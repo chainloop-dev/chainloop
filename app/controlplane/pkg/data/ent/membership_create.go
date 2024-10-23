@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -22,6 +24,7 @@ type MembershipCreate struct {
 	config
 	mutation *MembershipMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCurrent sets the "current" field.
@@ -217,6 +220,7 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		_node = &Membership{config: mc.config}
 		_spec = sqlgraph.NewCreateSpec(membership.Table, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = mc.conflict
 	if id, ok := mc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -274,11 +278,228 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Membership.Create().
+//		SetCurrent(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.MembershipUpsert) {
+//			SetCurrent(v+v).
+//		}).
+//		Exec(ctx)
+func (mc *MembershipCreate) OnConflict(opts ...sql.ConflictOption) *MembershipUpsertOne {
+	mc.conflict = opts
+	return &MembershipUpsertOne{
+		create: mc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Membership.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (mc *MembershipCreate) OnConflictColumns(columns ...string) *MembershipUpsertOne {
+	mc.conflict = append(mc.conflict, sql.ConflictColumns(columns...))
+	return &MembershipUpsertOne{
+		create: mc,
+	}
+}
+
+type (
+	// MembershipUpsertOne is the builder for "upsert"-ing
+	//  one Membership node.
+	MembershipUpsertOne struct {
+		create *MembershipCreate
+	}
+
+	// MembershipUpsert is the "OnConflict" setter.
+	MembershipUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetCurrent sets the "current" field.
+func (u *MembershipUpsert) SetCurrent(v bool) *MembershipUpsert {
+	u.Set(membership.FieldCurrent, v)
+	return u
+}
+
+// UpdateCurrent sets the "current" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateCurrent() *MembershipUpsert {
+	u.SetExcluded(membership.FieldCurrent)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *MembershipUpsert) SetUpdatedAt(v time.Time) *MembershipUpsert {
+	u.Set(membership.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateUpdatedAt() *MembershipUpsert {
+	u.SetExcluded(membership.FieldUpdatedAt)
+	return u
+}
+
+// SetRole sets the "role" field.
+func (u *MembershipUpsert) SetRole(v authz.Role) *MembershipUpsert {
+	u.Set(membership.FieldRole, v)
+	return u
+}
+
+// UpdateRole sets the "role" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateRole() *MembershipUpsert {
+	u.SetExcluded(membership.FieldRole)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.Membership.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(membership.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *MembershipUpsertOne) UpdateNewValues() *MembershipUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(membership.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(membership.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Membership.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *MembershipUpsertOne) Ignore() *MembershipUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *MembershipUpsertOne) DoNothing() *MembershipUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the MembershipCreate.OnConflict
+// documentation for more info.
+func (u *MembershipUpsertOne) Update(set func(*MembershipUpsert)) *MembershipUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&MembershipUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetCurrent sets the "current" field.
+func (u *MembershipUpsertOne) SetCurrent(v bool) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetCurrent(v)
+	})
+}
+
+// UpdateCurrent sets the "current" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateCurrent() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateCurrent()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *MembershipUpsertOne) SetUpdatedAt(v time.Time) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateUpdatedAt() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// SetRole sets the "role" field.
+func (u *MembershipUpsertOne) SetRole(v authz.Role) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetRole(v)
+	})
+}
+
+// UpdateRole sets the "role" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateRole() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateRole()
+	})
+}
+
+// Exec executes the query.
+func (u *MembershipUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for MembershipCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *MembershipUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *MembershipUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: MembershipUpsertOne.ID is not supported by MySQL driver. Use MembershipUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *MembershipUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // MembershipCreateBulk is the builder for creating many Membership entities in bulk.
 type MembershipCreateBulk struct {
 	config
 	err      error
 	builders []*MembershipCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Membership entities in the database.
@@ -308,6 +529,7 @@ func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error
 					_, err = mutators[i+1].Mutate(root, mcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = mcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, mcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -354,6 +576,165 @@ func (mcb *MembershipCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (mcb *MembershipCreateBulk) ExecX(ctx context.Context) {
 	if err := mcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Membership.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.MembershipUpsert) {
+//			SetCurrent(v+v).
+//		}).
+//		Exec(ctx)
+func (mcb *MembershipCreateBulk) OnConflict(opts ...sql.ConflictOption) *MembershipUpsertBulk {
+	mcb.conflict = opts
+	return &MembershipUpsertBulk{
+		create: mcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Membership.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (mcb *MembershipCreateBulk) OnConflictColumns(columns ...string) *MembershipUpsertBulk {
+	mcb.conflict = append(mcb.conflict, sql.ConflictColumns(columns...))
+	return &MembershipUpsertBulk{
+		create: mcb,
+	}
+}
+
+// MembershipUpsertBulk is the builder for "upsert"-ing
+// a bulk of Membership nodes.
+type MembershipUpsertBulk struct {
+	create *MembershipCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Membership.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(membership.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *MembershipUpsertBulk) UpdateNewValues() *MembershipUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(membership.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(membership.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Membership.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *MembershipUpsertBulk) Ignore() *MembershipUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *MembershipUpsertBulk) DoNothing() *MembershipUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the MembershipCreateBulk.OnConflict
+// documentation for more info.
+func (u *MembershipUpsertBulk) Update(set func(*MembershipUpsert)) *MembershipUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&MembershipUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetCurrent sets the "current" field.
+func (u *MembershipUpsertBulk) SetCurrent(v bool) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetCurrent(v)
+	})
+}
+
+// UpdateCurrent sets the "current" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateCurrent() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateCurrent()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *MembershipUpsertBulk) SetUpdatedAt(v time.Time) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateUpdatedAt() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// SetRole sets the "role" field.
+func (u *MembershipUpsertBulk) SetRole(v authz.Role) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetRole(v)
+	})
+}
+
+// UpdateRole sets the "role" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateRole() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateRole()
+	})
+}
+
+// Exec executes the query.
+func (u *MembershipUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the MembershipCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for MembershipCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *MembershipUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

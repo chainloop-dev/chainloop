@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -21,6 +23,7 @@ type IntegrationCreate struct {
 	config
 	mutation *IntegrationMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -222,6 +225,7 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 		_node = &Integration{config: ic.config}
 		_spec = sqlgraph.NewCreateSpec(integration.Table, sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = ic.conflict
 	if id, ok := ic.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -290,11 +294,276 @@ func (ic *IntegrationCreate) createSpec() (*Integration, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Integration.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.IntegrationUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (ic *IntegrationCreate) OnConflict(opts ...sql.ConflictOption) *IntegrationUpsertOne {
+	ic.conflict = opts
+	return &IntegrationUpsertOne{
+		create: ic,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Integration.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (ic *IntegrationCreate) OnConflictColumns(columns ...string) *IntegrationUpsertOne {
+	ic.conflict = append(ic.conflict, sql.ConflictColumns(columns...))
+	return &IntegrationUpsertOne{
+		create: ic,
+	}
+}
+
+type (
+	// IntegrationUpsertOne is the builder for "upsert"-ing
+	//  one Integration node.
+	IntegrationUpsertOne struct {
+		create *IntegrationCreate
+	}
+
+	// IntegrationUpsert is the "OnConflict" setter.
+	IntegrationUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetDescription sets the "description" field.
+func (u *IntegrationUpsert) SetDescription(v string) *IntegrationUpsert {
+	u.Set(integration.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *IntegrationUpsert) UpdateDescription() *IntegrationUpsert {
+	u.SetExcluded(integration.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *IntegrationUpsert) ClearDescription() *IntegrationUpsert {
+	u.SetNull(integration.FieldDescription)
+	return u
+}
+
+// SetConfiguration sets the "configuration" field.
+func (u *IntegrationUpsert) SetConfiguration(v []byte) *IntegrationUpsert {
+	u.Set(integration.FieldConfiguration, v)
+	return u
+}
+
+// UpdateConfiguration sets the "configuration" field to the value that was provided on create.
+func (u *IntegrationUpsert) UpdateConfiguration() *IntegrationUpsert {
+	u.SetExcluded(integration.FieldConfiguration)
+	return u
+}
+
+// ClearConfiguration clears the value of the "configuration" field.
+func (u *IntegrationUpsert) ClearConfiguration() *IntegrationUpsert {
+	u.SetNull(integration.FieldConfiguration)
+	return u
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *IntegrationUpsert) SetDeletedAt(v time.Time) *IntegrationUpsert {
+	u.Set(integration.FieldDeletedAt, v)
+	return u
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *IntegrationUpsert) UpdateDeletedAt() *IntegrationUpsert {
+	u.SetExcluded(integration.FieldDeletedAt)
+	return u
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *IntegrationUpsert) ClearDeletedAt() *IntegrationUpsert {
+	u.SetNull(integration.FieldDeletedAt)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.Integration.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(integration.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *IntegrationUpsertOne) UpdateNewValues() *IntegrationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(integration.FieldID)
+		}
+		if _, exists := u.create.mutation.Name(); exists {
+			s.SetIgnore(integration.FieldName)
+		}
+		if _, exists := u.create.mutation.Kind(); exists {
+			s.SetIgnore(integration.FieldKind)
+		}
+		if _, exists := u.create.mutation.SecretName(); exists {
+			s.SetIgnore(integration.FieldSecretName)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(integration.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Integration.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *IntegrationUpsertOne) Ignore() *IntegrationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *IntegrationUpsertOne) DoNothing() *IntegrationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the IntegrationCreate.OnConflict
+// documentation for more info.
+func (u *IntegrationUpsertOne) Update(set func(*IntegrationUpsert)) *IntegrationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&IntegrationUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *IntegrationUpsertOne) SetDescription(v string) *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *IntegrationUpsertOne) UpdateDescription() *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *IntegrationUpsertOne) ClearDescription() *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetConfiguration sets the "configuration" field.
+func (u *IntegrationUpsertOne) SetConfiguration(v []byte) *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.SetConfiguration(v)
+	})
+}
+
+// UpdateConfiguration sets the "configuration" field to the value that was provided on create.
+func (u *IntegrationUpsertOne) UpdateConfiguration() *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.UpdateConfiguration()
+	})
+}
+
+// ClearConfiguration clears the value of the "configuration" field.
+func (u *IntegrationUpsertOne) ClearConfiguration() *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.ClearConfiguration()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *IntegrationUpsertOne) SetDeletedAt(v time.Time) *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *IntegrationUpsertOne) UpdateDeletedAt() *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *IntegrationUpsertOne) ClearDeletedAt() *IntegrationUpsertOne {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *IntegrationUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for IntegrationCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *IntegrationUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *IntegrationUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: IntegrationUpsertOne.ID is not supported by MySQL driver. Use IntegrationUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *IntegrationUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // IntegrationCreateBulk is the builder for creating many Integration entities in bulk.
 type IntegrationCreateBulk struct {
 	config
 	err      error
 	builders []*IntegrationCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Integration entities in the database.
@@ -324,6 +593,7 @@ func (icb *IntegrationCreateBulk) Save(ctx context.Context) ([]*Integration, err
 					_, err = mutators[i+1].Mutate(root, icb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = icb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, icb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -370,6 +640,195 @@ func (icb *IntegrationCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (icb *IntegrationCreateBulk) ExecX(ctx context.Context) {
 	if err := icb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Integration.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.IntegrationUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (icb *IntegrationCreateBulk) OnConflict(opts ...sql.ConflictOption) *IntegrationUpsertBulk {
+	icb.conflict = opts
+	return &IntegrationUpsertBulk{
+		create: icb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Integration.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (icb *IntegrationCreateBulk) OnConflictColumns(columns ...string) *IntegrationUpsertBulk {
+	icb.conflict = append(icb.conflict, sql.ConflictColumns(columns...))
+	return &IntegrationUpsertBulk{
+		create: icb,
+	}
+}
+
+// IntegrationUpsertBulk is the builder for "upsert"-ing
+// a bulk of Integration nodes.
+type IntegrationUpsertBulk struct {
+	create *IntegrationCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Integration.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(integration.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *IntegrationUpsertBulk) UpdateNewValues() *IntegrationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(integration.FieldID)
+			}
+			if _, exists := b.mutation.Name(); exists {
+				s.SetIgnore(integration.FieldName)
+			}
+			if _, exists := b.mutation.Kind(); exists {
+				s.SetIgnore(integration.FieldKind)
+			}
+			if _, exists := b.mutation.SecretName(); exists {
+				s.SetIgnore(integration.FieldSecretName)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(integration.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Integration.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *IntegrationUpsertBulk) Ignore() *IntegrationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *IntegrationUpsertBulk) DoNothing() *IntegrationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the IntegrationCreateBulk.OnConflict
+// documentation for more info.
+func (u *IntegrationUpsertBulk) Update(set func(*IntegrationUpsert)) *IntegrationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&IntegrationUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *IntegrationUpsertBulk) SetDescription(v string) *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *IntegrationUpsertBulk) UpdateDescription() *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *IntegrationUpsertBulk) ClearDescription() *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetConfiguration sets the "configuration" field.
+func (u *IntegrationUpsertBulk) SetConfiguration(v []byte) *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.SetConfiguration(v)
+	})
+}
+
+// UpdateConfiguration sets the "configuration" field to the value that was provided on create.
+func (u *IntegrationUpsertBulk) UpdateConfiguration() *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.UpdateConfiguration()
+	})
+}
+
+// ClearConfiguration clears the value of the "configuration" field.
+func (u *IntegrationUpsertBulk) ClearConfiguration() *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.ClearConfiguration()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *IntegrationUpsertBulk) SetDeletedAt(v time.Time) *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *IntegrationUpsertBulk) UpdateDeletedAt() *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *IntegrationUpsertBulk) ClearDeletedAt() *IntegrationUpsertBulk {
+	return u.Update(func(s *IntegrationUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *IntegrationUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the IntegrationCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for IntegrationCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *IntegrationUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

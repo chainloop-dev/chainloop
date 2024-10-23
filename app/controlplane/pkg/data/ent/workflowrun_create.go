@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -24,6 +26,7 @@ type WorkflowRunCreate struct {
 	config
 	mutation *WorkflowRunMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -314,6 +317,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_node = &WorkflowRun{config: wrc.config}
 		_spec = sqlgraph.NewCreateSpec(workflowrun.Table, sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = wrc.conflict
 	if id, ok := wrc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -415,11 +419,527 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.WorkflowRun.Create().
+//		SetCreatedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.WorkflowRunUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (wrc *WorkflowRunCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowRunUpsertOne {
+	wrc.conflict = opts
+	return &WorkflowRunUpsertOne{
+		create: wrc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.WorkflowRun.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (wrc *WorkflowRunCreate) OnConflictColumns(columns ...string) *WorkflowRunUpsertOne {
+	wrc.conflict = append(wrc.conflict, sql.ConflictColumns(columns...))
+	return &WorkflowRunUpsertOne{
+		create: wrc,
+	}
+}
+
+type (
+	// WorkflowRunUpsertOne is the builder for "upsert"-ing
+	//  one WorkflowRun node.
+	WorkflowRunUpsertOne struct {
+		create *WorkflowRunCreate
+	}
+
+	// WorkflowRunUpsert is the "OnConflict" setter.
+	WorkflowRunUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetFinishedAt sets the "finished_at" field.
+func (u *WorkflowRunUpsert) SetFinishedAt(v time.Time) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldFinishedAt, v)
+	return u
+}
+
+// UpdateFinishedAt sets the "finished_at" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateFinishedAt() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldFinishedAt)
+	return u
+}
+
+// ClearFinishedAt clears the value of the "finished_at" field.
+func (u *WorkflowRunUpsert) ClearFinishedAt() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldFinishedAt)
+	return u
+}
+
+// SetState sets the "state" field.
+func (u *WorkflowRunUpsert) SetState(v biz.WorkflowRunStatus) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldState, v)
+	return u
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateState() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldState)
+	return u
+}
+
+// SetReason sets the "reason" field.
+func (u *WorkflowRunUpsert) SetReason(v string) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldReason, v)
+	return u
+}
+
+// UpdateReason sets the "reason" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateReason() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldReason)
+	return u
+}
+
+// ClearReason clears the value of the "reason" field.
+func (u *WorkflowRunUpsert) ClearReason() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldReason)
+	return u
+}
+
+// SetRunURL sets the "run_url" field.
+func (u *WorkflowRunUpsert) SetRunURL(v string) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldRunURL, v)
+	return u
+}
+
+// UpdateRunURL sets the "run_url" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateRunURL() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldRunURL)
+	return u
+}
+
+// ClearRunURL clears the value of the "run_url" field.
+func (u *WorkflowRunUpsert) ClearRunURL() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldRunURL)
+	return u
+}
+
+// SetRunnerType sets the "runner_type" field.
+func (u *WorkflowRunUpsert) SetRunnerType(v string) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldRunnerType, v)
+	return u
+}
+
+// UpdateRunnerType sets the "runner_type" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateRunnerType() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldRunnerType)
+	return u
+}
+
+// ClearRunnerType clears the value of the "runner_type" field.
+func (u *WorkflowRunUpsert) ClearRunnerType() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldRunnerType)
+	return u
+}
+
+// SetAttestation sets the "attestation" field.
+func (u *WorkflowRunUpsert) SetAttestation(v *dsse.Envelope) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldAttestation, v)
+	return u
+}
+
+// UpdateAttestation sets the "attestation" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateAttestation() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldAttestation)
+	return u
+}
+
+// ClearAttestation clears the value of the "attestation" field.
+func (u *WorkflowRunUpsert) ClearAttestation() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldAttestation)
+	return u
+}
+
+// SetAttestationDigest sets the "attestation_digest" field.
+func (u *WorkflowRunUpsert) SetAttestationDigest(v string) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldAttestationDigest, v)
+	return u
+}
+
+// UpdateAttestationDigest sets the "attestation_digest" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateAttestationDigest() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldAttestationDigest)
+	return u
+}
+
+// ClearAttestationDigest clears the value of the "attestation_digest" field.
+func (u *WorkflowRunUpsert) ClearAttestationDigest() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldAttestationDigest)
+	return u
+}
+
+// SetAttestationState sets the "attestation_state" field.
+func (u *WorkflowRunUpsert) SetAttestationState(v []byte) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldAttestationState, v)
+	return u
+}
+
+// UpdateAttestationState sets the "attestation_state" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateAttestationState() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldAttestationState)
+	return u
+}
+
+// ClearAttestationState clears the value of the "attestation_state" field.
+func (u *WorkflowRunUpsert) ClearAttestationState() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldAttestationState)
+	return u
+}
+
+// SetContractRevisionUsed sets the "contract_revision_used" field.
+func (u *WorkflowRunUpsert) SetContractRevisionUsed(v int) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldContractRevisionUsed, v)
+	return u
+}
+
+// UpdateContractRevisionUsed sets the "contract_revision_used" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateContractRevisionUsed() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldContractRevisionUsed)
+	return u
+}
+
+// AddContractRevisionUsed adds v to the "contract_revision_used" field.
+func (u *WorkflowRunUpsert) AddContractRevisionUsed(v int) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldContractRevisionUsed, v)
+	return u
+}
+
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (u *WorkflowRunUpsert) SetContractRevisionLatest(v int) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldContractRevisionLatest, v)
+	return u
+}
+
+// UpdateContractRevisionLatest sets the "contract_revision_latest" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateContractRevisionLatest() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldContractRevisionLatest)
+	return u
+}
+
+// AddContractRevisionLatest adds v to the "contract_revision_latest" field.
+func (u *WorkflowRunUpsert) AddContractRevisionLatest(v int) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldContractRevisionLatest, v)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.WorkflowRun.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(workflowrun.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *WorkflowRunUpsertOne) UpdateNewValues() *WorkflowRunUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(workflowrun.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(workflowrun.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.WorkflowRun.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *WorkflowRunUpsertOne) Ignore() *WorkflowRunUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *WorkflowRunUpsertOne) DoNothing() *WorkflowRunUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the WorkflowRunCreate.OnConflict
+// documentation for more info.
+func (u *WorkflowRunUpsertOne) Update(set func(*WorkflowRunUpsert)) *WorkflowRunUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&WorkflowRunUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetFinishedAt sets the "finished_at" field.
+func (u *WorkflowRunUpsertOne) SetFinishedAt(v time.Time) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetFinishedAt(v)
+	})
+}
+
+// UpdateFinishedAt sets the "finished_at" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateFinishedAt() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateFinishedAt()
+	})
+}
+
+// ClearFinishedAt clears the value of the "finished_at" field.
+func (u *WorkflowRunUpsertOne) ClearFinishedAt() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearFinishedAt()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *WorkflowRunUpsertOne) SetState(v biz.WorkflowRunStatus) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateState() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateState()
+	})
+}
+
+// SetReason sets the "reason" field.
+func (u *WorkflowRunUpsertOne) SetReason(v string) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetReason(v)
+	})
+}
+
+// UpdateReason sets the "reason" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateReason() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateReason()
+	})
+}
+
+// ClearReason clears the value of the "reason" field.
+func (u *WorkflowRunUpsertOne) ClearReason() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearReason()
+	})
+}
+
+// SetRunURL sets the "run_url" field.
+func (u *WorkflowRunUpsertOne) SetRunURL(v string) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetRunURL(v)
+	})
+}
+
+// UpdateRunURL sets the "run_url" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateRunURL() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateRunURL()
+	})
+}
+
+// ClearRunURL clears the value of the "run_url" field.
+func (u *WorkflowRunUpsertOne) ClearRunURL() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearRunURL()
+	})
+}
+
+// SetRunnerType sets the "runner_type" field.
+func (u *WorkflowRunUpsertOne) SetRunnerType(v string) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetRunnerType(v)
+	})
+}
+
+// UpdateRunnerType sets the "runner_type" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateRunnerType() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateRunnerType()
+	})
+}
+
+// ClearRunnerType clears the value of the "runner_type" field.
+func (u *WorkflowRunUpsertOne) ClearRunnerType() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearRunnerType()
+	})
+}
+
+// SetAttestation sets the "attestation" field.
+func (u *WorkflowRunUpsertOne) SetAttestation(v *dsse.Envelope) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetAttestation(v)
+	})
+}
+
+// UpdateAttestation sets the "attestation" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateAttestation() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateAttestation()
+	})
+}
+
+// ClearAttestation clears the value of the "attestation" field.
+func (u *WorkflowRunUpsertOne) ClearAttestation() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearAttestation()
+	})
+}
+
+// SetAttestationDigest sets the "attestation_digest" field.
+func (u *WorkflowRunUpsertOne) SetAttestationDigest(v string) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetAttestationDigest(v)
+	})
+}
+
+// UpdateAttestationDigest sets the "attestation_digest" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateAttestationDigest() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateAttestationDigest()
+	})
+}
+
+// ClearAttestationDigest clears the value of the "attestation_digest" field.
+func (u *WorkflowRunUpsertOne) ClearAttestationDigest() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearAttestationDigest()
+	})
+}
+
+// SetAttestationState sets the "attestation_state" field.
+func (u *WorkflowRunUpsertOne) SetAttestationState(v []byte) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetAttestationState(v)
+	})
+}
+
+// UpdateAttestationState sets the "attestation_state" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateAttestationState() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateAttestationState()
+	})
+}
+
+// ClearAttestationState clears the value of the "attestation_state" field.
+func (u *WorkflowRunUpsertOne) ClearAttestationState() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearAttestationState()
+	})
+}
+
+// SetContractRevisionUsed sets the "contract_revision_used" field.
+func (u *WorkflowRunUpsertOne) SetContractRevisionUsed(v int) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetContractRevisionUsed(v)
+	})
+}
+
+// AddContractRevisionUsed adds v to the "contract_revision_used" field.
+func (u *WorkflowRunUpsertOne) AddContractRevisionUsed(v int) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddContractRevisionUsed(v)
+	})
+}
+
+// UpdateContractRevisionUsed sets the "contract_revision_used" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateContractRevisionUsed() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateContractRevisionUsed()
+	})
+}
+
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (u *WorkflowRunUpsertOne) SetContractRevisionLatest(v int) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetContractRevisionLatest(v)
+	})
+}
+
+// AddContractRevisionLatest adds v to the "contract_revision_latest" field.
+func (u *WorkflowRunUpsertOne) AddContractRevisionLatest(v int) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddContractRevisionLatest(v)
+	})
+}
+
+// UpdateContractRevisionLatest sets the "contract_revision_latest" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateContractRevisionLatest() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateContractRevisionLatest()
+	})
+}
+
+// Exec executes the query.
+func (u *WorkflowRunUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for WorkflowRunCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *WorkflowRunUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *WorkflowRunUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: WorkflowRunUpsertOne.ID is not supported by MySQL driver. Use WorkflowRunUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *WorkflowRunUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // WorkflowRunCreateBulk is the builder for creating many WorkflowRun entities in bulk.
 type WorkflowRunCreateBulk struct {
 	config
 	err      error
 	builders []*WorkflowRunCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the WorkflowRun entities in the database.
@@ -449,6 +969,7 @@ func (wrcb *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, er
 					_, err = mutators[i+1].Mutate(root, wrcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = wrcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, wrcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -495,6 +1016,326 @@ func (wrcb *WorkflowRunCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (wrcb *WorkflowRunCreateBulk) ExecX(ctx context.Context) {
 	if err := wrcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.WorkflowRun.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.WorkflowRunUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (wrcb *WorkflowRunCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowRunUpsertBulk {
+	wrcb.conflict = opts
+	return &WorkflowRunUpsertBulk{
+		create: wrcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.WorkflowRun.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (wrcb *WorkflowRunCreateBulk) OnConflictColumns(columns ...string) *WorkflowRunUpsertBulk {
+	wrcb.conflict = append(wrcb.conflict, sql.ConflictColumns(columns...))
+	return &WorkflowRunUpsertBulk{
+		create: wrcb,
+	}
+}
+
+// WorkflowRunUpsertBulk is the builder for "upsert"-ing
+// a bulk of WorkflowRun nodes.
+type WorkflowRunUpsertBulk struct {
+	create *WorkflowRunCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.WorkflowRun.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(workflowrun.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *WorkflowRunUpsertBulk) UpdateNewValues() *WorkflowRunUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(workflowrun.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(workflowrun.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.WorkflowRun.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *WorkflowRunUpsertBulk) Ignore() *WorkflowRunUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *WorkflowRunUpsertBulk) DoNothing() *WorkflowRunUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the WorkflowRunCreateBulk.OnConflict
+// documentation for more info.
+func (u *WorkflowRunUpsertBulk) Update(set func(*WorkflowRunUpsert)) *WorkflowRunUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&WorkflowRunUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetFinishedAt sets the "finished_at" field.
+func (u *WorkflowRunUpsertBulk) SetFinishedAt(v time.Time) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetFinishedAt(v)
+	})
+}
+
+// UpdateFinishedAt sets the "finished_at" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateFinishedAt() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateFinishedAt()
+	})
+}
+
+// ClearFinishedAt clears the value of the "finished_at" field.
+func (u *WorkflowRunUpsertBulk) ClearFinishedAt() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearFinishedAt()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *WorkflowRunUpsertBulk) SetState(v biz.WorkflowRunStatus) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateState() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateState()
+	})
+}
+
+// SetReason sets the "reason" field.
+func (u *WorkflowRunUpsertBulk) SetReason(v string) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetReason(v)
+	})
+}
+
+// UpdateReason sets the "reason" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateReason() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateReason()
+	})
+}
+
+// ClearReason clears the value of the "reason" field.
+func (u *WorkflowRunUpsertBulk) ClearReason() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearReason()
+	})
+}
+
+// SetRunURL sets the "run_url" field.
+func (u *WorkflowRunUpsertBulk) SetRunURL(v string) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetRunURL(v)
+	})
+}
+
+// UpdateRunURL sets the "run_url" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateRunURL() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateRunURL()
+	})
+}
+
+// ClearRunURL clears the value of the "run_url" field.
+func (u *WorkflowRunUpsertBulk) ClearRunURL() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearRunURL()
+	})
+}
+
+// SetRunnerType sets the "runner_type" field.
+func (u *WorkflowRunUpsertBulk) SetRunnerType(v string) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetRunnerType(v)
+	})
+}
+
+// UpdateRunnerType sets the "runner_type" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateRunnerType() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateRunnerType()
+	})
+}
+
+// ClearRunnerType clears the value of the "runner_type" field.
+func (u *WorkflowRunUpsertBulk) ClearRunnerType() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearRunnerType()
+	})
+}
+
+// SetAttestation sets the "attestation" field.
+func (u *WorkflowRunUpsertBulk) SetAttestation(v *dsse.Envelope) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetAttestation(v)
+	})
+}
+
+// UpdateAttestation sets the "attestation" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateAttestation() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateAttestation()
+	})
+}
+
+// ClearAttestation clears the value of the "attestation" field.
+func (u *WorkflowRunUpsertBulk) ClearAttestation() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearAttestation()
+	})
+}
+
+// SetAttestationDigest sets the "attestation_digest" field.
+func (u *WorkflowRunUpsertBulk) SetAttestationDigest(v string) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetAttestationDigest(v)
+	})
+}
+
+// UpdateAttestationDigest sets the "attestation_digest" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateAttestationDigest() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateAttestationDigest()
+	})
+}
+
+// ClearAttestationDigest clears the value of the "attestation_digest" field.
+func (u *WorkflowRunUpsertBulk) ClearAttestationDigest() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearAttestationDigest()
+	})
+}
+
+// SetAttestationState sets the "attestation_state" field.
+func (u *WorkflowRunUpsertBulk) SetAttestationState(v []byte) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetAttestationState(v)
+	})
+}
+
+// UpdateAttestationState sets the "attestation_state" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateAttestationState() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateAttestationState()
+	})
+}
+
+// ClearAttestationState clears the value of the "attestation_state" field.
+func (u *WorkflowRunUpsertBulk) ClearAttestationState() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearAttestationState()
+	})
+}
+
+// SetContractRevisionUsed sets the "contract_revision_used" field.
+func (u *WorkflowRunUpsertBulk) SetContractRevisionUsed(v int) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetContractRevisionUsed(v)
+	})
+}
+
+// AddContractRevisionUsed adds v to the "contract_revision_used" field.
+func (u *WorkflowRunUpsertBulk) AddContractRevisionUsed(v int) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddContractRevisionUsed(v)
+	})
+}
+
+// UpdateContractRevisionUsed sets the "contract_revision_used" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateContractRevisionUsed() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateContractRevisionUsed()
+	})
+}
+
+// SetContractRevisionLatest sets the "contract_revision_latest" field.
+func (u *WorkflowRunUpsertBulk) SetContractRevisionLatest(v int) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetContractRevisionLatest(v)
+	})
+}
+
+// AddContractRevisionLatest adds v to the "contract_revision_latest" field.
+func (u *WorkflowRunUpsertBulk) AddContractRevisionLatest(v int) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddContractRevisionLatest(v)
+	})
+}
+
+// UpdateContractRevisionLatest sets the "contract_revision_latest" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateContractRevisionLatest() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateContractRevisionLatest()
+	})
+}
+
+// Exec executes the query.
+func (u *WorkflowRunUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the WorkflowRunCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for WorkflowRunCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *WorkflowRunUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

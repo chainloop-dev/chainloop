@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
@@ -20,6 +22,7 @@ type APITokenCreate struct {
 	config
 	mutation *APITokenMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -199,6 +202,7 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 		_node = &APIToken{config: atc.config}
 		_spec = sqlgraph.NewCreateSpec(apitoken.Table, sqlgraph.NewFieldSpec(apitoken.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = atc.conflict
 	if id, ok := atc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -243,11 +247,260 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.APIToken.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.APITokenUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (atc *APITokenCreate) OnConflict(opts ...sql.ConflictOption) *APITokenUpsertOne {
+	atc.conflict = opts
+	return &APITokenUpsertOne{
+		create: atc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.APIToken.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (atc *APITokenCreate) OnConflictColumns(columns ...string) *APITokenUpsertOne {
+	atc.conflict = append(atc.conflict, sql.ConflictColumns(columns...))
+	return &APITokenUpsertOne{
+		create: atc,
+	}
+}
+
+type (
+	// APITokenUpsertOne is the builder for "upsert"-ing
+	//  one APIToken node.
+	APITokenUpsertOne struct {
+		create *APITokenCreate
+	}
+
+	// APITokenUpsert is the "OnConflict" setter.
+	APITokenUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetDescription sets the "description" field.
+func (u *APITokenUpsert) SetDescription(v string) *APITokenUpsert {
+	u.Set(apitoken.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateDescription() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *APITokenUpsert) ClearDescription() *APITokenUpsert {
+	u.SetNull(apitoken.FieldDescription)
+	return u
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *APITokenUpsert) SetRevokedAt(v time.Time) *APITokenUpsert {
+	u.Set(apitoken.FieldRevokedAt, v)
+	return u
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateRevokedAt() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldRevokedAt)
+	return u
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *APITokenUpsert) ClearRevokedAt() *APITokenUpsert {
+	u.SetNull(apitoken.FieldRevokedAt)
+	return u
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *APITokenUpsert) SetOrganizationID(v uuid.UUID) *APITokenUpsert {
+	u.Set(apitoken.FieldOrganizationID, v)
+	return u
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateOrganizationID() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldOrganizationID)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.APIToken.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(apitoken.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *APITokenUpsertOne) UpdateNewValues() *APITokenUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(apitoken.FieldID)
+		}
+		if _, exists := u.create.mutation.Name(); exists {
+			s.SetIgnore(apitoken.FieldName)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(apitoken.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.ExpiresAt(); exists {
+			s.SetIgnore(apitoken.FieldExpiresAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.APIToken.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *APITokenUpsertOne) Ignore() *APITokenUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *APITokenUpsertOne) DoNothing() *APITokenUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the APITokenCreate.OnConflict
+// documentation for more info.
+func (u *APITokenUpsertOne) Update(set func(*APITokenUpsert)) *APITokenUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&APITokenUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *APITokenUpsertOne) SetDescription(v string) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateDescription() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *APITokenUpsertOne) ClearDescription() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *APITokenUpsertOne) SetRevokedAt(v time.Time) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateRevokedAt() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *APITokenUpsertOne) ClearRevokedAt() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *APITokenUpsertOne) SetOrganizationID(v uuid.UUID) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateOrganizationID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// Exec executes the query.
+func (u *APITokenUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for APITokenCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *APITokenUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *APITokenUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: APITokenUpsertOne.ID is not supported by MySQL driver. Use APITokenUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *APITokenUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // APITokenCreateBulk is the builder for creating many APIToken entities in bulk.
 type APITokenCreateBulk struct {
 	config
 	err      error
 	builders []*APITokenCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the APIToken entities in the database.
@@ -277,6 +530,7 @@ func (atcb *APITokenCreateBulk) Save(ctx context.Context) ([]*APIToken, error) {
 					_, err = mutators[i+1].Mutate(root, atcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = atcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, atcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -323,6 +577,185 @@ func (atcb *APITokenCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (atcb *APITokenCreateBulk) ExecX(ctx context.Context) {
 	if err := atcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.APIToken.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.APITokenUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (atcb *APITokenCreateBulk) OnConflict(opts ...sql.ConflictOption) *APITokenUpsertBulk {
+	atcb.conflict = opts
+	return &APITokenUpsertBulk{
+		create: atcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.APIToken.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (atcb *APITokenCreateBulk) OnConflictColumns(columns ...string) *APITokenUpsertBulk {
+	atcb.conflict = append(atcb.conflict, sql.ConflictColumns(columns...))
+	return &APITokenUpsertBulk{
+		create: atcb,
+	}
+}
+
+// APITokenUpsertBulk is the builder for "upsert"-ing
+// a bulk of APIToken nodes.
+type APITokenUpsertBulk struct {
+	create *APITokenCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.APIToken.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(apitoken.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *APITokenUpsertBulk) UpdateNewValues() *APITokenUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(apitoken.FieldID)
+			}
+			if _, exists := b.mutation.Name(); exists {
+				s.SetIgnore(apitoken.FieldName)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(apitoken.FieldCreatedAt)
+			}
+			if _, exists := b.mutation.ExpiresAt(); exists {
+				s.SetIgnore(apitoken.FieldExpiresAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.APIToken.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *APITokenUpsertBulk) Ignore() *APITokenUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *APITokenUpsertBulk) DoNothing() *APITokenUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the APITokenCreateBulk.OnConflict
+// documentation for more info.
+func (u *APITokenUpsertBulk) Update(set func(*APITokenUpsert)) *APITokenUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&APITokenUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *APITokenUpsertBulk) SetDescription(v string) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateDescription() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *APITokenUpsertBulk) ClearDescription() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *APITokenUpsertBulk) SetRevokedAt(v time.Time) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateRevokedAt() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *APITokenUpsertBulk) ClearRevokedAt() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *APITokenUpsertBulk) SetOrganizationID(v uuid.UUID) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateOrganizationID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// Exec executes the query.
+func (u *APITokenUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the APITokenCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for APITokenCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *APITokenUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

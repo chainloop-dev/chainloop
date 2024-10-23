@@ -271,6 +271,38 @@ var (
 		Columns:    OrganizationsColumns,
 		PrimaryKey: []*schema.Column{OrganizationsColumns[0]},
 	}
+	// ProjectsColumns holds the columns for the "projects" table.
+	ProjectsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
+	}
+	// ProjectsTable holds the schema information for the "projects" table.
+	ProjectsTable = &schema.Table{
+		Name:       "projects",
+		Columns:    ProjectsColumns,
+		PrimaryKey: []*schema.Column{ProjectsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "projects_organizations_projects",
+				Columns:    []*schema.Column{ProjectsColumns[4]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "project_name_organization_id",
+				Unique:  true,
+				Columns: []*schema.Column{ProjectsColumns[1], ProjectsColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
+		},
+	}
 	// ReferrersColumns holds the columns for the "referrers" table.
 	ReferrersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -332,7 +364,7 @@ var (
 	WorkflowsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "name", Type: field.TypeString},
-		{Name: "project", Type: field.TypeString},
+		{Name: "project_old", Type: field.TypeString, Nullable: true},
 		{Name: "team", Type: field.TypeString, Nullable: true},
 		{Name: "runs_count", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
@@ -340,6 +372,7 @@ var (
 		{Name: "public", Type: field.TypeBool, Default: false},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeUUID},
 		{Name: "workflow_contract", Type: field.TypeUUID},
 	}
 	// WorkflowsTable holds the schema information for the "workflows" table.
@@ -355,17 +388,23 @@ var (
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "workflows_workflow_contracts_contract",
+				Symbol:     "workflows_projects_workflows",
 				Columns:    []*schema.Column{WorkflowsColumns[10]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "workflows_workflow_contracts_contract",
+				Columns:    []*schema.Column{WorkflowsColumns[11]},
 				RefColumns: []*schema.Column{WorkflowContractsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "workflow_name_project_organization_id",
+				Name:    "workflow_name_organization_id_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[2], WorkflowsColumns[9]},
+				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[9], WorkflowsColumns[10]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -593,6 +632,7 @@ var (
 		MembershipsTable,
 		OrgInvitationsTable,
 		OrganizationsTable,
+		ProjectsTable,
 		ReferrersTable,
 		RobotAccountsTable,
 		UsersTable,
@@ -619,9 +659,11 @@ func init() {
 	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	OrgInvitationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
+	ProjectsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	RobotAccountsTable.ForeignKeys[0].RefTable = WorkflowsTable
 	WorkflowsTable.ForeignKeys[0].RefTable = OrganizationsTable
-	WorkflowsTable.ForeignKeys[1].RefTable = WorkflowContractsTable
+	WorkflowsTable.ForeignKeys[1].RefTable = ProjectsTable
+	WorkflowsTable.ForeignKeys[2].RefTable = WorkflowContractsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowContractVersionsTable.ForeignKeys[0].RefTable = WorkflowContractsTable
 	WorkflowRunsTable.ForeignKeys[0].RefTable = WorkflowsTable

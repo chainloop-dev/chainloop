@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import (
 
 func main() {
 	err := entc.Generate("./schema", &gen.Config{
-		Features: []gen.Feature{gen.FeatureVersionedMigration, gen.FeatureModifier, gen.FeatureLock},
+		Features: []gen.Feature{gen.FeatureVersionedMigration, gen.FeatureModifier, gen.FeatureLock, gen.FeatureUpsert},
 	}, entc.Extensions(entviz.Extension{}))
 	if err != nil {
 		log.Fatalf("running ent codegen: %v", err)

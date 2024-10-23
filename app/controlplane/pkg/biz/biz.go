@@ -17,7 +17,6 @@ package biz
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -84,7 +83,7 @@ func ValidateIsDNS1123(name string) error {
 			errMsg += fmt.Sprintf("%q: %s\n", name, e)
 		}
 
-		return errors.New(errMsg)
+		return NewErrValidationStr(errMsg)
 	}
 
 	return nil

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
@@ -20,6 +22,7 @@ type RobotAccountCreate struct {
 	config
 	mutation *RobotAccountMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -173,6 +176,7 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 		_node = &RobotAccount{config: rac.config}
 		_spec = sqlgraph.NewCreateSpec(robotaccount.Table, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = rac.conflict
 	if id, ok := rac.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -209,11 +213,215 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.RobotAccount.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.RobotAccountUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (rac *RobotAccountCreate) OnConflict(opts ...sql.ConflictOption) *RobotAccountUpsertOne {
+	rac.conflict = opts
+	return &RobotAccountUpsertOne{
+		create: rac,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.RobotAccount.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (rac *RobotAccountCreate) OnConflictColumns(columns ...string) *RobotAccountUpsertOne {
+	rac.conflict = append(rac.conflict, sql.ConflictColumns(columns...))
+	return &RobotAccountUpsertOne{
+		create: rac,
+	}
+}
+
+type (
+	// RobotAccountUpsertOne is the builder for "upsert"-ing
+	//  one RobotAccount node.
+	RobotAccountUpsertOne struct {
+		create *RobotAccountCreate
+	}
+
+	// RobotAccountUpsert is the "OnConflict" setter.
+	RobotAccountUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetName sets the "name" field.
+func (u *RobotAccountUpsert) SetName(v string) *RobotAccountUpsert {
+	u.Set(robotaccount.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *RobotAccountUpsert) UpdateName() *RobotAccountUpsert {
+	u.SetExcluded(robotaccount.FieldName)
+	return u
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *RobotAccountUpsert) SetRevokedAt(v time.Time) *RobotAccountUpsert {
+	u.Set(robotaccount.FieldRevokedAt, v)
+	return u
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *RobotAccountUpsert) UpdateRevokedAt() *RobotAccountUpsert {
+	u.SetExcluded(robotaccount.FieldRevokedAt)
+	return u
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *RobotAccountUpsert) ClearRevokedAt() *RobotAccountUpsert {
+	u.SetNull(robotaccount.FieldRevokedAt)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.RobotAccount.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(robotaccount.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *RobotAccountUpsertOne) UpdateNewValues() *RobotAccountUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(robotaccount.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(robotaccount.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.RobotAccount.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *RobotAccountUpsertOne) Ignore() *RobotAccountUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *RobotAccountUpsertOne) DoNothing() *RobotAccountUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the RobotAccountCreate.OnConflict
+// documentation for more info.
+func (u *RobotAccountUpsertOne) Update(set func(*RobotAccountUpsert)) *RobotAccountUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&RobotAccountUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *RobotAccountUpsertOne) SetName(v string) *RobotAccountUpsertOne {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *RobotAccountUpsertOne) UpdateName() *RobotAccountUpsertOne {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *RobotAccountUpsertOne) SetRevokedAt(v time.Time) *RobotAccountUpsertOne {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *RobotAccountUpsertOne) UpdateRevokedAt() *RobotAccountUpsertOne {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *RobotAccountUpsertOne) ClearRevokedAt() *RobotAccountUpsertOne {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *RobotAccountUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for RobotAccountCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *RobotAccountUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *RobotAccountUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: RobotAccountUpsertOne.ID is not supported by MySQL driver. Use RobotAccountUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *RobotAccountUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // RobotAccountCreateBulk is the builder for creating many RobotAccount entities in bulk.
 type RobotAccountCreateBulk struct {
 	config
 	err      error
 	builders []*RobotAccountCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the RobotAccount entities in the database.
@@ -243,6 +451,7 @@ func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, 
 					_, err = mutators[i+1].Mutate(root, racb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = racb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, racb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -289,6 +498,158 @@ func (racb *RobotAccountCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (racb *RobotAccountCreateBulk) ExecX(ctx context.Context) {
 	if err := racb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.RobotAccount.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.RobotAccountUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (racb *RobotAccountCreateBulk) OnConflict(opts ...sql.ConflictOption) *RobotAccountUpsertBulk {
+	racb.conflict = opts
+	return &RobotAccountUpsertBulk{
+		create: racb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.RobotAccount.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (racb *RobotAccountCreateBulk) OnConflictColumns(columns ...string) *RobotAccountUpsertBulk {
+	racb.conflict = append(racb.conflict, sql.ConflictColumns(columns...))
+	return &RobotAccountUpsertBulk{
+		create: racb,
+	}
+}
+
+// RobotAccountUpsertBulk is the builder for "upsert"-ing
+// a bulk of RobotAccount nodes.
+type RobotAccountUpsertBulk struct {
+	create *RobotAccountCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.RobotAccount.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(robotaccount.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *RobotAccountUpsertBulk) UpdateNewValues() *RobotAccountUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(robotaccount.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(robotaccount.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.RobotAccount.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *RobotAccountUpsertBulk) Ignore() *RobotAccountUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *RobotAccountUpsertBulk) DoNothing() *RobotAccountUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the RobotAccountCreateBulk.OnConflict
+// documentation for more info.
+func (u *RobotAccountUpsertBulk) Update(set func(*RobotAccountUpsert)) *RobotAccountUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&RobotAccountUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *RobotAccountUpsertBulk) SetName(v string) *RobotAccountUpsertBulk {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *RobotAccountUpsertBulk) UpdateName() *RobotAccountUpsertBulk {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *RobotAccountUpsertBulk) SetRevokedAt(v time.Time) *RobotAccountUpsertBulk {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *RobotAccountUpsertBulk) UpdateRevokedAt() *RobotAccountUpsertBulk {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *RobotAccountUpsertBulk) ClearRevokedAt() *RobotAccountUpsertBulk {
+	return u.Update(func(s *RobotAccountUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *RobotAccountUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the RobotAccountCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for RobotAccountCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *RobotAccountUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

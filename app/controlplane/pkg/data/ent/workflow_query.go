@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -36,6 +37,7 @@ type WorkflowQuery struct {
 	withOrganization           *OrganizationQuery
 	withContract               *WorkflowContractQuery
 	withIntegrationAttachments *IntegrationAttachmentQuery
+	withProject                *ProjectQuery
 	withReferrers              *ReferrerQuery
 	withFKs                    bool
 	modifiers                  []func(*sql.Selector)
@@ -178,6 +180,28 @@ func (wq *WorkflowQuery) QueryIntegrationAttachments() *IntegrationAttachmentQue
 			sqlgraph.From(workflow.Table, workflow.FieldID, selector),
 			sqlgraph.To(integrationattachment.Table, integrationattachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, workflow.IntegrationAttachmentsTable, workflow.IntegrationAttachmentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProject chains the current query on the "project" edge.
+func (wq *WorkflowQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: wq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflow.Table, workflow.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, workflow.ProjectTable, workflow.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
 		return fromU, nil
@@ -404,6 +428,7 @@ func (wq *WorkflowQuery) Clone() *WorkflowQuery {
 		withOrganization:           wq.withOrganization.Clone(),
 		withContract:               wq.withContract.Clone(),
 		withIntegrationAttachments: wq.withIntegrationAttachments.Clone(),
+		withProject:                wq.withProject.Clone(),
 		withReferrers:              wq.withReferrers.Clone(),
 		// clone intermediate query.
 		sql:  wq.sql.Clone(),
@@ -463,6 +488,17 @@ func (wq *WorkflowQuery) WithIntegrationAttachments(opts ...func(*IntegrationAtt
 		opt(query)
 	}
 	wq.withIntegrationAttachments = query
+	return wq
+}
+
+// WithProject tells the query-builder to eager-load the nodes that are connected to
+// the "project" edge. The optional arguments are used to configure the query builder of the edge.
+func (wq *WorkflowQuery) WithProject(opts ...func(*ProjectQuery)) *WorkflowQuery {
+	query := (&ProjectClient{config: wq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wq.withProject = query
 	return wq
 }
 
@@ -556,12 +592,13 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 		nodes       = []*Workflow{}
 		withFKs     = wq.withFKs
 		_spec       = wq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			wq.withRobotaccounts != nil,
 			wq.withWorkflowruns != nil,
 			wq.withOrganization != nil,
 			wq.withContract != nil,
 			wq.withIntegrationAttachments != nil,
+			wq.withProject != nil,
 			wq.withReferrers != nil,
 		}
 	)
@@ -624,6 +661,12 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 			func(n *Workflow, e *IntegrationAttachment) {
 				n.Edges.IntegrationAttachments = append(n.Edges.IntegrationAttachments, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := wq.withProject; query != nil {
+		if err := wq.loadProject(ctx, query, nodes, nil,
+			func(n *Workflow, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -791,6 +834,35 @@ func (wq *WorkflowQuery) loadIntegrationAttachments(ctx context.Context, query *
 	}
 	return nil
 }
+func (wq *WorkflowQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*Workflow, init func(*Workflow), assign func(*Workflow, *Project)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Workflow)
+	for i := range nodes {
+		fk := nodes[i].ProjectID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "project_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (wq *WorkflowQuery) loadReferrers(ctx context.Context, query *ReferrerQuery, nodes []*Workflow, init func(*Workflow), assign func(*Workflow, *Referrer)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*Workflow)
@@ -883,6 +955,9 @@ func (wq *WorkflowQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if wq.withOrganization != nil {
 			_spec.Node.AddColumnOnce(workflow.FieldOrganizationID)
+		}
+		if wq.withProject != nil {
+			_spec.Node.AddColumnOnce(workflow.FieldProjectID)
 		}
 	}
 	if ps := wq.predicates; len(ps) > 0 {

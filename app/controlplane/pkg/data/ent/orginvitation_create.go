@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -23,6 +25,7 @@ type OrgInvitationCreate struct {
 	config
 	mutation *OrgInvitationMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetReceiverEmail sets the "receiver_email" field.
@@ -236,6 +239,7 @@ func (oic *OrgInvitationCreate) createSpec() (*OrgInvitation, *sqlgraph.CreateSp
 		_node = &OrgInvitation{config: oic.config}
 		_spec = sqlgraph.NewCreateSpec(orginvitation.Table, sqlgraph.NewFieldSpec(orginvitation.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = oic.conflict
 	if id, ok := oic.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -297,11 +301,309 @@ func (oic *OrgInvitationCreate) createSpec() (*OrgInvitation, *sqlgraph.CreateSp
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.OrgInvitation.Create().
+//		SetReceiverEmail(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.OrgInvitationUpsert) {
+//			SetReceiverEmail(v+v).
+//		}).
+//		Exec(ctx)
+func (oic *OrgInvitationCreate) OnConflict(opts ...sql.ConflictOption) *OrgInvitationUpsertOne {
+	oic.conflict = opts
+	return &OrgInvitationUpsertOne{
+		create: oic,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.OrgInvitation.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (oic *OrgInvitationCreate) OnConflictColumns(columns ...string) *OrgInvitationUpsertOne {
+	oic.conflict = append(oic.conflict, sql.ConflictColumns(columns...))
+	return &OrgInvitationUpsertOne{
+		create: oic,
+	}
+}
+
+type (
+	// OrgInvitationUpsertOne is the builder for "upsert"-ing
+	//  one OrgInvitation node.
+	OrgInvitationUpsertOne struct {
+		create *OrgInvitationCreate
+	}
+
+	// OrgInvitationUpsert is the "OnConflict" setter.
+	OrgInvitationUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetStatus sets the "status" field.
+func (u *OrgInvitationUpsert) SetStatus(v biz.OrgInvitationStatus) *OrgInvitationUpsert {
+	u.Set(orginvitation.FieldStatus, v)
+	return u
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *OrgInvitationUpsert) UpdateStatus() *OrgInvitationUpsert {
+	u.SetExcluded(orginvitation.FieldStatus)
+	return u
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *OrgInvitationUpsert) SetDeletedAt(v time.Time) *OrgInvitationUpsert {
+	u.Set(orginvitation.FieldDeletedAt, v)
+	return u
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *OrgInvitationUpsert) UpdateDeletedAt() *OrgInvitationUpsert {
+	u.SetExcluded(orginvitation.FieldDeletedAt)
+	return u
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *OrgInvitationUpsert) ClearDeletedAt() *OrgInvitationUpsert {
+	u.SetNull(orginvitation.FieldDeletedAt)
+	return u
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *OrgInvitationUpsert) SetOrganizationID(v uuid.UUID) *OrgInvitationUpsert {
+	u.Set(orginvitation.FieldOrganizationID, v)
+	return u
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *OrgInvitationUpsert) UpdateOrganizationID() *OrgInvitationUpsert {
+	u.SetExcluded(orginvitation.FieldOrganizationID)
+	return u
+}
+
+// SetSenderID sets the "sender_id" field.
+func (u *OrgInvitationUpsert) SetSenderID(v uuid.UUID) *OrgInvitationUpsert {
+	u.Set(orginvitation.FieldSenderID, v)
+	return u
+}
+
+// UpdateSenderID sets the "sender_id" field to the value that was provided on create.
+func (u *OrgInvitationUpsert) UpdateSenderID() *OrgInvitationUpsert {
+	u.SetExcluded(orginvitation.FieldSenderID)
+	return u
+}
+
+// SetRole sets the "role" field.
+func (u *OrgInvitationUpsert) SetRole(v authz.Role) *OrgInvitationUpsert {
+	u.Set(orginvitation.FieldRole, v)
+	return u
+}
+
+// UpdateRole sets the "role" field to the value that was provided on create.
+func (u *OrgInvitationUpsert) UpdateRole() *OrgInvitationUpsert {
+	u.SetExcluded(orginvitation.FieldRole)
+	return u
+}
+
+// ClearRole clears the value of the "role" field.
+func (u *OrgInvitationUpsert) ClearRole() *OrgInvitationUpsert {
+	u.SetNull(orginvitation.FieldRole)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.OrgInvitation.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(orginvitation.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *OrgInvitationUpsertOne) UpdateNewValues() *OrgInvitationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(orginvitation.FieldID)
+		}
+		if _, exists := u.create.mutation.ReceiverEmail(); exists {
+			s.SetIgnore(orginvitation.FieldReceiverEmail)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(orginvitation.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.OrgInvitation.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *OrgInvitationUpsertOne) Ignore() *OrgInvitationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *OrgInvitationUpsertOne) DoNothing() *OrgInvitationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the OrgInvitationCreate.OnConflict
+// documentation for more info.
+func (u *OrgInvitationUpsertOne) Update(set func(*OrgInvitationUpsert)) *OrgInvitationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&OrgInvitationUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetStatus sets the "status" field.
+func (u *OrgInvitationUpsertOne) SetStatus(v biz.OrgInvitationStatus) *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *OrgInvitationUpsertOne) UpdateStatus() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateStatus()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *OrgInvitationUpsertOne) SetDeletedAt(v time.Time) *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *OrgInvitationUpsertOne) UpdateDeletedAt() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *OrgInvitationUpsertOne) ClearDeletedAt() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *OrgInvitationUpsertOne) SetOrganizationID(v uuid.UUID) *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *OrgInvitationUpsertOne) UpdateOrganizationID() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// SetSenderID sets the "sender_id" field.
+func (u *OrgInvitationUpsertOne) SetSenderID(v uuid.UUID) *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetSenderID(v)
+	})
+}
+
+// UpdateSenderID sets the "sender_id" field to the value that was provided on create.
+func (u *OrgInvitationUpsertOne) UpdateSenderID() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateSenderID()
+	})
+}
+
+// SetRole sets the "role" field.
+func (u *OrgInvitationUpsertOne) SetRole(v authz.Role) *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetRole(v)
+	})
+}
+
+// UpdateRole sets the "role" field to the value that was provided on create.
+func (u *OrgInvitationUpsertOne) UpdateRole() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateRole()
+	})
+}
+
+// ClearRole clears the value of the "role" field.
+func (u *OrgInvitationUpsertOne) ClearRole() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearRole()
+	})
+}
+
+// Exec executes the query.
+func (u *OrgInvitationUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for OrgInvitationCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *OrgInvitationUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *OrgInvitationUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: OrgInvitationUpsertOne.ID is not supported by MySQL driver. Use OrgInvitationUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *OrgInvitationUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // OrgInvitationCreateBulk is the builder for creating many OrgInvitation entities in bulk.
 type OrgInvitationCreateBulk struct {
 	config
 	err      error
 	builders []*OrgInvitationCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the OrgInvitation entities in the database.
@@ -331,6 +633,7 @@ func (oicb *OrgInvitationCreateBulk) Save(ctx context.Context) ([]*OrgInvitation
 					_, err = mutators[i+1].Mutate(root, oicb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = oicb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, oicb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -377,6 +680,210 @@ func (oicb *OrgInvitationCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (oicb *OrgInvitationCreateBulk) ExecX(ctx context.Context) {
 	if err := oicb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.OrgInvitation.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.OrgInvitationUpsert) {
+//			SetReceiverEmail(v+v).
+//		}).
+//		Exec(ctx)
+func (oicb *OrgInvitationCreateBulk) OnConflict(opts ...sql.ConflictOption) *OrgInvitationUpsertBulk {
+	oicb.conflict = opts
+	return &OrgInvitationUpsertBulk{
+		create: oicb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.OrgInvitation.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (oicb *OrgInvitationCreateBulk) OnConflictColumns(columns ...string) *OrgInvitationUpsertBulk {
+	oicb.conflict = append(oicb.conflict, sql.ConflictColumns(columns...))
+	return &OrgInvitationUpsertBulk{
+		create: oicb,
+	}
+}
+
+// OrgInvitationUpsertBulk is the builder for "upsert"-ing
+// a bulk of OrgInvitation nodes.
+type OrgInvitationUpsertBulk struct {
+	create *OrgInvitationCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.OrgInvitation.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(orginvitation.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *OrgInvitationUpsertBulk) UpdateNewValues() *OrgInvitationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(orginvitation.FieldID)
+			}
+			if _, exists := b.mutation.ReceiverEmail(); exists {
+				s.SetIgnore(orginvitation.FieldReceiverEmail)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(orginvitation.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.OrgInvitation.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *OrgInvitationUpsertBulk) Ignore() *OrgInvitationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *OrgInvitationUpsertBulk) DoNothing() *OrgInvitationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the OrgInvitationCreateBulk.OnConflict
+// documentation for more info.
+func (u *OrgInvitationUpsertBulk) Update(set func(*OrgInvitationUpsert)) *OrgInvitationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&OrgInvitationUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetStatus sets the "status" field.
+func (u *OrgInvitationUpsertBulk) SetStatus(v biz.OrgInvitationStatus) *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *OrgInvitationUpsertBulk) UpdateStatus() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateStatus()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *OrgInvitationUpsertBulk) SetDeletedAt(v time.Time) *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *OrgInvitationUpsertBulk) UpdateDeletedAt() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *OrgInvitationUpsertBulk) ClearDeletedAt() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *OrgInvitationUpsertBulk) SetOrganizationID(v uuid.UUID) *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *OrgInvitationUpsertBulk) UpdateOrganizationID() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// SetSenderID sets the "sender_id" field.
+func (u *OrgInvitationUpsertBulk) SetSenderID(v uuid.UUID) *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetSenderID(v)
+	})
+}
+
+// UpdateSenderID sets the "sender_id" field to the value that was provided on create.
+func (u *OrgInvitationUpsertBulk) UpdateSenderID() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateSenderID()
+	})
+}
+
+// SetRole sets the "role" field.
+func (u *OrgInvitationUpsertBulk) SetRole(v authz.Role) *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetRole(v)
+	})
+}
+
+// UpdateRole sets the "role" field to the value that was provided on create.
+func (u *OrgInvitationUpsertBulk) UpdateRole() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateRole()
+	})
+}
+
+// ClearRole clears the value of the "role" field.
+func (u *OrgInvitationUpsertBulk) ClearRole() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearRole()
+	})
+}
+
+// Exec executes the query.
+func (u *OrgInvitationUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the OrgInvitationCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for OrgInvitationCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *OrgInvitationUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

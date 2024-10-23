@@ -79,7 +79,7 @@ func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Work
 		return nil, nil
 	}
 
-	return entWrToBizWr(run), nil
+	return entWrToBizWr(ctx, run), nil
 }
 
 func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest string) (*biz.WorkflowRun, error) {
@@ -90,7 +90,7 @@ func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest st
 		return nil, nil
 	}
 
-	return entWrToBizWr(run), nil
+	return entWrToBizWr(ctx, run), nil
 }
 
 func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.WorkflowRun, error) {
@@ -105,7 +105,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 		return nil, biz.NewErrNotFound("workflow run")
 	}
 
-	return entWrToBizWr(run), nil
+	return entWrToBizWr(ctx, run), nil
 }
 
 // Save the attestation for a workflow run in the database
@@ -180,7 +180,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 			continue
 		}
 
-		result = append(result, entWrToBizWr(wr))
+		result = append(result, entWrToBizWr(ctx, wr))
 	}
 
 	return result, cursor, nil
@@ -200,7 +200,7 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 
 	result := make([]*biz.WorkflowRun, 0, len(workflowRuns))
 	for _, wr := range workflowRuns {
-		result = append(result, entWrToBizWr(wr))
+		result = append(result, entWrToBizWr(ctx, wr))
 	}
 
 	return result, nil
@@ -210,7 +210,7 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
 }
 
-func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
+func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
 		ID:                     wr.ID,
 		CreatedAt:              toTimePtr(wr.CreatedAt),
@@ -236,7 +236,7 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	}
 
 	if wf := wr.Edges.Workflow; wf != nil {
-		w, _ := entWFToBizWF(wf, nil)
+		w, _ := entWFToBizWF(ctx, wf, nil)
 		r.Workflow = w
 	}
 

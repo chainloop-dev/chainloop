@@ -31,6 +31,8 @@ const (
 	EdgeIntegrations = "integrations"
 	// EdgeAPITokens holds the string denoting the api_tokens edge name in mutations.
 	EdgeAPITokens = "api_tokens"
+	// EdgeProjects holds the string denoting the projects edge name in mutations.
+	EdgeProjects = "projects"
 	// Table holds the table name of the organization in the database.
 	Table = "organizations"
 	// MembershipsTable is the table that holds the memberships relation/edge.
@@ -75,6 +77,13 @@ const (
 	APITokensInverseTable = "api_tokens"
 	// APITokensColumn is the table column denoting the api_tokens relation/edge.
 	APITokensColumn = "organization_id"
+	// ProjectsTable is the table that holds the projects relation/edge.
+	ProjectsTable = "projects"
+	// ProjectsInverseTable is the table name for the Project entity.
+	// It exists in this package in order to avoid circular dependency with the "project" package.
+	ProjectsInverseTable = "projects"
+	// ProjectsColumn is the table column denoting the projects relation/edge.
+	ProjectsColumn = "organization_id"
 )
 
 // Columns holds all SQL columns for organization fields.
@@ -202,6 +211,20 @@ func ByAPITokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAPITokensStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByProjectsCount orders the results by projects count.
+func ByProjectsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProjectsStep(), opts...)
+	}
+}
+
+// ByProjects orders the results by projects terms.
+func ByProjects(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProjectsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newMembershipsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -242,5 +265,12 @@ func newAPITokensStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(APITokensInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, APITokensTable, APITokensColumn),
+	)
+}
+func newProjectsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProjectsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ProjectsTable, ProjectsColumn),
 	)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -36,17 +37,23 @@ func (wu *WorkflowUpdate) Where(ps ...predicate.Workflow) *WorkflowUpdate {
 	return wu
 }
 
-// SetProject sets the "project" field.
-func (wu *WorkflowUpdate) SetProject(s string) *WorkflowUpdate {
-	wu.mutation.SetProject(s)
+// SetProjectOld sets the "project_old" field.
+func (wu *WorkflowUpdate) SetProjectOld(s string) *WorkflowUpdate {
+	wu.mutation.SetProjectOld(s)
 	return wu
 }
 
-// SetNillableProject sets the "project" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableProject(s *string) *WorkflowUpdate {
+// SetNillableProjectOld sets the "project_old" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableProjectOld(s *string) *WorkflowUpdate {
 	if s != nil {
-		wu.SetProject(*s)
+		wu.SetProjectOld(*s)
 	}
+	return wu
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (wu *WorkflowUpdate) ClearProjectOld() *WorkflowUpdate {
+	wu.mutation.ClearProjectOld()
 	return wu
 }
 
@@ -139,6 +146,20 @@ func (wu *WorkflowUpdate) SetNillableOrganizationID(u *uuid.UUID) *WorkflowUpdat
 	return wu
 }
 
+// SetProjectID sets the "project_id" field.
+func (wu *WorkflowUpdate) SetProjectID(u uuid.UUID) *WorkflowUpdate {
+	wu.mutation.SetProjectID(u)
+	return wu
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableProjectID(u *uuid.UUID) *WorkflowUpdate {
+	if u != nil {
+		wu.SetProjectID(*u)
+	}
+	return wu
+}
+
 // SetDescription sets the "description" field.
 func (wu *WorkflowUpdate) SetDescription(s string) *WorkflowUpdate {
 	wu.mutation.SetDescription(s)
@@ -218,6 +239,11 @@ func (wu *WorkflowUpdate) AddIntegrationAttachments(i ...*IntegrationAttachment)
 		ids[j] = i[j].ID
 	}
 	return wu.AddIntegrationAttachmentIDs(ids...)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (wu *WorkflowUpdate) SetProject(p *Project) *WorkflowUpdate {
+	return wu.SetProjectID(p.ID)
 }
 
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
@@ -315,6 +341,12 @@ func (wu *WorkflowUpdate) RemoveIntegrationAttachments(i ...*IntegrationAttachme
 	return wu.RemoveIntegrationAttachmentIDs(ids...)
 }
 
+// ClearProject clears the "project" edge to the Project entity.
+func (wu *WorkflowUpdate) ClearProject() *WorkflowUpdate {
+	wu.mutation.ClearProject()
+	return wu
+}
+
 // ClearReferrers clears all "referrers" edges to the Referrer entity.
 func (wu *WorkflowUpdate) ClearReferrers() *WorkflowUpdate {
 	wu.mutation.ClearReferrers()
@@ -371,6 +403,9 @@ func (wu *WorkflowUpdate) check() error {
 	if wu.mutation.ContractCleared() && len(wu.mutation.ContractIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.contract"`)
 	}
+	if wu.mutation.ProjectCleared() && len(wu.mutation.ProjectIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Workflow.project"`)
+	}
 	return nil
 }
 
@@ -392,8 +427,11 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := wu.mutation.Project(); ok {
-		_spec.SetField(workflow.FieldProject, field.TypeString, value)
+	if value, ok := wu.mutation.ProjectOld(); ok {
+		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
+	}
+	if wu.mutation.ProjectOldCleared() {
+		_spec.ClearField(workflow.FieldProjectOld, field.TypeString)
 	}
 	if value, ok := wu.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
@@ -615,6 +653,35 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if wu.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflow.ProjectTable,
+			Columns: []string{workflow.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wu.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflow.ProjectTable,
+			Columns: []string{workflow.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if wu.mutation.ReferrersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -682,17 +749,23 @@ type WorkflowUpdateOne struct {
 	modifiers []func(*sql.UpdateBuilder)
 }
 
-// SetProject sets the "project" field.
-func (wuo *WorkflowUpdateOne) SetProject(s string) *WorkflowUpdateOne {
-	wuo.mutation.SetProject(s)
+// SetProjectOld sets the "project_old" field.
+func (wuo *WorkflowUpdateOne) SetProjectOld(s string) *WorkflowUpdateOne {
+	wuo.mutation.SetProjectOld(s)
 	return wuo
 }
 
-// SetNillableProject sets the "project" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableProject(s *string) *WorkflowUpdateOne {
+// SetNillableProjectOld sets the "project_old" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableProjectOld(s *string) *WorkflowUpdateOne {
 	if s != nil {
-		wuo.SetProject(*s)
+		wuo.SetProjectOld(*s)
 	}
+	return wuo
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (wuo *WorkflowUpdateOne) ClearProjectOld() *WorkflowUpdateOne {
+	wuo.mutation.ClearProjectOld()
 	return wuo
 }
 
@@ -785,6 +858,20 @@ func (wuo *WorkflowUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *WorkflowU
 	return wuo
 }
 
+// SetProjectID sets the "project_id" field.
+func (wuo *WorkflowUpdateOne) SetProjectID(u uuid.UUID) *WorkflowUpdateOne {
+	wuo.mutation.SetProjectID(u)
+	return wuo
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableProjectID(u *uuid.UUID) *WorkflowUpdateOne {
+	if u != nil {
+		wuo.SetProjectID(*u)
+	}
+	return wuo
+}
+
 // SetDescription sets the "description" field.
 func (wuo *WorkflowUpdateOne) SetDescription(s string) *WorkflowUpdateOne {
 	wuo.mutation.SetDescription(s)
@@ -864,6 +951,11 @@ func (wuo *WorkflowUpdateOne) AddIntegrationAttachments(i ...*IntegrationAttachm
 		ids[j] = i[j].ID
 	}
 	return wuo.AddIntegrationAttachmentIDs(ids...)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (wuo *WorkflowUpdateOne) SetProject(p *Project) *WorkflowUpdateOne {
+	return wuo.SetProjectID(p.ID)
 }
 
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
@@ -961,6 +1053,12 @@ func (wuo *WorkflowUpdateOne) RemoveIntegrationAttachments(i ...*IntegrationAtta
 	return wuo.RemoveIntegrationAttachmentIDs(ids...)
 }
 
+// ClearProject clears the "project" edge to the Project entity.
+func (wuo *WorkflowUpdateOne) ClearProject() *WorkflowUpdateOne {
+	wuo.mutation.ClearProject()
+	return wuo
+}
+
 // ClearReferrers clears all "referrers" edges to the Referrer entity.
 func (wuo *WorkflowUpdateOne) ClearReferrers() *WorkflowUpdateOne {
 	wuo.mutation.ClearReferrers()
@@ -1030,6 +1128,9 @@ func (wuo *WorkflowUpdateOne) check() error {
 	if wuo.mutation.ContractCleared() && len(wuo.mutation.ContractIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.contract"`)
 	}
+	if wuo.mutation.ProjectCleared() && len(wuo.mutation.ProjectIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Workflow.project"`)
+	}
 	return nil
 }
 
@@ -1068,8 +1169,11 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 			}
 		}
 	}
-	if value, ok := wuo.mutation.Project(); ok {
-		_spec.SetField(workflow.FieldProject, field.TypeString, value)
+	if value, ok := wuo.mutation.ProjectOld(); ok {
+		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
+	}
+	if wuo.mutation.ProjectOldCleared() {
+		_spec.ClearField(workflow.FieldProjectOld, field.TypeString)
 	}
 	if value, ok := wuo.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
@@ -1284,6 +1388,35 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wuo.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflow.ProjectTable,
+			Columns: []string{workflow.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wuo.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflow.ProjectTable,
+			Columns: []string{workflow.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

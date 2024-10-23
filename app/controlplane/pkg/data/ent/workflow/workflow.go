@@ -17,8 +17,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldProject holds the string denoting the project field in the database.
-	FieldProject = "project"
+	// FieldProjectOld holds the string denoting the project_old field in the database.
+	FieldProjectOld = "project_old"
 	// FieldTeam holds the string denoting the team field in the database.
 	FieldTeam = "team"
 	// FieldRunsCount holds the string denoting the runs_count field in the database.
@@ -31,6 +31,8 @@ const (
 	FieldPublic = "public"
 	// FieldOrganizationID holds the string denoting the organization_id field in the database.
 	FieldOrganizationID = "organization_id"
+	// FieldProjectID holds the string denoting the project_id field in the database.
+	FieldProjectID = "project_id"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// EdgeRobotaccounts holds the string denoting the robotaccounts edge name in mutations.
@@ -43,6 +45,8 @@ const (
 	EdgeContract = "contract"
 	// EdgeIntegrationAttachments holds the string denoting the integration_attachments edge name in mutations.
 	EdgeIntegrationAttachments = "integration_attachments"
+	// EdgeProject holds the string denoting the project edge name in mutations.
+	EdgeProject = "project"
 	// EdgeReferrers holds the string denoting the referrers edge name in mutations.
 	EdgeReferrers = "referrers"
 	// Table holds the table name of the workflow in the database.
@@ -82,6 +86,13 @@ const (
 	IntegrationAttachmentsInverseTable = "integration_attachments"
 	// IntegrationAttachmentsColumn is the table column denoting the integration_attachments relation/edge.
 	IntegrationAttachmentsColumn = "workflow_id"
+	// ProjectTable is the table that holds the project relation/edge.
+	ProjectTable = "workflows"
+	// ProjectInverseTable is the table name for the Project entity.
+	// It exists in this package in order to avoid circular dependency with the "project" package.
+	ProjectInverseTable = "projects"
+	// ProjectColumn is the table column denoting the project relation/edge.
+	ProjectColumn = "project_id"
 	// ReferrersTable is the table that holds the referrers relation/edge. The primary key declared below.
 	ReferrersTable = "referrer_workflows"
 	// ReferrersInverseTable is the table name for the Referrer entity.
@@ -93,13 +104,14 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
-	FieldProject,
+	FieldProjectOld,
 	FieldTeam,
 	FieldRunsCount,
 	FieldCreatedAt,
 	FieldDeletedAt,
 	FieldPublic,
 	FieldOrganizationID,
+	FieldProjectID,
 	FieldDescription,
 }
 
@@ -154,9 +166,9 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByProject orders the results by the project field.
-func ByProject(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProject, opts...).ToFunc()
+// ByProjectOld orders the results by the project_old field.
+func ByProjectOld(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectOld, opts...).ToFunc()
 }
 
 // ByTeam orders the results by the team field.
@@ -187,6 +199,11 @@ func ByPublic(opts ...sql.OrderTermOption) OrderOption {
 // ByOrganizationID orders the results by the organization_id field.
 func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+}
+
+// ByProjectID orders the results by the project_id field.
+func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.
@@ -250,6 +267,13 @@ func ByIntegrationAttachments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderO
 	}
 }
 
+// ByProjectField orders the results by project field.
+func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByReferrersCount orders the results by referrers count.
 func ByReferrersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -296,6 +320,13 @@ func newIntegrationAttachmentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(IntegrationAttachmentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, IntegrationAttachmentsTable, IntegrationAttachmentsColumn),
+	)
+}
+func newProjectStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProjectInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ProjectTable, ProjectColumn),
 	)
 }
 func newReferrersStep() *sqlgraph.Step {
