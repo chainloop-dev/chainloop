@@ -43,6 +43,7 @@ const (
 	// EnvironmentModePermissive allows all operations on the compiler
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
+	inputElements                             = "elements"
 	deprecatedRule                            = "violations"
 	mainRule                                  = "result"
 )
@@ -77,6 +78,13 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	var decodedInput interface{}
 	if err := decoder.Decode(&decodedInput); err != nil {
 		return nil, fmt.Errorf("failed to parse input: %w", err)
+	}
+
+	// if input is an array, transform it to an object
+	if array, ok := decodedInput.([]interface{}); ok {
+		inputMap := make(map[string]interface{})
+		inputMap[inputElements] = array
+		decodedInput = inputMap
 	}
 
 	// put arguments embedded in the input object

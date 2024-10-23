@@ -67,6 +67,23 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	})
 }
 
+func TestRego_VerifyWithInputArray(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/arrays.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "foobar",
+		Source: regoContent,
+	}
+
+	t.Run("creates 'elements' field", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte(`[{"foo": "bar"}, {"foo2":"bar2"}]`), nil)
+		require.NoError(t, err)
+		assert.Equal(t, "2", result.SkipReason)
+	})
+}
+
 func TestRego_VerifyWithArguments(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/arguments.rego")
 	require.NoError(t, err)
