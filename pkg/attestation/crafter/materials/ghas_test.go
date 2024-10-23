@@ -133,3 +133,75 @@ func TestGHASCodeScanCraft(t *testing.T) {
 		})
 	}
 }
+
+func TestGHASSecretScanCraft(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "invalid format",
+			filePath: "./testdata/sbom.cyclonedx.json",
+			wantErr:  "unexpected material type",
+		},
+		{
+			name:     "invalid path",
+			filePath: "./testdata/non-existing.json",
+			wantErr:  "no such file or directory",
+		},
+		{
+			name:     "invalid artifact type",
+			filePath: "./testdata/simple.txt",
+			wantErr:  "unexpected material type",
+		},
+		{
+			name:     "missing 'secret type' field ß",
+			filePath: "./testdata/ghas-secret-scan-wrong.json",
+			wantErr:  "field not found in GHAS secret scan",
+		},
+		{
+			name:     "valid artifact type",
+			filePath: "./testdata/ghas-secret-scan.json",
+		},
+	}
+
+	assert := assert.New(t)
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_GHAS_SECRET_SCAN,
+	}
+	l := zerolog.Nop()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Mock uploader
+			uploader := mUploader.NewUploader(t)
+			if tc.wantErr == "" {
+				uploader.On("UploadFile", context.TODO(), tc.filePath).
+					Return(&casclient.UpDownStatus{
+						Digest:   "deadbeef",
+						Filename: "ghas-secret-scan.json",
+					}, nil)
+			}
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewGHASSecretScanCrafter(schema, backend, &l)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			if tc.wantErr != "" {
+				assert.ErrorContains(err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+
+			assert.Equal(contractAPI.CraftingSchema_Material_GHAS_SECRET_SCAN.String(), got.MaterialType.String())
+			assert.True(got.UploadedToCas)
+
+			// // The result includes the digest reference
+			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
+				Id: "test", Digest: "sha256:603aecf4c64b6b448f68870bf043c4b349189d5e7e524e6ddddbc0b12f2679ef", Name: "ghas-secret-scan.json",
+			})
+		})
+	}
+}
