@@ -36,7 +36,7 @@ func (Workflow) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").Immutable(),
 		// deprecated, kept for rollback purpose
-		field.String("project_old"),
+		field.String("project_old").Optional(),
 		field.String("team").Optional(),
 		field.Int("runs_count").Default(0),
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),

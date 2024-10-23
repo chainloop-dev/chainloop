@@ -17,6 +17,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldProjectOld holds the string denoting the project_old field in the database.
+	FieldProjectOld = "project_old"
 	// FieldTeam holds the string denoting the team field in the database.
 	FieldTeam = "team"
 	// FieldRunsCount holds the string denoting the runs_count field in the database.
@@ -102,6 +104,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldProjectOld,
 	FieldTeam,
 	FieldRunsCount,
 	FieldCreatedAt,
@@ -161,6 +164,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByProjectOld orders the results by the project_old field.
+func ByProjectOld(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectOld, opts...).ToFunc()
 }
 
 // ByTeam orders the results by the team field.

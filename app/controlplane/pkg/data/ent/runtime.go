@@ -180,19 +180,19 @@ func init() {
 	workflowFields := schema.Workflow{}.Fields()
 	_ = workflowFields
 	// workflowDescRunsCount is the schema descriptor for runs_count field.
-	workflowDescRunsCount := workflowFields[2].Descriptor()
+	workflowDescRunsCount := workflowFields[3].Descriptor()
 	// workflow.DefaultRunsCount holds the default value on creation for the runs_count field.
 	workflow.DefaultRunsCount = workflowDescRunsCount.Default.(int)
 	// workflowDescCreatedAt is the schema descriptor for created_at field.
-	workflowDescCreatedAt := workflowFields[4].Descriptor()
+	workflowDescCreatedAt := workflowFields[5].Descriptor()
 	// workflow.DefaultCreatedAt holds the default value on creation for the created_at field.
 	workflow.DefaultCreatedAt = workflowDescCreatedAt.Default.(func() time.Time)
 	// workflowDescPublic is the schema descriptor for public field.
-	workflowDescPublic := workflowFields[6].Descriptor()
+	workflowDescPublic := workflowFields[7].Descriptor()
 	// workflow.DefaultPublic holds the default value on creation for the public field.
 	workflow.DefaultPublic = workflowDescPublic.Default.(bool)
 	// workflowDescID is the schema descriptor for id field.
-	workflowDescID := workflowFields[3].Descriptor()
+	workflowDescID := workflowFields[4].Descriptor()
 	// workflow.DefaultID holds the default value on creation for the id field.
 	workflow.DefaultID = workflowDescID.Default.(func() uuid.UUID)
 	workflowcontractFields := schema.WorkflowContract{}.Fields()

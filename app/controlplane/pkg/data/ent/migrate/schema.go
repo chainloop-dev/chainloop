@@ -364,6 +364,7 @@ var (
 	WorkflowsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "name", Type: field.TypeString},
+		{Name: "project_old", Type: field.TypeString, Nullable: true},
 		{Name: "team", Type: field.TypeString, Nullable: true},
 		{Name: "runs_count", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
@@ -382,19 +383,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflows_organizations_workflows",
-				Columns:    []*schema.Column{WorkflowsColumns[8]},
+				Columns:    []*schema.Column{WorkflowsColumns[9]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflows_projects_workflows",
-				Columns:    []*schema.Column{WorkflowsColumns[9]},
+				Columns:    []*schema.Column{WorkflowsColumns[10]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflows_workflow_contracts_contract",
-				Columns:    []*schema.Column{WorkflowsColumns[10]},
+				Columns:    []*schema.Column{WorkflowsColumns[11]},
 				RefColumns: []*schema.Column{WorkflowContractsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -403,7 +404,7 @@ var (
 			{
 				Name:    "workflow_name_organization_id_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[8], WorkflowsColumns[9]},
+				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[9], WorkflowsColumns[10]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -411,7 +412,7 @@ var (
 			{
 				Name:    "workflow_organization_id_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[8], WorkflowsColumns[0]},
+				Columns: []*schema.Column{WorkflowsColumns[9], WorkflowsColumns[0]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

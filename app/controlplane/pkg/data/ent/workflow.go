@@ -23,6 +23,8 @@ type Workflow struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// ProjectOld holds the value of the "project_old" field.
+	ProjectOld string `json:"project_old,omitempty"`
 	// Team holds the value of the "team" field.
 	Team string `json:"team,omitempty"`
 	// RunsCount holds the value of the "runs_count" field.
@@ -145,7 +147,7 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case workflow.FieldRunsCount:
 			values[i] = new(sql.NullInt64)
-		case workflow.FieldName, workflow.FieldTeam, workflow.FieldDescription:
+		case workflow.FieldName, workflow.FieldProjectOld, workflow.FieldTeam, workflow.FieldDescription:
 			values[i] = new(sql.NullString)
 		case workflow.FieldCreatedAt, workflow.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -179,6 +181,12 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				w.Name = value.String
+			}
+		case workflow.FieldProjectOld:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field project_old", values[i])
+			} else if value.Valid {
+				w.ProjectOld = value.String
 			}
 		case workflow.FieldTeam:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -308,6 +316,9 @@ func (w *Workflow) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", w.ID))
 	builder.WriteString("name=")
 	builder.WriteString(w.Name)
+	builder.WriteString(", ")
+	builder.WriteString("project_old=")
+	builder.WriteString(w.ProjectOld)
 	builder.WriteString(", ")
 	builder.WriteString("team=")
 	builder.WriteString(w.Team)

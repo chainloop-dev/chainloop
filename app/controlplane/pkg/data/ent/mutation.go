@@ -8985,6 +8985,7 @@ type WorkflowMutation struct {
 	typ                            string
 	id                             *uuid.UUID
 	name                           *string
+	project_old                    *string
 	team                           *string
 	runs_count                     *int
 	addruns_count                  *int
@@ -9154,6 +9155,55 @@ func (m *WorkflowMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *WorkflowMutation) ResetName() {
 	m.name = nil
+}
+
+// SetProjectOld sets the "project_old" field.
+func (m *WorkflowMutation) SetProjectOld(s string) {
+	m.project_old = &s
+}
+
+// ProjectOld returns the value of the "project_old" field in the mutation.
+func (m *WorkflowMutation) ProjectOld() (r string, exists bool) {
+	v := m.project_old
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectOld returns the old "project_old" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldProjectOld(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectOld is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectOld requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectOld: %w", err)
+	}
+	return oldValue.ProjectOld, nil
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (m *WorkflowMutation) ClearProjectOld() {
+	m.project_old = nil
+	m.clearedFields[workflow.FieldProjectOld] = struct{}{}
+}
+
+// ProjectOldCleared returns if the "project_old" field was cleared in this mutation.
+func (m *WorkflowMutation) ProjectOldCleared() bool {
+	_, ok := m.clearedFields[workflow.FieldProjectOld]
+	return ok
+}
+
+// ResetProjectOld resets all changes to the "project_old" field.
+func (m *WorkflowMutation) ResetProjectOld() {
+	m.project_old = nil
+	delete(m.clearedFields, workflow.FieldProjectOld)
 }
 
 // SetTeam sets the "team" field.
@@ -9846,9 +9896,12 @@ func (m *WorkflowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
+	}
+	if m.project_old != nil {
+		fields = append(fields, workflow.FieldProjectOld)
 	}
 	if m.team != nil {
 		fields = append(fields, workflow.FieldTeam)
@@ -9884,6 +9937,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case workflow.FieldName:
 		return m.Name()
+	case workflow.FieldProjectOld:
+		return m.ProjectOld()
 	case workflow.FieldTeam:
 		return m.Team()
 	case workflow.FieldRunsCount:
@@ -9911,6 +9966,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case workflow.FieldName:
 		return m.OldName(ctx)
+	case workflow.FieldProjectOld:
+		return m.OldProjectOld(ctx)
 	case workflow.FieldTeam:
 		return m.OldTeam(ctx)
 	case workflow.FieldRunsCount:
@@ -9942,6 +9999,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case workflow.FieldProjectOld:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectOld(v)
 		return nil
 	case workflow.FieldTeam:
 		v, ok := value.(string)
@@ -10044,6 +10108,9 @@ func (m *WorkflowMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *WorkflowMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(workflow.FieldProjectOld) {
+		fields = append(fields, workflow.FieldProjectOld)
+	}
 	if m.FieldCleared(workflow.FieldTeam) {
 		fields = append(fields, workflow.FieldTeam)
 	}
@@ -10067,6 +10134,9 @@ func (m *WorkflowMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *WorkflowMutation) ClearField(name string) error {
 	switch name {
+	case workflow.FieldProjectOld:
+		m.ClearProjectOld()
+		return nil
 	case workflow.FieldTeam:
 		m.ClearTeam()
 		return nil
@@ -10086,6 +10156,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 	switch name {
 	case workflow.FieldName:
 		m.ResetName()
+		return nil
+	case workflow.FieldProjectOld:
+		m.ResetProjectOld()
 		return nil
 	case workflow.FieldTeam:
 		m.ResetTeam()

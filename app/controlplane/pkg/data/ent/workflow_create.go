@@ -37,6 +37,20 @@ func (wc *WorkflowCreate) SetName(s string) *WorkflowCreate {
 	return wc
 }
 
+// SetProjectOld sets the "project_old" field.
+func (wc *WorkflowCreate) SetProjectOld(s string) *WorkflowCreate {
+	wc.mutation.SetProjectOld(s)
+	return wc
+}
+
+// SetNillableProjectOld sets the "project_old" field if the given value is not nil.
+func (wc *WorkflowCreate) SetNillableProjectOld(s *string) *WorkflowCreate {
+	if s != nil {
+		wc.SetProjectOld(*s)
+	}
+	return wc
+}
+
 // SetTeam sets the "team" field.
 func (wc *WorkflowCreate) SetTeam(s string) *WorkflowCreate {
 	wc.mutation.SetTeam(s)
@@ -350,6 +364,10 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 		_spec.SetField(workflow.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := wc.mutation.ProjectOld(); ok {
+		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
+		_node.ProjectOld = value
+	}
 	if value, ok := wc.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
 		_node.Team = value
@@ -541,6 +559,24 @@ type (
 	}
 )
 
+// SetProjectOld sets the "project_old" field.
+func (u *WorkflowUpsert) SetProjectOld(v string) *WorkflowUpsert {
+	u.Set(workflow.FieldProjectOld, v)
+	return u
+}
+
+// UpdateProjectOld sets the "project_old" field to the value that was provided on create.
+func (u *WorkflowUpsert) UpdateProjectOld() *WorkflowUpsert {
+	u.SetExcluded(workflow.FieldProjectOld)
+	return u
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (u *WorkflowUpsert) ClearProjectOld() *WorkflowUpsert {
+	u.SetNull(workflow.FieldProjectOld)
+	return u
+}
+
 // SetTeam sets the "team" field.
 func (u *WorkflowUpsert) SetTeam(v string) *WorkflowUpsert {
 	u.Set(workflow.FieldTeam, v)
@@ -701,6 +737,27 @@ func (u *WorkflowUpsertOne) Update(set func(*WorkflowUpsert)) *WorkflowUpsertOne
 		set(&WorkflowUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProjectOld sets the "project_old" field.
+func (u *WorkflowUpsertOne) SetProjectOld(v string) *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetProjectOld(v)
+	})
+}
+
+// UpdateProjectOld sets the "project_old" field to the value that was provided on create.
+func (u *WorkflowUpsertOne) UpdateProjectOld() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateProjectOld()
+	})
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (u *WorkflowUpsertOne) ClearProjectOld() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearProjectOld()
+	})
 }
 
 // SetTeam sets the "team" field.
@@ -1048,6 +1105,27 @@ func (u *WorkflowUpsertBulk) Update(set func(*WorkflowUpsert)) *WorkflowUpsertBu
 		set(&WorkflowUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProjectOld sets the "project_old" field.
+func (u *WorkflowUpsertBulk) SetProjectOld(v string) *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetProjectOld(v)
+	})
+}
+
+// UpdateProjectOld sets the "project_old" field to the value that was provided on create.
+func (u *WorkflowUpsertBulk) UpdateProjectOld() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateProjectOld()
+	})
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (u *WorkflowUpsertBulk) ClearProjectOld() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearProjectOld()
+	})
 }
 
 // SetTeam sets the "team" field.

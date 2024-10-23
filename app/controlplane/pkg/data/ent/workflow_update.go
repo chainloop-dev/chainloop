@@ -37,6 +37,26 @@ func (wu *WorkflowUpdate) Where(ps ...predicate.Workflow) *WorkflowUpdate {
 	return wu
 }
 
+// SetProjectOld sets the "project_old" field.
+func (wu *WorkflowUpdate) SetProjectOld(s string) *WorkflowUpdate {
+	wu.mutation.SetProjectOld(s)
+	return wu
+}
+
+// SetNillableProjectOld sets the "project_old" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableProjectOld(s *string) *WorkflowUpdate {
+	if s != nil {
+		wu.SetProjectOld(*s)
+	}
+	return wu
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (wu *WorkflowUpdate) ClearProjectOld() *WorkflowUpdate {
+	wu.mutation.ClearProjectOld()
+	return wu
+}
+
 // SetTeam sets the "team" field.
 func (wu *WorkflowUpdate) SetTeam(s string) *WorkflowUpdate {
 	wu.mutation.SetTeam(s)
@@ -407,6 +427,12 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := wu.mutation.ProjectOld(); ok {
+		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
+	}
+	if wu.mutation.ProjectOldCleared() {
+		_spec.ClearField(workflow.FieldProjectOld, field.TypeString)
+	}
 	if value, ok := wu.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
 	}
@@ -721,6 +747,26 @@ type WorkflowUpdateOne struct {
 	hooks     []Hook
 	mutation  *WorkflowMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetProjectOld sets the "project_old" field.
+func (wuo *WorkflowUpdateOne) SetProjectOld(s string) *WorkflowUpdateOne {
+	wuo.mutation.SetProjectOld(s)
+	return wuo
+}
+
+// SetNillableProjectOld sets the "project_old" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableProjectOld(s *string) *WorkflowUpdateOne {
+	if s != nil {
+		wuo.SetProjectOld(*s)
+	}
+	return wuo
+}
+
+// ClearProjectOld clears the value of the "project_old" field.
+func (wuo *WorkflowUpdateOne) ClearProjectOld() *WorkflowUpdateOne {
+	wuo.mutation.ClearProjectOld()
+	return wuo
 }
 
 // SetTeam sets the "team" field.
@@ -1122,6 +1168,12 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := wuo.mutation.ProjectOld(); ok {
+		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
+	}
+	if wuo.mutation.ProjectOldCleared() {
+		_spec.ClearField(workflow.FieldProjectOld, field.TypeString)
 	}
 	if value, ok := wuo.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)

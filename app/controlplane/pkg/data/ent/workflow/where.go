@@ -61,6 +61,11 @@ func Name(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldName, v))
 }
 
+// ProjectOld applies equality check predicate on the "project_old" field. It's identical to ProjectOldEQ.
+func ProjectOld(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldProjectOld, v))
+}
+
 // Team applies equality check predicate on the "team" field. It's identical to TeamEQ.
 func Team(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldTeam, v))
@@ -164,6 +169,81 @@ func NameEqualFold(v string) predicate.Workflow {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldContainsFold(FieldName, v))
+}
+
+// ProjectOldEQ applies the EQ predicate on the "project_old" field.
+func ProjectOldEQ(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldProjectOld, v))
+}
+
+// ProjectOldNEQ applies the NEQ predicate on the "project_old" field.
+func ProjectOldNEQ(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldProjectOld, v))
+}
+
+// ProjectOldIn applies the In predicate on the "project_old" field.
+func ProjectOldIn(vs ...string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldIn(FieldProjectOld, vs...))
+}
+
+// ProjectOldNotIn applies the NotIn predicate on the "project_old" field.
+func ProjectOldNotIn(vs ...string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotIn(FieldProjectOld, vs...))
+}
+
+// ProjectOldGT applies the GT predicate on the "project_old" field.
+func ProjectOldGT(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldGT(FieldProjectOld, v))
+}
+
+// ProjectOldGTE applies the GTE predicate on the "project_old" field.
+func ProjectOldGTE(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldGTE(FieldProjectOld, v))
+}
+
+// ProjectOldLT applies the LT predicate on the "project_old" field.
+func ProjectOldLT(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldLT(FieldProjectOld, v))
+}
+
+// ProjectOldLTE applies the LTE predicate on the "project_old" field.
+func ProjectOldLTE(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldLTE(FieldProjectOld, v))
+}
+
+// ProjectOldContains applies the Contains predicate on the "project_old" field.
+func ProjectOldContains(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldContains(FieldProjectOld, v))
+}
+
+// ProjectOldHasPrefix applies the HasPrefix predicate on the "project_old" field.
+func ProjectOldHasPrefix(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldHasPrefix(FieldProjectOld, v))
+}
+
+// ProjectOldHasSuffix applies the HasSuffix predicate on the "project_old" field.
+func ProjectOldHasSuffix(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldHasSuffix(FieldProjectOld, v))
+}
+
+// ProjectOldIsNil applies the IsNil predicate on the "project_old" field.
+func ProjectOldIsNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldIsNull(FieldProjectOld))
+}
+
+// ProjectOldNotNil applies the NotNil predicate on the "project_old" field.
+func ProjectOldNotNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotNull(FieldProjectOld))
+}
+
+// ProjectOldEqualFold applies the EqualFold predicate on the "project_old" field.
+func ProjectOldEqualFold(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEqualFold(FieldProjectOld, v))
+}
+
+// ProjectOldContainsFold applies the ContainsFold predicate on the "project_old" field.
+func ProjectOldContainsFold(v string) predicate.Workflow {
+	return predicate.Workflow(sql.FieldContainsFold(FieldProjectOld, v))
 }
 
 // TeamEQ applies the EQ predicate on the "team" field.
