@@ -1,0 +1,167 @@
+[
+  {
+    "number": 54,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "cookie"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-pxg6-pf52-xh8x",
+      "cve_id": "CVE-2024-47764",
+      "summary": "cookie accepts cookie name, path, and domain with out of bounds characters",
+      "description": "### Impact\n\nThe cookie name could be used to set other fields of the cookie, resulting in an unexpected cookie value. For example, `serialize(\"userName=\u003cscript\u003ealert('XSS3')\u003c/script\u003e; Max-Age=2592000; a\", value)` would result in `\"userName=\u003cscript\u003ealert('XSS3')\u003c/script\u003e; Max-Age=2592000; a=test\"`, setting `userName` cookie to `\u003cscript\u003e` and ignoring `value`.\n\nA similar escape can be used for `path` and `domain`, which could be abused to alter other fields of the cookie.\n\n### Patches\n\nUpgrade to 0.7.0, which updates the validation for `name`, `path`, and `domain`.\n\n### Workarounds\n\nAvoid passing untrusted or arbitrary values for these fields, ensure they are set by the application instead of user input.\n\n### References\n\n* https://github.com/jshttp/cookie/pull/167",
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "cookie"
+          },
+          "severity": "low",
+          "vulnerable_version_range": "\u003c 0.7.0",
+          "first_patched_version": {
+            "identifier": "0.7.0"
+          }
+        }
+      ],
+      "severity": "low",
+      "cvss": {
+        "score": 0
+      },
+      "cwes": [
+        {
+          "cwe_id": "CWE-74",
+          "name": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')"
+        }
+      ],
+      "identifiers": [
+        {
+          "value": "GHSA-pxg6-pf52-xh8x",
+          "type": "GHSA"
+        },
+        {
+          "value": "CVE-2024-47764",
+          "type": "CVE"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://github.com/jshttp/cookie/security/advisories/GHSA-pxg6-pf52-xh8x"
+        },
+        {
+          "url": "https://github.com/jshttp/cookie/pull/167"
+        },
+        {
+          "url": "https://github.com/jshttp/cookie/commit/e10042845354fea83bd8f34af72475eed1dadf5c"
+        },
+        {
+          "url": "https://github.com/advisories/GHSA-pxg6-pf52-xh8x"
+        }
+      ],
+      "published_at": "2024-10-04T20:31:00Z",
+      "updated_at": "2024-10-04T20:31:01Z"
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "cookie"
+      },
+      "severity": "low",
+      "vulnerable_version_range": "\u003c 0.7.0",
+      "first_patched_version": {
+        "identifier": "0.7.0"
+      }
+    },
+    "url": "https://github.com/alerturl",
+    "html_url": "https://github.com/alerturl/html",
+    "created_at": "2024-10-08T20:05:22Z",
+    "updated_at": "2024-10-08T20:05:22Z"
+  },
+  {
+    "number": 53,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "send"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-m6fv-jmcg-4jfg",
+      "cve_id": "CVE-2024-43799",
+      "summary": "send vulnerable to template injection that can lead to XSS",
+      "description": "### Impact\n\npassing untrusted user input - even after sanitizing it - to `SendStream.redirect()` may execute untrusted code\n\n### Patches\n\nthis issue is patched in send 0.19.0\n\n### Workarounds\n\nusers are encouraged to upgrade to the patched version of express, but otherwise can workaround this issue by making sure any untrusted inputs are safe, ideally by validating them against an explicit allowlist\n\n### Details\n\nsuccessful exploitation of this vector requires the following:\n\n1. The attacker MUST control the input to response.redirect()\n1. express MUST NOT redirect before the template appears\n1. the browser MUST NOT complete redirection before:\n1. the user MUST click on the link in the template\n",
+      "vulnerabilities": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "send"
+          },
+          "severity": "medium",
+          "vulnerable_version_range": "\u003c 0.19.0",
+          "first_patched_version": {
+            "identifier": "0.19.0"
+          }
+        }
+      ],
+      "severity": "medium",
+      "cvss": {
+        "score": 5,
+        "vector_string": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:L"
+      },
+      "cwes": [
+        {
+          "cwe_id": "CWE-79",
+          "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+        }
+      ],
+      "identifiers": [
+        {
+          "value": "GHSA-m6fv-jmcg-4jfg",
+          "type": "GHSA"
+        },
+        {
+          "value": "CVE-2024-43799",
+          "type": "CVE"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://github.com/pillarjs/send/security/advisories/GHSA-m6fv-jmcg-4jfg"
+        },
+        {
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-43799"
+        },
+        {
+          "url": "https://github.com/pillarjs/send/commit/ae4f2989491b392ae2ef3b0015a019770ae65d35"
+        },
+        {
+          "url": "https://github.com/advisories/GHSA-m6fv-jmcg-4jfg"
+        }
+      ],
+      "published_at": "2024-09-10T19:42:41Z",
+      "updated_at": "2024-09-10T19:42:42Z"
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "send"
+      },
+      "severity": "medium",
+      "vulnerable_version_range": "\u003c 0.19.0",
+      "first_patched_version": {
+        "identifier": "0.19.0"
+      }
+    },
+    "url": "https://github.com/alerturl",
+    "html_url": "https://github.com/alerturl/html",
+    "created_at": "2024-09-18T23:13:01Z",
+    "updated_at": "2024-09-18T23:13:01Z"
+  }
+]
