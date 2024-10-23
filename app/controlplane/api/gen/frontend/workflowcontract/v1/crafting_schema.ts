@@ -139,6 +139,15 @@ export enum CraftingSchema_Material_MaterialType {
   BLACKDUCK_SCA_JSON = 18,
   /** TWISTCLI_SCAN_JSON - Twistcli scan output in json format: https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images */
   TWISTCLI_SCAN_JSON = 19,
+  /**
+   * GHAS_CODE_SCAN - GitHub Advanced Security API reports
+   * https://docs.github.com/en/rest/code-scanning/code-scanning?apiVersion=2022-11-28
+   */
+  GHAS_CODE_SCAN = 20,
+  /** GHAS_SECRET_SCAN - https://docs.github.com/en/rest/secret-scanning/secret-scanning?apiVersion=2022-11-28 */
+  GHAS_SECRET_SCAN = 21,
+  /** GHAS_DEPENDENCY_SCAN - https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28 */
+  GHAS_DEPENDENCY_SCAN = 22,
   UNRECOGNIZED = -1,
 }
 
@@ -204,6 +213,15 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 19:
     case "TWISTCLI_SCAN_JSON":
       return CraftingSchema_Material_MaterialType.TWISTCLI_SCAN_JSON;
+    case 20:
+    case "GHAS_CODE_SCAN":
+      return CraftingSchema_Material_MaterialType.GHAS_CODE_SCAN;
+    case 21:
+    case "GHAS_SECRET_SCAN":
+      return CraftingSchema_Material_MaterialType.GHAS_SECRET_SCAN;
+    case 22:
+    case "GHAS_DEPENDENCY_SCAN":
+      return CraftingSchema_Material_MaterialType.GHAS_DEPENDENCY_SCAN;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -253,6 +271,12 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "BLACKDUCK_SCA_JSON";
     case CraftingSchema_Material_MaterialType.TWISTCLI_SCAN_JSON:
       return "TWISTCLI_SCAN_JSON";
+    case CraftingSchema_Material_MaterialType.GHAS_CODE_SCAN:
+      return "GHAS_CODE_SCAN";
+    case CraftingSchema_Material_MaterialType.GHAS_SECRET_SCAN:
+      return "GHAS_SECRET_SCAN";
+    case CraftingSchema_Material_MaterialType.GHAS_DEPENDENCY_SCAN:
+      return "GHAS_DEPENDENCY_SCAN";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

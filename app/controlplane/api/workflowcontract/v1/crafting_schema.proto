@@ -113,6 +113,14 @@ message CraftingSchema {
       BLACKDUCK_SCA_JSON = 18;
       // Twistcli scan output in json format: https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images
       TWISTCLI_SCAN_JSON = 19;
+
+      // GitHub Advanced Security API reports
+      // https://docs.github.com/en/rest/code-scanning/code-scanning?apiVersion=2022-11-28
+      GHAS_CODE_SCAN = 20;
+      // https://docs.github.com/en/rest/secret-scanning/secret-scanning?apiVersion=2022-11-28
+      GHAS_SECRET_SCAN = 21;
+      // https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28
+      GHAS_DEPENDENCY_SCAN = 22;
     }
   }
 }
