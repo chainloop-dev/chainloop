@@ -310,7 +310,7 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*bi
 	}
 
 	if r != nil {
-		wf.LastRun = entWrToBizWr(r)
+		wf.LastRun = entWrToBizWr(ctx, r)
 	}
 
 	return wf, nil
