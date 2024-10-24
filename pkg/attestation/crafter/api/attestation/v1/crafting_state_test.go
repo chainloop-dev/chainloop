@@ -153,5 +153,4 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			assert.Equal(t, decodedMaterial["chainloop_metadata"].(map[string]any)["name"], "name")
 		})
 	}
-
 }
