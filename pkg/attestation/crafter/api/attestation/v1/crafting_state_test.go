@@ -16,6 +16,8 @@
 package v1
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -106,4 +108,50 @@ func TestNormalizeOutput(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestGetEvaluableContentWithMetadata(t *testing.T) {
+	cases := []struct {
+		name     string
+		material *Attestation_Material
+	}{
+		{
+			name: "artifact based material",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_SARIF,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Content: []byte("{}"),
+					},
+				},
+				InlineCas: true,
+			},
+		},
+		{
+			name: "artifact based material",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_CONTAINER_IMAGE,
+				M: &Attestation_Material_ContainerImage_{
+					ContainerImage: &Attestation_Material_ContainerImage{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Tag: "latest",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			content, err := tc.material.GetEvaluableContent("")
+			assert.NoError(t, err)
+			decoder := json.NewDecoder(bytes.NewReader(content))
+
+			var decodedMaterial map[string]interface{}
+			err = decoder.Decode(&decodedMaterial)
+			assert.NoError(t, err)
+
+			assert.Equal(t, decodedMaterial["chainloop_metadata"].(map[string]any)["name"], "name")
+		})
+	}
+
 }
