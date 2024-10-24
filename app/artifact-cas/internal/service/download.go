@@ -91,9 +91,13 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filename := r.URL.Query().Get("filename")
+	if filename == "" {
+		filename = info.FileName
+	}
 	// if the buffer contains the actual data we expect we proceed with sending it to the browser
 	// Set headers
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", info.FileName))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
 	s.log.Infow("msg", "download initialized", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(info.Size)))
 
