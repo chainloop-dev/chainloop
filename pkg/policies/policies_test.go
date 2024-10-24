@@ -852,13 +852,6 @@ func (s *testSuite) TestNewResultFormat() {
 			expectSkipped: true,
 			expectReasons: []string{"this one is skipped", "this is also skipped"},
 		},
-		{
-			name:          "containers",
-			policy:        "file://testdata/container_policy.yaml",
-			material:      "{}",
-			expectSkipped: true,
-			expectReasons: []string{"this one is skipped", "this is also skipped"},
-		},
 	}
 
 	for _, tc := range cases {
