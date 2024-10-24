@@ -1,0 +1,20 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: container-policy
+  description: test policy
+  annotations:
+    category: containers
+spec:
+  policies:
+    - kind: CONTAINER_IMAGE
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "violations": [],
+          "skipped": true,
+          "skip_reason": sprintf("the tag is '%s'", [input.chainloop_metadata.annotations["chainloop.material.image.tag"]])
+        }

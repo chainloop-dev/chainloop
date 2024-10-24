@@ -25,6 +25,7 @@ import (
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
+	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -411,9 +412,9 @@ func intotoSubjectToReferrer(r *v1.ResourceDescriptor) (*Referrer, error) {
 	// it's a material type
 	for k, v := range r.Annotations.AsMap() {
 		// It's a material type
-		if k == chainloop.AnnotationMaterialType {
+		if k == v2.AnnotationMaterialType {
 			materialType = v.(string)
-		} else if k == chainloop.AnnotationMaterialCAS {
+		} else if k == v2.AnnotationMaterialCAS {
 			uploadedToCAS = v.(bool)
 		}
 	}
