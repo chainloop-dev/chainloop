@@ -212,7 +212,6 @@ message PolicySpec {
     (buf.validate.field).enum = {
       not_in: [
         1,
-        2,
         3,
         10,
         11
@@ -247,7 +246,6 @@ message PolicySpecV2 {
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [
       1,
-      2,
       3,
       10,
       11
