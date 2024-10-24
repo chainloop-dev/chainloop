@@ -91,6 +91,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Override file nane if one is provided
 	filename := r.URL.Query().Get("filename")
 	if filename == "" {
 		filename = info.FileName
