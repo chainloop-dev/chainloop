@@ -47,26 +47,31 @@ func NewPolicyGroupVerifier(schema *v1.CraftingSchema, client v13.AttestationSer
 func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *api.Attestation_Material, path string) ([]*api.PolicyEvaluation, error) {
 	result := make([]*api.PolicyEvaluation, 0)
 
-	attachments, err := pgv.requiredPolicyGroupsForMaterial(ctx, material)
+	attachmentsMap, err := pgv.requiredPolicyGroupsForMaterial(ctx, material)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
 
-	for _, attachment := range attachments {
-		// Load material content
-		subject, err := material.GetEvaluableContent(path)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
+	for groupName, policyAtts := range attachmentsMap {
+		for _, att := range policyAtts {
+			// Load material content
+			subject, err := material.GetEvaluableContent(path)
+			if err != nil {
+				return nil, NewPolicyError(err)
+			}
 
-		ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId()},
-		)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
+			ev, err := pgv.evaluatePolicyAttachment(ctx, att, subject,
+				&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId()},
+			)
+			if err != nil {
+				return nil, NewPolicyError(err)
+			}
 
-		result = append(result, ev)
+			// Assign the group name to this evaluation
+			ev.GroupName = groupName
+
+			result = append(result, ev)
+		}
 	}
 
 	return result, nil
@@ -93,6 +98,9 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 				return nil, NewPolicyError(err)
 			}
 
+			// Assign the group name to this evaluation
+			ev.GroupName = group.GetMetadata().GetName()
+
 			result = append(result, ev)
 		}
 	}
@@ -100,8 +108,9 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	return result, nil
 }
 
-func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Context, material *api.Attestation_Material) ([]*v1.PolicyAttachment, error) {
-	result := make([]*v1.PolicyAttachment, 0)
+// requiredPolicyGroupsForMaterial returns a map which group names as keys and the list of applied policies as value
+func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Context, material *api.Attestation_Material) (map[string][]*v1.PolicyAttachment, error) {
+	result := make(map[string][]*v1.PolicyAttachment)
 	attachments := pgv.schema.GetPolicyGroups()
 
 	for _, attachment := range attachments {
@@ -111,6 +120,7 @@ func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Cont
 			return nil, NewPolicyError(err)
 		}
 
+		policyAttachments := make([]*v1.PolicyAttachment, 0)
 		// 2. go through all policies in the group and check individually
 		for _, policyAtt := range group.GetSpec().GetPolicies().GetMaterials() {
 			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
@@ -119,9 +129,10 @@ func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Cont
 			}
 
 			if apply {
-				result = append(result, policyAtt)
+				policyAttachments = append(policyAttachments, policyAtt)
 			}
 		}
+		result[group.GetMetadata().GetName()] = policyAttachments
 	}
 
 	return result, nil

@@ -127,9 +127,9 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 			}
 
 			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
-			atts, err := v.requiredPolicyGroupsForMaterial(context.TODO(), material)
+			attsMap, err := v.requiredPolicyGroupsForMaterial(context.TODO(), material)
 			s.Require().NoError(err)
-			s.Len(atts, tc.expected)
+			s.Len(attsMap["sbom-quality"], tc.expected)
 		})
 	}
 }
@@ -186,6 +186,7 @@ func (s *groupsTestSuite) TestVerifyAttestations() {
 		npolicies  int
 		violations int
 		wantErr    error
+		groupName  string
 	}{
 		{
 			name: "test attestation with violations",
@@ -199,6 +200,7 @@ func (s *groupsTestSuite) TestVerifyAttestations() {
 			statement:  "testdata/statement.json",
 			npolicies:  1,
 			violations: 1,
+			groupName:  "sbom-quality",
 		},
 	}
 	for _, tc := range cases {
@@ -217,6 +219,7 @@ func (s *groupsTestSuite) TestVerifyAttestations() {
 				violations := 0
 				for _, pol := range res {
 					violations += len(pol.Violations)
+					s.Equal(tc.groupName, pol.GroupName)
 				}
 				s.Equal(tc.violations, violations)
 			}

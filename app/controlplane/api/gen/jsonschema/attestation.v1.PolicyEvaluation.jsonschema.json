@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "A policy executed against an attestation or material",
   "patternProperties": {
+    "^(group_name)$": {
+      "description": "Group this evaluated policy belongs to, if any",
+      "type": "string"
+    },
     "^(material_name)$": {
       "type": "string"
     },
@@ -37,6 +41,10 @@
       "type": "string"
     },
     "description": {
+      "type": "string"
+    },
+    "groupName": {
+      "description": "Group this evaluated policy belongs to, if any",
       "type": "string"
     },
     "materialName": {
