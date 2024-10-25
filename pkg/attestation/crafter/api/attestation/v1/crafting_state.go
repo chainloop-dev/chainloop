@@ -218,7 +218,7 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 
 func (m *Attestation_Material) GetID() string {
 	if m.GetArtifact() != nil {
-		return m.GetArtifact().GetName()
+		return m.GetArtifact().GetId()
 	} else if m.GetContainerImage() != nil {
 		return m.GetContainerImage().GetId()
 	}
