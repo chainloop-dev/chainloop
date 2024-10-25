@@ -39,9 +39,11 @@ type ProjectEdges struct {
 	Organization *Organization `json:"organization,omitempty"`
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
+	// Versions holds the value of the versions edge.
+	Versions []*ProjectVersion `json:"versions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -62,6 +64,15 @@ func (e ProjectEdges) WorkflowsOrErr() ([]*Workflow, error) {
 		return e.Workflows, nil
 	}
 	return nil, &NotLoadedError{edge: "workflows"}
+}
+
+// VersionsOrErr returns the Versions value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProjectEdges) VersionsOrErr() ([]*ProjectVersion, error) {
+	if e.loadedTypes[2] {
+		return e.Versions, nil
+	}
+	return nil, &NotLoadedError{edge: "versions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -141,6 +152,11 @@ func (pr *Project) QueryOrganization() *OrganizationQuery {
 // QueryWorkflows queries the "workflows" edge of the Project entity.
 func (pr *Project) QueryWorkflows() *WorkflowQuery {
 	return NewProjectClient(pr.config).QueryWorkflows(pr)
+}
+
+// QueryVersions queries the "versions" edge of the Project entity.
+func (pr *Project) QueryVersions() *ProjectVersionQuery {
+	return NewProjectClient(pr.config).QueryVersions(pr)
 }
 
 // Update returns a builder for updating this Project.

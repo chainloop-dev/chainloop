@@ -39,12 +39,16 @@ const (
 	FieldContractRevisionUsed = "contract_revision_used"
 	// FieldContractRevisionLatest holds the string denoting the contract_revision_latest field in the database.
 	FieldContractRevisionLatest = "contract_revision_latest"
+	// FieldVersionID holds the string denoting the version_id field in the database.
+	FieldVersionID = "version_id"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
 	EdgeContractVersion = "contract_version"
 	// EdgeCasBackends holds the string denoting the cas_backends edge name in mutations.
 	EdgeCasBackends = "cas_backends"
+	// EdgeVersion holds the string denoting the version edge name in mutations.
+	EdgeVersion = "version"
 	// Table holds the table name of the workflowrun in the database.
 	Table = "workflow_runs"
 	// WorkflowTable is the table that holds the workflow relation/edge.
@@ -66,6 +70,13 @@ const (
 	// CasBackendsInverseTable is the table name for the CASBackend entity.
 	// It exists in this package in order to avoid circular dependency with the "casbackend" package.
 	CasBackendsInverseTable = "cas_backends"
+	// VersionTable is the table that holds the version relation/edge.
+	VersionTable = "workflow_runs"
+	// VersionInverseTable is the table name for the ProjectVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "projectversion" package.
+	VersionInverseTable = "project_versions"
+	// VersionColumn is the table column denoting the version relation/edge.
+	VersionColumn = "version_id"
 )
 
 // Columns holds all SQL columns for workflowrun fields.
@@ -82,6 +93,7 @@ var Columns = []string{
 	FieldAttestationState,
 	FieldContractRevisionUsed,
 	FieldContractRevisionLatest,
+	FieldVersionID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -184,6 +196,11 @@ func ByContractRevisionLatest(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContractRevisionLatest, opts...).ToFunc()
 }
 
+// ByVersionID orders the results by the version_id field.
+func ByVersionID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVersionID, opts...).ToFunc()
+}
+
 // ByWorkflowField orders the results by workflow field.
 func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -211,6 +228,13 @@ func ByCasBackends(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCasBackendsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByVersionField orders the results by version field.
+func ByVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVersionStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newWorkflowStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -230,5 +254,12 @@ func newCasBackendsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CasBackendsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, CasBackendsTable, CasBackendsPrimaryKey...),
+	)
+}
+func newVersionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VersionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, VersionTable, VersionColumn),
 	)
 }

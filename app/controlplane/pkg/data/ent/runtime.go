@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/schema"
@@ -143,6 +144,20 @@ func init() {
 	projectDescID := projectFields[0].Descriptor()
 	// project.DefaultID holds the default value on creation for the id field.
 	project.DefaultID = projectDescID.Default.(func() uuid.UUID)
+	projectversionFields := schema.ProjectVersion{}.Fields()
+	_ = projectversionFields
+	// projectversionDescVersion is the schema descriptor for version field.
+	projectversionDescVersion := projectversionFields[1].Descriptor()
+	// projectversion.DefaultVersion holds the default value on creation for the version field.
+	projectversion.DefaultVersion = projectversionDescVersion.Default.(string)
+	// projectversionDescCreatedAt is the schema descriptor for created_at field.
+	projectversionDescCreatedAt := projectversionFields[2].Descriptor()
+	// projectversion.DefaultCreatedAt holds the default value on creation for the created_at field.
+	projectversion.DefaultCreatedAt = projectversionDescCreatedAt.Default.(func() time.Time)
+	// projectversionDescID is the schema descriptor for id field.
+	projectversionDescID := projectversionFields[0].Descriptor()
+	// projectversion.DefaultID holds the default value on creation for the id field.
+	projectversion.DefaultID = projectversionDescID.Default.(func() uuid.UUID)
 	referrerFields := schema.Referrer{}.Fields()
 	_ = referrerFields
 	// referrerDescCreatedAt is the schema descriptor for created_at field.

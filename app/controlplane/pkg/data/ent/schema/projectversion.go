@@ -23,20 +23,20 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
-// Project holds the schema definition for the Project entity.
-type Project struct {
+// ProjectVersion holds the schema definition for the ProjectVersion entity.
+type ProjectVersion struct {
 	ent.Schema
 }
 
-// Fields of the Project.
-func (Project) Fields() []ent.Field {
+// Fields of the Version.
+func (ProjectVersion) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("name").Immutable().Validate(biz.ValidateIsDNS1123),
+		// empty version means no defined version
+		field.String("version").Immutable().Default(""),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
@@ -44,22 +44,21 @@ func (Project) Fields() []ent.Field {
 				Default: "CURRENT_TIMESTAMP",
 			}),
 		field.Time("deleted_at").Optional(),
-		field.UUID("organization_id", uuid.UUID{}).Immutable(),
+		field.UUID("project_id", uuid.UUID{}),
 	}
 }
 
-// Edges of the Project.
-func (Project) Edges() []ent.Edge {
+// Edges of the Version.
+func (ProjectVersion) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).Field("organization_id").Ref("projects").Unique().Required().Immutable(),
-		edge.To("workflows", Workflow.Type),
-		edge.To("versions", ProjectVersion.Type),
+		edge.From("project", Project.Type).Field("project_id").Ref("versions").Unique().Required(),
+		edge.To("runs", WorkflowRun.Type),
 	}
 }
 
-func (Project) Indexes() []ent.Index {
+func (ProjectVersion) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name").Edges("organization").Unique().Annotations(
+		index.Fields("version", "project_id").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),
 	}

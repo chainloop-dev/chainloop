@@ -102,6 +102,11 @@ func ContractRevisionLatest(v int) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldContractRevisionLatest, v))
 }
 
+// VersionID applies equality check predicate on the "version_id" field. It's identical to VersionIDEQ.
+func VersionID(v uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldVersionID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -662,6 +667,36 @@ func ContractRevisionLatestLTE(v int) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldLTE(FieldContractRevisionLatest, v))
 }
 
+// VersionIDEQ applies the EQ predicate on the "version_id" field.
+func VersionIDEQ(v uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldVersionID, v))
+}
+
+// VersionIDNEQ applies the NEQ predicate on the "version_id" field.
+func VersionIDNEQ(v uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldVersionID, v))
+}
+
+// VersionIDIn applies the In predicate on the "version_id" field.
+func VersionIDIn(vs ...uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldVersionID, vs...))
+}
+
+// VersionIDNotIn applies the NotIn predicate on the "version_id" field.
+func VersionIDNotIn(vs ...uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldVersionID, vs...))
+}
+
+// VersionIDIsNil applies the IsNil predicate on the "version_id" field.
+func VersionIDIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldVersionID))
+}
+
+// VersionIDNotNil applies the NotNil predicate on the "version_id" field.
+func VersionIDNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldVersionID))
+}
+
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.
 func HasWorkflow() predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {
@@ -723,6 +758,29 @@ func HasCasBackends() predicate.WorkflowRun {
 func HasCasBackendsWith(preds ...predicate.CASBackend) predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {
 		step := newCasBackendsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasVersion applies the HasEdge predicate on the "version" edge.
+func HasVersion() predicate.WorkflowRun {
+	return predicate.WorkflowRun(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, VersionTable, VersionColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVersionWith applies the HasEdge predicate on the "version" edge with a given conditions (other predicates).
+func HasVersionWith(preds ...predicate.ProjectVersion) predicate.WorkflowRun {
+	return predicate.WorkflowRun(func(s *sql.Selector) {
+		step := newVersionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

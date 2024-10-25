@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
@@ -52,25 +52,6 @@ func (pu *ProjectUpdate) ClearDeletedAt() *ProjectUpdate {
 	return pu
 }
 
-// SetOrganizationID sets the "organization_id" field.
-func (pu *ProjectUpdate) SetOrganizationID(u uuid.UUID) *ProjectUpdate {
-	pu.mutation.SetOrganizationID(u)
-	return pu
-}
-
-// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableOrganizationID(u *uuid.UUID) *ProjectUpdate {
-	if u != nil {
-		pu.SetOrganizationID(*u)
-	}
-	return pu
-}
-
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (pu *ProjectUpdate) SetOrganization(o *Organization) *ProjectUpdate {
-	return pu.SetOrganizationID(o.ID)
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (pu *ProjectUpdate) AddWorkflowIDs(ids ...uuid.UUID) *ProjectUpdate {
 	pu.mutation.AddWorkflowIDs(ids...)
@@ -86,15 +67,24 @@ func (pu *ProjectUpdate) AddWorkflows(w ...*Workflow) *ProjectUpdate {
 	return pu.AddWorkflowIDs(ids...)
 }
 
+// AddVersionIDs adds the "versions" edge to the ProjectVersion entity by IDs.
+func (pu *ProjectUpdate) AddVersionIDs(ids ...uuid.UUID) *ProjectUpdate {
+	pu.mutation.AddVersionIDs(ids...)
+	return pu
+}
+
+// AddVersions adds the "versions" edges to the ProjectVersion entity.
+func (pu *ProjectUpdate) AddVersions(p ...*ProjectVersion) *ProjectUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.AddVersionIDs(ids...)
+}
+
 // Mutation returns the ProjectMutation object of the builder.
 func (pu *ProjectUpdate) Mutation() *ProjectMutation {
 	return pu.mutation
-}
-
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (pu *ProjectUpdate) ClearOrganization() *ProjectUpdate {
-	pu.mutation.ClearOrganization()
-	return pu
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
@@ -116,6 +106,27 @@ func (pu *ProjectUpdate) RemoveWorkflows(w ...*Workflow) *ProjectUpdate {
 		ids[i] = w[i].ID
 	}
 	return pu.RemoveWorkflowIDs(ids...)
+}
+
+// ClearVersions clears all "versions" edges to the ProjectVersion entity.
+func (pu *ProjectUpdate) ClearVersions() *ProjectUpdate {
+	pu.mutation.ClearVersions()
+	return pu
+}
+
+// RemoveVersionIDs removes the "versions" edge to ProjectVersion entities by IDs.
+func (pu *ProjectUpdate) RemoveVersionIDs(ids ...uuid.UUID) *ProjectUpdate {
+	pu.mutation.RemoveVersionIDs(ids...)
+	return pu
+}
+
+// RemoveVersions removes "versions" edges to ProjectVersion entities.
+func (pu *ProjectUpdate) RemoveVersions(p ...*ProjectVersion) *ProjectUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.RemoveVersionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -177,35 +188,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if pu.mutation.DeletedAtCleared() {
 		_spec.ClearField(project.FieldDeletedAt, field.TypeTime)
 	}
-	if pu.mutation.OrganizationCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.OrganizationTable,
-			Columns: []string{project.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.OrganizationIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.OrganizationTable,
-			Columns: []string{project.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if pu.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -244,6 +226,51 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !pu.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -293,25 +320,6 @@ func (puo *ProjectUpdateOne) ClearDeletedAt() *ProjectUpdateOne {
 	return puo
 }
 
-// SetOrganizationID sets the "organization_id" field.
-func (puo *ProjectUpdateOne) SetOrganizationID(u uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.SetOrganizationID(u)
-	return puo
-}
-
-// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *ProjectUpdateOne {
-	if u != nil {
-		puo.SetOrganizationID(*u)
-	}
-	return puo
-}
-
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (puo *ProjectUpdateOne) SetOrganization(o *Organization) *ProjectUpdateOne {
-	return puo.SetOrganizationID(o.ID)
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (puo *ProjectUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ProjectUpdateOne {
 	puo.mutation.AddWorkflowIDs(ids...)
@@ -327,15 +335,24 @@ func (puo *ProjectUpdateOne) AddWorkflows(w ...*Workflow) *ProjectUpdateOne {
 	return puo.AddWorkflowIDs(ids...)
 }
 
+// AddVersionIDs adds the "versions" edge to the ProjectVersion entity by IDs.
+func (puo *ProjectUpdateOne) AddVersionIDs(ids ...uuid.UUID) *ProjectUpdateOne {
+	puo.mutation.AddVersionIDs(ids...)
+	return puo
+}
+
+// AddVersions adds the "versions" edges to the ProjectVersion entity.
+func (puo *ProjectUpdateOne) AddVersions(p ...*ProjectVersion) *ProjectUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.AddVersionIDs(ids...)
+}
+
 // Mutation returns the ProjectMutation object of the builder.
 func (puo *ProjectUpdateOne) Mutation() *ProjectMutation {
 	return puo.mutation
-}
-
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (puo *ProjectUpdateOne) ClearOrganization() *ProjectUpdateOne {
-	puo.mutation.ClearOrganization()
-	return puo
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
@@ -357,6 +374,27 @@ func (puo *ProjectUpdateOne) RemoveWorkflows(w ...*Workflow) *ProjectUpdateOne {
 		ids[i] = w[i].ID
 	}
 	return puo.RemoveWorkflowIDs(ids...)
+}
+
+// ClearVersions clears all "versions" edges to the ProjectVersion entity.
+func (puo *ProjectUpdateOne) ClearVersions() *ProjectUpdateOne {
+	puo.mutation.ClearVersions()
+	return puo
+}
+
+// RemoveVersionIDs removes the "versions" edge to ProjectVersion entities by IDs.
+func (puo *ProjectUpdateOne) RemoveVersionIDs(ids ...uuid.UUID) *ProjectUpdateOne {
+	puo.mutation.RemoveVersionIDs(ids...)
+	return puo
+}
+
+// RemoveVersions removes "versions" edges to ProjectVersion entities.
+func (puo *ProjectUpdateOne) RemoveVersions(p ...*ProjectVersion) *ProjectUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.RemoveVersionIDs(ids...)
 }
 
 // Where appends a list predicates to the ProjectUpdate builder.
@@ -448,35 +486,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if puo.mutation.DeletedAtCleared() {
 		_spec.ClearField(project.FieldDeletedAt, field.TypeTime)
 	}
-	if puo.mutation.OrganizationCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.OrganizationTable,
-			Columns: []string{project.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.OrganizationIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.OrganizationTable,
-			Columns: []string{project.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if puo.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -515,6 +524,51 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !puo.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

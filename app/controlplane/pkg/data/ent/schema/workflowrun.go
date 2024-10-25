@@ -56,6 +56,8 @@ func (WorkflowRun) Fields() []ent.Field {
 		// The latest version of the contract that was available
 		// at the time of the initialization of the run
 		field.Int("contract_revision_latest"),
+		// We have runs without data
+		field.UUID("version_id", uuid.UUID{}).Optional(),
 	}
 }
 
@@ -68,6 +70,8 @@ func (WorkflowRun) Edges() []ent.Edge {
 		edge.To("contract_version", WorkflowContractVersion.Type).Unique().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		// A WorkflowRun can have multiple CASBackends associated to it
 		edge.To("cas_backends", CASBackend.Type),
+		// not required since we have old data
+		edge.From("version", ProjectVersion.Type).Field("version_id").Ref("runs").Unique(),
 	}
 }
 

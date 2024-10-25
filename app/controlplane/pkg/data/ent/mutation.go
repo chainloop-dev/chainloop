@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
@@ -52,6 +53,7 @@ const (
 	TypeOrgInvitation           = "OrgInvitation"
 	TypeOrganization            = "Organization"
 	TypeProject                 = "Project"
+	TypeProjectVersion          = "ProjectVersion"
 	TypeReferrer                = "Referrer"
 	TypeRobotAccount            = "RobotAccount"
 	TypeUser                    = "User"
@@ -6428,6 +6430,9 @@ type ProjectMutation struct {
 	workflows           map[uuid.UUID]struct{}
 	removedworkflows    map[uuid.UUID]struct{}
 	clearedworkflows    bool
+	versions            map[uuid.UUID]struct{}
+	removedversions     map[uuid.UUID]struct{}
+	clearedversions     bool
 	done                bool
 	oldValue            func(context.Context) (*Project, error)
 	predicates          []predicate.Project
@@ -6775,6 +6780,60 @@ func (m *ProjectMutation) ResetWorkflows() {
 	m.removedworkflows = nil
 }
 
+// AddVersionIDs adds the "versions" edge to the ProjectVersion entity by ids.
+func (m *ProjectMutation) AddVersionIDs(ids ...uuid.UUID) {
+	if m.versions == nil {
+		m.versions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.versions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearVersions clears the "versions" edge to the ProjectVersion entity.
+func (m *ProjectMutation) ClearVersions() {
+	m.clearedversions = true
+}
+
+// VersionsCleared reports if the "versions" edge to the ProjectVersion entity was cleared.
+func (m *ProjectMutation) VersionsCleared() bool {
+	return m.clearedversions
+}
+
+// RemoveVersionIDs removes the "versions" edge to the ProjectVersion entity by IDs.
+func (m *ProjectMutation) RemoveVersionIDs(ids ...uuid.UUID) {
+	if m.removedversions == nil {
+		m.removedversions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.versions, ids[i])
+		m.removedversions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedVersions returns the removed IDs of the "versions" edge to the ProjectVersion entity.
+func (m *ProjectMutation) RemovedVersionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedversions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// VersionsIDs returns the "versions" edge IDs in the mutation.
+func (m *ProjectMutation) VersionsIDs() (ids []uuid.UUID) {
+	for id := range m.versions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetVersions resets all changes to the "versions" edge.
+func (m *ProjectMutation) ResetVersions() {
+	m.versions = nil
+	m.clearedversions = false
+	m.removedversions = nil
+}
+
 // Where appends a list predicates to the ProjectMutation builder.
 func (m *ProjectMutation) Where(ps ...predicate.Project) {
 	m.predicates = append(m.predicates, ps...)
@@ -6968,12 +7027,15 @@ func (m *ProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.organization != nil {
 		edges = append(edges, project.EdgeOrganization)
 	}
 	if m.workflows != nil {
 		edges = append(edges, project.EdgeWorkflows)
+	}
+	if m.versions != nil {
+		edges = append(edges, project.EdgeVersions)
 	}
 	return edges
 }
@@ -6992,15 +7054,24 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case project.EdgeVersions:
+		ids := make([]ent.Value, 0, len(m.versions))
+		for id := range m.versions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedworkflows != nil {
 		edges = append(edges, project.EdgeWorkflows)
+	}
+	if m.removedversions != nil {
+		edges = append(edges, project.EdgeVersions)
 	}
 	return edges
 }
@@ -7015,18 +7086,27 @@ func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case project.EdgeVersions:
+		ids := make([]ent.Value, 0, len(m.removedversions))
+		for id := range m.removedversions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedorganization {
 		edges = append(edges, project.EdgeOrganization)
 	}
 	if m.clearedworkflows {
 		edges = append(edges, project.EdgeWorkflows)
+	}
+	if m.clearedversions {
+		edges = append(edges, project.EdgeVersions)
 	}
 	return edges
 }
@@ -7039,6 +7119,8 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 		return m.clearedorganization
 	case project.EdgeWorkflows:
 		return m.clearedworkflows
+	case project.EdgeVersions:
+		return m.clearedversions
 	}
 	return false
 }
@@ -7064,8 +7146,666 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 	case project.EdgeWorkflows:
 		m.ResetWorkflows()
 		return nil
+	case project.EdgeVersions:
+		m.ResetVersions()
+		return nil
 	}
 	return fmt.Errorf("unknown Project edge %s", name)
+}
+
+// ProjectVersionMutation represents an operation that mutates the ProjectVersion nodes in the graph.
+type ProjectVersionMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	version        *string
+	created_at     *time.Time
+	deleted_at     *time.Time
+	clearedFields  map[string]struct{}
+	project        *uuid.UUID
+	clearedproject bool
+	runs           map[uuid.UUID]struct{}
+	removedruns    map[uuid.UUID]struct{}
+	clearedruns    bool
+	done           bool
+	oldValue       func(context.Context) (*ProjectVersion, error)
+	predicates     []predicate.ProjectVersion
+}
+
+var _ ent.Mutation = (*ProjectVersionMutation)(nil)
+
+// projectversionOption allows management of the mutation configuration using functional options.
+type projectversionOption func(*ProjectVersionMutation)
+
+// newProjectVersionMutation creates new mutation for the ProjectVersion entity.
+func newProjectVersionMutation(c config, op Op, opts ...projectversionOption) *ProjectVersionMutation {
+	m := &ProjectVersionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeProjectVersion,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withProjectVersionID sets the ID field of the mutation.
+func withProjectVersionID(id uuid.UUID) projectversionOption {
+	return func(m *ProjectVersionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ProjectVersion
+		)
+		m.oldValue = func(ctx context.Context) (*ProjectVersion, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ProjectVersion.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withProjectVersion sets the old ProjectVersion of the mutation.
+func withProjectVersion(node *ProjectVersion) projectversionOption {
+	return func(m *ProjectVersionMutation) {
+		m.oldValue = func(context.Context) (*ProjectVersion, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ProjectVersionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ProjectVersionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ProjectVersion entities.
+func (m *ProjectVersionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ProjectVersionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ProjectVersionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ProjectVersion.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetVersion sets the "version" field.
+func (m *ProjectVersionMutation) SetVersion(s string) {
+	m.version = &s
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *ProjectVersionMutation) Version() (r string, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *ProjectVersionMutation) ResetVersion() {
+	m.version = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ProjectVersionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ProjectVersionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ProjectVersionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *ProjectVersionMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *ProjectVersionMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *ProjectVersionMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[projectversion.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *ProjectVersionMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[projectversion.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *ProjectVersionMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, projectversion.FieldDeletedAt)
+}
+
+// SetProjectID sets the "project_id" field.
+func (m *ProjectVersionMutation) SetProjectID(u uuid.UUID) {
+	m.project = &u
+}
+
+// ProjectID returns the value of the "project_id" field in the mutation.
+func (m *ProjectVersionMutation) ProjectID() (r uuid.UUID, exists bool) {
+	v := m.project
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectID returns the old "project_id" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldProjectID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectID: %w", err)
+	}
+	return oldValue.ProjectID, nil
+}
+
+// ResetProjectID resets all changes to the "project_id" field.
+func (m *ProjectVersionMutation) ResetProjectID() {
+	m.project = nil
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (m *ProjectVersionMutation) ClearProject() {
+	m.clearedproject = true
+	m.clearedFields[projectversion.FieldProjectID] = struct{}{}
+}
+
+// ProjectCleared reports if the "project" edge to the Project entity was cleared.
+func (m *ProjectVersionMutation) ProjectCleared() bool {
+	return m.clearedproject
+}
+
+// ProjectIDs returns the "project" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProjectID instead. It exists only for internal usage by the builders.
+func (m *ProjectVersionMutation) ProjectIDs() (ids []uuid.UUID) {
+	if id := m.project; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProject resets all changes to the "project" edge.
+func (m *ProjectVersionMutation) ResetProject() {
+	m.project = nil
+	m.clearedproject = false
+}
+
+// AddRunIDs adds the "runs" edge to the WorkflowRun entity by ids.
+func (m *ProjectVersionMutation) AddRunIDs(ids ...uuid.UUID) {
+	if m.runs == nil {
+		m.runs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRuns clears the "runs" edge to the WorkflowRun entity.
+func (m *ProjectVersionMutation) ClearRuns() {
+	m.clearedruns = true
+}
+
+// RunsCleared reports if the "runs" edge to the WorkflowRun entity was cleared.
+func (m *ProjectVersionMutation) RunsCleared() bool {
+	return m.clearedruns
+}
+
+// RemoveRunIDs removes the "runs" edge to the WorkflowRun entity by IDs.
+func (m *ProjectVersionMutation) RemoveRunIDs(ids ...uuid.UUID) {
+	if m.removedruns == nil {
+		m.removedruns = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.runs, ids[i])
+		m.removedruns[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRuns returns the removed IDs of the "runs" edge to the WorkflowRun entity.
+func (m *ProjectVersionMutation) RemovedRunsIDs() (ids []uuid.UUID) {
+	for id := range m.removedruns {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RunsIDs returns the "runs" edge IDs in the mutation.
+func (m *ProjectVersionMutation) RunsIDs() (ids []uuid.UUID) {
+	for id := range m.runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRuns resets all changes to the "runs" edge.
+func (m *ProjectVersionMutation) ResetRuns() {
+	m.runs = nil
+	m.clearedruns = false
+	m.removedruns = nil
+}
+
+// Where appends a list predicates to the ProjectVersionMutation builder.
+func (m *ProjectVersionMutation) Where(ps ...predicate.ProjectVersion) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ProjectVersionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ProjectVersionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ProjectVersion, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ProjectVersionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ProjectVersionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ProjectVersion).
+func (m *ProjectVersionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ProjectVersionMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.version != nil {
+		fields = append(fields, projectversion.FieldVersion)
+	}
+	if m.created_at != nil {
+		fields = append(fields, projectversion.FieldCreatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, projectversion.FieldDeletedAt)
+	}
+	if m.project != nil {
+		fields = append(fields, projectversion.FieldProjectID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ProjectVersionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case projectversion.FieldVersion:
+		return m.Version()
+	case projectversion.FieldCreatedAt:
+		return m.CreatedAt()
+	case projectversion.FieldDeletedAt:
+		return m.DeletedAt()
+	case projectversion.FieldProjectID:
+		return m.ProjectID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ProjectVersionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case projectversion.FieldVersion:
+		return m.OldVersion(ctx)
+	case projectversion.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case projectversion.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case projectversion.FieldProjectID:
+		return m.OldProjectID(ctx)
+	}
+	return nil, fmt.Errorf("unknown ProjectVersion field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case projectversion.FieldVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case projectversion.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case projectversion.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case projectversion.FieldProjectID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectVersion field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ProjectVersionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ProjectVersionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProjectVersionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ProjectVersion numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ProjectVersionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(projectversion.FieldDeletedAt) {
+		fields = append(fields, projectversion.FieldDeletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ProjectVersionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ProjectVersionMutation) ClearField(name string) error {
+	switch name {
+	case projectversion.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectVersion nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ProjectVersionMutation) ResetField(name string) error {
+	switch name {
+	case projectversion.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case projectversion.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case projectversion.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case projectversion.FieldProjectID:
+		m.ResetProjectID()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectVersion field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ProjectVersionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.project != nil {
+		edges = append(edges, projectversion.EdgeProject)
+	}
+	if m.runs != nil {
+		edges = append(edges, projectversion.EdgeRuns)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ProjectVersionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case projectversion.EdgeProject:
+		if id := m.project; id != nil {
+			return []ent.Value{*id}
+		}
+	case projectversion.EdgeRuns:
+		ids := make([]ent.Value, 0, len(m.runs))
+		for id := range m.runs {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ProjectVersionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedruns != nil {
+		edges = append(edges, projectversion.EdgeRuns)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ProjectVersionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case projectversion.EdgeRuns:
+		ids := make([]ent.Value, 0, len(m.removedruns))
+		for id := range m.removedruns {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ProjectVersionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedproject {
+		edges = append(edges, projectversion.EdgeProject)
+	}
+	if m.clearedruns {
+		edges = append(edges, projectversion.EdgeRuns)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ProjectVersionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case projectversion.EdgeProject:
+		return m.clearedproject
+	case projectversion.EdgeRuns:
+		return m.clearedruns
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ProjectVersionMutation) ClearEdge(name string) error {
+	switch name {
+	case projectversion.EdgeProject:
+		m.ClearProject()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectVersion unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ProjectVersionMutation) ResetEdge(name string) error {
+	switch name {
+	case projectversion.EdgeProject:
+		m.ResetProject()
+		return nil
+	case projectversion.EdgeRuns:
+		m.ResetRuns()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectVersion edge %s", name)
 }
 
 // ReferrerMutation represents an operation that mutates the Referrer nodes in the graph.
@@ -11874,6 +12614,8 @@ type WorkflowRunMutation struct {
 	cas_backends                map[uuid.UUID]struct{}
 	removedcas_backends         map[uuid.UUID]struct{}
 	clearedcas_backends         bool
+	version                     *uuid.UUID
+	clearedversion              bool
 	done                        bool
 	oldValue                    func(context.Context) (*WorkflowRun, error)
 	predicates                  []predicate.WorkflowRun
@@ -12510,6 +13252,55 @@ func (m *WorkflowRunMutation) ResetContractRevisionLatest() {
 	m.addcontract_revision_latest = nil
 }
 
+// SetVersionID sets the "version_id" field.
+func (m *WorkflowRunMutation) SetVersionID(u uuid.UUID) {
+	m.version = &u
+}
+
+// VersionID returns the value of the "version_id" field in the mutation.
+func (m *WorkflowRunMutation) VersionID() (r uuid.UUID, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersionID returns the old "version_id" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldVersionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersionID: %w", err)
+	}
+	return oldValue.VersionID, nil
+}
+
+// ClearVersionID clears the value of the "version_id" field.
+func (m *WorkflowRunMutation) ClearVersionID() {
+	m.version = nil
+	m.clearedFields[workflowrun.FieldVersionID] = struct{}{}
+}
+
+// VersionIDCleared returns if the "version_id" field was cleared in this mutation.
+func (m *WorkflowRunMutation) VersionIDCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldVersionID]
+	return ok
+}
+
+// ResetVersionID resets all changes to the "version_id" field.
+func (m *WorkflowRunMutation) ResetVersionID() {
+	m.version = nil
+	delete(m.clearedFields, workflowrun.FieldVersionID)
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
 func (m *WorkflowRunMutation) SetWorkflowID(id uuid.UUID) {
 	m.workflow = &id
@@ -12642,6 +13433,33 @@ func (m *WorkflowRunMutation) ResetCasBackends() {
 	m.removedcas_backends = nil
 }
 
+// ClearVersion clears the "version" edge to the ProjectVersion entity.
+func (m *WorkflowRunMutation) ClearVersion() {
+	m.clearedversion = true
+	m.clearedFields[workflowrun.FieldVersionID] = struct{}{}
+}
+
+// VersionCleared reports if the "version" edge to the ProjectVersion entity was cleared.
+func (m *WorkflowRunMutation) VersionCleared() bool {
+	return m.VersionIDCleared() || m.clearedversion
+}
+
+// VersionIDs returns the "version" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// VersionID instead. It exists only for internal usage by the builders.
+func (m *WorkflowRunMutation) VersionIDs() (ids []uuid.UUID) {
+	if id := m.version; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetVersion resets all changes to the "version" edge.
+func (m *WorkflowRunMutation) ResetVersion() {
+	m.version = nil
+	m.clearedversion = false
+}
+
 // Where appends a list predicates to the WorkflowRunMutation builder.
 func (m *WorkflowRunMutation) Where(ps ...predicate.WorkflowRun) {
 	m.predicates = append(m.predicates, ps...)
@@ -12676,7 +13494,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -12710,6 +13528,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.contract_revision_latest != nil {
 		fields = append(fields, workflowrun.FieldContractRevisionLatest)
 	}
+	if m.version != nil {
+		fields = append(fields, workflowrun.FieldVersionID)
+	}
 	return fields
 }
 
@@ -12740,6 +13561,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.ContractRevisionUsed()
 	case workflowrun.FieldContractRevisionLatest:
 		return m.ContractRevisionLatest()
+	case workflowrun.FieldVersionID:
+		return m.VersionID()
 	}
 	return nil, false
 }
@@ -12771,6 +13594,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldContractRevisionUsed(ctx)
 	case workflowrun.FieldContractRevisionLatest:
 		return m.OldContractRevisionLatest(ctx)
+	case workflowrun.FieldVersionID:
+		return m.OldVersionID(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -12857,6 +13682,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetContractRevisionLatest(v)
 		return nil
+	case workflowrun.FieldVersionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersionID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -12935,6 +13767,9 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldAttestationState) {
 		fields = append(fields, workflowrun.FieldAttestationState)
 	}
+	if m.FieldCleared(workflowrun.FieldVersionID) {
+		fields = append(fields, workflowrun.FieldVersionID)
+	}
 	return fields
 }
 
@@ -12969,6 +13804,9 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldAttestationState:
 		m.ClearAttestationState()
+		return nil
+	case workflowrun.FieldVersionID:
+		m.ClearVersionID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
@@ -13011,13 +13849,16 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 	case workflowrun.FieldContractRevisionLatest:
 		m.ResetContractRevisionLatest()
 		return nil
+	case workflowrun.FieldVersionID:
+		m.ResetVersionID()
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowRunMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.workflow != nil {
 		edges = append(edges, workflowrun.EdgeWorkflow)
 	}
@@ -13026,6 +13867,9 @@ func (m *WorkflowRunMutation) AddedEdges() []string {
 	}
 	if m.cas_backends != nil {
 		edges = append(edges, workflowrun.EdgeCasBackends)
+	}
+	if m.version != nil {
+		edges = append(edges, workflowrun.EdgeVersion)
 	}
 	return edges
 }
@@ -13048,13 +13892,17 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case workflowrun.EdgeVersion:
+		if id := m.version; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowRunMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedcas_backends != nil {
 		edges = append(edges, workflowrun.EdgeCasBackends)
 	}
@@ -13077,7 +13925,7 @@ func (m *WorkflowRunMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowRunMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedworkflow {
 		edges = append(edges, workflowrun.EdgeWorkflow)
 	}
@@ -13086,6 +13934,9 @@ func (m *WorkflowRunMutation) ClearedEdges() []string {
 	}
 	if m.clearedcas_backends {
 		edges = append(edges, workflowrun.EdgeCasBackends)
+	}
+	if m.clearedversion {
+		edges = append(edges, workflowrun.EdgeVersion)
 	}
 	return edges
 }
@@ -13100,6 +13951,8 @@ func (m *WorkflowRunMutation) EdgeCleared(name string) bool {
 		return m.clearedcontract_version
 	case workflowrun.EdgeCasBackends:
 		return m.clearedcas_backends
+	case workflowrun.EdgeVersion:
+		return m.clearedversion
 	}
 	return false
 }
@@ -13113,6 +13966,9 @@ func (m *WorkflowRunMutation) ClearEdge(name string) error {
 		return nil
 	case workflowrun.EdgeContractVersion:
 		m.ClearContractVersion()
+		return nil
+	case workflowrun.EdgeVersion:
+		m.ClearVersion()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun unique edge %s", name)
@@ -13130,6 +13986,9 @@ func (m *WorkflowRunMutation) ResetEdge(name string) error {
 		return nil
 	case workflowrun.EdgeCasBackends:
 		m.ResetCasBackends()
+		return nil
+	case workflowrun.EdgeVersion:
+		m.ResetVersion()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun edge %s", name)

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -45,6 +46,8 @@ type WorkflowRun struct {
 	ContractRevisionUsed int `json:"contract_revision_used,omitempty"`
 	// ContractRevisionLatest holds the value of the "contract_revision_latest" field.
 	ContractRevisionLatest int `json:"contract_revision_latest,omitempty"`
+	// VersionID holds the value of the "version_id" field.
+	VersionID uuid.UUID `json:"version_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -61,9 +64,11 @@ type WorkflowRunEdges struct {
 	ContractVersion *WorkflowContractVersion `json:"contract_version,omitempty"`
 	// CasBackends holds the value of the cas_backends edge.
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
+	// Version holds the value of the version edge.
+	Version *ProjectVersion `json:"version,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -97,6 +102,17 @@ func (e WorkflowRunEdges) CasBackendsOrErr() ([]*CASBackend, error) {
 	return nil, &NotLoadedError{edge: "cas_backends"}
 }
 
+// VersionOrErr returns the Version value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowRunEdges) VersionOrErr() (*ProjectVersion, error) {
+	if e.Version != nil {
+		return e.Version, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: projectversion.Label}
+	}
+	return nil, &NotLoadedError{edge: "version"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -110,7 +126,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
 			values[i] = new(sql.NullTime)
-		case workflowrun.FieldID:
+		case workflowrun.FieldID, workflowrun.FieldVersionID:
 			values[i] = new(uuid.UUID)
 		case workflowrun.ForeignKeys[0]: // workflow_workflowruns
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -205,6 +221,12 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				wr.ContractRevisionLatest = int(value.Int64)
 			}
+		case workflowrun.FieldVersionID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field version_id", values[i])
+			} else if value != nil {
+				wr.VersionID = *value
+			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_workflowruns", values[i])
@@ -245,6 +267,11 @@ func (wr *WorkflowRun) QueryContractVersion() *WorkflowContractVersionQuery {
 // QueryCasBackends queries the "cas_backends" edge of the WorkflowRun entity.
 func (wr *WorkflowRun) QueryCasBackends() *CASBackendQuery {
 	return NewWorkflowRunClient(wr.config).QueryCasBackends(wr)
+}
+
+// QueryVersion queries the "version" edge of the WorkflowRun entity.
+func (wr *WorkflowRun) QueryVersion() *ProjectVersionQuery {
+	return NewWorkflowRunClient(wr.config).QueryVersion(wr)
 }
 
 // Update returns a builder for updating this WorkflowRun.
@@ -302,6 +329,9 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("contract_revision_latest=")
 	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionLatest))
+	builder.WriteString(", ")
+	builder.WriteString("version_id=")
+	builder.WriteString(fmt.Sprintf("%v", wr.VersionID))
 	builder.WriteByte(')')
 	return builder.String()
 }
