@@ -899,6 +899,70 @@ func (s *testSuite) TestNewResultFormat() {
 	}
 }
 
+func (s *testSuite) TestContainerMaterial() {
+	cases := []struct {
+		name          string
+		policy        string
+		tag           string
+		expectErr     bool
+		expectSkipped bool
+		expectReasons []string
+	}{
+		{
+			name: "containers",
+			// This policy injects the container tag in the `skip_reason` field
+			policy:        "file://testdata/container_policy.yaml",
+			tag:           "latest",
+			expectSkipped: true,
+			expectReasons: []string{"the tag is 'latest'"},
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{
+				Materials: []*v12.CraftingSchema_Material{
+					{
+						Name: "the-container",
+						Type: v12.CraftingSchema_Material_CONTAINER_IMAGE,
+					},
+				},
+				Policies: &v12.Policies{
+					Materials: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: tc.policy},
+						},
+					},
+					Attestation: nil,
+				},
+			}
+			material := &v1.Attestation_Material{
+				M: &v1.Attestation_Material_ContainerImage_{ContainerImage: &v1.Attestation_Material_ContainerImage{
+					Id:                "material-1729779925030105000",
+					Tag:               tc.tag,
+					SignatureProvider: "cosign",
+				}},
+				MaterialType: v12.CraftingSchema_Material_CONTAINER_IMAGE,
+			}
+
+			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(res, 1)
+			s.Equal(tc.expectSkipped, res[0].Skipped)
+			if len(res[0].SkipReasons) > 0 {
+				s.Equal(res[0].SkipReasons, tc.expectReasons)
+			}
+		})
+	}
+}
+
 type testSuite struct {
 	suite.Suite
 

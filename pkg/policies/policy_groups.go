@@ -54,7 +54,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 
 	for _, attachment := range attachments {
 		// Load material content
-		subject, err := getMaterialContent(material, path)
+		subject, err := material.GetEvaluableContent(path)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
