@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(groupName)$": {
+      "type": "string"
+    },
     "^(materialName)$": {
       "type": "string"
     },
@@ -30,6 +33,9 @@
       "type": "string"
     },
     "description": {
+      "type": "string"
+    },
+    "group_name": {
       "type": "string"
     },
     "material_name": {

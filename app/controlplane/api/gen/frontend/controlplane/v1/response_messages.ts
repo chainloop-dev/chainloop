@@ -291,6 +291,7 @@ export interface PolicyEvaluation {
   policyReference?: PolicyReference;
   skipped: boolean;
   skipReasons: string[];
+  groupName: string;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1671,6 +1672,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     policyReference: undefined,
     skipped: false,
     skipReasons: [],
+    groupName: "",
   };
 }
 
@@ -1711,6 +1713,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.skipReasons) {
       writer.uint32(106).string(v!);
+    }
+    if (message.groupName !== "") {
+      writer.uint32(114).string(message.groupName);
     }
     return writer;
   },
@@ -1812,6 +1817,13 @@ export const PolicyEvaluation = {
 
           message.skipReasons.push(reader.string());
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.groupName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1847,6 +1859,7 @@ export const PolicyEvaluation = {
       policyReference: isSet(object.policyReference) ? PolicyReference.fromJSON(object.policyReference) : undefined,
       skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
+      groupName: isSet(object.groupName) ? String(object.groupName) : "",
     };
   },
 
@@ -1887,6 +1900,7 @@ export const PolicyEvaluation = {
     } else {
       obj.skipReasons = [];
     }
+    message.groupName !== undefined && (obj.groupName = message.groupName);
     return obj;
   },
 
@@ -1923,6 +1937,7 @@ export const PolicyEvaluation = {
       : undefined;
     message.skipped = object.skipped ?? false;
     message.skipReasons = object.skipReasons?.map((e) => e) || [];
+    message.groupName = object.groupName ?? "";
     return message;
   },
 };

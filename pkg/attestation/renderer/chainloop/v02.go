@@ -59,6 +59,7 @@ type PolicyEvaluation struct {
 	Type            string                     `json:"type"`
 	Skipped         bool                       `json:"skipped"`
 	SkipReasons     []string                   `json:"skip_reasons,omitempty"`
+	GroupName       string                     `json:"group_name"`
 }
 
 type PolicyViolation struct {
@@ -317,6 +318,7 @@ func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
 		},
 		SkipReasons: ev.SkipReasons,
 		Skipped:     ev.Skipped,
+		GroupName:   ev.GroupName,
 	}
 }
 
