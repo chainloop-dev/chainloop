@@ -13283,22 +13283,9 @@ func (m *WorkflowRunMutation) OldVersionID(ctx context.Context) (v uuid.UUID, er
 	return oldValue.VersionID, nil
 }
 
-// ClearVersionID clears the value of the "version_id" field.
-func (m *WorkflowRunMutation) ClearVersionID() {
-	m.version = nil
-	m.clearedFields[workflowrun.FieldVersionID] = struct{}{}
-}
-
-// VersionIDCleared returns if the "version_id" field was cleared in this mutation.
-func (m *WorkflowRunMutation) VersionIDCleared() bool {
-	_, ok := m.clearedFields[workflowrun.FieldVersionID]
-	return ok
-}
-
 // ResetVersionID resets all changes to the "version_id" field.
 func (m *WorkflowRunMutation) ResetVersionID() {
 	m.version = nil
-	delete(m.clearedFields, workflowrun.FieldVersionID)
 }
 
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
@@ -13441,7 +13428,7 @@ func (m *WorkflowRunMutation) ClearVersion() {
 
 // VersionCleared reports if the "version" edge to the ProjectVersion entity was cleared.
 func (m *WorkflowRunMutation) VersionCleared() bool {
-	return m.VersionIDCleared() || m.clearedversion
+	return m.clearedversion
 }
 
 // VersionIDs returns the "version" edge IDs in the mutation.
@@ -13767,9 +13754,6 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldAttestationState) {
 		fields = append(fields, workflowrun.FieldAttestationState)
 	}
-	if m.FieldCleared(workflowrun.FieldVersionID) {
-		fields = append(fields, workflowrun.FieldVersionID)
-	}
 	return fields
 }
 
@@ -13804,9 +13788,6 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldAttestationState:
 		m.ClearAttestationState()
-		return nil
-	case workflowrun.FieldVersionID:
-		m.ClearVersionID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)

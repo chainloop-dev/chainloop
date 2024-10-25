@@ -57,7 +57,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		// at the time of the initialization of the run
 		field.Int("contract_revision_latest"),
 		// We have runs without data
-		field.UUID("version_id", uuid.UUID{}).Optional(),
+		field.UUID("version_id", uuid.UUID{}),
 	}
 }
 
@@ -71,7 +71,7 @@ func (WorkflowRun) Edges() []ent.Edge {
 		// A WorkflowRun can have multiple CASBackends associated to it
 		edge.To("cas_backends", CASBackend.Type),
 		// not required since we have old data
-		edge.From("version", ProjectVersion.Type).Field("version_id").Ref("runs").Unique(),
+		edge.From("version", ProjectVersion.Type).Field("version_id").Ref("runs").Unique().Required(),
 	}
 }
 

@@ -529,7 +529,7 @@ var (
 		{Name: "attestation_state", Type: field.TypeBytes, Nullable: true},
 		{Name: "contract_revision_used", Type: field.TypeInt},
 		{Name: "contract_revision_latest", Type: field.TypeInt},
-		{Name: "version_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "version_id", Type: field.TypeUUID},
 		{Name: "workflow_workflowruns", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
 	}
@@ -543,7 +543,7 @@ var (
 				Symbol:     "workflow_runs_project_versions_runs",
 				Columns:    []*schema.Column{WorkflowRunsColumns[12]},
 				RefColumns: []*schema.Column{ProjectVersionsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflow_runs_workflows_workflowruns",

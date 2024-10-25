@@ -158,14 +158,6 @@ func (wrc *WorkflowRunCreate) SetVersionID(u uuid.UUID) *WorkflowRunCreate {
 	return wrc
 }
 
-// SetNillableVersionID sets the "version_id" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableVersionID(u *uuid.UUID) *WorkflowRunCreate {
-	if u != nil {
-		wrc.SetVersionID(*u)
-	}
-	return wrc
-}
-
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -305,6 +297,12 @@ func (wrc *WorkflowRunCreate) check() error {
 	}
 	if _, ok := wrc.mutation.ContractRevisionLatest(); !ok {
 		return &ValidationError{Name: "contract_revision_latest", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_latest"`)}
+	}
+	if _, ok := wrc.mutation.VersionID(); !ok {
+		return &ValidationError{Name: "version_id", err: errors.New(`ent: missing required field "WorkflowRun.version_id"`)}
+	}
+	if len(wrc.mutation.VersionIDs()) == 0 {
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required edge "WorkflowRun.version"`)}
 	}
 	return nil
 }
@@ -691,12 +689,6 @@ func (u *WorkflowRunUpsert) UpdateVersionID() *WorkflowRunUpsert {
 	return u
 }
 
-// ClearVersionID clears the value of the "version_id" field.
-func (u *WorkflowRunUpsert) ClearVersionID() *WorkflowRunUpsert {
-	u.SetNull(workflowrun.FieldVersionID)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -962,13 +954,6 @@ func (u *WorkflowRunUpsertOne) SetVersionID(v uuid.UUID) *WorkflowRunUpsertOne {
 func (u *WorkflowRunUpsertOne) UpdateVersionID() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.UpdateVersionID()
-	})
-}
-
-// ClearVersionID clears the value of the "version_id" field.
-func (u *WorkflowRunUpsertOne) ClearVersionID() *WorkflowRunUpsertOne {
-	return u.Update(func(s *WorkflowRunUpsert) {
-		s.ClearVersionID()
 	})
 }
 
@@ -1404,13 +1389,6 @@ func (u *WorkflowRunUpsertBulk) SetVersionID(v uuid.UUID) *WorkflowRunUpsertBulk
 func (u *WorkflowRunUpsertBulk) UpdateVersionID() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.UpdateVersionID()
-	})
-}
-
-// ClearVersionID clears the value of the "version_id" field.
-func (u *WorkflowRunUpsertBulk) ClearVersionID() *WorkflowRunUpsertBulk {
-	return u.Update(func(s *WorkflowRunUpsert) {
-		s.ClearVersionID()
 	})
 }
 

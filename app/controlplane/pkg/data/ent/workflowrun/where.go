@@ -687,16 +687,6 @@ func VersionIDNotIn(vs ...uuid.UUID) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotIn(FieldVersionID, vs...))
 }
 
-// VersionIDIsNil applies the IsNil predicate on the "version_id" field.
-func VersionIDIsNil() predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldIsNull(FieldVersionID))
-}
-
-// VersionIDNotNil applies the NotNil predicate on the "version_id" field.
-func VersionIDNotNil() predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldNotNull(FieldVersionID))
-}
-
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.
 func HasWorkflow() predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {

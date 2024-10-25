@@ -230,12 +230,6 @@ func (wru *WorkflowRunUpdate) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpd
 	return wru
 }
 
-// ClearVersionID clears the value of the "version_id" field.
-func (wru *WorkflowRunUpdate) ClearVersionID() *WorkflowRunUpdate {
-	wru.mutation.ClearVersionID()
-	return wru
-}
-
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wru *WorkflowRunUpdate) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetWorkflowID(id)
@@ -371,6 +365,9 @@ func (wru *WorkflowRunUpdate) check() error {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
+	}
+	if wru.mutation.VersionCleared() && len(wru.mutation.VersionIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
 	return nil
 }
@@ -798,12 +795,6 @@ func (wruo *WorkflowRunUpdateOne) SetNillableVersionID(u *uuid.UUID) *WorkflowRu
 	return wruo
 }
 
-// ClearVersionID clears the value of the "version_id" field.
-func (wruo *WorkflowRunUpdateOne) ClearVersionID() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearVersionID()
-	return wruo
-}
-
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetWorkflowID(id)
@@ -952,6 +943,9 @@ func (wruo *WorkflowRunUpdateOne) check() error {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
+	}
+	if wruo.mutation.VersionCleared() && len(wruo.mutation.VersionIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
 	return nil
 }
