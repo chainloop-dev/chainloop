@@ -46,6 +46,12 @@ type WorkflowRun struct {
 	ContractRevisionUsed int
 	// The max revision of the contract at the time of the run
 	ContractRevisionLatest int
+	ProjectVersion         *ProjectVersion
+}
+
+type ProjectVersion struct {
+	ID      uuid.UUID
+	Version string
 }
 
 type Attestation struct {

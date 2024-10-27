@@ -103,6 +103,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
 	return client.WorkflowRun.Query().
 		WithWorkflow(func(q *ent.WorkflowQuery) { q.WithOrganization() }).
+		WithVersion().
 		WithContractVersion().
 		WithCasBackends()
 }
@@ -276,6 +277,17 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 		r.Workflow = w
 	}
 
+	// Load version preloaded or otherwise query it
+	var err error
+	version := wr.Edges.Version
+	if version == nil {
+		version, err = wr.QueryVersion().Only(ctx)
+		if err != nil {
+			log.Errorf("failed to query version: %v", err)
+		}
+	}
+	r.ProjectVersion = entProjectVersionToBiz(version)
+
 	if backends := wr.Edges.CasBackends; backends != nil {
 		for _, b := range backends {
 			r.CASBackends = append(r.CASBackends, entCASBackendToBiz(b))
@@ -283,4 +295,11 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 	}
 
 	return r
+}
+
+func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
+	return &biz.ProjectVersion{
+		ID:      v.ID,
+		Version: v.Version,
+	}
 }

@@ -172,6 +172,7 @@ func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 		RunnerType:             bizRunnerToPb(wfr.RunnerType),
 		ContractRevisionUsed:   int32(wfr.ContractRevisionUsed),
 		ContractRevisionLatest: int32(wfr.ContractRevisionLatest),
+		Version:                bizProjectVersionToPb(wfr.ProjectVersion),
 	}
 
 	if wfr.FinishedAt != nil {
@@ -197,6 +198,13 @@ func pbWorkflowRunStatusToBiz(st pb.RunStatus) (biz.WorkflowRunStatus, error) {
 	}
 
 	return m[st], nil
+}
+
+func bizProjectVersionToPb(v *biz.ProjectVersion) *pb.ProjectVersion {
+	return &pb.ProjectVersion{
+		Id:      v.ID.String(),
+		Version: v.Version,
+	}
 }
 
 func bizWorkflowRunStatusToPb(st biz.WorkflowRunStatus) pb.RunStatus {
