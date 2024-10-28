@@ -262,7 +262,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		}
 	})
 
-	s.T().Run("find or creates version", func(t *testing.T) {
+	s.T().Run("find or create version", func(_ *testing.T) {
 		testCases := []struct {
 			version string
 		}{
