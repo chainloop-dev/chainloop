@@ -30,6 +30,7 @@ func newAttestationInitCmd() *cobra.Command {
 		attestationDryRun       bool
 		workflowName            string
 		projectName             string
+		projectVersion          string
 		newWorkflowcontractName string
 	)
 
@@ -60,7 +61,14 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			// Initialize it
-			attestationID, err := a.Run(cmd.Context(), contractRevision, projectName, workflowName, newWorkflowcontractName)
+			attestationID, err := a.Run(cmd.Context(), &action.AttestationInitRunOpts{
+				ContractRevision:        contractRevision,
+				ProjectName:             projectName,
+				ProjectVersion:          projectVersion,
+				WorkflowName:            workflowName,
+				NewWorkflowContractName: newWorkflowcontractName,
+			})
+
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -93,8 +101,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			return encodeOutput(res, fullStatusTable)
-		},
-	}
+		}}
 
 	// This option is only useful for local-based attestation states
 	cmd.Flags().BoolVarP(&force, "replace", "f", false, "replace any existing in-progress attestation")
@@ -112,6 +119,8 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
 	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 	cmd.Flags().StringVar(&newWorkflowcontractName, "contract", "", "name of an existing contract to attach it to the auto-created workflow (it doesn't update an existing one)")
+
+	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
 
 	return cmd
 }

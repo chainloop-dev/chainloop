@@ -150,6 +150,8 @@ func init() {
 	projectversionDescVersion := projectversionFields[1].Descriptor()
 	// projectversion.DefaultVersion holds the default value on creation for the version field.
 	projectversion.DefaultVersion = projectversionDescVersion.Default.(string)
+	// projectversion.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	projectversion.VersionValidator = projectversionDescVersion.Validators[0].(func(string) error)
 	// projectversionDescCreatedAt is the schema descriptor for created_at field.
 	projectversionDescCreatedAt := projectversionFields[2].Descriptor()
 	// projectversion.DefaultCreatedAt holds the default value on creation for the created_at field.

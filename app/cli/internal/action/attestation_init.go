@@ -70,7 +70,15 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 }
 
 // returns the attestation ID
-func (action *AttestationInit) Run(ctx context.Context, contractRevision int, projectName, workflowName, newWorkflowContractName string) (string, error) {
+type AttestationInitRunOpts struct {
+	ContractRevision        int
+	ProjectName             string
+	ProjectVersion          string
+	WorkflowName            string
+	NewWorkflowContractName string
+}
+
+func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
 	if action.dryRun && action.useRemoteState {
 		return "", errors.New("remote state is not compatible with dry-run mode")
 	}
@@ -87,9 +95,9 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// 1 - Find or create the workflow
 	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
-		ProjectName:  projectName,
-		WorkflowName: workflowName,
-		ContractName: newWorkflowContractName,
+		ProjectName:  opts.ProjectName,
+		WorkflowName: opts.WorkflowName,
+		ContractName: opts.NewWorkflowContractName,
 	})
 	if err != nil {
 		return "", err
@@ -98,9 +106,9 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 
 	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
-		ContractRevision: int32(contractRevision),
-		WorkflowName:     workflowName,
-		ProjectName:      projectName,
+		ContractRevision: int32(opts.ContractRevision),
+		WorkflowName:     opts.WorkflowName,
+		ProjectName:      opts.ProjectName,
 	})
 	if err != nil {
 		return "", err
@@ -113,6 +121,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 		Project:        workflow.GetProject(),
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
+		ProjectVersion: opts.ProjectVersion,
 	}
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
@@ -133,10 +142,11 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 			&pb.AttestationServiceInitRequest{
 				Runner:           discoveredRunner.ID(),
 				JobUrl:           discoveredRunner.RunURI(),
-				ContractRevision: int32(contractRevision),
+				ContractRevision: int32(opts.ContractRevision),
 				// send the workflow name explicitly provided by the user to detect that functional case
-				WorkflowName: workflowName,
-				ProjectName:  projectName,
+				WorkflowName:   opts.WorkflowName,
+				ProjectName:    opts.ProjectName,
+				ProjectVersion: opts.ProjectVersion,
 			},
 		)
 		if err != nil {

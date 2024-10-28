@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(projectVersion)$": {
+      "type": "string"
+    },
     "^(schemaRevision)$": {
       "type": "string"
     },
@@ -22,6 +25,9 @@
       "type": "string"
     },
     "project": {
+      "type": "string"
+    },
+    "project_version": {
       "type": "string"
     },
     "schema_revision": {

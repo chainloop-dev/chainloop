@@ -177,6 +177,7 @@ message CraftingState {
 message WorkflowMetadata {
   string name = 1 [(buf.validate.field).string.min_len = 1];
   string project = 2;
+  string project_version = 9;
   string team = 3;
   string workflow_id = 5 [(buf.validate.field).string.min_len = 1];
   string workflow_run_id = 6; // Not required since we might be doing a dry-run
