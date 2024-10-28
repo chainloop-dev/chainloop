@@ -139,11 +139,18 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 	return r.FindByID(ctx, wf.ID)
 }
 
-func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workflow, error) {
-	workflows, err := orgScopedQuery(r.data.DB, orgID).
+func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) ([]*biz.Workflow, error) {
+	baseQuery := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().
+		WithContract().
+		WithOrganization()
+
+	if projectID != uuid.Nil {
+		baseQuery = baseQuery.Where(workflow.ProjectID(projectID))
+	}
+
+	workflows, err := baseQuery.
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		All(ctx)
 	if err != nil {
@@ -194,7 +201,7 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 	return entWFToBizWF(ctx, workflow, lastRun)
 }
 
-// GetOrgScopedByName Gets a workflow by name making sure it belongs to a given org
+// GetOrgScopedByProjectAndName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
 	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
 		Where(workflow.HasProjectWith(project.Name(projectName)), workflow.Name(workflowName), workflow.DeletedAtIsNil()).

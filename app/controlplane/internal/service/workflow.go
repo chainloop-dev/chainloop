@@ -103,13 +103,13 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 	return &pb.WorkflowServiceUpdateResponse{Result: bizWorkflowToPb(p)}, nil
 }
 
-func (s *WorkflowService) List(ctx context.Context, _ *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {
+func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	workflows, err := s.useCase.List(ctx, currentOrg.ID)
+	workflows, err := s.useCase.List(ctx, currentOrg.ID, req.GetProjectName())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

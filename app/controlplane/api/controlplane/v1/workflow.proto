@@ -101,7 +101,16 @@ message WorkflowServiceDeleteRequest {
 
 message WorkflowServiceDeleteResponse {}
 
-message WorkflowServiceListRequest {}
+message WorkflowServiceListRequest {
+  optional string project_name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "dns-1123"
+    }
+  }];
+}
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
 }

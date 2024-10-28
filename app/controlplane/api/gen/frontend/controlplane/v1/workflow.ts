@@ -46,6 +46,7 @@ export interface WorkflowServiceDeleteResponse {
 }
 
 export interface WorkflowServiceListRequest {
+  projectName?: string | undefined;
 }
 
 export interface WorkflowServiceListResponse {
@@ -550,11 +551,14 @@ export const WorkflowServiceDeleteResponse = {
 };
 
 function createBaseWorkflowServiceListRequest(): WorkflowServiceListRequest {
-  return {};
+  return { projectName: undefined };
 }
 
 export const WorkflowServiceListRequest = {
-  encode(_: WorkflowServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: WorkflowServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectName !== undefined) {
+      writer.uint32(10).string(message.projectName);
+    }
     return writer;
   },
 
@@ -565,6 +569,13 @@ export const WorkflowServiceListRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -574,12 +585,13 @@ export const WorkflowServiceListRequest = {
     return message;
   },
 
-  fromJSON(_: any): WorkflowServiceListRequest {
-    return {};
+  fromJSON(object: any): WorkflowServiceListRequest {
+    return { projectName: isSet(object.projectName) ? String(object.projectName) : undefined };
   },
 
-  toJSON(_: WorkflowServiceListRequest): unknown {
+  toJSON(message: WorkflowServiceListRequest): unknown {
     const obj: any = {};
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     return obj;
   },
 
@@ -587,8 +599,9 @@ export const WorkflowServiceListRequest = {
     return WorkflowServiceListRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<WorkflowServiceListRequest>, I>>(_: I): WorkflowServiceListRequest {
+  fromPartial<I extends Exact<DeepPartial<WorkflowServiceListRequest>, I>>(object: I): WorkflowServiceListRequest {
     const message = createBaseWorkflowServiceListRequest();
+    message.projectName = object.projectName ?? undefined;
     return message;
   },
 };
