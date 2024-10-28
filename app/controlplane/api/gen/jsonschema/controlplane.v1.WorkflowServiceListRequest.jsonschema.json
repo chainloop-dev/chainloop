@@ -3,13 +3,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
-    "^(project_name)$": {
-      "type": "string"
+    "^(project_reference)$": {
+      "$ref": "controlplane.v1.EntityRef.jsonschema.json"
     }
   },
   "properties": {
-    "projectName": {
-      "type": "string"
+    "projectReference": {
+      "$ref": "controlplane.v1.EntityRef.jsonschema.json"
     }
   },
   "title": "Workflow Service List Request",

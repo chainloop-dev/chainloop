@@ -48,11 +48,28 @@ func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.
 		return nil, nil
 	}
 
+	return entProjectToBiz(pro), nil
+}
+
+// FindProjectByOrgIDAndID gets a project by organization ID and project ID
+func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*biz.Project, error) {
+	pro, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).QueryProjects().Where(project.ID(projectID)).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if pro == nil {
+		return nil, nil
+	}
+
+	return entProjectToBiz(pro), nil
+}
+
+// entProjectToBiz converts an ent.Project to a biz.Project
+func entProjectToBiz(pro *ent.Project) *biz.Project {
 	return &biz.Project{
 		ID:        pro.ID,
 		Name:      pro.Name,
 		OrgID:     pro.OrganizationID,
 		CreatedAt: &pro.CreatedAt,
 		UpdatedAt: &pro.CreatedAt,
-	}, nil
+	}
 }

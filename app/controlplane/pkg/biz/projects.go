@@ -19,12 +19,23 @@ import (
 	"context"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
+
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
 // ProjectsRepo is a repository for projects
 type ProjectsRepo interface {
 	FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*Project, error)
+	FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*Project, error)
+}
+
+// ProjectUseCase is a use case for projects
+type ProjectUseCase struct {
+	logger *log.Helper
+	// Repositories
+	projectsRepository ProjectsRepo
 }
 
 // Project is a project in the organization
@@ -39,4 +50,35 @@ type Project struct {
 	CreatedAt *time.Time
 	// UpdatedAt is the time when the project was last updated
 	UpdatedAt *time.Time
+}
+
+func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo) *ProjectUseCase {
+	return &ProjectUseCase{
+		logger:             servicelogger.ScopedHelper(logger, "biz/projects"),
+		projectsRepository: projectsRepository,
+	}
+}
+
+// FindProjectByReference finds a project by reference, which can be either a project name or a project ID.
+func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID string, reference *EntityRef) (*Project, error) {
+	if reference == nil || orgID == "" {
+		return nil, NewErrValidationStr("orgID or project reference are empty")
+	}
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	switch {
+	case reference.Name != "":
+		return uc.projectsRepository.FindProjectByOrgIDAndName(ctx, orgUUID, reference.Name)
+	case reference.ID != "":
+		projectUUID, err := uuid.Parse(reference.ID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		return uc.projectsRepository.FindProjectByOrgIDAndID(ctx, orgUUID, projectUUID)
+	default:
+		return nil, NewErrValidationStr("project reference is empty")
+	}
 }

@@ -180,22 +180,19 @@ func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, name
 	return uc.contractUC.Create(ctx, &WorkflowContractCreateOpts{OrgID: orgID, Name: name, AddUniquePrefix: true})
 }
 
-func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, projectName string) ([]*Workflow, error) {
+func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, projectID string) ([]*Workflow, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
 	var projectUUID uuid.UUID
-	if projectName != "" {
-		p, err := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, projectName)
+	if projectID != "" {
+		parsedUUID, err := uuid.Parse(projectID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get project: %w", err)
+			return nil, NewErrInvalidUUID(err)
 		}
-
-		if p != nil {
-			projectUUID = p.ID
-		}
+		projectUUID = parsedUUID
 	}
 
 	return uc.wfRepo.List(ctx, orgUUID, projectUUID)
