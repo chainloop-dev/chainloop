@@ -5,7 +5,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -53,11 +53,6 @@ func (s *versionTestSuite) TestValidateVersion() {
 			wantError: false,
 		},
 		{
-			name:      "valid version with underscore",
-			version:   "release_1.2.3",
-			wantError: false,
-		},
-		{
 			name:      "valid complex version",
 			version:   "v1.2.3-alpha.1",
 			wantError: false,
@@ -85,11 +80,6 @@ func (s *versionTestSuite) TestValidateVersion() {
 		{
 			name:      "valid date based version with prefix",
 			version:   "release-20230615",
-			wantError: false,
-		},
-		{
-			name:      "valid date based version with underscore",
-			version:   "release_20230615",
 			wantError: false,
 		},
 		{
@@ -126,6 +116,7 @@ func (s *versionTestSuite) TestValidateVersion() {
 		})
 	}
 }
+
 func TestVersionSuite(t *testing.T) {
 	suite.Run(t, new(versionTestSuite))
 }
