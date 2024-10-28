@@ -24,9 +24,9 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	"github.com/docker/distribution/uuid"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -151,7 +151,7 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 		},
 		{
 			name: "non-existing contract will create it",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.Generate().String(), Project: project},
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.NewString(), Project: project},
 		},
 		{
 			name: "can create it with just the name, the project and the org",
@@ -233,7 +233,7 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	}{
 		{
 			name:    "non existing workflow",
-			id:      uuid.Generate().String(),
+			id:      uuid.NewString(),
 			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
 			wantErr: true,
 		},
@@ -303,10 +303,12 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 			s.NoError(err)
 
 			if diff := cmp.Diff(tc.want, got,
-				cmpopts.IgnoreFields(biz.Workflow{}, "Name", "CreatedAt", "ID", "OrgID", "ContractName", "ContractID", "ContractRevisionLatest"),
+				cmpopts.IgnoreFields(biz.Workflow{}, "Name", "CreatedAt", "ID", "OrgID", "ContractName", "ContractID", "ContractRevisionLatest", "ProjectID"),
 			); diff != "" {
 				s.Failf("mismatch (-want +got):\n%s", diff)
 			}
+
+			s.NotEqual(uuid.Nil, got.ProjectID)
 
 			if tc.want.Name != "" {
 				s.Equal(tc.want.Name, got.Name)
