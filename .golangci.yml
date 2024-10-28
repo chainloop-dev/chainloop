@@ -30,6 +30,10 @@ linters:
     # - unparam
 
 linters-settings:
+  gosec:
+    excludes:
+      # https://github.com/moby/moby/issues/48358
+      - G115
   gofmt:
     simplify: true
   dupl:
