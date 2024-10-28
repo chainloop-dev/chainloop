@@ -16,53 +16,45 @@
 package policies
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveRef(t *testing.T) {
+func TestCreateRef(t *testing.T) {
 	testCases := []struct {
-		name        string
-		providerURL string
-		policyName  string
-		digest      string
-		want        *PolicyReference
-		wantErr     bool
+		name       string
+		policyURL  string
+		policyName string
+		digest     string
+		orgName    string
+		want       *PolicyReference
 	}{
 		{
-			name:        "valid",
-			providerURL: "https://p1host.com/foo",
-			policyName:  "my-policy",
-			digest:      "my-digest",
-			want:        &PolicyReference{URL: "chainloop://p1host.com/my-policy", Digest: "my-digest"},
+			name:       "base",
+			policyURL:  "https://p1host.com/foo",
+			policyName: "my-policy",
+			digest:     "my-digest",
+			want:       &PolicyReference{URL: "chainloop://p1host.com/my-policy", Digest: "my-digest"},
 		},
 		{
-			name:        "missing digest",
-			providerURL: "https://p1host.com/foo",
-			policyName:  "my-policy",
-			wantErr:     true,
-		},
-		{
-			name:        "missing schema",
-			providerURL: "p1host.com/foo",
-			policyName:  "my-policy",
-			wantErr:     true,
+			name:       "with org",
+			policyURL:  "https://p1host.com/foo",
+			policyName: "my-policy",
+			digest:     "my-digest",
+			orgName:    "my-org",
+			want:       &PolicyReference{URL: "chainloop://p1host.com/my-policy?org=my-org", Digest: "my-digest"},
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.providerURL, func(t *testing.T) {
-			provider := &PolicyProvider{url: tc.providerURL}
-
-			got, err := provider.resolveRef(tc.policyName, tc.digest)
-			if tc.wantErr {
-				require.Error(t, err)
-				return
-			}
-
+		t.Run(tc.name, func(t *testing.T) {
+			policyURL, err := url.Parse(tc.policyURL)
 			require.NoError(t, err)
+			got := createRef(policyURL, tc.policyName, tc.digest, tc.orgName)
+
 			assert.Equal(t, tc.want, got)
 		})
 	}
