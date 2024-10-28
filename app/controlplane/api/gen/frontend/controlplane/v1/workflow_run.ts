@@ -89,10 +89,6 @@ export interface AttestationServiceInitRequest {
   jobUrl: string;
   runner: CraftingSchema_Runner_RunnerType;
   workflowName: string;
-  /**
-   * Version of the project
-   * string project_version = 6;
-   */
   projectName: string;
 }
 

@@ -49,11 +49,6 @@ type WorkflowRun struct {
 	ProjectVersion         *ProjectVersion
 }
 
-type ProjectVersion struct {
-	ID      uuid.UUID
-	Version string
-}
-
 type Attestation struct {
 	Envelope *dsse.Envelope
 	Digest   string

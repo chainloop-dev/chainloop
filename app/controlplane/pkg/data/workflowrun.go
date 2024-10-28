@@ -296,10 +296,3 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 
 	return r
 }
-
-func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
-	return &biz.ProjectVersion{
-		ID:      v.ID,
-		Version: v.Version,
-	}
-}
