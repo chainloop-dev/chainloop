@@ -117,6 +117,18 @@ func (f ProjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectMutation", m)
 }
 
+// The ProjectVersionFunc type is an adapter to allow the use of ordinary
+// function as ProjectVersion mutator.
+type ProjectVersionFunc func(context.Context, *ent.ProjectVersionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ProjectVersionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ProjectVersionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectVersionMutation", m)
+}
+
 // The ReferrerFunc type is an adapter to allow the use of ordinary
 // function as Referrer mutator.
 type ReferrerFunc func(context.Context, *ent.ReferrerMutation) (ent.Value, error)

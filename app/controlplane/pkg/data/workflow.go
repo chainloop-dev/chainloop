@@ -293,6 +293,7 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*bi
 			return nil, err
 		}
 		wf.Project = project.Name
+		wf.ProjectID = project.ID
 	}
 
 	if wf.Project == "" {

@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
@@ -29,6 +30,7 @@ type ProjectQuery struct {
 	predicates       []predicate.Project
 	withOrganization *OrganizationQuery
 	withWorkflows    *WorkflowQuery
+	withVersions     *ProjectVersionQuery
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -103,6 +105,28 @@ func (pq *ProjectQuery) QueryWorkflows() *WorkflowQuery {
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.WorkflowsTable, project.WorkflowsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVersions chains the current query on the "versions" edge.
+func (pq *ProjectQuery) QueryVersions() *ProjectVersionQuery {
+	query := (&ProjectVersionClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(projectversion.Table, projectversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, project.VersionsTable, project.VersionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -304,6 +328,7 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		predicates:       append([]predicate.Project{}, pq.predicates...),
 		withOrganization: pq.withOrganization.Clone(),
 		withWorkflows:    pq.withWorkflows.Clone(),
+		withVersions:     pq.withVersions.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -329,6 +354,17 @@ func (pq *ProjectQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ProjectQuer
 		opt(query)
 	}
 	pq.withWorkflows = query
+	return pq
+}
+
+// WithVersions tells the query-builder to eager-load the nodes that are connected to
+// the "versions" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithVersions(opts ...func(*ProjectVersionQuery)) *ProjectQuery {
+	query := (&ProjectVersionClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withVersions = query
 	return pq
 }
 
@@ -410,9 +446,10 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			pq.withOrganization != nil,
 			pq.withWorkflows != nil,
+			pq.withVersions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -446,6 +483,13 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := pq.loadWorkflows(ctx, query, nodes,
 			func(n *Project) { n.Edges.Workflows = []*Workflow{} },
 			func(n *Project, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withVersions; query != nil {
+		if err := pq.loadVersions(ctx, query, nodes,
+			func(n *Project) { n.Edges.Versions = []*ProjectVersion{} },
+			func(n *Project, e *ProjectVersion) { n.Edges.Versions = append(n.Edges.Versions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -497,6 +541,36 @@ func (pq *ProjectQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery,
 	}
 	query.Where(predicate.Workflow(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(project.WorkflowsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ProjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *ProjectQuery) loadVersions(ctx context.Context, query *ProjectVersionQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectVersion)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Project)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(projectversion.FieldProjectID)
+	}
+	query.Where(predicate.ProjectVersion(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(project.VersionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

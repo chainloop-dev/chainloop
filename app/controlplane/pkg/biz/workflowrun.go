@@ -46,6 +46,7 @@ type WorkflowRun struct {
 	ContractRevisionUsed int
 	// The max revision of the contract at the time of the run
 	ContractRevisionLatest int
+	ProjectVersion         *ProjectVersion
 }
 
 type Attestation struct {
@@ -172,6 +173,7 @@ type WorkflowRunCreateOpts struct {
 	RunnerRunURL     string
 	RunnerType       string
 	CASBackendID     uuid.UUID
+	ProjectVersion   string
 }
 
 type WorkflowRunRepoCreateOpts struct {
@@ -179,6 +181,7 @@ type WorkflowRunRepoCreateOpts struct {
 	RunURL, RunnerType           string
 	Backends                     []uuid.UUID
 	LatestRevision, UsedRevision int
+	ProjectVersion               string
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -209,6 +212,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			Backends:        backends,
 			LatestRevision:  contractRevision.Contract.LatestRevision,
 			UsedRevision:    contractRevision.Version.Revision,
+			ProjectVersion:  opts.ProjectVersion,
 		})
 	if err != nil {
 		return nil, err

@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -151,6 +152,12 @@ func (wrc *WorkflowRunCreate) SetContractRevisionLatest(i int) *WorkflowRunCreat
 	return wrc
 }
 
+// SetVersionID sets the "version_id" field.
+func (wrc *WorkflowRunCreate) SetVersionID(u uuid.UUID) *WorkflowRunCreate {
+	wrc.mutation.SetVersionID(u)
+	return wrc
+}
+
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -216,6 +223,11 @@ func (wrc *WorkflowRunCreate) AddCasBackends(c ...*CASBackend) *WorkflowRunCreat
 		ids[i] = c[i].ID
 	}
 	return wrc.AddCasBackendIDs(ids...)
+}
+
+// SetVersion sets the "version" edge to the ProjectVersion entity.
+func (wrc *WorkflowRunCreate) SetVersion(p *ProjectVersion) *WorkflowRunCreate {
+	return wrc.SetVersionID(p.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
@@ -285,6 +297,12 @@ func (wrc *WorkflowRunCreate) check() error {
 	}
 	if _, ok := wrc.mutation.ContractRevisionLatest(); !ok {
 		return &ValidationError{Name: "contract_revision_latest", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_latest"`)}
+	}
+	if _, ok := wrc.mutation.VersionID(); !ok {
+		return &ValidationError{Name: "version_id", err: errors.New(`ent: missing required field "WorkflowRun.version_id"`)}
+	}
+	if len(wrc.mutation.VersionIDs()) == 0 {
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required edge "WorkflowRun.version"`)}
 	}
 	return nil
 }
@@ -414,6 +432,23 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wrc.mutation.VersionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowrun.VersionTable,
+			Columns: []string{workflowrun.VersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.VersionID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -639,6 +674,18 @@ func (u *WorkflowRunUpsert) UpdateContractRevisionLatest() *WorkflowRunUpsert {
 // AddContractRevisionLatest adds v to the "contract_revision_latest" field.
 func (u *WorkflowRunUpsert) AddContractRevisionLatest(v int) *WorkflowRunUpsert {
 	u.Add(workflowrun.FieldContractRevisionLatest, v)
+	return u
+}
+
+// SetVersionID sets the "version_id" field.
+func (u *WorkflowRunUpsert) SetVersionID(v uuid.UUID) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldVersionID, v)
+	return u
+}
+
+// UpdateVersionID sets the "version_id" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateVersionID() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldVersionID)
 	return u
 }
 
@@ -893,6 +940,20 @@ func (u *WorkflowRunUpsertOne) AddContractRevisionLatest(v int) *WorkflowRunUpse
 func (u *WorkflowRunUpsertOne) UpdateContractRevisionLatest() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.UpdateContractRevisionLatest()
+	})
+}
+
+// SetVersionID sets the "version_id" field.
+func (u *WorkflowRunUpsertOne) SetVersionID(v uuid.UUID) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetVersionID(v)
+	})
+}
+
+// UpdateVersionID sets the "version_id" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateVersionID() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateVersionID()
 	})
 }
 
@@ -1314,6 +1375,20 @@ func (u *WorkflowRunUpsertBulk) AddContractRevisionLatest(v int) *WorkflowRunUps
 func (u *WorkflowRunUpsertBulk) UpdateContractRevisionLatest() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.UpdateContractRevisionLatest()
+	})
+}
+
+// SetVersionID sets the "version_id" field.
+func (u *WorkflowRunUpsertBulk) SetVersionID(v uuid.UUID) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetVersionID(v)
+	})
+}
+
+// UpdateVersionID sets the "version_id" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateVersionID() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateVersionID()
 	})
 }
 

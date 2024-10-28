@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
@@ -98,6 +99,21 @@ func (pc *ProjectCreate) AddWorkflows(w ...*Workflow) *ProjectCreate {
 		ids[i] = w[i].ID
 	}
 	return pc.AddWorkflowIDs(ids...)
+}
+
+// AddVersionIDs adds the "versions" edge to the ProjectVersion entity by IDs.
+func (pc *ProjectCreate) AddVersionIDs(ids ...uuid.UUID) *ProjectCreate {
+	pc.mutation.AddVersionIDs(ids...)
+	return pc
+}
+
+// AddVersions adds the "versions" edges to the ProjectVersion entity.
+func (pc *ProjectCreate) AddVersions(p ...*ProjectVersion) *ProjectCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pc.AddVersionIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -245,6 +261,22 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := pc.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.VersionsTable,
+			Columns: []string{project.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -315,18 +347,6 @@ func (u *ProjectUpsert) ClearDeletedAt() *ProjectUpsert {
 	return u
 }
 
-// SetOrganizationID sets the "organization_id" field.
-func (u *ProjectUpsert) SetOrganizationID(v uuid.UUID) *ProjectUpsert {
-	u.Set(project.FieldOrganizationID, v)
-	return u
-}
-
-// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
-func (u *ProjectUpsert) UpdateOrganizationID() *ProjectUpsert {
-	u.SetExcluded(project.FieldOrganizationID)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -349,6 +369,9 @@ func (u *ProjectUpsertOne) UpdateNewValues() *ProjectUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(project.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(project.FieldOrganizationID)
 		}
 	}))
 	return u
@@ -399,20 +422,6 @@ func (u *ProjectUpsertOne) UpdateDeletedAt() *ProjectUpsertOne {
 func (u *ProjectUpsertOne) ClearDeletedAt() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.ClearDeletedAt()
-	})
-}
-
-// SetOrganizationID sets the "organization_id" field.
-func (u *ProjectUpsertOne) SetOrganizationID(v uuid.UUID) *ProjectUpsertOne {
-	return u.Update(func(s *ProjectUpsert) {
-		s.SetOrganizationID(v)
-	})
-}
-
-// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
-func (u *ProjectUpsertOne) UpdateOrganizationID() *ProjectUpsertOne {
-	return u.Update(func(s *ProjectUpsert) {
-		s.UpdateOrganizationID()
 	})
 }
 
@@ -605,6 +614,9 @@ func (u *ProjectUpsertBulk) UpdateNewValues() *ProjectUpsertBulk {
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(project.FieldCreatedAt)
 			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(project.FieldOrganizationID)
+			}
 		}
 	}))
 	return u
@@ -655,20 +667,6 @@ func (u *ProjectUpsertBulk) UpdateDeletedAt() *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) ClearDeletedAt() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.ClearDeletedAt()
-	})
-}
-
-// SetOrganizationID sets the "organization_id" field.
-func (u *ProjectUpsertBulk) SetOrganizationID(v uuid.UUID) *ProjectUpsertBulk {
-	return u.Update(func(s *ProjectUpsert) {
-		s.SetOrganizationID(v)
-	})
-}
-
-// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
-func (u *ProjectUpsertBulk) UpdateOrganizationID() *ProjectUpsertBulk {
-	return u.Update(func(s *ProjectUpsert) {
-		s.UpdateOrganizationID()
 	})
 }
 

@@ -244,17 +244,43 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
-		assert.NoError(err)
+		s.Require().NoError(err)
+		// Load project version
+		pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, run.Workflow.ProjectID.String(), "")
+		s.Require().NoError(err)
 		if diff := cmp.Diff(&biz.WorkflowRun{
 			RunnerType: "runnerType", RunURL: "runURL", State: string(biz.WorkflowRunInitialized), ContractVersionID: s.contractVersion.Version.ID,
 			Workflow:             s.workflowOrg1,
 			CASBackends:          []*biz.CASBackend{s.casBackend},
 			ContractRevisionUsed: 1, ContractRevisionLatest: 1,
+			ProjectVersion: pv,
 		}, run,
 			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
 			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt", "OrganizationID"),
 		); diff != "" {
 			assert.Failf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	s.T().Run("find or create version", func(_ *testing.T) {
+		testCases := []struct {
+			version string
+		}{
+			{version: ""},
+			{version: "custom"},
+		}
+
+		for _, tc := range testCases {
+			run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+				WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+				RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: tc.version,
+			})
+			s.Require().NoError(err)
+			// Load project version
+			s.Equal(tc.version, run.ProjectVersion.Version)
+			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, run.Workflow.ProjectID.String(), tc.version)
+			s.Require().NoError(err)
+			s.Equal(pv.ID, run.ProjectVersion.ID)
 		}
 	})
 }
