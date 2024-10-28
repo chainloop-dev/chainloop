@@ -39,8 +39,8 @@ func NewProjectsRepo(data *Data, logger log.Logger) biz.ProjectsRepo {
 	}
 }
 
-// GetProjectByOrgIDAndName gets a project by organization ID and project name
-func (r *ProjectRepo) GetProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*biz.Project, error) {
+// FindProjectByOrgIDAndName gets a project by organization ID and project name
+func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*biz.Project, error) {
 	pro, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).QueryProjects().Where(project.Name(projectName)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err

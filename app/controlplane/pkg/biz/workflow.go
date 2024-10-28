@@ -188,7 +188,7 @@ func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, projectName s
 
 	var projectUUID uuid.UUID
 	if projectName != "" {
-		p, err := uc.projectRepo.GetProjectByOrgIDAndName(ctx, orgUUID, projectName)
+		p, err := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, projectName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get project: %w", err)
 		}

@@ -24,7 +24,7 @@ import (
 
 // ProjectsRepo is a repository for projects
 type ProjectsRepo interface {
-	GetProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*Project, error)
+	FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*Project, error)
 }
 
 // Project is a project in the organization
