@@ -269,3 +269,18 @@ enum UserWithNoMembershipError {
   USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED = 0;
   USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG = 1 [(errors.code) = 403];
 }
+
+// EntityRef is a reference to an entity in the system that can be either by name or ID
+message EntityRef {
+  oneof ref {
+    string entity_id = 1 [(buf.validate.field).string.uuid = true];
+    string entity_name = 2 [(buf.validate.field) = {
+      // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+      cel: {
+        message: "must contain only lowercase letters, numbers, and hyphens."
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+        id: "dns-1123"
+      }
+    }];
+  }
+}

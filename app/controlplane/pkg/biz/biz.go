@@ -50,6 +50,7 @@ var ProviderSet = wire.NewSet(
 	NewChainloopSigningUseCase,
 	NewPrometheusUseCase,
 	NewProjectVersionUseCase,
+	NewProjectsUseCase,
 	wire.Bind(new(PromObservable), new(*PrometheusUseCase)),
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
@@ -88,4 +89,12 @@ func ValidateIsDNS1123(name string) error {
 	}
 
 	return nil
+}
+
+// EntityRef is a reference to an entity
+type EntityRef struct {
+	// ID is the unique identifier of the entity
+	ID string
+	// Name is the name of the entity
+	Name string
 }

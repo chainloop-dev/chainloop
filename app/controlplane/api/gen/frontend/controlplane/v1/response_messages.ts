@@ -503,6 +503,12 @@ export interface CASBackendItem_Limits {
   maxBytes: number;
 }
 
+/** EntityRef is a reference to an entity in the system that can be either by name or ID */
+export interface EntityRef {
+  entityId?: string | undefined;
+  entityName?: string | undefined;
+}
+
 function createBaseWorkflowItem(): WorkflowItem {
   return {
     id: "",
@@ -3403,6 +3409,77 @@ export const CASBackendItem_Limits = {
   fromPartial<I extends Exact<DeepPartial<CASBackendItem_Limits>, I>>(object: I): CASBackendItem_Limits {
     const message = createBaseCASBackendItem_Limits();
     message.maxBytes = object.maxBytes ?? 0;
+    return message;
+  },
+};
+
+function createBaseEntityRef(): EntityRef {
+  return { entityId: undefined, entityName: undefined };
+}
+
+export const EntityRef = {
+  encode(message: EntityRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.entityId !== undefined) {
+      writer.uint32(10).string(message.entityId);
+    }
+    if (message.entityName !== undefined) {
+      writer.uint32(18).string(message.entityName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EntityRef {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEntityRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entityId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entityName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EntityRef {
+    return {
+      entityId: isSet(object.entityId) ? String(object.entityId) : undefined,
+      entityName: isSet(object.entityName) ? String(object.entityName) : undefined,
+    };
+  },
+
+  toJSON(message: EntityRef): unknown {
+    const obj: any = {};
+    message.entityId !== undefined && (obj.entityId = message.entityId);
+    message.entityName !== undefined && (obj.entityName = message.entityName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EntityRef>, I>>(base?: I): EntityRef {
+    return EntityRef.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<EntityRef>, I>>(object: I): EntityRef {
+    const message = createBaseEntityRef();
+    message.entityId = object.entityId ?? undefined;
+    message.entityName = object.entityName ?? undefined;
     return message;
   },
 };

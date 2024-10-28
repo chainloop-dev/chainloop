@@ -101,7 +101,9 @@ message WorkflowServiceDeleteRequest {
 
 message WorkflowServiceDeleteResponse {}
 
-message WorkflowServiceListRequest {}
+message WorkflowServiceListRequest {
+  optional EntityRef project_reference = 1;
+}
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
 }

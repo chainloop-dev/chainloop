@@ -28,15 +28,17 @@ type WorkflowService struct {
 	pb.UnimplementedWorkflowServiceServer
 	*service
 
-	useCase    *biz.WorkflowUseCase
-	contractUC *biz.WorkflowContractUseCase
+	useCase         *biz.WorkflowUseCase
+	projectsUseCase *biz.ProjectUseCase
+	contractUC      *biz.WorkflowContractUseCase
 }
 
-func NewWorkflowService(uc *biz.WorkflowUseCase, wfuc *biz.WorkflowContractUseCase, opts ...NewOpt) *WorkflowService {
+func NewWorkflowService(uc *biz.WorkflowUseCase, wfuc *biz.WorkflowContractUseCase, projectUseCase *biz.ProjectUseCase, opts ...NewOpt) *WorkflowService {
 	return &WorkflowService{
-		service:    newService(opts...),
-		useCase:    uc,
-		contractUC: wfuc,
+		service:         newService(opts...),
+		useCase:         uc,
+		contractUC:      wfuc,
+		projectsUseCase: projectUseCase,
 	}
 }
 
@@ -103,13 +105,33 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 	return &pb.WorkflowServiceUpdateResponse{Result: bizWorkflowToPb(p)}, nil
 }
 
-func (s *WorkflowService) List(ctx context.Context, _ *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {
+func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	workflows, err := s.useCase.List(ctx, currentOrg.ID)
+	// If project reference is provided, find the project and scope the workflow List request
+	// to only projects within the project
+	var projectID string
+	if req.GetProjectReference().GetRef() != nil {
+		pro, err := s.projectsUseCase.FindProjectByReference(ctx, currentOrg.ID, &biz.EntityRef{
+			ID:   req.GetProjectReference().GetEntityId(),
+			Name: req.GetProjectReference().GetEntityName(),
+		})
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		// If the project is not found, return an empty response
+		if pro == nil {
+			return &pb.WorkflowServiceListResponse{}, nil
+		}
+
+		projectID = pro.ID.String()
+	}
+
+	workflows, err := s.useCase.List(ctx, currentOrg.ID, projectID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

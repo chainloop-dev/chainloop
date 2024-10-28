@@ -2,7 +2,16 @@
   "$id": "controlplane.v1.WorkflowServiceListRequest.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "properties": {},
+  "patternProperties": {
+    "^(projectReference)$": {
+      "$ref": "controlplane.v1.EntityRef.schema.json"
+    }
+  },
+  "properties": {
+    "project_reference": {
+      "$ref": "controlplane.v1.EntityRef.schema.json"
+    }
+  },
   "title": "Workflow Service List Request",
   "type": "object"
 }
