@@ -93,8 +93,10 @@ func (s *groupsTestSuite) TestLoadGroupSpec() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			verifier := NewPolicyGroupVerifier(nil, nil, &s.logger)
-			group, _, err := verifier.loadPolicyGroup(context.TODO(), tc.attachment)
+			group, _, err := LoadPolicyGroup(context.TODO(), tc.attachment, &LoadPolicyGroupOptions{
+				Client: nil,
+				Logger: &s.logger,
+			})
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -187,9 +189,11 @@ func (s *groupsTestSuite) TestGroupLoader() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			v := NewPolicyGroupVerifier(nil, nil, &s.logger)
 			att := &v1.PolicyGroupAttachment{Ref: tc.ref}
-			loader, err := v.getGroupLoader(att)
+			loader, err := getGroupLoader(att, &LoadPolicyGroupOptions{
+				Client: nil,
+				Logger: &s.logger,
+			})
 			if tc.wantErr {
 				s.Error(err)
 				return

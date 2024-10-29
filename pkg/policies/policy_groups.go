@@ -77,7 +77,10 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	result := make([]*api.PolicyEvaluation, 0)
 	attachments := pgv.schema.GetPolicyGroups()
 	for _, groupAtt := range attachments {
-		group, _, err := pgv.loadPolicyGroup(ctx, groupAtt)
+		group, _, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
+			Client: pgv.client,
+			Logger: pgv.logger,
+		})
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -101,6 +104,58 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	return result, nil
 }
 
+type LoadPolicyGroupOptions struct {
+	Client v13.AttestationServiceClient
+	Logger *zerolog.Logger
+}
+
+// LoadPolicyGroup loads a group (unmarshalls it) from a group attachment
+func LoadPolicyGroup(ctx context.Context, att *v1.PolicyGroupAttachment, opts *LoadPolicyGroupOptions) (*v1.PolicyGroup, *PolicyDescriptor, error) {
+	loader, err := getGroupLoader(att, opts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get a loader for policy group: %w", err)
+	}
+
+	group, ref, err := loader.Load(ctx, att)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to load policy group: %w", err)
+	}
+
+	// Validate just in case
+	if err = validateResource(group); err != nil {
+		return nil, nil, err
+	}
+
+	return group, ref, nil
+}
+
+// getGroupLoader creates a suitable group loader for a group attachment
+func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupOptions) (GroupLoader, error) {
+	ref := attachment.GetRef()
+
+	if ref == "" {
+		return nil, errors.New("policy group must be referenced in the attachment")
+	}
+
+	var loader GroupLoader
+	scheme, _ := refParts(ref)
+	switch scheme {
+	// No scheme means chainloop loader
+	case chainloopScheme, "":
+		loader = NewChainloopGroupLoader(opts.Client)
+	case fileScheme:
+		loader = new(FileGroupLoader)
+	case httpsScheme, httpScheme:
+		loader = new(HTTPSGroupLoader)
+	default:
+		return nil, fmt.Errorf("policy scheme not supported: %q", scheme)
+	}
+
+	opts.Logger.Debug().Msgf("loading policy group %q using %T", ref, loader)
+
+	return loader, nil
+}
+
 func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 
@@ -108,7 +163,10 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 
 	for _, attachment := range attachments {
 		// 1. load the policy group
-		group, _, err := pgv.loadPolicyGroup(ctx, attachment)
+		group, _, err := LoadPolicyGroup(ctx, attachment, &LoadPolicyGroupOptions{
+			Client: pgv.client,
+			Logger: pgv.logger,
+		})
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -159,50 +217,4 @@ func (pgv *PolicyGroupVerifier) shouldApplyPolicy(ctx context.Context, policyAtt
 	}
 
 	return false, nil
-}
-
-// LoadPolicySpec loads and validates a policy spec from a contract
-func (pgv *PolicyGroupVerifier) loadPolicyGroup(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
-	loader, err := pgv.getGroupLoader(attachment)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get a loader for policy group: %w", err)
-	}
-
-	group, ref, err := loader.Load(ctx, attachment)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to load policy group: %w", err)
-	}
-
-	// Validate just in case
-	if err = validateResource(group); err != nil {
-		return nil, nil, err
-	}
-
-	return group, ref, nil
-}
-
-func (pgv *PolicyGroupVerifier) getGroupLoader(attachment *v1.PolicyGroupAttachment) (GroupLoader, error) {
-	ref := attachment.GetRef()
-
-	if ref == "" {
-		return nil, errors.New("policy group must be referenced in the attachment")
-	}
-
-	var loader GroupLoader
-	scheme, _ := refParts(ref)
-	switch scheme {
-	// No scheme means chainloop loader
-	case chainloopScheme, "":
-		loader = NewChainloopGroupLoader(pgv.client)
-	case fileScheme:
-		loader = new(FileGroupLoader)
-	case httpsScheme, httpScheme:
-		loader = new(HTTPSGroupLoader)
-	default:
-		return nil, fmt.Errorf("policy scheme not supported: %q", scheme)
-	}
-
-	pgv.logger.Debug().Msgf("loading policy group %q using %T", ref, loader)
-
-	return loader, nil
 }
