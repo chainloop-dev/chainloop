@@ -128,7 +128,7 @@ func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Cont
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
-func (pgv *PolicyGroupVerifier) loadPolicyGroup(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *api.ResourceDescriptor, error) {
+func (pgv *PolicyGroupVerifier) loadPolicyGroup(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	loader, err := pgv.getGroupLoader(attachment)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get a loader for policy group: %w", err)

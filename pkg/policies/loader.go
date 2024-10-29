@@ -29,7 +29,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
-	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -44,20 +43,60 @@ const (
 
 // Loader defines the interface for policy loaders from contract attachments
 type Loader interface {
-	Load(context.Context, *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error)
+	Load(context.Context, *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error)
+}
+
+// PolicyDescriptor Represents a policy reference. Used as FQ references.
+type PolicyDescriptor struct {
+	// FQ URI of the policy
+	URI string
+	// Policy name (only when it can be resolved by the loader)
+	Name string
+	// policy digest
+	Digest string
+	// Org name for custom policies (only supported by the remote ChainloopLoader)
+	OrgName string
+}
+
+func (p *PolicyDescriptor) GetURI() string {
+	if p != nil {
+		return p.URI
+	}
+	return ""
+}
+
+func (p *PolicyDescriptor) GetName() string {
+	if p != nil {
+		return p.Name
+	}
+	return ""
+}
+
+func (p *PolicyDescriptor) GetDigest() string {
+	if p != nil {
+		return p.Digest
+	}
+	return ""
+}
+
+func (p *PolicyDescriptor) GetOrgName() string {
+	if p != nil {
+		return p.OrgName
+	}
+	return ""
 }
 
 // EmbeddedLoader returns embedded policies
 type EmbeddedLoader struct{}
 
-func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+func (e *EmbeddedLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	return attachment.GetEmbedded(), nil, nil
 }
 
 // FileLoader loader loads policies from filesystem and HTTPS references using Cosign's blob package
 type FileLoader struct{}
 
-func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	var (
 		raw []byte
 		err error
@@ -87,7 +126,7 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
 type HTTPSLoader struct{}
 
-func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref, wantDigest := ExtractDigest(attachment.GetRef())
 
 	// and do not remove the scheme since we need http(s):// to make the request
@@ -124,7 +163,7 @@ type ChainloopLoader struct {
 
 type policyWithReference struct {
 	policy    *v1.Policy
-	reference *v12.ResourceDescriptor
+	reference *PolicyDescriptor
 }
 
 var remotePolicyCache = make(map[string]*policyWithReference)
@@ -133,7 +172,7 @@ func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 	return &ChainloopLoader{Client: client}
 }
 
-func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
 	c.cacheMutex.Lock()
@@ -163,13 +202,14 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		return nil, nil, fmt.Errorf("parsing digest: %w", err)
 	}
 
-	reference := policyReferenceResourceDescriptor(resp.Reference.GetUrl(), h)
+	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), providerRef.OrgName, h)
+
 	// cache result
 	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
 	return resp.GetPolicy(), reference, nil
 }
 
-func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*v12.ResourceDescriptor, error) {
+func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*PolicyDescriptor, error) {
 	jsonContent, err := attestation.LoadJSONBytes(raw, filepath.Ext(ref))
 	if err != nil {
 		return nil, fmt.Errorf("loading resource spec: %w", err)
@@ -190,7 +230,7 @@ func unmarshallResource(raw []byte, ref string, digest string, dest proto.Messag
 		return nil, fmt.Errorf("digest mismatch: got %s, want %s", h.String(), digest)
 	}
 
-	return policyReferenceResourceDescriptor(ref, h), nil
+	return policyReferenceResourceDescriptor("", ref, "", h), nil
 }
 
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
@@ -275,12 +315,12 @@ func refParts(ref string) (string, string) {
 	return "", parts[0]
 }
 
-func policyReferenceResourceDescriptor(ref string, digest crv1.Hash) *v12.ResourceDescriptor {
-	return &v12.ResourceDescriptor{
-		Name: ref,
-		Digest: map[string]string{
-			digest.Algorithm: digest.Hex,
-		},
+func policyReferenceResourceDescriptor(policyName, ref, orgName string, digest crv1.Hash) *PolicyDescriptor {
+	return &PolicyDescriptor{
+		URI:     ref,
+		Name:    policyName,
+		Digest:  digest.String(),
+		OrgName: orgName,
 	}
 }
 

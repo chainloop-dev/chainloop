@@ -605,7 +605,7 @@ func (s *testSuite) TestLoadPolicySpec() {
 		expectedName     string
 		expectedDesc     string
 		expectedCategory string
-		expectedRef      *v1.ResourceDescriptor
+		expectedRef      *PolicyDescriptor
 	}{
 		{
 			name:       "missing policy",
@@ -622,11 +622,9 @@ func (s *testSuite) TestLoadPolicySpec() {
 			expectedName:     "made-with-syft",
 			expectedDesc:     "This policy checks that the SPDX SBOM was created with syft",
 			expectedCategory: "SBOM",
-			expectedRef: &v1.ResourceDescriptor{
-				Name: "file://testdata/sbom_syft.yaml",
-				Digest: map[string]string{
-					"sha256": "81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
-				},
+			expectedRef: &PolicyDescriptor{
+				URI:    "file://testdata/sbom_syft.yaml",
+				Digest: "sha256:81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
 			},
 		},
 		{
@@ -637,11 +635,9 @@ func (s *testSuite) TestLoadPolicySpec() {
 				},
 			},
 			expectedName: "made-with-syft",
-			expectedRef: &v1.ResourceDescriptor{
-				Name: "file://testdata/sbom_syft.yaml",
-				Digest: map[string]string{
-					"sha256": "81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
-				},
+			expectedRef: &PolicyDescriptor{
+				URI:    "file://testdata/sbom_syft.yaml",
+				Digest: "sha256:81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
 			},
 		},
 		{

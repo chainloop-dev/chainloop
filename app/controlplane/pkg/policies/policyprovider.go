@@ -68,12 +68,16 @@ func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
-	ref, err := p.queryProvider(endpoint, digest, orgName, token, &policy)
+	url, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing policy provider URL: %w", err)
+	}
+	providerDigest, err := p.queryProvider(url, digest, orgName, token, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
 
-	return &policy, ref, nil
+	return &policy, createRef(url, policyName, providerDigest, orgName), nil
 }
 
 // ResolveGroup calls remote provider for retrieving a policy group definition
@@ -83,29 +87,27 @@ func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schema
 	}
 
 	// the policy name might include a digest in the form of <name>@sha256:<digest>
-	policyName, digest := policies.ExtractDigest(groupName)
+	groupName, digest := policies.ExtractDigest(groupName)
 
 	var group schemaapi.PolicyGroup
-	endpoint, err := url.JoinPath(p.url, groupsEndpoint, policyName)
+	endpoint, err := url.JoinPath(p.url, groupsEndpoint, groupName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
-	ref, err := p.queryProvider(endpoint, digest, orgName, token, &group)
+	url, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing policy provider URL: %w", err)
+	}
+	providerDigest, err := p.queryProvider(url, digest, orgName, token, &group)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
 
-	return &group, ref, nil
+	return &group, createRef(url, groupName, providerDigest, orgName), nil
 }
 
-func (p *PolicyProvider) queryProvider(path, digest, orgName, token string, out proto.Message) (*PolicyReference, error) {
-	// craft the URL
-	uri, err := url.Parse(path)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing policy provider URL: %w", err)
-	}
-
-	query := uri.Query()
+func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token string, out proto.Message) (string, error) {
+	query := url.Query()
 	if digest != "" {
 		query.Set(digestParam, digest)
 	}
@@ -114,11 +116,11 @@ func (p *PolicyProvider) queryProvider(path, digest, orgName, token string, out 
 		query.Set(orgNameParam, orgName)
 	}
 
-	uri.RawQuery = query.Encode()
+	url.RawQuery = query.Encode()
 
-	req, err := http.NewRequest("GET", uri.String(), nil)
+	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating policy request: %w", err)
+		return "", fmt.Errorf("error creating policy request: %w", err)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
@@ -126,63 +128,48 @@ func (p *PolicyProvider) queryProvider(path, digest, orgName, token string, out 
 	// make the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error executing policy request: %w", err)
+		return "", fmt.Errorf("error executing policy request: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, ErrNotFound
+			return "", ErrNotFound
 		}
 
-		return nil, fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
+		return "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 	}
 
 	resBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading policy response: %w", err)
+		return "", fmt.Errorf("error reading policy response: %w", err)
 	}
 
 	// unmarshall response
 	var response ProviderResponse
 	if err := json.Unmarshal(resBytes, &response); err != nil {
-		return nil, fmt.Errorf("error unmarshalling policy response: %w", err)
-	}
-
-	ref, err := p.resolveRef(path, response.Digest)
-	if err != nil {
-		return nil, fmt.Errorf("error resolving policy reference: %w", err)
+		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 
 	// extract the policy payload from the query response
 	jsonPolicy, err := json.Marshal(response.Data)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling policy response: %w", err)
+		return "", fmt.Errorf("error marshalling policy response: %w", err)
 	}
 
 	if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
-		return nil, fmt.Errorf("error unmarshalling policy response: %w", err)
+		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 
-	return ref, nil
+	return response.Digest, nil
 }
 
-func (p *PolicyProvider) resolveRef(path, digest string) (*PolicyReference, error) {
-	// Extract hostname from the policy provider URL
-	uri, err := url.Parse(p.url)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing policy provider URL: %w", err)
+func createRef(policyURL *url.URL, name, digest, orgName string) *PolicyReference {
+	refURL := fmt.Sprintf("chainloop://%s/%s", policyURL.Host, name)
+	if orgName != "" {
+		refURL = fmt.Sprintf("%s?org=%s", refURL, orgName)
 	}
-
-	if uri.Host == "" {
-		return nil, fmt.Errorf("invalid policy provider URL")
-	}
-
-	if path == "" || digest == "" {
-		return nil, fmt.Errorf("both path and digest are mandatory")
-	}
-
 	return &PolicyReference{
-		URL:    fmt.Sprintf("chainloop://%s/%s", uri.Host, path),
+		URL:    refURL,
 		Digest: digest,
-	}, nil
+	}
 }

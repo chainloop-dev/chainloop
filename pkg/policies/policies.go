@@ -154,7 +154,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	var evaluationSources []string
-	if !IsProviderScheme(ref.GetName()) {
+	if ref != nil && !IsProviderScheme(ref.URI) {
 		evaluationSources = sources
 	}
 
@@ -174,8 +174,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            attachment.GetWith(),
 		Type:            opts.kind,
-		ReferenceName:   ref.Name,
-		ReferenceDigest: ref.Digest["sha256"],
+		ReferenceName:   ref.GetURI(),
+		ReferenceDigest: ref.GetDigest(),
 		// Merged "skipped"
 		Skipped: skipped,
 		// Merged "skip_reason"
@@ -216,7 +216,7 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, 
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
-func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	loader, err := pv.getLoader(attachment)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get a loader for policy: %w", err)
