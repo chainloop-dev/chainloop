@@ -223,5 +223,8 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 			}
 		}
 	}
+
+	schema.Materials = contractMaterials
+
 	return nil
 }
