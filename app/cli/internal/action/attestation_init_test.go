@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -43,6 +44,17 @@ func TestEnrichMaterials(t *testing.T) {
 			},
 			policyGroup: "file://testdata/policy_group.yaml",
 			nMaterials:  2,
+		},
+		{
+			name: "existing materials in schema, no override",
+			materials: []*v1.CraftingSchema_Material{
+				{
+					Type: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+					Name: "another-sbom",
+				},
+			},
+			policyGroup: "file://testdata/policy_group.yaml",
+			nMaterials:  3,
 		},
 		{
 			name:        "empty materials in schema",
@@ -76,6 +88,10 @@ func TestEnrichMaterials(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Len(t, schema.Materials, tc.nMaterials)
+			// find "sbom" material and check it has proper policies
+			assert.True(t, slices.ContainsFunc(schema.Materials, func(m *v1.CraftingSchema_Material) bool {
+				return m.Name == "sbom" && len(m.Policies) == 1
+			}))
 		})
 	}
 }
