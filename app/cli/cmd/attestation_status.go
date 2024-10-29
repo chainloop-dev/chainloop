@@ -84,6 +84,12 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	gt.AppendRow(table.Row{"Organization", meta.Organization})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Project", meta.Project})
+	projectVersion := "none"
+	if meta.ProjectVersion != "" {
+		projectVersion = meta.ProjectVersion
+	}
+
+	gt.AppendRow(table.Row{"Version", projectVersion})
 	gt.AppendRow(table.Row{"Contract Revision", meta.ContractRevision})
 	if status.RunnerContext.JobURL != "" {
 		gt.AppendRow(table.Row{"Runner Type", status.RunnerContext.RunnerType})

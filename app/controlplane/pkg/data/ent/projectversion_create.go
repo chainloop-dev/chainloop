@@ -162,6 +162,11 @@ func (pvc *ProjectVersionCreate) check() error {
 	if _, ok := pvc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "ProjectVersion.version"`)}
 	}
+	if v, ok := pvc.mutation.Version(); ok {
+		if err := projectversion.VersionValidator(v); err != nil {
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectVersion.version": %w`, err)}
+		}
+	}
 	if _, ok := pvc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectVersion.created_at"`)}
 	}

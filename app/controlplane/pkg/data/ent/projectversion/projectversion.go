@@ -67,6 +67,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultVersion holds the default value on creation for the "version" field.
 	DefaultVersion string
+	// VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	VersionValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.

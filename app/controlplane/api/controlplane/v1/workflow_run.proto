@@ -117,6 +117,9 @@ message AttestationServiceInitRequest {
   workflowcontract.v1.CraftingSchema.Runner.RunnerType runner = 3;
   string workflow_name = 4 [(buf.validate.field).string.min_len = 1];
   string project_name = 5 [(buf.validate.field).string.min_len = 1];
+
+  // Optional project version
+  string project_version = 6;
 }
 
 message AttestationServiceInitResponse {

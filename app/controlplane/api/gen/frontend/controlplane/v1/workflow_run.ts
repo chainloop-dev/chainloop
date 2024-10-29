@@ -90,6 +90,8 @@ export interface AttestationServiceInitRequest {
   runner: CraftingSchema_Runner_RunnerType;
   workflowName: string;
   projectName: string;
+  /** Optional project version */
+  projectVersion: string;
 }
 
 export interface AttestationServiceInitResponse {
@@ -999,7 +1001,7 @@ export const AttestationServiceGetContractResponse_Result = {
 };
 
 function createBaseAttestationServiceInitRequest(): AttestationServiceInitRequest {
-  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "", projectName: "" };
+  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "", projectName: "", projectVersion: "" };
 }
 
 export const AttestationServiceInitRequest = {
@@ -1018,6 +1020,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.projectName !== "") {
       writer.uint32(42).string(message.projectName);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(50).string(message.projectVersion);
     }
     return writer;
   },
@@ -1064,6 +1069,13 @@ export const AttestationServiceInitRequest = {
 
           message.projectName = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1080,6 +1092,7 @@ export const AttestationServiceInitRequest = {
       runner: isSet(object.runner) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runner) : 0,
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
     };
   },
 
@@ -1090,6 +1103,7 @@ export const AttestationServiceInitRequest = {
     message.runner !== undefined && (obj.runner = craftingSchema_Runner_RunnerTypeToJSON(message.runner));
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     return obj;
   },
 
@@ -1106,6 +1120,7 @@ export const AttestationServiceInitRequest = {
     message.runner = object.runner ?? 0;
     message.workflowName = object.workflowName ?? "";
     message.projectName = object.projectName ?? "";
+    message.projectVersion = object.projectVersion ?? "";
     return message;
   },
 };

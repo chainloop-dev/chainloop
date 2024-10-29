@@ -14,6 +14,10 @@
     "^(projectName)$": {
       "type": "string"
     },
+    "^(projectVersion)$": {
+      "description": "Optional project version",
+      "type": "string"
+    },
     "^(workflowName)$": {
       "type": "string"
     }
@@ -28,6 +32,10 @@
       "type": "string"
     },
     "project_name": {
+      "type": "string"
+    },
+    "project_version": {
+      "description": "Optional project version",
       "type": "string"
     },
     "runner": {

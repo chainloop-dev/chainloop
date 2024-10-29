@@ -183,6 +183,7 @@ export interface CraftingState {
 export interface WorkflowMetadata {
   name: string;
   project: string;
+  projectVersion: string;
   team: string;
   workflowId: string;
   /** Not required since we might be doing a dry-run */
@@ -2069,7 +2070,16 @@ export const CraftingState = {
 };
 
 function createBaseWorkflowMetadata(): WorkflowMetadata {
-  return { name: "", project: "", team: "", workflowId: "", workflowRunId: "", schemaRevision: "", organization: "" };
+  return {
+    name: "",
+    project: "",
+    projectVersion: "",
+    team: "",
+    workflowId: "",
+    workflowRunId: "",
+    schemaRevision: "",
+    organization: "",
+  };
 }
 
 export const WorkflowMetadata = {
@@ -2079,6 +2089,9 @@ export const WorkflowMetadata = {
     }
     if (message.project !== "") {
       writer.uint32(18).string(message.project);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(74).string(message.projectVersion);
     }
     if (message.team !== "") {
       writer.uint32(26).string(message.team);
@@ -2118,6 +2131,13 @@ export const WorkflowMetadata = {
           }
 
           message.project = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -2167,6 +2187,7 @@ export const WorkflowMetadata = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
       team: isSet(object.team) ? String(object.team) : "",
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
@@ -2179,6 +2200,7 @@ export const WorkflowMetadata = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     message.team !== undefined && (obj.team = message.team);
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
@@ -2195,6 +2217,7 @@ export const WorkflowMetadata = {
     const message = createBaseWorkflowMetadata();
     message.name = object.name ?? "";
     message.project = object.project ?? "";
+    message.projectVersion = object.projectVersion ?? "";
     message.team = object.team ?? "";
     message.workflowId = object.workflowId ?? "";
     message.workflowRunId = object.workflowRunId ?? "";

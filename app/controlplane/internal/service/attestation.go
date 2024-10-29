@@ -156,6 +156,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		RunnerRunURL:     req.GetJobUrl(),
 		RunnerType:       req.GetRunner().String(),
 		CASBackendID:     backend.ID,
+		ProjectVersion:   req.GetProjectVersion(),
 	}
 
 	run, err := s.wrUseCase.Create(ctx, opts)

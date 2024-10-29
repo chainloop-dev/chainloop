@@ -200,6 +200,12 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	}
 	contractRevision := opts.ContractRevision
 
+	if opts.ProjectVersion != "" {
+		if err := ValidateVersion(opts.ProjectVersion); err != nil {
+			return nil, err
+		}
+	}
+
 	// For now we only associate the workflow run to one backend.
 	// This might change in the future so we prepare the data layer to support an array of associated backends
 	backends := []uuid.UUID{opts.CASBackendID}
