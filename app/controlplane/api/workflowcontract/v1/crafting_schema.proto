@@ -81,6 +81,9 @@ message CraftingSchema {
     // this metadata can be used later on by the integrations engine to filter and interpolate data
     repeated Annotation annotations = 5;
 
+    // Policies to be applied to this material
+    repeated PolicyAttachment policies = 6;
+
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;
       STRING = 1;
@@ -268,11 +271,11 @@ message PolicyGroup {
   PolicyGroupSpec spec = 4 [(buf.validate.field).required = true];
 
   message PolicyGroupSpec {
-    PolicyGroupPolicies policies = 1;
+    GroupPolicies policies = 1;
   }
 
-  message PolicyGroupPolicies {
-    repeated PolicyAttachment materials = 1;
+  message GroupPolicies {
+    repeated CraftingSchema.Material materials = 1;
     repeated PolicyAttachment attestation = 2;
   }
 }

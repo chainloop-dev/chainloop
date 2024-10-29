@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "properties": {
     "policies": {
-      "$ref": "workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.jsonschema.json"
+      "$ref": "workflowcontract.v1.PolicyGroup.GroupPolicies.jsonschema.json"
     }
   },
   "title": "Policy Group Spec",

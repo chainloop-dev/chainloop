@@ -10,7 +10,7 @@ spec:
     attestation:
       - ref: file://testdata/with_arguments.yaml
     materials:
+      # No type specified in this material
       - name: sbom
-        type: SBOM_SPDX_JSON
         policies:
           - ref: file://testdata/multi-kind.yaml

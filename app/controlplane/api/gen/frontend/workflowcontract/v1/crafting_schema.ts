@@ -103,6 +103,8 @@ export interface CraftingSchema_Material {
    * this metadata can be used later on by the integrations engine to filter and interpolate data
    */
   annotations: Annotation[];
+  /** Policies to be applied to this material */
+  policies: PolicyAttachment[];
 }
 
 export enum CraftingSchema_Material_MaterialType {
@@ -417,11 +419,11 @@ export interface PolicyGroup {
 }
 
 export interface PolicyGroup_PolicyGroupSpec {
-  policies?: PolicyGroup_PolicyGroupPolicies;
+  policies?: PolicyGroup_GroupPolicies;
 }
 
-export interface PolicyGroup_PolicyGroupPolicies {
-  materials: PolicyAttachment[];
+export interface PolicyGroup_GroupPolicies {
+  materials: CraftingSchema_Material[];
   attestation: PolicyAttachment[];
 }
 
@@ -651,7 +653,7 @@ export const CraftingSchema_Runner = {
 };
 
 function createBaseCraftingSchema_Material(): CraftingSchema_Material {
-  return { type: 0, name: "", optional: false, output: false, annotations: [] };
+  return { type: 0, name: "", optional: false, output: false, annotations: [], policies: [] };
 }
 
 export const CraftingSchema_Material = {
@@ -670,6 +672,9 @@ export const CraftingSchema_Material = {
     }
     for (const v of message.annotations) {
       Annotation.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.policies) {
+      PolicyAttachment.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -716,6 +721,13 @@ export const CraftingSchema_Material = {
 
           message.annotations.push(Annotation.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.policies.push(PolicyAttachment.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -732,6 +744,7 @@ export const CraftingSchema_Material = {
       optional: isSet(object.optional) ? Boolean(object.optional) : false,
       output: isSet(object.output) ? Boolean(object.output) : false,
       annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
+      policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
     };
   },
 
@@ -745,6 +758,11 @@ export const CraftingSchema_Material = {
       obj.annotations = message.annotations.map((e) => e ? Annotation.toJSON(e) : undefined);
     } else {
       obj.annotations = [];
+    }
+    if (message.policies) {
+      obj.policies = message.policies.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
+    } else {
+      obj.policies = [];
     }
     return obj;
   },
@@ -760,6 +778,7 @@ export const CraftingSchema_Material = {
     message.optional = object.optional ?? false;
     message.output = object.output ?? false;
     message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
+    message.policies = object.policies?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1801,7 +1820,7 @@ function createBasePolicyGroup_PolicyGroupSpec(): PolicyGroup_PolicyGroupSpec {
 export const PolicyGroup_PolicyGroupSpec = {
   encode(message: PolicyGroup_PolicyGroupSpec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.policies !== undefined) {
-      PolicyGroup_PolicyGroupPolicies.encode(message.policies, writer.uint32(10).fork()).ldelim();
+      PolicyGroup_GroupPolicies.encode(message.policies, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -1818,7 +1837,7 @@ export const PolicyGroup_PolicyGroupSpec = {
             break;
           }
 
-          message.policies = PolicyGroup_PolicyGroupPolicies.decode(reader, reader.uint32());
+          message.policies = PolicyGroup_GroupPolicies.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1830,13 +1849,13 @@ export const PolicyGroup_PolicyGroupSpec = {
   },
 
   fromJSON(object: any): PolicyGroup_PolicyGroupSpec {
-    return { policies: isSet(object.policies) ? PolicyGroup_PolicyGroupPolicies.fromJSON(object.policies) : undefined };
+    return { policies: isSet(object.policies) ? PolicyGroup_GroupPolicies.fromJSON(object.policies) : undefined };
   },
 
   toJSON(message: PolicyGroup_PolicyGroupSpec): unknown {
     const obj: any = {};
     message.policies !== undefined &&
-      (obj.policies = message.policies ? PolicyGroup_PolicyGroupPolicies.toJSON(message.policies) : undefined);
+      (obj.policies = message.policies ? PolicyGroup_GroupPolicies.toJSON(message.policies) : undefined);
     return obj;
   },
 
@@ -1847,20 +1866,20 @@ export const PolicyGroup_PolicyGroupSpec = {
   fromPartial<I extends Exact<DeepPartial<PolicyGroup_PolicyGroupSpec>, I>>(object: I): PolicyGroup_PolicyGroupSpec {
     const message = createBasePolicyGroup_PolicyGroupSpec();
     message.policies = (object.policies !== undefined && object.policies !== null)
-      ? PolicyGroup_PolicyGroupPolicies.fromPartial(object.policies)
+      ? PolicyGroup_GroupPolicies.fromPartial(object.policies)
       : undefined;
     return message;
   },
 };
 
-function createBasePolicyGroup_PolicyGroupPolicies(): PolicyGroup_PolicyGroupPolicies {
+function createBasePolicyGroup_GroupPolicies(): PolicyGroup_GroupPolicies {
   return { materials: [], attestation: [] };
 }
 
-export const PolicyGroup_PolicyGroupPolicies = {
-  encode(message: PolicyGroup_PolicyGroupPolicies, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PolicyGroup_GroupPolicies = {
+  encode(message: PolicyGroup_GroupPolicies, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.materials) {
-      PolicyAttachment.encode(v!, writer.uint32(10).fork()).ldelim();
+      CraftingSchema_Material.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     for (const v of message.attestation) {
       PolicyAttachment.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -1868,10 +1887,10 @@ export const PolicyGroup_PolicyGroupPolicies = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyGroup_PolicyGroupPolicies {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyGroup_GroupPolicies {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicyGroup_PolicyGroupPolicies();
+    const message = createBasePolicyGroup_GroupPolicies();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1880,7 +1899,7 @@ export const PolicyGroup_PolicyGroupPolicies = {
             break;
           }
 
-          message.materials.push(PolicyAttachment.decode(reader, reader.uint32()));
+          message.materials.push(CraftingSchema_Material.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -1898,19 +1917,21 @@ export const PolicyGroup_PolicyGroupPolicies = {
     return message;
   },
 
-  fromJSON(object: any): PolicyGroup_PolicyGroupPolicies {
+  fromJSON(object: any): PolicyGroup_GroupPolicies {
     return {
-      materials: Array.isArray(object?.materials) ? object.materials.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
+      materials: Array.isArray(object?.materials)
+        ? object.materials.map((e: any) => CraftingSchema_Material.fromJSON(e))
+        : [],
       attestation: Array.isArray(object?.attestation)
         ? object.attestation.map((e: any) => PolicyAttachment.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: PolicyGroup_PolicyGroupPolicies): unknown {
+  toJSON(message: PolicyGroup_GroupPolicies): unknown {
     const obj: any = {};
     if (message.materials) {
-      obj.materials = message.materials.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
+      obj.materials = message.materials.map((e) => e ? CraftingSchema_Material.toJSON(e) : undefined);
     } else {
       obj.materials = [];
     }
@@ -1922,15 +1943,13 @@ export const PolicyGroup_PolicyGroupPolicies = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PolicyGroup_PolicyGroupPolicies>, I>>(base?: I): PolicyGroup_PolicyGroupPolicies {
-    return PolicyGroup_PolicyGroupPolicies.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<PolicyGroup_GroupPolicies>, I>>(base?: I): PolicyGroup_GroupPolicies {
+    return PolicyGroup_GroupPolicies.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<PolicyGroup_PolicyGroupPolicies>, I>>(
-    object: I,
-  ): PolicyGroup_PolicyGroupPolicies {
-    const message = createBasePolicyGroup_PolicyGroupPolicies();
-    message.materials = object.materials?.map((e) => PolicyAttachment.fromPartial(e)) || [];
+  fromPartial<I extends Exact<DeepPartial<PolicyGroup_GroupPolicies>, I>>(object: I): PolicyGroup_GroupPolicies {
+    const message = createBasePolicyGroup_GroupPolicies();
+    message.materials = object.materials?.map((e) => CraftingSchema_Material.fromPartial(e)) || [];
     message.attestation = object.attestation?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     return message;
   },
