@@ -79,6 +79,9 @@ func (m *Chainloop) Init(
 	// name of an existing contract to attach it to the auto-created workflow
 	// +optional
 	contractName string,
+	// Version of the project to be used for the attestation
+	// +optional
+	projectVersion string,
 ) (*Attestation, error) {
 	att := &Attestation{
 		Token:      token,
@@ -99,6 +102,12 @@ func (m *Chainloop) Init(
 	if contractName != "" {
 		args = append(args,
 			"--contract", contractName,
+		)
+	}
+
+	if projectVersion != "" {
+		args = append(args,
+			"--version", projectVersion,
 		)
 	}
 
