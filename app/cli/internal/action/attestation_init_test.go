@@ -15,8 +15,67 @@
 
 package action
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestEnrichMaterials(t *testing.T) {
+	cases := []struct {
+		name        string
+		materials   []*v1.CraftingSchema_Material
+		policyGroup string
+		expectErr   bool
+		nMaterials  int
+	}{
+		{
+			name: "override existing materials in schema",
+			materials: []*v1.CraftingSchema_Material{
+				{
+					Type: v1.CraftingSchema_Material_SBOM_SPDX_JSON,
+					Name: "sbom",
+				},
+			},
+			policyGroup: "file://testdata/policy_group.yaml",
+			nMaterials:  2,
+		},
+		{
+			name:        "empty materials in schema",
+			materials:   []*v1.CraftingSchema_Material{},
+			policyGroup: "file://testdata/policy_group.yaml",
+			nMaterials:  2,
+		},
+		{
+			name:        "wrong policy group",
+			materials:   []*v1.CraftingSchema_Material{},
+			policyGroup: "file://testdata/idontexist.yaml",
+			expectErr:   true,
+		},
+	}
 
+	l := zerolog.Nop()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := v1.CraftingSchema{
+				Materials: tc.materials,
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{
+						Ref: tc.policyGroup,
+					},
+				},
+			}
+			err := enrichContractMaterials(context.TODO(), &schema, nil, &l)
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Len(t, schema.Materials, tc.nMaterials)
+		})
+	}
 }
