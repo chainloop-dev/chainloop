@@ -271,10 +271,10 @@ message PolicyGroup {
   PolicyGroupSpec spec = 4 [(buf.validate.field).required = true];
 
   message PolicyGroupSpec {
-    GroupPolicies policies = 1;
+    PolicyGroupPolicies policies = 1;
   }
 
-  message GroupPolicies {
+  message PolicyGroupPolicies {
     repeated CraftingSchema.Material materials = 1;
     repeated PolicyAttachment attestation = 2;
   }
