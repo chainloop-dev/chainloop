@@ -209,7 +209,7 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
 
-		toAdd := overrideMaterials(group, contractMaterials, logger)
+		toAdd := getGroupMaterialsToAdd(group, contractMaterials, logger)
 		contractMaterials = append(contractMaterials, toAdd...)
 	}
 
@@ -219,7 +219,7 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 }
 
 // merge existing materials with group ones, taking the contract's one in case of conflict
-func overrideMaterials(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
+func getGroupMaterialsToAdd(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
 	toAdd := make([]*v1.CraftingSchema_Material, 0)
 	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
 		// check if material already exists in the contract and skip it in that case
