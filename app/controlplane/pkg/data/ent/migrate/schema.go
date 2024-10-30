@@ -301,6 +301,14 @@ var (
 					Where: "deleted_at IS NULL",
 				},
 			},
+			{
+				Name:    "project_organization_id",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectsColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
 		},
 	}
 	// ProjectVersionsColumns holds the columns for the "project_versions" table.
