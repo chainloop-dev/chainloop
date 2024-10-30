@@ -180,7 +180,10 @@ message WorkflowRunServiceListRequest {
   // by run status
   RunStatus status = 3;
   // by project version
-  string project_version = 5;
+  string project_version = 5 [(buf.validate.field) = {
+    string: {uuid: true}
+    ignore_empty: true
+  }];
   // pagination options
   CursorPaginationRequest pagination = 2;
 
@@ -202,7 +205,10 @@ message WorkflowRunServiceViewRequest {
   oneof ref {
     option (buf.validate.oneof).required = true;
 
-    string id = 1 [(buf.validate.field).string.uuid = true];
+    string id = 1 [(buf.validate.field) = {
+      string: {uuid: true}
+      ignore_empty: false
+    }];
     string digest = 2 [(buf.validate.field).string = {min_len: 1}];
   }
 }
