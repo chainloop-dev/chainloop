@@ -173,7 +173,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo: workflowMeta, SchemaV1: contractVersion.GetV1(),
+		WfInfo:        workflowMeta,
+		SchemaV1:      contractVersion.GetV1(),
 		DryRun:        action.dryRun,
 		AttestationID: attestationID,
 		Runner:        discoveredRunner,
@@ -207,24 +208,35 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 			return fmt.Errorf("failed to load policy group: %w", err)
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
-		for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-			// check if material already exists in the contract, and override it
-			found := false
-			for i, mat := range contractMaterials {
-				if mat.GetName() == groupMaterial.GetName() {
-					logger.Warn().Msgf("material '%s' from contract is also present in the policy group '%s' and will get overridden. You can safely remove it from the contract.", mat.GetName(), group.GetMetadata().GetName())
-					contractMaterials[i] = groupMaterial
-					found = true
-					break
-				}
-			}
-			if !found {
-				contractMaterials = append(contractMaterials, groupMaterial)
-			}
-		}
+
+		toAdd := overrideMaterials(group, contractMaterials, logger)
+		contractMaterials = append(contractMaterials, toAdd...)
 	}
 
 	schema.Materials = contractMaterials
 
 	return nil
+}
+
+// override existing materials and return new ones
+func overrideMaterials(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
+	toAdd := make([]*v1.CraftingSchema_Material, 0)
+	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		// check if material already exists in the contract, and override it
+		found := false
+		for i, mat := range fromContract {
+			if mat.GetName() == groupMaterial.GetName() {
+				logger.Warn().Msgf("material '%s' from contract is also present in the policy group '%s' and will get overridden. You can safely remove it from the contract.", mat.GetName(), group.GetMetadata().GetName())
+				// override
+				fromContract[i] = groupMaterial
+				found = true
+				break
+			}
+		}
+		if !found {
+			toAdd = append(toAdd, groupMaterial)
+		}
+	}
+
+	return toAdd
 }
