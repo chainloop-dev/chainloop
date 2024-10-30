@@ -329,7 +329,7 @@ var (
 				Symbol:     "project_versions_projects_versions",
 				Columns:    []*schema.Column{ProjectVersionsColumns[4]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
