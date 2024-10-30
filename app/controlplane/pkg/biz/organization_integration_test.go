@@ -69,7 +69,7 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(_ *testing.T) {
 			org, err := s.Organization.Create(ctx, tc.name)
 			if tc.expectedError {
 				s.Error(err)

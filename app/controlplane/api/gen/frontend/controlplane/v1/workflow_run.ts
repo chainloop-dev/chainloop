@@ -181,6 +181,8 @@ export interface WorkflowRunServiceListRequest {
   projectName: string;
   /** by run status */
   status: RunStatus;
+  /** by project version */
+  projectVersion: string;
   /** pagination options */
   pagination?: CursorPaginationRequest;
 }
@@ -1596,7 +1598,7 @@ export const AttestationServiceCancelResponse = {
 };
 
 function createBaseWorkflowRunServiceListRequest(): WorkflowRunServiceListRequest {
-  return { workflowName: "", projectName: "", status: 0, pagination: undefined };
+  return { workflowName: "", projectName: "", status: 0, projectVersion: "", pagination: undefined };
 }
 
 export const WorkflowRunServiceListRequest = {
@@ -1609,6 +1611,9 @@ export const WorkflowRunServiceListRequest = {
     }
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(42).string(message.projectVersion);
     }
     if (message.pagination !== undefined) {
       CursorPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
@@ -1644,6 +1649,13 @@ export const WorkflowRunServiceListRequest = {
 
           message.status = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1665,6 +1677,7 @@ export const WorkflowRunServiceListRequest = {
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
@@ -1674,6 +1687,7 @@ export const WorkflowRunServiceListRequest = {
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
@@ -1690,6 +1704,7 @@ export const WorkflowRunServiceListRequest = {
     message.workflowName = object.workflowName ?? "";
     message.projectName = object.projectName ?? "";
     message.status = object.status ?? 0;
+    message.projectVersion = object.projectVersion ?? "";
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationRequest.fromPartial(object.pagination)
       : undefined;

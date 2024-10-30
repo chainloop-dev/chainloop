@@ -183,8 +183,8 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	// Skip the runs that have a workflow marked as deleted
 	wfQuery := orgQuery.QueryWorkflows().Where(workflow.DeletedAtIsNil())
 	// Append the workflow filter if present
-	if filters != nil && filters.WorkflowID != uuid.Nil {
-		wfQuery = wfQuery.Where(workflow.ID(filters.WorkflowID))
+	if filters != nil && filters.WorkflowID != nil {
+		wfQuery = wfQuery.Where(workflow.ID(*filters.WorkflowID))
 	}
 
 	wfRunsQuery := wfQuery.QueryWorkflowruns().
@@ -194,6 +194,11 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	// Append the state filter if present, i.e only running
 	if filters != nil && filters.Status != "" {
 		wfRunsQuery = wfRunsQuery.Where(workflowrun.StateEQ(filters.Status))
+	}
+
+	// or the project version
+	if filters != nil && filters.VersionID != nil {
+		wfRunsQuery = wfRunsQuery.Where(workflowrun.VersionID(*filters.VersionID))
 	}
 
 	if p.Cursor != nil {
