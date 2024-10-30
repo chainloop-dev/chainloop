@@ -62,5 +62,8 @@ func (Project) Indexes() []ent.Index {
 		index.Fields("name").Edges("organization").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),
+		index.Edges("organization").Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }
