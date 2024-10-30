@@ -205,10 +205,7 @@ message WorkflowRunServiceViewRequest {
   oneof ref {
     option (buf.validate.oneof).required = true;
 
-    string id = 1 [(buf.validate.field) = {
-      string: {uuid: true}
-      ignore_empty: false
-    }];
+    string id = 1 [(buf.validate.field).string.uuid = true];
     string digest = 2 [(buf.validate.field).string = {min_len: 1}];
   }
 }
