@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
@@ -11922,7 +11923,7 @@ type WorkflowContractVersionMutation struct {
 	id              *uuid.UUID
 	body            *[]byte
 	raw_body        *[]byte
-	raw_body_format *biz.ContractRawFormat
+	raw_body_format *misc.RawFormat
 	revision        *int
 	addrevision     *int
 	created_at      *time.Time
@@ -12124,12 +12125,12 @@ func (m *WorkflowContractVersionMutation) ResetRawBody() {
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (m *WorkflowContractVersionMutation) SetRawBodyFormat(brf biz.ContractRawFormat) {
-	m.raw_body_format = &brf
+func (m *WorkflowContractVersionMutation) SetRawBodyFormat(mf misc.RawFormat) {
+	m.raw_body_format = &mf
 }
 
 // RawBodyFormat returns the value of the "raw_body_format" field in the mutation.
-func (m *WorkflowContractVersionMutation) RawBodyFormat() (r biz.ContractRawFormat, exists bool) {
+func (m *WorkflowContractVersionMutation) RawBodyFormat() (r misc.RawFormat, exists bool) {
 	v := m.raw_body_format
 	if v == nil {
 		return
@@ -12140,7 +12141,7 @@ func (m *WorkflowContractVersionMutation) RawBodyFormat() (r biz.ContractRawForm
 // OldRawBodyFormat returns the old "raw_body_format" field's value of the WorkflowContractVersion entity.
 // If the WorkflowContractVersion object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkflowContractVersionMutation) OldRawBodyFormat(ctx context.Context) (v biz.ContractRawFormat, err error) {
+func (m *WorkflowContractVersionMutation) OldRawBodyFormat(ctx context.Context) (v misc.RawFormat, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRawBodyFormat is only allowed on UpdateOne operations")
 	}
@@ -12401,7 +12402,7 @@ func (m *WorkflowContractVersionMutation) SetField(name string, value ent.Value)
 		m.SetRawBody(v)
 		return nil
 	case workflowcontractversion.FieldRawBodyFormat:
-		v, ok := value.(biz.ContractRawFormat)
+		v, ok := value.(misc.RawFormat)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

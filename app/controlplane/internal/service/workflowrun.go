@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -74,7 +75,16 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 			return nil, errors.NotFound("not found", "workflow not found")
 		}
 
-		filters.WorkflowID = wf.ID
+		filters.WorkflowID = &wf.ID
+	}
+
+	if req.GetProjectVersion() != "" {
+		projectUUID, err := uuid.Parse(req.GetProjectVersion())
+		if err != nil {
+			return nil, errors.BadRequest("invalid", "invalid project version")
+		}
+
+		filters.VersionID = &projectUUID
 	}
 
 	// by run status
@@ -119,17 +129,18 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 
 	// retrieve the workflow run either by ID or by digest
 	var run *biz.WorkflowRun
-	if req.GetId() != "" {
+	switch {
+	case req.GetId() != "":
 		run, err = s.wrUseCase.GetByIDInOrgOrPublic(ctx, currentOrg.ID, req.GetId())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-	} else if req.GetDigest() != "" {
+	case req.GetDigest() != "":
 		run, err = s.wrUseCase.GetByDigestInOrgOrPublic(ctx, currentOrg.ID, req.GetDigest())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-	} else {
+	default:
 		return nil, errors.BadRequest("invalid", "id or digest required")
 	}
 

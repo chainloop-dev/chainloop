@@ -7,6 +7,10 @@
       "description": "Not required since filtering by workflow and project is optional",
       "type": "string"
     },
+    "^(project_version)$": {
+      "description": "by project version",
+      "type": "string"
+    },
     "^(workflow_name)$": {
       "description": "Filters\n by workflow",
       "type": "string"
@@ -19,6 +23,10 @@
     },
     "projectName": {
       "description": "Not required since filtering by workflow and project is optional",
+      "type": "string"
+    },
+    "projectVersion": {
+      "description": "by project version",
       "type": "string"
     },
     "status": {
