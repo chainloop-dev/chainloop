@@ -55,9 +55,9 @@ func newAttestationInitCmd() *cobra.Command {
 					return nil
 				}
 
-				logger.Debug().Msgf("loaded version %s from config file %s", cfg.Version, path)
+				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
 
-				projectVersion = cfg.Version
+				projectVersion = cfg.ProjectVersion
 			}
 
 			return nil
