@@ -16,7 +16,12 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 // Map of all the possible configuration options that we expect viper to handle
@@ -62,4 +67,52 @@ func newConfigCmd() *cobra.Command {
 
 	cmd.AddCommand(newConfigSaveCmd(), newConfigViewCmd(), newConfigResetCmd())
 	return cmd
+}
+
+// Configuration file used in repositories ot modify the attestation process
+const (
+	dotChainloopConfigFilename = ".chainloop"
+
+	maxParentDirTraversals = 3
+)
+
+var (
+	errDotChainloopConfigNotFound = fmt.Errorf("attestation config file %s not found", dotChainloopConfigFilename)
+	dotChainloopConfigExtension   = []string{".yaml", ".yml"}
+)
+
+// loadDotChainloopConfigWithParentTraversal attempts to load the attestation configuration file from the current directory
+// and its parent directories up to a maximum of maxParentDirTraversals. If the file is found, it
+// is decoded and returned. If the file is not found, an error is returned.
+func loadDotChainloopConfigWithParentTraversal() (*DotChainloopConfig, string, error) {
+	currentDir := "."
+	for i := 0; i < maxParentDirTraversals; i++ {
+		for _, ext := range dotChainloopConfigExtension {
+			configPath := filepath.Join(currentDir, fmt.Sprintf("%s%s", dotChainloopConfigFilename, ext))
+			// Check if the file exists
+			if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+				// Load from the YAML file
+				file, err := os.Open(configPath)
+				if err != nil {
+					return nil, "", fmt.Errorf("opening attestation config file: %w", err)
+				}
+				defer file.Close()
+
+				cfg := &DotChainloopConfig{}
+				decoder := yaml.NewDecoder(file)
+				if err := decoder.Decode(cfg); err != nil {
+					return nil, "", fmt.Errorf("decoding attestation config file: %w", err)
+				}
+
+				return cfg, configPath, nil
+			}
+		}
+		currentDir = filepath.Join(currentDir, "..")
+	}
+
+	return nil, "", errDotChainloopConfigNotFound
+}
+
+type DotChainloopConfig struct {
+	Version string `yaml:"version"`
 }
