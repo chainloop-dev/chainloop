@@ -164,7 +164,6 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 		if err := unmarshalFromRaw(response.Raw, out); err != nil {
 			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
 		}
-		return response.Digest, nil
 	} else if response.Data != nil {
 		// extract the policy payload from the query response
 		jsonPolicy, err := json.Marshal(response.Data)
