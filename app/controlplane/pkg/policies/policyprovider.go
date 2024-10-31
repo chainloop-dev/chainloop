@@ -22,6 +22,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"cuelang.org/go/cue/cuecontext"
+	"github.com/bufbuild/protovalidate-go"
+	"github.com/bufbuild/protoyaml-go"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -45,6 +48,12 @@ type PolicyProvider struct {
 type ProviderResponse struct {
 	Data   map[string]any `json:"data"`
 	Digest string         `json:"digest"`
+	Raw    *RawMessage    `json:"raw"`
+}
+
+type RawMessage struct {
+	Body   []byte `json:"body"`
+	Format string `json:"format"`
 }
 
 type PolicyReference struct {
@@ -150,17 +159,58 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 
-	// extract the policy payload from the query response
-	jsonPolicy, err := json.Marshal(response.Data)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling policy response: %w", err)
-	}
+	// if raw message is provided, just interpret it as a base64 encoded string
+	if response.Raw != nil {
+		if err := unmarshalFromRaw(response.Raw, out); err != nil {
+			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
+		return response.Digest, nil
+	} else if response.Data != nil {
+		// extract the policy payload from the query response
+		jsonPolicy, err := json.Marshal(response.Data)
+		if err != nil {
+			return "", fmt.Errorf("error marshalling policy response: %w", err)
+		}
 
-	if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
-		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
+			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
 	}
 
 	return response.Digest, nil
+}
+
+func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {
+	switch raw.Format {
+	case "FORMAT_JSON":
+		if err := protojson.Unmarshal(raw.Body, out); err != nil {
+			return fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
+	case "FORMAT_YAML":
+		// protoyaml allows validating the contract while unmarshalling
+		validator, err := protovalidate.New()
+		if err != nil {
+			return fmt.Errorf("could not create validator: %w", err)
+		}
+		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
+		if err := yamlOpts.Unmarshal(raw.Body, out); err != nil {
+			return fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
+	case "FORMAT_CUE":
+		ctx := cuecontext.New()
+		v := ctx.CompileBytes(raw.Body)
+		jsonRawData, err := v.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
+
+		if err := protojson.Unmarshal(jsonRawData, out); err != nil {
+			return fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported format: %s", raw.Format)
+	}
+	return nil
 }
 
 func createRef(policyURL *url.URL, name, digest, orgName string) *PolicyReference {

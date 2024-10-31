@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,6 +57,38 @@ func TestCreateRef(t *testing.T) {
 			got := createRef(policyURL, tc.policyName, tc.digest, tc.orgName)
 
 			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestUnmarshalFromRaw(t *testing.T) {
+	cases := []struct {
+		name    string
+		raw     *RawMessage
+		wantErr bool
+	}{
+		{
+			name:    "raw from json",
+			raw:     &RawMessage{Format: "FORMAT_JSON", Body: []byte("{\"apiVersion\": \"workflowcontract.chainloop.dev/v1\",\"kind\": \"Policy\",\"metadata\": {\"name\": \"policy-workflow\" },\"spec\": {\"policies\": [{\"kind\": \"CONTAINER_IMAGE\",\"embedded\": \"\"}]}}")},
+			wantErr: false,
+		},
+		{
+			name:    "raw from yaml",
+			raw:     &RawMessage{Format: "FORMAT_YAML", Body: []byte("apiVersion: workflowcontract.chainloop.dev/v1\nkind: Policy\nmetadata:\n  name: policy-workflow\nspec:\n  policies:\n    - kind: CONTAINER_IMAGE\n      embedded: |\n        package main\n        import rego.v1\n        result := {\"violations\":[], \"skipped\": true, \"skip_reason\":\"hello world\"}")},
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var policy v1.Policy
+			err := unmarshalFromRaw(tc.raw, &policy)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, "policy-workflow", policy.Metadata.Name)
 		})
 	}
 }
