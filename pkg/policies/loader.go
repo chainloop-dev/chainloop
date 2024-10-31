@@ -28,7 +28,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -210,7 +210,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 }
 
 func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*PolicyDescriptor, error) {
-	jsonContent, err := attestation.LoadJSONBytes(raw, filepath.Ext(ref))
+	jsonContent, err := misc.LoadJSONBytes(raw, filepath.Ext(ref))
 	if err != nil {
 		return nil, fmt.Errorf("loading resource spec: %w", err)
 	}

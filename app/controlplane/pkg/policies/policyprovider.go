@@ -23,6 +23,7 @@ import (
 	"net/url"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -43,8 +44,15 @@ type PolicyProvider struct {
 }
 
 type ProviderResponse struct {
+	// Deprecated: Raw is the preferred approach
 	Data   map[string]any `json:"data"`
 	Digest string         `json:"digest"`
+	Raw    *RawMessage    `json:"raw"`
+}
+
+type RawMessage struct {
+	Body   []byte `json:"body"`
+	Format string `json:"format"`
 }
 
 type PolicyReference struct {
@@ -150,17 +158,45 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 
-	// extract the policy payload from the query response
-	jsonPolicy, err := json.Marshal(response.Data)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling policy response: %w", err)
-	}
+	// if raw message is provided, just interpret it as a base64 encoded string
+	if response.Raw != nil {
+		if err := unmarshalFromRaw(response.Raw, out); err != nil {
+			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
+	} else if response.Data != nil {
+		// extract the policy payload from the query response
+		jsonPolicy, err := json.Marshal(response.Data)
+		if err != nil {
+			return "", fmt.Errorf("error marshalling policy response: %w", err)
+		}
 
-	if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
-		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
+			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		}
 	}
 
 	return response.Digest, nil
+}
+
+func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {
+	var format misc.RawFormat
+	switch raw.Format {
+	case "FORMAT_JSON":
+		format = misc.RawFormatJSON
+	case "FORMAT_YAML":
+		format = misc.RawFormatYAML
+	case "FORMAT_CUE":
+		format = misc.RawFormatCUE
+	default:
+		return fmt.Errorf("unsupported format: %s", raw.Format)
+	}
+
+	err := misc.UnmarshalFromRaw(raw.Body, format, out)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling policy response: %w", err)
+	}
+
+	return nil
 }
 
 func createRef(policyURL *url.URL, name, digest, orgName string) *PolicyReference {

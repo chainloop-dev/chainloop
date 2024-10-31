@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
 	"github.com/google/uuid"
 )
 
@@ -32,15 +32,15 @@ func (wcvu *WorkflowContractVersionUpdate) Where(ps ...predicate.WorkflowContrac
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(brf biz.ContractRawFormat) *WorkflowContractVersionUpdate {
-	wcvu.mutation.SetRawBodyFormat(brf)
+func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(mf misc.RawFormat) *WorkflowContractVersionUpdate {
+	wcvu.mutation.SetRawBodyFormat(mf)
 	return wcvu
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(brf *biz.ContractRawFormat) *WorkflowContractVersionUpdate {
-	if brf != nil {
-		wcvu.SetRawBodyFormat(*brf)
+func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(mf *misc.RawFormat) *WorkflowContractVersionUpdate {
+	if mf != nil {
+		wcvu.SetRawBodyFormat(*mf)
 	}
 	return wcvu
 }
@@ -188,15 +188,15 @@ type WorkflowContractVersionUpdateOne struct {
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(brf biz.ContractRawFormat) *WorkflowContractVersionUpdateOne {
-	wcvuo.mutation.SetRawBodyFormat(brf)
+func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(mf misc.RawFormat) *WorkflowContractVersionUpdateOne {
+	wcvuo.mutation.SetRawBodyFormat(mf)
 	return wcvuo
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(brf *biz.ContractRawFormat) *WorkflowContractVersionUpdateOne {
-	if brf != nil {
-		wcvuo.SetRawBodyFormat(*brf)
+func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(mf *misc.RawFormat) *WorkflowContractVersionUpdateOne {
+	if mf != nil {
+		wcvuo.SetRawBodyFormat(*mf)
 	}
 	return wcvuo
 }
