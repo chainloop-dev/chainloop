@@ -22,10 +22,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"cuelang.org/go/cue/cuecontext"
-	"github.com/bufbuild/protovalidate-go"
-	"github.com/bufbuild/protoyaml-go"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -46,6 +44,7 @@ type PolicyProvider struct {
 }
 
 type ProviderResponse struct {
+	// Deprecated: Raw is the preferred approach
 	Data   map[string]any `json:"data"`
 	Digest string         `json:"digest"`
 	Raw    *RawMessage    `json:"raw"`
@@ -180,35 +179,23 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 }
 
 func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {
+	var format misc.RawFormat
 	switch raw.Format {
 	case "FORMAT_JSON":
-		if err := protojson.Unmarshal(raw.Body, out); err != nil {
-			return fmt.Errorf("error unmarshalling policy response: %w", err)
-		}
+		format = misc.RawFormatJSON
 	case "FORMAT_YAML":
-		// protoyaml allows validating the contract while unmarshalling
-		validator, err := protovalidate.New()
-		if err != nil {
-			return fmt.Errorf("could not create validator: %w", err)
-		}
-		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
-		if err := yamlOpts.Unmarshal(raw.Body, out); err != nil {
-			return fmt.Errorf("error unmarshalling policy response: %w", err)
-		}
+		format = misc.RawFormatYAML
 	case "FORMAT_CUE":
-		ctx := cuecontext.New()
-		v := ctx.CompileBytes(raw.Body)
-		jsonRawData, err := v.MarshalJSON()
-		if err != nil {
-			return fmt.Errorf("error unmarshalling policy response: %w", err)
-		}
-
-		if err := protojson.Unmarshal(jsonRawData, out); err != nil {
-			return fmt.Errorf("error unmarshalling policy response: %w", err)
-		}
+		format = misc.RawFormatCUE
 	default:
 		return fmt.Errorf("unsupported format: %s", raw.Format)
 	}
+
+	err := misc.UnmarshalFromRaw(raw.Body, format, out)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling policy response: %w", err)
+	}
+
 	return nil
 }
 
