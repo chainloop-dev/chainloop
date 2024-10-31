@@ -53,7 +53,7 @@ func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("organization", Organization.Type).Field("organization_id").Ref("projects").Unique().Required().Immutable(),
 		edge.To("workflows", Workflow.Type),
-		edge.To("versions", ProjectVersion.Type),
+		edge.To("versions", ProjectVersion.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 
