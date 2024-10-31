@@ -295,7 +295,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 }
 
 type RunListFilters struct {
-	WorkflowID uuid.UUID
+	WorkflowID *uuid.UUID
+	VersionID  *uuid.UUID
 	Status     WorkflowRunStatus
 }
 
@@ -304,6 +305,10 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunList
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, "", NewErrInvalidUUID(err)
+	}
+
+	if f.WorkflowID != nil && f.VersionID != nil {
+		return nil, "", NewErrValidation(errors.New("cannot filter by workflow and version at the same time"))
 	}
 
 	return uc.wfRunRepo.List(ctx, orgUUID, f, p)
