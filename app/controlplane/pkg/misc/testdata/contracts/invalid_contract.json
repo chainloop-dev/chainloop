@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "v2",
+  "materials": [
+    {
+      "type": "CONTAINER_IMAGE",
+      "name": "INVALID_NAME"
+    }
+  ]
+}
