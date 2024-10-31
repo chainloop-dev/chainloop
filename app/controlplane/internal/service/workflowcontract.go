@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -189,13 +190,13 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 }
 
 func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {
-	formatTranslator := func(biz.ContractRawFormat) pb.WorkflowContractVersionItem_RawBody_Format {
+	formatTranslator := func(misc.RawFormat) pb.WorkflowContractVersionItem_RawBody_Format {
 		switch schema.Schema.Format {
-		case biz.ContractRawFormatJSON:
+		case misc.RawFormatJSON:
 			return pb.WorkflowContractVersionItem_RawBody_FORMAT_JSON
-		case biz.ContractRawFormatYAML:
+		case misc.RawFormatYAML:
 			return pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML
-		case biz.ContractRawFormatCUE:
+		case misc.RawFormatCUE:
 			return pb.WorkflowContractVersionItem_RawBody_FORMAT_CUE
 		}
 
