@@ -45,6 +45,21 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
+			// load version from the file if not set
+			if projectVersion == "" {
+				// load the cfg from the file
+				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
+				// we do gracefully load, if not found, or any other error we continue
+				if err != nil {
+					logger.Debug().Msgf("failed to load chainloop config: %s", err)
+					return nil
+				}
+
+				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
+
+				projectVersion = cfg.ProjectVersion
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
