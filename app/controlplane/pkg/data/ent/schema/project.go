@@ -37,6 +37,7 @@ func (Project) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.String("name").Immutable().Validate(biz.ValidateIsDNS1123),
+		field.String("description").Optional(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().

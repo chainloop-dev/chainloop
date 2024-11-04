@@ -37,7 +37,8 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT}
+          tag=$(echo -n ${{github.ref}} | cut -d / -f3)
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag"
 
       - name: Attest all assets
         run: |
