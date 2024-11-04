@@ -1,4 +1,4 @@
-projectVersion: v0.97.6
+projectVersion: v0.97.7
 
 # Experimental feature used by Chainloop labs shared workflow https://github.com/chainloop-dev/labs
 # It maps the material names with location in disk so they get automatically attested
