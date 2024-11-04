@@ -365,10 +365,6 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 	return result, nil
 }
 
-// Check if this attachment can be applied to a material, following these rules:
-// 1. if the policy supports the material type, it can be applied
-// 2. if the policy doesn't have any specified type (rare, but supported), it can only be applied if the attachment has a selector with the same name as the material
-// 3. otherwise, it cannot be applied
 func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.PolicyAttachment, material *v12.Attestation_Material) (bool, error) {
 	// load the policy spec
 	spec, _, err := pv.loadPolicySpec(ctx, policyAtt)
@@ -386,7 +382,7 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, nil
 	}
 
-	if filteredName != "" && filteredName != material.GetID() {
+	if filteredName != "" && filteredName != material.GetArtifact().GetId() {
 		// a filer exists and doesn't match
 		return false, nil
 	}

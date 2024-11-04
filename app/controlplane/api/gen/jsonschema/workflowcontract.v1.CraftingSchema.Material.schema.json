@@ -20,13 +20,6 @@
       "description": "If a material is set as output it will get added to the subject in the statement",
       "type": "boolean"
     },
-    "policies": {
-      "description": "Policies to be applied to this material",
-      "items": {
-        "$ref": "workflowcontract.v1.PolicyAttachment.schema.json"
-      },
-      "type": "array"
-    },
     "type": {
       "anyOf": [
         {

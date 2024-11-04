@@ -71,32 +71,16 @@ func (s *groupsTestSuite) TestLoadGroupSpec() {
 		{
 			name: "with correct digest",
 			attachment: &v1.PolicyGroupAttachment{
-				Ref: "file://testdata/policy_group.yaml@sha256:e35d8effedf522b33a080168a69b0d56ca7d7e2779e2fe6e7d8c460509771f88",
+				Ref: "file://testdata/policy_group.yaml@sha256:1c21e5bb5323934a6c4827e760fa3fe20086470f83b2c99a2cdb75fc0b066035",
 			},
 			expectedName: "sbom-quality",
-		},
-		{
-			name: "materials in policy groups must have a type",
-			attachment: &v1.PolicyGroupAttachment{
-				Ref: "file://testdata/policy_group_wrong.yaml",
-			},
-			wantErr: true,
-		},
-		{
-			name: "materials in policy groups must have a type",
-			attachment: &v1.PolicyGroupAttachment{
-				Ref: "file://testdata/policy_group_wrong.yaml",
-			},
-			wantErr: true,
 		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			group, _, err := LoadPolicyGroup(context.TODO(), tc.attachment, &LoadPolicyGroupOptions{
-				Client: nil,
-				Logger: &s.logger,
-			})
+			verifier := NewPolicyGroupVerifier(nil, nil, &s.logger)
+			group, _, err := verifier.loadPolicyGroup(context.TODO(), tc.attachment)
 			if tc.wantErr {
 				s.Error(err)
 				return
@@ -117,21 +101,18 @@ func (s *groupsTestSuite) TestLoadGroupSpec() {
 func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 	cases := []struct {
 		name         string
-		materialName string
 		schemaRef    string
 		materialType v1.CraftingSchema_Material_MaterialType
 		expected     int
 	}{
 		{
 			name:         "no match",
-			materialName: "gitlab-report",
 			schemaRef:    "file://testdata/policy_group.yaml",
 			materialType: v1.CraftingSchema_Material_GITLAB_SECURITY_REPORT,
 			expected:     0,
 		},
 		{
-			name:         "match by name",
-			materialName: "sbom",
+			name:         "match",
 			schemaRef:    "file://testdata/policy_group.yaml",
 			materialType: v1.CraftingSchema_Material_SBOM_SPDX_JSON,
 			expected:     1,
@@ -143,15 +124,10 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 
 			material := &api.Attestation_Material{
 				MaterialType: tc.materialType,
-				M: &api.Attestation_Material_Artifact_{
-					Artifact: &api.Attestation_Material_Artifact{
-						Id: tc.materialName,
-					},
-				},
 			}
 
 			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
-			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material)
+			atts, err := v.requiredPolicyGroupsForMaterial(context.TODO(), material)
 			s.Require().NoError(err)
 			s.Len(atts, tc.expected)
 		})
@@ -189,11 +165,9 @@ func (s *groupsTestSuite) TestGroupLoader() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
+			v := NewPolicyGroupVerifier(nil, nil, &s.logger)
 			att := &v1.PolicyGroupAttachment{Ref: tc.ref}
-			loader, err := getGroupLoader(att, &LoadPolicyGroupOptions{
-				Client: nil,
-				Logger: &s.logger,
-			})
+			loader, err := v.getGroupLoader(att)
 			if tc.wantErr {
 				s.Error(err)
 				return
