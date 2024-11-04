@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -48,7 +47,7 @@ func NewPolicyGroupVerifier(schema *v1.CraftingSchema, client v13.AttestationSer
 func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *api.Attestation_Material, path string) ([]*api.PolicyEvaluation, error) {
 	result := make([]*api.PolicyEvaluation, 0)
 
-	attachments, err := pgv.requiredPoliciesForMaterial(ctx, material)
+	attachments, err := pgv.requiredPolicyGroupsForMaterial(ctx, material)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -61,7 +60,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 		}
 
 		ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetID()},
+			&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId()},
 		)
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -77,10 +76,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	result := make([]*api.PolicyEvaluation, 0)
 	attachments := pgv.schema.GetPolicyGroups()
 	for _, groupAtt := range attachments {
-		group, _, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
-			Client: pgv.client,
-			Logger: pgv.logger,
-		})
+		group, _, err := pgv.loadPolicyGroup(ctx, groupAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -104,19 +100,41 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	return result, nil
 }
 
-type LoadPolicyGroupOptions struct {
-	Client v13.AttestationServiceClient
-	Logger *zerolog.Logger
+func (pgv *PolicyGroupVerifier) requiredPolicyGroupsForMaterial(ctx context.Context, material *api.Attestation_Material) ([]*v1.PolicyAttachment, error) {
+	result := make([]*v1.PolicyAttachment, 0)
+	attachments := pgv.schema.GetPolicyGroups()
+
+	for _, attachment := range attachments {
+		// 1. load the policy group
+		group, _, err := pgv.loadPolicyGroup(ctx, attachment)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
+
+		// 2. go through all policies in the group and check individually
+		for _, policyAtt := range group.GetSpec().GetPolicies().GetMaterials() {
+			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
+			if err != nil {
+				return nil, err
+			}
+
+			if apply {
+				result = append(result, policyAtt)
+			}
+		}
+	}
+
+	return result, nil
 }
 
-// LoadPolicyGroup loads a group (unmarshalls it) from a group attachment
-func LoadPolicyGroup(ctx context.Context, att *v1.PolicyGroupAttachment, opts *LoadPolicyGroupOptions) (*v1.PolicyGroup, *PolicyDescriptor, error) {
-	loader, err := getGroupLoader(att, opts)
+// LoadPolicySpec loads and validates a policy spec from a contract
+func (pgv *PolicyGroupVerifier) loadPolicyGroup(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
+	loader, err := pgv.getGroupLoader(attachment)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get a loader for policy group: %w", err)
 	}
 
-	group, ref, err := loader.Load(ctx, att)
+	group, ref, err := loader.Load(ctx, attachment)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load policy group: %w", err)
 	}
@@ -129,8 +147,7 @@ func LoadPolicyGroup(ctx context.Context, att *v1.PolicyGroupAttachment, opts *L
 	return group, ref, nil
 }
 
-// getGroupLoader creates a suitable group loader for a group attachment
-func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupOptions) (GroupLoader, error) {
+func (pgv *PolicyGroupVerifier) getGroupLoader(attachment *v1.PolicyGroupAttachment) (GroupLoader, error) {
 	ref := attachment.GetRef()
 
 	if ref == "" {
@@ -142,7 +159,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":
-		loader = NewChainloopGroupLoader(opts.Client)
+		loader = NewChainloopGroupLoader(pgv.client)
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:
@@ -151,70 +168,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 		return nil, fmt.Errorf("policy scheme not supported: %q", scheme)
 	}
 
-	opts.Logger.Debug().Msgf("loading policy group %q using %T", ref, loader)
+	pgv.logger.Debug().Msgf("loading policy group %q using %T", ref, loader)
 
 	return loader, nil
-}
-
-func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material) ([]*v1.PolicyAttachment, error) {
-	result := make([]*v1.PolicyAttachment, 0)
-
-	attachments := pgv.schema.GetPolicyGroups()
-
-	for _, attachment := range attachments {
-		// 1. load the policy group
-		group, _, err := LoadPolicyGroup(ctx, attachment, &LoadPolicyGroupOptions{
-			Client: pgv.client,
-			Logger: pgv.logger,
-		})
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
-
-		// 2. go through all materials in the group and look for the crafted material
-		for _, schemaMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-			if schemaMaterial.GetName() != material.GetID() {
-				continue
-			}
-
-			// 3. Material found. Let's check its policies
-			for _, policyAtt := range schemaMaterial.GetPolicies() {
-				apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
-				if err != nil {
-					return nil, err
-				}
-
-				if apply {
-					result = append(result, policyAtt)
-				}
-			}
-		}
-	}
-
-	return result, nil
-}
-
-// // policy groups can be applied if they support the material type, or they don't have any specified material
-func (pgv *PolicyGroupVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.PolicyAttachment, material *api.Attestation_Material) (bool, error) {
-	// load the policy spec
-	spec, _, err := pgv.loadPolicySpec(ctx, policyAtt)
-	if err != nil {
-		return false, fmt.Errorf("failed to load policy attachment %q: %w", policyAtt.GetRef(), err)
-	}
-
-	materialType := material.GetMaterialType()
-	specTypes := getPolicyTypes(spec)
-
-	// if spec has a type, and matches, it can be applied
-	if len(specTypes) > 0 && slices.Contains(specTypes, materialType) {
-		// types don't match, continue
-		return true, nil
-	}
-
-	// if policy doesn't have any type to match, we can apply it
-	if len(specTypes) == 0 {
-		return true, nil
-	}
-
-	return false, nil
 }

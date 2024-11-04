@@ -22,11 +22,8 @@ import (
 	"strconv"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/pkg/policies"
-	"github.com/rs/zerolog"
 )
 
 type AttestationInitOpts struct {
@@ -129,12 +126,6 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
 
-	// 3. enrich contract with group materials and policies
-	err = enrichContractMaterials(ctx, contractVersion.GetV1(), client, &action.Logger)
-	if err != nil {
-		return "", fmt.Errorf("failed to apply materials from policy groups: %w", err)
-	}
-
 	// Auto discover the runner context and enforce against the one in the contract if needed
 	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.Logger)
 	if err != nil {
@@ -173,8 +164,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo:        workflowMeta,
-		SchemaV1:      contractVersion.GetV1(),
+		WfInfo: workflowMeta, SchemaV1: contractVersion.GetV1(),
 		DryRun:        action.dryRun,
 		AttestationID: attestationID,
 		Runner:        discoveredRunner,
@@ -195,45 +185,4 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	return attestationID, nil
-}
-
-func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, client pb.AttestationServiceClient, logger *zerolog.Logger) error {
-	contractMaterials := schema.GetMaterials()
-	for _, pgAtt := range schema.GetPolicyGroups() {
-		group, _, err := policies.LoadPolicyGroup(ctx, pgAtt, &policies.LoadPolicyGroupOptions{
-			Client: client,
-			Logger: logger,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to load policy group: %w", err)
-		}
-		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
-
-		toAdd := getGroupMaterialsToAdd(group, contractMaterials, logger)
-		contractMaterials = append(contractMaterials, toAdd...)
-	}
-
-	schema.Materials = contractMaterials
-
-	return nil
-}
-
-// merge existing materials with group ones, taking the contract's one in case of conflict
-func getGroupMaterialsToAdd(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
-	toAdd := make([]*v1.CraftingSchema_Material, 0)
-	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-		// check if material already exists in the contract and skip it in that case
-		ignore := false
-		for _, mat := range fromContract {
-			if mat.GetName() == groupMaterial.GetName() {
-				logger.Warn().Msgf("material '%s' from policy group '%s' is also present in the contract and will be ignored", mat.GetName(), group.GetMetadata().GetName())
-				ignore = true
-			}
-		}
-		if !ignore {
-			toAdd = append(toAdd, groupMaterial)
-		}
-	}
-
-	return toAdd
 }
