@@ -12198,8 +12198,8 @@ func (m *WorkflowContractVersionMutation) ResetRawBody() {
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (m *WorkflowContractVersionMutation) SetRawBodyFormat(mf unmarshal.RawFormat) {
-	m.raw_body_format = &mf
+func (m *WorkflowContractVersionMutation) SetRawBodyFormat(uf unmarshal.RawFormat) {
+	m.raw_body_format = &uf
 }
 
 // RawBodyFormat returns the value of the "raw_body_format" field in the mutation.

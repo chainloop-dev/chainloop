@@ -32,15 +32,15 @@ func (wcvu *WorkflowContractVersionUpdate) Where(ps ...predicate.WorkflowContrac
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(mf unmarshal.RawFormat) *WorkflowContractVersionUpdate {
-	wcvu.mutation.SetRawBodyFormat(mf)
+func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(uf unmarshal.RawFormat) *WorkflowContractVersionUpdate {
+	wcvu.mutation.SetRawBodyFormat(uf)
 	return wcvu
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(mf *unmarshal.RawFormat) *WorkflowContractVersionUpdate {
-	if mf != nil {
-		wcvu.SetRawBodyFormat(*mf)
+func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(uf *unmarshal.RawFormat) *WorkflowContractVersionUpdate {
+	if uf != nil {
+		wcvu.SetRawBodyFormat(*uf)
 	}
 	return wcvu
 }
@@ -188,15 +188,15 @@ type WorkflowContractVersionUpdateOne struct {
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(mf unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
-	wcvuo.mutation.SetRawBodyFormat(mf)
+func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(uf unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
+	wcvuo.mutation.SetRawBodyFormat(uf)
 	return wcvuo
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(mf *unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
-	if mf != nil {
-		wcvuo.SetRawBodyFormat(*mf)
+func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(uf *unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
+	if uf != nil {
+		wcvuo.SetRawBodyFormat(*uf)
 	}
 	return wcvuo
 }

@@ -39,8 +39,8 @@ func (wcvc *WorkflowContractVersionCreate) SetRawBody(b []byte) *WorkflowContrac
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvc *WorkflowContractVersionCreate) SetRawBodyFormat(mf unmarshal.RawFormat) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetRawBodyFormat(mf)
+func (wcvc *WorkflowContractVersionCreate) SetRawBodyFormat(uf unmarshal.RawFormat) *WorkflowContractVersionCreate {
+	wcvc.mutation.SetRawBodyFormat(uf)
 	return wcvc
 }
 
