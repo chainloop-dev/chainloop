@@ -279,7 +279,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}()
 
 	// promote release if the workflowRun is successful
-	if req.MarkVersionAsRelease != nil && *req.MarkVersionAsRelease {
+	if req.MarkVersionAsReleased != nil && *req.MarkVersionAsReleased {
 		// Update the project version to mark it as a release
 		if _, err := s.projectVersionUseCase.MarkAsRelease(ctx, wRun.ProjectVersion.ID.String(), true); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
