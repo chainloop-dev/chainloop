@@ -1,30 +1,28 @@
 #!/usr/bin/env bash
 
-# Bump the Chainloop project version to a specific version number in configFile (defult .chainloop.yml)
+# Bump the Chainloop project version to the next minor version to the version defined .chainloop.yml
 
 set -e
 
 die () {
-    echo >&2 "$@"
-    echo "usage: bump-project-version.sh [version] [configFile]"
-    exit 1
+   echo >&2 "$@"
+   echo "usage: bump-project-version.sh [configFile]"
+   exit 1
 }
 
 ## debug if desired
 if [[ -n "${DEBUG}" ]]; then
-    set -x
+   set -x
 fi
-
-[ "$#" -ge 1 ] || die "At least 1 arguments required, $# provided"
-
-version="${1}"
-# append project path if provided
 
 project_yaml=".chainloop.yml"
 # manual override
-if [[ -n "${2}" ]]; then
-    project_yaml="${2}"
+if [[ -n "${1}" ]]; then
+   project_yaml="${1}"
 fi
+
+# load the previous version and BUMP THE MINOR
+version=$(cat ${project_yaml} | awk -F'[ .]' '/^projectVersion:/ {print $2"."$3+1"."0}')
 
 ## Changes in .chainloop.yml
 sed -i "s#^projectVersion:.*#projectVersion: ${version}#g" "${project_yaml}"

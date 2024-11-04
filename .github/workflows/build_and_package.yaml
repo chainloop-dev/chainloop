@@ -121,7 +121,7 @@ jobs:
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
       - name: Bump Project Version
-        run: .github/workflows/utils/bump-project-version.sh ${{ github.ref_name }}
+        run: .github/workflows/utils/bump-project-version.sh
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
