@@ -33,6 +33,20 @@ func (pc *ProjectCreate) SetName(s string) *ProjectCreate {
 	return pc
 }
 
+// SetDescription sets the "description" field.
+func (pc *ProjectCreate) SetDescription(s string) *ProjectCreate {
+	pc.mutation.SetDescription(s)
+	return pc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableDescription(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetDescription(*s)
+	}
+	return pc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (pc *ProjectCreate) SetCreatedAt(t time.Time) *ProjectCreate {
 	pc.mutation.SetCreatedAt(t)
@@ -220,6 +234,10 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_spec.SetField(project.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := pc.mutation.Description(); ok {
+		_spec.SetField(project.FieldDescription, field.TypeString, value)
+		_node.Description = value
+	}
 	if value, ok := pc.mutation.CreatedAt(); ok {
 		_spec.SetField(project.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -329,6 +347,24 @@ type (
 	}
 )
 
+// SetDescription sets the "description" field.
+func (u *ProjectUpsert) SetDescription(v string) *ProjectUpsert {
+	u.Set(project.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *ProjectUpsert) UpdateDescription() *ProjectUpsert {
+	u.SetExcluded(project.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *ProjectUpsert) ClearDescription() *ProjectUpsert {
+	u.SetNull(project.FieldDescription)
+	return u
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *ProjectUpsert) SetDeletedAt(v time.Time) *ProjectUpsert {
 	u.Set(project.FieldDeletedAt, v)
@@ -402,6 +438,27 @@ func (u *ProjectUpsertOne) Update(set func(*ProjectUpsert)) *ProjectUpsertOne {
 		set(&ProjectUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *ProjectUpsertOne) SetDescription(v string) *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *ProjectUpsertOne) UpdateDescription() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *ProjectUpsertOne) ClearDescription() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearDescription()
+	})
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -647,6 +704,27 @@ func (u *ProjectUpsertBulk) Update(set func(*ProjectUpsert)) *ProjectUpsertBulk 
 		set(&ProjectUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *ProjectUpsertBulk) SetDescription(v string) *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *ProjectUpsertBulk) UpdateDescription() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *ProjectUpsertBulk) ClearDescription() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearDescription()
+	})
 }
 
 // SetDeletedAt sets the "deleted_at" field.
