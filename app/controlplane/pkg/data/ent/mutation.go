@@ -6423,6 +6423,7 @@ type ProjectMutation struct {
 	typ                 string
 	id                  *uuid.UUID
 	name                *string
+	description         *string
 	created_at          *time.Time
 	deleted_at          *time.Time
 	clearedFields       map[string]struct{}
@@ -6577,6 +6578,55 @@ func (m *ProjectMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *ProjectMutation) ResetName() {
 	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *ProjectMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *ProjectMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *ProjectMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[project.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *ProjectMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[project.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *ProjectMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, project.FieldDescription)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -6869,9 +6919,12 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, project.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, project.FieldDescription)
 	}
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
@@ -6892,6 +6945,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case project.FieldName:
 		return m.Name()
+	case project.FieldDescription:
+		return m.Description()
 	case project.FieldCreatedAt:
 		return m.CreatedAt()
 	case project.FieldDeletedAt:
@@ -6909,6 +6964,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 	switch name {
 	case project.FieldName:
 		return m.OldName(ctx)
+	case project.FieldDescription:
+		return m.OldDescription(ctx)
 	case project.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case project.FieldDeletedAt:
@@ -6930,6 +6987,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case project.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case project.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -6982,6 +7046,9 @@ func (m *ProjectMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ProjectMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(project.FieldDescription) {
+		fields = append(fields, project.FieldDescription)
+	}
 	if m.FieldCleared(project.FieldDeletedAt) {
 		fields = append(fields, project.FieldDeletedAt)
 	}
@@ -6999,6 +7066,9 @@ func (m *ProjectMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ProjectMutation) ClearField(name string) error {
 	switch name {
+	case project.FieldDescription:
+		m.ClearDescription()
+		return nil
 	case project.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
@@ -7012,6 +7082,9 @@ func (m *ProjectMutation) ResetField(name string) error {
 	switch name {
 	case project.FieldName:
 		m.ResetName()
+		return nil
+	case project.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case project.FieldCreatedAt:
 		m.ResetCreatedAt()

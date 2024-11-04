@@ -275,6 +275,7 @@ var (
 	ProjectsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
@@ -287,7 +288,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "projects_organizations_projects",
-				Columns:    []*schema.Column{ProjectsColumns[4]},
+				Columns:    []*schema.Column{ProjectsColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -296,7 +297,7 @@ var (
 			{
 				Name:    "project_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectsColumns[1], ProjectsColumns[4]},
+				Columns: []*schema.Column{ProjectsColumns[1], ProjectsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -304,7 +305,7 @@ var (
 			{
 				Name:    "project_organization_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectsColumns[4]},
+				Columns: []*schema.Column{ProjectsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
