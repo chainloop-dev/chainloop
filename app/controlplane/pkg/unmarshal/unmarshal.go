@@ -37,9 +37,6 @@ const (
 	RawFormatCUE  RawFormat = "cue"
 )
 
-type UnmarshalError struct {
-}
-
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (RawFormat) Values() (kinds []string) {
 	for _, s := range []RawFormat{RawFormatJSON, RawFormatYAML, RawFormatCUE} {
