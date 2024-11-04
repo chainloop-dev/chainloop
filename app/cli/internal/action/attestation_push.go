@@ -172,7 +172,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return attestationResult, nil
 	}
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, crafter.CraftingState.Attestation.GetWorkflow().GetWorkflowRunId())
+	workflow := crafter.CraftingState.Attestation.GetWorkflow()
+
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, workflow.GetWorkflowRunId(), workflow.GetProjectVersion().GetMarkAsReleased())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
@@ -187,7 +189,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	return attestationResult, nil
 }
 
-func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string) (string, error) {
+func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string, markVersionAsReleased bool) (string, error) {
 	encodedAttestation, err := encodeEnvelope(envelope)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
@@ -195,8 +197,9 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 
 	client := pb.NewAttestationServiceClient(conn)
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
-		Attestation:   encodedAttestation,
-		WorkflowRunId: workflowRunID,
+		Attestation:          encodedAttestation,
+		WorkflowRunId:        workflowRunID,
+		MarkVersionAsRelease: &markVersionAsReleased,
 	})
 
 	if err != nil {

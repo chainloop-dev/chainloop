@@ -123,11 +123,15 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 
 func versionString(p *action.ProjectVersion) string {
 	versionString := p.Version
-	if versionString != "" && p.Prerelease {
-		versionString = fmt.Sprintf("%s (prerelease)", p.Version)
+	if versionString == "" {
+		return ""
 	}
 
-	return versionString
+	if !p.Prerelease {
+		return versionString
+	}
+
+	return fmt.Sprintf("%s (prerelease)", p.Version)
 }
 
 // listAvailableWorkflowStatusFlag returns a list of available workflow status flags

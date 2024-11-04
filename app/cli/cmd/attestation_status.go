@@ -84,7 +84,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	gt.AppendRow(table.Row{"Organization", meta.Organization})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Project", meta.Project})
-	projectVersion := versionString(meta.ProjectVersion)
+	projectVersion := versionStringAttestation(meta.ProjectVersion)
 	if projectVersion == "" {
 		projectVersion = "none"
 	}
@@ -205,4 +205,23 @@ func hBool(b bool) string {
 	}
 
 	return "No"
+}
+
+// Version information to be shown during the attestation process
+func versionStringAttestation(p *action.ProjectVersion) string {
+	if p.Version == "" {
+		return ""
+	}
+
+	// We are releasing a pre-release at the end of the attestation
+	if p.MarkAsReleased && p.Prerelease {
+		return fmt.Sprintf("%s (will release)", p.Version)
+	}
+
+	// The version loaded is a already released version
+	if !p.Prerelease {
+		return fmt.Sprintf("%s (already released)", p.Version)
+	}
+
+	return fmt.Sprintf("%s (prerelease)", p.Version)
 }

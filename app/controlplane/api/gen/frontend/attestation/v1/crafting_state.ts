@@ -195,7 +195,9 @@ export interface WorkflowMetadata {
 
 export interface ProjectVersion {
   version: string;
+  /** if it's pre-release */
   prerelease: boolean;
+  markAsReleased: boolean;
 }
 
 /**
@@ -2236,7 +2238,7 @@ export const WorkflowMetadata = {
 };
 
 function createBaseProjectVersion(): ProjectVersion {
-  return { version: "", prerelease: false };
+  return { version: "", prerelease: false, markAsReleased: false };
 }
 
 export const ProjectVersion = {
@@ -2246,6 +2248,9 @@ export const ProjectVersion = {
     }
     if (message.prerelease === true) {
       writer.uint32(16).bool(message.prerelease);
+    }
+    if (message.markAsReleased === true) {
+      writer.uint32(24).bool(message.markAsReleased);
     }
     return writer;
   },
@@ -2271,6 +2276,13 @@ export const ProjectVersion = {
 
           message.prerelease = reader.bool();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.markAsReleased = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2284,6 +2296,7 @@ export const ProjectVersion = {
     return {
       version: isSet(object.version) ? String(object.version) : "",
       prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
+      markAsReleased: isSet(object.markAsReleased) ? Boolean(object.markAsReleased) : false,
     };
   },
 
@@ -2291,6 +2304,7 @@ export const ProjectVersion = {
     const obj: any = {};
     message.version !== undefined && (obj.version = message.version);
     message.prerelease !== undefined && (obj.prerelease = message.prerelease);
+    message.markAsReleased !== undefined && (obj.markAsReleased = message.markAsReleased);
     return obj;
   },
 
@@ -2302,6 +2316,7 @@ export const ProjectVersion = {
     const message = createBaseProjectVersion();
     message.version = object.version ?? "";
     message.prerelease = object.prerelease ?? false;
+    message.markAsReleased = object.markAsReleased ?? false;
     return message;
   },
 };

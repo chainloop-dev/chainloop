@@ -108,6 +108,8 @@ export interface AttestationServiceStoreRequest {
   /** encoded DSEE envelope */
   attestation: Uint8Array;
   workflowRunId: string;
+  /** mark the associated version as released */
+  markVersionAsRelease?: boolean | undefined;
 }
 
 export interface AttestationServiceStoreResponse {
@@ -1267,7 +1269,7 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return { attestation: new Uint8Array(0), workflowRunId: "" };
+  return { attestation: new Uint8Array(0), workflowRunId: "", markVersionAsRelease: undefined };
 }
 
 export const AttestationServiceStoreRequest = {
@@ -1277,6 +1279,9 @@ export const AttestationServiceStoreRequest = {
     }
     if (message.workflowRunId !== "") {
       writer.uint32(18).string(message.workflowRunId);
+    }
+    if (message.markVersionAsRelease !== undefined) {
+      writer.uint32(24).bool(message.markVersionAsRelease);
     }
     return writer;
   },
@@ -1302,6 +1307,13 @@ export const AttestationServiceStoreRequest = {
 
           message.workflowRunId = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.markVersionAsRelease = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1315,6 +1327,7 @@ export const AttestationServiceStoreRequest = {
     return {
       attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
+      markVersionAsRelease: isSet(object.markVersionAsRelease) ? Boolean(object.markVersionAsRelease) : undefined,
     };
   },
 
@@ -1323,6 +1336,7 @@ export const AttestationServiceStoreRequest = {
     message.attestation !== undefined &&
       (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
+    message.markVersionAsRelease !== undefined && (obj.markVersionAsRelease = message.markVersionAsRelease);
     return obj;
   },
 
@@ -1336,6 +1350,7 @@ export const AttestationServiceStoreRequest = {
     const message = createBaseAttestationServiceStoreRequest();
     message.attestation = object.attestation ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
+    message.markVersionAsRelease = object.markVersionAsRelease ?? undefined;
     return message;
   },
 };

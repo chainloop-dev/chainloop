@@ -2,8 +2,22 @@
   "$id": "attestation.v1.ProjectVersion.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+<<<<<<< HEAD
   "properties": {
     "prerelease": {
+=======
+  "patternProperties": {
+    "^(mark_as_released)$": {
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "markAsReleased": {
+      "type": "boolean"
+    },
+    "prerelease": {
+      "description": "if it's pre-release",
+>>>>>>> e6ca35d1 (feat: expose prerelease info)
       "type": "boolean"
     },
     "version": {

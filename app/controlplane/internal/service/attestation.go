@@ -53,6 +53,7 @@ type AttestationService struct {
 	referrerUseCase         *biz.ReferrerUseCase
 	orgUseCase              *biz.OrganizationUseCase
 	prometheusUseCase       *biz.PrometheusUseCase
+	projectVersionUseCase   *biz.ProjectVersionUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -69,6 +70,7 @@ type NewAttestationServiceOpts struct {
 	ReferrerUC         *biz.ReferrerUseCase
 	OrgUC              *biz.OrganizationUseCase
 	PromUC             *biz.PrometheusUseCase
+	ProjectVersionUC   *biz.ProjectVersionUseCase
 	Opts               []NewOpt
 }
 
@@ -88,6 +90,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		referrerUseCase:         opts.ReferrerUC,
 		orgUseCase:              opts.OrgUC,
 		prometheusUseCase:       opts.PromUC,
+		projectVersionUseCase:   opts.ProjectVersionUC,
 	}
 }
 
@@ -274,6 +277,14 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 			_ = handleUseCaseErr(err, s.log)
 		}
 	}()
+
+	// promote release if the workflowRun is successful
+	if req.MarkVersionAsRelease != nil && *req.MarkVersionAsRelease {
+		// Update the project version to mark it as a release
+		if _, err := s.projectVersionUseCase.MarkAsRelease(ctx, wRun.ProjectVersion.ID.String(), true); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	}
 
 	if err := s.wrUseCase.MarkAsFinished(ctx, req.WorkflowRunId, biz.WorkflowRunSuccess, ""); err != nil {
 		return nil, handleUseCaseErr(err, s.log)

@@ -55,9 +55,10 @@ type WorkflowRunItem struct {
 }
 
 type ProjectVersion struct {
-	ID         string `json:"id"`
-	Version    string `json:"version,omitempty"`
-	Prerelease bool   `json:"prerelease"`
+	ID             string `json:"id"`
+	Version        string `json:"version,omitempty"`
+	Prerelease     bool   `json:"prerelease"`
+	MarkAsReleased bool   `json:"markAsRelease"`
 }
 
 type PaginatedWorkflowRunItem struct {

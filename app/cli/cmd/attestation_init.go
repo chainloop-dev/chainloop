@@ -31,6 +31,7 @@ func newAttestationInitCmd() *cobra.Command {
 		workflowName            string
 		projectName             string
 		projectVersion          string
+		projectVersionRelease   bool
 		newWorkflowcontractName string
 	)
 
@@ -60,6 +61,10 @@ func newAttestationInitCmd() *cobra.Command {
 				projectVersion = cfg.ProjectVersion
 			}
 
+			if projectVersion == "" && projectVersionRelease {
+				return errors.New("project version is required when using --release")
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -82,6 +87,7 @@ func newAttestationInitCmd() *cobra.Command {
 				ProjectVersion:          projectVersion,
 				WorkflowName:            workflowName,
 				NewWorkflowContractName: newWorkflowcontractName,
+				ProjectVersionRelease:   projectVersionRelease,
 			})
 
 			if err != nil {
@@ -136,6 +142,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&newWorkflowcontractName, "contract", "", "name of an existing contract to attach it to the auto-created workflow (it doesn't update an existing one)")
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
+	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
 
 	return cmd
 }

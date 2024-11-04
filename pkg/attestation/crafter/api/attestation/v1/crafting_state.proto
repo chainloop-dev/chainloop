@@ -188,7 +188,9 @@ message WorkflowMetadata {
 
 message ProjectVersion {
   string version = 1 [(buf.validate.field).string.min_len = 1];
+  // if it's pre-release
   bool prerelease = 2;
+  bool mark_as_released = 3;
 }
 
 // Proto representation of the in-toto v1 ResourceDescriptor.

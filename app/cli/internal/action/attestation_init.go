@@ -77,6 +77,7 @@ type AttestationInitRunOpts struct {
 	ContractRevision        int
 	ProjectName             string
 	ProjectVersion          string
+	ProjectVersionRelease   bool
 	WorkflowName            string
 	NewWorkflowContractName string
 }
@@ -125,8 +126,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
 		ProjectVersion: &clientAPI.ProjectVersion{
-			Version:    opts.ProjectVersion,
-			Prerelease: true,
+			Version:        opts.ProjectVersion,
+			MarkAsReleased: opts.ProjectVersionRelease,
 		},
 	}
 
@@ -168,6 +169,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowRun := runResp.GetResult().GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		workflowMeta.Organization = runResp.GetResult().GetOrganization()
+		workflowMeta.ProjectVersion.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
 		attestationID = workflowRun.GetId()
 	}

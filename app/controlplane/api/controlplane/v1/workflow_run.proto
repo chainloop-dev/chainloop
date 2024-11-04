@@ -136,6 +136,8 @@ message AttestationServiceStoreRequest {
   // encoded DSEE envelope
   bytes attestation = 1 [(buf.validate.field).bytes.min_len = 1];
   string workflow_run_id = 2 [(buf.validate.field).string = {min_len: 1}];
+  // mark the associated version as released
+  optional bool mark_version_as_release = 3;
 }
 
 message AttestationServiceStoreResponse {

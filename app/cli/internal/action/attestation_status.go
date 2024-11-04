@@ -100,8 +100,9 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
 			ProjectVersion: &ProjectVersion{
-				Version:    workflowMeta.GetProjectVersion().GetVersion(),
-				Prerelease: workflowMeta.GetProjectVersion().GetPrerelease(),
+				Version:        workflowMeta.GetProjectVersion().GetVersion(),
+				Prerelease:     workflowMeta.GetProjectVersion().GetPrerelease(),
+				MarkAsReleased: att.GetWorkflow().ProjectVersion.MarkAsReleased,
 			},
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
