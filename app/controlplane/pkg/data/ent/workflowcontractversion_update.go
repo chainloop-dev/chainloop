@@ -13,7 +13,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 )
 
@@ -32,13 +32,13 @@ func (wcvu *WorkflowContractVersionUpdate) Where(ps ...predicate.WorkflowContrac
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(mf misc.RawFormat) *WorkflowContractVersionUpdate {
+func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(mf unmarshal.RawFormat) *WorkflowContractVersionUpdate {
 	wcvu.mutation.SetRawBodyFormat(mf)
 	return wcvu
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(mf *misc.RawFormat) *WorkflowContractVersionUpdate {
+func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(mf *unmarshal.RawFormat) *WorkflowContractVersionUpdate {
 	if mf != nil {
 		wcvu.SetRawBodyFormat(*mf)
 	}
@@ -188,13 +188,13 @@ type WorkflowContractVersionUpdateOne struct {
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(mf misc.RawFormat) *WorkflowContractVersionUpdateOne {
+func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(mf unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
 	wcvuo.mutation.SetRawBodyFormat(mf)
 	return wcvuo
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(mf *misc.RawFormat) *WorkflowContractVersionUpdateOne {
+func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(mf *unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
 	if mf != nil {
 		wcvuo.SetRawBodyFormat(*mf)
 	}

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/bufbuild/protovalidate-go"
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -85,12 +84,8 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 		if err != nil {
 			// Temporarily skip if policy groups still use old schema
 			// TODO: remove this check in next release
-			var ve *protovalidate.ValidationError
-			if errors.As(err, &ve) {
-				pgv.logger.Warn().Msgf("policy group '%s' skipped since it uses an old schema version", groupAtt.GetRef())
-				continue
-			}
-			return nil, NewPolicyError(err)
+			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
+			continue
 		}
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
 			material, err := protojson.Marshal(statement)
@@ -178,12 +173,8 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 		if err != nil {
 			// Temporarily skip if policy groups still use old schema
 			// TODO: remove this check in next release
-			var ve *protovalidate.ValidationError
-			if errors.As(err, &ve) {
-				pgv.logger.Warn().Msgf("policy group '%s' skipped since it uses an old schema version", attachment.GetRef())
-				continue
-			}
-			return nil, NewPolicyError(err)
+			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", attachment.GetRef())
+			continue
 		}
 
 		// 2. go through all materials in the group and look for the crafted material

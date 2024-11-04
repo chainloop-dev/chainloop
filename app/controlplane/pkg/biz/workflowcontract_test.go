@@ -19,7 +19,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,17 +27,17 @@ import (
 func TestIdentifyAndValidateRawContract(t *testing.T) {
 	testData := []struct {
 		filename          string
-		wantFormat        misc.RawFormat
+		wantFormat        unmarshal.RawFormat
 		wantValidationErr bool
 		wantFormatErr     bool
 	}{
 		{
 			filename:   "contract.cue",
-			wantFormat: misc.RawFormatCUE,
+			wantFormat: unmarshal.RawFormatCUE,
 		},
 		{
 			filename:   "contract.json",
-			wantFormat: misc.RawFormatJSON,
+			wantFormat: unmarshal.RawFormatJSON,
 		},
 		{
 			filename:          "invalid_contract.json",
@@ -45,7 +45,7 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 		},
 		{
 			filename:   "contract.yaml",
-			wantFormat: misc.RawFormatYAML,
+			wantFormat: unmarshal.RawFormatYAML,
 		},
 		{
 			filename:          "invalid_contract.yaml",

@@ -14,7 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 )
 
@@ -39,7 +39,7 @@ func (wcvc *WorkflowContractVersionCreate) SetRawBody(b []byte) *WorkflowContrac
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvc *WorkflowContractVersionCreate) SetRawBodyFormat(mf misc.RawFormat) *WorkflowContractVersionCreate {
+func (wcvc *WorkflowContractVersionCreate) SetRawBodyFormat(mf unmarshal.RawFormat) *WorkflowContractVersionCreate {
 	wcvc.mutation.SetRawBodyFormat(mf)
 	return wcvc
 }
@@ -304,7 +304,7 @@ type (
 )
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (u *WorkflowContractVersionUpsert) SetRawBodyFormat(v misc.RawFormat) *WorkflowContractVersionUpsert {
+func (u *WorkflowContractVersionUpsert) SetRawBodyFormat(v unmarshal.RawFormat) *WorkflowContractVersionUpsert {
 	u.Set(workflowcontractversion.FieldRawBodyFormat, v)
 	return u
 }
@@ -376,7 +376,7 @@ func (u *WorkflowContractVersionUpsertOne) Update(set func(*WorkflowContractVers
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (u *WorkflowContractVersionUpsertOne) SetRawBodyFormat(v misc.RawFormat) *WorkflowContractVersionUpsertOne {
+func (u *WorkflowContractVersionUpsertOne) SetRawBodyFormat(v unmarshal.RawFormat) *WorkflowContractVersionUpsertOne {
 	return u.Update(func(s *WorkflowContractVersionUpsert) {
 		s.SetRawBodyFormat(v)
 	})
@@ -617,7 +617,7 @@ func (u *WorkflowContractVersionUpsertBulk) Update(set func(*WorkflowContractVer
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (u *WorkflowContractVersionUpsertBulk) SetRawBodyFormat(v misc.RawFormat) *WorkflowContractVersionUpsertBulk {
+func (u *WorkflowContractVersionUpsertBulk) SetRawBodyFormat(v unmarshal.RawFormat) *WorkflowContractVersionUpsertBulk {
 	return u.Update(func(s *WorkflowContractVersionUpsert) {
 		s.SetRawBodyFormat(v)
 	})

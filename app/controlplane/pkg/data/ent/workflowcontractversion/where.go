@@ -8,7 +8,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 )
 
@@ -168,19 +168,19 @@ func RawBodyLTE(v []byte) predicate.WorkflowContractVersion {
 }
 
 // RawBodyFormatEQ applies the EQ predicate on the "raw_body_format" field.
-func RawBodyFormatEQ(v misc.RawFormat) predicate.WorkflowContractVersion {
+func RawBodyFormatEQ(v unmarshal.RawFormat) predicate.WorkflowContractVersion {
 	vc := v
 	return predicate.WorkflowContractVersion(sql.FieldEQ(FieldRawBodyFormat, vc))
 }
 
 // RawBodyFormatNEQ applies the NEQ predicate on the "raw_body_format" field.
-func RawBodyFormatNEQ(v misc.RawFormat) predicate.WorkflowContractVersion {
+func RawBodyFormatNEQ(v unmarshal.RawFormat) predicate.WorkflowContractVersion {
 	vc := v
 	return predicate.WorkflowContractVersion(sql.FieldNEQ(FieldRawBodyFormat, vc))
 }
 
 // RawBodyFormatIn applies the In predicate on the "raw_body_format" field.
-func RawBodyFormatIn(vs ...misc.RawFormat) predicate.WorkflowContractVersion {
+func RawBodyFormatIn(vs ...unmarshal.RawFormat) predicate.WorkflowContractVersion {
 	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -189,7 +189,7 @@ func RawBodyFormatIn(vs ...misc.RawFormat) predicate.WorkflowContractVersion {
 }
 
 // RawBodyFormatNotIn applies the NotIn predicate on the "raw_body_format" field.
-func RawBodyFormatNotIn(vs ...misc.RawFormat) predicate.WorkflowContractVersion {
+func RawBodyFormatNotIn(vs ...unmarshal.RawFormat) predicate.WorkflowContractVersion {
 	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]

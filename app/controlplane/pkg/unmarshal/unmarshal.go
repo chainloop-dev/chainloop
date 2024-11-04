@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package misc
+package unmarshal
 
 import (
 	"encoding/json"
@@ -36,6 +36,9 @@ const (
 	RawFormatYAML RawFormat = "yaml"
 	RawFormatCUE  RawFormat = "cue"
 )
+
+type UnmarshalError struct {
+}
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (RawFormat) Values() (kinds []string) {

@@ -23,7 +23,7 @@ import (
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -36,7 +36,7 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	updatedSchemaRawFormat, err := biz.SchemaToRawContract(updatedSchema)
 	require.NoError(s.T(), err)
 
-	updatedSchemaInYAML := &biz.Contract{Format: misc.RawFormatYAML, Raw: []byte(`schemaVersion: v1`)}
+	updatedSchemaInYAML := &biz.Contract{Format: unmarshal.RawFormatYAML, Raw: []byte(`schemaVersion: v1`)}
 
 	testCases := []struct {
 		name                string
@@ -247,22 +247,22 @@ func (s *workflowContractIntegrationTestSuite) TestCreateWithCustomContract() {
 		name         string
 		contractPath string
 		wantErrMsg   string
-		format       misc.RawFormat
+		format       unmarshal.RawFormat
 	}{
 		{
 			name:         "from-cue",
 			contractPath: "testdata/contracts/contract.cue",
-			format:       misc.RawFormatCUE,
+			format:       unmarshal.RawFormatCUE,
 		},
 		{
 			name:         "from-yaml",
 			contractPath: "testdata/contracts/contract.yaml",
-			format:       misc.RawFormatYAML,
+			format:       unmarshal.RawFormatYAML,
 		},
 		{
 			name:         "from-json",
 			contractPath: "testdata/contracts/contract.json",
-			format:       misc.RawFormatJSON,
+			format:       unmarshal.RawFormatJSON,
 		},
 		{
 			name:         "invalid-contract",
@@ -300,7 +300,7 @@ func (s *workflowContractIntegrationTestSuite) TestCreateWithCustomContract() {
 		require.NoError(s.T(), err)
 		contractWithVersion, err := s.WorkflowContract.Describe(ctx, s.org.ID, contract.ID.String(), 1)
 		require.NoError(s.T(), err)
-		s.Equal(biz.EmptyDefaultContract.Format, misc.RawFormatYAML)
+		s.Equal(biz.EmptyDefaultContract.Format, unmarshal.RawFormatYAML)
 		s.Equal(biz.EmptyDefaultContract.Raw, contractWithVersion.Version.Schema.Raw)
 		s.NotNil(contractWithVersion.Version.Schema.Schema)
 	})
