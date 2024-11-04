@@ -197,9 +197,9 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 
 	client := pb.NewAttestationServiceClient(conn)
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
-		Attestation:          encodedAttestation,
-		WorkflowRunId:        workflowRunID,
-		MarkVersionAsRelease: &markVersionAsReleased,
+		Attestation:           encodedAttestation,
+		WorkflowRunId:         workflowRunID,
+		MarkVersionAsReleased: &markVersionAsReleased,
 	})
 
 	if err != nil {

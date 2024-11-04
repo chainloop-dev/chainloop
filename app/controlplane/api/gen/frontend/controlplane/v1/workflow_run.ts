@@ -109,7 +109,7 @@ export interface AttestationServiceStoreRequest {
   attestation: Uint8Array;
   workflowRunId: string;
   /** mark the associated version as released */
-  markVersionAsRelease?: boolean | undefined;
+  markVersionAsReleased?: boolean | undefined;
 }
 
 export interface AttestationServiceStoreResponse {
@@ -1269,7 +1269,7 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return { attestation: new Uint8Array(0), workflowRunId: "", markVersionAsRelease: undefined };
+  return { attestation: new Uint8Array(0), workflowRunId: "", markVersionAsReleased: undefined };
 }
 
 export const AttestationServiceStoreRequest = {
@@ -1280,8 +1280,8 @@ export const AttestationServiceStoreRequest = {
     if (message.workflowRunId !== "") {
       writer.uint32(18).string(message.workflowRunId);
     }
-    if (message.markVersionAsRelease !== undefined) {
-      writer.uint32(24).bool(message.markVersionAsRelease);
+    if (message.markVersionAsReleased !== undefined) {
+      writer.uint32(24).bool(message.markVersionAsReleased);
     }
     return writer;
   },
@@ -1312,7 +1312,7 @@ export const AttestationServiceStoreRequest = {
             break;
           }
 
-          message.markVersionAsRelease = reader.bool();
+          message.markVersionAsReleased = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1327,7 +1327,7 @@ export const AttestationServiceStoreRequest = {
     return {
       attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
-      markVersionAsRelease: isSet(object.markVersionAsRelease) ? Boolean(object.markVersionAsRelease) : undefined,
+      markVersionAsReleased: isSet(object.markVersionAsReleased) ? Boolean(object.markVersionAsReleased) : undefined,
     };
   },
 
@@ -1336,7 +1336,7 @@ export const AttestationServiceStoreRequest = {
     message.attestation !== undefined &&
       (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
-    message.markVersionAsRelease !== undefined && (obj.markVersionAsRelease = message.markVersionAsRelease);
+    message.markVersionAsReleased !== undefined && (obj.markVersionAsReleased = message.markVersionAsReleased);
     return obj;
   },
 
@@ -1350,7 +1350,7 @@ export const AttestationServiceStoreRequest = {
     const message = createBaseAttestationServiceStoreRequest();
     message.attestation = object.attestation ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
-    message.markVersionAsRelease = object.markVersionAsRelease ?? undefined;
+    message.markVersionAsReleased = object.markVersionAsReleased ?? undefined;
     return message;
   },
 };
