@@ -84,9 +84,9 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	gt.AppendRow(table.Row{"Organization", meta.Organization})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Project", meta.Project})
-	projectVersion := "none"
-	if meta.ProjectVersion != "" {
-		projectVersion = meta.ProjectVersion
+	projectVersion := versionString(meta.ProjectVersion)
+	if projectVersion == "" {
+		projectVersion = "none"
 	}
 
 	gt.AppendRow(table.Row{"Version", projectVersion})

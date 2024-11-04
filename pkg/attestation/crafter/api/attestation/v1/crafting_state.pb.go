@@ -480,13 +480,13 @@ type WorkflowMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name           string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Project        string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
-	ProjectVersion string `protobuf:"bytes,9,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
-	Team           string `protobuf:"bytes,3,opt,name=team,proto3" json:"team,omitempty"`
-	WorkflowId     string `protobuf:"bytes,5,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
-	WorkflowRunId  string `protobuf:"bytes,6,opt,name=workflow_run_id,json=workflowRunId,proto3" json:"workflow_run_id,omitempty"` // Not required since we might be doing a dry-run
-	SchemaRevision string `protobuf:"bytes,7,opt,name=schema_revision,json=schemaRevision,proto3" json:"schema_revision,omitempty"`
+	Name           string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Project        string          `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
+	ProjectVersion *ProjectVersion `protobuf:"bytes,9,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
+	Team           string          `protobuf:"bytes,3,opt,name=team,proto3" json:"team,omitempty"`
+	WorkflowId     string          `protobuf:"bytes,5,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	WorkflowRunId  string          `protobuf:"bytes,6,opt,name=workflow_run_id,json=workflowRunId,proto3" json:"workflow_run_id,omitempty"` // Not required since we might be doing a dry-run
+	SchemaRevision string          `protobuf:"bytes,7,opt,name=schema_revision,json=schemaRevision,proto3" json:"schema_revision,omitempty"`
 	// organization name
 	Organization string `protobuf:"bytes,8,opt,name=organization,proto3" json:"organization,omitempty"`
 }
@@ -537,11 +537,11 @@ func (x *WorkflowMetadata) GetProject() string {
 	return ""
 }
 
-func (x *WorkflowMetadata) GetProjectVersion() string {
+func (x *WorkflowMetadata) GetProjectVersion() *ProjectVersion {
 	if x != nil {
 		return x.ProjectVersion
 	}
-	return ""
+	return nil
 }
 
 func (x *WorkflowMetadata) GetTeam() string {
@@ -579,6 +579,61 @@ func (x *WorkflowMetadata) GetOrganization() string {
 	return ""
 }
 
+type ProjectVersion struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Version    string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	Prerelease bool   `protobuf:"varint,2,opt,name=prerelease,proto3" json:"prerelease,omitempty"`
+}
+
+func (x *ProjectVersion) Reset() {
+	*x = ProjectVersion{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ProjectVersion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectVersion) ProtoMessage() {}
+
+func (x *ProjectVersion) ProtoReflect() protoreflect.Message {
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectVersion.ProtoReflect.Descriptor instead.
+func (*ProjectVersion) Descriptor() ([]byte, []int) {
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ProjectVersion) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *ProjectVersion) GetPrerelease() bool {
+	if x != nil {
+		return x.Prerelease
+	}
+	return false
+}
+
 // Proto representation of the in-toto v1 ResourceDescriptor.
 // https://github.com/in-toto/attestation/blob/main/spec/v1/resource_descriptor.md
 // Validation of all fields is left to the users of this proto.
@@ -605,7 +660,7 @@ type ResourceDescriptor struct {
 func (x *ResourceDescriptor) Reset() {
 	*x = ResourceDescriptor{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -618,7 +673,7 @@ func (x *ResourceDescriptor) String() string {
 func (*ResourceDescriptor) ProtoMessage() {}
 
 func (x *ResourceDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -631,7 +686,7 @@ func (x *ResourceDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceDescriptor.ProtoReflect.Descriptor instead.
 func (*ResourceDescriptor) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{5}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ResourceDescriptor) GetName() string {
@@ -708,7 +763,7 @@ type Attestation_Material struct {
 func (x *Attestation_Material) Reset() {
 	*x = Attestation_Material{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[8]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -721,7 +776,7 @@ func (x *Attestation_Material) String() string {
 func (*Attestation_Material) ProtoMessage() {}
 
 func (x *Attestation_Material) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[8]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -834,7 +889,7 @@ type Attestation_Material_KeyVal struct {
 func (x *Attestation_Material_KeyVal) Reset() {
 	*x = Attestation_Material_KeyVal{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[11]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -847,7 +902,7 @@ func (x *Attestation_Material_KeyVal) String() string {
 func (*Attestation_Material_KeyVal) ProtoMessage() {}
 
 func (x *Attestation_Material_KeyVal) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[11]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -899,7 +954,7 @@ type Attestation_Material_ContainerImage struct {
 func (x *Attestation_Material_ContainerImage) Reset() {
 	*x = Attestation_Material_ContainerImage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[12]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -912,7 +967,7 @@ func (x *Attestation_Material_ContainerImage) String() string {
 func (*Attestation_Material_ContainerImage) ProtoMessage() {}
 
 func (x *Attestation_Material_ContainerImage) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[12]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1005,7 +1060,7 @@ type Attestation_Material_Artifact struct {
 func (x *Attestation_Material_Artifact) Reset() {
 	*x = Attestation_Material_Artifact{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1018,7 +1073,7 @@ func (x *Attestation_Material_Artifact) String() string {
 func (*Attestation_Material_Artifact) ProtoMessage() {}
 
 func (x *Attestation_Material_Artifact) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1081,7 +1136,7 @@ type PolicyEvaluation_Violation struct {
 func (x *PolicyEvaluation_Violation) Reset() {
 	*x = PolicyEvaluation_Violation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[16]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1094,7 +1149,7 @@ func (x *PolicyEvaluation_Violation) String() string {
 func (*PolicyEvaluation_Violation) ProtoMessage() {}
 
 func (x *PolicyEvaluation_Violation) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[16]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1136,7 +1191,7 @@ type Commit_Remote struct {
 func (x *Commit_Remote) Reset() {
 	*x = Commit_Remote{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
+		mi := &file_attestation_v1_crafting_state_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1149,7 +1204,7 @@ func (x *Commit_Remote) String() string {
 func (*Commit_Remote) ProtoMessage() {}
 
 func (x *Commit_Remote) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1413,14 +1468,16 @@ var file_attestation_v1_crafting_state_proto_rawDesc = []byte{
 	0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x74, 0x74,
 	0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0b, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x17, 0x0a, 0x07, 0x64, 0x72, 0x79, 0x5f, 0x72, 0x75, 0x6e,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x64, 0x72, 0x79, 0x52, 0x75, 0x6e, 0x22, 0xb7,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x64, 0x72, 0x79, 0x52, 0x75, 0x6e, 0x22, 0xd7,
 	0x02, 0x0a, 0x10, 0x57, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77, 0x4d, 0x65, 0x74, 0x61, 0x64,
 	0x61, 0x74, 0x61, 0x12, 0x1b, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
 	0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x27, 0x0a, 0x0f, 0x70, 0x72,
+	0x09, 0x52, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x47, 0x0a, 0x0f, 0x70, 0x72,
 	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x09, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x65, 0x72, 0x73,
+	0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x52, 0x0e, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x65, 0x72, 0x73,
 	0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x61, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x04, 0x74, 0x65, 0x61, 0x6d, 0x12, 0x28, 0x0a, 0x0b, 0x77, 0x6f, 0x72, 0x6b, 0x66,
 	0x6c, 0x6f, 0x77, 0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xba, 0x48,
@@ -1433,35 +1490,40 @@ var file_attestation_v1_crafting_state_proto_rawDesc = []byte{
 	0x65, 0x6d, 0x61, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x2b, 0x0a, 0x0c, 0x6f,
 	0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x08, 0x20, 0x01, 0x28,
 	0x09, 0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x0c, 0x6f, 0x72, 0x67, 0x61,
-	0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xde, 0x02, 0x0a, 0x12, 0x52, 0x65, 0x73,
-	0x6f, 0x75, 0x72, 0x63, 0x65, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x12,
-	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
-	0x61, 0x6d, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x69, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x03, 0x75, 0x72, 0x69, 0x12, 0x46, 0x0a, 0x06, 0x64, 0x69, 0x67, 0x65, 0x73, 0x74, 0x18,
-	0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x44,
-	0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x2e, 0x44, 0x69, 0x67, 0x65, 0x73, 0x74,
-	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x06, 0x64, 0x69, 0x67, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a,
-	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x07,
-	0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x2b, 0x0a, 0x11, 0x64, 0x6f, 0x77, 0x6e, 0x6c,
-	0x6f, 0x61, 0x64, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x10, 0x64, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x4c, 0x6f, 0x63, 0x61,
-	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1d, 0x0a, 0x0a, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x5f, 0x74, 0x79,
-	0x70, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x54,
-	0x79, 0x70, 0x65, 0x12, 0x39, 0x0a, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
-	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63,
-	0x74, 0x52, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0x39,
-	0x0a, 0x0b, 0x44, 0x69, 0x67, 0x65, 0x73, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
-	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
-	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
-	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42, 0x4f, 0x5a, 0x4d, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f,
-	0x70, 0x2d, 0x64, 0x65, 0x76, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2f,
-	0x70, 0x6b, 0x67, 0x2f, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2f,
-	0x63, 0x72, 0x61, 0x66, 0x74, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x74, 0x74, 0x65,
-	0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x53, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a,
+	0x65, 0x63, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x21, 0x0a, 0x07, 0x76, 0x65,
+	0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xba, 0x48, 0x04,
+	0x72, 0x02, 0x10, 0x01, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1e, 0x0a,
+	0x0a, 0x70, 0x72, 0x65, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x0a, 0x70, 0x72, 0x65, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x22, 0xde, 0x02,
+	0x0a, 0x12, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69,
+	0x70, 0x74, 0x6f, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x69, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x75, 0x72, 0x69, 0x12, 0x46, 0x0a, 0x06, 0x64, 0x69,
+	0x67, 0x65, 0x73, 0x74, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x61, 0x74, 0x74,
+	0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f,
+	0x75, 0x72, 0x63, 0x65, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x2e, 0x44,
+	0x69, 0x67, 0x65, 0x73, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x06, 0x64, 0x69, 0x67, 0x65,
+	0x73, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x2b, 0x0a, 0x11,
+	0x64, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x64, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61,
+	0x64, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1d, 0x0a, 0x0a, 0x6d, 0x65, 0x64,
+	0x69, 0x61, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6d,
+	0x65, 0x64, 0x69, 0x61, 0x54, 0x79, 0x70, 0x65, 0x12, 0x39, 0x0a, 0x0b, 0x61, 0x6e, 0x6e, 0x6f,
+	0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x1a, 0x39, 0x0a, 0x0b, 0x44, 0x69, 0x67, 0x65, 0x73, 0x74, 0x45, 0x6e, 0x74,
+	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42, 0x4f,
+	0x5a, 0x4d, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x61,
+	0x69, 0x6e, 0x6c, 0x6f, 0x6f, 0x70, 0x2d, 0x64, 0x65, 0x76, 0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e,
+	0x6c, 0x6f, 0x6f, 0x70, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x63, 0x72, 0x61, 0x66, 0x74, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x76, 0x31, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1476,65 +1538,67 @@ func file_attestation_v1_crafting_state_proto_rawDescGZIP() []byte {
 	return file_attestation_v1_crafting_state_proto_rawDescData
 }
 
-var file_attestation_v1_crafting_state_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_attestation_v1_crafting_state_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_attestation_v1_crafting_state_proto_goTypes = []interface{}{
 	(*Attestation)(nil),                 // 0: attestation.v1.Attestation
 	(*PolicyEvaluation)(nil),            // 1: attestation.v1.PolicyEvaluation
 	(*Commit)(nil),                      // 2: attestation.v1.Commit
 	(*CraftingState)(nil),               // 3: attestation.v1.CraftingState
 	(*WorkflowMetadata)(nil),            // 4: attestation.v1.WorkflowMetadata
-	(*ResourceDescriptor)(nil),          // 5: attestation.v1.ResourceDescriptor
-	nil,                                 // 6: attestation.v1.Attestation.MaterialsEntry
-	nil,                                 // 7: attestation.v1.Attestation.AnnotationsEntry
-	(*Attestation_Material)(nil),        // 8: attestation.v1.Attestation.Material
-	nil,                                 // 9: attestation.v1.Attestation.EnvVarsEntry
-	nil,                                 // 10: attestation.v1.Attestation.Material.AnnotationsEntry
-	(*Attestation_Material_KeyVal)(nil), // 11: attestation.v1.Attestation.Material.KeyVal
-	(*Attestation_Material_ContainerImage)(nil), // 12: attestation.v1.Attestation.Material.ContainerImage
-	(*Attestation_Material_Artifact)(nil),       // 13: attestation.v1.Attestation.Material.Artifact
-	nil,                                         // 14: attestation.v1.PolicyEvaluation.AnnotationsEntry
-	nil,                                         // 15: attestation.v1.PolicyEvaluation.WithEntry
-	(*PolicyEvaluation_Violation)(nil),          // 16: attestation.v1.PolicyEvaluation.Violation
-	(*Commit_Remote)(nil),                       // 17: attestation.v1.Commit.Remote
-	nil,                                         // 18: attestation.v1.ResourceDescriptor.DigestEntry
-	(*timestamppb.Timestamp)(nil),               // 19: google.protobuf.Timestamp
-	(v1.CraftingSchema_Runner_RunnerType)(0),    // 20: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(v1.CraftingSchema_Material_MaterialType)(0), // 21: workflowcontract.v1.CraftingSchema.Material.MaterialType
-	(*v1.CraftingSchema)(nil),                    // 22: workflowcontract.v1.CraftingSchema
-	(*structpb.Struct)(nil),                      // 23: google.protobuf.Struct
+	(*ProjectVersion)(nil),              // 5: attestation.v1.ProjectVersion
+	(*ResourceDescriptor)(nil),          // 6: attestation.v1.ResourceDescriptor
+	nil,                                 // 7: attestation.v1.Attestation.MaterialsEntry
+	nil,                                 // 8: attestation.v1.Attestation.AnnotationsEntry
+	(*Attestation_Material)(nil),        // 9: attestation.v1.Attestation.Material
+	nil,                                 // 10: attestation.v1.Attestation.EnvVarsEntry
+	nil,                                 // 11: attestation.v1.Attestation.Material.AnnotationsEntry
+	(*Attestation_Material_KeyVal)(nil), // 12: attestation.v1.Attestation.Material.KeyVal
+	(*Attestation_Material_ContainerImage)(nil), // 13: attestation.v1.Attestation.Material.ContainerImage
+	(*Attestation_Material_Artifact)(nil),       // 14: attestation.v1.Attestation.Material.Artifact
+	nil,                                         // 15: attestation.v1.PolicyEvaluation.AnnotationsEntry
+	nil,                                         // 16: attestation.v1.PolicyEvaluation.WithEntry
+	(*PolicyEvaluation_Violation)(nil),          // 17: attestation.v1.PolicyEvaluation.Violation
+	(*Commit_Remote)(nil),                       // 18: attestation.v1.Commit.Remote
+	nil,                                         // 19: attestation.v1.ResourceDescriptor.DigestEntry
+	(*timestamppb.Timestamp)(nil),               // 20: google.protobuf.Timestamp
+	(v1.CraftingSchema_Runner_RunnerType)(0),    // 21: workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	(v1.CraftingSchema_Material_MaterialType)(0), // 22: workflowcontract.v1.CraftingSchema.Material.MaterialType
+	(*v1.CraftingSchema)(nil),                    // 23: workflowcontract.v1.CraftingSchema
+	(*structpb.Struct)(nil),                      // 24: google.protobuf.Struct
 }
 var file_attestation_v1_crafting_state_proto_depIdxs = []int32{
-	19, // 0: attestation.v1.Attestation.initialized_at:type_name -> google.protobuf.Timestamp
-	19, // 1: attestation.v1.Attestation.finished_at:type_name -> google.protobuf.Timestamp
+	20, // 0: attestation.v1.Attestation.initialized_at:type_name -> google.protobuf.Timestamp
+	20, // 1: attestation.v1.Attestation.finished_at:type_name -> google.protobuf.Timestamp
 	4,  // 2: attestation.v1.Attestation.workflow:type_name -> attestation.v1.WorkflowMetadata
-	6,  // 3: attestation.v1.Attestation.materials:type_name -> attestation.v1.Attestation.MaterialsEntry
-	7,  // 4: attestation.v1.Attestation.annotations:type_name -> attestation.v1.Attestation.AnnotationsEntry
-	9,  // 5: attestation.v1.Attestation.env_vars:type_name -> attestation.v1.Attestation.EnvVarsEntry
-	20, // 6: attestation.v1.Attestation.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	7,  // 3: attestation.v1.Attestation.materials:type_name -> attestation.v1.Attestation.MaterialsEntry
+	8,  // 4: attestation.v1.Attestation.annotations:type_name -> attestation.v1.Attestation.AnnotationsEntry
+	10, // 5: attestation.v1.Attestation.env_vars:type_name -> attestation.v1.Attestation.EnvVarsEntry
+	21, // 6: attestation.v1.Attestation.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
 	2,  // 7: attestation.v1.Attestation.head:type_name -> attestation.v1.Commit
 	1,  // 8: attestation.v1.Attestation.policy_evaluations:type_name -> attestation.v1.PolicyEvaluation
-	14, // 9: attestation.v1.PolicyEvaluation.annotations:type_name -> attestation.v1.PolicyEvaluation.AnnotationsEntry
-	16, // 10: attestation.v1.PolicyEvaluation.violations:type_name -> attestation.v1.PolicyEvaluation.Violation
-	15, // 11: attestation.v1.PolicyEvaluation.with:type_name -> attestation.v1.PolicyEvaluation.WithEntry
-	21, // 12: attestation.v1.PolicyEvaluation.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	19, // 13: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
-	17, // 14: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
-	22, // 15: attestation.v1.CraftingState.input_schema:type_name -> workflowcontract.v1.CraftingSchema
+	15, // 9: attestation.v1.PolicyEvaluation.annotations:type_name -> attestation.v1.PolicyEvaluation.AnnotationsEntry
+	17, // 10: attestation.v1.PolicyEvaluation.violations:type_name -> attestation.v1.PolicyEvaluation.Violation
+	16, // 11: attestation.v1.PolicyEvaluation.with:type_name -> attestation.v1.PolicyEvaluation.WithEntry
+	22, // 12: attestation.v1.PolicyEvaluation.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	20, // 13: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
+	18, // 14: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
+	23, // 15: attestation.v1.CraftingState.input_schema:type_name -> workflowcontract.v1.CraftingSchema
 	0,  // 16: attestation.v1.CraftingState.attestation:type_name -> attestation.v1.Attestation
-	18, // 17: attestation.v1.ResourceDescriptor.digest:type_name -> attestation.v1.ResourceDescriptor.DigestEntry
-	23, // 18: attestation.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
-	8,  // 19: attestation.v1.Attestation.MaterialsEntry.value:type_name -> attestation.v1.Attestation.Material
-	11, // 20: attestation.v1.Attestation.Material.string:type_name -> attestation.v1.Attestation.Material.KeyVal
-	12, // 21: attestation.v1.Attestation.Material.container_image:type_name -> attestation.v1.Attestation.Material.ContainerImage
-	13, // 22: attestation.v1.Attestation.Material.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
-	19, // 23: attestation.v1.Attestation.Material.added_at:type_name -> google.protobuf.Timestamp
-	21, // 24: attestation.v1.Attestation.Material.material_type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	10, // 25: attestation.v1.Attestation.Material.annotations:type_name -> attestation.v1.Attestation.Material.AnnotationsEntry
-	26, // [26:26] is the sub-list for method output_type
-	26, // [26:26] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	5,  // 17: attestation.v1.WorkflowMetadata.project_version:type_name -> attestation.v1.ProjectVersion
+	19, // 18: attestation.v1.ResourceDescriptor.digest:type_name -> attestation.v1.ResourceDescriptor.DigestEntry
+	24, // 19: attestation.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
+	9,  // 20: attestation.v1.Attestation.MaterialsEntry.value:type_name -> attestation.v1.Attestation.Material
+	12, // 21: attestation.v1.Attestation.Material.string:type_name -> attestation.v1.Attestation.Material.KeyVal
+	13, // 22: attestation.v1.Attestation.Material.container_image:type_name -> attestation.v1.Attestation.Material.ContainerImage
+	14, // 23: attestation.v1.Attestation.Material.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
+	20, // 24: attestation.v1.Attestation.Material.added_at:type_name -> google.protobuf.Timestamp
+	22, // 25: attestation.v1.Attestation.Material.material_type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	11, // 26: attestation.v1.Attestation.Material.annotations:type_name -> attestation.v1.Attestation.Material.AnnotationsEntry
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_attestation_v1_crafting_state_proto_init() }
@@ -1604,6 +1668,18 @@ func file_attestation_v1_crafting_state_proto_init() {
 			}
 		}
 		file_attestation_v1_crafting_state_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProjectVersion); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_attestation_v1_crafting_state_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ResourceDescriptor); i {
 			case 0:
 				return &v.state
@@ -1615,7 +1691,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 				return nil
 			}
 		}
-		file_attestation_v1_crafting_state_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_attestation_v1_crafting_state_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Attestation_Material); i {
 			case 0:
 				return &v.state
@@ -1627,7 +1703,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 				return nil
 			}
 		}
-		file_attestation_v1_crafting_state_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_attestation_v1_crafting_state_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Attestation_Material_KeyVal); i {
 			case 0:
 				return &v.state
@@ -1639,7 +1715,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 				return nil
 			}
 		}
-		file_attestation_v1_crafting_state_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_attestation_v1_crafting_state_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Attestation_Material_ContainerImage); i {
 			case 0:
 				return &v.state
@@ -1651,7 +1727,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 				return nil
 			}
 		}
-		file_attestation_v1_crafting_state_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_attestation_v1_crafting_state_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Attestation_Material_Artifact); i {
 			case 0:
 				return &v.state
@@ -1663,7 +1739,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 				return nil
 			}
 		}
-		file_attestation_v1_crafting_state_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_attestation_v1_crafting_state_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PolicyEvaluation_Violation); i {
 			case 0:
 				return &v.state
@@ -1675,7 +1751,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 				return nil
 			}
 		}
-		file_attestation_v1_crafting_state_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_attestation_v1_crafting_state_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Commit_Remote); i {
 			case 0:
 				return &v.state
@@ -1688,7 +1764,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 			}
 		}
 	}
-	file_attestation_v1_crafting_state_proto_msgTypes[8].OneofWrappers = []interface{}{
+	file_attestation_v1_crafting_state_proto_msgTypes[9].OneofWrappers = []interface{}{
 		(*Attestation_Material_String_)(nil),
 		(*Attestation_Material_ContainerImage_)(nil),
 		(*Attestation_Material_Artifact_)(nil),
@@ -1699,7 +1775,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_attestation_v1_crafting_state_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

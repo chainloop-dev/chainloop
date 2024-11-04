@@ -66,6 +66,20 @@ func (pvu *ProjectVersionUpdate) SetNillableProjectID(u *uuid.UUID) *ProjectVers
 	return pvu
 }
 
+// SetPrerelease sets the "prerelease" field.
+func (pvu *ProjectVersionUpdate) SetPrerelease(b bool) *ProjectVersionUpdate {
+	pvu.mutation.SetPrerelease(b)
+	return pvu
+}
+
+// SetNillablePrerelease sets the "prerelease" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillablePrerelease(b *bool) *ProjectVersionUpdate {
+	if b != nil {
+		pvu.SetPrerelease(*b)
+	}
+	return pvu
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pvu *ProjectVersionUpdate) SetProject(p *Project) *ProjectVersionUpdate {
 	return pvu.SetProjectID(p.ID)
@@ -176,6 +190,9 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if pvu.mutation.DeletedAtCleared() {
 		_spec.ClearField(projectversion.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := pvu.mutation.Prerelease(); ok {
+		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
 	}
 	if pvu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -303,6 +320,20 @@ func (pvuo *ProjectVersionUpdateOne) SetProjectID(u uuid.UUID) *ProjectVersionUp
 func (pvuo *ProjectVersionUpdateOne) SetNillableProjectID(u *uuid.UUID) *ProjectVersionUpdateOne {
 	if u != nil {
 		pvuo.SetProjectID(*u)
+	}
+	return pvuo
+}
+
+// SetPrerelease sets the "prerelease" field.
+func (pvuo *ProjectVersionUpdateOne) SetPrerelease(b bool) *ProjectVersionUpdateOne {
+	pvuo.mutation.SetPrerelease(b)
+	return pvuo
+}
+
+// SetNillablePrerelease sets the "prerelease" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillablePrerelease(b *bool) *ProjectVersionUpdateOne {
+	if b != nil {
+		pvuo.SetPrerelease(*b)
 	}
 	return pvuo
 }
@@ -447,6 +478,9 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 	}
 	if pvuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(projectversion.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := pvuo.mutation.Prerelease(); ok {
+		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
 	}
 	if pvuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

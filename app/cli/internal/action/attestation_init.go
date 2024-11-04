@@ -124,7 +124,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		Project:        workflow.GetProject(),
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
-		ProjectVersion: opts.ProjectVersion,
+		ProjectVersion: &clientAPI.ProjectVersion{
+			Version:    opts.ProjectVersion,
+			Prerelease: true,
+		},
 	}
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")

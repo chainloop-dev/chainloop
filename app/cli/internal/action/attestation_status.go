@@ -52,7 +52,8 @@ type AttestationResultRunnerContext struct {
 }
 
 type AttestationStatusWorkflowMeta struct {
-	WorkflowID, Name, Team, Project, ContractRevision, Organization, ProjectVersion string
+	WorkflowID, Name, Team, Project, ContractRevision, Organization string
+	ProjectVersion                                                  *ProjectVersion
 }
 
 type AttestationStatusResultMaterial struct {
@@ -98,7 +99,10 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Project:          workflowMeta.GetProject(),
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
-			ProjectVersion:   workflowMeta.GetProjectVersion(),
+			ProjectVersion: &ProjectVersion{
+				Version:    workflowMeta.GetProjectVersion().GetVersion(),
+				Prerelease: workflowMeta.GetProjectVersion().GetPrerelease(),
+			},
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:        c.CraftingState.DryRun,

@@ -26,9 +26,10 @@ import (
 )
 
 type ProjectVersion struct {
-	ID        uuid.UUID
-	Version   string
-	CreatedAt *time.Time
+	ID         uuid.UUID
+	Version    string
+	Prerelease bool
+	CreatedAt  *time.Time
 }
 
 type ProjectVersionRepo interface {

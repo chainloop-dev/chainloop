@@ -183,7 +183,7 @@ export interface CraftingState {
 export interface WorkflowMetadata {
   name: string;
   project: string;
-  projectVersion: string;
+  projectVersion?: ProjectVersion;
   team: string;
   workflowId: string;
   /** Not required since we might be doing a dry-run */
@@ -191,6 +191,11 @@ export interface WorkflowMetadata {
   schemaRevision: string;
   /** organization name */
   organization: string;
+}
+
+export interface ProjectVersion {
+  version: string;
+  prerelease: boolean;
 }
 
 /**
@@ -2073,7 +2078,7 @@ function createBaseWorkflowMetadata(): WorkflowMetadata {
   return {
     name: "",
     project: "",
-    projectVersion: "",
+    projectVersion: undefined,
     team: "",
     workflowId: "",
     workflowRunId: "",
@@ -2090,8 +2095,8 @@ export const WorkflowMetadata = {
     if (message.project !== "") {
       writer.uint32(18).string(message.project);
     }
-    if (message.projectVersion !== "") {
-      writer.uint32(74).string(message.projectVersion);
+    if (message.projectVersion !== undefined) {
+      ProjectVersion.encode(message.projectVersion, writer.uint32(74).fork()).ldelim();
     }
     if (message.team !== "") {
       writer.uint32(26).string(message.team);
@@ -2137,7 +2142,7 @@ export const WorkflowMetadata = {
             break;
           }
 
-          message.projectVersion = reader.string();
+          message.projectVersion = ProjectVersion.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2187,7 +2192,7 @@ export const WorkflowMetadata = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
-      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      projectVersion: isSet(object.projectVersion) ? ProjectVersion.fromJSON(object.projectVersion) : undefined,
       team: isSet(object.team) ? String(object.team) : "",
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
@@ -2200,7 +2205,8 @@ export const WorkflowMetadata = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
-    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.projectVersion !== undefined &&
+      (obj.projectVersion = message.projectVersion ? ProjectVersion.toJSON(message.projectVersion) : undefined);
     message.team !== undefined && (obj.team = message.team);
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
@@ -2217,12 +2223,85 @@ export const WorkflowMetadata = {
     const message = createBaseWorkflowMetadata();
     message.name = object.name ?? "";
     message.project = object.project ?? "";
-    message.projectVersion = object.projectVersion ?? "";
+    message.projectVersion = (object.projectVersion !== undefined && object.projectVersion !== null)
+      ? ProjectVersion.fromPartial(object.projectVersion)
+      : undefined;
     message.team = object.team ?? "";
     message.workflowId = object.workflowId ?? "";
     message.workflowRunId = object.workflowRunId ?? "";
     message.schemaRevision = object.schemaRevision ?? "";
     message.organization = object.organization ?? "";
+    return message;
+  },
+};
+
+function createBaseProjectVersion(): ProjectVersion {
+  return { version: "", prerelease: false };
+}
+
+export const ProjectVersion = {
+  encode(message: ProjectVersion, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.version !== "") {
+      writer.uint32(10).string(message.version);
+    }
+    if (message.prerelease === true) {
+      writer.uint32(16).bool(message.prerelease);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectVersion {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectVersion();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.prerelease = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectVersion {
+    return {
+      version: isSet(object.version) ? String(object.version) : "",
+      prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
+    };
+  },
+
+  toJSON(message: ProjectVersion): unknown {
+    const obj: any = {};
+    message.version !== undefined && (obj.version = message.version);
+    message.prerelease !== undefined && (obj.prerelease = message.prerelease);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectVersion>, I>>(base?: I): ProjectVersion {
+    return ProjectVersion.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectVersion>, I>>(object: I): ProjectVersion {
+    const message = createBaseProjectVersion();
+    message.version = object.version ?? "";
+    message.prerelease = object.prerelease ?? false;
     return message;
   },
 };

@@ -51,7 +51,8 @@ func (r *ProjectVersionRepo) FindByProjectAndVersion(ctx context.Context, projec
 
 func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
 	return &biz.ProjectVersion{
-		ID:      v.ID,
-		Version: v.Version,
+		ID:         v.ID,
+		Version:    v.Version,
+		Prerelease: v.Prerelease,
 	}
 }

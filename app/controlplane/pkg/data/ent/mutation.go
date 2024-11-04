@@ -7236,6 +7236,7 @@ type ProjectVersionMutation struct {
 	version        *string
 	created_at     *time.Time
 	deleted_at     *time.Time
+	prerelease     *bool
 	clearedFields  map[string]struct{}
 	project        *uuid.UUID
 	clearedproject bool
@@ -7508,6 +7509,42 @@ func (m *ProjectVersionMutation) ResetProjectID() {
 	m.project = nil
 }
 
+// SetPrerelease sets the "prerelease" field.
+func (m *ProjectVersionMutation) SetPrerelease(b bool) {
+	m.prerelease = &b
+}
+
+// Prerelease returns the value of the "prerelease" field in the mutation.
+func (m *ProjectVersionMutation) Prerelease() (r bool, exists bool) {
+	v := m.prerelease
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrerelease returns the old "prerelease" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldPrerelease(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrerelease is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrerelease requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrerelease: %w", err)
+	}
+	return oldValue.Prerelease, nil
+}
+
+// ResetPrerelease resets all changes to the "prerelease" field.
+func (m *ProjectVersionMutation) ResetPrerelease() {
+	m.prerelease = nil
+}
+
 // ClearProject clears the "project" edge to the Project entity.
 func (m *ProjectVersionMutation) ClearProject() {
 	m.clearedproject = true
@@ -7623,7 +7660,7 @@ func (m *ProjectVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectVersionMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.version != nil {
 		fields = append(fields, projectversion.FieldVersion)
 	}
@@ -7635,6 +7672,9 @@ func (m *ProjectVersionMutation) Fields() []string {
 	}
 	if m.project != nil {
 		fields = append(fields, projectversion.FieldProjectID)
+	}
+	if m.prerelease != nil {
+		fields = append(fields, projectversion.FieldPrerelease)
 	}
 	return fields
 }
@@ -7652,6 +7692,8 @@ func (m *ProjectVersionMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case projectversion.FieldProjectID:
 		return m.ProjectID()
+	case projectversion.FieldPrerelease:
+		return m.Prerelease()
 	}
 	return nil, false
 }
@@ -7669,6 +7711,8 @@ func (m *ProjectVersionMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldDeletedAt(ctx)
 	case projectversion.FieldProjectID:
 		return m.OldProjectID(ctx)
+	case projectversion.FieldPrerelease:
+		return m.OldPrerelease(ctx)
 	}
 	return nil, fmt.Errorf("unknown ProjectVersion field %s", name)
 }
@@ -7705,6 +7749,13 @@ func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProjectID(v)
+		return nil
+	case projectversion.FieldPrerelease:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrerelease(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)
@@ -7775,6 +7826,9 @@ func (m *ProjectVersionMutation) ResetField(name string) error {
 		return nil
 	case projectversion.FieldProjectID:
 		m.ResetProjectID()
+		return nil
+	case projectversion.FieldPrerelease:
+		m.ResetPrerelease()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)

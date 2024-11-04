@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(project_version)$": {
-      "type": "string"
+      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
     },
     "^(schema_revision)$": {
       "type": "string"
@@ -28,7 +28,7 @@
       "type": "string"
     },
     "projectVersion": {
-      "type": "string"
+      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
     },
     "schemaRevision": {
       "type": "string"

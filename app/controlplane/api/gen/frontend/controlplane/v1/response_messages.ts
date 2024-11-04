@@ -228,6 +228,7 @@ export interface WorkflowRunItem {
 export interface ProjectVersion {
   id: string;
   version: string;
+  prerelease: boolean;
 }
 
 export interface AttestationItem {
@@ -955,7 +956,7 @@ export const WorkflowRunItem = {
 };
 
 function createBaseProjectVersion(): ProjectVersion {
-  return { id: "", version: "" };
+  return { id: "", version: "", prerelease: false };
 }
 
 export const ProjectVersion = {
@@ -965,6 +966,9 @@ export const ProjectVersion = {
     }
     if (message.version !== "") {
       writer.uint32(18).string(message.version);
+    }
+    if (message.prerelease === true) {
+      writer.uint32(24).bool(message.prerelease);
     }
     return writer;
   },
@@ -990,6 +994,13 @@ export const ProjectVersion = {
 
           message.version = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.prerelease = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1003,6 +1014,7 @@ export const ProjectVersion = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       version: isSet(object.version) ? String(object.version) : "",
+      prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
     };
   },
 
@@ -1010,6 +1022,7 @@ export const ProjectVersion = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.version !== undefined && (obj.version = message.version);
+    message.prerelease !== undefined && (obj.prerelease = message.prerelease);
     return obj;
   },
 
@@ -1021,6 +1034,7 @@ export const ProjectVersion = {
     const message = createBaseProjectVersion();
     message.id = object.id ?? "";
     message.version = object.version ?? "";
+    message.prerelease = object.prerelease ?? false;
     return message;
   },
 };
