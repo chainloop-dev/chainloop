@@ -23,7 +23,7 @@ import (
 	"net/url"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -179,19 +179,19 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 }
 
 func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {
-	var format misc.RawFormat
+	var format unmarshal.RawFormat
 	switch raw.Format {
 	case "FORMAT_JSON":
-		format = misc.RawFormatJSON
+		format = unmarshal.RawFormatJSON
 	case "FORMAT_YAML":
-		format = misc.RawFormatYAML
+		format = unmarshal.RawFormatYAML
 	case "FORMAT_CUE":
-		format = misc.RawFormatCUE
+		format = unmarshal.RawFormatCUE
 	default:
 		return fmt.Errorf("unsupported format: %s", raw.Format)
 	}
 
-	err := misc.UnmarshalFromRaw(raw.Body, format, out)
+	err := unmarshal.UnmarshalFromRaw(raw.Body, format, out)
 	if err != nil {
 		return fmt.Errorf("error unmarshalling policy response: %w", err)
 	}

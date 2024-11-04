@@ -8,7 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/misc"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 )
 
@@ -83,7 +83,7 @@ var (
 )
 
 // RawBodyFormatValidator is a validator for the "raw_body_format" field enum values. It is called by the builders before save.
-func RawBodyFormatValidator(rbf misc.RawFormat) error {
+func RawBodyFormatValidator(rbf unmarshal.RawFormat) error {
 	switch rbf {
 	case "json", "yaml", "cue":
 		return nil
