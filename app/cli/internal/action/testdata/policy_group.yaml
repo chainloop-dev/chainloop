@@ -14,3 +14,5 @@ spec:
         type: SBOM_SPDX_JSON
         policies:
           - ref: file://testdata/multi-kind.yaml
+      - name: container
+        type: CONTAINER_IMAGE

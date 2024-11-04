@@ -1,5 +1,5 @@
 {
-  "$id": "workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.schema.json",
+  "$id": "workflowcontract.v1.PolicyGroup.GroupPolicies.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -16,6 +16,6 @@
       "type": "array"
     }
   },
-  "title": "Policy Group Policies",
+  "title": "Group Policies",
   "type": "object"
 }
