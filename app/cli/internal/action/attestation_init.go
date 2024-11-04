@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bufbuild/protovalidate-go"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -205,6 +206,13 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 			Logger: logger,
 		})
 		if err != nil {
+			// Temporarily skip if policy groups still use old schema
+			// TODO: remove this check in next release
+			var ve *protovalidate.ValidationError
+			if errors.As(err, &ve) {
+				logger.Warn().Msgf("policy group '%s' skipped since it uses an old schema version", pgAtt.GetRef())
+				return nil
+			}
 			return fmt.Errorf("failed to load policy group: %w", err)
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
