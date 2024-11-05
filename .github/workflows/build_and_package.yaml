@@ -48,9 +48,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
+      # mark this attestation as a release
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT --release
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
