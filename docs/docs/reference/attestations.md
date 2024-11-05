@@ -15,7 +15,7 @@ For example, the following line will perform an attestation associated with the 
 $ chainloop att init --workflow mywf --project myproject
 ```
 
-Optionally you can provide a version
+Optionally you can provide a version either explicitly with the `--version` flag or using a `.chainloop.yml` file (more on that below).
 
 ```sh
 $ chainloop att init --workflow mywf --project myproject --version 1.0.0
@@ -53,6 +53,17 @@ $ chainloop wf run ls
 ```
 
 This gives you control on the lifecycle of your project versions, deciding when a version is ready to be promoted to production.
+
+### Automatically load the version
+
+An alternative to provide the --version flag in each attestation is to use a `.chainloop.yml` file in your repo.
+
+```yaml
+# your-project/.chainloop.yml
+projectVersion: v0.1.0 # example version
+```
+
+The CLI, during `attestation init` will traverse up the directory tree and load the version from the `.chainloop.yml` file automatically if it exists.
 
 ## Contract-less pieces of evidence
 A Workflow Contract specifies the necessary content that a workflow must include in its attestation. For instance, it might mandate the inclusion of the URI@digest of the generated container image, the container root filesystem used during the build, and the Software Bill of Materials for that container image. These pieces of evidence must be associated with a specific material type. Operators define what must be included in the [contracts](operator/contract.mdx), and developers need to understand and comply with these requirements.
