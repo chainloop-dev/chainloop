@@ -5,7 +5,7 @@ import rego.v1
 violations contains msg if {
 	not valid_developer
 
-	msg := sprintf("Invalid developer: %s", [input.args.email])
+	msg := "Invalid developer"
 }
 
 valid_developer if {
