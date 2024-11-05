@@ -177,7 +177,10 @@ message CraftingState {
 message WorkflowMetadata {
   string name = 1 [(buf.validate.field).string.min_len = 1];
   string project = 2;
-  ProjectVersion project_version = 9;
+  // kept for backwards compatibility with remote state storage
+  string project_version = 9 [deprecated = true];
+  // project version
+  ProjectVersion version = 10;
   string team = 3;
   string workflow_id = 5 [(buf.validate.field).string.min_len = 1];
   string workflow_run_id = 6; // Not required since we might be doing a dry-run
@@ -185,7 +188,6 @@ message WorkflowMetadata {
   // organization name
   string organization = 8 [(buf.validate.field).string.min_len = 1];
 }
-
 message ProjectVersion {
   string version = 1 [(buf.validate.field).string.min_len = 1];
   // if it's pre-release

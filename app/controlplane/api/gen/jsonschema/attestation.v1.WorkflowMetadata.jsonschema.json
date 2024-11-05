@@ -4,7 +4,8 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(project_version)$": {
-      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
+      "description": "kept for backwards compatibility with remote state storage",
+      "type": "string"
     },
     "^(schema_revision)$": {
       "type": "string"
@@ -28,13 +29,18 @@
       "type": "string"
     },
     "projectVersion": {
-      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
+      "description": "kept for backwards compatibility with remote state storage",
+      "type": "string"
     },
     "schemaRevision": {
       "type": "string"
     },
     "team": {
       "type": "string"
+    },
+    "version": {
+      "$ref": "attestation.v1.ProjectVersion.jsonschema.json",
+      "description": "project version"
     },
     "workflowId": {
       "type": "string"
