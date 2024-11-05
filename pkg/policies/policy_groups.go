@@ -109,6 +109,11 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
 			continue
 		}
+		// compute group arguments
+		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
 			material, err := protojson.Marshal(statement)
 			if err != nil {
@@ -116,7 +121,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			}
 
 			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
-				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION},
+				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
 			)
 			if err != nil {
 				return nil, NewPolicyError(err)

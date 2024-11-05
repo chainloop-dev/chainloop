@@ -208,7 +208,7 @@ func (s *groupsTestSuite) TestGroupLoader() {
 	}
 }
 
-func (s *groupsTestSuite) TestVerifyAttestations() {
+func (s *groupsTestSuite) TestVerifyStatement() {
 	cases := []struct {
 		name       string
 		schema     *v1.CraftingSchema
@@ -250,6 +250,54 @@ func (s *groupsTestSuite) TestVerifyAttestations() {
 				}
 				s.Equal(tc.violations, violations)
 			}
+		})
+	}
+}
+
+func (s *groupsTestSuite) TestGroupInputs() {
+	cases := []struct {
+		name    string
+		args    map[string]string
+		wanted  string
+		wantErr error
+	}{
+		{
+			name:   "group inputs with interpolation",
+			args:   map[string]string{"username": "devel"},
+			wanted: "the email is: devel@chainloop.dev",
+		},
+		{
+			name:   "group inputs with default value",
+			wanted: "the email is: foo@chainloop.dev",
+		},
+	}
+
+	for _, tc := range cases {
+		schema := &v1.CraftingSchema{
+			PolicyGroups: []*v1.PolicyGroupAttachment{
+				{
+					Ref:  "file://testdata/group_with_inputs.yaml",
+					With: tc.args,
+				},
+			},
+		}
+		material := &api.Attestation_Material{
+			M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{Id: "sbom",
+				Content: []byte(`{}`), // content not validated in this context
+			}},
+			MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+			InlineCas:    true,
+		}
+		s.Run(tc.name, func() {
+			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
+			evs, err := v.VerifyMaterial(context.TODO(), material, "")
+			if tc.wantErr != nil {
+				s.Error(err)
+				return
+			}
+			s.Require().NoError(err)
+			s.Len(evs, 1)
+			s.Equal(tc.wanted, evs[0].SkipReasons[0])
 		})
 	}
 }

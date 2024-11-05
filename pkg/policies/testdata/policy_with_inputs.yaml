@@ -1,0 +1,23 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: policy-with-inputs
+  description: Policy with inputs
+  annotations:
+    category: SBOM
+spec:
+  inputs:
+    - name: email
+      required: true
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+          
+        import rego.v1
+        
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": sprintf("the email is: %s", [input.args.email]),
+        }
