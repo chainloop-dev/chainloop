@@ -183,8 +183,13 @@ export interface CraftingState {
 export interface WorkflowMetadata {
   name: string;
   project: string;
-  /** @deprecated */
+  /**
+   * kept for backwards compatibility with remote state storage
+   *
+   * @deprecated
+   */
   projectVersion: string;
+  /** project version */
   version?: ProjectVersion;
   team: string;
   workflowId: string;

@@ -125,7 +125,6 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		Project:        workflow.GetProject(),
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
-		ProjectVersion: opts.ProjectVersion,
 		Version: &clientAPI.ProjectVersion{
 			Version:        opts.ProjectVersion,
 			MarkAsReleased: opts.ProjectVersionMarkAsReleased,

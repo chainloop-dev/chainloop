@@ -482,8 +482,11 @@ type WorkflowMetadata struct {
 
 	Name    string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Project string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
+	// kept for backwards compatibility with remote state storage
+	//
 	// Deprecated: Marked as deprecated in attestation/v1/crafting_state.proto.
-	ProjectVersion string          `protobuf:"bytes,9,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
+	ProjectVersion string `protobuf:"bytes,9,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
+	// project version
 	Version        *ProjectVersion `protobuf:"bytes,10,opt,name=version,proto3" json:"version,omitempty"`
 	Team           string          `protobuf:"bytes,3,opt,name=team,proto3" json:"team,omitempty"`
 	WorkflowId     string          `protobuf:"bytes,5,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
