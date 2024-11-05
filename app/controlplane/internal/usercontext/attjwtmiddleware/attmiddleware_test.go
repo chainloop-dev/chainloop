@@ -99,7 +99,7 @@ func TestAttestationAPITokenProvider(t *testing.T) {
 		{
 			name:           "invalid token",
 			wantErr:        true,
-			expectedError:  "UNAUTHORIZED message",
+			expectedError:  "signature is invalid",
 			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcxNTMzMjUwOSwiaWF0IjoxNzE1MzMyNTA5fQ.41X6FyZ5xo0ckpkOkQbe2wLpFZ4Emtb8aMy_-3ZFs6Y"),
 			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
 		},
