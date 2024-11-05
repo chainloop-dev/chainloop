@@ -1,12 +1,64 @@
 ---
 sidebar_position: 1
-title: Contract-less and auto-discovery of pieces of evidence
+title: Attestation Process, advanced features
 ---
+
+The basics of the attestation process is described in our [getting started guide](/getting-started/attestation-crafting). This guide, instead will focus in some advance features guide
+
+## Project and Versions
+
+During the attestation process, you can provide the name of the project the workflow belongs to and optionally a version.
+
+For example, the following line will perform an attestation associated with the project `myproject` and no version `1.0.0 (pre-release)`.
+
+```sh
+$ chainloop att init --workflow mywf --project myproject
+```
+
+Optionally you can provide a version
+
+```sh
+$ chainloop att init --workflow mywf --project myproject --version 1.0.0
+
+┌───────────────────┬──────────────────────────────────────┐
+│ Initialized At    │ 05 Nov 24 14:36 UTC                  │
+├───────────────────┼──────────────────────────────────────┤
+│ Attestation ID    │ 0c6c780c-7a95-4e18-9f94-b27c5ae7de6f │
+│ Organization      │ miguel                               │
+│ Name              │ mywf                                 │
+│ Project           │ myproject                            │
+│ Version           │ 1.0.0 (prerelease)                   │
+│ Contract Revision │ 1                                    │
+└───────────────────┴──────────────────────────────────────┘
+```
+
+As you might have noticed in the table above, the version is `1.0.0 (prerelease)`, this is because, by default, Chainloop considers all versions pre-release until they are explicitly promoted with the `--release` flag.
+
+```
+$ chainloop att init --workflow mywf --project myproject --version 1.0.0 --release
+```
+
+Once the attestation is successfully crafted and pushed, the version will be promoted to `1.0.0`.
+
+```sh
+$ chainloop att push
+```
+
+```sh
+$ chainloop wf run ls
+┌──────────────────────────────────────┬─────────────────────────────────┬───────────────────────┬─────────────┬─────────────────────┬─────────────────┬────────┐
+│ ID                                   │ WORKFLOW                        │ VERSION               │ PRERELEASE  │ STATE               │ CREATED AT      │ RUNNER │
+├──────────────────────────────────────┼─────────────────────────────────┼───────────────────────┼─────────────┼─────────────────────┼─────────────────┼────────┤
+│ e293221a-5e28-4ffa-af02-0a07be908866 │ myproject/mywf                  │ 1.0.0                 │ success     │ 05 Nov 24 14:38 UTC │ Unspecified     │        │
+```
+
+This gives you control on the lifecycle of your project versions, deciding when a version is ready to be promoted to production.
+
+## Contract-less pieces of evidence
 A Workflow Contract specifies the necessary content that a workflow must include in its attestation. For instance, it might mandate the inclusion of the URI@digest of the generated container image, the container root filesystem used during the build, and the Software Bill of Materials for that container image. These pieces of evidence must be associated with a specific material type. Operators define what must be included in the [contracts](operator/contract.mdx), and developers need to understand and comply with these requirements.
 
 This has been the case up until now, with the introduction of contract-less pieces of evidences and auto-discovery, we ease the job of operators and developers when working with attestations.
 
-## Contract-less pieces of evidence
 Not all pieces of evidences need to to be registered as a material on the contract, you can add as many pieces of evidences as you like by adding 
 its value and a new flag `--kind`, which determines that type of material you’re attesting, example:
 
@@ -183,5 +235,25 @@ INF push completed
 Attestation Digest: sha256:8a0b3a9db0372fdf571dbe85c8a9b5202f473ca97e9dbcdf77c3f9b423ea3b9c
 ```
 
-## In a nutshell
 Contract-less and auto-discovery and two features that walk hand by hand. They compose a new way of adding pieces of evidences to an existing contract in a frictionless way. You can see it in action in our [quickstart](../quickstart.md) guide.
+
+## Remote State
+
+By default, the attestation process state is stored locally. But this setup is not suitable when running a multi-step attestation process in a stateless environment, like our Dagger module, or when you want to leverage CI multi-job parallelism or similar.
+
+For that, we implemented attestation remote state. Simply put, instead of the attestation CLI being in charge of maintaining the state during the attestation, this can be delegated to the server and retrieved at any time by providing an “attestation-id.”
+
+
+```sh
+# You can enable the feature by providing the --remote-state flag
+# and it will return an attestation-id
+$ chainloop attestation init --name my-workflow --project my-project --remote-state
+
+# Then you can add any piece of evidence by providing the attestation-id
+$ chainloop attestation add --value cyberdyne.cyclonedx.sbom --attestation-id deadbeef
+
+# And finally craft the attestation, sign-it and push it
+$ chainloop attestation push --attestation-id deadbeef
+```
+
+With this optional feature, as long as you have the attestation-id, you can add any piece of evidence to the attestation from anywhere.
