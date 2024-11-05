@@ -823,6 +823,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 		name      string
 		inputs    []*v12.PolicyInput
 		args      map[string]string
+		bindings  map[string]string
 		expected  map[string]string
 		expectErr bool
 	}{
@@ -844,9 +845,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 		{
 			name: "default values are set",
 			inputs: []*v12.PolicyInput{{
-				Name:     "arg1",
-				Required: false,
-				Default:  "value1",
+				Name:    "arg1",
+				Default: "value1",
 			}, {
 				Name:     "arg2",
 				Required: true,
@@ -857,12 +857,10 @@ func (s *testSuite) TestComputePolicyArguments() {
 		{
 			name: "unexpected arguments are ignored",
 			inputs: []*v12.PolicyInput{{
-				Name:     "arg1",
-				Required: false,
-				Default:  "value1",
+				Name:    "arg1",
+				Default: "value1",
 			}, {
-				Name:     "arg2",
-				Required: false,
+				Name: "arg2",
 			}},
 			args:     map[string]string{"arg3": "value3"},
 			expected: map[string]string{"arg1": "value1"},
@@ -870,22 +868,58 @@ func (s *testSuite) TestComputePolicyArguments() {
 		{
 			name: "expected arguments with values are respected",
 			inputs: []*v12.PolicyInput{{
-				Name:     "arg1",
-				Required: false,
-				Default:  "value1",
+				Name:    "arg1",
+				Default: "value1",
 			}, {
-				Name:     "arg2",
-				Required: false,
+				Name: "arg2",
 			}},
 			args:     map[string]string{"arg1": "value1", "arg2": "value2"},
 			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
+		},
+		{
+			name: "simple bindings",
+			inputs: []*v12.PolicyInput{{
+				Name: "arg1",
+			}},
+			args:     map[string]string{"arg1": "Hello {{ .foo }}"},
+			bindings: map[string]string{"foo": "world"},
+			expected: map[string]string{"arg1": "Hello world"},
+		},
+		{
+			name: "multiple bindings",
+			inputs: []*v12.PolicyInput{{
+				Name: "arg1",
+			}, {
+				Name: "arg2",
+			}},
+			args:     map[string]string{"arg1": "Hello {{ .foo }} {{ .bar }}", "arg2": "Bye {{ .bar }}"},
+			bindings: map[string]string{"foo": "world", "bar": "template"},
+			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
+		},
+		{
+			name: "no variable found in bindings",
+			inputs: []*v12.PolicyInput{{
+				Name: "arg1",
+			}},
+			args:     map[string]string{"arg1": "Hello {{ .foo }}"},
+			bindings: map[string]string{"bar": "world"},
+			expected: map[string]string{"arg1": "Hello <no value>"},
+		},
+		{
+			name: "no interpolation needed",
+			inputs: []*v12.PolicyInput{{
+				Name: "arg1",
+			}},
+			args:     map[string]string{"arg1": "Hello world"},
+			bindings: map[string]string{"foo": "bar"},
+			expected: map[string]string{"arg1": "Hello world"},
 		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
 			pv := NewPolicyVerifier(nil, nil, &s.logger)
-			computed, err := pv.computeArguments(tc.inputs, tc.args, nil)
+			computed, err := pv.computeArguments(tc.inputs, tc.args, tc.bindings)
 			if tc.expectErr {
 				s.Error(err)
 				return
