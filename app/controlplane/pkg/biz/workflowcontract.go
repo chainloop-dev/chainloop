@@ -359,6 +359,16 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 			uc.logger.Warnf("policy group '%s' skipped since it's not found or it might use an old schema version", att.GetRef())
 			return nil, nil
 		}
+		if remoteGroup.PolicyGroup != nil {
+			// validate policy arguments
+			with := att.GetWith()
+			for _, input := range remoteGroup.PolicyGroup.GetSpec().GetInputs() {
+				_, ok := with[input.GetName()]
+				if !ok && input.GetRequired() {
+					return nil, NewErrValidation(fmt.Errorf("missing required input %q for group", input.GetName()))
+				}
+			}
+		}
 		return remoteGroup.PolicyGroup, nil
 	}
 
