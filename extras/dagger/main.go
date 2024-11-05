@@ -82,6 +82,9 @@ func (m *Chainloop) Init(
 	// Version of the project to be used for the attestation
 	// +optional
 	projectVersion string,
+	// mark the version as release
+	// +optional
+	release bool,
 ) (*Attestation, error) {
 	att := &Attestation{
 		Token:      token,
@@ -108,6 +111,12 @@ func (m *Chainloop) Init(
 	if projectVersion != "" {
 		args = append(args,
 			"--version", projectVersion,
+		)
+	}
+
+	if release {
+		args = append(args,
+			"--release",
 		)
 	}
 
