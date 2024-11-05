@@ -82,12 +82,12 @@ func newAttestationInitCmd() *cobra.Command {
 
 			// Initialize it
 			attestationID, err := a.Run(cmd.Context(), &action.AttestationInitRunOpts{
-				ContractRevision:        contractRevision,
-				ProjectName:             projectName,
-				ProjectVersion:          projectVersion,
-				WorkflowName:            workflowName,
-				NewWorkflowContractName: newWorkflowcontractName,
-				ProjectVersionRelease:   projectVersionRelease,
+				ContractRevision:             contractRevision,
+				ProjectName:                  projectName,
+				ProjectVersion:               projectVersion,
+				WorkflowName:                 workflowName,
+				NewWorkflowContractName:      newWorkflowcontractName,
+				ProjectVersionMarkAsReleased: projectVersionRelease,
 			})
 
 			if err != nil {

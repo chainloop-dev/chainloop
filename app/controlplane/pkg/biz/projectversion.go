@@ -35,6 +35,7 @@ type ProjectVersion struct {
 type ProjectVersionRepo interface {
 	FindByProjectAndVersion(ctx context.Context, projectID uuid.UUID, version string) (*ProjectVersion, error)
 	Update(ctx context.Context, versionID uuid.UUID, updates *ProjectVersionUpdateOpts) (*ProjectVersion, error)
+	Create(ctx context.Context, projectID uuid.UUID, version string, prerelease bool) (*ProjectVersion, error)
 }
 
 type ProjectVersionUseCase struct {
@@ -63,7 +64,7 @@ type ProjectVersionUpdateOpts struct {
 	Prerelease *bool
 }
 
-func (uc *ProjectVersionUseCase) MarkAsRelease(ctx context.Context, version string, isRelease bool) (*ProjectVersion, error) {
+func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, version string, isRelease bool) (*ProjectVersion, error) {
 	versionUUID, err := uuid.Parse(version)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -71,4 +72,13 @@ func (uc *ProjectVersionUseCase) MarkAsRelease(ctx context.Context, version stri
 
 	preRelease := !isRelease
 	return uc.projectRepo.Update(ctx, versionUUID, &ProjectVersionUpdateOpts{Prerelease: &preRelease})
+}
+
+func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version string, prerelease bool) (*ProjectVersion, error) {
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.projectRepo.Create(ctx, projectUUID, version, prerelease)
 }

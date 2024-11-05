@@ -63,6 +63,15 @@ func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UU
 	return entProjectToBiz(pro), nil
 }
 
+func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) (*biz.Project, error) {
+	pro, err := r.data.DB.Project.Create().SetOrganizationID(orgID).SetName(name).Save(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entProjectToBiz(pro), nil
+}
+
 // entProjectToBiz converts an ent.Project to a biz.Project
 func entProjectToBiz(pro *ent.Project) *biz.Project {
 	return &biz.Project{

@@ -74,12 +74,12 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 
 // returns the attestation ID
 type AttestationInitRunOpts struct {
-	ContractRevision        int
-	ProjectName             string
-	ProjectVersion          string
-	ProjectVersionRelease   bool
-	WorkflowName            string
-	NewWorkflowContractName string
+	ContractRevision             int
+	ProjectName                  string
+	ProjectVersion               string
+	ProjectVersionMarkAsReleased bool
+	WorkflowName                 string
+	NewWorkflowContractName      string
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -127,7 +127,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
 		ProjectVersion: &clientAPI.ProjectVersion{
 			Version:        opts.ProjectVersion,
-			MarkAsReleased: opts.ProjectVersionRelease,
+			MarkAsReleased: opts.ProjectVersionMarkAsReleased,
 		},
 	}
 
