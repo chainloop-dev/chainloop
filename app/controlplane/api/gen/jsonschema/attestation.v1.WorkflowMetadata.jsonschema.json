@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(project_version)$": {
-      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
+      "type": "string"
     },
     "^(schema_revision)$": {
       "type": "string"
@@ -28,13 +28,16 @@
       "type": "string"
     },
     "projectVersion": {
-      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
+      "type": "string"
     },
     "schemaRevision": {
       "type": "string"
     },
     "team": {
       "type": "string"
+    },
+    "version": {
+      "$ref": "attestation.v1.ProjectVersion.jsonschema.json"
     },
     "workflowId": {
       "type": "string"

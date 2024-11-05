@@ -183,7 +183,9 @@ export interface CraftingState {
 export interface WorkflowMetadata {
   name: string;
   project: string;
-  projectVersion?: ProjectVersion;
+  /** @deprecated */
+  projectVersion: string;
+  version?: ProjectVersion;
   team: string;
   workflowId: string;
   /** Not required since we might be doing a dry-run */
@@ -2080,7 +2082,8 @@ function createBaseWorkflowMetadata(): WorkflowMetadata {
   return {
     name: "",
     project: "",
-    projectVersion: undefined,
+    projectVersion: "",
+    version: undefined,
     team: "",
     workflowId: "",
     workflowRunId: "",
@@ -2097,8 +2100,11 @@ export const WorkflowMetadata = {
     if (message.project !== "") {
       writer.uint32(18).string(message.project);
     }
-    if (message.projectVersion !== undefined) {
-      ProjectVersion.encode(message.projectVersion, writer.uint32(74).fork()).ldelim();
+    if (message.projectVersion !== "") {
+      writer.uint32(74).string(message.projectVersion);
+    }
+    if (message.version !== undefined) {
+      ProjectVersion.encode(message.version, writer.uint32(82).fork()).ldelim();
     }
     if (message.team !== "") {
       writer.uint32(26).string(message.team);
@@ -2144,7 +2150,14 @@ export const WorkflowMetadata = {
             break;
           }
 
-          message.projectVersion = ProjectVersion.decode(reader, reader.uint32());
+          message.projectVersion = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.version = ProjectVersion.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2194,7 +2207,8 @@ export const WorkflowMetadata = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
-      projectVersion: isSet(object.projectVersion) ? ProjectVersion.fromJSON(object.projectVersion) : undefined,
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      version: isSet(object.version) ? ProjectVersion.fromJSON(object.version) : undefined,
       team: isSet(object.team) ? String(object.team) : "",
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
@@ -2207,8 +2221,9 @@ export const WorkflowMetadata = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
-    message.projectVersion !== undefined &&
-      (obj.projectVersion = message.projectVersion ? ProjectVersion.toJSON(message.projectVersion) : undefined);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.version !== undefined &&
+      (obj.version = message.version ? ProjectVersion.toJSON(message.version) : undefined);
     message.team !== undefined && (obj.team = message.team);
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
@@ -2225,8 +2240,9 @@ export const WorkflowMetadata = {
     const message = createBaseWorkflowMetadata();
     message.name = object.name ?? "";
     message.project = object.project ?? "";
-    message.projectVersion = (object.projectVersion !== undefined && object.projectVersion !== null)
-      ? ProjectVersion.fromPartial(object.projectVersion)
+    message.projectVersion = object.projectVersion ?? "";
+    message.version = (object.version !== undefined && object.version !== null)
+      ? ProjectVersion.fromPartial(object.version)
       : undefined;
     message.team = object.team ?? "";
     message.workflowId = object.workflowId ?? "";

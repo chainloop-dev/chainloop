@@ -104,7 +104,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
 			ProjectVersion: &ProjectVersion{
-				Version: workflowMeta.GetProjectVersion().GetVersion(),
+				Version: workflowMeta.GetVersion().GetVersion(),
 			},
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
@@ -113,8 +113,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	}
 
 	if !action.skipReleaseInfo {
-		res.WorkflowMeta.ProjectVersion.Prerelease = workflowMeta.ProjectVersion.Prerelease
-		res.WorkflowMeta.ProjectVersion.MarkAsReleased = workflowMeta.ProjectVersion.MarkAsReleased
+		res.WorkflowMeta.ProjectVersion.Prerelease = workflowMeta.Version.Prerelease
+		res.WorkflowMeta.ProjectVersion.MarkAsReleased = workflowMeta.Version.MarkAsReleased
 	}
 
 	// Let's perform the following steps in order to show all possible materials:

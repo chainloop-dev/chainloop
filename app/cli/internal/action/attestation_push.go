@@ -177,7 +177,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	workflow := crafter.CraftingState.Attestation.GetWorkflow()
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, workflow.GetWorkflowRunId(), workflow.GetProjectVersion().GetMarkAsReleased())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
