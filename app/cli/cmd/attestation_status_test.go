@@ -49,7 +49,7 @@ func TestVersionStringAttestation(t *testing.T) {
 				Version:    "1.0.0",
 				Prerelease: false,
 			},
-			expected: "1.0.0 (already released)",
+			expected: "1.0.0 (released)",
 		},
 		{
 			name: "prerelease version",
