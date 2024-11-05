@@ -23,6 +23,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
+	// FieldPrerelease holds the string denoting the prerelease field in the database.
+	FieldPrerelease = "prerelease"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
 	// EdgeRuns holds the string denoting the runs edge name in mutations.
@@ -52,6 +54,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldDeletedAt,
 	FieldProjectID,
+	FieldPrerelease,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -71,6 +74,8 @@ var (
 	VersionValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultPrerelease holds the default value on creation for the "prerelease" field.
+	DefaultPrerelease bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -101,6 +106,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByProjectID orders the results by the project_id field.
 func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
+}
+
+// ByPrerelease orders the results by the prerelease field.
+func ByPrerelease(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPrerelease, opts...).ToFunc()
 }
 
 // ByProjectField orders the results by project field.

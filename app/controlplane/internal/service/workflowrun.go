@@ -213,8 +213,9 @@ func pbWorkflowRunStatusToBiz(st pb.RunStatus) (biz.WorkflowRunStatus, error) {
 
 func bizProjectVersionToPb(v *biz.ProjectVersion) *pb.ProjectVersion {
 	return &pb.ProjectVersion{
-		Id:      v.ID.String(),
-		Version: v.Version,
+		Id:         v.ID.String(),
+		Version:    v.Version,
+		Prerelease: v.Prerelease,
 	}
 }
 

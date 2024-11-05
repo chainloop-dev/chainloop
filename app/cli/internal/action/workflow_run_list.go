@@ -55,8 +55,10 @@ type WorkflowRunItem struct {
 }
 
 type ProjectVersion struct {
-	ID      string `json:"id"`
-	Version string `json:"version,omitempty"`
+	ID             string `json:"id"`
+	Version        string `json:"version,omitempty"`
+	Prerelease     bool   `json:"prerelease"`
+	MarkAsReleased bool   `json:"markAsRelease"`
 }
 
 type PaginatedWorkflowRunItem struct {
@@ -126,8 +128,9 @@ func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
 		ContractRevisionUsed:   int(in.GetContractRevisionUsed()),
 		ContractRevisionLatest: int(in.GetContractRevisionLatest()),
 		ProjectVersion: &ProjectVersion{
-			ID:      in.GetVersion().GetId(),
-			Version: in.GetVersion().GetVersion(),
+			ID:         in.GetVersion().GetId(),
+			Version:    in.GetVersion().GetVersion(),
+			Prerelease: in.GetVersion().GetPrerelease(),
 		},
 	}
 

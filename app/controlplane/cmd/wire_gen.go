@@ -142,6 +142,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v6, organizationUseCase, orgMetricsUseCase, logger)
+	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
+	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
@@ -156,6 +158,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ReferrerUC:         referrerUseCase,
 		OrgUC:              organizationUseCase,
 		PromUC:             prometheusUseCase,
+		ProjectVersionUC:   projectVersionUseCase,
 		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)

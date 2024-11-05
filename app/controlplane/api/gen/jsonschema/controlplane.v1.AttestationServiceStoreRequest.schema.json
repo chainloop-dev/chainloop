@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(markVersionAsReleased)$": {
+      "description": "mark the associated version as released",
+      "type": "boolean"
+    },
     "^(workflowRunId)$": {
       "type": "string"
     }
@@ -12,6 +16,10 @@
       "description": "encoded DSEE envelope",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
+    },
+    "mark_version_as_released": {
+      "description": "mark the associated version as released",
+      "type": "boolean"
     },
     "workflow_run_id": {
       "type": "string"

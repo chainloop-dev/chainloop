@@ -6,6 +6,9 @@
     "id": {
       "type": "string"
     },
+    "prerelease": {
+      "type": "boolean"
+    },
     "version": {
       "type": "string"
     }

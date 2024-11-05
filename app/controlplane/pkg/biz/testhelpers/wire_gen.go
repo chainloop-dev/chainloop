@@ -122,6 +122,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
+	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
 	testingRepos := &TestingRepos{
 		Membership:       membershipRepo,
 		Referrer:         referrerRepo,
@@ -152,6 +153,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Enforcer:               enforcer,
 		AttestationState:       attestationStateUseCase,
 		ProjectVersion:         projectVersionUseCase,
+		Project:                projectUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

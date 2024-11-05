@@ -49,9 +49,38 @@ func (r *ProjectVersionRepo) FindByProjectAndVersion(ctx context.Context, projec
 	return entProjectVersionToBiz(pv), nil
 }
 
+func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *biz.ProjectVersionUpdateOpts) (*biz.ProjectVersion, error) {
+	if updates == nil {
+		updates = &biz.ProjectVersionUpdateOpts{}
+	}
+
+	res, err := r.data.DB.ProjectVersion.UpdateOneID(id).SetNillablePrerelease(updates.Prerelease).Save(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if res == nil {
+		return nil, biz.NewErrNotFound("Version")
+	}
+
+	return entProjectVersionToBiz(res), nil
+}
+
+func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, version string, prerelease bool) (*biz.ProjectVersion, error) {
+	pv, err := r.data.DB.ProjectVersion.Create().
+		SetProjectID(projectID).
+		SetVersion(version).
+		SetPrerelease(prerelease).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return entProjectVersionToBiz(pv), nil
+}
+
 func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
 	return &biz.ProjectVersion{
-		ID:      v.ID,
-		Version: v.Version,
+		ID:         v.ID,
+		Version:    v.Version,
+		Prerelease: v.Prerelease,
 	}
 }

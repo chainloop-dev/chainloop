@@ -51,6 +51,7 @@ func (ProjectVersion) Fields() []ent.Field {
 			}),
 		field.Time("deleted_at").Optional(),
 		field.UUID("project_id", uuid.UUID{}),
+		field.Bool("prerelease").Default(true),
 	}
 }
 

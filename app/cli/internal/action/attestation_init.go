@@ -74,11 +74,12 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 
 // returns the attestation ID
 type AttestationInitRunOpts struct {
-	ContractRevision        int
-	ProjectName             string
-	ProjectVersion          string
-	WorkflowName            string
-	NewWorkflowContractName string
+	ContractRevision             int
+	ProjectName                  string
+	ProjectVersion               string
+	ProjectVersionMarkAsReleased bool
+	WorkflowName                 string
+	NewWorkflowContractName      string
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -124,7 +125,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		Project:        workflow.GetProject(),
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
-		ProjectVersion: opts.ProjectVersion,
+		ProjectVersion: &clientAPI.ProjectVersion{
+			Version:        opts.ProjectVersion,
+			MarkAsReleased: opts.ProjectVersionMarkAsReleased,
+		},
 	}
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
@@ -165,6 +169,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowRun := runResp.GetResult().GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		workflowMeta.Organization = runResp.GetResult().GetOrganization()
+		workflowMeta.ProjectVersion.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
 		attestationID = workflowRun.GetId()
 	}

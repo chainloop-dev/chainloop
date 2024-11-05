@@ -76,6 +76,11 @@ func ProjectID(v uuid.UUID) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldProjectID, v))
 }
 
+// Prerelease applies equality check predicate on the "prerelease" field. It's identical to PrereleaseEQ.
+func Prerelease(v bool) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldPrerelease, v))
+}
+
 // VersionEQ applies the EQ predicate on the "version" field.
 func VersionEQ(v string) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldVersion, v))
@@ -249,6 +254,16 @@ func ProjectIDIn(vs ...uuid.UUID) predicate.ProjectVersion {
 // ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
 func ProjectIDNotIn(vs ...uuid.UUID) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
+// PrereleaseEQ applies the EQ predicate on the "prerelease" field.
+func PrereleaseEQ(v bool) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldPrerelease, v))
+}
+
+// PrereleaseNEQ applies the NEQ predicate on the "prerelease" field.
+func PrereleaseNEQ(v bool) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNEQ(FieldPrerelease, v))
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

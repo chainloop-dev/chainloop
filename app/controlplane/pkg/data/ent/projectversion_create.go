@@ -74,6 +74,20 @@ func (pvc *ProjectVersionCreate) SetProjectID(u uuid.UUID) *ProjectVersionCreate
 	return pvc
 }
 
+// SetPrerelease sets the "prerelease" field.
+func (pvc *ProjectVersionCreate) SetPrerelease(b bool) *ProjectVersionCreate {
+	pvc.mutation.SetPrerelease(b)
+	return pvc
+}
+
+// SetNillablePrerelease sets the "prerelease" field if the given value is not nil.
+func (pvc *ProjectVersionCreate) SetNillablePrerelease(b *bool) *ProjectVersionCreate {
+	if b != nil {
+		pvc.SetPrerelease(*b)
+	}
+	return pvc
+}
+
 // SetID sets the "id" field.
 func (pvc *ProjectVersionCreate) SetID(u uuid.UUID) *ProjectVersionCreate {
 	pvc.mutation.SetID(u)
@@ -151,6 +165,10 @@ func (pvc *ProjectVersionCreate) defaults() {
 		v := projectversion.DefaultCreatedAt()
 		pvc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := pvc.mutation.Prerelease(); !ok {
+		v := projectversion.DefaultPrerelease
+		pvc.mutation.SetPrerelease(v)
+	}
 	if _, ok := pvc.mutation.ID(); !ok {
 		v := projectversion.DefaultID()
 		pvc.mutation.SetID(v)
@@ -172,6 +190,9 @@ func (pvc *ProjectVersionCreate) check() error {
 	}
 	if _, ok := pvc.mutation.ProjectID(); !ok {
 		return &ValidationError{Name: "project_id", err: errors.New(`ent: missing required field "ProjectVersion.project_id"`)}
+	}
+	if _, ok := pvc.mutation.Prerelease(); !ok {
+		return &ValidationError{Name: "prerelease", err: errors.New(`ent: missing required field "ProjectVersion.prerelease"`)}
 	}
 	if len(pvc.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectVersion.project"`)}
@@ -223,6 +244,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 	if value, ok := pvc.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
+	}
+	if value, ok := pvc.mutation.Prerelease(); ok {
+		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
+		_node.Prerelease = value
 	}
 	if nodes := pvc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -339,6 +364,18 @@ func (u *ProjectVersionUpsert) UpdateProjectID() *ProjectVersionUpsert {
 	return u
 }
 
+// SetPrerelease sets the "prerelease" field.
+func (u *ProjectVersionUpsert) SetPrerelease(v bool) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldPrerelease, v)
+	return u
+}
+
+// UpdatePrerelease sets the "prerelease" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdatePrerelease() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldPrerelease)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -425,6 +462,20 @@ func (u *ProjectVersionUpsertOne) SetProjectID(v uuid.UUID) *ProjectVersionUpser
 func (u *ProjectVersionUpsertOne) UpdateProjectID() *ProjectVersionUpsertOne {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.UpdateProjectID()
+	})
+}
+
+// SetPrerelease sets the "prerelease" field.
+func (u *ProjectVersionUpsertOne) SetPrerelease(v bool) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetPrerelease(v)
+	})
+}
+
+// UpdatePrerelease sets the "prerelease" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdatePrerelease() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdatePrerelease()
 	})
 }
 
@@ -681,6 +732,20 @@ func (u *ProjectVersionUpsertBulk) SetProjectID(v uuid.UUID) *ProjectVersionUpse
 func (u *ProjectVersionUpsertBulk) UpdateProjectID() *ProjectVersionUpsertBulk {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.UpdateProjectID()
+	})
+}
+
+// SetPrerelease sets the "prerelease" field.
+func (u *ProjectVersionUpsertBulk) SetPrerelease(v bool) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetPrerelease(v)
+	})
+}
+
+// UpdatePrerelease sets the "prerelease" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdatePrerelease() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdatePrerelease()
 	})
 }
 

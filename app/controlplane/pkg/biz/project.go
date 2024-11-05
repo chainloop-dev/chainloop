@@ -29,6 +29,7 @@ import (
 type ProjectsRepo interface {
 	FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*Project, error)
 	FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*Project, error)
+	Create(ctx context.Context, orgID uuid.UUID, name string) (*Project, error)
 }
 
 // ProjectUseCase is a use case for projects
@@ -54,7 +55,7 @@ type Project struct {
 
 func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo) *ProjectUseCase {
 	return &ProjectUseCase{
-		logger:             servicelogger.ScopedHelper(logger, "biz/projects"),
+		logger:             servicelogger.ScopedHelper(logger, "biz/project"),
 		projectsRepository: projectsRepository,
 	}
 }
@@ -81,4 +82,17 @@ func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID stri
 	default:
 		return nil, NewErrValidationStr("project reference is empty")
 	}
+}
+
+func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Project, error) {
+	if name == "" || orgID == "" {
+		return nil, NewErrValidationStr("orgID or project name are empty")
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.projectsRepository.Create(ctx, orgUUID, name)
 }

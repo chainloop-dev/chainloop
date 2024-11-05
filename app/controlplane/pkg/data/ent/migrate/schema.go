@@ -318,6 +318,7 @@ var (
 		{Name: "version", Type: field.TypeString, Default: ""},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "prerelease", Type: field.TypeBool, Default: true},
 		{Name: "project_id", Type: field.TypeUUID},
 	}
 	// ProjectVersionsTable holds the schema information for the "project_versions" table.
@@ -328,7 +329,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_versions_projects_versions",
-				Columns:    []*schema.Column{ProjectVersionsColumns[4]},
+				Columns:    []*schema.Column{ProjectVersionsColumns[5]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -337,7 +338,7 @@ var (
 			{
 				Name:    "projectversion_version_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectVersionsColumns[1], ProjectVersionsColumns[4]},
+				Columns: []*schema.Column{ProjectVersionsColumns[1], ProjectVersionsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
