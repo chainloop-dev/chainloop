@@ -78,7 +78,10 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// Retrieve attestation status
-	statusAction, err := NewAttestationStatus(&AttestationStatusOpts{ActionsOpts: action.ActionsOpts, UseAttestationRemoteState: useRemoteState})
+	statusAction, err := NewAttestationStatus(&AttestationStatusOpts{
+		ActionsOpts: action.ActionsOpts, UseAttestationRemoteState: useRemoteState, SkipReleaseInfo: true,
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("creating status action: %w", err)
 	}

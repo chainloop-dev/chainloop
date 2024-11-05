@@ -220,7 +220,7 @@ func versionStringAttestation(p *action.ProjectVersion) string {
 
 	// The version loaded is a already released version
 	if !p.Prerelease {
-		return fmt.Sprintf("%s (already released)", p.Version)
+		return fmt.Sprintf("%s (released)", p.Version)
 	}
 
 	return fmt.Sprintf("%s (prerelease)", p.Version)
