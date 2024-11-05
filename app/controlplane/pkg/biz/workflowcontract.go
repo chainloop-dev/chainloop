@@ -360,7 +360,7 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 			return nil, nil
 		}
 		if remoteGroup.PolicyGroup != nil {
-			// validate policy arguments
+			// validate group arguments
 			with := att.GetWith()
 			for _, input := range remoteGroup.PolicyGroup.GetSpec().GetInputs() {
 				_, ok := with[input.GetName()]
