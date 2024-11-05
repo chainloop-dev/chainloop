@@ -3,6 +3,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "inputs": {
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyInput.schema.json"
+      },
+      "type": "array"
+    },
     "policies": {
       "$ref": "workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.schema.json"
     }

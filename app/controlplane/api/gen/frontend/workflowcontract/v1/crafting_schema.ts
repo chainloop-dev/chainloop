@@ -429,6 +429,7 @@ export interface PolicyGroup {
 
 export interface PolicyGroup_PolicyGroupSpec {
   policies?: PolicyGroup_PolicyGroupPolicies;
+  inputs: PolicyInput[];
 }
 
 export interface PolicyGroup_PolicyGroupPolicies {
@@ -1937,13 +1938,16 @@ export const PolicyGroup = {
 };
 
 function createBasePolicyGroup_PolicyGroupSpec(): PolicyGroup_PolicyGroupSpec {
-  return { policies: undefined };
+  return { policies: undefined, inputs: [] };
 }
 
 export const PolicyGroup_PolicyGroupSpec = {
   encode(message: PolicyGroup_PolicyGroupSpec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.policies !== undefined) {
       PolicyGroup_PolicyGroupPolicies.encode(message.policies, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.inputs) {
+      PolicyInput.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1962,6 +1966,13 @@ export const PolicyGroup_PolicyGroupSpec = {
 
           message.policies = PolicyGroup_PolicyGroupPolicies.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.inputs.push(PolicyInput.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1972,13 +1983,21 @@ export const PolicyGroup_PolicyGroupSpec = {
   },
 
   fromJSON(object: any): PolicyGroup_PolicyGroupSpec {
-    return { policies: isSet(object.policies) ? PolicyGroup_PolicyGroupPolicies.fromJSON(object.policies) : undefined };
+    return {
+      policies: isSet(object.policies) ? PolicyGroup_PolicyGroupPolicies.fromJSON(object.policies) : undefined,
+      inputs: Array.isArray(object?.inputs) ? object.inputs.map((e: any) => PolicyInput.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: PolicyGroup_PolicyGroupSpec): unknown {
     const obj: any = {};
     message.policies !== undefined &&
       (obj.policies = message.policies ? PolicyGroup_PolicyGroupPolicies.toJSON(message.policies) : undefined);
+    if (message.inputs) {
+      obj.inputs = message.inputs.map((e) => e ? PolicyInput.toJSON(e) : undefined);
+    } else {
+      obj.inputs = [];
+    }
     return obj;
   },
 
@@ -1991,6 +2010,7 @@ export const PolicyGroup_PolicyGroupSpec = {
     message.policies = (object.policies !== undefined && object.policies !== null)
       ? PolicyGroup_PolicyGroupPolicies.fromPartial(object.policies)
       : undefined;
+    message.inputs = object.inputs?.map((e) => PolicyInput.fromPartial(e)) || [];
     return message;
   },
 };

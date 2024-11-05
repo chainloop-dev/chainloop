@@ -288,8 +288,8 @@ message PolicyGroup {
   PolicyGroupSpec spec = 4 [(buf.validate.field).required = true];
 
   message PolicyGroupSpec {
-
     PolicyGroupPolicies policies = 1;
+    repeated PolicyInput inputs = 2;
   }
 
   message PolicyGroupPolicies {

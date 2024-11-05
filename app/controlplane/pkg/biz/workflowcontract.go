@@ -335,10 +335,10 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAtt
 	if policy != nil {
 		// validate policy arguments
 		with := att.GetWith()
-		for k, input := range policy.GetSpec().GetInputs() {
-			_, ok := with[k]
-			if !ok && input.Required {
-				return nil, NewErrValidation(fmt.Errorf("missing required input %q", k))
+		for _, input := range policy.GetSpec().GetInputs() {
+			_, ok := with[input.GetName()]
+			if !ok && input.GetRequired() {
+				return nil, NewErrValidation(fmt.Errorf("missing required input %q", input.GetName()))
 			}
 		}
 	}
