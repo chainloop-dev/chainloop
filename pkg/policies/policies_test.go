@@ -762,7 +762,7 @@ func (s *testSuite) TestLoader() {
 	}
 }
 
-func (s *testSuite) TestInputArguments() {
+func (s *testSuite) TestGetInputArguments() {
 	cases := []struct {
 		name     string
 		inputs   map[string]string
@@ -814,6 +814,92 @@ func (s *testSuite) TestInputArguments() {
 		s.Run(tc.name, func() {
 			actual := getInputArguments(tc.inputs)
 			s.Equal(tc.expected, actual)
+		})
+	}
+}
+
+func (s *testSuite) TestComputePolicyArguments() {
+	cases := []struct {
+		name      string
+		inputs    []*v12.PolicyInput
+		args      map[string]string
+		expected  map[string]string
+		expectErr bool
+	}{
+		{
+			name:     "all args passed when no inputs present",
+			inputs:   nil,
+			args:     map[string]string{"arg1": "value1", "arg2": "value2"},
+			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
+		},
+		{
+			name: "required inputs",
+			inputs: []*v12.PolicyInput{{
+				Name:     "arg1",
+				Required: true,
+			}},
+			args:      map[string]string{"arg2": "value2"},
+			expectErr: true,
+		},
+		{
+			name: "default values are set",
+			inputs: []*v12.PolicyInput{{
+				Name:     "arg1",
+				Required: false,
+				Default:  "value1",
+			}, {
+				Name:     "arg2",
+				Required: true,
+			}},
+			args:     map[string]string{"arg2": "value2"},
+			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
+		},
+		{
+			name: "unexpected arguments are ignored",
+			inputs: []*v12.PolicyInput{{
+				Name:     "arg1",
+				Required: false,
+				Default:  "value1",
+			}, {
+				Name:     "arg2",
+				Required: false,
+			}},
+			args:     map[string]string{"arg3": "value3"},
+			expected: map[string]string{"arg1": "value1"},
+		},
+		{
+			name: "expected arguments with values are respected",
+			inputs: []*v12.PolicyInput{{
+				Name:     "arg1",
+				Required: false,
+				Default:  "value1",
+			}, {
+				Name:     "arg2",
+				Required: false,
+			}},
+			args:     map[string]string{"arg1": "value1", "arg2": "value2"},
+			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
+		},
+	}
+
+	for _, tc := range cases {
+		policy := &v12.Policy{
+			Spec: &v12.PolicySpec{
+				Inputs: tc.inputs,
+			},
+		}
+		att := &v12.PolicyAttachment{
+			With: tc.args,
+		}
+		s.Run(tc.name, func() {
+			pv := NewPolicyVerifier(nil, nil, &s.logger)
+			computed, err := pv.computePolicyArguments(policy, att)
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+			s.NoError(err)
+			s.Equal(tc.expected, computed)
 		})
 	}
 }

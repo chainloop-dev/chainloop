@@ -112,7 +112,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		return nil, NewPolicyError(err)
 	}
 
-	if err := pv.validatePolicyArguments(policy, attachment); err != nil {
+	args, err := pv.computePolicyArguments(policy, attachment)
+	if err != nil {
 		return nil, NewPolicyError(err)
 	}
 
@@ -140,7 +141,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	skipped := true
 	reasons := make([]string, 0)
 	for _, script := range scripts {
-		r, err := pv.executeScript(ctx, policy, script, material, attachment)
+		r, err := pv.executeScript(ctx, policy, script, material, args)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -187,21 +188,43 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}, nil
 }
 
-func (pv *PolicyVerifier) validatePolicyArguments(policy *v1.Policy, attachment *v1.PolicyAttachment) error {
+func (pv *PolicyVerifier) computePolicyArguments(policy *v1.Policy, attachment *v1.PolicyAttachment) (map[string]string, error) {
+	result := make(map[string]string)
 	inputs := policy.GetSpec().GetInputs()
 	args := attachment.GetWith()
-	for k, input := range inputs {
-		if _, ok := args[k]; !ok && input.Required {
-			return fmt.Errorf("missing required input %q for policy %q", k, policy.GetMetadata().GetName())
-		}
+
+	// Policies without inputs in the spec
+	// TODO: Remove this in next release, once users have migrated their policies
+	if inputs == nil {
+		result = args
 	}
-	for k, _ := range args {
-		if _, ok := inputs[k]; !ok {
-			pv.logger.Warn().Msgf("policy argument %q will be ignored for policy %q", k, policy.GetMetadata().GetName())
+
+	// Check for required inputs
+	for _, input := range inputs {
+		if _, ok := args[input.Name]; !ok {
+			if input.Required {
+				return nil, fmt.Errorf("missing required input %q for policy %q", input.Name, policy.GetMetadata().GetName())
+			}
+			// if not required, and it has a default value, let's use it
+			if args[input.Name] == "" && input.Default != "" {
+				result[input.Name] = input.Default
+			}
 		}
 	}
 
-	return nil
+	// check for provided arguments
+	for k, v := range args {
+		expected := slices.ContainsFunc(inputs, func(input *v1.PolicyInput) bool {
+			return input.Name == k
+		})
+		if !expected {
+			pv.logger.Warn().Msgf("policy argument %q will be ignored for policy %q", k, policy.GetMetadata().GetName())
+			continue
+		}
+		result[k] = v
+	}
+
+	return result, nil
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
@@ -225,10 +248,10 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, att *v1.PolicyAttachment) (*engine.EvaluationResult, error) {
+func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
 	// verify the policy
 	ng := getPolicyEngine(policy)
-	res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
+	res, err := ng.Verify(ctx, script, material, getInputArguments(args))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute policy : %w", err)
 	}
@@ -301,6 +324,7 @@ func validateResource(m proto.Message) error {
 	return nil
 }
 
+// transforms input arguments for policy consumption
 func getInputArguments(inputs map[string]string) map[string]any {
 	args := make(map[string]any)
 

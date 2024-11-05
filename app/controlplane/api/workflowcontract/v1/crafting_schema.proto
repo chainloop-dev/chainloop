@@ -226,7 +226,7 @@ message PolicySpec {
   repeated PolicySpecV2 policies = 4;
 
   // Describe the supported inputs
-  map<string, PolicyInput> inputs = 5;
+  repeated PolicyInput inputs = 5;
 
   option (buf.validate.message).cel = {
     id: "policyspec"
@@ -236,8 +236,17 @@ message PolicySpec {
 }
 
 message PolicyInput {
-  string description = 1;
-  bool required = 2;
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
+  }];
+  string description = 2;
+  bool required = 3;
+  string default = 4;
 }
 
 message PolicySpecV2 {
@@ -279,6 +288,7 @@ message PolicyGroup {
   PolicyGroupSpec spec = 4 [(buf.validate.field).required = true];
 
   message PolicyGroupSpec {
+
     PolicyGroupPolicies policies = 1;
   }
 

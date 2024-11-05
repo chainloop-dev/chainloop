@@ -386,17 +386,14 @@ export interface PolicySpec {
   type: CraftingSchema_Material_MaterialType;
   policies: PolicySpecV2[];
   /** Describe the supported inputs */
-  inputs: { [key: string]: PolicyInput };
-}
-
-export interface PolicySpec_InputsEntry {
-  key: string;
-  value?: PolicyInput;
+  inputs: PolicyInput[];
 }
 
 export interface PolicyInput {
+  name: string;
   description: string;
   required: boolean;
+  default: string;
 }
 
 export interface PolicySpecV2 {
@@ -1483,7 +1480,7 @@ export const Metadata_AnnotationsEntry = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: undefined, embedded: undefined, type: 0, policies: [], inputs: {} };
+  return { path: undefined, embedded: undefined, type: 0, policies: [], inputs: [] };
 }
 
 export const PolicySpec = {
@@ -1500,9 +1497,9 @@ export const PolicySpec = {
     for (const v of message.policies) {
       PolicySpecV2.encode(v!, writer.uint32(34).fork()).ldelim();
     }
-    Object.entries(message.inputs).forEach(([key, value]) => {
-      PolicySpec_InputsEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
-    });
+    for (const v of message.inputs) {
+      PolicyInput.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -1546,10 +1543,7 @@ export const PolicySpec = {
             break;
           }
 
-          const entry5 = PolicySpec_InputsEntry.decode(reader, reader.uint32());
-          if (entry5.value !== undefined) {
-            message.inputs[entry5.key] = entry5.value;
-          }
+          message.inputs.push(PolicyInput.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1566,12 +1560,7 @@ export const PolicySpec = {
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
       policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicySpecV2.fromJSON(e)) : [],
-      inputs: isObject(object.inputs)
-        ? Object.entries(object.inputs).reduce<{ [key: string]: PolicyInput }>((acc, [key, value]) => {
-          acc[key] = PolicyInput.fromJSON(value);
-          return acc;
-        }, {})
-        : {},
+      inputs: Array.isArray(object?.inputs) ? object.inputs.map((e: any) => PolicyInput.fromJSON(e)) : [],
     };
   },
 
@@ -1585,11 +1574,10 @@ export const PolicySpec = {
     } else {
       obj.policies = [];
     }
-    obj.inputs = {};
     if (message.inputs) {
-      Object.entries(message.inputs).forEach(([k, v]) => {
-        obj.inputs[k] = PolicyInput.toJSON(v);
-      });
+      obj.inputs = message.inputs.map((e) => e ? PolicyInput.toJSON(e) : undefined);
+    } else {
+      obj.inputs = [];
     }
     return obj;
   },
@@ -1604,100 +1592,28 @@ export const PolicySpec = {
     message.embedded = object.embedded ?? undefined;
     message.type = object.type ?? 0;
     message.policies = object.policies?.map((e) => PolicySpecV2.fromPartial(e)) || [];
-    message.inputs = Object.entries(object.inputs ?? {}).reduce<{ [key: string]: PolicyInput }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = PolicyInput.fromPartial(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBasePolicySpec_InputsEntry(): PolicySpec_InputsEntry {
-  return { key: "", value: undefined };
-}
-
-export const PolicySpec_InputsEntry = {
-  encode(message: PolicySpec_InputsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== undefined) {
-      PolicyInput.encode(message.value, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PolicySpec_InputsEntry {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicySpec_InputsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = PolicyInput.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PolicySpec_InputsEntry {
-    return {
-      key: isSet(object.key) ? String(object.key) : "",
-      value: isSet(object.value) ? PolicyInput.fromJSON(object.value) : undefined,
-    };
-  },
-
-  toJSON(message: PolicySpec_InputsEntry): unknown {
-    const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value ? PolicyInput.toJSON(message.value) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<PolicySpec_InputsEntry>, I>>(base?: I): PolicySpec_InputsEntry {
-    return PolicySpec_InputsEntry.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<PolicySpec_InputsEntry>, I>>(object: I): PolicySpec_InputsEntry {
-    const message = createBasePolicySpec_InputsEntry();
-    message.key = object.key ?? "";
-    message.value = (object.value !== undefined && object.value !== null)
-      ? PolicyInput.fromPartial(object.value)
-      : undefined;
+    message.inputs = object.inputs?.map((e) => PolicyInput.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBasePolicyInput(): PolicyInput {
-  return { description: "", required: false };
+  return { name: "", description: "", required: false, default: "" };
 }
 
 export const PolicyInput = {
   encode(message: PolicyInput, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
     if (message.description !== "") {
-      writer.uint32(10).string(message.description);
+      writer.uint32(18).string(message.description);
     }
     if (message.required === true) {
-      writer.uint32(16).bool(message.required);
+      writer.uint32(24).bool(message.required);
+    }
+    if (message.default !== "") {
+      writer.uint32(34).string(message.default);
     }
     return writer;
   },
@@ -1714,14 +1630,28 @@ export const PolicyInput = {
             break;
           }
 
-          message.description = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.required = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.default = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1734,15 +1664,19 @@ export const PolicyInput = {
 
   fromJSON(object: any): PolicyInput {
     return {
+      name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       required: isSet(object.required) ? Boolean(object.required) : false,
+      default: isSet(object.default) ? String(object.default) : "",
     };
   },
 
   toJSON(message: PolicyInput): unknown {
     const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.required !== undefined && (obj.required = message.required);
+    message.default !== undefined && (obj.default = message.default);
     return obj;
   },
 
@@ -1752,8 +1686,10 @@ export const PolicyInput = {
 
   fromPartial<I extends Exact<DeepPartial<PolicyInput>, I>>(object: I): PolicyInput {
     const message = createBasePolicyInput();
+    message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.required = object.required ?? false;
+    message.default = object.default ?? "";
     return message;
   },
 };
