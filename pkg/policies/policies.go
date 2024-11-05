@@ -16,6 +16,7 @@
 package policies
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -23,6 +24,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"text/template"
 
 	"github.com/bufbuild/protovalidate-go"
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -103,16 +105,13 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 type evalOpts struct {
 	name string
 	kind v1.CraftingSchema_Material_MaterialType
+	// Argument bindings for policy evaluations
+	bindings map[string]string
 }
 
 func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
 	// load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
-	if err != nil {
-		return nil, NewPolicyError(err)
-	}
-
-	args, err := pv.computePolicyArguments(policy, attachment)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -134,6 +133,11 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Info().Msgf("evaluating policy %s against %s", policy.Metadata.Name, opts.name)
 	} else {
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
+	}
+
+	args, err := pv.computeArguments(policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings)
+	if err != nil {
+		return nil, NewPolicyError(err)
 	}
 
 	sources := make([]string, 0)
@@ -188,10 +192,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}, nil
 }
 
-func (pv *PolicyVerifier) computePolicyArguments(policy *v1.Policy, attachment *v1.PolicyAttachment) (map[string]string, error) {
+func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[string]string, bindings map[string]string) (map[string]string, error) {
 	result := make(map[string]string)
-	inputs := policy.GetSpec().GetInputs()
-	args := attachment.GetWith()
 
 	// Policies without inputs in the spec
 	// TODO: Remove this in next release, once users have migrated their policies
@@ -203,11 +205,15 @@ func (pv *PolicyVerifier) computePolicyArguments(policy *v1.Policy, attachment *
 	for _, input := range inputs {
 		if _, ok := args[input.Name]; !ok {
 			if input.Required {
-				return nil, fmt.Errorf("missing required input %q for policy %q", input.Name, policy.GetMetadata().GetName())
+				return nil, fmt.Errorf("missing required input %q", input.Name)
 			}
 			// if not required, and it has a default value, let's use it
 			if args[input.Name] == "" && input.Default != "" {
-				result[input.Name] = input.Default
+				value, err := applyBinding(input.Default, bindings)
+				if err != nil {
+					return nil, err
+				}
+				result[input.Name] = value
 			}
 		}
 	}
@@ -218,13 +224,36 @@ func (pv *PolicyVerifier) computePolicyArguments(policy *v1.Policy, attachment *
 			return input.Name == k
 		})
 		if !expected {
-			pv.logger.Warn().Msgf("policy argument %q will be ignored for policy %q", k, policy.GetMetadata().GetName())
+			pv.logger.Warn().Msgf("argument %q will be ignored", k)
 			continue
 		}
-		result[k] = v
+		value, err := applyBinding(v, bindings)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = value
 	}
 
 	return result, nil
+}
+
+// renders an input template using bindings in Go templating format
+func applyBinding(input string, bindings map[string]string) (string, error) {
+	if bindings == nil {
+		return input, nil
+	}
+
+	tmpl, err := template.New("chainloop").Parse(input)
+	if err != nil {
+		return "", err
+	}
+	buffer := new(bytes.Buffer)
+	err = tmpl.Execute(buffer, bindings)
+	if err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema

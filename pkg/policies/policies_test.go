@@ -883,17 +883,9 @@ func (s *testSuite) TestComputePolicyArguments() {
 	}
 
 	for _, tc := range cases {
-		policy := &v12.Policy{
-			Spec: &v12.PolicySpec{
-				Inputs: tc.inputs,
-			},
-		}
-		att := &v12.PolicyAttachment{
-			With: tc.args,
-		}
 		s.Run(tc.name, func() {
 			pv := NewPolicyVerifier(nil, nil, &s.logger)
-			computed, err := pv.computePolicyArguments(policy, att)
+			computed, err := pv.computeArguments(tc.inputs, tc.args, nil)
 			if tc.expectErr {
 				s.Error(err)
 				return

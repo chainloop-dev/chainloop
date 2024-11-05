@@ -151,7 +151,11 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 			}
 
 			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
-			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material)
+			group, _, err := new(FileGroupLoader).Load(context.TODO(), &v1.PolicyGroupAttachment{
+				Ref: tc.schemaRef,
+			})
+			s.Require().NoError(err)
+			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group)
 			s.Require().NoError(err)
 			s.Len(atts, tc.expected)
 		})
