@@ -292,7 +292,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	// Validate that externally provided policies exist
 	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
-		return err
+		return NewErrValidation(err)
 	}
 
 	for _, att := range c.Schema.GetPolicies().GetAttestation() {
