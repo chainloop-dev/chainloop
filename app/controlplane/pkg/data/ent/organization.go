@@ -42,9 +42,11 @@ type OrganizationEdges struct {
 	Integrations []*Integration `json:"integrations,omitempty"`
 	// APITokens holds the value of the api_tokens edge.
 	APITokens []*APIToken `json:"api_tokens,omitempty"`
+	// Projects holds the value of the projects edge.
+	Projects []*Project `json:"projects,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 }
 
 // MembershipsOrErr returns the Memberships value or an error if the edge
@@ -99,6 +101,15 @@ func (e OrganizationEdges) APITokensOrErr() ([]*APIToken, error) {
 		return e.APITokens, nil
 	}
 	return nil, &NotLoadedError{edge: "api_tokens"}
+}
+
+// ProjectsOrErr returns the Projects value or an error if the edge
+// was not loaded in eager-loading.
+func (e OrganizationEdges) ProjectsOrErr() ([]*Project, error) {
+	if e.loadedTypes[6] {
+		return e.Projects, nil
+	}
+	return nil, &NotLoadedError{edge: "projects"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -186,6 +197,11 @@ func (o *Organization) QueryIntegrations() *IntegrationQuery {
 // QueryAPITokens queries the "api_tokens" edge of the Organization entity.
 func (o *Organization) QueryAPITokens() *APITokenQuery {
 	return NewOrganizationClient(o.config).QueryAPITokens(o)
+}
+
+// QueryProjects queries the "projects" edge of the Organization entity.
+func (o *Organization) QueryProjects() *ProjectQuery {
+	return NewOrganizationClient(o.config).QueryProjects(o)
 }
 
 // Update returns a builder for updating this Organization.

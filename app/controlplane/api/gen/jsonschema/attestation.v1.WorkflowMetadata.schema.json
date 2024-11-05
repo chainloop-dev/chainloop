@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(projectVersion)$": {
+      "description": "kept for backwards compatibility with remote state storage",
+      "type": "string"
+    },
     "^(schemaRevision)$": {
       "type": "string"
     },
@@ -24,11 +28,19 @@
     "project": {
       "type": "string"
     },
+    "project_version": {
+      "description": "kept for backwards compatibility with remote state storage",
+      "type": "string"
+    },
     "schema_revision": {
       "type": "string"
     },
     "team": {
       "type": "string"
+    },
+    "version": {
+      "$ref": "attestation.v1.ProjectVersion.schema.json",
+      "description": "project version"
     },
     "workflow_id": {
       "type": "string"

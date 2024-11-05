@@ -17,21 +17,17 @@ package biz
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
-	"cuelang.org/go/cue/cuecontext"
-	"github.com/bufbuild/protovalidate-go"
-	"github.com/bufbuild/protoyaml-go"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	loader "github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
-	"gopkg.in/yaml.v2"
 )
 
 type WorkflowContract struct {
@@ -56,18 +52,10 @@ type Contract struct {
 	// it maintain the format provided by the user
 	Raw []byte
 	// Detected format as provided by the user
-	Format ContractRawFormat
+	Format unmarshal.RawFormat
 	// marhalled proto contract
 	Schema *schemav1.CraftingSchema
 }
-
-type ContractRawFormat string
-
-const (
-	ContractRawFormatJSON ContractRawFormat = "json"
-	ContractRawFormatYAML ContractRawFormat = "yaml"
-	ContractRawFormatCUE  ContractRawFormat = "cue"
-)
 
 type WorkflowContractWithVersion struct {
 	Contract *WorkflowContract
@@ -151,7 +139,7 @@ type WorkflowContractCreateOpts struct {
 
 // EmptyDefaultContract is the default contract that will be created if no contract is provided
 var EmptyDefaultContract = &Contract{
-	Raw: []byte("schemaVersion: v1"), Format: ContractRawFormatYAML,
+	Raw: []byte("schemaVersion: v1"), Format: unmarshal.RawFormatYAML,
 }
 
 // we currently only support schema v1
@@ -366,7 +354,10 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 		pr := loader.ProviderParts(att.GetRef())
 		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, token)
 		if err != nil {
-			return nil, err
+			// Temporarily skip if policy groups still use old schema
+			// TODO: remove this check in next release
+			uc.logger.Warnf("policy group '%s' skipped since it's not found or it might use an old schema version", att.GetRef())
+			return nil, nil
 		}
 		return remoteGroup.PolicyGroup, nil
 	}
@@ -469,53 +460,11 @@ func (uc *WorkflowContractUseCase) findProvider(providerName string) (*policies.
 	return provider, nil
 }
 
-// Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
-func (ContractRawFormat) Values() (kinds []string) {
-	for _, s := range []ContractRawFormat{ContractRawFormatJSON, ContractRawFormatYAML, ContractRawFormatCUE} {
-		kinds = append(kinds, string(s))
-	}
-	return
-}
-
-// Take the raw contract + format and will unmarshal the contract and validate it
-func UnmarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Contract, error) {
-	if format == "" {
-		return nil, errors.New("format not provided")
-	}
-
-	validator, err := protovalidate.New()
-	if err != nil {
-		return nil, fmt.Errorf("could not create validator: %w", err)
-	}
-
+// UnmarshalAndValidateRawContract Takes the raw contract + format and will unmarshal the contract and validate it
+func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*Contract, error) {
 	contract := &schemav1.CraftingSchema{}
-
-	switch format {
-	case ContractRawFormatJSON:
-		if err := protojson.Unmarshal(raw, contract); err != nil {
-			return nil, NewErrValidation(err)
-		}
-	case ContractRawFormatCUE:
-		ctx := cuecontext.New()
-		v := ctx.CompileBytes(raw)
-		jsonRawData, err := v.MarshalJSON()
-		if err != nil {
-			return nil, NewErrValidation(err)
-		}
-
-		if err := protojson.Unmarshal(jsonRawData, contract); err != nil {
-			return nil, NewErrValidation(err)
-		}
-	case ContractRawFormatYAML:
-		// protoyaml allows validating the contract while unmarshalling
-		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
-		if err := yamlOpts.Unmarshal(raw, contract); err != nil {
-			return nil, NewErrValidation(err)
-		}
-	}
-
-	// Additional proto validations
-	if err := validator.Validate(contract); err != nil {
+	err := unmarshal.UnmarshalFromRaw(raw, format, contract)
+	if err != nil {
 		return nil, NewErrValidation(err)
 	}
 
@@ -533,7 +482,7 @@ func UnmarshalAndValidateRawContract(raw []byte, format ContractRawFormat) (*Con
 
 // Will try to figure out the format of the raw contract and validate it
 func identifyUnMarshalAndValidateRawContract(raw []byte) (*Contract, error) {
-	format, err := identifyFormat(raw)
+	format, err := unmarshal.IdentifyFormat(raw)
 	if err != nil {
 		return nil, fmt.Errorf("identify contract: %w", err)
 	}
@@ -541,33 +490,7 @@ func identifyUnMarshalAndValidateRawContract(raw []byte) (*Contract, error) {
 	return UnmarshalAndValidateRawContract(raw, format)
 }
 
-// It does a best effort to identify the format of the raw contract
-// by going the unmashalling path in the following order: json, cue, yaml
-// NOTE that we are just validating the format, not the content using regular marshalling
-// not even proto marshalling, that comes later once we know the format
-func identifyFormat(raw []byte) (ContractRawFormat, error) {
-	// json marshalling first
-	var sink any
-	if err := json.Unmarshal(raw, &sink); err == nil {
-		return ContractRawFormatJSON, nil
-	}
-
-	// cue marshalling next
-	ctx := cuecontext.New()
-	v := ctx.CompileBytes(raw)
-	if _, err := v.MarshalJSON(); err == nil {
-		return ContractRawFormatCUE, nil
-	}
-
-	// yaml marshalling last
-	if err := yaml.Unmarshal(raw, &sink); err == nil {
-		return ContractRawFormatYAML, nil
-	}
-
-	return "", errors.New("format not found")
-}
-
-// generate a default representation of a contract
+// SchemaToRawContract generates a default representation of a contract
 func SchemaToRawContract(contract *schemav1.CraftingSchema) (*Contract, error) {
 	marshaler := protojson.MarshalOptions{Indent: "  "}
 	r, err := marshaler.Marshal(contract)
@@ -575,5 +498,5 @@ func SchemaToRawContract(contract *schemav1.CraftingSchema) (*Contract, error) {
 		return nil, fmt.Errorf("failed to marshal contract: %w", err)
 	}
 
-	return &Contract{Raw: r, Format: ContractRawFormatJSON, Schema: contract}, nil
+	return &Contract{Raw: r, Format: unmarshal.RawFormatJSON, Schema: contract}, nil
 }

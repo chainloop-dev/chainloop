@@ -28,11 +28,14 @@ import (
 type AttestationStatusOpts struct {
 	*ActionsOpts
 	UseAttestationRemoteState bool
+	SkipReleaseInfo           bool
 }
 
 type AttestationStatus struct {
 	*ActionsOpts
 	c *crafter.Crafter
+	// Do not show information about the project version release status
+	skipReleaseInfo bool
 }
 
 type AttestationStatusResult struct {
@@ -53,6 +56,7 @@ type AttestationResultRunnerContext struct {
 
 type AttestationStatusWorkflowMeta struct {
 	WorkflowID, Name, Team, Project, ContractRevision, Organization string
+	ProjectVersion                                                  *ProjectVersion
 }
 
 type AttestationStatusResultMaterial struct {
@@ -67,8 +71,9 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 	}
 
 	return &AttestationStatus{
-		ActionsOpts: cfg.ActionsOpts,
-		c:           c,
+		ActionsOpts:     cfg.ActionsOpts,
+		c:               c,
+		skipReleaseInfo: cfg.SkipReleaseInfo,
 	}, nil
 }
 
@@ -98,10 +103,18 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Project:          workflowMeta.GetProject(),
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
+			ProjectVersion: &ProjectVersion{
+				Version: workflowMeta.GetVersion().GetVersion(),
+			},
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:        c.CraftingState.DryRun,
 		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
+	}
+
+	if !action.skipReleaseInfo {
+		res.WorkflowMeta.ProjectVersion.Prerelease = workflowMeta.Version.Prerelease
+		res.WorkflowMeta.ProjectVersion.MarkAsReleased = workflowMeta.Version.MarkAsReleased
 	}
 
 	// Let's perform the following steps in order to show all possible materials:

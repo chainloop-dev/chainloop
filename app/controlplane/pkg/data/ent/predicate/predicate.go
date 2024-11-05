@@ -30,6 +30,12 @@ type OrgInvitation func(*sql.Selector)
 // Organization is the predicate function for organization builders.
 type Organization func(*sql.Selector)
 
+// Project is the predicate function for project builders.
+type Project func(*sql.Selector)
+
+// ProjectVersion is the predicate function for projectversion builders.
+type ProjectVersion func(*sql.Selector)
+
 // Referrer is the predicate function for referrer builders.
 type Referrer func(*sql.Selector)
 

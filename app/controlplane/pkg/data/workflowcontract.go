@@ -394,7 +394,7 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 	if workflows == nil {
 		var err error
 		workflows, err = schema.QueryWorkflows().
-			Where(workflow.DeletedAtIsNil()).
+			Where(workflow.DeletedAtIsNil()).WithProject().
 			Select(workflowcontract.FieldID).All(ctx)
 		if err != nil {
 			return nil, err
@@ -403,10 +403,15 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 
 	references := make([]*biz.WorkflowRef, 0, len(workflows))
 	for _, wf := range workflows {
+		wfBiz, err := entWFToBizWF(ctx, wf, nil)
+		if err != nil {
+			return nil, err
+		}
+
 		references = append(references, &biz.WorkflowRef{
-			ID:          wf.ID,
-			Name:        wf.Name,
-			ProjectName: wf.Project,
+			ID:          wfBiz.ID,
+			Name:        wfBiz.Name,
+			ProjectName: wfBiz.Project,
 		})
 	}
 

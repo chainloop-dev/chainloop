@@ -23,7 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 )
 
@@ -42,7 +42,7 @@ func (WorkflowContractVersion) Fields() []ent.Field {
 		// raw_body is the raw representation of the contract in whatever original format it was (json, yaml, ...)
 		// it supersedes the body field
 		field.Bytes("raw_body").NotEmpty().Immutable(),
-		field.Enum("raw_body_format").GoType(biz.ContractRawFormat("")),
+		field.Enum("raw_body_format").GoType(unmarshal.RawFormat("")),
 		field.Int("revision").Default(1).Immutable(),
 		field.Time("created_at").
 			Default(time.Now).

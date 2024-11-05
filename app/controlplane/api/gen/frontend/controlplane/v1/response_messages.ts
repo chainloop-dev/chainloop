@@ -221,6 +221,14 @@ export interface WorkflowRunItem {
   contractRevisionUsed: number;
   /** The latest revision available for this contract at the time of the run */
   contractRevisionLatest: number;
+  /** The version of the project the attestation was initiated with */
+  version?: ProjectVersion;
+}
+
+export interface ProjectVersion {
+  id: string;
+  version: string;
+  prerelease: boolean;
 }
 
 export interface AttestationItem {
@@ -496,6 +504,12 @@ export interface CASBackendItem_Limits {
   maxBytes: number;
 }
 
+/** EntityRef is a reference to an entity in the system that can be either by name or ID */
+export interface EntityRef {
+  entityId?: string | undefined;
+  entityName?: string | undefined;
+}
+
 function createBaseWorkflowItem(): WorkflowItem {
   return {
     id: "",
@@ -714,6 +728,7 @@ function createBaseWorkflowRunItem(): WorkflowRunItem {
     contractVersion: undefined,
     contractRevisionUsed: 0,
     contractRevisionLatest: 0,
+    version: undefined,
   };
 }
 
@@ -754,6 +769,9 @@ export const WorkflowRunItem = {
     }
     if (message.contractRevisionLatest !== 0) {
       writer.uint32(88).int32(message.contractRevisionLatest);
+    }
+    if (message.version !== undefined) {
+      ProjectVersion.encode(message.version, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -849,6 +867,13 @@ export const WorkflowRunItem = {
 
           message.contractRevisionLatest = reader.int32();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.version = ProjectVersion.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -874,6 +899,7 @@ export const WorkflowRunItem = {
         : undefined,
       contractRevisionUsed: isSet(object.contractRevisionUsed) ? Number(object.contractRevisionUsed) : 0,
       contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
+      version: isSet(object.version) ? ProjectVersion.fromJSON(object.version) : undefined,
     };
   },
 
@@ -895,6 +921,8 @@ export const WorkflowRunItem = {
     message.contractRevisionUsed !== undefined && (obj.contractRevisionUsed = Math.round(message.contractRevisionUsed));
     message.contractRevisionLatest !== undefined &&
       (obj.contractRevisionLatest = Math.round(message.contractRevisionLatest));
+    message.version !== undefined &&
+      (obj.version = message.version ? ProjectVersion.toJSON(message.version) : undefined);
     return obj;
   },
 
@@ -920,6 +948,93 @@ export const WorkflowRunItem = {
       : undefined;
     message.contractRevisionUsed = object.contractRevisionUsed ?? 0;
     message.contractRevisionLatest = object.contractRevisionLatest ?? 0;
+    message.version = (object.version !== undefined && object.version !== null)
+      ? ProjectVersion.fromPartial(object.version)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectVersion(): ProjectVersion {
+  return { id: "", version: "", prerelease: false };
+}
+
+export const ProjectVersion = {
+  encode(message: ProjectVersion, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.version !== "") {
+      writer.uint32(18).string(message.version);
+    }
+    if (message.prerelease === true) {
+      writer.uint32(24).bool(message.prerelease);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectVersion {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectVersion();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.prerelease = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectVersion {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      version: isSet(object.version) ? String(object.version) : "",
+      prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
+    };
+  },
+
+  toJSON(message: ProjectVersion): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.version !== undefined && (obj.version = message.version);
+    message.prerelease !== undefined && (obj.prerelease = message.prerelease);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectVersion>, I>>(base?: I): ProjectVersion {
+    return ProjectVersion.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectVersion>, I>>(object: I): ProjectVersion {
+    const message = createBaseProjectVersion();
+    message.id = object.id ?? "";
+    message.version = object.version ?? "";
+    message.prerelease = object.prerelease ?? false;
     return message;
   },
 };
@@ -3308,6 +3423,77 @@ export const CASBackendItem_Limits = {
   fromPartial<I extends Exact<DeepPartial<CASBackendItem_Limits>, I>>(object: I): CASBackendItem_Limits {
     const message = createBaseCASBackendItem_Limits();
     message.maxBytes = object.maxBytes ?? 0;
+    return message;
+  },
+};
+
+function createBaseEntityRef(): EntityRef {
+  return { entityId: undefined, entityName: undefined };
+}
+
+export const EntityRef = {
+  encode(message: EntityRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.entityId !== undefined) {
+      writer.uint32(10).string(message.entityId);
+    }
+    if (message.entityName !== undefined) {
+      writer.uint32(18).string(message.entityName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EntityRef {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEntityRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entityId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entityName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EntityRef {
+    return {
+      entityId: isSet(object.entityId) ? String(object.entityId) : undefined,
+      entityName: isSet(object.entityName) ? String(object.entityName) : undefined,
+    };
+  },
+
+  toJSON(message: EntityRef): unknown {
+    const obj: any = {};
+    message.entityId !== undefined && (obj.entityId = message.entityId);
+    message.entityName !== undefined && (obj.entityName = message.entityName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EntityRef>, I>>(base?: I): EntityRef {
+    return EntityRef.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<EntityRef>, I>>(object: I): EntityRef {
+    const message = createBaseEntityRef();
+    message.entityId = object.entityId ?? undefined;
+    message.entityName = object.entityName ?? undefined;
     return message;
   },
 };

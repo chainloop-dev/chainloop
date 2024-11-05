@@ -183,6 +183,14 @@ export interface CraftingState {
 export interface WorkflowMetadata {
   name: string;
   project: string;
+  /**
+   * kept for backwards compatibility with remote state storage
+   *
+   * @deprecated
+   */
+  projectVersion: string;
+  /** project version */
+  version?: ProjectVersion;
   team: string;
   workflowId: string;
   /** Not required since we might be doing a dry-run */
@@ -190,6 +198,13 @@ export interface WorkflowMetadata {
   schemaRevision: string;
   /** organization name */
   organization: string;
+}
+
+export interface ProjectVersion {
+  version: string;
+  /** if it's pre-release */
+  prerelease: boolean;
+  markAsReleased: boolean;
 }
 
 /**
@@ -2069,7 +2084,17 @@ export const CraftingState = {
 };
 
 function createBaseWorkflowMetadata(): WorkflowMetadata {
-  return { name: "", project: "", team: "", workflowId: "", workflowRunId: "", schemaRevision: "", organization: "" };
+  return {
+    name: "",
+    project: "",
+    projectVersion: "",
+    version: undefined,
+    team: "",
+    workflowId: "",
+    workflowRunId: "",
+    schemaRevision: "",
+    organization: "",
+  };
 }
 
 export const WorkflowMetadata = {
@@ -2079,6 +2104,12 @@ export const WorkflowMetadata = {
     }
     if (message.project !== "") {
       writer.uint32(18).string(message.project);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(74).string(message.projectVersion);
+    }
+    if (message.version !== undefined) {
+      ProjectVersion.encode(message.version, writer.uint32(82).fork()).ldelim();
     }
     if (message.team !== "") {
       writer.uint32(26).string(message.team);
@@ -2118,6 +2149,20 @@ export const WorkflowMetadata = {
           }
 
           message.project = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.version = ProjectVersion.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2167,6 +2212,8 @@ export const WorkflowMetadata = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      version: isSet(object.version) ? ProjectVersion.fromJSON(object.version) : undefined,
       team: isSet(object.team) ? String(object.team) : "",
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
@@ -2179,6 +2226,9 @@ export const WorkflowMetadata = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.version !== undefined &&
+      (obj.version = message.version ? ProjectVersion.toJSON(message.version) : undefined);
     message.team !== undefined && (obj.team = message.team);
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
@@ -2195,11 +2245,99 @@ export const WorkflowMetadata = {
     const message = createBaseWorkflowMetadata();
     message.name = object.name ?? "";
     message.project = object.project ?? "";
+    message.projectVersion = object.projectVersion ?? "";
+    message.version = (object.version !== undefined && object.version !== null)
+      ? ProjectVersion.fromPartial(object.version)
+      : undefined;
     message.team = object.team ?? "";
     message.workflowId = object.workflowId ?? "";
     message.workflowRunId = object.workflowRunId ?? "";
     message.schemaRevision = object.schemaRevision ?? "";
     message.organization = object.organization ?? "";
+    return message;
+  },
+};
+
+function createBaseProjectVersion(): ProjectVersion {
+  return { version: "", prerelease: false, markAsReleased: false };
+}
+
+export const ProjectVersion = {
+  encode(message: ProjectVersion, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.version !== "") {
+      writer.uint32(10).string(message.version);
+    }
+    if (message.prerelease === true) {
+      writer.uint32(16).bool(message.prerelease);
+    }
+    if (message.markAsReleased === true) {
+      writer.uint32(24).bool(message.markAsReleased);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectVersion {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectVersion();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.prerelease = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.markAsReleased = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectVersion {
+    return {
+      version: isSet(object.version) ? String(object.version) : "",
+      prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
+      markAsReleased: isSet(object.markAsReleased) ? Boolean(object.markAsReleased) : false,
+    };
+  },
+
+  toJSON(message: ProjectVersion): unknown {
+    const obj: any = {};
+    message.version !== undefined && (obj.version = message.version);
+    message.prerelease !== undefined && (obj.prerelease = message.prerelease);
+    message.markAsReleased !== undefined && (obj.markAsReleased = message.markAsReleased);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectVersion>, I>>(base?: I): ProjectVersion {
+    return ProjectVersion.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectVersion>, I>>(object: I): ProjectVersion {
+    const message = createBaseProjectVersion();
+    message.version = object.version ?? "";
+    message.prerelease = object.prerelease ?? false;
+    message.markAsReleased = object.markAsReleased ?? false;
     return message;
   },
 };

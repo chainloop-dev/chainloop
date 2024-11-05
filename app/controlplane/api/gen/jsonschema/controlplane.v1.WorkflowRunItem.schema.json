@@ -130,6 +130,10 @@
         }
       ]
     },
+    "version": {
+      "$ref": "controlplane.v1.ProjectVersion.schema.json",
+      "description": "The version of the project the attestation was initiated with"
+    },
     "workflow": {
       "$ref": "controlplane.v1.WorkflowItem.schema.json"
     }

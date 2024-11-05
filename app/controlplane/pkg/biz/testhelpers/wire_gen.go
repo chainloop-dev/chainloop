@@ -60,7 +60,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, logger)
-	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, workflowContractUseCase, logger)
+	projectsRepo := data.NewProjectsRepo(dataData, logger)
+	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, logger)
 	if err != nil {
@@ -119,6 +120,9 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
+	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
+	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
+	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
 	testingRepos := &TestingRepos{
 		Membership:       membershipRepo,
 		Referrer:         referrerRepo,
@@ -148,6 +152,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		APIToken:               apiTokenUseCase,
 		Enforcer:               enforcer,
 		AttestationState:       attestationStateUseCase,
+		ProjectVersion:         projectVersionUseCase,
+		Project:                projectUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

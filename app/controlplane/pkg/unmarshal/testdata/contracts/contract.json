@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "v1",
+  "annotations": [
+    {
+      "name": "version",
+      "value": "oss"
+    }
+  ],
+  "materials": [
+    {
+      "type": "CONTAINER_IMAGE",
+      "name": "skynet-control-plane",
+      "output": true,
+      "annotations": [
+        {
+          "name": "component",
+          "value": "control-plane"
+        },
+        {
+          "name": "asset"
+        }
+      ]
+    },
+    { "type": "ARTIFACT", "name": "rootfs" },
+    { "type": "ARTIFACT", "name": "dockerfile", "optional": true },
+    { "type": "STRING", "name": "build-ref" },
+    { "type": "SBOM_CYCLONEDX_JSON", "name": "skynet-sbom" },
+    { "type": "OPENVEX", "name": "disclosure" },
+    { "type": "SARIF", "name": "static-output" }
+  ],
+  "envAllowList": ["CUSTOM_VAR"],
+  "runner": { "type": "GITHUB_ACTION" }
+}

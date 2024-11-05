@@ -212,7 +212,7 @@ func (r *RendererV02) subject() ([]*intoto.ResourceDescriptor, error) {
 	// We might don't want this and just force the existence of one material with output = true
 	subject := []*intoto.ResourceDescriptor{
 		{
-			Name: prefixed(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
+			Name: v1.CreateAnnotation(fmt.Sprintf("workflow.%s", r.att.GetWorkflow().Name)),
 			Digest: map[string]string{
 				"sha256": fmt.Sprintf("%x", sha256.Sum256(raw)),
 			},
@@ -334,7 +334,6 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 	for _, mdefName := range keys {
 		mdef := materials[mdefName]
 
-		artifactType := mdef.MaterialType
 		nMaterial, err := mdef.NormalizedOutput()
 		if err != nil {
 			return nil, fmt.Errorf("error normalizing material: %w", err)
@@ -345,62 +344,9 @@ func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDe
 			continue
 		}
 
-		material := &intoto.ResourceDescriptor{}
-		if artifactType == schemaapi.CraftingSchema_Material_STRING {
-			material.Content = nMaterial.Content
-		}
-
-		if digest := nMaterial.Digest; digest != "" {
-			parts := strings.Split(digest, ":")
-			material.Digest = map[string]string{
-				parts[0]: parts[1],
-			}
-			material.Name = nMaterial.Name
-			material.Content = nMaterial.Content
-		}
-
-		// Required, built-in annotations
-		annotationsM := map[string]interface{}{
-			AnnotationMaterialType: artifactType.String(),
-			AnnotationMaterialName: mdefName,
-		}
-
-		// Set the special annotations for container images
-		if artifactType == schemaapi.CraftingSchema_Material_CONTAINER_IMAGE {
-			if tag := mdef.GetContainerImage().GetTag(); tag != "" {
-				annotationsM[annotationContainerTag] = tag
-			}
-
-			if sigDigest := mdef.GetContainerImage().GetSignatureDigest(); sigDigest != "" {
-				annotationsM[annotationSignatureDigest] = sigDigest
-			}
-
-			if sigProvider := mdef.GetContainerImage().GetSignatureProvider(); sigProvider != "" {
-				annotationsM[annotationSignatureProvider] = sigProvider
-			}
-
-			if sigPayload := mdef.GetContainerImage().GetSignature(); sigPayload != "" {
-				annotationsM[annotationMaterialSignature] = sigPayload
-			}
-		}
-
-		// Custom annotations, it does not override the built-in ones
-		for k, v := range mdef.Annotations {
-			_, ok := annotationsM[k]
-			if !ok {
-				annotationsM[k] = v
-			}
-		}
-
-		if mdef.UploadedToCas {
-			annotationsM[AnnotationMaterialCAS] = true
-		} else if mdef.InlineCas {
-			annotationsM[annotationMaterialInlineCAS] = true
-		}
-
-		material.Annotations, err = structpb.NewStruct(annotationsM)
+		material, err := mdef.CraftingStateToIntotoDescriptor(mdefName)
 		if err != nil {
-			return nil, fmt.Errorf("error creating annotations: %w", err)
+			return nil, fmt.Errorf("rendering material: %w", err)
 		}
 
 		res = append(res, material)
@@ -438,14 +384,14 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	for k, v := range mAnnotationsMap {
 		// if the annotation key doesn't start with chainloop.
 		// we set it as a custom annotation
-		if strings.HasPrefix(k, rendererPrefix) {
+		if strings.HasPrefix(k, v1.AnnotationPrefix) {
 			continue
 		}
 
 		m.Annotations[k] = v.GetStringValue()
 	}
 
-	mType, ok := mAnnotationsMap[AnnotationMaterialType]
+	mType, ok := mAnnotationsMap[v1.AnnotationMaterialType]
 	if !ok {
 		return nil, fmt.Errorf("material type not found")
 	}
@@ -453,7 +399,7 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	// Set the type
 	m.Type = mType.GetStringValue()
 
-	mName, ok := mAnnotationsMap[AnnotationMaterialName]
+	mName, ok := mAnnotationsMap[v1.AnnotationMaterialName]
 	if !ok {
 		return nil, fmt.Errorf("material name not found")
 	}
@@ -489,16 +435,16 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	// In the case of container images for example the value is in the name field
 	m.Value = material.Name
 
-	if v, ok := mAnnotationsMap[AnnotationMaterialCAS]; ok && v.GetBoolValue() {
+	if v, ok := mAnnotationsMap[v1.AnnotationMaterialCAS]; ok && v.GetBoolValue() {
 		m.UploadedToCAS = true
 	}
 
-	if v, ok := mAnnotationsMap[annotationMaterialInlineCAS]; ok && v.GetBoolValue() {
+	if v, ok := mAnnotationsMap[v1.AnnotationMaterialInlineCAS]; ok && v.GetBoolValue() {
 		m.EmbeddedInline = true
 	}
 
 	// Extract the container image tag if it's set in the annotations
-	if v, ok := mAnnotationsMap[annotationContainerTag]; ok && v.GetStringValue() != "" {
+	if v, ok := mAnnotationsMap[v1.AnnotationContainerTag]; ok && v.GetStringValue() != "" {
 		m.Tag = v.GetStringValue()
 	}
 

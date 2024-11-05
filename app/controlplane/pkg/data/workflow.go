@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/go-kratos/kratos/v2/log"
@@ -43,7 +45,7 @@ func NewWorkflowRepo(data *Data, logger log.Logger) biz.WorkflowRepo {
 	}
 }
 
-func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts) (*biz.Workflow, error) {
+func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts) (wf *biz.Workflow, err error) {
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, err
@@ -54,9 +56,34 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, err
 	}
 
-	wf, err := r.data.DB.Workflow.Create().
+	// Create project and workflow in a transaction
+	tx, err := r.data.DB.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("starting transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				r.log.Errorf("rolling back transaction: %v", rbErr)
+			}
+		}
+	}()
+
+	// Find or create project.
+	projectID, err := tx.Project.Create().SetName(opts.Project).SetOrganizationID(orgUUID).
+		OnConflict(
+			sql.ConflictColumns(project.FieldName, project.FieldOrganizationID),
+			// Since we are using a partial index, we need to explicitly craft the upsert query
+			sql.ConflictWhere(sql.IsNull(project.FieldDeletedAt)),
+		).Ignore().ID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating project: %w", err)
+	}
+
+	entwf, err := tx.Workflow.Create().
 		SetName(opts.Name).
-		SetProject(opts.Project).
+		SetProjectID(projectID).
 		SetTeam(opts.Team).
 		SetPublic(opts.Public).
 		SetName(opts.Name).
@@ -72,7 +99,11 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 
-	return r.FindByID(ctx, wf.ID)
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return r.FindByID(ctx, entwf.ID)
 }
 
 func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.WorkflowUpdateOpts) (*biz.Workflow, error) {
@@ -108,11 +139,18 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 	return r.FindByID(ctx, wf.ID)
 }
 
-func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workflow, error) {
-	workflows, err := orgScopedQuery(r.data.DB, orgID).
+func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) ([]*biz.Workflow, error) {
+	baseQuery := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().
+		WithContract().
+		WithOrganization()
+
+	if projectID != uuid.Nil {
+		baseQuery = baseQuery.Where(workflow.ProjectID(projectID))
+	}
+
+	workflows, err := baseQuery.
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		All(ctx)
 	if err != nil {
@@ -127,7 +165,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Workfl
 			return nil, err
 		}
 
-		r, err := entWFToBizWF(wf, lastRun)
+		r, err := entWFToBizWF(ctx, wf, lastRun)
 		if err != nil {
 			return nil, fmt.Errorf("converting entity: %w", err)
 		}
@@ -160,14 +198,14 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 		return nil, err
 	}
 
-	return entWFToBizWF(workflow, lastRun)
+	return entWFToBizWF(ctx, workflow, lastRun)
 }
 
-// GetOrgScopedByName Gets a workflow by name making sure it belongs to a given org
+// GetOrgScopedByProjectAndName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
 	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
-		Where(workflow.Project(projectName), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().
+		Where(workflow.HasProjectWith(project.Name(projectName)), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
+		WithContract().WithOrganization().WithProject().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
 
@@ -184,7 +222,7 @@ func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID u
 		return nil, err
 	}
 
-	return entWFToBizWF(wf, lastRun)
+	return entWFToBizWF(ctx, wf, lastRun)
 }
 
 func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error {
@@ -209,9 +247,10 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 		return nil, err
 	}
 
-	return entWFToBizWF(workflow, lastRun)
+	return entWFToBizWF(ctx, workflow, lastRun)
 }
 
+// Soft delete workflow, attachments and related projects (if applicable)
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
@@ -224,20 +263,48 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	// Soft delete workflow
-	if err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+	wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).Save(ctx)
+	if err != nil {
 		return err
+	}
+
+	// Soft delete project if it has no more workflows
+	// TODO: in the future, we'll handle this separately through explicit user action
+	if wfTotal, err := wf.QueryProject().QueryWorkflows().Where(workflow.DeletedAtIsNil()).Count(ctx); err != nil {
+		return err
+	} else if wfTotal == 0 {
+		// soft deleted project if it has no more workflows
+		if err := tx.Project.UpdateOneID(wf.ProjectID).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()
 }
 
-func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
+func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
 		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
-		Project: w.Project, RunsCounter: w.RunsCount,
+		RunsCounter: w.RunsCount,
 		Public:      w.Public,
 		Description: w.Description,
 		OrgID:       w.OrganizationID,
+	}
+
+	// Set project either pre-loaded or queried
+	if project := w.Edges.Project; project != nil {
+		wf.Project = project.Name
+	} else {
+		project, err := w.QueryProject().Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		wf.Project = project.Name
+		wf.ProjectID = project.ID
+	}
+
+	if wf.Project == "" {
+		return nil, fmt.Errorf("workflow %s has no project", w.ID)
 	}
 
 	if contract := w.Edges.Contract; contract != nil {
@@ -251,7 +318,7 @@ func entWFToBizWF(w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
 	}
 
 	if r != nil {
-		wf.LastRun = entWrToBizWr(r)
+		wf.LastRun = entWrToBizWr(ctx, r)
 	}
 
 	return wf, nil

@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +25,7 @@ type WorkflowContractVersion struct {
 	// RawBody holds the value of the "raw_body" field.
 	RawBody []byte `json:"raw_body,omitempty"`
 	// RawBodyFormat holds the value of the "raw_body_format" field.
-	RawBodyFormat biz.ContractRawFormat `json:"raw_body_format,omitempty"`
+	RawBodyFormat unmarshal.RawFormat `json:"raw_body_format,omitempty"`
 	// Revision holds the value of the "revision" field.
 	Revision int `json:"revision,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -111,7 +111,7 @@ func (wcv *WorkflowContractVersion) assignValues(columns []string, values []any)
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field raw_body_format", values[i])
 			} else if value.Valid {
-				wcv.RawBodyFormat = biz.ContractRawFormat(value.String)
+				wcv.RawBodyFormat = unmarshal.RawFormat(value.String)
 			}
 		case workflowcontractversion.FieldRevision:
 			if value, ok := values[i].(*sql.NullInt64); !ok {

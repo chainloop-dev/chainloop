@@ -24,9 +24,9 @@ import (
 	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/internal/casclient/mocks"
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -543,7 +543,7 @@ func loadSchema(path string) (*schemaapi.CraftingSchema, error) {
 		return nil, err
 	}
 
-	jsonSchemaRaw, err := attestation.LoadJSONBytes(content, filepath.Ext(path))
+	jsonSchemaRaw, err := unmarshal.LoadJSONBytes(content, filepath.Ext(path))
 	if err != nil {
 		return nil, err
 	}

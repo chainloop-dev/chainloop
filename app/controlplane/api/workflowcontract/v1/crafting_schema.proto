@@ -81,6 +81,9 @@ message CraftingSchema {
     // this metadata can be used later on by the integrations engine to filter and interpolate data
     repeated Annotation annotations = 5;
 
+    // Policies to be applied to this material
+    repeated PolicyAttachment policies = 6;
+
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;
       STRING = 1;
@@ -113,6 +116,14 @@ message CraftingSchema {
       BLACKDUCK_SCA_JSON = 18;
       // Twistcli scan output in json format: https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images
       TWISTCLI_SCAN_JSON = 19;
+
+      // GitHub Advanced Security API reports
+      // https://docs.github.com/en/rest/code-scanning/code-scanning?apiVersion=2022-11-28
+      GHAS_CODE_SCAN = 20;
+      // https://docs.github.com/en/rest/secret-scanning/secret-scanning?apiVersion=2022-11-28
+      GHAS_SECRET_SCAN = 21;
+      // https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28
+      GHAS_DEPENDENCY_SCAN = 22;
     }
   }
 }
@@ -204,7 +215,6 @@ message PolicySpec {
     (buf.validate.field).enum = {
       not_in: [
         1,
-        2,
         3,
         10,
         11
@@ -247,7 +257,6 @@ message PolicySpecV2 {
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [
       1,
-      2,
       3,
       10,
       11
@@ -274,7 +283,7 @@ message PolicyGroup {
   }
 
   message PolicyGroupPolicies {
-    repeated PolicyAttachment materials = 1;
+    repeated CraftingSchema.Material materials = 1;
     repeated PolicyAttachment attestation = 2;
   }
 }

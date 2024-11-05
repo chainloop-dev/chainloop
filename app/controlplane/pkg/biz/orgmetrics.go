@@ -170,7 +170,7 @@ func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(ctx context.Context, org
 	}
 
 	// List all workflows
-	wfs, err := uc.wfUseCase.List(ctx, org.ID)
+	wfs, err := uc.wfUseCase.List(ctx, org.ID, "")
 	if err != nil {
 		return nil, fmt.Errorf("listing workflows: %w", err)
 	}

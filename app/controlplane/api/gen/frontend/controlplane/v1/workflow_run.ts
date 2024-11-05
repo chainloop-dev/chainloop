@@ -90,6 +90,8 @@ export interface AttestationServiceInitRequest {
   runner: CraftingSchema_Runner_RunnerType;
   workflowName: string;
   projectName: string;
+  /** Optional project version */
+  projectVersion: string;
 }
 
 export interface AttestationServiceInitResponse {
@@ -106,6 +108,8 @@ export interface AttestationServiceStoreRequest {
   /** encoded DSEE envelope */
   attestation: Uint8Array;
   workflowRunId: string;
+  /** mark the associated version as released */
+  markVersionAsReleased?: boolean | undefined;
 }
 
 export interface AttestationServiceStoreResponse {
@@ -179,6 +183,8 @@ export interface WorkflowRunServiceListRequest {
   projectName: string;
   /** by run status */
   status: RunStatus;
+  /** by project version */
+  projectVersion: string;
   /** pagination options */
   pagination?: CursorPaginationRequest;
 }
@@ -999,7 +1005,7 @@ export const AttestationServiceGetContractResponse_Result = {
 };
 
 function createBaseAttestationServiceInitRequest(): AttestationServiceInitRequest {
-  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "", projectName: "" };
+  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "", projectName: "", projectVersion: "" };
 }
 
 export const AttestationServiceInitRequest = {
@@ -1018,6 +1024,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.projectName !== "") {
       writer.uint32(42).string(message.projectName);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(50).string(message.projectVersion);
     }
     return writer;
   },
@@ -1064,6 +1073,13 @@ export const AttestationServiceInitRequest = {
 
           message.projectName = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1080,6 +1096,7 @@ export const AttestationServiceInitRequest = {
       runner: isSet(object.runner) ? craftingSchema_Runner_RunnerTypeFromJSON(object.runner) : 0,
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
     };
   },
 
@@ -1090,6 +1107,7 @@ export const AttestationServiceInitRequest = {
     message.runner !== undefined && (obj.runner = craftingSchema_Runner_RunnerTypeToJSON(message.runner));
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     return obj;
   },
 
@@ -1106,6 +1124,7 @@ export const AttestationServiceInitRequest = {
     message.runner = object.runner ?? 0;
     message.workflowName = object.workflowName ?? "";
     message.projectName = object.projectName ?? "";
+    message.projectVersion = object.projectVersion ?? "";
     return message;
   },
 };
@@ -1250,7 +1269,7 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return { attestation: new Uint8Array(0), workflowRunId: "" };
+  return { attestation: new Uint8Array(0), workflowRunId: "", markVersionAsReleased: undefined };
 }
 
 export const AttestationServiceStoreRequest = {
@@ -1260,6 +1279,9 @@ export const AttestationServiceStoreRequest = {
     }
     if (message.workflowRunId !== "") {
       writer.uint32(18).string(message.workflowRunId);
+    }
+    if (message.markVersionAsReleased !== undefined) {
+      writer.uint32(24).bool(message.markVersionAsReleased);
     }
     return writer;
   },
@@ -1285,6 +1307,13 @@ export const AttestationServiceStoreRequest = {
 
           message.workflowRunId = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.markVersionAsReleased = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1298,6 +1327,7 @@ export const AttestationServiceStoreRequest = {
     return {
       attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
+      markVersionAsReleased: isSet(object.markVersionAsReleased) ? Boolean(object.markVersionAsReleased) : undefined,
     };
   },
 
@@ -1306,6 +1336,7 @@ export const AttestationServiceStoreRequest = {
     message.attestation !== undefined &&
       (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
+    message.markVersionAsReleased !== undefined && (obj.markVersionAsReleased = message.markVersionAsReleased);
     return obj;
   },
 
@@ -1319,6 +1350,7 @@ export const AttestationServiceStoreRequest = {
     const message = createBaseAttestationServiceStoreRequest();
     message.attestation = object.attestation ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
+    message.markVersionAsReleased = object.markVersionAsReleased ?? undefined;
     return message;
   },
 };
@@ -1581,7 +1613,7 @@ export const AttestationServiceCancelResponse = {
 };
 
 function createBaseWorkflowRunServiceListRequest(): WorkflowRunServiceListRequest {
-  return { workflowName: "", projectName: "", status: 0, pagination: undefined };
+  return { workflowName: "", projectName: "", status: 0, projectVersion: "", pagination: undefined };
 }
 
 export const WorkflowRunServiceListRequest = {
@@ -1594,6 +1626,9 @@ export const WorkflowRunServiceListRequest = {
     }
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(42).string(message.projectVersion);
     }
     if (message.pagination !== undefined) {
       CursorPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
@@ -1629,6 +1664,13 @@ export const WorkflowRunServiceListRequest = {
 
           message.status = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1650,6 +1692,7 @@ export const WorkflowRunServiceListRequest = {
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
@@ -1659,6 +1702,7 @@ export const WorkflowRunServiceListRequest = {
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
@@ -1675,6 +1719,7 @@ export const WorkflowRunServiceListRequest = {
     message.workflowName = object.workflowName ?? "";
     message.projectName = object.projectName ?? "";
     message.status = object.status ?? 0;
+    message.projectVersion = object.projectVersion ?? "";
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationRequest.fromPartial(object.pagination)
       : undefined;

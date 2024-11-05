@@ -46,6 +46,7 @@ type WorkflowRun struct {
 	ContractRevisionUsed int
 	// The max revision of the contract at the time of the run
 	ContractRevisionLatest int
+	ProjectVersion         *ProjectVersion
 }
 
 type Attestation struct {
@@ -172,6 +173,7 @@ type WorkflowRunCreateOpts struct {
 	RunnerRunURL     string
 	RunnerType       string
 	CASBackendID     uuid.UUID
+	ProjectVersion   string
 }
 
 type WorkflowRunRepoCreateOpts struct {
@@ -179,6 +181,7 @@ type WorkflowRunRepoCreateOpts struct {
 	RunURL, RunnerType           string
 	Backends                     []uuid.UUID
 	LatestRevision, UsedRevision int
+	ProjectVersion               string
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -197,6 +200,12 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	}
 	contractRevision := opts.ContractRevision
 
+	if opts.ProjectVersion != "" {
+		if err := ValidateVersion(opts.ProjectVersion); err != nil {
+			return nil, err
+		}
+	}
+
 	// For now we only associate the workflow run to one backend.
 	// This might change in the future so we prepare the data layer to support an array of associated backends
 	backends := []uuid.UUID{opts.CASBackendID}
@@ -209,6 +218,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			Backends:        backends,
 			LatestRevision:  contractRevision.Contract.LatestRevision,
 			UsedRevision:    contractRevision.Version.Revision,
+			ProjectVersion:  opts.ProjectVersion,
 		})
 	if err != nil {
 		return nil, err
@@ -285,7 +295,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 }
 
 type RunListFilters struct {
-	WorkflowID uuid.UUID
+	WorkflowID *uuid.UUID
+	VersionID  *uuid.UUID
 	Status     WorkflowRunStatus
 }
 
@@ -294,6 +305,10 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunList
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, "", NewErrInvalidUUID(err)
+	}
+
+	if f.WorkflowID != nil && f.VersionID != nil {
+		return nil, "", NewErrValidation(errors.New("cannot filter by workflow and version at the same time"))
 	}
 
 	return uc.wfRunRepo.List(ctx, orgUUID, f, p)

@@ -558,6 +558,9 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	}
 	c.CraftingState.Attestation.PolicyEvaluations = append(c.CraftingState.Attestation.PolicyEvaluations, policyGroupResults...)
 
+	// log group policy violations
+	policies.LogPolicyEvaluations(policyGroupResults, c.Logger)
+
 	// Validate policies
 	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
@@ -569,7 +572,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	c.CraftingState.Attestation.PolicyEvaluations = append(c.CraftingState.Attestation.PolicyEvaluations, policyResults...)
 
 	// log policy violations
-	policies.LogPolicyEvaluations(c.CraftingState.Attestation.PolicyEvaluations, c.Logger)
+	policies.LogPolicyEvaluations(policyResults, c.Logger)
 
 	// 5 - Attach it to state
 	if c.CraftingState.Attestation.Materials == nil {

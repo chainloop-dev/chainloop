@@ -30,6 +30,8 @@ func newAttestationInitCmd() *cobra.Command {
 		attestationDryRun       bool
 		workflowName            string
 		projectName             string
+		projectVersion          string
+		projectVersionRelease   bool
 		newWorkflowcontractName string
 	)
 
@@ -42,6 +44,25 @@ func newAttestationInitCmd() *cobra.Command {
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if workflowName == "" {
 				return errors.New("workflow name is required, set it via --workflow flag")
+			}
+
+			// load version from the file if not set
+			if projectVersion == "" {
+				// load the cfg from the file
+				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
+				// we do gracefully load, if not found, or any other error we continue
+				if err != nil {
+					logger.Debug().Msgf("failed to load chainloop config: %s", err)
+					return nil
+				}
+
+				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
+
+				projectVersion = cfg.ProjectVersion
+			}
+
+			if projectVersion == "" && projectVersionRelease {
+				return errors.New("project version is required when using --release")
 			}
 
 			return nil
@@ -60,7 +81,15 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			// Initialize it
-			attestationID, err := a.Run(cmd.Context(), contractRevision, projectName, workflowName, newWorkflowcontractName)
+			attestationID, err := a.Run(cmd.Context(), &action.AttestationInitRunOpts{
+				ContractRevision:             contractRevision,
+				ProjectName:                  projectName,
+				ProjectVersion:               projectVersion,
+				WorkflowName:                 workflowName,
+				NewWorkflowContractName:      newWorkflowcontractName,
+				ProjectVersionMarkAsReleased: projectVersionRelease,
+			})
+
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err
@@ -93,8 +122,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			return encodeOutput(res, fullStatusTable)
-		},
-	}
+		}}
 
 	// This option is only useful for local-based attestation states
 	cmd.Flags().BoolVarP(&force, "replace", "f", false, "replace any existing in-progress attestation")
@@ -112,6 +140,9 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
 	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 	cmd.Flags().StringVar(&newWorkflowcontractName, "contract", "", "name of an existing contract to attach it to the auto-created workflow (it doesn't update an existing one)")
+
+	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
+	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
 
 	return cmd
 }

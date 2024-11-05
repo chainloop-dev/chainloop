@@ -197,6 +197,12 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewBlackduckSCAJSONCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_TWISTCLI_SCAN_JSON:
 		crafter, err = NewTwistCLIScanCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_GHAS_CODE_SCAN:
+		crafter, err = NewGHASCodeScanCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_GHAS_SECRET_SCAN:
+		crafter, err = NewGHASSecretScanCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_GHAS_DEPENDENCY_SCAN:
+		crafter, err = NewGHASDependencyScanCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

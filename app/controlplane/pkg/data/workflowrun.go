@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/go-kratos/kratos/v2/log"
@@ -46,10 +47,41 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 	}
 }
 
-func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRun, error) {
-	// Find the contract to calculate the revisions
-	p, err := r.data.DB.WorkflowRun.Create().
+func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (run *biz.WorkflowRun, err error) {
+	// Create version and workflow in a transaction
+	tx, err := r.data.DB.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("starting transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+			r.log.Errorf("rolling back transaction: %v", err)
+		}
+	}()
+
+	// Find workflow to get the project
+	wf, err := tx.Workflow.Get(ctx, opts.WorkflowID)
+	if err != nil {
+		return nil, fmt.Errorf("getting workflow: %w", err)
+	}
+
+	// Find or create version.
+	versionID, err := tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
+		OnConflict(
+			sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
+			// Since we are using a partial index, we need to explicitly craft the upsert query
+			sql.ConflictWhere(sql.IsNull(projectversion.FieldDeletedAt)),
+		).Ignore().ID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating version: %w", err)
+	}
+
+	// Create workflow run
+	p, err := tx.WorkflowRun.Create().
 		SetWorkflowID(opts.WorkflowID).
+		SetVersionID(versionID).
 		SetContractVersionID(opts.SchemaVersionID).
 		SetRunURL(opts.RunURL).
 		SetRunnerType(opts.RunnerType).
@@ -61,12 +93,17 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("committing transaction: %w", err)
+	}
+
 	return r.FindByID(ctx, p.ID)
 }
 
 func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
 	return client.WorkflowRun.Query().
 		WithWorkflow(func(q *ent.WorkflowQuery) { q.WithOrganization() }).
+		WithVersion().
 		WithContractVersion().
 		WithCasBackends()
 }
@@ -79,7 +116,7 @@ func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Work
 		return nil, nil
 	}
 
-	return entWrToBizWr(run), nil
+	return entWrToBizWr(ctx, run), nil
 }
 
 func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest string) (*biz.WorkflowRun, error) {
@@ -90,7 +127,7 @@ func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest st
 		return nil, nil
 	}
 
-	return entWrToBizWr(run), nil
+	return entWrToBizWr(ctx, run), nil
 }
 
 func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.WorkflowRun, error) {
@@ -105,7 +142,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 		return nil, biz.NewErrNotFound("workflow run")
 	}
 
-	return entWrToBizWr(run), nil
+	return entWrToBizWr(ctx, run), nil
 }
 
 // Save the attestation for a workflow run in the database
@@ -146,8 +183,8 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	// Skip the runs that have a workflow marked as deleted
 	wfQuery := orgQuery.QueryWorkflows().Where(workflow.DeletedAtIsNil())
 	// Append the workflow filter if present
-	if filters != nil && filters.WorkflowID != uuid.Nil {
-		wfQuery = wfQuery.Where(workflow.ID(filters.WorkflowID))
+	if filters != nil && filters.WorkflowID != nil {
+		wfQuery = wfQuery.Where(workflow.ID(*filters.WorkflowID))
 	}
 
 	wfRunsQuery := wfQuery.QueryWorkflowruns().
@@ -157,6 +194,11 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	// Append the state filter if present, i.e only running
 	if filters != nil && filters.Status != "" {
 		wfRunsQuery = wfRunsQuery.Where(workflowrun.StateEQ(filters.Status))
+	}
+
+	// or the project version
+	if filters != nil && filters.VersionID != nil {
+		wfRunsQuery = wfRunsQuery.Where(workflowrun.VersionID(*filters.VersionID))
 	}
 
 	if p.Cursor != nil {
@@ -180,7 +222,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 			continue
 		}
 
-		result = append(result, entWrToBizWr(wr))
+		result = append(result, entWrToBizWr(ctx, wr))
 	}
 
 	return result, cursor, nil
@@ -200,7 +242,7 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 
 	result := make([]*biz.WorkflowRun, 0, len(workflowRuns))
 	for _, wr := range workflowRuns {
-		result = append(result, entWrToBizWr(wr))
+		result = append(result, entWrToBizWr(ctx, wr))
 	}
 
 	return result, nil
@@ -210,7 +252,7 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
 }
 
-func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
+func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 	r := &biz.WorkflowRun{
 		ID:                     wr.ID,
 		CreatedAt:              toTimePtr(wr.CreatedAt),
@@ -236,9 +278,20 @@ func entWrToBizWr(wr *ent.WorkflowRun) *biz.WorkflowRun {
 	}
 
 	if wf := wr.Edges.Workflow; wf != nil {
-		w, _ := entWFToBizWF(wf, nil)
+		w, _ := entWFToBizWF(ctx, wf, nil)
 		r.Workflow = w
 	}
+
+	// Load version preloaded or otherwise query it
+	var err error
+	version := wr.Edges.Version
+	if version == nil {
+		version, err = wr.QueryVersion().Only(ctx)
+		if err != nil {
+			log.Errorf("failed to query version: %v", err)
+		}
+	}
+	r.ProjectVersion = entProjectVersionToBiz(version)
 
 	if backends := wr.Edges.CasBackends; backends != nil {
 		for _, b := range backends {

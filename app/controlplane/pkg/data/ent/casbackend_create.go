@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -22,6 +24,7 @@ type CASBackendCreate struct {
 	config
 	mutation *CASBackendMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetLocation sets the "location" field.
@@ -329,6 +332,7 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		_node = &CASBackend{config: cbc.config}
 		_spec = sqlgraph.NewCreateSpec(casbackend.Table, sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = cbc.conflict
 	if id, ok := cbc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -417,11 +421,383 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.CASBackend.Create().
+//		SetLocation(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.CASBackendUpsert) {
+//			SetLocation(v+v).
+//		}).
+//		Exec(ctx)
+func (cbc *CASBackendCreate) OnConflict(opts ...sql.ConflictOption) *CASBackendUpsertOne {
+	cbc.conflict = opts
+	return &CASBackendUpsertOne{
+		create: cbc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.CASBackend.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (cbc *CASBackendCreate) OnConflictColumns(columns ...string) *CASBackendUpsertOne {
+	cbc.conflict = append(cbc.conflict, sql.ConflictColumns(columns...))
+	return &CASBackendUpsertOne{
+		create: cbc,
+	}
+}
+
+type (
+	// CASBackendUpsertOne is the builder for "upsert"-ing
+	//  one CASBackend node.
+	CASBackendUpsertOne struct {
+		create *CASBackendCreate
+	}
+
+	// CASBackendUpsert is the "OnConflict" setter.
+	CASBackendUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetDescription sets the "description" field.
+func (u *CASBackendUpsert) SetDescription(v string) *CASBackendUpsert {
+	u.Set(casbackend.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateDescription() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *CASBackendUpsert) ClearDescription() *CASBackendUpsert {
+	u.SetNull(casbackend.FieldDescription)
+	return u
+}
+
+// SetSecretName sets the "secret_name" field.
+func (u *CASBackendUpsert) SetSecretName(v string) *CASBackendUpsert {
+	u.Set(casbackend.FieldSecretName, v)
+	return u
+}
+
+// UpdateSecretName sets the "secret_name" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateSecretName() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldSecretName)
+	return u
+}
+
+// SetValidationStatus sets the "validation_status" field.
+func (u *CASBackendUpsert) SetValidationStatus(v biz.CASBackendValidationStatus) *CASBackendUpsert {
+	u.Set(casbackend.FieldValidationStatus, v)
+	return u
+}
+
+// UpdateValidationStatus sets the "validation_status" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateValidationStatus() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldValidationStatus)
+	return u
+}
+
+// SetValidatedAt sets the "validated_at" field.
+func (u *CASBackendUpsert) SetValidatedAt(v time.Time) *CASBackendUpsert {
+	u.Set(casbackend.FieldValidatedAt, v)
+	return u
+}
+
+// UpdateValidatedAt sets the "validated_at" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateValidatedAt() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldValidatedAt)
+	return u
+}
+
+// SetDefault sets the "default" field.
+func (u *CASBackendUpsert) SetDefault(v bool) *CASBackendUpsert {
+	u.Set(casbackend.FieldDefault, v)
+	return u
+}
+
+// UpdateDefault sets the "default" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateDefault() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldDefault)
+	return u
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *CASBackendUpsert) SetDeletedAt(v time.Time) *CASBackendUpsert {
+	u.Set(casbackend.FieldDeletedAt, v)
+	return u
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateDeletedAt() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldDeletedAt)
+	return u
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *CASBackendUpsert) ClearDeletedAt() *CASBackendUpsert {
+	u.SetNull(casbackend.FieldDeletedAt)
+	return u
+}
+
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (u *CASBackendUpsert) SetMaxBlobSizeBytes(v int64) *CASBackendUpsert {
+	u.Set(casbackend.FieldMaxBlobSizeBytes, v)
+	return u
+}
+
+// UpdateMaxBlobSizeBytes sets the "max_blob_size_bytes" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateMaxBlobSizeBytes() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldMaxBlobSizeBytes)
+	return u
+}
+
+// AddMaxBlobSizeBytes adds v to the "max_blob_size_bytes" field.
+func (u *CASBackendUpsert) AddMaxBlobSizeBytes(v int64) *CASBackendUpsert {
+	u.Add(casbackend.FieldMaxBlobSizeBytes, v)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.CASBackend.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(casbackend.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *CASBackendUpsertOne) UpdateNewValues() *CASBackendUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(casbackend.FieldID)
+		}
+		if _, exists := u.create.mutation.Location(); exists {
+			s.SetIgnore(casbackend.FieldLocation)
+		}
+		if _, exists := u.create.mutation.Name(); exists {
+			s.SetIgnore(casbackend.FieldName)
+		}
+		if _, exists := u.create.mutation.Provider(); exists {
+			s.SetIgnore(casbackend.FieldProvider)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(casbackend.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.Fallback(); exists {
+			s.SetIgnore(casbackend.FieldFallback)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.CASBackend.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *CASBackendUpsertOne) Ignore() *CASBackendUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *CASBackendUpsertOne) DoNothing() *CASBackendUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the CASBackendCreate.OnConflict
+// documentation for more info.
+func (u *CASBackendUpsertOne) Update(set func(*CASBackendUpsert)) *CASBackendUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&CASBackendUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *CASBackendUpsertOne) SetDescription(v string) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateDescription() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *CASBackendUpsertOne) ClearDescription() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetSecretName sets the "secret_name" field.
+func (u *CASBackendUpsertOne) SetSecretName(v string) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetSecretName(v)
+	})
+}
+
+// UpdateSecretName sets the "secret_name" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateSecretName() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateSecretName()
+	})
+}
+
+// SetValidationStatus sets the "validation_status" field.
+func (u *CASBackendUpsertOne) SetValidationStatus(v biz.CASBackendValidationStatus) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetValidationStatus(v)
+	})
+}
+
+// UpdateValidationStatus sets the "validation_status" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateValidationStatus() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateValidationStatus()
+	})
+}
+
+// SetValidatedAt sets the "validated_at" field.
+func (u *CASBackendUpsertOne) SetValidatedAt(v time.Time) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetValidatedAt(v)
+	})
+}
+
+// UpdateValidatedAt sets the "validated_at" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateValidatedAt() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateValidatedAt()
+	})
+}
+
+// SetDefault sets the "default" field.
+func (u *CASBackendUpsertOne) SetDefault(v bool) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetDefault(v)
+	})
+}
+
+// UpdateDefault sets the "default" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateDefault() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateDefault()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *CASBackendUpsertOne) SetDeletedAt(v time.Time) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateDeletedAt() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *CASBackendUpsertOne) ClearDeletedAt() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (u *CASBackendUpsertOne) SetMaxBlobSizeBytes(v int64) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetMaxBlobSizeBytes(v)
+	})
+}
+
+// AddMaxBlobSizeBytes adds v to the "max_blob_size_bytes" field.
+func (u *CASBackendUpsertOne) AddMaxBlobSizeBytes(v int64) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.AddMaxBlobSizeBytes(v)
+	})
+}
+
+// UpdateMaxBlobSizeBytes sets the "max_blob_size_bytes" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateMaxBlobSizeBytes() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateMaxBlobSizeBytes()
+	})
+}
+
+// Exec executes the query.
+func (u *CASBackendUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for CASBackendCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *CASBackendUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *CASBackendUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: CASBackendUpsertOne.ID is not supported by MySQL driver. Use CASBackendUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *CASBackendUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // CASBackendCreateBulk is the builder for creating many CASBackend entities in bulk.
 type CASBackendCreateBulk struct {
 	config
 	err      error
 	builders []*CASBackendCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the CASBackend entities in the database.
@@ -451,6 +827,7 @@ func (cbcb *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, erro
 					_, err = mutators[i+1].Mutate(root, cbcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = cbcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, cbcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -497,6 +874,254 @@ func (cbcb *CASBackendCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (cbcb *CASBackendCreateBulk) ExecX(ctx context.Context) {
 	if err := cbcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.CASBackend.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.CASBackendUpsert) {
+//			SetLocation(v+v).
+//		}).
+//		Exec(ctx)
+func (cbcb *CASBackendCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASBackendUpsertBulk {
+	cbcb.conflict = opts
+	return &CASBackendUpsertBulk{
+		create: cbcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.CASBackend.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (cbcb *CASBackendCreateBulk) OnConflictColumns(columns ...string) *CASBackendUpsertBulk {
+	cbcb.conflict = append(cbcb.conflict, sql.ConflictColumns(columns...))
+	return &CASBackendUpsertBulk{
+		create: cbcb,
+	}
+}
+
+// CASBackendUpsertBulk is the builder for "upsert"-ing
+// a bulk of CASBackend nodes.
+type CASBackendUpsertBulk struct {
+	create *CASBackendCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.CASBackend.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(casbackend.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *CASBackendUpsertBulk) UpdateNewValues() *CASBackendUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(casbackend.FieldID)
+			}
+			if _, exists := b.mutation.Location(); exists {
+				s.SetIgnore(casbackend.FieldLocation)
+			}
+			if _, exists := b.mutation.Name(); exists {
+				s.SetIgnore(casbackend.FieldName)
+			}
+			if _, exists := b.mutation.Provider(); exists {
+				s.SetIgnore(casbackend.FieldProvider)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(casbackend.FieldCreatedAt)
+			}
+			if _, exists := b.mutation.Fallback(); exists {
+				s.SetIgnore(casbackend.FieldFallback)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.CASBackend.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *CASBackendUpsertBulk) Ignore() *CASBackendUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *CASBackendUpsertBulk) DoNothing() *CASBackendUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the CASBackendCreateBulk.OnConflict
+// documentation for more info.
+func (u *CASBackendUpsertBulk) Update(set func(*CASBackendUpsert)) *CASBackendUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&CASBackendUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *CASBackendUpsertBulk) SetDescription(v string) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateDescription() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *CASBackendUpsertBulk) ClearDescription() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.ClearDescription()
+	})
+}
+
+// SetSecretName sets the "secret_name" field.
+func (u *CASBackendUpsertBulk) SetSecretName(v string) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetSecretName(v)
+	})
+}
+
+// UpdateSecretName sets the "secret_name" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateSecretName() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateSecretName()
+	})
+}
+
+// SetValidationStatus sets the "validation_status" field.
+func (u *CASBackendUpsertBulk) SetValidationStatus(v biz.CASBackendValidationStatus) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetValidationStatus(v)
+	})
+}
+
+// UpdateValidationStatus sets the "validation_status" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateValidationStatus() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateValidationStatus()
+	})
+}
+
+// SetValidatedAt sets the "validated_at" field.
+func (u *CASBackendUpsertBulk) SetValidatedAt(v time.Time) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetValidatedAt(v)
+	})
+}
+
+// UpdateValidatedAt sets the "validated_at" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateValidatedAt() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateValidatedAt()
+	})
+}
+
+// SetDefault sets the "default" field.
+func (u *CASBackendUpsertBulk) SetDefault(v bool) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetDefault(v)
+	})
+}
+
+// UpdateDefault sets the "default" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateDefault() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateDefault()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *CASBackendUpsertBulk) SetDeletedAt(v time.Time) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateDeletedAt() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *CASBackendUpsertBulk) ClearDeletedAt() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.ClearDeletedAt()
+	})
+}
+
+// SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
+func (u *CASBackendUpsertBulk) SetMaxBlobSizeBytes(v int64) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetMaxBlobSizeBytes(v)
+	})
+}
+
+// AddMaxBlobSizeBytes adds v to the "max_blob_size_bytes" field.
+func (u *CASBackendUpsertBulk) AddMaxBlobSizeBytes(v int64) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.AddMaxBlobSizeBytes(v)
+	})
+}
+
+// UpdateMaxBlobSizeBytes sets the "max_blob_size_bytes" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateMaxBlobSizeBytes() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateMaxBlobSizeBytes()
+	})
+}
+
+// Exec executes the query.
+func (u *CASBackendUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the CASBackendCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for CASBackendCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *CASBackendUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

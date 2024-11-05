@@ -2,7 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { WorkflowItem } from "./response_messages";
+import { EntityRef, WorkflowItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -46,6 +46,7 @@ export interface WorkflowServiceDeleteResponse {
 }
 
 export interface WorkflowServiceListRequest {
+  projectReference?: EntityRef | undefined;
 }
 
 export interface WorkflowServiceListResponse {
@@ -550,11 +551,14 @@ export const WorkflowServiceDeleteResponse = {
 };
 
 function createBaseWorkflowServiceListRequest(): WorkflowServiceListRequest {
-  return {};
+  return { projectReference: undefined };
 }
 
 export const WorkflowServiceListRequest = {
-  encode(_: WorkflowServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: WorkflowServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectReference !== undefined) {
+      EntityRef.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -565,6 +569,13 @@ export const WorkflowServiceListRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectReference = EntityRef.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -574,12 +585,16 @@ export const WorkflowServiceListRequest = {
     return message;
   },
 
-  fromJSON(_: any): WorkflowServiceListRequest {
-    return {};
+  fromJSON(object: any): WorkflowServiceListRequest {
+    return {
+      projectReference: isSet(object.projectReference) ? EntityRef.fromJSON(object.projectReference) : undefined,
+    };
   },
 
-  toJSON(_: WorkflowServiceListRequest): unknown {
+  toJSON(message: WorkflowServiceListRequest): unknown {
     const obj: any = {};
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference ? EntityRef.toJSON(message.projectReference) : undefined);
     return obj;
   },
 
@@ -587,8 +602,11 @@ export const WorkflowServiceListRequest = {
     return WorkflowServiceListRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<WorkflowServiceListRequest>, I>>(_: I): WorkflowServiceListRequest {
+  fromPartial<I extends Exact<DeepPartial<WorkflowServiceListRequest>, I>>(object: I): WorkflowServiceListRequest {
     const message = createBaseWorkflowServiceListRequest();
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? EntityRef.fromPartial(object.projectReference)
+      : undefined;
     return message;
   },
 };

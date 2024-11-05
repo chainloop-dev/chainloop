@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,5 +85,42 @@ func TestGetAuthURLs(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
+	}
+}
+
+func TestGetPreferredEmail(t *testing.T) {
+	testCases := []struct {
+		claims *upstreamOIDCclaims
+		want   string
+	}{
+		{
+			claims: &upstreamOIDCclaims{Email: ""},
+			want:   "",
+		},
+		{
+			claims: &upstreamOIDCclaims{Email: "foo@bar.com"},
+			want:   "foo@bar.com",
+		},
+		{
+			claims: &upstreamOIDCclaims{Email: "foo@bar.com", PreferredUsername: "overridden"},
+			want:   "foo@bar.com",
+		},
+		{
+			claims: &upstreamOIDCclaims{Email: "foo@bar.com", PreferredUsername: "overridden@bar.com"},
+			want:   "overridden@bar.com",
+		},
+		{
+			claims: &upstreamOIDCclaims{Email: "foo@bar.com", PreferredUsername: "overridden+22@bar.com"},
+			want:   "overridden+22@bar.com",
+		},
+		{
+			claims: &upstreamOIDCclaims{Email: "foo@bar.com", PreferredUsername: "overridden@bar.sub.com"},
+			want:   "overridden@bar.sub.com",
+		},
+	}
+
+	for _, tc := range testCases {
+		got := tc.claims.preferredEmail()
+		assert.Equal(t, tc.want, got)
 	}
 }

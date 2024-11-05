@@ -48,9 +48,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
+      # mark this attestation as a release
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT --release
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
@@ -120,6 +121,8 @@ jobs:
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
+      - name: Bump Project Version
+        run: .github/workflows/utils/bump-project-version.sh
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2

@@ -60,7 +60,7 @@ func (s *workflowRunIntegrationTestSuite) TestList() {
 		},
 		{
 			name:    "filter by workflow",
-			filters: &biz.RunListFilters{WorkflowID: s.workflowOrg2.ID},
+			filters: &biz.RunListFilters{WorkflowID: &s.workflowOrg2.ID},
 			want:    []*biz.WorkflowRun{s.runOrg2, finishedRun},
 		},
 		{
@@ -75,8 +75,28 @@ func (s *workflowRunIntegrationTestSuite) TestList() {
 		},
 		{
 			name:    "filter by finished state and workflow with results",
-			filters: &biz.RunListFilters{Status: biz.WorkflowRunSuccess, WorkflowID: s.workflowOrg2.ID},
+			filters: &biz.RunListFilters{Status: biz.WorkflowRunSuccess, WorkflowID: &s.workflowOrg2.ID},
 			want:    []*biz.WorkflowRun{finishedRun},
+		},
+		{
+			name:    "can not filter by workflow and version",
+			filters: &biz.RunListFilters{VersionID: &s.version2.ID, WorkflowID: &s.workflowOrg2.ID},
+			wantErr: true,
+		},
+		{
+			name:    "filter by version no results",
+			filters: &biz.RunListFilters{VersionID: &s.casBackend.ID}, // providing a random ID
+			want:    []*biz.WorkflowRun{},
+		},
+		{
+			name:    "filter by version with results",
+			filters: &biz.RunListFilters{VersionID: &s.version1.ID},
+			want:    []*biz.WorkflowRun{s.runOrg2},
+		},
+		{
+			name:    "filter by version with results",
+			filters: &biz.RunListFilters{VersionID: &s.version2.ID},
+			want:    []*biz.WorkflowRun{s.runOrg2Public},
 		},
 	}
 
@@ -244,17 +264,43 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
-		assert.NoError(err)
+		s.Require().NoError(err)
+		// Load project version
+		pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, run.Workflow.ProjectID.String(), "")
+		s.Require().NoError(err)
 		if diff := cmp.Diff(&biz.WorkflowRun{
 			RunnerType: "runnerType", RunURL: "runURL", State: string(biz.WorkflowRunInitialized), ContractVersionID: s.contractVersion.Version.ID,
 			Workflow:             s.workflowOrg1,
 			CASBackends:          []*biz.CASBackend{s.casBackend},
 			ContractRevisionUsed: 1, ContractRevisionLatest: 1,
+			ProjectVersion: pv,
 		}, run,
 			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
 			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt", "OrganizationID"),
 		); diff != "" {
 			assert.Failf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	s.T().Run("find or create version", func(_ *testing.T) {
+		testCases := []struct {
+			version string
+		}{
+			{version: ""},
+			{version: "custom"},
+		}
+
+		for _, tc := range testCases {
+			run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+				WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+				RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: tc.version,
+			})
+			s.Require().NoError(err)
+			// Load project version
+			s.Equal(tc.version, run.ProjectVersion.Version)
+			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, run.Workflow.ProjectID.String(), tc.version)
+			s.Require().NoError(err)
+			s.Equal(pv.ID, run.ProjectVersion.ID)
 		}
 	})
 }
@@ -315,6 +361,7 @@ type workflowRunTestData struct {
 	runOrg1, runOrg2, runOrg2Public                *biz.WorkflowRun
 	contractVersion                                *biz.WorkflowContractWithVersion
 	digestAtt1, digestAttOrg2, digestAttPublic     string
+	version1, version2                             *biz.ProjectVersion
 }
 
 func testEnvelope(t *testing.T, path string) *dsse.Envelope {
@@ -324,6 +371,11 @@ func testEnvelope(t *testing.T, path string) *dsse.Envelope {
 	require.NoError(t, json.Unmarshal(attJSON, &envelope))
 	return envelope
 }
+
+const (
+	version1 = "v1"
+	version2 = "v2"
+)
 
 // extract this setup to a helper function so it can be used from other test suites
 func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, s *workflowRunTestData) {
@@ -356,6 +408,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	s.runOrg1, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			ProjectVersion: version1,
 		})
 	assert.NoError(err)
 	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), testEnvelope(t, "testdata/attestations/full.json"))
@@ -365,6 +418,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	s.runOrg2, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg2.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			ProjectVersion: version1,
 		})
 	assert.NoError(err)
 	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), testEnvelope(t, "testdata/attestations/empty.json"))
@@ -373,10 +427,16 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowPublicOrg2.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			ProjectVersion: version2,
 		})
 	assert.NoError(err)
 	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), testEnvelope(t, "testdata/attestations/with-string.json"))
 	assert.NoError(err)
+
+	s.version1, err = suite.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg2.ProjectID.String(), version1)
+	require.NoError(t, err)
+	s.version2, err = suite.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowPublicOrg2.ProjectID.String(), version2)
+	require.NoError(t, err)
 }
 
 func (s *workflowRunIntegrationTestSuite) SetupTest() {

@@ -73,6 +73,7 @@ require (
 	github.com/casbin/casbin/v2 v2.81.0
 	github.com/casbin/ent-adapter v0.3.0
 	github.com/denisbrodbeck/machineid v1.0.1
+	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/in-toto/attestation v0.1.1-0.20231010121940-09a03152c04a
 	github.com/invopop/jsonschema v0.7.0

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 		return nil
 	}
 
-	header := table.Row{"ID", "Workflow", "State", "Created At", "Runner"}
+	header := table.Row{"ID", "Workflow", "Version", "Prerelease", "State", "Created At", "Runner"}
 	if full {
 		header = append(header, "Finished At", "Failure reason")
 	}
@@ -105,7 +105,7 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 
 	for _, p := range runs {
 		wf := p.Workflow
-		r := table.Row{p.ID, wf.NamespacedName(), p.State, p.CreatedAt.Format(time.RFC822), p.RunnerType}
+		r := table.Row{p.ID, wf.NamespacedName(), versionString(p.ProjectVersion), p.State, p.CreatedAt.Format(time.RFC822), p.RunnerType}
 
 		if full {
 			var finishedAt string
@@ -119,6 +119,19 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 	t.Render()
 
 	return nil
+}
+
+func versionString(p *action.ProjectVersion) string {
+	versionString := p.Version
+	if versionString == "" {
+		return ""
+	}
+
+	if !p.Prerelease {
+		return versionString
+	}
+
+	return fmt.Sprintf("%s (prerelease)", p.Version)
 }
 
 // listAvailableWorkflowStatusFlag returns a list of available workflow status flags

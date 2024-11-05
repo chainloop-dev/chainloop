@@ -22,8 +22,11 @@ import (
 	"strconv"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
+	"github.com/rs/zerolog"
 )
 
 type AttestationInitOpts struct {
@@ -70,7 +73,16 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 }
 
 // returns the attestation ID
-func (action *AttestationInit) Run(ctx context.Context, contractRevision int, projectName, workflowName, newWorkflowContractName string) (string, error) {
+type AttestationInitRunOpts struct {
+	ContractRevision             int
+	ProjectName                  string
+	ProjectVersion               string
+	ProjectVersionMarkAsReleased bool
+	WorkflowName                 string
+	NewWorkflowContractName      string
+}
+
+func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
 	if action.dryRun && action.useRemoteState {
 		return "", errors.New("remote state is not compatible with dry-run mode")
 	}
@@ -87,9 +99,9 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 	// 1 - Find or create the workflow
 	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
-		ProjectName:  projectName,
-		WorkflowName: workflowName,
-		ContractName: newWorkflowContractName,
+		ProjectName:  opts.ProjectName,
+		WorkflowName: opts.WorkflowName,
+		ContractName: opts.NewWorkflowContractName,
 	})
 	if err != nil {
 		return "", err
@@ -98,9 +110,9 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 
 	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
-		ContractRevision: int32(contractRevision),
-		WorkflowName:     workflowName,
-		ProjectName:      projectName,
+		ContractRevision: int32(opts.ContractRevision),
+		WorkflowName:     opts.WorkflowName,
+		ProjectName:      opts.ProjectName,
 	})
 	if err != nil {
 		return "", err
@@ -113,9 +125,19 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 		Project:        workflow.GetProject(),
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
+		Version: &clientAPI.ProjectVersion{
+			Version:        opts.ProjectVersion,
+			MarkAsReleased: opts.ProjectVersionMarkAsReleased,
+		},
 	}
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
+
+	// 3. enrich contract with group materials and policies
+	err = enrichContractMaterials(ctx, contractVersion.GetV1(), client, &action.Logger)
+	if err != nil {
+		return "", fmt.Errorf("failed to apply materials from policy groups: %w", err)
+	}
 
 	// Auto discover the runner context and enforce against the one in the contract if needed
 	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.Logger)
@@ -133,10 +155,11 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 			&pb.AttestationServiceInitRequest{
 				Runner:           discoveredRunner.ID(),
 				JobUrl:           discoveredRunner.RunURI(),
-				ContractRevision: int32(contractRevision),
+				ContractRevision: int32(opts.ContractRevision),
 				// send the workflow name explicitly provided by the user to detect that functional case
-				WorkflowName: workflowName,
-				ProjectName:  projectName,
+				WorkflowName:   opts.WorkflowName,
+				ProjectName:    opts.ProjectName,
+				ProjectVersion: opts.ProjectVersion,
 			},
 		)
 		if err != nil {
@@ -146,6 +169,7 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 		workflowRun := runResp.GetResult().GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		workflowMeta.Organization = runResp.GetResult().GetOrganization()
+		workflowMeta.Version.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
 		attestationID = workflowRun.GetId()
 	}
@@ -154,7 +178,8 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo: workflowMeta, SchemaV1: contractVersion.GetV1(),
+		WfInfo:        workflowMeta,
+		SchemaV1:      contractVersion.GetV1(),
 		DryRun:        action.dryRun,
 		AttestationID: attestationID,
 		Runner:        discoveredRunner,
@@ -175,4 +200,48 @@ func (action *AttestationInit) Run(ctx context.Context, contractRevision int, pr
 	}
 
 	return attestationID, nil
+}
+
+func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, client pb.AttestationServiceClient, logger *zerolog.Logger) error {
+	contractMaterials := schema.GetMaterials()
+	for _, pgAtt := range schema.GetPolicyGroups() {
+		group, _, err := policies.LoadPolicyGroup(ctx, pgAtt, &policies.LoadPolicyGroupOptions{
+			Client: client,
+			Logger: logger,
+		})
+		if err != nil {
+			// Temporarily skip if policy groups still use old schema
+			// TODO: remove this check in next release
+			logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", pgAtt.GetRef())
+			return nil
+		}
+		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
+
+		toAdd := getGroupMaterialsToAdd(group, contractMaterials, logger)
+		contractMaterials = append(contractMaterials, toAdd...)
+	}
+
+	schema.Materials = contractMaterials
+
+	return nil
+}
+
+// merge existing materials with group ones, taking the contract's one in case of conflict
+func getGroupMaterialsToAdd(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
+	toAdd := make([]*v1.CraftingSchema_Material, 0)
+	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		// check if material already exists in the contract and skip it in that case
+		ignore := false
+		for _, mat := range fromContract {
+			if mat.GetName() == groupMaterial.GetName() {
+				logger.Warn().Msgf("material '%s' from policy group '%s' is also present in the contract and will be ignored", mat.GetName(), group.GetMetadata().GetName())
+				ignore = true
+			}
+		}
+		if !ignore {
+			toAdd = append(toAdd, groupMaterial)
+		}
+	}
+
+	return toAdd
 }

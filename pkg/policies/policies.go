@@ -18,10 +18,8 @@ package policies
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -30,7 +28,6 @@ import (
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -85,13 +82,13 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 	for _, attachment := range attachments {
 		// Load material content
-		subject, err := getMaterialContent(material, artifactPath)
+		subject, err := material.GetEvaluableContent(artifactPath)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
 		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetArtifact().GetId()},
+			&evalOpts{kind: material.MaterialType, name: material.GetID()},
 		)
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -161,7 +158,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	var evaluationSources []string
-	if !IsProviderScheme(ref.GetName()) {
+	if ref != nil && !IsProviderScheme(ref.URI) {
 		evaluationSources = sources
 	}
 
@@ -181,8 +178,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            attachment.GetWith(),
 		Type:            opts.kind,
-		ReferenceName:   ref.Name,
-		ReferenceDigest: ref.Digest["sha256"],
+		ReferenceName:   ref.GetURI(),
+		ReferenceDigest: ref.GetDigest(),
 		// Merged "skipped"
 		Skipped: skipped,
 		// Merged "skip_reason"
@@ -240,7 +237,7 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, 
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract
-func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *v12.ResourceDescriptor, error) {
+func (pv *PolicyVerifier) loadPolicySpec(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	loader, err := pv.getLoader(attachment)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get a loader for policy: %w", err)
@@ -367,38 +364,6 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult) []*v12
 	return res
 }
 
-func getMaterialContent(material *v12.Attestation_Material, artifactPath string) ([]byte, error) {
-	var rawMaterial []byte
-	var err error
-
-	// nolint: gocritic
-	if material.InlineCas {
-		rawMaterial = material.GetArtifact().GetContent()
-	} else if artifactPath == "" {
-		return nil, errors.New("artifact path required")
-	} else {
-		// read content from local filesystem
-		rawMaterial, err = os.ReadFile(artifactPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read material content: %w", err)
-		}
-	}
-	// special case for ATTESTATION materials, the statement needs to be extracted from the dsse wrapper.
-	if material.MaterialType == v1.CraftingSchema_Material_ATTESTATION {
-		var envelope dsse.Envelope
-		if err := json.Unmarshal(rawMaterial, &envelope); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal attestation material: %w", err)
-		}
-
-		rawMaterial, err = envelope.DecodeB64Payload()
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode attestation material: %w", err)
-		}
-	}
-
-	return rawMaterial, nil
-}
-
 // returns the list of polices to be applied to a material, following these rules:
 // 1. if policy spec has a type, return it only if material has the same type
 // 2. if attachment has a name filter, return the policy only if the material has the same name
@@ -421,6 +386,10 @@ func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, mater
 	return result, nil
 }
 
+// Check if this attachment can be applied to a material, following these rules:
+// 1. if the policy supports the material type, it can be applied
+// 2. if the policy doesn't have any specified type (rare, but supported), it can only be applied if the attachment has a selector with the same name as the material
+// 3. otherwise, it cannot be applied
 func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.PolicyAttachment, material *v12.Attestation_Material) (bool, error) {
 	// load the policy spec
 	spec, _, err := pv.loadPolicySpec(ctx, policyAtt)
@@ -438,7 +407,7 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, nil
 	}
 
-	if filteredName != "" && filteredName != material.GetArtifact().GetId() {
+	if filteredName != "" && filteredName != material.GetID() {
 		// a filer exists and doesn't match
 		return false, nil
 	}

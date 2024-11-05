@@ -19,6 +19,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,17 +27,17 @@ import (
 func TestIdentifyAndValidateRawContract(t *testing.T) {
 	testData := []struct {
 		filename          string
-		wantFormat        ContractRawFormat
+		wantFormat        unmarshal.RawFormat
 		wantValidationErr bool
 		wantFormatErr     bool
 	}{
 		{
 			filename:   "contract.cue",
-			wantFormat: ContractRawFormatCUE,
+			wantFormat: unmarshal.RawFormatCUE,
 		},
 		{
 			filename:   "contract.json",
-			wantFormat: ContractRawFormatJSON,
+			wantFormat: unmarshal.RawFormatJSON,
 		},
 		{
 			filename:          "invalid_contract.json",
@@ -44,7 +45,7 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 		},
 		{
 			filename:   "contract.yaml",
-			wantFormat: ContractRawFormatYAML,
+			wantFormat: unmarshal.RawFormatYAML,
 		},
 		{
 			filename:          "invalid_contract.yaml",
@@ -77,56 +78,6 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 
 			assert.Equal(t, tc.wantFormat, contract.Format)
 			assert.Equal(t, data, contract.Raw)
-		})
-	}
-}
-
-func TestIdentifyFormat(t *testing.T) {
-	testData := []struct {
-		filename   string
-		wantFormat ContractRawFormat
-		wantErr    bool
-	}{
-		{
-			filename:   "contract.cue",
-			wantFormat: ContractRawFormatCUE,
-		},
-		{
-			filename:   "contract.json",
-			wantFormat: ContractRawFormatJSON,
-		},
-		{
-			filename:   "invalid_contract.json",
-			wantFormat: ContractRawFormatJSON,
-		},
-		{
-			filename:   "contract.yaml",
-			wantFormat: ContractRawFormatYAML,
-		},
-		{
-			filename:   "invalid_contract.yaml",
-			wantFormat: ContractRawFormatYAML,
-		},
-		{
-			filename: "invalid_format.json",
-			wantErr:  true,
-		},
-	}
-
-	for _, tt := range testData {
-		t.Run(tt.filename, func(t *testing.T) {
-			// load file from testdata/contracts
-			data, err := os.ReadFile("testdata/contracts/" + tt.filename)
-			require.NoError(t, err)
-
-			format, err := identifyFormat(data)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.wantFormat, format)
 		})
 	}
 }

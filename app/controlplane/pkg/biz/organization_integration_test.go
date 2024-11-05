@@ -69,7 +69,7 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(_ *testing.T) {
 			org, err := s.Organization.Create(ctx, tc.name)
 			if tc.expectedError {
 				s.Error(err)
@@ -145,7 +145,7 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 		assert.Nil(ociRepo)
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 
-		workflows, err := s.Workflow.List(ctx, s.org.ID)
+		workflows, err := s.Workflow.List(ctx, s.org.ID, "")
 		assert.NoError(err)
 		assert.Empty(workflows)
 
@@ -226,7 +226,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 	assert.NotNil(ociRepo)
 
-	workflows, err := s.Workflow.List(ctx, s.org.ID)
+	workflows, err := s.Workflow.List(ctx, s.org.ID, "")
 	assert.NoError(err)
 	assert.Len(workflows, 1)
 

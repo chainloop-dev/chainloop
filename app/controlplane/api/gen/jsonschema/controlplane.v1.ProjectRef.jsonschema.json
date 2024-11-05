@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.ProjectRef.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(project_id)$": {
+      "type": "string"
+    },
+    "^(project_name)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "projectId": {
+      "type": "string"
+    },
+    "projectName": {
+      "type": "string"
+    }
+  },
+  "title": "Project Ref",
+  "type": "object"
+}

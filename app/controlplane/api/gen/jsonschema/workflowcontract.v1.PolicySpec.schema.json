@@ -50,7 +50,10 @@
             "GITLAB_SECURITY_REPORT",
             "ZAP_DAST_ZIP",
             "BLACKDUCK_SCA_JSON",
-            "TWISTCLI_SCAN_JSON"
+            "TWISTCLI_SCAN_JSON",
+            "GHAS_CODE_SCAN",
+            "GHAS_SECRET_SCAN",
+            "GHAS_DEPENDENCY_SCAN"
           ],
           "title": "Material Type",
           "type": "string"

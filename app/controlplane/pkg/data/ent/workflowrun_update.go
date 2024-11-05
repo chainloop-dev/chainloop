@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -215,6 +216,20 @@ func (wru *WorkflowRunUpdate) AddContractRevisionLatest(i int) *WorkflowRunUpdat
 	return wru
 }
 
+// SetVersionID sets the "version_id" field.
+func (wru *WorkflowRunUpdate) SetVersionID(u uuid.UUID) *WorkflowRunUpdate {
+	wru.mutation.SetVersionID(u)
+	return wru
+}
+
+// SetNillableVersionID sets the "version_id" field if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpdate {
+	if u != nil {
+		wru.SetVersionID(*u)
+	}
+	return wru
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wru *WorkflowRunUpdate) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetWorkflowID(id)
@@ -268,6 +283,11 @@ func (wru *WorkflowRunUpdate) AddCasBackends(c ...*CASBackend) *WorkflowRunUpdat
 	return wru.AddCasBackendIDs(ids...)
 }
 
+// SetVersion sets the "version" edge to the ProjectVersion entity.
+func (wru *WorkflowRunUpdate) SetVersion(p *ProjectVersion) *WorkflowRunUpdate {
+	return wru.SetVersionID(p.ID)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
 	return wru.mutation
@@ -306,6 +326,12 @@ func (wru *WorkflowRunUpdate) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUp
 	return wru.RemoveCasBackendIDs(ids...)
 }
 
+// ClearVersion clears the "version" edge to the ProjectVersion entity.
+func (wru *WorkflowRunUpdate) ClearVersion() *WorkflowRunUpdate {
+	wru.mutation.ClearVersion()
+	return wru
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (wru *WorkflowRunUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, wru.sqlSave, wru.mutation, wru.hooks)
@@ -339,6 +365,9 @@ func (wru *WorkflowRunUpdate) check() error {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
+	}
+	if wru.mutation.VersionCleared() && len(wru.mutation.VersionIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
 	return nil
 }
@@ -514,6 +543,35 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wru.mutation.VersionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowrun.VersionTable,
+			Columns: []string{workflowrun.VersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wru.mutation.VersionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowrun.VersionTable,
+			Columns: []string{workflowrun.VersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -723,6 +781,20 @@ func (wruo *WorkflowRunUpdateOne) AddContractRevisionLatest(i int) *WorkflowRunU
 	return wruo
 }
 
+// SetVersionID sets the "version_id" field.
+func (wruo *WorkflowRunUpdateOne) SetVersionID(u uuid.UUID) *WorkflowRunUpdateOne {
+	wruo.mutation.SetVersionID(u)
+	return wruo
+}
+
+// SetNillableVersionID sets the "version_id" field if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpdateOne {
+	if u != nil {
+		wruo.SetVersionID(*u)
+	}
+	return wruo
+}
+
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetWorkflowID(id)
@@ -776,6 +848,11 @@ func (wruo *WorkflowRunUpdateOne) AddCasBackends(c ...*CASBackend) *WorkflowRunU
 	return wruo.AddCasBackendIDs(ids...)
 }
 
+// SetVersion sets the "version" edge to the ProjectVersion entity.
+func (wruo *WorkflowRunUpdateOne) SetVersion(p *ProjectVersion) *WorkflowRunUpdateOne {
+	return wruo.SetVersionID(p.ID)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
 	return wruo.mutation
@@ -812,6 +889,12 @@ func (wruo *WorkflowRunUpdateOne) RemoveCasBackends(c ...*CASBackend) *WorkflowR
 		ids[i] = c[i].ID
 	}
 	return wruo.RemoveCasBackendIDs(ids...)
+}
+
+// ClearVersion clears the "version" edge to the ProjectVersion entity.
+func (wruo *WorkflowRunUpdateOne) ClearVersion() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearVersion()
+	return wruo
 }
 
 // Where appends a list predicates to the WorkflowRunUpdate builder.
@@ -860,6 +943,9 @@ func (wruo *WorkflowRunUpdateOne) check() error {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
+	}
+	if wruo.mutation.VersionCleared() && len(wruo.mutation.VersionIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
 	return nil
 }
@@ -1052,6 +1138,35 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wruo.mutation.VersionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowrun.VersionTable,
+			Columns: []string{workflowrun.VersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wruo.mutation.VersionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowrun.VersionTable,
+			Columns: []string{workflowrun.VersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

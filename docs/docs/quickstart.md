@@ -26,17 +26,7 @@ This quickstart will guide you through the process of installing the Chainloop C
     chainloop organization describe
     ```
 
-3. Create a new Chainloop Workflow.
-
-    Chainloop workflows represent any CI or process you might want to attest. Check [this doc](/getting-started/workflow-definition) for a complete explanation of Workflows and Contracts.
-    You might also want to check our [contract reference](/reference/operator/contract).
-
-    ```bash
-    chainloop workflow create --name mywf --project myproject
-    ```
-
-
-4. Create API Token to perform the attestation process:
+3. Create API Token to perform the attestation process:
 
     To perform an attestation process, you need to provide an API Token:
 
@@ -46,11 +36,14 @@ This quickstart will guide you through the process of installing the Chainloop C
 
     Chainloop API Tokens are commonly used (and required) in CI/CD scenarios. Tokens have narrower permissions, ensuring that they can only perform the operations they are granted to. More information in [API Tokens](/reference/operator/api-tokens#api-tokens).
 
-5. Perform an attestation process:
+4. Perform an attestation process:
 
     We are now ready to perform our first attestation, to learn more about its lifecyle refer to [this section](/getting-started/attestation-crafting#introduction)
     
-    We'll start with the [initialization](/getting-started/attestation-crafting#initialization) of an attestation for our previously created workflow (`mywf`)
+    We'll start with the [initialization](/getting-started/attestation-crafting#initialization) of an attestation. The attestation process requires the name of a workflow and a project to be associated with it.
+
+    Chainloop workflows represent any CI or process you might want to attest. Check [this doc](/getting-started/workflow-definition) for a complete explanation of Workflows and Contracts.
+    You might also want to check our [contract reference](/reference/operator/contract).
 
     ```bash
     chainloop att init --workflow mywf --project myproject

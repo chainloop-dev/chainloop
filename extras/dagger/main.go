@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	chainloopVersion = "v0.97.0"
+	chainloopVersion = "v0.98.1"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -79,6 +79,12 @@ func (m *Chainloop) Init(
 	// name of an existing contract to attach it to the auto-created workflow
 	// +optional
 	contractName string,
+	// Version of the project to be used for the attestation
+	// +optional
+	projectVersion string,
+	// mark the version as release
+	// +optional
+	release bool,
 ) (*Attestation, error) {
 	att := &Attestation{
 		Token:      token,
@@ -99,6 +105,18 @@ func (m *Chainloop) Init(
 	if contractName != "" {
 		args = append(args,
 			"--contract", contractName,
+		)
+	}
+
+	if projectVersion != "" {
+		args = append(args,
+			"--version", projectVersion,
+		)
+	}
+
+	if release {
+		args = append(args,
+			"--release",
 		)
 	}
 

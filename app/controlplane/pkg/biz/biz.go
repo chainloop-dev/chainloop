@@ -17,9 +17,9 @@ package biz
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"github.com/google/wire"
@@ -50,6 +50,8 @@ var ProviderSet = wire.NewSet(
 	NewAttestationStateUseCase,
 	NewChainloopSigningUseCase,
 	NewPrometheusUseCase,
+	NewProjectVersionUseCase,
+	NewProjectsUseCase,
 	wire.Bind(new(PromObservable), new(*PrometheusUseCase)),
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
@@ -84,8 +86,29 @@ func ValidateIsDNS1123(name string) error {
 			errMsg += fmt.Sprintf("%q: %s\n", name, e)
 		}
 
-		return errors.New(errMsg)
+		return NewErrValidationStr(errMsg)
 	}
 
 	return nil
+}
+
+// ValidateVersion validates that the provided version string is in a valid format.
+// The version string must match the following regular expression: ^[a-zA-Z0-9.\-]+$
+// This ensures the version only contains alphanumeric characters, dots, and hyphens.
+func ValidateVersion(version string) error {
+	// Basic regex check (example: allow alphanumeric, dots, hyphens, underscores, plus signs, and build metadata)
+	regex := regexp.MustCompile(`^[a-zA-Z0-9.\-_+]+(?:\+[a-zA-Z0-9.\-_]+)?$`)
+	if !regex.MatchString(version) {
+		return NewErrValidationStr(fmt.Sprintf("invalid version format: %s. Valid examples: '1.0.0', 'v2.1-alpha', '3.0.0+build.123', '2024.3.12', 'v1.0_beta'", version))
+	}
+
+	return nil
+}
+
+// EntityRef is a reference to an entity
+type EntityRef struct {
+	// ID is the unique identifier of the entity
+	ID string
+	// Name is the name of the entity
+	Name string
 }

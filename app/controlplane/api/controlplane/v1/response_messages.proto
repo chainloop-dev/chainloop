@@ -62,6 +62,15 @@ message WorkflowRunItem {
   int32 contract_revision_used = 10;
   // The latest revision available for this contract at the time of the run
   int32 contract_revision_latest = 11;
+
+  // The version of the project the attestation was initiated with
+  ProjectVersion version = 13;
+}
+
+message ProjectVersion {
+  string id = 1;
+  string version = 2;
+  bool prerelease = 3;
 }
 
 enum RunStatus {
@@ -153,10 +162,10 @@ message WorkflowRef {
   string id = 1 [(buf.validate.field).string.uuid = true];
   string name = 2 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name-dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name-dns-1123"
+    }
   }];
   string project_name = 3 [(buf.validate.field).string = {min_len: 1}];
 }
@@ -260,4 +269,19 @@ enum UserWithNoMembershipError {
   option (errors.default_code) = 500;
   USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED = 0;
   USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG = 1 [(errors.code) = 403];
+}
+
+// EntityRef is a reference to an entity in the system that can be either by name or ID
+message EntityRef {
+  oneof ref {
+    string entity_id = 1 [(buf.validate.field).string.uuid = true];
+    string entity_name = 2 [(buf.validate.field) = {
+      // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+      cel: {
+        message: "must contain only lowercase letters, numbers, and hyphens."
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+        id: "dns-1123"
+      }
+    }];
+  }
 }

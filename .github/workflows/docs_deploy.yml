@@ -11,7 +11,7 @@ concurrency: "deploy-to-prod"
 jobs:
   chainloop_init:
     name: Chainloop Init
-    uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@edd4d30e954a4a456dd770f3b7c5e6871c84a661
+    uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@64839eb68c20fefda46929c6c6e893cdf0537619
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
@@ -83,13 +83,11 @@ jobs:
 
   chainloop_push:
     name: Chainloop Push
-    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@edd4d30e954a4a456dd770f3b7c5e6871c84a661
+    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@25c77318e739c60e86d3dfe7e864f51c665972dd
     needs:
       - deploy_docs
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
-      signing_key: ${{ secrets.COSIGN_KEY }}
-      signing_key_password: ${{ secrets.COSIGN_PASSWORD }}
     with:
       attestation_name: "docs"
       workflow_name: "chainloop-docs-release"

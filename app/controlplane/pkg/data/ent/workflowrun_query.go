@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -31,6 +32,7 @@ type WorkflowRunQuery struct {
 	withWorkflow        *WorkflowQuery
 	withContractVersion *WorkflowContractVersionQuery
 	withCasBackends     *CASBackendQuery
+	withVersion         *ProjectVersionQuery
 	withFKs             bool
 	modifiers           []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -128,6 +130,28 @@ func (wrq *WorkflowRunQuery) QueryCasBackends() *CASBackendQuery {
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
 			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, workflowrun.CasBackendsTable, workflowrun.CasBackendsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVersion chains the current query on the "version" edge.
+func (wrq *WorkflowRunQuery) QueryVersion() *ProjectVersionQuery {
+	query := (&ProjectVersionClient{config: wrq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wrq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wrq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
+			sqlgraph.To(projectversion.Table, projectversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.VersionTable, workflowrun.VersionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
 		return fromU, nil
@@ -330,6 +354,7 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 		withWorkflow:        wrq.withWorkflow.Clone(),
 		withContractVersion: wrq.withContractVersion.Clone(),
 		withCasBackends:     wrq.withCasBackends.Clone(),
+		withVersion:         wrq.withVersion.Clone(),
 		// clone intermediate query.
 		sql:  wrq.sql.Clone(),
 		path: wrq.path,
@@ -366,6 +391,17 @@ func (wrq *WorkflowRunQuery) WithCasBackends(opts ...func(*CASBackendQuery)) *Wo
 		opt(query)
 	}
 	wrq.withCasBackends = query
+	return wrq
+}
+
+// WithVersion tells the query-builder to eager-load the nodes that are connected to
+// the "version" edge. The optional arguments are used to configure the query builder of the edge.
+func (wrq *WorkflowRunQuery) WithVersion(opts ...func(*ProjectVersionQuery)) *WorkflowRunQuery {
+	query := (&ProjectVersionClient{config: wrq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wrq.withVersion = query
 	return wrq
 }
 
@@ -448,10 +484,11 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*WorkflowRun{}
 		withFKs     = wrq.withFKs
 		_spec       = wrq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			wrq.withWorkflow != nil,
 			wrq.withContractVersion != nil,
 			wrq.withCasBackends != nil,
+			wrq.withVersion != nil,
 		}
 	)
 	if wrq.withWorkflow != nil || wrq.withContractVersion != nil {
@@ -497,6 +534,12 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := wrq.loadCasBackends(ctx, query, nodes,
 			func(n *WorkflowRun) { n.Edges.CasBackends = []*CASBackend{} },
 			func(n *WorkflowRun, e *CASBackend) { n.Edges.CasBackends = append(n.Edges.CasBackends, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wrq.withVersion; query != nil {
+		if err := wrq.loadVersion(ctx, query, nodes, nil,
+			func(n *WorkflowRun, e *ProjectVersion) { n.Edges.Version = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -628,6 +671,35 @@ func (wrq *WorkflowRunQuery) loadCasBackends(ctx context.Context, query *CASBack
 	}
 	return nil
 }
+func (wrq *WorkflowRunQuery) loadVersion(ctx context.Context, query *ProjectVersionQuery, nodes []*WorkflowRun, init func(*WorkflowRun), assign func(*WorkflowRun, *ProjectVersion)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*WorkflowRun)
+	for i := range nodes {
+		fk := nodes[i].VersionID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(projectversion.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "version_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (wrq *WorkflowRunQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := wrq.querySpec()
@@ -656,6 +728,9 @@ func (wrq *WorkflowRunQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != workflowrun.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if wrq.withVersion != nil {
+			_spec.Node.AddColumnOnce(workflowrun.FieldVersionID)
 		}
 	}
 	if ps := wrq.predicates; len(ps) > 0 {
