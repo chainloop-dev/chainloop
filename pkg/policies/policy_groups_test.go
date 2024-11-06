@@ -259,16 +259,23 @@ func (s *groupsTestSuite) TestGroupInputs() {
 		name    string
 		args    map[string]string
 		wanted  string
-		wantErr error
+		wantErr bool
+		errMsg  string
 	}{
 		{
-			name:   "group inputs with interpolation",
+			name:   "group inputs with interpolation, default values",
 			args:   map[string]string{"username": "devel"},
 			wanted: "the email is: devel@chainloop.dev",
 		},
 		{
-			name:   "group inputs with default value",
-			wanted: "the email is: foo@chainloop.dev",
+			name:    "missing username input",
+			wantErr: true,
+			errMsg:  "missing required input \"username\"",
+		},
+		{
+			name:   "group inputs with interpolation, all values",
+			args:   map[string]string{"username": "foo", "domain": "bar.com"},
+			wanted: "the email is: foo@bar.com",
 		},
 	}
 
@@ -291,8 +298,9 @@ func (s *groupsTestSuite) TestGroupInputs() {
 		s.Run(tc.name, func() {
 			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
 			evs, err := v.VerifyMaterial(context.TODO(), material, "")
-			if tc.wantErr != nil {
+			if tc.wantErr {
 				s.Error(err)
+				s.Contains(err.Error(), tc.errMsg)
 				return
 			}
 			s.Require().NoError(err)

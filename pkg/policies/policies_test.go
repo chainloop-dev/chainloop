@@ -826,6 +826,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 		bindings  map[string]string
 		expected  map[string]string
 		expectErr bool
+		errMsg    string
 	}{
 		{
 			name:     "all args passed when no inputs present",
@@ -841,6 +842,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 			}},
 			args:      map[string]string{"arg2": "value2"},
 			expectErr: true,
+			errMsg:    "missing required input \"arg1\"",
 		},
 		{
 			name: "default values are set",
@@ -922,6 +924,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 			computed, err := pv.computeArguments(tc.inputs, tc.args, tc.bindings)
 			if tc.expectErr {
 				s.Error(err)
+				s.Contains(err.Error(), tc.errMsg)
 				return
 			}
 			s.NoError(err)

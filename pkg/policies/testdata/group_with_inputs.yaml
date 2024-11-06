@@ -8,8 +8,10 @@ metadata:
 spec:
   inputs:
     - name: username
+      required: true
+    - name: domain
       required: false
-      default: "foo"
+      default: "chainloop.dev"
   policies:
     materials:
       - name: sbom
@@ -17,5 +19,5 @@ spec:
         policies:
           - ref: file://testdata/policy_with_inputs.yaml
             with:
-              email: "{{ .username }}@chainloop.dev"
+              email: "{{ .username }}@{{ .domain }}"
 
