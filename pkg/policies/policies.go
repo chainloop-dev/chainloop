@@ -188,6 +188,12 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		Type:            opts.kind,
 		ReferenceName:   ref.GetURI(),
 		ReferenceDigest: ref.GetDigest(),
+		PolicyReference: &v12.PolicyEvaluation_Reference{
+			Name:    policy.GetMetadata().GetName(),
+			Digest:  ref.GetDigest(),
+			Uri:     ref.GetURI(),
+			OrgName: ref.GetOrgName(),
+		},
 		// Merged "skipped"
 		Skipped: skipped,
 		// Merged "skip_reason"

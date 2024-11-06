@@ -52,7 +52,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 
 	for _, groupAtt := range groupAtts {
 		// 1. load the policy group
-		group, _, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
+		group, desc, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
 			Client: pgv.client,
 			Logger: pgv.logger,
 		})
@@ -88,8 +88,13 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 				return nil, NewPolicyError(err)
 			}
 
-			// Assign group name to this evaluation
-			ev.GroupName = group.GetMetadata().GetName()
+			// Assign group reference to this evaluation
+			ev.GroupReference = &api.PolicyEvaluation_Reference{
+				Name:    group.GetMetadata().GetName(),
+				Digest:  desc.GetDigest(),
+				Uri:     desc.GetURI(),
+				OrgName: desc.GetOrgName(),
+			}
 			result = append(result, ev)
 		}
 	}
@@ -101,7 +106,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	result := make([]*api.PolicyEvaluation, 0)
 	attachments := pgv.schema.GetPolicyGroups()
 	for _, groupAtt := range attachments {
-		group, _, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
+		group, desc, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
 			Client: pgv.client,
 			Logger: pgv.logger,
 		})
@@ -129,8 +134,13 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 				return nil, NewPolicyError(err)
 			}
 
-			// Assign group name to this evaluation
-			ev.GroupName = group.GetMetadata().GetName()
+			// Assign group reference to this evaluation
+			ev.GroupReference = &api.PolicyEvaluation_Reference{
+				Name:    group.GetMetadata().GetName(),
+				Digest:  desc.GetDigest(),
+				Uri:     desc.GetURI(),
+				OrgName: desc.GetOrgName(),
+			}
 
 			result = append(result, ev)
 		}

@@ -125,8 +125,9 @@ message PolicyEvaluation {
   // file://foo.yaml
   // chainloop://my-provider.com/foo@sha256:1234
   // NOTE: embedded policies will not have a reference
-  string reference_digest = 10;
-  string reference_name = 11;
+  // Deprecated: use policy_reference instead
+  string reference_digest = 10 [deprecated=true];
+  string reference_name = 11 [deprecated=true];
 
   string description = 5;
   map<string, string> annotations = 6;
@@ -147,11 +148,19 @@ message PolicyEvaluation {
   repeated string skip_reasons = 14;
 
   // Group this evaluated policy belongs to, if any
-  string group_name = 15;
+  Reference policy_reference = 15;
+  Reference group_reference = 16;
 
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];
+  }
+
+  message Reference {
+    string name = 1;
+    string digest = 2;
+    string uri = 3;
+    string org_name = 4;
   }
 }
 

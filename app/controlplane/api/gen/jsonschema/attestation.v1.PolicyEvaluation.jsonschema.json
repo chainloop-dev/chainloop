@@ -4,15 +4,18 @@
   "additionalProperties": false,
   "description": "A policy executed against an attestation or material",
   "patternProperties": {
-    "^(group_name)$": {
-      "description": "Group this evaluated policy belongs to, if any",
-      "type": "string"
+    "^(group_reference)$": {
+      "$ref": "attestation.v1.PolicyEvaluation.Reference.jsonschema.json"
     },
     "^(material_name)$": {
       "type": "string"
     },
+    "^(policy_reference)$": {
+      "$ref": "attestation.v1.PolicyEvaluation.Reference.jsonschema.json",
+      "description": "Group this evaluated policy belongs to, if any"
+    },
     "^(reference_digest)$": {
-      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference",
+      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference\n Deprecated: use policy_reference instead",
       "type": "string"
     },
     "^(reference_name)$": {
@@ -43,9 +46,8 @@
     "description": {
       "type": "string"
     },
-    "groupName": {
-      "description": "Group this evaluated policy belongs to, if any",
-      "type": "string"
+    "groupReference": {
+      "$ref": "attestation.v1.PolicyEvaluation.Reference.jsonschema.json"
     },
     "materialName": {
       "type": "string"
@@ -54,8 +56,12 @@
       "description": "The policy name from the policy spec",
       "type": "string"
     },
+    "policyReference": {
+      "$ref": "attestation.v1.PolicyEvaluation.Reference.jsonschema.json",
+      "description": "Group this evaluated policy belongs to, if any"
+    },
     "referenceDigest": {
-      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference",
+      "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference\n Deprecated: use policy_reference instead",
       "type": "string"
     },
     "referenceName": {

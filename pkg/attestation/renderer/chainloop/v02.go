@@ -59,7 +59,7 @@ type PolicyEvaluation struct {
 	Type            string                     `json:"type"`
 	Skipped         bool                       `json:"skipped"`
 	SkipReasons     []string                   `json:"skip_reasons,omitempty"`
-	GroupName       string                     `json:"group_name"`
+	GroupName       *intoto.ResourceDescriptor `json:"group_name,omitempty"`
 }
 
 type PolicyViolation struct {
@@ -311,14 +311,19 @@ func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
 		Type:         ev.Type.String(),
 		Violations:   violations,
 		PolicyReference: &intoto.ResourceDescriptor{
-			Name: ev.ReferenceName,
+			Name: ev.GetPolicyReference().GetUri(),
 			Digest: map[string]string{
-				"sha256": ev.ReferenceDigest,
+				"sha256": ev.GetPolicyReference().GetDigest(),
 			},
 		},
 		SkipReasons: ev.SkipReasons,
 		Skipped:     ev.Skipped,
-		GroupName:   ev.GroupName,
+		GroupName: &intoto.ResourceDescriptor{
+			Name: ev.GetGroupReference().GetUri(),
+			Digest: map[string]string{
+				"sha256": ev.GetGroupReference().GetDigest(),
+			},
+		},
 	}
 }
 

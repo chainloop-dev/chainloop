@@ -249,7 +249,7 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 				violations := 0
 				for _, pol := range res {
 					violations += len(pol.Violations)
-					s.Equal(tc.groupName, pol.GroupName)
+					s.Equal(tc.groupName, pol.GroupReference.GetName())
 				}
 				s.Equal(tc.violations, violations)
 			}

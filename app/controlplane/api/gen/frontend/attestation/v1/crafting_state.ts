@@ -126,8 +126,12 @@ export interface PolicyEvaluation {
    * file://foo.yaml
    * chainloop://my-provider.com/foo@sha256:1234
    * NOTE: embedded policies will not have a reference
+   * Deprecated: use policy_reference instead
+   *
+   * @deprecated
    */
   referenceDigest: string;
+  /** @deprecated */
   referenceName: string;
   description: string;
   annotations: { [key: string]: string };
@@ -142,7 +146,8 @@ export interface PolicyEvaluation {
   /** Evaluation messages, intended to communicate evaluation errors (invalid input) */
   skipReasons: string[];
   /** Group this evaluated policy belongs to, if any */
-  groupName: string;
+  policyReference?: PolicyEvaluation_Reference;
+  groupReference?: PolicyEvaluation_Reference;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -158,6 +163,13 @@ export interface PolicyEvaluation_WithEntry {
 export interface PolicyEvaluation_Violation {
   subject: string;
   message: string;
+}
+
+export interface PolicyEvaluation_Reference {
+  name: string;
+  digest: string;
+  uri: string;
+  orgName: string;
 }
 
 export interface Commit {
@@ -1323,7 +1335,8 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     type: 0,
     skipped: false,
     skipReasons: [],
-    groupName: "",
+    policyReference: undefined,
+    groupReference: undefined,
   };
 }
 
@@ -1368,8 +1381,11 @@ export const PolicyEvaluation = {
     for (const v of message.skipReasons) {
       writer.uint32(114).string(v!);
     }
-    if (message.groupName !== "") {
-      writer.uint32(122).string(message.groupName);
+    if (message.policyReference !== undefined) {
+      PolicyEvaluation_Reference.encode(message.policyReference, writer.uint32(122).fork()).ldelim();
+    }
+    if (message.groupReference !== undefined) {
+      PolicyEvaluation_Reference.encode(message.groupReference, writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -1483,7 +1499,14 @@ export const PolicyEvaluation = {
             break;
           }
 
-          message.groupName = reader.string();
+          message.policyReference = PolicyEvaluation_Reference.decode(reader, reader.uint32());
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.groupReference = PolicyEvaluation_Reference.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1521,7 +1544,12 @@ export const PolicyEvaluation = {
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
       skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
-      groupName: isSet(object.groupName) ? String(object.groupName) : "",
+      policyReference: isSet(object.policyReference)
+        ? PolicyEvaluation_Reference.fromJSON(object.policyReference)
+        : undefined,
+      groupReference: isSet(object.groupReference)
+        ? PolicyEvaluation_Reference.fromJSON(object.groupReference)
+        : undefined,
     };
   },
 
@@ -1562,7 +1590,12 @@ export const PolicyEvaluation = {
     } else {
       obj.skipReasons = [];
     }
-    message.groupName !== undefined && (obj.groupName = message.groupName);
+    message.policyReference !== undefined && (obj.policyReference = message.policyReference
+      ? PolicyEvaluation_Reference.toJSON(message.policyReference)
+      : undefined);
+    message.groupReference !== undefined && (obj.groupReference = message.groupReference
+      ? PolicyEvaluation_Reference.toJSON(message.groupReference)
+      : undefined);
     return obj;
   },
 
@@ -1598,7 +1631,12 @@ export const PolicyEvaluation = {
     message.type = object.type ?? 0;
     message.skipped = object.skipped ?? false;
     message.skipReasons = object.skipReasons?.map((e) => e) || [];
-    message.groupName = object.groupName ?? "";
+    message.policyReference = (object.policyReference !== undefined && object.policyReference !== null)
+      ? PolicyEvaluation_Reference.fromPartial(object.policyReference)
+      : undefined;
+    message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
+      ? PolicyEvaluation_Reference.fromPartial(object.groupReference)
+      : undefined;
     return message;
   },
 };
@@ -1810,6 +1848,103 @@ export const PolicyEvaluation_Violation = {
     const message = createBasePolicyEvaluation_Violation();
     message.subject = object.subject ?? "";
     message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyEvaluation_Reference(): PolicyEvaluation_Reference {
+  return { name: "", digest: "", uri: "", orgName: "" };
+}
+
+export const PolicyEvaluation_Reference = {
+  encode(message: PolicyEvaluation_Reference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.digest !== "") {
+      writer.uint32(18).string(message.digest);
+    }
+    if (message.uri !== "") {
+      writer.uint32(26).string(message.uri);
+    }
+    if (message.orgName !== "") {
+      writer.uint32(34).string(message.orgName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_Reference {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluation_Reference();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.uri = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.orgName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluation_Reference {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      digest: isSet(object.digest) ? String(object.digest) : "",
+      uri: isSet(object.uri) ? String(object.uri) : "",
+      orgName: isSet(object.orgName) ? String(object.orgName) : "",
+    };
+  },
+
+  toJSON(message: PolicyEvaluation_Reference): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.digest !== undefined && (obj.digest = message.digest);
+    message.uri !== undefined && (obj.uri = message.uri);
+    message.orgName !== undefined && (obj.orgName = message.orgName);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluation_Reference>, I>>(base?: I): PolicyEvaluation_Reference {
+    return PolicyEvaluation_Reference.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_Reference>, I>>(object: I): PolicyEvaluation_Reference {
+    const message = createBasePolicyEvaluation_Reference();
+    message.name = object.name ?? "";
+    message.digest = object.digest ?? "";
+    message.uri = object.uri ?? "";
+    message.orgName = object.orgName ?? "";
     return message;
   },
 };
