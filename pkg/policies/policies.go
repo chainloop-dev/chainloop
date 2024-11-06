@@ -197,7 +197,7 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 
 	// Policies without inputs in the spec
 	// TODO: Remove this in next release, once users have migrated their policies
-	if inputs == nil {
+	if len(inputs) == 0 {
 		result = args
 	}
 
