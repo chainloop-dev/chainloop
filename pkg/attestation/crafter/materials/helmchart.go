@@ -27,6 +27,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v2"
 )
@@ -36,26 +37,51 @@ const (
 	chartFileName = "Chart.yaml"
 	// chartValuesYamlFileName is the name of the values.yaml file in the helm chart
 	chartValuesYamlFileName = "values.yaml"
+	// OCI artifact type mime type
+	chartArtifactType = "application/vnd.cncf.helm.config.v1+json"
 )
 
 type HelmChartCrafter struct {
 	backend *casclient.CASBackend
 	*crafterCommon
+	// Helm Chart can be stored also as an OCI artifact
+	ociCrafter *OCIImageCrafter
 }
 
-func NewHelmChartCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend,
+func NewHelmChartCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, ociAuth authn.Keychain,
 	l *zerolog.Logger) (*HelmChartCrafter, error) {
 	if materialSchema.Type != schemaapi.CraftingSchema_Material_HELM_CHART {
 		return nil, fmt.Errorf("material type is not HELM_CHART format")
 	}
 
+	ociCrafter, err := NewOCIImageCrafter(materialSchema, ociAuth, l, WithArtifactTypeValidation(chartArtifactType))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OCI crafter: %w", err)
+	}
+
 	return &HelmChartCrafter{
 		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
+		ociCrafter:    ociCrafter,
 	}, nil
 }
 
-func (c *HelmChartCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (c *HelmChartCrafter) Craft(ctx context.Context, helmChartRef string) (*api.Attestation_Material, error) {
+	const ociProtocol = "oci://"
+
+	// if it starts with oci://, it's an OCI image
+	if strings.HasPrefix(helmChartRef, ociProtocol) {
+		c.logger.Debug().Str("name", helmChartRef).Msg("retrieving Helm Chart info from OCI registry")
+		// craft without the prefix
+		return c.ociCrafter.Craft(ctx, helmChartRef[len(ociProtocol):])
+	}
+
+	c.logger.Debug().Str("name", helmChartRef).Msg("loading from local path")
+	// otherwise, it's a local file
+	return c.craftLocalHelmChart(ctx, helmChartRef)
+}
+
+func (c *HelmChartCrafter) craftLocalHelmChart(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
 	// Open the helm chart tar file
 	f, err := os.Open(filepath)
 	if err != nil {
