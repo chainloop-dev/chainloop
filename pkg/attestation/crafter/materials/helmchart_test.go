@@ -52,7 +52,7 @@ func TestNewHelmChartCrafter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewHelmChartCrafter(tc.input, nil, nil)
+			_, err := materials.NewHelmChartCrafter(tc.input, nil, nil, nil)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -120,7 +120,7 @@ func TestHelmChartCraft(t *testing.T) {
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewHelmChartCrafter(schema, backend, &l)
+			crafter, err := materials.NewHelmChartCrafter(schema, backend, nil, &l)
 			require.NoError(t, err)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)

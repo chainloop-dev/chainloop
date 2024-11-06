@@ -176,7 +176,8 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 	}
 
 	// Set the special annotations for container images
-	if artifactType == v1.CraftingSchema_Material_CONTAINER_IMAGE {
+	// NOTE: this is in fact an OCI artifact that can be a container image or any stored OCI artifact
+	if m.GetContainerImage() != nil {
 		if tag := m.GetContainerImage().GetTag(); tag != "" {
 			annotationsM[AnnotationContainerTag] = tag
 		}

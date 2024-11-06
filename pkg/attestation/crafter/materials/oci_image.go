@@ -57,15 +57,26 @@ type containerSignatureInfo struct {
 type OCIImageCrafter struct {
 	*crafterCommon
 	keychain authn.Keychain
+	// validate the artifact type (optional)
+	artifactTypeValidation string
+}
+type OCICraftOpt func(*OCIImageCrafter)
+
+func WithArtifactTypeValidation(artifactTypeValidation string) OCICraftOpt {
+	return func(opts *OCIImageCrafter) {
+		opts.artifactTypeValidation = artifactTypeValidation
+	}
 }
 
-func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, ociAuth authn.Keychain, l *zerolog.Logger) (*OCIImageCrafter, error) {
-	if schema.Type != schemaapi.CraftingSchema_Material_CONTAINER_IMAGE {
-		return nil, fmt.Errorf("material type is not container image")
+func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, ociAuth authn.Keychain, l *zerolog.Logger, opts ...OCICraftOpt) (*OCIImageCrafter, error) {
+	craftCommon := &crafterCommon{logger: l, input: schema}
+	c := &OCIImageCrafter{crafterCommon: craftCommon, keychain: ociAuth}
+
+	for _, opt := range opts {
+		opt(c)
 	}
 
-	craftCommon := &crafterCommon{logger: l, input: schema}
-	return &OCIImageCrafter{craftCommon, ociAuth}, nil
+	return c, nil
 }
 
 func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attestation_Material, error) {
@@ -79,6 +90,13 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	descriptor, err := remote.Get(ref, remote.WithAuthFromKeychain(i.keychain))
 	if err != nil {
 		return nil, err
+	}
+
+	if i.artifactTypeValidation != "" {
+		i.logger.Debug().Str("name", imageRef).Str("want", i.artifactTypeValidation).Msg("validating artifact type")
+		if descriptor.ArtifactType != i.artifactTypeValidation {
+			return nil, fmt.Errorf("artifact type %s does not match expected type %s", descriptor.ArtifactType, i.artifactTypeValidation)
+		}
 	}
 
 	remoteRef := ref.Context().Digest(descriptor.Digest.String())

@@ -7,9 +7,9 @@ metadata:
     category: test
 spec:
   inputs:
-    - name: username
+    - name: user_name
       required: true
-    - name: domain
+    - name: domainName
       required: false
       default: "chainloop.dev"
   policies:
@@ -19,5 +19,5 @@ spec:
         policies:
           - ref: file://testdata/policy_with_inputs.yaml
             with:
-              email: "{{inputs.username}}@{{inputs.domain}}"
+              email: "{{inputs.user_name}}@{{inputs.domainName}}"
 
