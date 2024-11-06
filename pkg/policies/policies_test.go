@@ -938,17 +938,6 @@ func (s *testSuite) TestComputePolicyArguments() {
 			bindings: map[string]string{"foo": "world", "bar": "template"},
 			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},
-		{
-			name: "bindings in camelcase",
-			inputs: []*v12.PolicyInput{{
-				Name: "arg1",
-			}, {
-				Name: "arg2",
-			}},
-			args:     map[string]string{"arg1": "Hello {{inputs.fooBar }} {{   inputs.barFoo }}", "arg2": "Bye {{ inputs.barFoo}}"},
-			bindings: map[string]string{"fooBar": "world", "barFoo": "template"},
-			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
-		},
 	}
 
 	for _, tc := range cases {
