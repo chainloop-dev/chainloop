@@ -210,7 +210,7 @@ func hBool(b bool) string {
 // Version information to be shown during the attestation process
 // both during the process and at the end
 func versionStringAttestation(p *action.ProjectVersion, isPushed bool) string {
-	if p.Version == "" {
+	if p == nil || p.Version == "" {
 		return ""
 	}
 
