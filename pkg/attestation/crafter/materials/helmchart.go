@@ -37,6 +37,8 @@ const (
 	chartFileName = "Chart.yaml"
 	// chartValuesYamlFileName is the name of the values.yaml file in the helm chart
 	chartValuesYamlFileName = "values.yaml"
+	// OCI artifact type mime type
+	chartArtifactType = "application/vnd.cncf.helm.config.v1+json"
 )
 
 type HelmChartCrafter struct {
@@ -51,9 +53,8 @@ func NewHelmChartCrafter(materialSchema *schemaapi.CraftingSchema_Material, back
 	if materialSchema.Type != schemaapi.CraftingSchema_Material_HELM_CHART {
 		return nil, fmt.Errorf("material type is not HELM_CHART format")
 	}
-	const artifactType = "application/vnd.cncf.helm.config.v1+json"
 
-	ociCrafter, err := NewOCIImageCrafter(materialSchema, ociAuth, l, WithArtifactTypeValidation(artifactType))
+	ociCrafter, err := NewOCIImageCrafter(materialSchema, ociAuth, l, WithArtifactTypeValidation(chartArtifactType))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OCI crafter: %w", err)
 	}
