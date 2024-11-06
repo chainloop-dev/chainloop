@@ -128,7 +128,9 @@ There are two ways to attach a policy to a contract:
 In the example above, we can see that, when referenced by the `embedded` attribute (1), a full policy can be embedded in the contract.
 
 ### Policy arguments
-Policies may accept arguments to customize its behaviour. For example, this policy matches a "quality" score against a "threshold" argument:
+Policies may accept arguments to customize its behaviour. If defined, the `inputs` section, will be used by Chainloop to know with inputs arguments are supported by the policy
+
+For example, this policy matches a "quality" score against a "threshold" argument:
 ```yaml
 # quality.yaml
 apiVersion: workflowcontract.chainloop.dev/v1
@@ -139,27 +141,34 @@ metadata:
   annotations:
     category: sbom
 spec:
-  type: SBOM_CYCLONEDX_JSON
-  embedded: |
-    package main
+  inputs: #(1)
+    - name: threshold
+      description: quality threshold
+      required: true
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
 
-    import rego.v1
+        import rego.v1
 
-    result := {
-      "skipped": false,
-      "violations": violations,
-    }
+        result := {
+          "skipped": false,
+          "violations": violations,
+        }
 
-    default threshold := 5
-    threshold := to_number(input.args.threshold) # (1)
+        default threshold := 5
+        threshold := to_number(input.args.threshold) # (2)
 
-    violations contains msg if {
-      input.score < threshold
-      msg := sprintf("quality threshold not met %d < %d", [input.score, threshold])
-    }
+        violations contains msg if {
+          input.score < threshold
+          msg := sprintf("quality threshold not met %d < %d", [input.score, threshold])
+        }
 ```
+* (1) the `input` section tells Chainloop which parameters should be expected. If missing, the argument will be ignored (an no value will be passed to the policy)
+* (2) input parametes are available in the `input.args` rego input field.
 
-It can be instantiated with a custom `threshold` parameter, by adding a `with` property in the policy attachment in the contract:
+The above example can be instantiated with a custom `threshold` parameter, by adding a `with` property in the policy attachment in the contract:
 ```yaml
 policies:
   materials:
