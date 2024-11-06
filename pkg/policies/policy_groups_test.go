@@ -264,17 +264,17 @@ func (s *groupsTestSuite) TestGroupInputs() {
 	}{
 		{
 			name:   "group inputs with interpolation, default values",
-			args:   map[string]string{"username": "devel"},
+			args:   map[string]string{"user_name": "devel"},
 			wanted: "the email is: devel@chainloop.dev",
 		},
 		{
 			name:    "missing username input",
 			wantErr: true,
-			errMsg:  "missing required input \"username\"",
+			errMsg:  "missing required input \"user_name\"",
 		},
 		{
 			name:   "group inputs with interpolation, all values",
-			args:   map[string]string{"username": "foo", "domain": "bar.com"},
+			args:   map[string]string{"user_name": "foo", "domainName": "bar.com"},
 			wanted: "the email is: foo@bar.com",
 		},
 	}
