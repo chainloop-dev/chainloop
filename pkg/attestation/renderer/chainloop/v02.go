@@ -59,7 +59,7 @@ type PolicyEvaluation struct {
 	Type            string                     `json:"type"`
 	Skipped         bool                       `json:"skipped"`
 	SkipReasons     []string                   `json:"skip_reasons,omitempty"`
-	GroupReference  *intoto.ResourceDescriptor `json:"group_name,omitempty"`
+	GroupReference  *intoto.ResourceDescriptor `json:"group_reference,omitempty"`
 }
 
 type PolicyViolation struct {
@@ -159,7 +159,11 @@ func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEva
 	}
 	attEvaluations := make([]*PolicyEvaluation, 0, len(policyResults))
 	for _, ev := range policyResults {
-		attEvaluations = append(attEvaluations, renderEvaluation(ev))
+		renderedEv, err := renderEvaluation(ev)
+		if err != nil {
+			return fmt.Errorf("rendering evaluation: %w", err)
+		}
+		attEvaluations = append(attEvaluations, renderedEv)
 	}
 	p.PolicyEvaluations[AttPolicyEvaluation] = attEvaluations
 
@@ -257,7 +261,10 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)
 	}
 
-	policies := policyEvaluationsFromMaterials(r.att)
+	policies, err := policyEvaluationsFromMaterials(r.att)
+	if err != nil {
+		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
+	}
 
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
@@ -282,16 +289,20 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 }
 
 // collect all policy evaluations grouped by material
-func policyEvaluationsFromMaterials(att *v1.Attestation) map[string][]*PolicyEvaluation {
+func policyEvaluationsFromMaterials(att *v1.Attestation) (map[string][]*PolicyEvaluation, error) {
 	result := map[string][]*PolicyEvaluation{}
 	for _, p := range att.GetPolicyEvaluations() {
-		result[p.MaterialName] = append(result[p.MaterialName], renderEvaluation(p))
+		ev, err := renderEvaluation(p)
+		if err != nil {
+			return nil, err
+		}
+		result[p.MaterialName] = append(result[p.MaterialName], ev)
 	}
 
-	return result
+	return result, nil
 }
 
-func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
+func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
 	// Map violations
 	violations := make([]*PolicyViolation, 0)
 	for _, vi := range ev.Violations {
@@ -300,31 +311,52 @@ func renderEvaluation(ev *v1.PolicyEvaluation) *PolicyEvaluation {
 			Message: vi.Message,
 		})
 	}
-	return &PolicyEvaluation{
-		Name:         ev.Name,
-		MaterialName: ev.MaterialName,
-		Body:         ev.Body,
-		Sources:      ev.Sources,
-		Annotations:  ev.Annotations,
-		Description:  ev.Description,
-		With:         ev.With,
-		Type:         ev.Type.String(),
-		Violations:   violations,
-		PolicyReference: &intoto.ResourceDescriptor{
-			Name: ev.GetPolicyReference().GetUri(),
-			Digest: map[string]string{
-				"sha256": ev.GetPolicyReference().GetDigest(),
-			},
-		},
-		SkipReasons: ev.SkipReasons,
-		Skipped:     ev.Skipped,
-		GroupReference: &intoto.ResourceDescriptor{
-			Name: ev.GetGroupReference().GetUri(),
-			Digest: map[string]string{
-				"sha256": ev.GetGroupReference().GetDigest(),
-			},
-		},
+
+	policyRef, err := renderReference(ev.GetPolicyReference())
+	if err != nil {
+		return nil, err
 	}
+
+	groupRef, err := renderReference(ev.GetGroupReference())
+	if err != nil {
+		return nil, err
+	}
+
+	return &PolicyEvaluation{
+		Name:            ev.Name,
+		MaterialName:    ev.MaterialName,
+		Body:            ev.Body,
+		Sources:         ev.Sources,
+		Annotations:     ev.Annotations,
+		Description:     ev.Description,
+		With:            ev.With,
+		Type:            ev.Type.String(),
+		Violations:      violations,
+		PolicyReference: policyRef,
+		SkipReasons:     ev.SkipReasons,
+		Skipped:         ev.Skipped,
+		GroupReference:  groupRef,
+	}, nil
+}
+
+func renderReference(ref *v1.PolicyEvaluation_Reference) (*intoto.ResourceDescriptor, error) {
+	// skip empty references
+	if ref == nil {
+		return nil, nil
+	}
+	// intentionally ignore this error, and skip the annotations instead
+	annotations, err := structpb.NewStruct(map[string]interface{}{"name": ref.GetName(), "organization": ref.GetOrgName()})
+	if err != nil {
+		return nil, err
+	}
+	return &intoto.ResourceDescriptor{
+		Name: ref.GetName(),
+		Uri:  ref.GetUri(),
+		Digest: map[string]string{
+			"sha256": strings.TrimPrefix(ref.GetDigest(), "sha256:"),
+		},
+		Annotations: annotations,
+	}, nil
 }
 
 func outputMaterials(att *v1.Attestation, onlyOutput bool) ([]*intoto.ResourceDescriptor, error) {
