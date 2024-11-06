@@ -26,6 +26,7 @@ func TestVersionStringAttestation(t *testing.T) {
 		name     string
 		version  *action.ProjectVersion
 		expected string
+		pushed   bool
 	}{
 		{
 			name: "empty version",
@@ -41,7 +42,7 @@ func TestVersionStringAttestation(t *testing.T) {
 				Prerelease:     true,
 				MarkAsReleased: true,
 			},
-			expected: "1.0.0 (will release)",
+			expected: "1.0.0 (will be released)",
 		},
 		{
 			name: "already released version",
@@ -49,7 +50,7 @@ func TestVersionStringAttestation(t *testing.T) {
 				Version:    "1.0.0",
 				Prerelease: false,
 			},
-			expected: "1.0.0 (released)",
+			expected: "1.0.0 (already released)",
 		},
 		{
 			name: "prerelease version",
@@ -68,11 +69,42 @@ func TestVersionStringAttestation(t *testing.T) {
 			},
 			expected: "2.0.0-beta (prerelease)",
 		},
+		// Pushed state
+		{
+			name: "pushed - prerelease version",
+			version: &action.ProjectVersion{
+				Version:        "1.0.0-rc1",
+				Prerelease:     true,
+				MarkAsReleased: false,
+			},
+			pushed:   true,
+			expected: "1.0.0-rc1 (prerelease)",
+		},
+		{
+			name: "pushed - released version",
+			version: &action.ProjectVersion{
+				Version:        "1.0.0",
+				Prerelease:     false,
+				MarkAsReleased: true,
+			},
+			pushed:   true,
+			expected: "1.0.0",
+		},
+		{
+			name: "pushed - prerelease marked as released",
+			version: &action.ProjectVersion{
+				Version:        "2.0.0-beta",
+				Prerelease:     true,
+				MarkAsReleased: true,
+			},
+			pushed:   true,
+			expected: "2.0.0-beta",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := versionStringAttestation(tc.version)
+			result := versionStringAttestation(tc.version, tc.pushed)
 			assert.Equal(t, tc.expected, result)
 		})
 	}

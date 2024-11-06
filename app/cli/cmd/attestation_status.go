@@ -84,7 +84,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	gt.AppendRow(table.Row{"Organization", meta.Organization})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Project", meta.Project})
-	projectVersion := versionStringAttestation(meta.ProjectVersion)
+	projectVersion := versionStringAttestation(meta.ProjectVersion, status.IsPushed)
 	if projectVersion == "" {
 		projectVersion = "none"
 	}
@@ -208,20 +208,51 @@ func hBool(b bool) string {
 }
 
 // Version information to be shown during the attestation process
-func versionStringAttestation(p *action.ProjectVersion) string {
+// both during the process and at the end
+func versionStringAttestation(p *action.ProjectVersion, isPushed bool) string {
 	if p.Version == "" {
 		return ""
 	}
 
-	// We are releasing a pre-release at the end of the attestation
-	if p.MarkAsReleased && p.Prerelease {
-		return fmt.Sprintf("%s (will release)", p.Version)
+	if isPushed {
+		return versionStringAttFinal(p)
 	}
 
-	// The version loaded is a already released version
+	return versionStringAttTransient(p)
+}
+
+// Transient state
+// It's a prerelease that will be released
+// It's an already released version
+// It's a pre-release that will not be released
+
+func versionStringAttTransient(p *action.ProjectVersion) string {
+	if p == nil {
+		return ""
+	}
+
+	if p.Prerelease && p.MarkAsReleased {
+		return fmt.Sprintf("%s (will be released)", p.Version)
+	}
+
 	if !p.Prerelease {
-		return fmt.Sprintf("%s (released)", p.Version)
+		return fmt.Sprintf("%s (already released)", p.Version)
 	}
 
 	return fmt.Sprintf("%s (prerelease)", p.Version)
+}
+
+// Final state
+// The pre-release is still a pre-release
+// The pre-release is released
+func versionStringAttFinal(p *action.ProjectVersion) string {
+	if p == nil {
+		return ""
+	}
+
+	if p.Prerelease && !p.MarkAsReleased {
+		return fmt.Sprintf("%s (prerelease)", p.Version)
+	}
+
+	return p.Version
 }

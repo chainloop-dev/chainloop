@@ -28,14 +28,14 @@ import (
 type AttestationStatusOpts struct {
 	*ActionsOpts
 	UseAttestationRemoteState bool
-	SkipReleaseInfo           bool
+	isPushed                  bool
 }
 
 type AttestationStatus struct {
 	*ActionsOpts
 	c *crafter.Crafter
 	// Do not show information about the project version release status
-	skipReleaseInfo bool
+	isPushed bool
 }
 
 type AttestationStatusResult struct {
@@ -47,6 +47,7 @@ type AttestationStatusResult struct {
 	RunnerContext *AttestationResultRunnerContext   `json:"runnerContext"`
 	DryRun        bool                              `json:"dryRun"`
 	Annotations   []*Annotation                     `json:"annotations"`
+	IsPushed      bool                              `json:"isPushed"`
 }
 
 type AttestationResultRunnerContext struct {
@@ -71,9 +72,9 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 	}
 
 	return &AttestationStatus{
-		ActionsOpts:     cfg.ActionsOpts,
-		c:               c,
-		skipReleaseInfo: cfg.SkipReleaseInfo,
+		ActionsOpts: cfg.ActionsOpts,
+		c:           c,
+		isPushed:    cfg.isPushed,
 	}, nil
 }
 
@@ -104,17 +105,15 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
 			ProjectVersion: &ProjectVersion{
-				Version: workflowMeta.GetVersion().GetVersion(),
+				Version:        workflowMeta.GetVersion().GetVersion(),
+				Prerelease:     workflowMeta.Version.Prerelease,
+				MarkAsReleased: workflowMeta.Version.MarkAsReleased,
 			},
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:        c.CraftingState.DryRun,
 		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
-	}
-
-	if !action.skipReleaseInfo {
-		res.WorkflowMeta.ProjectVersion.Prerelease = workflowMeta.Version.Prerelease
-		res.WorkflowMeta.ProjectVersion.MarkAsReleased = workflowMeta.Version.MarkAsReleased
+		IsPushed:      action.isPushed,
 	}
 
 	// Let's perform the following steps in order to show all possible materials:
