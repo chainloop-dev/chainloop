@@ -104,16 +104,19 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Project:          workflowMeta.GetProject(),
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
-			ProjectVersion: &ProjectVersion{
-				Version:        workflowMeta.GetVersion().GetVersion(),
-				Prerelease:     workflowMeta.Version.Prerelease,
-				MarkAsReleased: workflowMeta.Version.MarkAsReleased,
-			},
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:        c.CraftingState.DryRun,
 		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
 		IsPushed:      action.isPushed,
+	}
+
+	if v := workflowMeta.GetVersion(); v != nil {
+		res.WorkflowMeta.ProjectVersion = &ProjectVersion{
+			Version:        v.GetVersion(),
+			Prerelease:     v.GetPrerelease(),
+			MarkAsReleased: v.GetMarkAsReleased(),
+		}
 	}
 
 	// Let's perform the following steps in order to show all possible materials:
