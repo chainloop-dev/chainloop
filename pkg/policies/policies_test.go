@@ -883,7 +883,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}},
-			args:     map[string]string{"arg1": "Hello {{ .foo }}"},
+			args:     map[string]string{"arg1": "Hello {{ .inputs.foo }}"},
 			bindings: map[string]string{"foo": "world"},
 			expected: map[string]string{"arg1": "Hello world"},
 		},
@@ -894,18 +894,18 @@ func (s *testSuite) TestComputePolicyArguments() {
 			}, {
 				Name: "arg2",
 			}},
-			args:     map[string]string{"arg1": "Hello {{ .foo }} {{ .bar }}", "arg2": "Bye {{ .bar }}"},
+			args:     map[string]string{"arg1": "Hello {{ .inputs.foo }} {{ .inputs.bar }}", "arg2": "Bye {{ .inputs.bar }}"},
 			bindings: map[string]string{"foo": "world", "bar": "template"},
 			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},
 		{
-			name: "no variable found in bindings",
+			name: "no variable found in bindings, renders zero value",
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}},
-			args:     map[string]string{"arg1": "Hello {{ .foo }}"},
+			args:     map[string]string{"arg1": "Hello {{ .inputs.foo }}"},
 			bindings: map[string]string{"bar": "world"},
-			expected: map[string]string{"arg1": "Hello <no value>"},
+			expected: map[string]string{"arg1": "Hello "},
 		},
 		{
 			name: "no interpolation needed",
@@ -915,6 +915,28 @@ func (s *testSuite) TestComputePolicyArguments() {
 			args:     map[string]string{"arg1": "Hello world"},
 			bindings: map[string]string{"foo": "bar"},
 			expected: map[string]string{"arg1": "Hello world"},
+		},
+		{
+			name: "required and default is illegal",
+			inputs: []*v12.PolicyInput{{
+				Name:     "arg1",
+				Required: true,
+				Default:  "foo",
+			}},
+			args:      map[string]string{"arg1": "Hello world"},
+			expectErr: true,
+			errMsg:    "required input arg1 with a default value is illegal",
+		},
+		{
+			name: "inputs prefix without dot",
+			inputs: []*v12.PolicyInput{{
+				Name: "arg1",
+			}, {
+				Name: "arg2",
+			}},
+			args:     map[string]string{"arg1": "Hello {{ inputs.foo }} {{ inputs.bar }}", "arg2": "Bye {{ inputs.bar }}"},
+			bindings: map[string]string{"foo": "world", "bar": "template"},
+			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},
 	}
 

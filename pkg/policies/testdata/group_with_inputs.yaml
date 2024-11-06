@@ -19,5 +19,5 @@ spec:
         policies:
           - ref: file://testdata/policy_with_inputs.yaml
             with:
-              email: "{{ .username }}@{{ .domain }}"
+              email: "{{inputs.username}}@{{inputs.domain}}"
 

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"text/template"
@@ -39,6 +40,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
+
+var inputsPrefixRegexp = regexp.MustCompile(`{{\s?(inputs.)`)
 
 type PolicyError struct {
 	err error
@@ -203,6 +206,10 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 
 	// Check for required inputs
 	for _, input := range inputs {
+		// Illegal combination
+		if input.Required && input.Default != "" {
+			return nil, fmt.Errorf("required input %s with a default value is illegal", input.Name)
+		}
 		if _, ok := args[input.Name]; !ok {
 			if input.Required {
 				return nil, fmt.Errorf("missing required input %q", input.Name)
@@ -243,12 +250,19 @@ func applyBinding(input string, bindings map[string]string) (string, error) {
 		return input, nil
 	}
 
-	tmpl, err := template.New("chainloop").Parse(input)
+	// Support both `.inputs.foo` and `inputs.foo`
+	input = inputsPrefixRegexp.ReplaceAllString(input, "{{ .inputs.")
+
+	tmpl, err := template.New("chainloop").Option("missingkey=zero").Parse(input)
 	if err != nil {
 		return "", err
 	}
+
+	// Only support placeholders that are prefixed with "inputs.", ex `{{ inputs.foo }}
+	namespacedBinding := map[string]any{"inputs": bindings}
+
 	buffer := new(bytes.Buffer)
-	err = tmpl.Execute(buffer, bindings)
+	err = tmpl.Execute(buffer, namespacedBinding)
 	if err != nil {
 		return "", err
 	}
