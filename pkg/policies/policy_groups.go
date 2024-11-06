@@ -48,26 +48,48 @@ func NewPolicyGroupVerifier(schema *v1.CraftingSchema, client v13.AttestationSer
 func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *api.Attestation_Material, path string) ([]*api.PolicyEvaluation, error) {
 	result := make([]*api.PolicyEvaluation, 0)
 
-	attachments, err := pgv.requiredPoliciesForMaterial(ctx, material)
-	if err != nil {
-		return nil, NewPolicyError(err)
-	}
+	groupAtts := pgv.schema.GetPolicyGroups()
 
-	for _, attachment := range attachments {
-		// Load material content
-		subject, err := material.GetEvaluableContent(path)
+	for _, groupAtt := range groupAtts {
+		// 1. load the policy group
+		group, _, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
+			Client: pgv.client,
+			Logger: pgv.logger,
+		})
+		if err != nil {
+			// Temporarily skip if policy groups still use old schema
+			// TODO: remove this check in next release
+			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
+			return result, nil
+		}
+
+		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetID()},
-		)
+		// compute group arguments
+		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		result = append(result, ev)
+		for _, policyAtt := range policyAtts {
+			// Load material content
+			subject, err := material.GetEvaluableContent(path)
+			if err != nil {
+				return nil, NewPolicyError(err)
+			}
+
+			ev, err := pgv.evaluatePolicyAttachment(ctx, policyAtt, subject,
+				&evalOpts{kind: material.MaterialType, name: material.GetID(), bindings: groupArgs},
+			)
+			if err != nil {
+				return nil, NewPolicyError(err)
+			}
+
+			result = append(result, ev)
+		}
 	}
 
 	return result, nil
@@ -87,6 +109,11 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
 			continue
 		}
+		// compute group arguments
+		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
 			material, err := protojson.Marshal(statement)
 			if err != nil {
@@ -94,7 +121,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			}
 
 			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
-				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION},
+				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
 			)
 			if err != nil {
 				return nil, NewPolicyError(err)
@@ -159,40 +186,25 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	return loader, nil
 }
 
-func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material) ([]*v1.PolicyAttachment, error) {
+// Gets the policies that can be applied to a material within a group
+func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 
-	attachments := pgv.schema.GetPolicyGroups()
-
-	for _, attachment := range attachments {
-		// 1. load the policy group
-		group, _, err := LoadPolicyGroup(ctx, attachment, &LoadPolicyGroupOptions{
-			Client: pgv.client,
-			Logger: pgv.logger,
-		})
-		if err != nil {
-			// Temporarily skip if policy groups still use old schema
-			// TODO: remove this check in next release
-			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", attachment.GetRef())
+	// 2. go through all materials in the group and look for the crafted material
+	for _, schemaMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		if schemaMaterial.GetName() != material.GetID() {
 			continue
 		}
 
-		// 2. go through all materials in the group and look for the crafted material
-		for _, schemaMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-			if schemaMaterial.GetName() != material.GetID() {
-				continue
+		// 3. Material found. Let's check its policies
+		for _, policyAtt := range schemaMaterial.GetPolicies() {
+			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
+			if err != nil {
+				return nil, err
 			}
 
-			// 3. Material found. Let's check its policies
-			for _, policyAtt := range schemaMaterial.GetPolicies() {
-				apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
-				if err != nil {
-					return nil, err
-				}
-
-				if apply {
-					result = append(result, policyAtt)
-				}
+			if apply {
+				result = append(result, policyAtt)
 			}
 		}
 	}

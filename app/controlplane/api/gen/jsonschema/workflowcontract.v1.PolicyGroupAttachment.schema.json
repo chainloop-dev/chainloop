@@ -7,6 +7,16 @@
     "ref": {
       "description": "Group reference, it might be an URL or a provider reference",
       "type": "string"
+    },
+    "with": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "group arguments",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
     }
   },
   "title": "Policy Group Attachment",

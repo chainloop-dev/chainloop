@@ -151,7 +151,11 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 			}
 
 			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
-			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material)
+			group, _, err := new(FileGroupLoader).Load(context.TODO(), &v1.PolicyGroupAttachment{
+				Ref: tc.schemaRef,
+			})
+			s.Require().NoError(err)
+			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group)
 			s.Require().NoError(err)
 			s.Len(atts, tc.expected)
 		})
@@ -204,7 +208,7 @@ func (s *groupsTestSuite) TestGroupLoader() {
 	}
 }
 
-func (s *groupsTestSuite) TestVerifyAttestations() {
+func (s *groupsTestSuite) TestVerifyStatement() {
 	cases := []struct {
 		name       string
 		schema     *v1.CraftingSchema
@@ -246,6 +250,62 @@ func (s *groupsTestSuite) TestVerifyAttestations() {
 				}
 				s.Equal(tc.violations, violations)
 			}
+		})
+	}
+}
+
+func (s *groupsTestSuite) TestGroupInputs() {
+	cases := []struct {
+		name    string
+		args    map[string]string
+		wanted  string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:   "group inputs with interpolation, default values",
+			args:   map[string]string{"username": "devel"},
+			wanted: "the email is: devel@chainloop.dev",
+		},
+		{
+			name:    "missing username input",
+			wantErr: true,
+			errMsg:  "missing required input \"username\"",
+		},
+		{
+			name:   "group inputs with interpolation, all values",
+			args:   map[string]string{"username": "foo", "domain": "bar.com"},
+			wanted: "the email is: foo@bar.com",
+		},
+	}
+
+	for _, tc := range cases {
+		schema := &v1.CraftingSchema{
+			PolicyGroups: []*v1.PolicyGroupAttachment{
+				{
+					Ref:  "file://testdata/group_with_inputs.yaml",
+					With: tc.args,
+				},
+			},
+		}
+		material := &api.Attestation_Material{
+			M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{Id: "sbom",
+				Content: []byte(`{}`), // content not validated in this context
+			}},
+			MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+			InlineCas:    true,
+		}
+		s.Run(tc.name, func() {
+			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
+			evs, err := v.VerifyMaterial(context.TODO(), material, "")
+			if tc.wantErr {
+				s.Error(err)
+				s.Contains(err.Error(), tc.errMsg)
+				return
+			}
+			s.Require().NoError(err)
+			s.Len(evs, 1)
+			s.Equal(tc.wanted, evs[0].SkipReasons[0])
 		})
 	}
 }

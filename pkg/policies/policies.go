@@ -16,13 +16,16 @@
 package policies
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
+	"text/template"
 
 	"github.com/bufbuild/protovalidate-go"
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -37,6 +40,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
+
+var inputsPrefixRegexp = regexp.MustCompile(`{{\s*(inputs.)`)
 
 type PolicyError struct {
 	err error
@@ -103,10 +108,12 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 type evalOpts struct {
 	name string
 	kind v1.CraftingSchema_Material_MaterialType
+	// Argument bindings for policy evaluations
+	bindings map[string]string
 }
 
 func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
-	// 1. load the policy policy
+	// load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
 	if err != nil {
 		return nil, NewPolicyError(err)
@@ -131,12 +138,17 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
+	args, err := pv.computeArguments(policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings)
+	if err != nil {
+		return nil, NewPolicyError(err)
+	}
+
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
 	skipped := true
 	reasons := make([]string, 0)
 	for _, script := range scripts {
-		r, err := pv.executeScript(ctx, policy, script, material, attachment)
+		r, err := pv.executeScript(ctx, policy, script, material, args)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -183,6 +195,81 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}, nil
 }
 
+func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[string]string, bindings map[string]string) (map[string]string, error) {
+	result := make(map[string]string)
+
+	// Policies without inputs in the spec
+	// TODO: Remove this in next release, once users have migrated their policies
+	if len(inputs) == 0 {
+		result = args
+	}
+
+	// Check for required inputs
+	for _, input := range inputs {
+		// Illegal combination
+		if input.Required && input.Default != "" {
+			return nil, fmt.Errorf("input %s can not be required and have a default at the same time", input.Name)
+		}
+		if _, ok := args[input.Name]; !ok {
+			if input.Required {
+				return nil, fmt.Errorf("missing required input %q", input.Name)
+			}
+			// if not required, and it has a default value, let's use it
+			if args[input.Name] == "" && input.Default != "" {
+				value, err := applyBinding(input.Default, bindings)
+				if err != nil {
+					return nil, err
+				}
+				result[input.Name] = value
+			}
+		}
+	}
+
+	// check for provided arguments
+	for k, v := range args {
+		expected := slices.ContainsFunc(inputs, func(input *v1.PolicyInput) bool {
+			return input.Name == k
+		})
+		if !expected {
+			pv.logger.Warn().Msgf("argument %q will be ignored", k)
+			continue
+		}
+		value, err := applyBinding(v, bindings)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = value
+	}
+
+	return result, nil
+}
+
+// renders an input template using bindings in Go templating format
+func applyBinding(input string, bindings map[string]string) (string, error) {
+	if bindings == nil {
+		return input, nil
+	}
+
+	// Support both `.inputs.foo` and `inputs.foo`
+	input = inputsPrefixRegexp.ReplaceAllString(input, "{{ .inputs.")
+
+	tmpl, err := template.New("chainloop").Option("missingkey=zero").Parse(input)
+	if err != nil {
+		return "", err
+	}
+
+	// Only support placeholders that are prefixed with "inputs.", ex `{{ inputs.foo }}
+	namespacedBinding := map[string]any{"inputs": bindings}
+
+	buffer := new(bytes.Buffer)
+	err = tmpl.Execute(buffer, namespacedBinding)
+	if err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
+}
+
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
 func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
@@ -204,10 +291,10 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, att *v1.PolicyAttachment) (*engine.EvaluationResult, error) {
+func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
 	// verify the policy
 	ng := getPolicyEngine(policy)
-	res, err := ng.Verify(ctx, script, material, getInputArguments(att.GetWith()))
+	res, err := ng.Verify(ctx, script, material, getInputArguments(args))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute policy : %w", err)
 	}
@@ -280,6 +367,7 @@ func validateResource(m proto.Message) error {
 	return nil
 }
 
+// transforms input arguments for policy consumption
 func getInputArguments(inputs map[string]string) map[string]any {
 	args := make(map[string]any)
 

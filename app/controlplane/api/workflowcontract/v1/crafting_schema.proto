@@ -225,11 +225,28 @@ message PolicySpec {
 
   repeated PolicySpecV2 policies = 4;
 
+  // Describe the supported inputs
+  repeated PolicyInput inputs = 5;
+
   option (buf.validate.message).cel = {
     id: "policyspec"
     message: "either spec source or policies fields must be provided"
     expression: "has(this.path) || has(this.embedded) || size(this.policies) > 0"
   };
+}
+
+message PolicyInput {
+  string name = 1 [(buf.validate.field) = {
+    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+    cel: {
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
+  }];
+  string description = 2;
+  bool required = 3;
+  string default = 4;
 }
 
 message PolicySpecV2 {
@@ -260,6 +277,8 @@ message PolicySpecV2 {
 message PolicyGroupAttachment {
   // Group reference, it might be an URL or a provider reference
   string ref = 1 [(buf.validate.field).string.min_len = 1];
+  // group arguments
+  map<string, string> with = 2;
 }
 
 // Represents a group or policies
@@ -272,6 +291,7 @@ message PolicyGroup {
 
   message PolicyGroupSpec {
     PolicyGroupPolicies policies = 1;
+    repeated PolicyInput inputs = 2;
   }
 
   message PolicyGroupPolicies {
