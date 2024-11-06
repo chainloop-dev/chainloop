@@ -214,10 +214,10 @@ metadata:
     category: SBOM
 spec:
   inputs:
-    - name: bannedlicenses
+    - name: bannedLicenses
       description: comma separated list of licenses to ban
       required: true
-    - name: bannedcomponents
+    - name: bannedComponents
       description: comma separated list of components to ban
       required: true
   policies:
@@ -227,10 +227,10 @@ spec:
         policies:
         - ref: sbom-banned-licenses
           with:
-            licenses: {{ inputs.bannedlicenses }}
+            licenses: {{ inputs.bannedLicenses }}
         - ref: sbom-banned-components
           with:
-            components: {{ inputs.bannedcomponents }}
+            components: {{ inputs.bannedComponents }}
 ```
 
 ### Using Policy Groups
