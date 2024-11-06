@@ -88,6 +88,8 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 				return nil, NewPolicyError(err)
 			}
 
+			// Assign group name to this evaluation
+			ev.GroupName = group.GetMetadata().GetName()
 			result = append(result, ev)
 		}
 	}
@@ -126,6 +128,9 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			if err != nil {
 				return nil, NewPolicyError(err)
 			}
+
+			// Assign group name to this evaluation
+			ev.GroupName = group.GetMetadata().GetName()
 
 			result = append(result, ev)
 		}

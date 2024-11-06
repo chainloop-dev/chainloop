@@ -146,6 +146,9 @@ message PolicyEvaluation {
   // Evaluation messages, intended to communicate evaluation errors (invalid input)
   repeated string skip_reasons = 14;
 
+  // Group this evaluated policy belongs to, if any
+  string group_name = 15;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];

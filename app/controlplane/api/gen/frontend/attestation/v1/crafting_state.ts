@@ -141,6 +141,8 @@ export interface PolicyEvaluation {
   skipped: boolean;
   /** Evaluation messages, intended to communicate evaluation errors (invalid input) */
   skipReasons: string[];
+  /** Group this evaluated policy belongs to, if any */
+  groupName: string;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1321,6 +1323,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     type: 0,
     skipped: false,
     skipReasons: [],
+    groupName: "",
   };
 }
 
@@ -1364,6 +1367,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.skipReasons) {
       writer.uint32(114).string(v!);
+    }
+    if (message.groupName !== "") {
+      writer.uint32(122).string(message.groupName);
     }
     return writer;
   },
@@ -1472,6 +1478,13 @@ export const PolicyEvaluation = {
 
           message.skipReasons.push(reader.string());
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.groupName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1508,6 +1521,7 @@ export const PolicyEvaluation = {
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
       skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
+      groupName: isSet(object.groupName) ? String(object.groupName) : "",
     };
   },
 
@@ -1548,6 +1562,7 @@ export const PolicyEvaluation = {
     } else {
       obj.skipReasons = [];
     }
+    message.groupName !== undefined && (obj.groupName = message.groupName);
     return obj;
   },
 
@@ -1583,6 +1598,7 @@ export const PolicyEvaluation = {
     message.type = object.type ?? 0;
     message.skipped = object.skipped ?? false;
     message.skipReasons = object.skipReasons?.map((e) => e) || [];
+    message.groupName = object.groupName ?? "";
     return message;
   },
 };
