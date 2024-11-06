@@ -208,7 +208,7 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 	for _, input := range inputs {
 		// Illegal combination
 		if input.Required && input.Default != "" {
-			return nil, fmt.Errorf("required input %s with a default value is illegal", input.Name)
+			return nil, fmt.Errorf("input %s can not be required and have a default at the same time", input.Name)
 		}
 		if _, ok := args[input.Name]; !ok {
 			if input.Required {

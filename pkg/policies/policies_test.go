@@ -925,7 +925,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 			}},
 			args:      map[string]string{"arg1": "Hello world"},
 			expectErr: true,
-			errMsg:    "required input arg1 with a default value is illegal",
+			errMsg:    "input arg1 can not be required and have a default at the same time",
 		},
 		{
 			name: "inputs prefix without dot",

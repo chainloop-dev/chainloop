@@ -368,7 +368,7 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 					return nil, NewErrValidation(fmt.Errorf("missing required input %q for group", input.GetName()))
 				}
 				if input.GetRequired() && input.GetDefault() != "" {
-					return nil, NewErrValidation(fmt.Errorf("required input %s with a default value is illegal", input.GetName()))
+					return nil, NewErrValidation(fmt.Errorf("input %s can not be required and have a default at the same time", input.GetName()))
 				}
 			}
 		}
