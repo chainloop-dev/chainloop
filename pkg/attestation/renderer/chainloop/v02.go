@@ -344,9 +344,10 @@ func renderReference(ref *v1.PolicyEvaluation_Reference) (*intoto.ResourceDescri
 	if ref == nil {
 		return nil, nil
 	}
-	// intentionally ignore this error, and skip the annotations instead
+
 	annotations, err := structpb.NewStruct(map[string]interface{}{"name": ref.GetName(), "organization": ref.GetOrgName()})
 	if err != nil {
+		// Struct raise errors in some conditions (when a field is not UTF8, for example). We need to handle them, although it's a remote possibility
 		return nil, err
 	}
 	return &intoto.ResourceDescriptor{
