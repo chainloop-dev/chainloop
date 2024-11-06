@@ -934,7 +934,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 			}, {
 				Name: "arg2",
 			}},
-			args:     map[string]string{"arg1": "Hello {{ inputs.foo }} {{ inputs.bar }}", "arg2": "Bye {{ inputs.bar }}"},
+			args:     map[string]string{"arg1": "Hello {{inputs.foo }} {{   inputs.bar }}", "arg2": "Bye {{ inputs.bar}}"},
 			bindings: map[string]string{"foo": "world", "bar": "template"},
 			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},

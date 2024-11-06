@@ -41,7 +41,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
 
-var inputsPrefixRegexp = regexp.MustCompile(`{{\s?(inputs.)`)
+var inputsPrefixRegexp = regexp.MustCompile(`{{\s*(inputs.)`)
 
 type PolicyError struct {
 	err error
