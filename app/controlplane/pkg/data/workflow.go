@@ -318,7 +318,12 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*bi
 	}
 
 	if r != nil {
-		wf.LastRun = entWrToBizWr(ctx, r)
+		lastRun, err := entWrToBizWr(ctx, r)
+		if err != nil {
+			return nil, fmt.Errorf("converting workflow run: %w", err)
+		}
+
+		wf.LastRun = lastRun
 	}
 
 	return wf, nil
