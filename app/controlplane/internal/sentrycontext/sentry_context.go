@@ -49,6 +49,7 @@ func addSentryContext(ctx context.Context, req interface{}) {
 	apiToken := usercontext.CurrentAPIToken(ctx)
 	role := usercontext.CurrentAuthzSubject(ctx)
 
+	// ConfigureScope allows to set context that will be sent along with the error if one occurs
 	sentry.ConfigureScope(func(scope *sentry.Scope) {
 		scope.SetContext("Account", buildAuthContext(user, apiToken, org, role))
 		scope.SetContext("Request", buildRequestContext(ctx, req))
@@ -112,6 +113,7 @@ func extractTracingIDFromMetadata(ctx context.Context) string {
 }
 
 // extractArgs returns the string of the req
+// Logic extracted from: https://github.com/go-kratos/kratos/blob/f8b97f675b32dfad02edae12d83053c720720b5b/middleware/logging/logging.go#L103
 func extractArgs(req interface{}) string {
 	if redacter, ok := req.(logging.Redacter); ok {
 		return redacter.Redact()
