@@ -116,7 +116,7 @@ func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Work
 		return nil, nil
 	}
 
-	return entWrToBizWr(ctx, run), nil
+	return entWrToBizWr(ctx, run)
 }
 
 func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest string) (*biz.WorkflowRun, error) {
@@ -127,7 +127,7 @@ func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest st
 		return nil, nil
 	}
 
-	return entWrToBizWr(ctx, run), nil
+	return entWrToBizWr(ctx, run)
 }
 
 func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.WorkflowRun, error) {
@@ -142,7 +142,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 		return nil, biz.NewErrNotFound("workflow run")
 	}
 
-	return entWrToBizWr(ctx, run), nil
+	return entWrToBizWr(ctx, run)
 }
 
 // Save the attestation for a workflow run in the database
@@ -222,7 +222,11 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 			continue
 		}
 
-		result = append(result, entWrToBizWr(ctx, wr))
+		r, err := entWrToBizWr(ctx, wr)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to convert workflow run: %w", err)
+		}
+		result = append(result, r)
 	}
 
 	return result, cursor, nil
@@ -242,7 +246,12 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 
 	result := make([]*biz.WorkflowRun, 0, len(workflowRuns))
 	for _, wr := range workflowRuns {
-		result = append(result, entWrToBizWr(ctx, wr))
+		r, err := entWrToBizWr(ctx, wr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert workflow run: %w", err)
+		}
+
+		result = append(result, r)
 	}
 
 	return result, nil
@@ -252,7 +261,7 @@ func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
 }
 
-func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
+func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, error) {
 	r := &biz.WorkflowRun{
 		ID:                     wr.ID,
 		CreatedAt:              toTimePtr(wr.CreatedAt),
@@ -278,7 +287,11 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 	}
 
 	if wf := wr.Edges.Workflow; wf != nil {
-		w, _ := entWFToBizWF(ctx, wf, nil)
+		w, err := entWFToBizWF(ctx, wf, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert workflow: %w", err)
+		}
+
 		r.Workflow = w
 	}
 
@@ -288,9 +301,10 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 	if version == nil {
 		version, err = wr.QueryVersion().Only(ctx)
 		if err != nil {
-			log.Errorf("failed to query version: %v", err)
+			return nil, fmt.Errorf("failed to query version: %w", err)
 		}
 	}
+
 	r.ProjectVersion = entProjectVersionToBiz(version)
 
 	if backends := wr.Edges.CasBackends; backends != nil {
@@ -299,5 +313,5 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) *biz.WorkflowRun {
 		}
 	}
 
-	return r
+	return r, nil
 }
