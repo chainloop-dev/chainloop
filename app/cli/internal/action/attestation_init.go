@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
+	"github.com/chainloop-dev/chainloop/pkg/templates"
 	"github.com/rs/zerolog"
 )
 
@@ -224,7 +225,10 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
 
-		toAdd := getGroupMaterialsToAdd(group, contractMaterials, logger)
+		toAdd, err := getGroupMaterialsToAdd(group, pgAtt, contractMaterials, logger)
+		if err != nil {
+			return err
+		}
 		contractMaterials = append(contractMaterials, toAdd...)
 	}
 
@@ -234,7 +238,7 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 }
 
 // merge existing materials with group ones, taking the contract's one in case of conflict
-func getGroupMaterialsToAdd(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
+func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) ([]*v1.CraftingSchema_Material, error) {
 	toAdd := make([]*v1.CraftingSchema_Material, 0)
 	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
 		// check if material already exists in the contract and skip it in that case
@@ -246,9 +250,31 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, fromContract []*v1.CraftingSc
 			}
 		}
 		if !ignore {
-			toAdd = append(toAdd, groupMaterial)
+			csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, pgAtt)
+			if err != nil {
+				return nil, err
+			}
+			toAdd = append(toAdd, csm)
 		}
 	}
 
-	return toAdd
+	return toAdd, nil
+}
+
+// translates materials and interpolates material names
+func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, pgAtt *v1.PolicyGroupAttachment) (*v1.CraftingSchema_Material, error) {
+	name := gm.Name
+
+	// Compute material name (for interpolations)
+	bindings := pgAtt.GetWith()
+	name, err := templates.ApplyBinding(name, bindings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.CraftingSchema_Material{
+		Type:     gm.Type,
+		Name:     name,
+		Optional: gm.Optional,
+	}, nil
 }

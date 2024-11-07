@@ -305,7 +305,7 @@ message PolicyGroup {
       (buf.validate.field).enum.defined_only = true
     ];
     // Free form name, as we support placeholders eg `{{ inputs.input_name }}`
-    string name = 2 [(buf.validate.field).string.min_len = 1];;
+    string name = 2 [(buf.validate.field).string.min_len = 1];
     bool optional = 3;
 
     // Policies to be applied to this material

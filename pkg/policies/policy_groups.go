@@ -24,6 +24,7 @@ import (
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -63,7 +64,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return result, nil
 		}
 
-		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group)
+		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupAtt)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -202,12 +203,19 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 }
 
 // Gets the policies that can be applied to a material within a group
-func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup) ([]*v1.PolicyAttachment, error) {
+func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup, groupAtt *v1.PolicyGroupAttachment) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 
 	// 2. go through all materials in the group and look for the crafted material
 	for _, schemaMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-		if schemaMaterial.GetName() != material.GetID() {
+		name := schemaMaterial.GetName()
+		// material names in groups can have interpolations
+		name, err := templates.ApplyBinding(name, groupAtt.GetWith())
+		if err != nil {
+			return nil, err
+		}
+
+		if name != material.GetID() {
 			continue
 		}
 

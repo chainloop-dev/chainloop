@@ -33,7 +33,6 @@ func TestEnrichMaterials(t *testing.T) {
 		policyGroup string
 		expectErr   bool
 		nMaterials  int
-		nPolicies   int
 	}{
 		{
 			name: "existing material",
@@ -45,7 +44,6 @@ func TestEnrichMaterials(t *testing.T) {
 			},
 			policyGroup: "file://testdata/policy_group.yaml",
 			nMaterials:  2,
-			nPolicies:   0,
 		},
 		{
 			name: "new materials",
@@ -57,14 +55,12 @@ func TestEnrichMaterials(t *testing.T) {
 			},
 			policyGroup: "file://testdata/policy_group.yaml",
 			nMaterials:  3,
-			nPolicies:   1,
 		},
 		{
 			name:        "empty materials in schema",
 			materials:   []*v1.CraftingSchema_Material{},
 			policyGroup: "file://testdata/policy_group.yaml",
 			nMaterials:  2,
-			nPolicies:   1,
 		},
 		{
 			name:        "wrong policy group",
@@ -93,10 +89,10 @@ func TestEnrichMaterials(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Len(t, schema.Materials, tc.nMaterials)
-			// find "sbom" material and check it has proper policies
+			// find "sbom" material
 			if tc.nMaterials > 0 {
 				assert.True(t, slices.ContainsFunc(schema.Materials, func(m *v1.CraftingSchema_Material) bool {
-					return m.Name == "sbom" && len(m.Policies) == tc.nPolicies
+					return m.Name == "sbom"
 				}))
 			}
 		})
