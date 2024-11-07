@@ -16,19 +16,17 @@
 package policies
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
-	"text/template"
 
 	"github.com/bufbuild/protovalidate-go"
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/sigstore/cosign/v2/pkg/blob"
@@ -40,8 +38,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 )
-
-var inputsPrefixRegexp = regexp.MustCompile(`{{\s*(inputs.)`)
 
 type PolicyError struct {
 	err error
@@ -222,7 +218,7 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 			}
 			// if not required, and it has a default value, let's use it
 			if args[input.Name] == "" && input.Default != "" {
-				value, err := applyBinding(input.Default, bindings)
+				value, err := templates.ApplyBinding(input.Default, bindings)
 				if err != nil {
 					return nil, err
 				}
@@ -240,7 +236,7 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 			pv.logger.Warn().Msgf("argument %q will be ignored", k)
 			continue
 		}
-		value, err := applyBinding(v, bindings)
+		value, err := templates.ApplyBinding(v, bindings)
 		if err != nil {
 			return nil, err
 		}
@@ -248,32 +244,6 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 	}
 
 	return result, nil
-}
-
-// renders an input template using bindings in Go templating format
-func applyBinding(input string, bindings map[string]string) (string, error) {
-	if bindings == nil {
-		return input, nil
-	}
-
-	// Support both `.inputs.foo` and `inputs.foo`
-	input = inputsPrefixRegexp.ReplaceAllString(input, "{{ .inputs.")
-
-	tmpl, err := template.New("chainloop").Option("missingkey=zero").Parse(input)
-	if err != nil {
-		return "", err
-	}
-
-	// Only support placeholders that are prefixed with "inputs.", ex `{{ inputs.foo }}
-	namespacedBinding := map[string]any{"inputs": bindings}
-
-	buffer := new(bytes.Buffer)
-	err = tmpl.Execute(buffer, namespacedBinding)
-	if err != nil {
-		return "", err
-	}
-
-	return buffer.String(), nil
 }
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
