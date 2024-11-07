@@ -23,6 +23,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/sentrycontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz/middleware"
@@ -215,6 +216,9 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
+
+	// Include the Sentry Context Interceptor
+	middlewares = append(middlewares, sentrycontext.NewSentryContext())
 
 	return middlewares
 }
