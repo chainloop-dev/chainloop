@@ -215,6 +215,7 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 		statement  string
 		npolicies  int
 		violations int
+		groupName  string
 		wantErr    error
 	}{
 		{
@@ -229,6 +230,7 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 			statement:  "testdata/statement.json",
 			npolicies:  1,
 			violations: 1,
+			groupName:  "sbom-quality",
 		},
 	}
 	for _, tc := range cases {
@@ -247,6 +249,7 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 				violations := 0
 				for _, pol := range res {
 					violations += len(pol.Violations)
+					s.Equal(tc.groupName, pol.GroupReference.GetName())
 				}
 				s.Equal(tc.violations, violations)
 			}

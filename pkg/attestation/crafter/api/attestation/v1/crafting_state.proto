@@ -125,8 +125,9 @@ message PolicyEvaluation {
   // file://foo.yaml
   // chainloop://my-provider.com/foo@sha256:1234
   // NOTE: embedded policies will not have a reference
-  string reference_digest = 10;
-  string reference_name = 11;
+  // Deprecated: use policy_reference instead
+  string reference_digest = 10 [deprecated=true];
+  string reference_name = 11 [deprecated=true];
 
   string description = 5;
   map<string, string> annotations = 6;
@@ -146,9 +147,26 @@ message PolicyEvaluation {
   // Evaluation messages, intended to communicate evaluation errors (invalid input)
   repeated string skip_reasons = 14;
 
+  // Group this evaluated policy belongs to, if any
+  Reference policy_reference = 15;
+  Reference group_reference = 16;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];
+  }
+
+  message Reference {
+    string name = 1[(buf.validate.field) = {
+      cel: {
+        message: "must contain only lowercase letters, numbers, and hyphens."
+        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+        id: "name.dns-1123"
+      }
+    }];
+    string digest = 2 [(buf.validate.field).string.min_len = 1];
+    string uri = 3 [(buf.validate.field).string.min_len = 1];
+    string org_name = 4;
   }
 }
 
