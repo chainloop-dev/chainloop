@@ -1,24 +1,22 @@
 {
-  "$id": "workflowcontract.v1.CraftingSchema.Material.jsonschema.json",
+  "$id": "workflowcontract.v1.PolicyGroup.Material.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "Policy group materials",
   "properties": {
-    "annotations": {
-      "description": "List of annotations that can be used to add metadata to the material\n this metadata can be used later on by the integrations engine to filter and interpolate data",
-      "items": {
-        "$ref": "workflowcontract.v1.Annotation.jsonschema.json"
-      },
-      "type": "array"
-    },
     "name": {
+      "description": "Free form name, as we support placeholders eg `{{ inputs.input_name }}`",
       "type": "string"
     },
     "optional": {
       "type": "boolean"
     },
-    "output": {
-      "description": "If a material is set as output it will get added to the subject in the statement",
-      "type": "boolean"
+    "policies": {
+      "description": "Policies to be applied to this material",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyAttachment.schema.json"
+      },
+      "type": "array"
     },
     "type": {
       "anyOf": [
