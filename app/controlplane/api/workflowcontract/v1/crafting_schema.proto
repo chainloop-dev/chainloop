@@ -309,6 +309,6 @@ message PolicyGroup {
     bool optional = 3;
 
     // Policies to be applied to this material
-    repeated PolicyAttachment policies = 4;
+    repeated PolicyAttachment policies = 6;
   }
 }

@@ -2217,7 +2217,7 @@ export const PolicyGroup_Material = {
       writer.uint32(24).bool(message.optional);
     }
     for (const v of message.policies) {
-      PolicyAttachment.encode(v!, writer.uint32(34).fork()).ldelim();
+      PolicyAttachment.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -2250,8 +2250,8 @@ export const PolicyGroup_Material = {
 
           message.optional = reader.bool();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 6:
+          if (tag !== 50) {
             break;
           }
 
