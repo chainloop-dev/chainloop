@@ -207,20 +207,18 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 	result := make([]*v1.PolicyAttachment, 0)
 
 	// 2. go through all materials in the group and look for the crafted material
-	for _, schemaMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-		name := schemaMaterial.GetName()
-		// material names in groups can have interpolations
-		name, err := templates.ApplyBinding(name, groupArgs)
+	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		gm, err := InterpolateGroupMaterial(groupMaterial, groupArgs)
 		if err != nil {
 			return nil, err
 		}
 
-		if name != material.GetID() {
+		if gm.Name != material.GetID() {
 			continue
 		}
 
 		// 3. Material found. Let's check its policies
-		for _, policyAtt := range schemaMaterial.GetPolicies() {
+		for _, policyAtt := range gm.GetPolicies() {
 			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
 			if err != nil {
 				return nil, err
@@ -233,6 +231,22 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 	}
 
 	return result, nil
+}
+
+// InterpolateGroupMaterial returns a version of the group material with all template interpolations applied (only name is supported atm)
+func InterpolateGroupMaterial(gm *v1.PolicyGroup_Material, bindings map[string]string) (*v1.PolicyGroup_Material, error) {
+	name := gm.Name
+	name, err := templates.ApplyBinding(name, bindings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.PolicyGroup_Material{
+		Type:     gm.Type,
+		Name:     name,
+		Optional: gm.Optional,
+		Policies: gm.Policies,
+	}, nil
 }
 
 // // policy groups can be applied if they support the material type, or they don't have any specified material

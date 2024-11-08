@@ -26,7 +26,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
-	"github.com/chainloop-dev/chainloop/pkg/templates"
 	"github.com/rs/zerolog"
 )
 
@@ -265,18 +264,14 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachme
 
 // translates materials and interpolates material names
 func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, pgAtt *v1.PolicyGroupAttachment) (*v1.CraftingSchema_Material, error) {
-	name := gm.Name
-
-	// Compute material name (for interpolations)
-	bindings := pgAtt.GetWith()
-	name, err := templates.ApplyBinding(name, bindings)
+	gm, err := policies.InterpolateGroupMaterial(gm, pgAtt.GetWith())
 	if err != nil {
 		return nil, err
 	}
 
 	return &v1.CraftingSchema_Material{
 		Type:     gm.Type,
-		Name:     name,
+		Name:     gm.Name,
 		Optional: gm.Optional,
 	}, nil
 }
