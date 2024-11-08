@@ -64,13 +64,14 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return result, nil
 		}
 
-		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupAtt.GetWith())
+		// matches group arguments against spec and apply defaults
+		groupArgs, err := ComputeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		// matches group arguments against spec
-		groupArgs, err := ComputeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
+		// gather required policies
+		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupArgs)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
