@@ -155,7 +155,7 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 				Ref: tc.schemaRef,
 			})
 			s.Require().NoError(err)
-			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group)
+			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group, nil)
 			s.Require().NoError(err)
 			s.Len(atts, tc.expected)
 		})
