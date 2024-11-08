@@ -259,26 +259,42 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 
 func (s *groupsTestSuite) TestGroupInputs() {
 	cases := []struct {
-		name    string
-		args    map[string]string
-		wanted  string
-		wantErr bool
-		errMsg  string
+		name         string
+		args         map[string]string
+		group        string
+		materialName string // the material name in the crafting state
+		nEvals       int
+		skipReason   string
+		wantErr      bool
+		errMsg       string
 	}{
 		{
-			name:   "group inputs with interpolation, default values",
-			args:   map[string]string{"user_name": "devel"},
-			wanted: "the email is: devel@chainloop.dev",
+			name:       "group inputs with interpolation, default values",
+			args:       map[string]string{"user_name": "devel"},
+			group:      "file://testdata/group_with_inputs.yaml",
+			nEvals:     1,
+			skipReason: "the email is: devel@chainloop.dev",
 		},
 		{
 			name:    "missing username input",
+			group:   "file://testdata/group_with_inputs.yaml",
 			wantErr: true,
 			errMsg:  "missing required input \"user_name\"",
 		},
 		{
-			name:   "group inputs with interpolation, all values",
-			args:   map[string]string{"user_name": "foo", "domainName": "bar.com"},
-			wanted: "the email is: foo@bar.com",
+			name:       "group inputs with interpolation, all values",
+			group:      "file://testdata/group_with_inputs.yaml",
+			args:       map[string]string{"user_name": "foo", "domainName": "bar.com"},
+			nEvals:     1,
+			skipReason: "the email is: foo@bar.com",
+		},
+		{
+			name:         "group with interpolated material name, no matched material",
+			group:        "file://testdata/group_with_interpolated_material.yaml",
+			args:         map[string]string{"user_name": "foo", "domainName": "bar.com", "sbom_name": "foo"},
+			materialName: "foo",
+			nEvals:       1,
+			skipReason:   "the email is: foo@bar.com",
 		},
 	}
 
@@ -286,13 +302,17 @@ func (s *groupsTestSuite) TestGroupInputs() {
 		schema := &v1.CraftingSchema{
 			PolicyGroups: []*v1.PolicyGroupAttachment{
 				{
-					Ref:  "file://testdata/group_with_inputs.yaml",
+					Ref:  tc.group,
 					With: tc.args,
 				},
 			},
 		}
+		mName := "sbom"
+		if tc.materialName != "" {
+			mName = tc.materialName
+		}
 		material := &api.Attestation_Material{
-			M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{Id: "sbom",
+			M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{Id: mName,
 				Content: []byte(`{}`), // content not validated in this context
 			}},
 			MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
@@ -307,8 +327,10 @@ func (s *groupsTestSuite) TestGroupInputs() {
 				return
 			}
 			s.Require().NoError(err)
-			s.Len(evs, 1)
-			s.Equal(tc.wanted, evs[0].SkipReasons[0])
+			s.Len(evs, tc.nEvals)
+			if tc.nEvals > 0 {
+				s.Equal(tc.skipReason, evs[0].SkipReasons[0])
+			}
 		})
 	}
 }

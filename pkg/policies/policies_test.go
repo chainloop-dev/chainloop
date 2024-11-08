@@ -942,8 +942,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			pv := NewPolicyVerifier(nil, nil, &s.logger)
-			computed, err := pv.computeArguments(tc.inputs, tc.args, tc.bindings)
+			computed, err := ComputeArguments(tc.inputs, tc.args, tc.bindings, &s.logger)
 			if tc.expectErr {
 				s.Error(err)
 				s.Contains(err.Error(), tc.errMsg)
