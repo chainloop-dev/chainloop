@@ -69,8 +69,8 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return nil, NewPolicyError(err)
 		}
 
-		// compute group arguments
-		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
+		// matches group arguments against spec
+		groupArgs, err := ComputeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -118,7 +118,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			continue
 		}
 		// compute group arguments
-		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
+		groupArgs, err := ComputeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}

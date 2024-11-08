@@ -134,7 +134,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	args, err := pv.computeArguments(policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings)
+	args, err := ComputeArguments(policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings, pv.logger)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -197,7 +197,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}, nil
 }
 
-func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[string]string, bindings map[string]string) (map[string]string, error) {
+// ComputeArguments takes a list of arguments, and matches it against the expected inputs. It also applies a set of interpolations if needed.
+func ComputeArguments(inputs []*v1.PolicyInput, args map[string]string, bindings map[string]string, logger *zerolog.Logger) (map[string]string, error) {
 	result := make(map[string]string)
 
 	// Policies without inputs in the spec
@@ -233,7 +234,7 @@ func (pv *PolicyVerifier) computeArguments(inputs []*v1.PolicyInput, args map[st
 			return input.Name == k
 		})
 		if !expected {
-			pv.logger.Warn().Msgf("argument %q will be ignored", k)
+			logger.Warn().Msgf("argument %q will be ignored", k)
 			continue
 		}
 		value, err := templates.ApplyBinding(v, bindings)

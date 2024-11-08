@@ -31,6 +31,7 @@ func TestEnrichMaterials(t *testing.T) {
 		name        string
 		materials   []*v1.CraftingSchema_Material
 		policyGroup string
+		args        map[string]string
 		expectErr   bool
 		nMaterials  int
 	}{
@@ -69,6 +70,12 @@ func TestEnrichMaterials(t *testing.T) {
 			// TODO: Fix this condition in next release
 			expectErr: false,
 		},
+		{
+			name:        "interpolates material names, no required inputs",
+			materials:   []*v1.CraftingSchema_Material{},
+			policyGroup: "file://testdata/policy_group_with_arguments.yaml",
+			expectErr:   true,
+		},
 	}
 
 	l := zerolog.Nop()
@@ -95,6 +102,71 @@ func TestEnrichMaterials(t *testing.T) {
 					return m.Name == "sbom"
 				}))
 			}
+		})
+	}
+}
+
+func TestTemplatedGroups(t *testing.T) {
+	cases := []struct {
+		name             string
+		materials        []*v1.CraftingSchema_Material
+		group            string
+		args             map[string]string
+		nMaterials       int
+		materialName     string
+		materialOptional bool
+	}{
+		{
+			name:         "interpolates material names, with defaults",
+			materials:    []*v1.CraftingSchema_Material{},
+			group:        "file://testdata/policy_group_with_arguments.yaml",
+			nMaterials:   1,
+			materialName: "sbom",
+		},
+		{
+			name:         "interpolates material names, custom material name",
+			materials:    []*v1.CraftingSchema_Material{},
+			group:        "file://testdata/policy_group_with_arguments.yaml",
+			args:         map[string]string{"sbom_name": "foo"},
+			nMaterials:   2,
+			materialName: "foo",
+		},
+		{
+			name: "interpolates material names, custom name, with material override",
+			materials: []*v1.CraftingSchema_Material{{
+				Type:     v1.CraftingSchema_Material_SBOM_SPDX_JSON,
+				Name:     "foo",
+				Optional: true,
+			},
+			},
+			group:            "file://testdata/policy_group_with_arguments.yaml",
+			args:             map[string]string{"sbom_name": "foo"},
+			nMaterials:       2,
+			materialName:     "foo",
+			materialOptional: true,
+		},
+	}
+
+	l := zerolog.Nop()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := v1.CraftingSchema{
+				Materials: tc.materials,
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{
+						Ref:  tc.group,
+						With: tc.args,
+					},
+					{
+						Ref: tc.group,
+					},
+				},
+			}
+			err := enrichContractMaterials(context.TODO(), &schema, nil, &l)
+			assert.NoError(t, err)
+			assert.Len(t, schema.Materials, tc.nMaterials)
+			assert.Equal(t, tc.materialName, schema.Materials[0].Name)
+			assert.Equal(t, tc.materialOptional, schema.Materials[0].Optional)
 		})
 	}
 }

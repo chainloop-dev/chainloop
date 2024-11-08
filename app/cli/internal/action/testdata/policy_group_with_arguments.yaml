@@ -1,0 +1,17 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: sbom-quality
+  description: This policy group applies a number of SBOM-related policies
+  annotations:
+    category: SBOM
+spec:
+  inputs:
+    - name: sbom_name
+      default: "sbom"
+  policies:
+    materials:
+      - name: "{{ inputs.sbom_name }}"
+        type: SBOM_SPDX_JSON
+        policies:
+          - ref: file://testdata/multi-kind.yaml

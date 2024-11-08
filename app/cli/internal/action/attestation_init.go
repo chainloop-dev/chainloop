@@ -241,7 +241,7 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachme
 	toAdd := make([]*v1.CraftingSchema_Material, 0)
 	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
 		// apply bindings if needed
-		csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, pgAtt)
+		csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, group, pgAtt, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -263,8 +263,15 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachme
 }
 
 // translates materials and interpolates material names
-func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, pgAtt *v1.PolicyGroupAttachment) (*v1.CraftingSchema_Material, error) {
-	gm, err := policies.InterpolateGroupMaterial(gm, pgAtt.GetWith())
+func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, logger *zerolog.Logger) (*v1.CraftingSchema_Material, error) {
+	// Validates and computes arguments
+	args, err := policies.ComputeArguments(group.GetSpec().GetInputs(), pgAtt.GetWith(), nil, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply arguments as interpolations for materials
+	gm, err = policies.InterpolateGroupMaterial(gm, args)
 	if err != nil {
 		return nil, err
 	}
