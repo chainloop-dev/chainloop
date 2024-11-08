@@ -241,19 +241,21 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) ([]*v1.CraftingSchema_Material, error) {
 	toAdd := make([]*v1.CraftingSchema_Material, 0)
 	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		// apply bindings if needed
+		csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, pgAtt)
+		if err != nil {
+			return nil, err
+		}
+
 		// check if material already exists in the contract and skip it in that case
 		ignore := false
 		for _, mat := range fromContract {
-			if mat.GetName() == groupMaterial.GetName() {
+			if mat.GetName() == csm.GetName() {
 				logger.Warn().Msgf("material '%s' from policy group '%s' is also present in the contract and will be ignored", mat.GetName(), group.GetMetadata().GetName())
 				ignore = true
 			}
 		}
 		if !ignore {
-			csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, pgAtt)
-			if err != nil {
-				return nil, err
-			}
 			toAdd = append(toAdd, csm)
 		}
 	}
