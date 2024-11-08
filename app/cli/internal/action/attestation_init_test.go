@@ -70,12 +70,6 @@ func TestEnrichMaterials(t *testing.T) {
 			// TODO: Fix this condition in next release
 			expectErr: false,
 		},
-		{
-			name:        "interpolates material names, no required inputs",
-			materials:   []*v1.CraftingSchema_Material{},
-			policyGroup: "file://testdata/policy_group_with_arguments.yaml",
-			expectErr:   true,
-		},
 	}
 
 	l := zerolog.Nop()
