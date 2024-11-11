@@ -82,8 +82,8 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 			rawMaterial = m.GetArtifact().GetContent()
 		} else if value == "" {
 			return nil, errors.New("artifact path required")
-		} else {
-			// read content from local filesystem
+		} else if m.MaterialType != v1.CraftingSchema_Material_HELM_CHART {
+			// read content from local filesystem (except for tgz charts)
 			rawMaterial, err = os.ReadFile(value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read material content: %w", err)
