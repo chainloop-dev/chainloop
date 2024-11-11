@@ -81,9 +81,6 @@ message CraftingSchema {
     // this metadata can be used later on by the integrations engine to filter and interpolate data
     repeated Annotation annotations = 5;
 
-    // Policies to be applied to this material
-    repeated PolicyAttachment policies = 6;
-
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;
       STRING = 1;
@@ -295,7 +292,23 @@ message PolicyGroup {
   }
 
   message PolicyGroupPolicies {
-    repeated CraftingSchema.Material materials = 1;
+    repeated Material materials = 1;
     repeated PolicyAttachment attestation = 2;
+  }
+
+  // Policy group materials
+  message Material {
+    CraftingSchema.Material.MaterialType type = 1 [
+      (buf.validate.field).enum = {
+        not_in: [0]
+      },
+      (buf.validate.field).enum.defined_only = true
+    ];
+    // Free form name, as we support placeholders eg `{{ inputs.input_name }}`
+    string name = 2 [(buf.validate.field).string.min_len = 1];
+    bool optional = 3;
+
+    // Policies to be applied to this material
+    repeated PolicyAttachment policies = 6;
   }
 }

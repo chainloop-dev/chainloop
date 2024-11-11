@@ -24,6 +24,7 @@ import (
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -63,13 +64,14 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return result, nil
 		}
 
-		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group)
+		// matches group arguments against spec and apply defaults
+		groupArgs, err := ComputeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
 
-		// compute group arguments
-		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
+		// gather required policies
+		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupArgs)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -117,7 +119,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			continue
 		}
 		// compute group arguments
-		groupArgs, err := pgv.computeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil)
+		groupArgs, err := ComputeArguments(group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -202,17 +204,22 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 }
 
 // Gets the policies that can be applied to a material within a group
-func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup) ([]*v1.PolicyAttachment, error) {
+func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup, groupArgs map[string]string) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 
 	// 2. go through all materials in the group and look for the crafted material
-	for _, schemaMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-		if schemaMaterial.GetName() != material.GetID() {
+	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		gm, err := InterpolateGroupMaterial(groupMaterial, groupArgs)
+		if err != nil {
+			return nil, err
+		}
+
+		if gm.Name != material.GetID() {
 			continue
 		}
 
 		// 3. Material found. Let's check its policies
-		for _, policyAtt := range schemaMaterial.GetPolicies() {
+		for _, policyAtt := range gm.GetPolicies() {
 			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
 			if err != nil {
 				return nil, err
@@ -225,6 +232,22 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 	}
 
 	return result, nil
+}
+
+// InterpolateGroupMaterial returns a version of the group material with all template interpolations applied (only name is supported atm)
+func InterpolateGroupMaterial(gm *v1.PolicyGroup_Material, bindings map[string]string) (*v1.PolicyGroup_Material, error) {
+	name := gm.Name
+	name, err := templates.ApplyBinding(name, bindings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.PolicyGroup_Material{
+		Type:     gm.Type,
+		Name:     name,
+		Optional: gm.Optional,
+		Policies: gm.Policies,
+	}, nil
 }
 
 // // policy groups can be applied if they support the material type, or they don't have any specified material

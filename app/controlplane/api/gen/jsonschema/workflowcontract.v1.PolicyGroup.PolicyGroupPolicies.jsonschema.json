@@ -11,7 +11,7 @@
     },
     "materials": {
       "items": {
-        "$ref": "workflowcontract.v1.CraftingSchema.Material.jsonschema.json"
+        "$ref": "workflowcontract.v1.PolicyGroup.Material.jsonschema.json"
       },
       "type": "array"
     }

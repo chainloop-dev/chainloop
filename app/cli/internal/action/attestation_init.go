@@ -224,7 +224,10 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
 
-		toAdd := getGroupMaterialsToAdd(group, contractMaterials, logger)
+		toAdd, err := getGroupMaterialsToAdd(group, pgAtt, contractMaterials, logger)
+		if err != nil {
+			return err
+		}
 		contractMaterials = append(contractMaterials, toAdd...)
 	}
 
@@ -234,21 +237,48 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 }
 
 // merge existing materials with group ones, taking the contract's one in case of conflict
-func getGroupMaterialsToAdd(group *v1.PolicyGroup, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) []*v1.CraftingSchema_Material {
+func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) ([]*v1.CraftingSchema_Material, error) {
 	toAdd := make([]*v1.CraftingSchema_Material, 0)
 	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		// apply bindings if needed
+		csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, group, pgAtt, logger)
+		if err != nil {
+			return nil, err
+		}
+
 		// check if material already exists in the contract and skip it in that case
 		ignore := false
 		for _, mat := range fromContract {
-			if mat.GetName() == groupMaterial.GetName() {
+			if mat.GetName() == csm.GetName() {
 				logger.Warn().Msgf("material '%s' from policy group '%s' is also present in the contract and will be ignored", mat.GetName(), group.GetMetadata().GetName())
 				ignore = true
 			}
 		}
 		if !ignore {
-			toAdd = append(toAdd, groupMaterial)
+			toAdd = append(toAdd, csm)
 		}
 	}
 
-	return toAdd
+	return toAdd, nil
+}
+
+// translates materials and interpolates material names
+func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, logger *zerolog.Logger) (*v1.CraftingSchema_Material, error) {
+	// Validates and computes arguments
+	args, err := policies.ComputeArguments(group.GetSpec().GetInputs(), pgAtt.GetWith(), nil, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply arguments as interpolations for materials
+	gm, err = policies.InterpolateGroupMaterial(gm, args)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.CraftingSchema_Material{
+		Type:     gm.Type,
+		Name:     gm.Name,
+		Optional: gm.Optional,
+	}, nil
 }
