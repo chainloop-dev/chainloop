@@ -180,7 +180,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		Violations:      engineEvaluationsToAPIViolations(evalResults),
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
-		With:            attachment.GetWith(),
+		With:            args,
 		Type:            opts.kind,
 		ReferenceName:   ref.GetURI(),
 		ReferenceDigest: ref.GetDigest(),
