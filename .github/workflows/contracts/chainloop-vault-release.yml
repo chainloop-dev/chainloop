@@ -1,3 +1,4 @@
+# Contract for the chainloop-vault-build-and-package workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION

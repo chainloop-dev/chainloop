@@ -1,3 +1,4 @@
+# Contract used in chainloop-docs-release workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION
@@ -6,20 +7,17 @@ materials:
     name: built-site
     optional: false
     output: true
-  - type: SBOM_CYCLONEDX_JSON
-    name: sbom-cdx
-    output: false
-  - type: SBOM_SPDX_JSON
-    name: sbom-spdx
-    output: false
 policies:
   attestation:
     - ref: source-commit
-  materials:
-    - ref: sbom-present
-    - ref: sbom-banned-licenses
-      with:
-        licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
-    - ref: sbom-banned-components
-      with:
-        components: log4j@2.14.1
+policyGroups:
+  - ref: sbom-quality
+    with:
+      sbom_name: sbom-cdx
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedComponents: log4j@2.14.1
+  - ref: sbom-quality
+    with:
+      sbom_name: sbom-spdx
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedComponents: log4j@2.14.1

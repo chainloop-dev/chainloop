@@ -1,3 +1,4 @@
+# Contract for chainloop-vault-scorecards workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION
@@ -8,8 +9,3 @@ materials:
 policies:
   attestation:
     - ref: source-commit
-  materials:
-    - ref: vulnerabilities
-      with:
-        severity: MEDIUM
-    - ref: cves-in-kev

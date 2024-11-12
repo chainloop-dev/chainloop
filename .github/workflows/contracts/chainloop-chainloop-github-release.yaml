@@ -1,14 +1,21 @@
+# contract used in chainloop-vault-release workflow
 schemaVersion: v1
 policies:
-  materials:
-    - ref: sbom-with-licenses
-    - ref: sbom-freshness
-    - ref: sbom-banned-licenses
-      with:
-        licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
-    - ref: sbom-banned-components
-      with:
-        components: log4j@2.14.1
   attestation:
-    - ref: sbom-present
     - ref: source-commit
+policyGroups:
+  - ref: sbom-quality
+    with:
+      sbom_name: cas-cyclonedx
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedComponents: log4j@2.14.1
+  - ref: sbom-quality
+    with:
+      sbom_name: cli-cyclonedx
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedComponents: log4j@2.14.1
+  - ref: sbom-quality
+    with:
+      sbom_name: controlplane-cyclonedx
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedComponents: log4j@2.14.1
