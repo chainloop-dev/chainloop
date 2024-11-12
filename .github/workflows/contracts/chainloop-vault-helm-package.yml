@@ -1,3 +1,4 @@
+# Contract for chainloop-vault-helm-package workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION
@@ -14,3 +15,6 @@ materials:
 policies:
   attestation:
     - ref: source-commit
+  materials:
+    - ref: artifact-signed
+
