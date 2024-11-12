@@ -2769,6 +2769,22 @@ func (c *WorkflowClient) QueryProject(w *Workflow) *ProjectQuery {
 	return query
 }
 
+// QueryLatestWorkflowRun queries the latest_workflow_run edge of a Workflow.
+func (c *WorkflowClient) QueryLatestWorkflowRun(w *Workflow) *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := w.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflow.Table, workflow.FieldID, id),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, workflow.LatestWorkflowRunTable, workflow.LatestWorkflowRunColumn),
+		)
+		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryReferrers queries the referrers edge of a Workflow.
 func (c *WorkflowClient) QueryReferrers(w *Workflow) *ReferrerQuery {
 	query := (&ReferrerClient{config: c.config}).Query()

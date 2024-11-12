@@ -98,6 +98,20 @@ func (wu *WorkflowUpdate) AddRunsCount(i int) *WorkflowUpdate {
 	return wu
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (wu *WorkflowUpdate) SetUpdatedAt(t time.Time) *WorkflowUpdate {
+	wu.mutation.SetUpdatedAt(t)
+	return wu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableUpdatedAt(t *time.Time) *WorkflowUpdate {
+	if t != nil {
+		wu.SetUpdatedAt(*t)
+	}
+	return wu
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (wu *WorkflowUpdate) SetDeletedAt(t time.Time) *WorkflowUpdate {
 	wu.mutation.SetDeletedAt(t)
@@ -157,6 +171,26 @@ func (wu *WorkflowUpdate) SetNillableProjectID(u *uuid.UUID) *WorkflowUpdate {
 	if u != nil {
 		wu.SetProjectID(*u)
 	}
+	return wu
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (wu *WorkflowUpdate) SetLatestRun(u uuid.UUID) *WorkflowUpdate {
+	wu.mutation.SetLatestRun(u)
+	return wu
+}
+
+// SetNillableLatestRun sets the "latest_run" field if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableLatestRun(u *uuid.UUID) *WorkflowUpdate {
+	if u != nil {
+		wu.SetLatestRun(*u)
+	}
+	return wu
+}
+
+// ClearLatestRun clears the value of the "latest_run" field.
+func (wu *WorkflowUpdate) ClearLatestRun() *WorkflowUpdate {
+	wu.mutation.ClearLatestRun()
 	return wu
 }
 
@@ -244,6 +278,25 @@ func (wu *WorkflowUpdate) AddIntegrationAttachments(i ...*IntegrationAttachment)
 // SetProject sets the "project" edge to the Project entity.
 func (wu *WorkflowUpdate) SetProject(p *Project) *WorkflowUpdate {
 	return wu.SetProjectID(p.ID)
+}
+
+// SetLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID.
+func (wu *WorkflowUpdate) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowUpdate {
+	wu.mutation.SetLatestWorkflowRunID(id)
+	return wu
+}
+
+// SetNillableLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
+func (wu *WorkflowUpdate) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowUpdate {
+	if id != nil {
+		wu = wu.SetLatestWorkflowRunID(*id)
+	}
+	return wu
+}
+
+// SetLatestWorkflowRun sets the "latest_workflow_run" edge to the WorkflowRun entity.
+func (wu *WorkflowUpdate) SetLatestWorkflowRun(w *WorkflowRun) *WorkflowUpdate {
+	return wu.SetLatestWorkflowRunID(w.ID)
 }
 
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
@@ -347,6 +400,12 @@ func (wu *WorkflowUpdate) ClearProject() *WorkflowUpdate {
 	return wu
 }
 
+// ClearLatestWorkflowRun clears the "latest_workflow_run" edge to the WorkflowRun entity.
+func (wu *WorkflowUpdate) ClearLatestWorkflowRun() *WorkflowUpdate {
+	wu.mutation.ClearLatestWorkflowRun()
+	return wu
+}
+
 // ClearReferrers clears all "referrers" edges to the Referrer entity.
 func (wu *WorkflowUpdate) ClearReferrers() *WorkflowUpdate {
 	wu.mutation.ClearReferrers()
@@ -444,6 +503,9 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := wu.mutation.AddedRunsCount(); ok {
 		_spec.AddField(workflow.FieldRunsCount, field.TypeInt, value)
+	}
+	if value, ok := wu.mutation.UpdatedAt(); ok {
+		_spec.SetField(workflow.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := wu.mutation.DeletedAt(); ok {
 		_spec.SetField(workflow.FieldDeletedAt, field.TypeTime, value)
@@ -682,6 +744,35 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if wu.mutation.LatestWorkflowRunCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflow.LatestWorkflowRunTable,
+			Columns: []string{workflow.LatestWorkflowRunColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wu.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflow.LatestWorkflowRunTable,
+			Columns: []string{workflow.LatestWorkflowRunColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if wu.mutation.ReferrersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -810,6 +901,20 @@ func (wuo *WorkflowUpdateOne) AddRunsCount(i int) *WorkflowUpdateOne {
 	return wuo
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (wuo *WorkflowUpdateOne) SetUpdatedAt(t time.Time) *WorkflowUpdateOne {
+	wuo.mutation.SetUpdatedAt(t)
+	return wuo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableUpdatedAt(t *time.Time) *WorkflowUpdateOne {
+	if t != nil {
+		wuo.SetUpdatedAt(*t)
+	}
+	return wuo
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (wuo *WorkflowUpdateOne) SetDeletedAt(t time.Time) *WorkflowUpdateOne {
 	wuo.mutation.SetDeletedAt(t)
@@ -869,6 +974,26 @@ func (wuo *WorkflowUpdateOne) SetNillableProjectID(u *uuid.UUID) *WorkflowUpdate
 	if u != nil {
 		wuo.SetProjectID(*u)
 	}
+	return wuo
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (wuo *WorkflowUpdateOne) SetLatestRun(u uuid.UUID) *WorkflowUpdateOne {
+	wuo.mutation.SetLatestRun(u)
+	return wuo
+}
+
+// SetNillableLatestRun sets the "latest_run" field if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableLatestRun(u *uuid.UUID) *WorkflowUpdateOne {
+	if u != nil {
+		wuo.SetLatestRun(*u)
+	}
+	return wuo
+}
+
+// ClearLatestRun clears the value of the "latest_run" field.
+func (wuo *WorkflowUpdateOne) ClearLatestRun() *WorkflowUpdateOne {
+	wuo.mutation.ClearLatestRun()
 	return wuo
 }
 
@@ -956,6 +1081,25 @@ func (wuo *WorkflowUpdateOne) AddIntegrationAttachments(i ...*IntegrationAttachm
 // SetProject sets the "project" edge to the Project entity.
 func (wuo *WorkflowUpdateOne) SetProject(p *Project) *WorkflowUpdateOne {
 	return wuo.SetProjectID(p.ID)
+}
+
+// SetLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID.
+func (wuo *WorkflowUpdateOne) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowUpdateOne {
+	wuo.mutation.SetLatestWorkflowRunID(id)
+	return wuo
+}
+
+// SetNillableLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
+func (wuo *WorkflowUpdateOne) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowUpdateOne {
+	if id != nil {
+		wuo = wuo.SetLatestWorkflowRunID(*id)
+	}
+	return wuo
+}
+
+// SetLatestWorkflowRun sets the "latest_workflow_run" edge to the WorkflowRun entity.
+func (wuo *WorkflowUpdateOne) SetLatestWorkflowRun(w *WorkflowRun) *WorkflowUpdateOne {
+	return wuo.SetLatestWorkflowRunID(w.ID)
 }
 
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
@@ -1056,6 +1200,12 @@ func (wuo *WorkflowUpdateOne) RemoveIntegrationAttachments(i ...*IntegrationAtta
 // ClearProject clears the "project" edge to the Project entity.
 func (wuo *WorkflowUpdateOne) ClearProject() *WorkflowUpdateOne {
 	wuo.mutation.ClearProject()
+	return wuo
+}
+
+// ClearLatestWorkflowRun clears the "latest_workflow_run" edge to the WorkflowRun entity.
+func (wuo *WorkflowUpdateOne) ClearLatestWorkflowRun() *WorkflowUpdateOne {
+	wuo.mutation.ClearLatestWorkflowRun()
 	return wuo
 }
 
@@ -1186,6 +1336,9 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 	}
 	if value, ok := wuo.mutation.AddedRunsCount(); ok {
 		_spec.AddField(workflow.FieldRunsCount, field.TypeInt, value)
+	}
+	if value, ok := wuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(workflow.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := wuo.mutation.DeletedAt(); ok {
 		_spec.SetField(workflow.FieldDeletedAt, field.TypeTime, value)
@@ -1417,6 +1570,35 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wuo.mutation.LatestWorkflowRunCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflow.LatestWorkflowRunTable,
+			Columns: []string{workflow.LatestWorkflowRunColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wuo.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflow.LatestWorkflowRunTable,
+			Columns: []string{workflow.LatestWorkflowRunColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

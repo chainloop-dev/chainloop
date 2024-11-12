@@ -403,7 +403,7 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 
 	references := make([]*biz.WorkflowRef, 0, len(workflows))
 	for _, wf := range workflows {
-		wfBiz, err := entWFToBizWF(ctx, wf, nil)
+		wfBiz, err := entWFToBizWF(ctx, wf)
 		if err != nil {
 			return nil, err
 		}

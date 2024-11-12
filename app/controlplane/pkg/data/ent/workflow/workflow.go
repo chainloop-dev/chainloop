@@ -25,6 +25,8 @@ const (
 	FieldRunsCount = "runs_count"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
 	// FieldPublic holds the string denoting the public field in the database.
@@ -33,6 +35,8 @@ const (
 	FieldOrganizationID = "organization_id"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
+	// FieldLatestRun holds the string denoting the latest_run field in the database.
+	FieldLatestRun = "latest_run"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// EdgeRobotaccounts holds the string denoting the robotaccounts edge name in mutations.
@@ -47,6 +51,8 @@ const (
 	EdgeIntegrationAttachments = "integration_attachments"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
+	// EdgeLatestWorkflowRun holds the string denoting the latest_workflow_run edge name in mutations.
+	EdgeLatestWorkflowRun = "latest_workflow_run"
 	// EdgeReferrers holds the string denoting the referrers edge name in mutations.
 	EdgeReferrers = "referrers"
 	// Table holds the table name of the workflow in the database.
@@ -93,6 +99,13 @@ const (
 	ProjectInverseTable = "projects"
 	// ProjectColumn is the table column denoting the project relation/edge.
 	ProjectColumn = "project_id"
+	// LatestWorkflowRunTable is the table that holds the latest_workflow_run relation/edge.
+	LatestWorkflowRunTable = "workflows"
+	// LatestWorkflowRunInverseTable is the table name for the WorkflowRun entity.
+	// It exists in this package in order to avoid circular dependency with the "workflowrun" package.
+	LatestWorkflowRunInverseTable = "workflow_runs"
+	// LatestWorkflowRunColumn is the table column denoting the latest_workflow_run relation/edge.
+	LatestWorkflowRunColumn = "latest_run"
 	// ReferrersTable is the table that holds the referrers relation/edge. The primary key declared below.
 	ReferrersTable = "referrer_workflows"
 	// ReferrersInverseTable is the table name for the Referrer entity.
@@ -108,10 +121,12 @@ var Columns = []string{
 	FieldTeam,
 	FieldRunsCount,
 	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldDeletedAt,
 	FieldPublic,
 	FieldOrganizationID,
 	FieldProjectID,
+	FieldLatestRun,
 	FieldDescription,
 }
 
@@ -147,6 +162,8 @@ var (
 	DefaultRunsCount int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
 	// DefaultPublic holds the default value on creation for the "public" field.
 	DefaultPublic bool
 	// DefaultID holds the default value on creation for the "id" field.
@@ -186,6 +203,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
@@ -204,6 +226,11 @@ func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
 // ByProjectID orders the results by the project_id field.
 func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
+}
+
+// ByLatestRun orders the results by the latest_run field.
+func ByLatestRun(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLatestRun, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.
@@ -274,6 +301,13 @@ func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByLatestWorkflowRunField orders the results by latest_workflow_run field.
+func ByLatestWorkflowRunField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newLatestWorkflowRunStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByReferrersCount orders the results by referrers count.
 func ByReferrersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -327,6 +361,13 @@ func newProjectStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProjectInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, ProjectTable, ProjectColumn),
+	)
+}
+func newLatestWorkflowRunStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(LatestWorkflowRunInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, LatestWorkflowRunTable, LatestWorkflowRunColumn),
 	)
 }
 func newReferrersStep() *sqlgraph.Step {
