@@ -61,28 +61,23 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 	}
 
 	storedMap := make(storedReferrerMap)
-	// 1 - Find or create each referrer
+
 	for _, r := range referrers {
 		// Check if it exists already, if not create it
-		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(r.Digest), referrer.Kind(r.Kind)).Only(ctx)
+		err := tx.Referrer.Create().
+			SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).
+			SetMetadata(r.Metadata).SetAnnotations(r.Annotations).
+			AddWorkflowIDs(workflowID).
+			OnConflictColumns(
+				referrer.FieldDigest, referrer.FieldKind,
+			).UpdateNewValues().Exec(ctx)
 		if err != nil {
-			if !ent.IsNotFound(err) {
-				return fmt.Errorf("failed to query referrer: %w", err)
-			}
-
-			storedRef, err = tx.Referrer.Create().
-				SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).
-				SetMetadata(r.Metadata).SetAnnotations(r.Annotations).
-				AddWorkflowIDs(workflowID).Save(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to create referrer: %w", err)
-			}
+			return fmt.Errorf("failed to create referrer: %w", err)
 		}
 
-		// associate it with the possibly new organization and workflow
-		storedRef, err = storedRef.Update().AddWorkflowIDs(workflowID).Save(ctx)
+		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(r.Digest), referrer.Kind(r.Kind)).Only(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to add organization to referrer: %w", err)
+			return fmt.Errorf("failed to load referrer: %w", err)
 		}
 
 		// Store it in the map
