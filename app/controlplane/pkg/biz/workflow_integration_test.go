@@ -21,13 +21,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -319,9 +324,127 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	}
 }
 
+func (s *workflowListIntegrationTestSuite) TestList() {
+	ctx := context.Background()
+	const project = "project"
+	const team = "team"
+	const description = "description"
+
+	s.Run("no workflows", func() {
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, nil, nil)
+		s.NoError(err)
+		s.Empty(workflows)
+	})
+
+	s.Run("list workflows without filters and pagination", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, nil, nil)
+		s.NoError(err)
+		s.Len(workflows, 2)
+	})
+
+	s.Run("list workflows with workflow name filter", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowName: "name1"}, nil)
+		s.NoError(err)
+		s.Len(workflows, 1)
+	})
+
+	s.Run("list workflows with workflow team filter", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: "other-team", Description: description})
+		require.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowTeam: team}, nil)
+		s.NoError(err)
+		s.Len(workflows, 2)
+	})
+
+	s.Run("list workflows with workflow project name filter", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: "other-project", Team: team, Description: description})
+		require.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowProjectNames: []string{"other-project"}}, nil)
+		s.NoError(err)
+		s.Len(workflows, 1)
+	})
+
+	s.Run("list workflows with workflow public filter", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description, Public: true})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: description, Public: false})
+		require.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowPublic: toPtrBool(true)}, nil)
+		s.NoError(err)
+		s.Len(workflows, 1)
+	})
+
+	s.Run("list workflows with workflow run runner type filter", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		w, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+
+		// Find contract revision
+		contractVersion, err := s.TestingUseCases.WorkflowContract.Describe(ctx, s.org.ID, w.ContractID.String(), 0)
+		assert.NoError(s.T(), err)
+		assert.NotNil(s.T(), contractVersion)
+
+		// Create a CAS backend
+		casBackend, err := s.TestingUseCases.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", backendType, true)
+		assert.NoError(s.T(), err)
+		assert.NotNil(s.T(), casBackend)
+
+		// Create the workflow run
+		wfRun, err := s.TestingUseCases.WorkflowRun.Create(ctx,
+			&biz.WorkflowRunCreateOpts{
+				WorkflowID: w.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
+				ProjectVersion: version1, RunnerType: "GITHUB_ACTION",
+			})
+		assert.NoError(s.T(), err)
+		assert.NotNil(s.T(), wfRun)
+
+		// Update the workflow run
+		err = s.TestingUseCases.WorkflowRun.MarkAsFinished(ctx, wfRun.ID.String(), biz.WorkflowRunSuccess, "the-logs")
+		assert.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowRunRunnerType: "GITHUB_ACTION"}, nil)
+		s.NoError(err)
+		s.Len(workflows, 1)
+	})
+
+	s.Run("list workflow with pagination", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+
+		paginationOpts, err := pagination.NewOffsetPaginationOpts(0, 1)
+		require.NoError(s.T(), err)
+
+		workflows, count, err := s.Workflow.List(ctx, s.org.ID, nil, paginationOpts)
+		s.NoError(err)
+		s.Len(workflows, 1)
+		s.Equal(2, count)
+	})
+}
+
 // Run the tests
 func TestWorkflowUseCase(t *testing.T) {
 	suite.Run(t, new(workflowIntegrationTestSuite))
+	suite.Run(t, new(workflowListIntegrationTestSuite))
 }
 
 // Utility struct to hold the test suite
@@ -346,6 +469,33 @@ func (s *workflowIntegrationTestSuite) SetupTest() {
 		OrgID:   s.org.ID,
 	})
 	assert.NoError(err)
+}
+
+// Utility struct to hold the test suite
+type workflowListIntegrationTestSuite struct {
+	testhelpers.UseCasesEachTestSuite
+	org *biz.Organization
+}
+
+func (s *workflowListIntegrationTestSuite) SetupTest() {
+	var err error
+	assert := assert.New(s.T())
+
+	credsWriter := creds.NewReaderWriter(s.T())
+	credsWriter.On("SaveCredentials", context.Background(), mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
+
+	ctx := context.Background()
+	s.org, err = s.Organization.CreateWithRandomName(ctx)
+	assert.NoError(err)
+}
+
+func (s *workflowListIntegrationTestSuite) TearDownSubTest() {
+	_, _ = s.Data.DB.Workflow.Delete().Exec(context.Background())
+	_, _ = s.Data.DB.Project.Delete().Exec(context.Background())
+	_, _ = s.Data.DB.WorkflowRun.Delete().Exec(context.Background())
+	_, _ = s.Data.DB.CASBackend.Delete().Exec(context.Background())
 }
 
 func toPtrS(s string) *string {

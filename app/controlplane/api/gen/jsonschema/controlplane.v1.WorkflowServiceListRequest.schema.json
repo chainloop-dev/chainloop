@@ -3,13 +3,179 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
-    "^(projectReference)$": {
-      "$ref": "controlplane.v1.EntityRef.schema.json"
+    "^(projectNames)$": {
+      "description": "The project the workflow belongs to",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(workflowLastActivityWindow)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED",
+            "WORKFLOW_ACTIVITY_WINDOW_LAST_DAY",
+            "WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS",
+            "WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS"
+          ],
+          "title": "Workflow Activity Window",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The time window for the last known workflow activity"
+    },
+    "^(workflowName)$": {
+      "description": "The name of the workflow to filter by",
+      "type": "string"
+    },
+    "^(workflowPublic)$": {
+      "description": "If the workflow is public",
+      "type": "boolean"
+    },
+    "^(workflowRunLastStatus)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUN_STATUS_UNSPECIFIED",
+            "RUN_STATUS_INITIALIZED",
+            "RUN_STATUS_SUCCEEDED",
+            "RUN_STATUS_FAILED",
+            "RUN_STATUS_EXPIRED",
+            "RUN_STATUS_CANCELLED"
+          ],
+          "title": "Run Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The status of the last workflow run"
+    },
+    "^(workflowRunRunnerType)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The type of runner that ran the workflow"
+    },
+    "^(workflowTeam)$": {
+      "description": "The team the workflow belongs to",
+      "type": "string"
     }
   },
   "properties": {
-    "project_reference": {
-      "$ref": "controlplane.v1.EntityRef.schema.json"
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination options"
+    },
+    "project_names": {
+      "description": "The project the workflow belongs to",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "workflow_last_activity_window": {
+      "anyOf": [
+        {
+          "enum": [
+            "WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED",
+            "WORKFLOW_ACTIVITY_WINDOW_LAST_DAY",
+            "WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS",
+            "WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS"
+          ],
+          "title": "Workflow Activity Window",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The time window for the last known workflow activity"
+    },
+    "workflow_name": {
+      "description": "The name of the workflow to filter by",
+      "type": "string"
+    },
+    "workflow_public": {
+      "description": "If the workflow is public",
+      "type": "boolean"
+    },
+    "workflow_run_last_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUN_STATUS_UNSPECIFIED",
+            "RUN_STATUS_INITIALIZED",
+            "RUN_STATUS_SUCCEEDED",
+            "RUN_STATUS_FAILED",
+            "RUN_STATUS_EXPIRED",
+            "RUN_STATUS_CANCELLED"
+          ],
+          "title": "Run Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The status of the last workflow run"
+    },
+    "workflow_run_runner_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The type of runner that ran the workflow"
+    },
+    "workflow_team": {
+      "description": "The team the workflow belongs to",
+      "type": "string"
     }
   },
   "title": "Workflow Service List Request",
