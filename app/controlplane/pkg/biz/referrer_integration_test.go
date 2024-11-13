@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"sync"
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -141,6 +142,33 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 	})
 }
 
+func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
+
+	// Load attestation
+	envelope := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	ctx := context.Background()
+
+	s.T().Run("and works with concurrency of the same thing", func(t *testing.T) {
+		var wg sync.WaitGroup
+		for i := 0; i < 5; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				err := s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
+				s.NoError(err)
+				err = s.Referrer.ExtractAndPersist(ctx, envelope, s.workflow2.ID.String())
+				s.NoError(err)
+			}()
+		}
+		wg.Wait()
+
+		got, err := s.Referrer.GetFromRootUser(ctx, "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7", "", s.user.ID)
+		s.NoError(err)
+		s.Len(got.WorkflowIDs, 2)
+		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
+	})
+
+}
 func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	// Load attestation
 	envelope := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
