@@ -143,12 +143,10 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 }
 
 func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
-
-	// Load attestation
 	envelope := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
 	ctx := context.Background()
 
-	s.T().Run("and works with concurrency of the same thing", func(t *testing.T) {
+	s.T().Run("and works with concurrency of the same thing", func(_ *testing.T) {
 		var wg sync.WaitGroup
 		for i := 0; i < 5; i++ {
 			wg.Add(1)
@@ -167,8 +165,8 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
 		s.Len(got.WorkflowIDs, 2)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
 	})
-
 }
+
 func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	// Load attestation
 	envelope := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
