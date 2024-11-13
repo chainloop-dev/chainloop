@@ -93,6 +93,20 @@ func (wc *WorkflowCreate) SetNillableCreatedAt(t *time.Time) *WorkflowCreate {
 	return wc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (wc *WorkflowCreate) SetUpdatedAt(t time.Time) *WorkflowCreate {
+	wc.mutation.SetUpdatedAt(t)
+	return wc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (wc *WorkflowCreate) SetNillableUpdatedAt(t *time.Time) *WorkflowCreate {
+	if t != nil {
+		wc.SetUpdatedAt(*t)
+	}
+	return wc
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (wc *WorkflowCreate) SetDeletedAt(t time.Time) *WorkflowCreate {
 	wc.mutation.SetDeletedAt(t)
@@ -130,6 +144,20 @@ func (wc *WorkflowCreate) SetOrganizationID(u uuid.UUID) *WorkflowCreate {
 // SetProjectID sets the "project_id" field.
 func (wc *WorkflowCreate) SetProjectID(u uuid.UUID) *WorkflowCreate {
 	wc.mutation.SetProjectID(u)
+	return wc
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (wc *WorkflowCreate) SetLatestRun(u uuid.UUID) *WorkflowCreate {
+	wc.mutation.SetLatestRun(u)
+	return wc
+}
+
+// SetNillableLatestRun sets the "latest_run" field if the given value is not nil.
+func (wc *WorkflowCreate) SetNillableLatestRun(u *uuid.UUID) *WorkflowCreate {
+	if u != nil {
+		wc.SetLatestRun(*u)
+	}
 	return wc
 }
 
@@ -227,6 +255,25 @@ func (wc *WorkflowCreate) SetProject(p *Project) *WorkflowCreate {
 	return wc.SetProjectID(p.ID)
 }
 
+// SetLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID.
+func (wc *WorkflowCreate) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowCreate {
+	wc.mutation.SetLatestWorkflowRunID(id)
+	return wc
+}
+
+// SetNillableLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
+func (wc *WorkflowCreate) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowCreate {
+	if id != nil {
+		wc = wc.SetLatestWorkflowRunID(*id)
+	}
+	return wc
+}
+
+// SetLatestWorkflowRun sets the "latest_workflow_run" edge to the WorkflowRun entity.
+func (wc *WorkflowCreate) SetLatestWorkflowRun(w *WorkflowRun) *WorkflowCreate {
+	return wc.SetLatestWorkflowRunID(w.ID)
+}
+
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
 func (wc *WorkflowCreate) AddReferrerIDs(ids ...uuid.UUID) *WorkflowCreate {
 	wc.mutation.AddReferrerIDs(ids...)
@@ -285,6 +332,10 @@ func (wc *WorkflowCreate) defaults() {
 		v := workflow.DefaultCreatedAt()
 		wc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := wc.mutation.UpdatedAt(); !ok {
+		v := workflow.DefaultUpdatedAt()
+		wc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := wc.mutation.Public(); !ok {
 		v := workflow.DefaultPublic
 		wc.mutation.SetPublic(v)
@@ -305,6 +356,9 @@ func (wc *WorkflowCreate) check() error {
 	}
 	if _, ok := wc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Workflow.created_at"`)}
+	}
+	if _, ok := wc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Workflow.updated_at"`)}
 	}
 	if _, ok := wc.mutation.Public(); !ok {
 		return &ValidationError{Name: "public", err: errors.New(`ent: missing required field "Workflow.public"`)}
@@ -379,6 +433,10 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 	if value, ok := wc.mutation.CreatedAt(); ok {
 		_spec.SetField(workflow.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := wc.mutation.UpdatedAt(); ok {
+		_spec.SetField(workflow.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := wc.mutation.DeletedAt(); ok {
 		_spec.SetField(workflow.FieldDeletedAt, field.TypeTime, value)
@@ -489,6 +547,23 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.ProjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wc.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflow.LatestWorkflowRunTable,
+			Columns: []string{workflow.LatestWorkflowRunColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.LatestRun = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := wc.mutation.ReferrersIDs(); len(nodes) > 0 {
@@ -613,6 +688,18 @@ func (u *WorkflowUpsert) AddRunsCount(v int) *WorkflowUpsert {
 	return u
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *WorkflowUpsert) SetUpdatedAt(v time.Time) *WorkflowUpsert {
+	u.Set(workflow.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *WorkflowUpsert) UpdateUpdatedAt() *WorkflowUpsert {
+	u.SetExcluded(workflow.FieldUpdatedAt)
+	return u
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *WorkflowUpsert) SetDeletedAt(v time.Time) *WorkflowUpsert {
 	u.Set(workflow.FieldDeletedAt, v)
@@ -664,6 +751,24 @@ func (u *WorkflowUpsert) SetProjectID(v uuid.UUID) *WorkflowUpsert {
 // UpdateProjectID sets the "project_id" field to the value that was provided on create.
 func (u *WorkflowUpsert) UpdateProjectID() *WorkflowUpsert {
 	u.SetExcluded(workflow.FieldProjectID)
+	return u
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (u *WorkflowUpsert) SetLatestRun(v uuid.UUID) *WorkflowUpsert {
+	u.Set(workflow.FieldLatestRun, v)
+	return u
+}
+
+// UpdateLatestRun sets the "latest_run" field to the value that was provided on create.
+func (u *WorkflowUpsert) UpdateLatestRun() *WorkflowUpsert {
+	u.SetExcluded(workflow.FieldLatestRun)
+	return u
+}
+
+// ClearLatestRun clears the value of the "latest_run" field.
+func (u *WorkflowUpsert) ClearLatestRun() *WorkflowUpsert {
+	u.SetNull(workflow.FieldLatestRun)
 	return u
 }
 
@@ -802,6 +907,20 @@ func (u *WorkflowUpsertOne) UpdateRunsCount() *WorkflowUpsertOne {
 	})
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *WorkflowUpsertOne) SetUpdatedAt(v time.Time) *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *WorkflowUpsertOne) UpdateUpdatedAt() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *WorkflowUpsertOne) SetDeletedAt(v time.Time) *WorkflowUpsertOne {
 	return u.Update(func(s *WorkflowUpsert) {
@@ -862,6 +981,27 @@ func (u *WorkflowUpsertOne) SetProjectID(v uuid.UUID) *WorkflowUpsertOne {
 func (u *WorkflowUpsertOne) UpdateProjectID() *WorkflowUpsertOne {
 	return u.Update(func(s *WorkflowUpsert) {
 		s.UpdateProjectID()
+	})
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (u *WorkflowUpsertOne) SetLatestRun(v uuid.UUID) *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetLatestRun(v)
+	})
+}
+
+// UpdateLatestRun sets the "latest_run" field to the value that was provided on create.
+func (u *WorkflowUpsertOne) UpdateLatestRun() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateLatestRun()
+	})
+}
+
+// ClearLatestRun clears the value of the "latest_run" field.
+func (u *WorkflowUpsertOne) ClearLatestRun() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearLatestRun()
 	})
 }
 
@@ -1170,6 +1310,20 @@ func (u *WorkflowUpsertBulk) UpdateRunsCount() *WorkflowUpsertBulk {
 	})
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *WorkflowUpsertBulk) SetUpdatedAt(v time.Time) *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *WorkflowUpsertBulk) UpdateUpdatedAt() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *WorkflowUpsertBulk) SetDeletedAt(v time.Time) *WorkflowUpsertBulk {
 	return u.Update(func(s *WorkflowUpsert) {
@@ -1230,6 +1384,27 @@ func (u *WorkflowUpsertBulk) SetProjectID(v uuid.UUID) *WorkflowUpsertBulk {
 func (u *WorkflowUpsertBulk) UpdateProjectID() *WorkflowUpsertBulk {
 	return u.Update(func(s *WorkflowUpsert) {
 		s.UpdateProjectID()
+	})
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (u *WorkflowUpsertBulk) SetLatestRun(v uuid.UUID) *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetLatestRun(v)
+	})
+}
+
+// UpdateLatestRun sets the "latest_run" field to the value that was provided on create.
+func (u *WorkflowUpsertBulk) UpdateLatestRun() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateLatestRun()
+	})
+}
+
+// ClearLatestRun clears the value of the "latest_run" field.
+func (u *WorkflowUpsertBulk) ClearLatestRun() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearLatestRun()
 	})
 }
 

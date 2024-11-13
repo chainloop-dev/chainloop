@@ -93,6 +93,15 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, err
 	}
 
+	// Update the workflow with the last run reference
+	_, err = tx.Workflow.UpdateOneID(wf.ID).
+		SetLatestWorkflowRunID(p.ID).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("updating workflow: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("committing transaction: %w", err)
 	}
@@ -287,7 +296,7 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 	}
 
 	if wf := wr.Edges.Workflow; wf != nil {
-		w, err := entWFToBizWF(ctx, wf, nil)
+		w, err := entWFToBizWF(ctx, wf)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert workflow: %w", err)
 		}

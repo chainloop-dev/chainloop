@@ -81,6 +81,11 @@ func CreatedAt(v time.Time) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldDeletedAt, v))
@@ -99,6 +104,11 @@ func OrganizationID(v uuid.UUID) predicate.Workflow {
 // ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
 func ProjectID(v uuid.UUID) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldProjectID, v))
+}
+
+// LatestRun applies equality check predicate on the "latest_run" field. It's identical to LatestRunEQ.
+func LatestRun(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldLatestRun, v))
 }
 
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
@@ -401,6 +411,46 @@ func CreatedAtLTE(v time.Time) predicate.Workflow {
 	return predicate.Workflow(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.Workflow {
+	return predicate.Workflow(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
 // DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
 func DeletedAtEQ(v time.Time) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldDeletedAt, v))
@@ -499,6 +549,36 @@ func ProjectIDIn(vs ...uuid.UUID) predicate.Workflow {
 // ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
 func ProjectIDNotIn(vs ...uuid.UUID) predicate.Workflow {
 	return predicate.Workflow(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
+// LatestRunEQ applies the EQ predicate on the "latest_run" field.
+func LatestRunEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldLatestRun, v))
+}
+
+// LatestRunNEQ applies the NEQ predicate on the "latest_run" field.
+func LatestRunNEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldLatestRun, v))
+}
+
+// LatestRunIn applies the In predicate on the "latest_run" field.
+func LatestRunIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldIn(FieldLatestRun, vs...))
+}
+
+// LatestRunNotIn applies the NotIn predicate on the "latest_run" field.
+func LatestRunNotIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotIn(FieldLatestRun, vs...))
+}
+
+// LatestRunIsNil applies the IsNil predicate on the "latest_run" field.
+func LatestRunIsNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldIsNull(FieldLatestRun))
+}
+
+// LatestRunNotNil applies the NotNil predicate on the "latest_run" field.
+func LatestRunNotNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotNull(FieldLatestRun))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.
@@ -706,6 +786,29 @@ func HasProject() predicate.Workflow {
 func HasProjectWith(preds ...predicate.Project) predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
 		step := newProjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasLatestWorkflowRun applies the HasEdge predicate on the "latest_workflow_run" edge.
+func HasLatestWorkflowRun() predicate.Workflow {
+	return predicate.Workflow(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, LatestWorkflowRunTable, LatestWorkflowRunColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasLatestWorkflowRunWith applies the HasEdge predicate on the "latest_workflow_run" edge with a given conditions (other predicates).
+func HasLatestWorkflowRunWith(preds ...predicate.WorkflowRun) predicate.Workflow {
+	return predicate.Workflow(func(s *sql.Selector) {
+		step := newLatestWorkflowRunStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

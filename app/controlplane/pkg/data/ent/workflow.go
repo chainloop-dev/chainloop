@@ -13,6 +13,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +32,8 @@ type Workflow struct {
 	RunsCount int `json:"runs_count,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Public holds the value of the "public" field.
@@ -39,6 +42,8 @@ type Workflow struct {
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	// LatestRun holds the value of the "latest_run" field.
+	LatestRun *uuid.UUID `json:"latest_run,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -62,11 +67,13 @@ type WorkflowEdges struct {
 	IntegrationAttachments []*IntegrationAttachment `json:"integration_attachments,omitempty"`
 	// Project holds the value of the project edge.
 	Project *Project `json:"project,omitempty"`
+	// LatestWorkflowRun holds the value of the latest_workflow_run edge.
+	LatestWorkflowRun *WorkflowRun `json:"latest_workflow_run,omitempty"`
 	// Referrers holds the value of the referrers edge.
 	Referrers []*Referrer `json:"referrers,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [8]bool
 }
 
 // RobotaccountsOrErr returns the Robotaccounts value or an error if the edge
@@ -129,10 +136,21 @@ func (e WorkflowEdges) ProjectOrErr() (*Project, error) {
 	return nil, &NotLoadedError{edge: "project"}
 }
 
+// LatestWorkflowRunOrErr returns the LatestWorkflowRun value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowEdges) LatestWorkflowRunOrErr() (*WorkflowRun, error) {
+	if e.LatestWorkflowRun != nil {
+		return e.LatestWorkflowRun, nil
+	} else if e.loadedTypes[6] {
+		return nil, &NotFoundError{label: workflowrun.Label}
+	}
+	return nil, &NotLoadedError{edge: "latest_workflow_run"}
+}
+
 // ReferrersOrErr returns the Referrers value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkflowEdges) ReferrersOrErr() ([]*Referrer, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Referrers, nil
 	}
 	return nil, &NotLoadedError{edge: "referrers"}
@@ -143,13 +161,15 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case workflow.FieldLatestRun:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case workflow.FieldPublic:
 			values[i] = new(sql.NullBool)
 		case workflow.FieldRunsCount:
 			values[i] = new(sql.NullInt64)
 		case workflow.FieldName, workflow.FieldProjectOld, workflow.FieldTeam, workflow.FieldDescription:
 			values[i] = new(sql.NullString)
-		case workflow.FieldCreatedAt, workflow.FieldDeletedAt:
+		case workflow.FieldCreatedAt, workflow.FieldUpdatedAt, workflow.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case workflow.FieldID, workflow.FieldOrganizationID, workflow.FieldProjectID:
 			values[i] = new(uuid.UUID)
@@ -206,6 +226,12 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				w.CreatedAt = value.Time
 			}
+		case workflow.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				w.UpdatedAt = value.Time
+			}
 		case workflow.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
@@ -229,6 +255,13 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
 			} else if value != nil {
 				w.ProjectID = *value
+			}
+		case workflow.FieldLatestRun:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field latest_run", values[i])
+			} else if value.Valid {
+				w.LatestRun = new(uuid.UUID)
+				*w.LatestRun = *value.S.(*uuid.UUID)
 			}
 		case workflow.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -286,6 +319,11 @@ func (w *Workflow) QueryProject() *ProjectQuery {
 	return NewWorkflowClient(w.config).QueryProject(w)
 }
 
+// QueryLatestWorkflowRun queries the "latest_workflow_run" edge of the Workflow entity.
+func (w *Workflow) QueryLatestWorkflowRun() *WorkflowRunQuery {
+	return NewWorkflowClient(w.config).QueryLatestWorkflowRun(w)
+}
+
 // QueryReferrers queries the "referrers" edge of the Workflow entity.
 func (w *Workflow) QueryReferrers() *ReferrerQuery {
 	return NewWorkflowClient(w.config).QueryReferrers(w)
@@ -329,6 +367,9 @@ func (w *Workflow) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(w.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(w.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(w.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -340,6 +381,11 @@ func (w *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", w.ProjectID))
+	builder.WriteString(", ")
+	if v := w.LatestRun; v != nil {
+		builder.WriteString("latest_run=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(w.Description)

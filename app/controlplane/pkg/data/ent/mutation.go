@@ -9858,6 +9858,7 @@ type WorkflowMutation struct {
 	runs_count                     *int
 	addruns_count                  *int
 	created_at                     *time.Time
+	updated_at                     *time.Time
 	deleted_at                     *time.Time
 	public                         *bool
 	description                    *string
@@ -9877,6 +9878,8 @@ type WorkflowMutation struct {
 	clearedintegration_attachments bool
 	project                        *uuid.UUID
 	clearedproject                 bool
+	latest_workflow_run            *uuid.UUID
+	clearedlatest_workflow_run     bool
 	referrers                      map[uuid.UUID]struct{}
 	removedreferrers               map[uuid.UUID]struct{}
 	clearedreferrers               bool
@@ -10215,6 +10218,42 @@ func (m *WorkflowMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (m *WorkflowMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *WorkflowMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *WorkflowMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (m *WorkflowMutation) SetDeletedAt(t time.Time) {
 	m.deleted_at = &t
@@ -10370,6 +10409,55 @@ func (m *WorkflowMutation) OldProjectID(ctx context.Context) (v uuid.UUID, err e
 // ResetProjectID resets all changes to the "project_id" field.
 func (m *WorkflowMutation) ResetProjectID() {
 	m.project = nil
+}
+
+// SetLatestRun sets the "latest_run" field.
+func (m *WorkflowMutation) SetLatestRun(u uuid.UUID) {
+	m.latest_workflow_run = &u
+}
+
+// LatestRun returns the value of the "latest_run" field in the mutation.
+func (m *WorkflowMutation) LatestRun() (r uuid.UUID, exists bool) {
+	v := m.latest_workflow_run
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatestRun returns the old "latest_run" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldLatestRun(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatestRun is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatestRun requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatestRun: %w", err)
+	}
+	return oldValue.LatestRun, nil
+}
+
+// ClearLatestRun clears the value of the "latest_run" field.
+func (m *WorkflowMutation) ClearLatestRun() {
+	m.latest_workflow_run = nil
+	m.clearedFields[workflow.FieldLatestRun] = struct{}{}
+}
+
+// LatestRunCleared returns if the "latest_run" field was cleared in this mutation.
+func (m *WorkflowMutation) LatestRunCleared() bool {
+	_, ok := m.clearedFields[workflow.FieldLatestRun]
+	return ok
+}
+
+// ResetLatestRun resets all changes to the "latest_run" field.
+func (m *WorkflowMutation) ResetLatestRun() {
+	m.latest_workflow_run = nil
+	delete(m.clearedFields, workflow.FieldLatestRun)
 }
 
 // SetDescription sets the "description" field.
@@ -10676,6 +10764,46 @@ func (m *WorkflowMutation) ResetProject() {
 	m.clearedproject = false
 }
 
+// SetLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by id.
+func (m *WorkflowMutation) SetLatestWorkflowRunID(id uuid.UUID) {
+	m.latest_workflow_run = &id
+}
+
+// ClearLatestWorkflowRun clears the "latest_workflow_run" edge to the WorkflowRun entity.
+func (m *WorkflowMutation) ClearLatestWorkflowRun() {
+	m.clearedlatest_workflow_run = true
+	m.clearedFields[workflow.FieldLatestRun] = struct{}{}
+}
+
+// LatestWorkflowRunCleared reports if the "latest_workflow_run" edge to the WorkflowRun entity was cleared.
+func (m *WorkflowMutation) LatestWorkflowRunCleared() bool {
+	return m.LatestRunCleared() || m.clearedlatest_workflow_run
+}
+
+// LatestWorkflowRunID returns the "latest_workflow_run" edge ID in the mutation.
+func (m *WorkflowMutation) LatestWorkflowRunID() (id uuid.UUID, exists bool) {
+	if m.latest_workflow_run != nil {
+		return *m.latest_workflow_run, true
+	}
+	return
+}
+
+// LatestWorkflowRunIDs returns the "latest_workflow_run" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// LatestWorkflowRunID instead. It exists only for internal usage by the builders.
+func (m *WorkflowMutation) LatestWorkflowRunIDs() (ids []uuid.UUID) {
+	if id := m.latest_workflow_run; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetLatestWorkflowRun resets all changes to the "latest_workflow_run" edge.
+func (m *WorkflowMutation) ResetLatestWorkflowRun() {
+	m.latest_workflow_run = nil
+	m.clearedlatest_workflow_run = false
+}
+
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by ids.
 func (m *WorkflowMutation) AddReferrerIDs(ids ...uuid.UUID) {
 	if m.referrers == nil {
@@ -10764,7 +10892,7 @@ func (m *WorkflowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
 	}
@@ -10780,6 +10908,9 @@ func (m *WorkflowMutation) Fields() []string {
 	if m.created_at != nil {
 		fields = append(fields, workflow.FieldCreatedAt)
 	}
+	if m.updated_at != nil {
+		fields = append(fields, workflow.FieldUpdatedAt)
+	}
 	if m.deleted_at != nil {
 		fields = append(fields, workflow.FieldDeletedAt)
 	}
@@ -10791,6 +10922,9 @@ func (m *WorkflowMutation) Fields() []string {
 	}
 	if m.project != nil {
 		fields = append(fields, workflow.FieldProjectID)
+	}
+	if m.latest_workflow_run != nil {
+		fields = append(fields, workflow.FieldLatestRun)
 	}
 	if m.description != nil {
 		fields = append(fields, workflow.FieldDescription)
@@ -10813,6 +10947,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.RunsCount()
 	case workflow.FieldCreatedAt:
 		return m.CreatedAt()
+	case workflow.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case workflow.FieldDeletedAt:
 		return m.DeletedAt()
 	case workflow.FieldPublic:
@@ -10821,6 +10957,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.OrganizationID()
 	case workflow.FieldProjectID:
 		return m.ProjectID()
+	case workflow.FieldLatestRun:
+		return m.LatestRun()
 	case workflow.FieldDescription:
 		return m.Description()
 	}
@@ -10842,6 +10980,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldRunsCount(ctx)
 	case workflow.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case workflow.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case workflow.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	case workflow.FieldPublic:
@@ -10850,6 +10990,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldOrganizationID(ctx)
 	case workflow.FieldProjectID:
 		return m.OldProjectID(ctx)
+	case workflow.FieldLatestRun:
+		return m.OldLatestRun(ctx)
 	case workflow.FieldDescription:
 		return m.OldDescription(ctx)
 	}
@@ -10896,6 +11038,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedAt(v)
 		return nil
+	case workflow.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
 	case workflow.FieldDeletedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -10923,6 +11072,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProjectID(v)
+		return nil
+	case workflow.FieldLatestRun:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatestRun(v)
 		return nil
 	case workflow.FieldDescription:
 		v, ok := value.(string)
@@ -10985,6 +11141,9 @@ func (m *WorkflowMutation) ClearedFields() []string {
 	if m.FieldCleared(workflow.FieldDeletedAt) {
 		fields = append(fields, workflow.FieldDeletedAt)
 	}
+	if m.FieldCleared(workflow.FieldLatestRun) {
+		fields = append(fields, workflow.FieldLatestRun)
+	}
 	if m.FieldCleared(workflow.FieldDescription) {
 		fields = append(fields, workflow.FieldDescription)
 	}
@@ -11010,6 +11169,9 @@ func (m *WorkflowMutation) ClearField(name string) error {
 		return nil
 	case workflow.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case workflow.FieldLatestRun:
+		m.ClearLatestRun()
 		return nil
 	case workflow.FieldDescription:
 		m.ClearDescription()
@@ -11037,6 +11199,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 	case workflow.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
+	case workflow.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
 	case workflow.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
@@ -11049,6 +11214,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 	case workflow.FieldProjectID:
 		m.ResetProjectID()
 		return nil
+	case workflow.FieldLatestRun:
+		m.ResetLatestRun()
+		return nil
 	case workflow.FieldDescription:
 		m.ResetDescription()
 		return nil
@@ -11058,7 +11226,7 @@ func (m *WorkflowMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.robotaccounts != nil {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -11076,6 +11244,9 @@ func (m *WorkflowMutation) AddedEdges() []string {
 	}
 	if m.project != nil {
 		edges = append(edges, workflow.EdgeProject)
+	}
+	if m.latest_workflow_run != nil {
+		edges = append(edges, workflow.EdgeLatestWorkflowRun)
 	}
 	if m.referrers != nil {
 		edges = append(edges, workflow.EdgeReferrers)
@@ -11117,6 +11288,10 @@ func (m *WorkflowMutation) AddedIDs(name string) []ent.Value {
 		if id := m.project; id != nil {
 			return []ent.Value{*id}
 		}
+	case workflow.EdgeLatestWorkflowRun:
+		if id := m.latest_workflow_run; id != nil {
+			return []ent.Value{*id}
+		}
 	case workflow.EdgeReferrers:
 		ids := make([]ent.Value, 0, len(m.referrers))
 		for id := range m.referrers {
@@ -11129,7 +11304,7 @@ func (m *WorkflowMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.removedrobotaccounts != nil {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -11179,7 +11354,7 @@ func (m *WorkflowMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.clearedrobotaccounts {
 		edges = append(edges, workflow.EdgeRobotaccounts)
 	}
@@ -11197,6 +11372,9 @@ func (m *WorkflowMutation) ClearedEdges() []string {
 	}
 	if m.clearedproject {
 		edges = append(edges, workflow.EdgeProject)
+	}
+	if m.clearedlatest_workflow_run {
+		edges = append(edges, workflow.EdgeLatestWorkflowRun)
 	}
 	if m.clearedreferrers {
 		edges = append(edges, workflow.EdgeReferrers)
@@ -11220,6 +11398,8 @@ func (m *WorkflowMutation) EdgeCleared(name string) bool {
 		return m.clearedintegration_attachments
 	case workflow.EdgeProject:
 		return m.clearedproject
+	case workflow.EdgeLatestWorkflowRun:
+		return m.clearedlatest_workflow_run
 	case workflow.EdgeReferrers:
 		return m.clearedreferrers
 	}
@@ -11238,6 +11418,9 @@ func (m *WorkflowMutation) ClearEdge(name string) error {
 		return nil
 	case workflow.EdgeProject:
 		m.ClearProject()
+		return nil
+	case workflow.EdgeLatestWorkflowRun:
+		m.ClearLatestWorkflowRun()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow unique edge %s", name)
@@ -11264,6 +11447,9 @@ func (m *WorkflowMutation) ResetEdge(name string) error {
 		return nil
 	case workflow.EdgeProject:
 		m.ResetProject()
+		return nil
+	case workflow.EdgeLatestWorkflowRun:
+		m.ResetLatestWorkflowRun()
 		return nil
 	case workflow.EdgeReferrers:
 		m.ResetReferrers()

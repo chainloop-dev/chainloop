@@ -46,11 +46,17 @@ func (Workflow) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
+		field.Time("updated_at").
+			Default(time.Now).
+			Annotations(&entsql.Annotation{
+				Default: "CURRENT_TIMESTAMP",
+			}),
 		field.Time("deleted_at").Optional(),
 		// public means that the workflow runs, attestations and materials are reachable
 		field.Bool("public").Default(false),
 		field.UUID("organization_id", uuid.UUID{}),
 		field.UUID("project_id", uuid.UUID{}),
+		field.UUID("latest_run", uuid.UUID{}).Optional().Nillable(),
 		field.String("description").Optional(),
 	}
 }
@@ -65,6 +71,7 @@ func (Workflow) Edges() []ent.Edge {
 		edge.From("integration_attachments", IntegrationAttachment.Type).
 			Ref("workflow"),
 		edge.From("project", Project.Type).Unique().Field("project_id").Ref("workflows").Required(),
+		edge.To("latest_workflow_run", WorkflowRun.Type).Field("latest_run").Unique(),
 
 		// M2M. referrer can be part of multiple workflows
 		edge.From("referrers", Referrer.Type).Ref("workflows"),

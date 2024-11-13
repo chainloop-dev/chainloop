@@ -26,7 +26,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -144,7 +143,8 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, projectID uuid
 		QueryWorkflows().
 		Where(workflow.DeletedAtIsNil()).
 		WithContract().
-		WithOrganization()
+		WithOrganization().
+		WithLatestWorkflowRun()
 
 	if projectID != uuid.Nil {
 		baseQuery = baseQuery.Where(workflow.ProjectID(projectID))
@@ -159,13 +159,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, projectID uuid
 
 	result := make([]*biz.Workflow, 0, len(workflows))
 	for _, wf := range workflows {
-		// Not efficient, we need to do a query limit = 1 grouped by workflowID
-		lastRun, err := getLastRun(ctx, wf)
-		if err != nil {
-			return nil, err
-		}
-
-		r, err := entWFToBizWF(ctx, wf, lastRun)
+		r, err := entWFToBizWF(ctx, wf)
 		if err != nil {
 			return nil, fmt.Errorf("converting entity: %w", err)
 		}
@@ -181,7 +175,7 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 	workflow, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.ID(workflowID), workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().
+		WithContract().WithOrganization().WithLatestWorkflowRun().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
 
@@ -192,20 +186,14 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 		return nil, err
 	}
 
-	// Not efficient, we need to do a query limit = 1 grouped by workflowID
-	lastRun, err := getLastRun(ctx, workflow)
-	if err != nil {
-		return nil, err
-	}
-
-	return entWFToBizWF(ctx, workflow, lastRun)
+	return entWFToBizWF(ctx, workflow)
 }
 
 // GetOrgScopedByProjectAndName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
 	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
 		Where(workflow.HasProjectWith(project.Name(projectName)), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().WithProject().
+		WithContract().WithOrganization().WithProject().WithLatestWorkflowRun().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
 
@@ -216,13 +204,7 @@ func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID u
 		return nil, err
 	}
 
-	// Not efficient, we need to do a query limit = 1 grouped by workflowID
-	lastRun, err := getLastRun(ctx, wf)
-	if err != nil {
-		return nil, err
-	}
-
-	return entWFToBizWF(ctx, wf, lastRun)
+	return entWFToBizWF(ctx, wf)
 }
 
 func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error {
@@ -232,7 +214,7 @@ func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID)
 func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflow, error) {
 	workflow, err := r.data.DB.Workflow.Query().
 		Where(workflow.DeletedAtIsNil(), workflow.ID(id)).
-		WithContract().WithOrganization().
+		WithContract().WithOrganization().WithLatestWorkflowRun().
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -241,13 +223,7 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 		return nil, err
 	}
 
-	// Not efficient, we need to do a query limit = 1 grouped by workflowID
-	lastRun, err := getLastRun(ctx, workflow)
-	if err != nil {
-		return nil, err
-	}
-
-	return entWFToBizWF(ctx, workflow, lastRun)
+	return entWFToBizWF(ctx, workflow)
 }
 
 // Soft delete workflow, attachments and related projects (if applicable)
@@ -263,7 +239,7 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	// Soft delete workflow
-	wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).Save(ctx)
+	wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Save(ctx)
 	if err != nil {
 		return err
 	}
@@ -282,7 +258,7 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return tx.Commit()
 }
 
-func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*biz.Workflow, error) {
+func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
 		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
 		RunsCounter: w.RunsCount,
@@ -317,8 +293,8 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*bi
 		wf.ContractRevisionLatest = lv.Revision
 	}
 
-	if r != nil {
-		lastRun, err := entWrToBizWr(ctx, r)
+	if latestRun := w.Edges.LatestWorkflowRun; latestRun != nil {
+		lastRun, err := entWrToBizWr(ctx, latestRun)
 		if err != nil {
 			return nil, fmt.Errorf("converting workflow run: %w", err)
 		}
@@ -327,13 +303,4 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow, r *ent.WorkflowRun) (*bi
 	}
 
 	return wf, nil
-}
-
-func getLastRun(ctx context.Context, wf *ent.Workflow) (*ent.WorkflowRun, error) {
-	lastRun, err := wf.QueryWorkflowruns().WithWorkflow().Order(ent.Desc(workflowrun.FieldCreatedAt)).Limit(1).All(ctx)
-	if len(lastRun) == 0 {
-		return nil, err
-	}
-
-	return lastRun[0], nil
 }

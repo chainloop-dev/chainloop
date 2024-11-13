@@ -38,6 +38,7 @@ type WorkflowQuery struct {
 	withContract               *WorkflowContractQuery
 	withIntegrationAttachments *IntegrationAttachmentQuery
 	withProject                *ProjectQuery
+	withLatestWorkflowRun      *WorkflowRunQuery
 	withReferrers              *ReferrerQuery
 	withFKs                    bool
 	modifiers                  []func(*sql.Selector)
@@ -202,6 +203,28 @@ func (wq *WorkflowQuery) QueryProject() *ProjectQuery {
 			sqlgraph.From(workflow.Table, workflow.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflow.ProjectTable, workflow.ProjectColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryLatestWorkflowRun chains the current query on the "latest_workflow_run" edge.
+func (wq *WorkflowQuery) QueryLatestWorkflowRun() *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: wq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflow.Table, workflow.FieldID, selector),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, workflow.LatestWorkflowRunTable, workflow.LatestWorkflowRunColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
 		return fromU, nil
@@ -429,6 +452,7 @@ func (wq *WorkflowQuery) Clone() *WorkflowQuery {
 		withContract:               wq.withContract.Clone(),
 		withIntegrationAttachments: wq.withIntegrationAttachments.Clone(),
 		withProject:                wq.withProject.Clone(),
+		withLatestWorkflowRun:      wq.withLatestWorkflowRun.Clone(),
 		withReferrers:              wq.withReferrers.Clone(),
 		// clone intermediate query.
 		sql:  wq.sql.Clone(),
@@ -499,6 +523,17 @@ func (wq *WorkflowQuery) WithProject(opts ...func(*ProjectQuery)) *WorkflowQuery
 		opt(query)
 	}
 	wq.withProject = query
+	return wq
+}
+
+// WithLatestWorkflowRun tells the query-builder to eager-load the nodes that are connected to
+// the "latest_workflow_run" edge. The optional arguments are used to configure the query builder of the edge.
+func (wq *WorkflowQuery) WithLatestWorkflowRun(opts ...func(*WorkflowRunQuery)) *WorkflowQuery {
+	query := (&WorkflowRunClient{config: wq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wq.withLatestWorkflowRun = query
 	return wq
 }
 
@@ -592,13 +627,14 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 		nodes       = []*Workflow{}
 		withFKs     = wq.withFKs
 		_spec       = wq.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [8]bool{
 			wq.withRobotaccounts != nil,
 			wq.withWorkflowruns != nil,
 			wq.withOrganization != nil,
 			wq.withContract != nil,
 			wq.withIntegrationAttachments != nil,
 			wq.withProject != nil,
+			wq.withLatestWorkflowRun != nil,
 			wq.withReferrers != nil,
 		}
 	)
@@ -667,6 +703,12 @@ func (wq *WorkflowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Wor
 	if query := wq.withProject; query != nil {
 		if err := wq.loadProject(ctx, query, nodes, nil,
 			func(n *Workflow, e *Project) { n.Edges.Project = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wq.withLatestWorkflowRun; query != nil {
+		if err := wq.loadLatestWorkflowRun(ctx, query, nodes, nil,
+			func(n *Workflow, e *WorkflowRun) { n.Edges.LatestWorkflowRun = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -863,6 +905,38 @@ func (wq *WorkflowQuery) loadProject(ctx context.Context, query *ProjectQuery, n
 	}
 	return nil
 }
+func (wq *WorkflowQuery) loadLatestWorkflowRun(ctx context.Context, query *WorkflowRunQuery, nodes []*Workflow, init func(*Workflow), assign func(*Workflow, *WorkflowRun)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Workflow)
+	for i := range nodes {
+		if nodes[i].LatestRun == nil {
+			continue
+		}
+		fk := *nodes[i].LatestRun
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(workflowrun.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "latest_run" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (wq *WorkflowQuery) loadReferrers(ctx context.Context, query *ReferrerQuery, nodes []*Workflow, init func(*Workflow), assign func(*Workflow, *Referrer)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*Workflow)
@@ -958,6 +1032,9 @@ func (wq *WorkflowQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if wq.withProject != nil {
 			_spec.Node.AddColumnOnce(workflow.FieldProjectID)
+		}
+		if wq.withLatestWorkflowRun != nil {
+			_spec.Node.AddColumnOnce(workflow.FieldLatestRun)
 		}
 	}
 	if ps := wq.predicates; len(ps) > 0 {

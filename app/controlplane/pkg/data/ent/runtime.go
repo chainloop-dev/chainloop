@@ -208,8 +208,12 @@ func init() {
 	workflowDescCreatedAt := workflowFields[5].Descriptor()
 	// workflow.DefaultCreatedAt holds the default value on creation for the created_at field.
 	workflow.DefaultCreatedAt = workflowDescCreatedAt.Default.(func() time.Time)
+	// workflowDescUpdatedAt is the schema descriptor for updated_at field.
+	workflowDescUpdatedAt := workflowFields[6].Descriptor()
+	// workflow.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	workflow.DefaultUpdatedAt = workflowDescUpdatedAt.Default.(func() time.Time)
 	// workflowDescPublic is the schema descriptor for public field.
-	workflowDescPublic := workflowFields[7].Descriptor()
+	workflowDescPublic := workflowFields[8].Descriptor()
 	// workflow.DefaultPublic holds the default value on creation for the public field.
 	workflow.DefaultPublic = workflowDescPublic.Default.(bool)
 	// workflowDescID is the schema descriptor for id field.
