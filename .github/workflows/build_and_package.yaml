@@ -137,6 +137,11 @@ jobs:
             automated
             helm
 
+      - name: Trigger GitHub Release workflow
+        uses: chainloop-dev/chainloop/.github/workflows/release.yaml@main
+        with:
+          tag: ${{ github.ref_name }}
+
       - name: Mark attestation as failed
         if: ${{ failure() }}
         run: |
