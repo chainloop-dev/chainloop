@@ -240,6 +240,11 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, fromContract []*v1.CraftingSchema_Material, logger *zerolog.Logger) ([]*v1.CraftingSchema_Material, error) {
 	toAdd := make([]*v1.CraftingSchema_Material, 0)
 	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		// if material has no name, it's not enforced
+		if groupMaterial.GetName() == "" {
+			continue
+		}
+
 		// apply bindings if needed
 		csm, err := groupMaterialToCraftingSchemaMaterial(groupMaterial, group, pgAtt, logger)
 		if err != nil {
