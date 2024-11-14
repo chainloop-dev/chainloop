@@ -83,7 +83,7 @@ func (s *groupsTestSuite) TestLoadGroupSpec() {
 			wantErr: true,
 		},
 		{
-			name: "materials in policy groups must have a type",
+			name: "named materials in policy groups must have a type",
 			attachment: &v1.PolicyGroupAttachment{
 				Ref: "file://testdata/policy_group_wrong.yaml",
 			},

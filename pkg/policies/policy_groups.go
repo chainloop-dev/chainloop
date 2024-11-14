@@ -219,6 +219,7 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 		}
 
 		// 3. Material found or group material has no name. Let's check policies to apply
+		// Note that this looks for types supported by the policies, not by the group material (it's ignored in that case)
 		for _, policyAtt := range gm.GetPolicies() {
 			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
 			if err != nil {

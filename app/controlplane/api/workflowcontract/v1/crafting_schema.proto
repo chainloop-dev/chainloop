@@ -297,9 +297,6 @@ message PolicyGroup {
   // Policy group materials
   message Material {
     CraftingSchema.Material.MaterialType type = 1 [
-      (buf.validate.field).enum = {
-        not_in: [0]
-      },
       (buf.validate.field).enum.defined_only = true
     ];
     // Free form name, as we support placeholders eg `{{ inputs.input_name }}`
@@ -309,5 +306,11 @@ message PolicyGroup {
 
     // Policies to be applied to this material
     repeated PolicyAttachment policies = 6;
+
+    option (buf.validate.message).cel = {
+      id: "group_material"
+      message: "if name is provided, type should have a valid value"
+      expression: "!has(this.name) || has(this.name) && this.type != 0"
+    };
   }
 }
