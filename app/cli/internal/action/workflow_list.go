@@ -44,43 +44,77 @@ type WorkflowItem struct {
 	Public bool `json:"public"`
 }
 
+// WorkflowListResult holds the output of the workflow list action
+type WorkflowListResult struct {
+	Workflows  []*WorkflowItem   `json:"workflows"`
+	Pagination *OffsetPagination `json:"pagination"`
+}
+
+// NewWorkflowList creates a new instance of WorkflowList
 func NewWorkflowList(cfg *ActionsOpts) *WorkflowList {
 	return &WorkflowList{cfg}
 }
 
-func (action *WorkflowList) Run() ([]*WorkflowItem, error) {
+// Run executes the workflow list action
+func (action *WorkflowList) Run(page int, pageSize int) (*WorkflowListResult, error) {
+	if page < 1 {
+		return nil, fmt.Errorf("page must be greater or equal to 1")
+	}
+	if pageSize < 1 {
+		return nil, fmt.Errorf("page-size must be greater or equal to 1")
+	}
+
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
-	resp, err := client.List(context.Background(), &pb.WorkflowServiceListRequest{})
+	res := &WorkflowListResult{}
+
+	resp, err := client.List(context.Background(), &pb.WorkflowServiceListRequest{
+		Pagination: &pb.OffsetPaginationRequest{
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*WorkflowItem, 0, len(resp.Result))
+	// Convert the response to the output format
 	for _, p := range resp.Result {
-		result = append(result, pbWorkflowItemToAction(p))
+		res.Workflows = append(res.Workflows, pbWorkflowItemToAction(p))
 	}
 
-	return result, nil
+	// Add the pagination details
+	res.Pagination = &OffsetPagination{
+		Page:       int(resp.GetPagination().GetPage()),
+		PageSize:   int(resp.GetPagination().GetPageSize()),
+		TotalPages: int(resp.GetPagination().GetTotalPages()),
+		TotalCount: int(resp.GetPagination().GetTotalCount()),
+	}
+
+	return res, nil
 }
 
+// pbWorkflowItemToAction converts API response to WorkflowItem
 func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 	if wf == nil {
 		return nil
 	}
 
-	res := &WorkflowItem{
-		Name: wf.Name, ID: wf.Id, CreatedAt: toTimePtr(wf.CreatedAt.AsTime()),
-		Project: wf.Project, Team: wf.Team, RunsCount: wf.RunsCount,
+	return &WorkflowItem{
+		Name:                   wf.Name,
+		ID:                     wf.Id,
+		CreatedAt:              toTimePtr(wf.CreatedAt.AsTime()),
+		Project:                wf.Project,
+		Team:                   wf.Team,
+		RunsCount:              wf.RunsCount,
 		ContractName:           wf.ContractName,
 		ContractRevisionLatest: wf.ContractRevisionLatest,
 		LastRun:                pbWorkflowRunItemToAction(wf.LastRun),
 		Public:                 wf.Public,
 		Description:            wf.Description,
 	}
-
-	return res
 }
 
+// NamespacedName returns the project and workflow name in a formatted string
 func (wi *WorkflowItem) NamespacedName() string {
 	return fmt.Sprintf("%s/%s", wi.Project, wi.Name)
 }

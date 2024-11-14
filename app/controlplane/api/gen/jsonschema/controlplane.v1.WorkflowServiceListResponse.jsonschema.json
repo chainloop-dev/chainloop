@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationResponse.jsonschema.json"
+    },
     "result": {
       "items": {
         "$ref": "controlplane.v1.WorkflowItem.jsonschema.json"

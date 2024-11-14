@@ -21,6 +21,7 @@ import (
 	"time"
 
 	prometheuscollector "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/collector"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -169,10 +170,34 @@ func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(ctx context.Context, org
 		return nil, fmt.Errorf("finding organization: %w", err)
 	}
 
-	// List all workflows
-	wfs, err := uc.wfUseCase.List(ctx, org.ID, "")
+	// Default pagination option
+	paginationOpts, err := pagination.NewOffsetPaginationOpts(pagination.DefaultPage, 100)
 	if err != nil {
-		return nil, fmt.Errorf("listing workflows: %w", err)
+		return nil, fmt.Errorf("creating pagination options: %w", err)
+	}
+
+	var wfs []*Workflow
+	// Request all workflows using the pagination until the returned workflows are less than the limit
+	for {
+		// List all workflows
+		wfsPage, _, err := uc.wfUseCase.List(ctx, org.ID, nil, paginationOpts)
+		if err != nil {
+			return nil, fmt.Errorf("listing workflows: %w", err)
+		}
+
+		// Append workflows to the list
+		wfs = append(wfs, wfsPage...)
+
+		// Check if there are more workflows to fetch
+		if len(wfsPage) < paginationOpts.Limit() {
+			break
+		}
+
+		// Update pagination options with the next offset
+		paginationOpts, err = pagination.NewOffsetPaginationOpts(paginationOpts.Offset()+paginationOpts.Limit(), paginationOpts.Limit())
+		if err != nil {
+			return nil, fmt.Errorf("creating pagination options: %w", err)
+		}
 	}
 
 	// Create reports
