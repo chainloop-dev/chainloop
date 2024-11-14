@@ -22,7 +22,7 @@ import (
 
 func newAttachedIntegrationAttachCmd() *cobra.Command {
 	var options []string
-	var integrationName, workflowName string
+	var integrationName, workflowName, projectName string
 
 	cmd := &cobra.Command{
 		Use:     "add",
@@ -52,7 +52,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewAttachedIntegrationAdd(actionOpts).Run(integrationName, workflowName, opts)
+			res, err := action.NewAttachedIntegrationAdd(actionOpts).Run(integrationName, workflowName, projectName, opts)
 			if err != nil {
 				return err
 			}
@@ -66,6 +66,9 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&workflowName, "workflow", "", "name of the workflow to attach this integration")
 	cobra.CheckErr(cmd.MarkFlagRequired("workflow"))
+
+	cmd.Flags().StringVar(&workflowName, "project", "", "name of the project the workflow belongs to")
+	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 
 	// StringSlice seems to struggle with comma-separated values such as p12 jsonKeys provided as passwords
 	// So we need to use StringArrayVar instead

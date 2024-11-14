@@ -29,10 +29,13 @@ func NewAttachedIntegrationList(cfg *ActionsOpts) *AttachedIntegrationList {
 	return &AttachedIntegrationList{cfg}
 }
 
-func (action *AttachedIntegrationList) Run(workflowName string) ([]*AttachedIntegrationItem, error) {
+func (action *AttachedIntegrationList) Run(projectName, workflowName string) ([]*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
-	resp, err := client.ListAttachments(context.Background(), &pb.ListAttachmentsRequest{WorkflowName: workflowName})
+	resp, err := client.ListAttachments(context.Background(), &pb.ListAttachmentsRequest{
+		ProjectName:  projectName,
+		WorkflowName: workflowName,
+	})
 	if err != nil {
 		return nil, err
 	}

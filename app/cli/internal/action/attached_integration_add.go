@@ -30,7 +30,7 @@ func NewAttachedIntegrationAdd(cfg *ActionsOpts) *AttachedIntegrationAdd {
 	return &AttachedIntegrationAdd{cfg}
 }
 
-func (action *AttachedIntegrationAdd) Run(integrationName, workflowName string, options map[string]any) (*AttachedIntegrationItem, error) {
+func (action *AttachedIntegrationAdd) Run(integrationName, workflowName, projectName string, options map[string]any) (*AttachedIntegrationItem, error) {
 	client := pb.NewIntegrationsServiceClient(action.cfg.CPConnection)
 
 	requestConfig, err := structpb.NewStruct(options)
@@ -39,7 +39,10 @@ func (action *AttachedIntegrationAdd) Run(integrationName, workflowName string, 
 	}
 
 	resp, err := client.Attach(context.Background(), &pb.IntegrationsServiceAttachRequest{
-		WorkflowName: workflowName, IntegrationName: integrationName, Config: requestConfig,
+		WorkflowName:    workflowName,
+		ProjectName:     projectName,
+		IntegrationName: integrationName,
+		Config:          requestConfig,
 	})
 	if err != nil {
 		return nil, err
