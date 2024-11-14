@@ -25,7 +25,7 @@ var inputsPrefixRegexp = regexp.MustCompile(`{{\s*(inputs.)`)
 
 // ApplyBinding renders an input template using bindings in Go templating format
 func ApplyBinding(input string, bindings map[string]string) (string, error) {
-	if bindings == nil {
+	if bindings == nil || input == "" {
 		return input, nil
 	}
 

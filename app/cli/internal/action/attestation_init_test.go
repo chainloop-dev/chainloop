@@ -70,6 +70,12 @@ func TestEnrichMaterials(t *testing.T) {
 			// TODO: Fix this condition in next release
 			expectErr: false,
 		},
+		{
+			name:        "name-less materials are not added",
+			materials:   []*v1.CraftingSchema_Material{},
+			policyGroup: "file://testdata/policy_group_no_name.yaml",
+			nMaterials:  0,
+		},
 	}
 
 	l := zerolog.Nop()
