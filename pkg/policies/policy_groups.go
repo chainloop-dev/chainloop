@@ -214,11 +214,11 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 			return nil, err
 		}
 
-		if gm.Name != material.GetID() {
+		if gm.Name != "" && gm.Name != material.GetID() {
 			continue
 		}
 
-		// 3. Material found. Let's check its policies
+		// 3. Material found or group material has no name. Let's check policies to apply
 		for _, policyAtt := range gm.GetPolicies() {
 			apply, err := pgv.shouldApplyPolicy(ctx, policyAtt, material)
 			if err != nil {
@@ -263,7 +263,7 @@ func (pgv *PolicyGroupVerifier) shouldApplyPolicy(ctx context.Context, policyAtt
 
 	// if spec has a type, and matches, it can be applied
 	if len(specTypes) > 0 && slices.Contains(specTypes, materialType) {
-		// types don't match, continue
+		// types match
 		return true, nil
 	}
 

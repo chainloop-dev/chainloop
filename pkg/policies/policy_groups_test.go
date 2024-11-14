@@ -89,6 +89,13 @@ func (s *groupsTestSuite) TestLoadGroupSpec() {
 			},
 			wantErr: true,
 		},
+		{
+			name: "policy group without name-less materials are supported",
+			attachment: &v1.PolicyGroupAttachment{
+				Ref: "file://testdata/policy_group_no_name.yaml",
+			},
+			expectedName: "sbom-quality",
+		},
 	}
 
 	for _, tc := range cases {
@@ -133,6 +140,13 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 			name:         "match by name",
 			materialName: "sbom",
 			schemaRef:    "file://testdata/policy_group.yaml",
+			materialType: v1.CraftingSchema_Material_SBOM_SPDX_JSON,
+			expected:     1,
+		},
+		{
+			name:         "name-less group",
+			materialName: "sbom",
+			schemaRef:    "file://testdata/policy_group_no_name.yaml",
 			materialType: v1.CraftingSchema_Material_SBOM_SPDX_JSON,
 			expected:     1,
 		},

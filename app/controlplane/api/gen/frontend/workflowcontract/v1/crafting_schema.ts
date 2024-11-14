@@ -445,7 +445,10 @@ export interface PolicyGroup_PolicyGroupPolicies {
 /** Policy group materials */
 export interface PolicyGroup_Material {
   type: CraftingSchema_Material_MaterialType;
-  /** Free form name, as we support placeholders eg `{{ inputs.input_name }}` */
+  /**
+   * Free form name, as we support placeholders eg `{{ inputs.input_name }}`
+   * If no name is provided, material won't be enforced and will apply policies if `type` matches
+   */
   name: string;
   optional: boolean;
   /** Policies to be applied to this material */

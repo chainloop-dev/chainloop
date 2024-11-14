@@ -5,7 +5,7 @@
   "description": "Policy group materials",
   "properties": {
     "name": {
-      "description": "Free form name, as we support placeholders eg `{{ inputs.input_name }}`",
+      "description": "Free form name, as we support placeholders eg `{{ inputs.input_name }}`\n If no name is provided, material won't be enforced and will apply policies if `type` matches",
       "type": "string"
     },
     "optional": {
