@@ -40,6 +40,7 @@ type MembershipRepo interface {
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Membership, error)
 	FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*Membership, error)
+	FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*Membership, error)
 	SetCurrent(ctx context.Context, ID uuid.UUID) (*Membership, error)
 	SetRole(ctx context.Context, ID uuid.UUID, role authz.Role) (*Membership, error)
 	Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*Membership, error)
@@ -267,6 +268,22 @@ func (uc *MembershipUseCase) FindByOrgAndUser(ctx context.Context, orgID, userID
 	}
 
 	m, err := uc.repo.FindByOrgAndUser(ctx, orgUUID, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return nil, NewErrNotFound("membership")
+	}
+
+	return m, nil
+}
+
+func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, userID string) (*Membership, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	m, err := uc.repo.FindByOrgNameAndUser(ctx, orgName, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find membership: %w", err)
 	} else if m == nil {

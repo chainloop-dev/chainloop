@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,6 +100,16 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz
 // FindByOrgAndUser finds the membership for a given organization and user
 func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
 	m, err := orgScopedQuery(r.data.DB, orgID).
+		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
+		WithOrganization().WithUser().Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entMembershipToBiz(m), nil
+}
+func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*biz.Membership, error) {
+	m, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).
 		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
 		WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
