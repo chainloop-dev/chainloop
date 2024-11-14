@@ -145,3 +145,14 @@ jobs:
         if: ${{ cancelled() }}
         run: |
           chainloop attestation reset --trigger cancellation
+
+  github-release:
+    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
+    uses: chainloop-dev/chainloop/.github/workflows/release.yaml@main
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      chainloop_token: ${{ secrets.CHAINLOOP_TOKEN }}
+    permissions:
+      packages: write
+      contents: write

@@ -6,6 +6,9 @@ on:
       tag:
         type: string
         required: true
+    secrets:
+      chainloop_token:
+        required: true
 
 jobs:
   # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
@@ -19,7 +22,7 @@ jobs:
       project: "chainloop"
       workflow_name: "chainloop-vault-release"
     secrets:
-      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
+      api_token: ${{ secrets.chainloop_token }}
 
   release:
     name: Record release from GitHub
@@ -30,7 +33,7 @@ jobs:
       packages: write
       contents: write
     env:
-      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+      CHAINLOOP_TOKEN: ${{ secrets.chainloop_token }}
       CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
       CHAINLOOP_PROJECT: ${{ needs.onboard_workflow.outputs.project_name }}
       GH_TOKEN: ${{ github.token }}
@@ -65,14 +68,14 @@ jobs:
           gh release download $tag -A tar.gz -D /tmp
           chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
 
-           # Include control-plane image
-           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/control-plane:$tag"
+          # Include control-plane image
+          chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/control-plane:$tag"
 
-           # Include cas image
-           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/artifact-cas:$tag"
+          # Include cas image
+          chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/artifact-cas:$tag"
 
-           # Include cli image
-           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/cli:$tag"
+          # Include cli image
+          chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/cli:$tag"
 
       - name: Finish and Record Attestation
         id: attestation-push
@@ -99,7 +102,7 @@ jobs:
         if: ${{ success() }}
         run: |
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
-          current_notes=$(gh release view ${{ github.ref_name }} --json body -q '.body')
+          current_notes=$(gh release view ${{inputs.tag}} --json body -q '.body')
 
           if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
             # Replace the existing Chainloop Attestation section with the new URL
@@ -110,4 +113,4 @@ jobs:
           fi
 
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit ${{ github.ref_name }} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+          gh release edit ${{inputs.tag}} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
