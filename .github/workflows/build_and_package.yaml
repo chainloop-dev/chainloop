@@ -149,7 +149,7 @@ jobs:
 
   github-release:
 #    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
-    uses: chainloop-dev/chainloop/.github/workflows/release.yaml@main
+    uses: chainloop-dev/chainloop/.github/workflows/release.yaml@fix/pfm-1701
     with:
       tag: "v0.109.0"
     permissions:

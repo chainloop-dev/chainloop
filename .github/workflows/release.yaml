@@ -13,7 +13,7 @@ jobs:
   # be ignored and the process will continue. For this to work it's using a pre-created API Token
   onboard_workflow:
     name: Onboard Chainloop Workflow
-    if: inputs.tag != null && github.event_name == 'workflow_call'
+    # if: inputs.tag != null && github.event_name == 'workflow_call'
     uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@64839eb68c20fefda46929c6c6e893cdf0537619
     with:
       project: "chainloop"
@@ -23,7 +23,7 @@ jobs:
 
   release:
     name: Record release from GitHub
-    if: inputs.tag != null && github.event_name == 'workflow_call'
+    # if: inputs.tag != null && github.event_name == 'workflow_call'
     runs-on: ubuntu-latest
     needs: onboard_workflow
     permissions:
