@@ -34,6 +34,13 @@ type ActionsOpts struct {
 	Logger       zerolog.Logger
 }
 
+type OffsetPagination struct {
+	Page       int `json:"page"`
+	PageSize   int `json:"pageSize"`
+	TotalPages int `json:"totalPages"`
+	TotalCount int `json:"totalCount"`
+}
+
 func toTimePtr(t time.Time) *time.Time {
 	return &t
 }
