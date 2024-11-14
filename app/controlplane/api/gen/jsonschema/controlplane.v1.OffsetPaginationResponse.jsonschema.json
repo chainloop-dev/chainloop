@@ -4,10 +4,6 @@
   "additionalProperties": false,
   "description": "OffsetPaginationResponse is used to return the pagination information",
   "patternProperties": {
-    "^(last_page)$": {
-      "description": "Indicates if this is the last page",
-      "type": "boolean"
-    },
     "^(page_size)$": {
       "description": "The number of results per page",
       "exclusiveMaximum": 2147483648,
@@ -19,13 +15,15 @@
       "exclusiveMaximum": 2147483648,
       "minimum": -2147483648,
       "type": "integer"
+    },
+    "^(total_pages)$": {
+      "description": "The total number of pages",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
     }
   },
   "properties": {
-    "lastPage": {
-      "description": "Indicates if this is the last page",
-      "type": "boolean"
-    },
     "page": {
       "description": "The current page number",
       "exclusiveMaximum": 2147483648,
@@ -40,6 +38,12 @@
     },
     "totalCount": {
       "description": "The total number of results",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "totalPages": {
+      "description": "The total number of pages",
       "exclusiveMaximum": 2147483648,
       "minimum": -2147483648,
       "type": "integer"

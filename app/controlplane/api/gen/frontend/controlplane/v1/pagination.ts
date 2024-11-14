@@ -29,8 +29,8 @@ export interface OffsetPaginationResponse {
   pageSize: number;
   /** The total number of results */
   totalCount: number;
-  /** Indicates if this is the last page */
-  lastPage: boolean;
+  /** The total number of pages */
+  totalPages: number;
 }
 
 function createBaseCursorPaginationResponse(): CursorPaginationResponse {
@@ -232,7 +232,7 @@ export const OffsetPaginationRequest = {
 };
 
 function createBaseOffsetPaginationResponse(): OffsetPaginationResponse {
-  return { page: 0, pageSize: 0, totalCount: 0, lastPage: false };
+  return { page: 0, pageSize: 0, totalCount: 0, totalPages: 0 };
 }
 
 export const OffsetPaginationResponse = {
@@ -246,8 +246,8 @@ export const OffsetPaginationResponse = {
     if (message.totalCount !== 0) {
       writer.uint32(24).int32(message.totalCount);
     }
-    if (message.lastPage === true) {
-      writer.uint32(32).bool(message.lastPage);
+    if (message.totalPages !== 0) {
+      writer.uint32(32).int32(message.totalPages);
     }
     return writer;
   },
@@ -285,7 +285,7 @@ export const OffsetPaginationResponse = {
             break;
           }
 
-          message.lastPage = reader.bool();
+          message.totalPages = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -301,7 +301,7 @@ export const OffsetPaginationResponse = {
       page: isSet(object.page) ? Number(object.page) : 0,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       totalCount: isSet(object.totalCount) ? Number(object.totalCount) : 0,
-      lastPage: isSet(object.lastPage) ? Boolean(object.lastPage) : false,
+      totalPages: isSet(object.totalPages) ? Number(object.totalPages) : 0,
     };
   },
 
@@ -310,7 +310,7 @@ export const OffsetPaginationResponse = {
     message.page !== undefined && (obj.page = Math.round(message.page));
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.totalCount !== undefined && (obj.totalCount = Math.round(message.totalCount));
-    message.lastPage !== undefined && (obj.lastPage = message.lastPage);
+    message.totalPages !== undefined && (obj.totalPages = Math.round(message.totalPages));
     return obj;
   },
 
@@ -323,7 +323,7 @@ export const OffsetPaginationResponse = {
     message.page = object.page ?? 0;
     message.pageSize = object.pageSize ?? 0;
     message.totalCount = object.totalCount ?? 0;
-    message.lastPage = object.lastPage ?? false;
+    message.totalPages = object.totalPages ?? 0;
     return message;
   },
 };

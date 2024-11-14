@@ -53,6 +53,6 @@ message OffsetPaginationResponse {
   int32 page_size = 2;
   // The total number of results
   int32 total_count = 3;
-  // Indicates if this is the last page
-  bool last_page = 4;
+  // The total number of pages
+  int32 total_pages = 4;
 }

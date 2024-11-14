@@ -118,9 +118,10 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		return nil, err
 	}
 
-	// Initialize the pagination options
-	paginationOpts := &pagination.OffsetPaginationOpts{}
+	// Initialize the pagination options, with default values
+	paginationOpts := pagination.NewDefaultOffsetPaginationOpts()
 
+	// Override the pagination options if they are provided
 	if req.GetPagination() != nil {
 		paginationOpts, err = pagination.NewOffsetPaginationOpts(
 			int(req.GetPagination().GetPage()),
@@ -129,9 +130,6 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-	} else {
-		// Apply default pagination if not provided
-		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
 
 	// Initialize the filters
@@ -191,24 +189,9 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		result = append(result, bizWorkflowToPb(p))
 	}
 
-	var (
-		isLastPage  bool
-		currentPage int32
-	)
-	// Calculate the current page
-	if count > 0 {
-		currentPage = int32(paginationOpts.Offset()/paginationOpts.Limit()) + 1
-		isLastPage = currentPage*int32(paginationOpts.Limit()) >= int32(count)
-	}
-
 	return &pb.WorkflowServiceListResponse{
-		Result: result,
-		Pagination: &pb.OffsetPaginationResponse{
-			Page:       currentPage,
-			PageSize:   int32(paginationOpts.Limit()),
-			LastPage:   isLastPage,
-			TotalCount: int32(count),
-		},
+		Result:     result,
+		Pagination: paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
 	}, nil
 }
 
@@ -286,4 +269,14 @@ func workflowsActivityTimeWindowPbToTimeWindow(tw pb.WorkflowActivityWindow) (*b
 	}
 
 	return timeWindow, nil
+}
+
+// paginationToPb converts a count, offset, and limit to a pb.OffsetPaginationResponse.
+func paginationToPb(count, offset, limit int) *pb.OffsetPaginationResponse {
+	return &pb.OffsetPaginationResponse{
+		TotalCount: int32(count),
+		Page:       int32(offset/limit) + 1,
+		TotalPages: (int32(count) + int32(limit) - 1) / int32(limit),
+		PageSize:   int32(limit),
+	}
 }

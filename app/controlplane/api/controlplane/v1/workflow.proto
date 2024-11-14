@@ -105,11 +105,11 @@ message WorkflowServiceDeleteResponse {}
 
 message WorkflowServiceListRequest {
   // The name of the workflow to filter by
-  string workflow_name = 1 [(buf.validate.field).ignore_empty = true];
+  string workflow_name = 1;
   // The team the workflow belongs to
-  string workflow_team = 2 [(buf.validate.field).ignore_empty = true];
+  string workflow_team = 2;
   // The project the workflow belongs to
-  repeated string project_names = 3 [(buf.validate.field).ignore_empty = true];
+  repeated string project_names = 3;
   // If the workflow is public
   optional bool workflow_public = 4;
   // The type of runner that ran the workflow
