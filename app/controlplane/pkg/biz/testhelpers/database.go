@@ -75,6 +75,7 @@ type TestingUseCases struct {
 	AttestationState       *biz.AttestationStateUseCase
 	ProjectVersion         *biz.ProjectVersionUseCase
 	Project                *biz.ProjectUseCase
+	OrgMetrics             *biz.OrgMetricsUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }

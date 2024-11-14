@@ -1,0 +1,30 @@
+{
+  "$id": "controlplane.v1.OffsetPaginationRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OffsetPaginationRequest is used to paginate the results",
+  "patternProperties": {
+    "^(pageSize)$": {
+      "description": "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "properties": {
+    "page": {
+      "description": "The (zero-based) offset of the first item returned in the collection.",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "page_size": {
+      "description": "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.",
+      "exclusiveMaximum": 2147483648,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "title": "Offset Pagination Request",
+  "type": "object"
+}

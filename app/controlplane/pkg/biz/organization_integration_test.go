@@ -145,7 +145,7 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 		assert.Nil(ociRepo)
 		assert.ErrorAs(err, &biz.ErrNotFound{})
 
-		workflows, err := s.Workflow.List(ctx, s.org.ID, "")
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, nil, nil)
 		assert.NoError(err)
 		assert.Empty(workflows)
 
@@ -226,7 +226,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 	assert.NotNil(ociRepo)
 
-	workflows, err := s.Workflow.List(ctx, s.org.ID, "")
+	workflows, _, err := s.Workflow.List(ctx, s.org.ID, nil, nil)
 	assert.NoError(err)
 	assert.Len(workflows, 1)
 
