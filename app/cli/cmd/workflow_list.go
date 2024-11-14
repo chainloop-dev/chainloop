@@ -29,7 +29,7 @@ func newWorkflowListCmd() *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List existing Workflows",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			res, err := action.NewWorkflowList(actionOpts).Run()
 			if err != nil {
 				return err
