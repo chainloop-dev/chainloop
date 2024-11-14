@@ -27,13 +27,13 @@ import (
 )
 
 func newAttachedIntegrationListCmd() *cobra.Command {
-	var workflowName string
+	var workflowName, projectName string
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List integrations attached to workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAttachedIntegrationList(actionOpts).Run(workflowName)
+			res, err := action.NewAttachedIntegrationList(actionOpts).Run(projectName, workflowName)
 			if err != nil {
 				return err
 			}
@@ -43,6 +43,9 @@ func newAttachedIntegrationListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&workflowName, "workflow", "", "workflow name")
+	cmd.Flags().StringVar(&projectName, "project", "", "project name")
+	// Add Required flags
+	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 	return cmd
 }
 
