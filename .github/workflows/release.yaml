@@ -41,10 +41,10 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/install.sh | bash -s
 
-      - name: Initialize Attestation
-        run: |
-          tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag"
+#      - name: Initialize Attestation
+#        run: |
+#          tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
+#          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag"
 
       - name: Attest all assets
         run: |
@@ -52,62 +52,66 @@ jobs:
           gh release download $tag -D /tmp/github-release
           for entry in $(ls /tmp/github-release); do
             # If the name is cas.cyclonedx.json, controlplane.cyclonedx.json or cli.cyclonedx.json, we need to add the attestation with the correct name
+            echo "/tmp/github-release/$entry"
             if [[ $entry =~ ^(cas|controlplane|cli)\.cyclonedx\.json$ ]]; then
               name=$(echo -n "${entry%.json}" | sed 's/\./-/g')
-              chainloop attestation add --value "/tmp/github-release/$entry" --name "$name"
+              # chainloop attestation add --value "/tmp/github-release/$entry" --name "$name"
+              echo "/tmp/github-release/$entry"
               continue
             fi
-            chainloop attestation add --value "/tmp/github-release/$entry"
+            # chainloop attestation add --value "/tmp/github-release/$entry"
           done
 
           # Include source code
           version=$(echo -n $tag | sed 's/v//g')
           gh release download $tag -A tar.gz -D /tmp
-          chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
+          # chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
 
            # Include control-plane image
-           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/control-plane:$tag"
+           # chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/control-plane:$tag"
 
            # Include cas image
-           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/artifact-cas:$tag"
+           # chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/artifact-cas:$tag"
 
            # Include cli image
-           chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/cli:$tag"
+           # chainloop attestation add --value "ghcr.io/chainloop-dev/chainloop/cli:$tag"
 
-      - name: Finish and Record Attestation
-        id: attestation-push
-        if: ${{ success() }}
-        run: |
-          chainloop attestation status --full
-          attestation_sha=$(chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY -o json | jq -r '.digest')
-          echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
-
-      - name: Mark attestation as failed
-        if: ${{ failure() }}
-        run: |
-          chainloop attestation reset
-
-      - name: Mark attestation as cancelled
-        if: ${{ cancelled() }}
-        run: |
-          chainloop attestation reset --trigger cancellation
+#      - name: Finish and Record Attestation
+#        id: attestation-push
+#        if: ${{ success() }}
+#        run: |
+#          chainloop attestation status --full
+#          attestation_sha=$(chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY -o json | jq -r '.digest')
+#          echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
+#        env:
+#          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+#          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+#
+#      - name: Mark attestation as failed
+#        if: ${{ failure() }}
+#        run: |
+#          chainloop attestation reset
+#
+#      - name: Mark attestation as cancelled
+#        if: ${{ cancelled() }}
+#        run: |
+#          chainloop attestation reset --trigger cancellation
 
       - name: Add attestation link to release notes
         if: ${{ success() }}
         run: |
-          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
+          # chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
           current_notes=$(gh release view ${{ github.ref_name }} --json body -q '.body')
+          
+          echo $current_notes
 
-          if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
-            # Replace the existing Chainloop Attestation section with the new URL
-            modified_notes=$(echo "$current_notes" | sed -E "s|## Chainloop Attestation[^\n]*\n\[View the attestation of this release\]\(https://app\.chainloop\.dev/attestation/[^\)]*\)|$chainloop_release_url|")
-          else
-            # Add the Chainloop Attestation section to the top
-            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
-          fi
-
-          # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit ${{ github.ref_name }} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+#          if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
+#            # Replace the existing Chainloop Attestation section with the new URL
+#            modified_notes=$(echo "$current_notes" | sed -E "s|## Chainloop Attestation[^\n]*\n\[View the attestation of this release\]\(https://app\.chainloop\.dev/attestation/[^\)]*\)|$chainloop_release_url|")
+#          else
+#            # Add the Chainloop Attestation section to the top
+#            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
+#          fi
+#
+#          # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
+#          gh release edit ${{ github.ref_name }} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
