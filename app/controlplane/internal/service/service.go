@@ -21,7 +21,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
@@ -142,7 +141,7 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 	switch {
 	case errors.Is(err, context.Canceled):
 		return errors.ClientClosed("client closed", err.Error())
-	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err) || biz.IsErrInvalidTimeWindow(err) || pagination.IsOffsetPaginationError(err):
+	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err) || biz.IsErrInvalidTimeWindow(err):
 		return errors.BadRequest("invalid", err.Error())
 	case biz.IsNotFound(err):
 		return errors.NotFound("not found", err.Error())

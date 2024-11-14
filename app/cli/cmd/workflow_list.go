@@ -24,82 +24,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	// defaultPageSize is the default page size
-	defaultPageSize = 15
-	// defaultPage is the default page
-	defaultPage = 1
-)
-
-var (
-	// page is the current page number
-	page int
-	// pageSize is the number of workflows per page
-	pageSize int
-)
-
 func newWorkflowListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List existing Workflows",
-		Example: `  # Let the default pagination apply
-  chainloop workflow list
-
-  # Specify the page and page size
-  chainloop workflow list --page 2 --page-size 10
-
-  # Output in json format to paginate using scripts
-  chainloop workflow list --page 2 --page-size 10 --output json
-
-  # Show the full report
-  chainloop workflow list --full
-`,
-		PreRunE: func(_ *cobra.Command, _ []string) error {
-			if page < 1 {
-				return fmt.Errorf("--page must be greater or equal than 1")
-			}
-			if pageSize < 1 {
-				return fmt.Errorf("--page-size must be greater or equal than 1")
-			}
-
-			return nil
-		},
-		RunE: func(_ *cobra.Command, _ []string) error {
-			res, err := action.NewWorkflowList(actionOpts).Run(page, pageSize)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			res, err := action.NewWorkflowList(actionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			if err := encodeOutput(res, WorkflowListTableOutput); err != nil {
-				return err
-			}
-
-			pgResponse := res.Pagination
-
-			logger.Info().Msg(fmt.Sprintf("Showing %d out of %d", len(res.Workflows), pgResponse.TotalCount))
-
-			if pgResponse.TotalCount > pgResponse.Page*pgResponse.PageSize {
-				logger.Info().Msg(fmt.Sprintf("Next page available: %d", pgResponse.Page+1))
-			}
-
-			return nil
+			return encodeOutput(res, WorkflowListTableOutput)
 		},
 	}
 
 	cmd.Flags().BoolVar(&full, "full", false, "show the full report")
-	cmd.Flags().IntVar(&page, "page", defaultPage, "page number")
-	cmd.Flags().IntVar(&pageSize, "page-size", defaultPageSize, "number of workflows per page")
 
 	return cmd
 }
 
 func workflowItemTableOutput(workflow *action.WorkflowItem) error {
-	return WorkflowListTableOutput(&action.WorkflowListResult{Workflows: []*action.WorkflowItem{workflow}})
+	return WorkflowListTableOutput([]*action.WorkflowItem{workflow})
 }
 
-func WorkflowListTableOutput(workflowListResult *action.WorkflowListResult) error {
-	if len(workflowListResult.Workflows) == 0 {
+func WorkflowListTableOutput(workflows []*action.WorkflowItem) error {
+	if len(workflows) == 0 {
 		fmt.Println("there are no workflows yet")
 		return nil
 	}
@@ -114,7 +64,7 @@ func WorkflowListTableOutput(workflowListResult *action.WorkflowListResult) erro
 		t.AppendHeader(headerRow)
 	}
 
-	for _, p := range workflowListResult.Workflows {
+	for _, p := range workflows {
 		var row table.Row
 		var lastRunRunner, lastRunState string
 		if lr := p.LastRun; lr != nil {

@@ -19,8 +19,6 @@ package controlplane.v1;
 
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
-import "controlplane/v1/pagination.proto";
-import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -104,32 +102,10 @@ message WorkflowServiceDeleteRequest {
 message WorkflowServiceDeleteResponse {}
 
 message WorkflowServiceListRequest {
-  // The name of the workflow to filter by
-  string workflow_name = 1;
-  // The team the workflow belongs to
-  string workflow_team = 2;
-  // The project the workflow belongs to
-  repeated string project_names = 3;
-  // If the workflow is public
-  optional bool workflow_public = 4;
-  // The type of runner that ran the workflow
-  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 5 [(buf.validate.field).enum = {
-    not_in: [0]
-  }, (buf.validate.field).ignore_empty = true];
-  // The status of the last workflow run
-  RunStatus workflow_run_last_status = 6 [(buf.validate.field).enum = {
-    not_in: [0]
-  }, (buf.validate.field).ignore_empty = true];
-  // The time window for the last known workflow activity
-  WorkflowActivityWindow workflow_last_activity_window = 7 [(buf.validate.field).enum = {
-    not_in: [0]
-  }, (buf.validate.field).ignore_empty = true];
-  // Pagination options
-  OffsetPaginationRequest pagination = 8;
+  optional EntityRef project_reference = 1;
 }
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
-  OffsetPaginationResponse pagination = 2;
 }
 
 message WorkflowServiceViewRequest {
@@ -146,12 +122,4 @@ message WorkflowServiceViewRequest {
 
 message WorkflowServiceViewResponse {
   WorkflowItem result = 1;
-}
-
-// WorkflowActivityWindow represents the time window for the last known workflow activity.
-enum WorkflowActivityWindow {
-  WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED = 0;
-  WORKFLOW_ACTIVITY_WINDOW_LAST_DAY = 1;
-  WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS = 2;
-  WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS = 3;
 }
