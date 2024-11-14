@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
-
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -54,7 +52,7 @@ type WorkflowRef struct {
 type WorkflowRepo interface {
 	Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error)
 	Update(ctx context.Context, id uuid.UUID, opts *WorkflowUpdateOpts) (*Workflow, error)
-	List(ctx context.Context, orgID uuid.UUID, filter *WorkflowListOpts, pagination *pagination.OffsetPaginationOpts) ([]*Workflow, int, error)
+	List(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) ([]*Workflow, error)
 	GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*Workflow, error)
 	GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*Workflow, error)
 	IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error
@@ -74,26 +72,6 @@ type WorkflowCreateOpts struct {
 type WorkflowUpdateOpts struct {
 	Team, Description, ContractID *string
 	Public                        *bool
-}
-
-// WorkflowListOpts is the options to filter the list of workflows
-type WorkflowListOpts struct {
-	// WorkflowName is the name of the workflow
-	WorkflowName string
-	// WorkflowDescription is the description of the workflow
-	WorkflowDescription string
-	// WorkflowTeam is the team of the workflow
-	WorkflowTeam string
-	// WorkflowProjectNames is the project name of the workflow
-	WorkflowProjectNames []string
-	// WorkflowPublic is the flag to filter public workflows
-	WorkflowPublic *bool
-	// WorkflowActiveWindow is the active window of the workflow
-	WorkflowRunRunnerType string
-	// WorkflowActiveWindow is the active window of the workflow
-	WorkflowActiveWindow *TimeWindow
-	// WorkflowRunStatus is the status of the workflow runs to return
-	WorkflowRunLastStatus WorkflowRunStatus
 }
 
 type WorkflowUseCase struct {
@@ -202,19 +180,22 @@ func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, name
 	return uc.contractUC.Create(ctx, &WorkflowContractCreateOpts{OrgID: orgID, Name: name, AddUniquePrefix: true})
 }
 
-// List returns a list of workflows and the total count of workflows
-func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, filterOpts *WorkflowListOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Workflow, int, error) {
+func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, projectID string) ([]*Workflow, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, 0, NewErrInvalidUUID(err)
-	}
-	// Apply default pagination if not provided
-	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
-	if paginationOpts != nil {
-		pgOpts = paginationOpts
+		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.wfRepo.List(ctx, orgUUID, filterOpts, pgOpts)
+	var projectUUID uuid.UUID
+	if projectID != "" {
+		parsedUUID, err := uuid.Parse(projectID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		projectUUID = parsedUUID
+	}
+
+	return uc.wfRepo.List(ctx, orgUUID, projectUUID)
 }
 
 func (uc *WorkflowUseCase) IncRunsCounter(ctx context.Context, workflowID string) error {

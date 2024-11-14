@@ -33,7 +33,6 @@ const formatTable = "table"
 type tabulatedData interface {
 	[]*action.WorkflowItem |
 		*action.WorkflowItem |
-		*action.WorkflowListResult |
 		*action.AttestationStatusResult |
 		[]*action.WorkflowRunItem |
 		*action.WorkflowRunItemFull |

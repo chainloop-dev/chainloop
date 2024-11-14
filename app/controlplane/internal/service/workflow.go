@@ -17,15 +17,9 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schema "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
-
-	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -111,75 +105,33 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 	return &pb.WorkflowServiceUpdateResponse{Result: bizWorkflowToPb(p)}, nil
 }
 
-// List returns a list of workflows.
 func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListRequest) (*pb.WorkflowServiceListResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize the pagination options, with default values
-	paginationOpts := pagination.NewDefaultOffsetPaginationOpts()
-
-	// Override the pagination options if they are provided
-	if req.GetPagination() != nil {
-		paginationOpts, err = pagination.NewOffsetPaginationOpts(
-			int(req.GetPagination().GetPage()),
-			int(req.GetPagination().GetPageSize()),
-		)
+	// If project reference is provided, find the project and scope the workflow List request
+	// to only projects within the project
+	var projectID string
+	if req.GetProjectReference().GetRef() != nil {
+		pro, err := s.projectsUseCase.FindProjectByReference(ctx, currentOrg.ID, &biz.EntityRef{
+			ID:   req.GetProjectReference().GetEntityId(),
+			Name: req.GetProjectReference().GetEntityName(),
+		})
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-	}
 
-	// Initialize the filters
-	filters := &biz.WorkflowListOpts{}
-
-	// Check the workflow name
-	if req.GetWorkflowName() != "" {
-		filters.WorkflowName = req.GetWorkflowName()
-	}
-
-	// Check the Team
-	if req.GetWorkflowTeam() != "" {
-		filters.WorkflowTeam = req.GetWorkflowTeam()
-	}
-
-	// Check the Project Name
-	if len(req.GetProjectNames()) != 0 {
-		filters.WorkflowProjectNames = req.GetProjectNames()
-	}
-
-	// Workflow visibility
-	if req.WorkflowPublic != nil {
-		val := req.GetWorkflowPublic()
-		filters.WorkflowPublic = &val
-	}
-
-	// Workflow Run Runner Type
-	if req.GetWorkflowRunRunnerType() != schema.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED {
-		filters.WorkflowRunRunnerType = req.GetWorkflowRunRunnerType().String()
-	}
-
-	// Workflow Last Known Status
-	if req.GetWorkflowRunLastStatus() != pb.RunStatus_RUN_STATUS_UNSPECIFIED {
-		status, err := pbWorkflowRunStatusToBiz(req.GetWorkflowRunLastStatus())
-		if err != nil {
-			return nil, errors.BadRequest("invalid argument", err.Error())
+		// If the project is not found, return an empty response
+		if pro == nil {
+			return &pb.WorkflowServiceListResponse{}, nil
 		}
-		filters.WorkflowRunLastStatus = status
+
+		projectID = pro.ID.String()
 	}
 
-	// Workflow Last Activity Window
-	if req.GetWorkflowLastActivityWindow() != pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED {
-		timeWindow, err := workflowsActivityTimeWindowPbToTimeWindow(req.GetWorkflowLastActivityWindow())
-		if err != nil {
-			return nil, errors.BadRequest("invalid argument", err.Error())
-		}
-		filters.WorkflowActiveWindow = timeWindow
-	}
-
-	workflows, count, err := s.useCase.List(ctx, currentOrg.ID, filters, paginationOpts)
+	workflows, err := s.useCase.List(ctx, currentOrg.ID, projectID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -189,10 +141,7 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		result = append(result, bizWorkflowToPb(p))
 	}
 
-	return &pb.WorkflowServiceListResponse{
-		Result:     result,
-		Pagination: paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
-	}, nil
+	return &pb.WorkflowServiceListResponse{Result: result}, nil
 }
 
 func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDeleteRequest) (*pb.WorkflowServiceDeleteResponse, error) {
@@ -250,33 +199,4 @@ func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 // bizWorkflowRunToPb converts a biz.WorkflowRun to a pb.WorkflowRun.
 func bizWorkflowRefToPb(wf *biz.WorkflowRef) *pb.WorkflowRef {
 	return &pb.WorkflowRef{Id: wf.ID.String(), Name: wf.Name, ProjectName: wf.ProjectName}
-}
-
-// workflowsActivityTimeWindowPbToTimeWindow converts a v1.WorkflowActivityWindow to a biz.TimeWindow.
-func workflowsActivityTimeWindowPbToTimeWindow(tw pb.WorkflowActivityWindow) (*biz.TimeWindow, error) {
-	timeWindow := &biz.TimeWindow{
-		To: time.Now().UTC(),
-	}
-	switch tw {
-	case pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_LAST_DAY:
-		timeWindow.From = timeWindow.To.Add(-24 * time.Hour)
-	case pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS:
-		timeWindow.From = timeWindow.To.Add(-7 * 24 * time.Hour)
-	case pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS:
-		timeWindow.From = timeWindow.To.Add(-30 * 24 * time.Hour)
-	case pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED:
-		return nil, fmt.Errorf("invalid time window: %s", tw)
-	}
-
-	return timeWindow, nil
-}
-
-// paginationToPb converts a count, offset, and limit to a pb.OffsetPaginationResponse.
-func paginationToPb(count, offset, limit int) *pb.OffsetPaginationResponse {
-	return &pb.OffsetPaginationResponse{
-		TotalCount: int32(count),
-		Page:       int32(offset/limit) + 1,
-		TotalPages: (int32(count) + int32(limit) - 1) / int32(limit),
-		PageSize:   int32(limit),
-	}
 }
