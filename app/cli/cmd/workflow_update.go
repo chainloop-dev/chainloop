@@ -52,7 +52,7 @@ func newWorkflowUpdateCmd() *cobra.Command {
 			}
 
 			logger.Info().Msg("Workflow updated!")
-			return encodeOutput([]*action.WorkflowItem{res}, WorkflowListTableOutput)
+			return encodeOutput(&action.WorkflowListResult{Workflows: []*action.WorkflowItem{res}}, WorkflowListTableOutput)
 		},
 	}
 
