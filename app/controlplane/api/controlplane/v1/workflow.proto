@@ -110,22 +110,24 @@ message WorkflowServiceListRequest {
   string workflow_team = 2;
   // The project the workflow belongs to
   repeated string project_names = 3;
+  // The description of the workflow
+  string workflow_description = 4;
   // If the workflow is public
-  optional bool workflow_public = 4;
+  optional bool workflow_public = 5;
   // The type of runner that ran the workflow
-  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 5 [(buf.validate.field).enum = {
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 6 [(buf.validate.field).enum = {
     not_in: [0]
   }, (buf.validate.field).ignore_empty = true];
   // The status of the last workflow run
-  RunStatus workflow_run_last_status = 6 [(buf.validate.field).enum = {
+  RunStatus workflow_run_last_status = 7 [(buf.validate.field).enum = {
     not_in: [0]
   }, (buf.validate.field).ignore_empty = true];
   // The time window for the last known workflow activity
-  WorkflowActivityWindow workflow_last_activity_window = 7 [(buf.validate.field).enum = {
+  WorkflowActivityWindow workflow_last_activity_window = 8 [(buf.validate.field).enum = {
     not_in: [0]
   }, (buf.validate.field).ignore_empty = true];
   // Pagination options
-  OffsetPaginationRequest pagination = 8;
+  OffsetPaginationRequest pagination = 9;
 }
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;
