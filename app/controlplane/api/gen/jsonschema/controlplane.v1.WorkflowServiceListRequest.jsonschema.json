@@ -10,6 +10,10 @@
       },
       "type": "array"
     },
+    "^(workflow_description)$": {
+      "description": "The description of the workflow",
+      "type": "string"
+    },
     "^(workflow_last_activity_window)$": {
       "anyOf": [
         {
@@ -99,6 +103,10 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "workflowDescription": {
+      "description": "The description of the workflow",
+      "type": "string"
     },
     "workflowLastActivityWindow": {
       "anyOf": [

@@ -145,6 +145,11 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		filters.WorkflowTeam = req.GetWorkflowTeam()
 	}
 
+	// Check the Workflow Description
+	if req.GetWorkflowDescription() != "" {
+		filters.WorkflowDescription = req.GetWorkflowDescription()
+	}
+
 	// Check the Project Name
 	if len(req.GetProjectNames()) != 0 {
 		filters.WorkflowProjectNames = req.GetProjectNames()
