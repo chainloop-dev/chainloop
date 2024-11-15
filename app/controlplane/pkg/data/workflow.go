@@ -20,6 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -138,36 +142,115 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 	return r.FindByID(ctx, wf.ID)
 }
 
-func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) ([]*biz.Workflow, error) {
-	baseQuery := orgScopedQuery(r.data.DB, orgID).
-		QueryWorkflows().
-		Where(workflow.DeletedAtIsNil()).
-		WithContract().
-		WithOrganization().
-		WithLatestWorkflowRun()
-
-	if projectID != uuid.Nil {
-		baseQuery = baseQuery.Where(workflow.ProjectID(projectID))
+func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowListOpts, pagination *pagination.OffsetPaginationOpts) ([]*biz.Workflow, int, error) {
+	if pagination == nil {
+		return nil, 0, fmt.Errorf("pagination options is required")
 	}
 
-	workflows, err := baseQuery.
+	// Initialize the base query for WorkflowRun
+	baseQuery := orgScopedQuery(r.data.DB, orgID).QueryWorkflows()
+
+	// Apply filters to the WorkflowRun query based on the provided options
+	baseQuery = applyWorkflowRunFilters(baseQuery, filter)
+
+	// Initialize the Workflow query and apply organization and deletion filters
+	wfQuery := baseQuery.Where(workflow.DeletedAtIsNil())
+
+	// Apply additional filters to the Workflow query based on the provided options
+	wfQuery = applyWorkflowFilters(wfQuery, filter)
+
+	// Get the count of all filtered rows without the limit and offset
+	count, err := wfQuery.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination options and execute the query
+	workflows, err := wfQuery.
+		WithLatestWorkflowRun().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
+		Limit(pagination.Limit()).
+		Offset(pagination.Offset()).
 		All(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	result := make([]*biz.Workflow, 0, len(workflows))
 	for _, wf := range workflows {
 		r, err := entWFToBizWF(ctx, wf)
 		if err != nil {
-			return nil, fmt.Errorf("converting entity: %w", err)
+			return nil, 0, fmt.Errorf("converting entity: %w", err)
 		}
 
 		result = append(result, r)
 	}
 
-	return result, nil
+	return result, count, nil
+}
+
+// applyWorkflowRunFilters applies filters to the WorkflowRun query based on the provided options
+func applyWorkflowRunFilters(baseQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts) *ent.WorkflowQuery {
+	if opts == nil || opts.WorkflowRunRunnerType == "" && opts.WorkflowRunLastStatus == "" {
+		return baseQuery
+	}
+
+	query := baseQuery.QueryLatestWorkflowRun()
+
+	if opts.WorkflowRunRunnerType != "" {
+		query = query.Where(
+			workflowrun.RunnerType(opts.WorkflowRunRunnerType),
+		)
+	}
+
+	if opts.WorkflowRunLastStatus != "" {
+		query = query.Where(
+			workflowrun.StateEQ(opts.WorkflowRunLastStatus),
+		)
+	}
+
+	return query.QueryWorkflow()
+}
+
+// applyWorkflowFilters applies filters to the Workflow query based on the provided options
+func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts) *ent.WorkflowQuery {
+	if opts != nil {
+		if opts.WorkflowPublic != nil {
+			wfQuery = wfQuery.Where(workflow.Public(*opts.WorkflowPublic))
+		}
+
+		// Updated at on Workflows is only updated when a new workflow run is referenced meaning
+		// a workflow run is started
+		if opts.WorkflowActiveWindow != nil {
+			wfQuery = wfQuery.Where(
+				workflow.UpdatedAtGTE(opts.WorkflowActiveWindow.From),
+				workflow.UpdatedAtLTE(opts.WorkflowActiveWindow.To),
+			)
+		}
+
+		if opts.WorkflowDescription != "" {
+			wfQuery = wfQuery.Where(workflow.DescriptionContains(opts.WorkflowDescription))
+		}
+
+		if len(opts.WorkflowProjectNames) != 0 {
+			wfQuery = wfQuery.Where(workflow.HasProjectWith(project.NameIn(opts.WorkflowProjectNames...)))
+		}
+
+		// Combine WorkflowTeam and WorkflowName filters using OR logic
+		var orConditions []predicate.Workflow
+		if opts.WorkflowTeam != "" {
+			orConditions = append(orConditions, workflow.TeamContains(opts.WorkflowTeam))
+		}
+		if opts.WorkflowName != "" {
+			orConditions = append(orConditions, workflow.NameContains(opts.WorkflowName))
+		}
+
+		if len(orConditions) > 0 {
+			wfQuery = wfQuery.Where(workflow.Or(orConditions...))
+		}
+	}
+
+	return wfQuery
 }
 
 // GetOrgScoped Gets a workflow making sure it belongs to a given org

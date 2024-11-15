@@ -154,6 +154,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		AttestationState:       attestationStateUseCase,
 		ProjectVersion:         projectVersionUseCase,
 		Project:                projectUseCase,
+		OrgMetrics:             orgMetricsUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

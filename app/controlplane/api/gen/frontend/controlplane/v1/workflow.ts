@@ -2,9 +2,61 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { EntityRef, WorkflowItem } from "./response_messages";
+import {
+  CraftingSchema_Runner_RunnerType,
+  craftingSchema_Runner_RunnerTypeFromJSON,
+  craftingSchema_Runner_RunnerTypeToJSON,
+} from "../../workflowcontract/v1/crafting_schema";
+import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
+import { RunStatus, runStatusFromJSON, runStatusToJSON, WorkflowItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
+
+/** WorkflowActivityWindow represents the time window for the last known workflow activity. */
+export enum WorkflowActivityWindow {
+  WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED = 0,
+  WORKFLOW_ACTIVITY_WINDOW_LAST_DAY = 1,
+  WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS = 2,
+  WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function workflowActivityWindowFromJSON(object: any): WorkflowActivityWindow {
+  switch (object) {
+    case 0:
+    case "WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED":
+      return WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED;
+    case 1:
+    case "WORKFLOW_ACTIVITY_WINDOW_LAST_DAY":
+      return WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_LAST_DAY;
+    case 2:
+    case "WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS":
+      return WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS;
+    case 3:
+    case "WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS":
+      return WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WorkflowActivityWindow.UNRECOGNIZED;
+  }
+}
+
+export function workflowActivityWindowToJSON(object: WorkflowActivityWindow): string {
+  switch (object) {
+    case WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED:
+      return "WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED";
+    case WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_LAST_DAY:
+      return "WORKFLOW_ACTIVITY_WINDOW_LAST_DAY";
+    case WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS:
+      return "WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS";
+    case WorkflowActivityWindow.WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS:
+      return "WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS";
+    case WorkflowActivityWindow.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
 export interface WorkflowServiceCreateRequest {
   name: string;
@@ -46,11 +98,29 @@ export interface WorkflowServiceDeleteResponse {
 }
 
 export interface WorkflowServiceListRequest {
-  projectReference?: EntityRef | undefined;
+  /** The name of the workflow to filter by */
+  workflowName: string;
+  /** The team the workflow belongs to */
+  workflowTeam: string;
+  /** The project the workflow belongs to */
+  projectNames: string[];
+  /** If the workflow is public */
+  workflowPublic?:
+    | boolean
+    | undefined;
+  /** The type of runner that ran the workflow */
+  workflowRunRunnerType: CraftingSchema_Runner_RunnerType;
+  /** The status of the last workflow run */
+  workflowRunLastStatus: RunStatus;
+  /** The time window for the last known workflow activity */
+  workflowLastActivityWindow: WorkflowActivityWindow;
+  /** Pagination options */
+  pagination?: OffsetPaginationRequest;
 }
 
 export interface WorkflowServiceListResponse {
   result: WorkflowItem[];
+  pagination?: OffsetPaginationResponse;
 }
 
 export interface WorkflowServiceViewRequest {
@@ -551,13 +621,43 @@ export const WorkflowServiceDeleteResponse = {
 };
 
 function createBaseWorkflowServiceListRequest(): WorkflowServiceListRequest {
-  return { projectReference: undefined };
+  return {
+    workflowName: "",
+    workflowTeam: "",
+    projectNames: [],
+    workflowPublic: undefined,
+    workflowRunRunnerType: 0,
+    workflowRunLastStatus: 0,
+    workflowLastActivityWindow: 0,
+    pagination: undefined,
+  };
 }
 
 export const WorkflowServiceListRequest = {
   encode(message: WorkflowServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.projectReference !== undefined) {
-      EntityRef.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    if (message.workflowName !== "") {
+      writer.uint32(10).string(message.workflowName);
+    }
+    if (message.workflowTeam !== "") {
+      writer.uint32(18).string(message.workflowTeam);
+    }
+    for (const v of message.projectNames) {
+      writer.uint32(26).string(v!);
+    }
+    if (message.workflowPublic !== undefined) {
+      writer.uint32(32).bool(message.workflowPublic);
+    }
+    if (message.workflowRunRunnerType !== 0) {
+      writer.uint32(40).int32(message.workflowRunRunnerType);
+    }
+    if (message.workflowRunLastStatus !== 0) {
+      writer.uint32(48).int32(message.workflowRunLastStatus);
+    }
+    if (message.workflowLastActivityWindow !== 0) {
+      writer.uint32(56).int32(message.workflowLastActivityWindow);
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -574,7 +674,56 @@ export const WorkflowServiceListRequest = {
             break;
           }
 
-          message.projectReference = EntityRef.decode(reader, reader.uint32());
+          message.workflowName = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.workflowTeam = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectNames.push(reader.string());
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.workflowPublic = reader.bool();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.workflowRunRunnerType = reader.int32() as any;
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.workflowRunLastStatus = reader.int32() as any;
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.workflowLastActivityWindow = reader.int32() as any;
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -587,14 +736,39 @@ export const WorkflowServiceListRequest = {
 
   fromJSON(object: any): WorkflowServiceListRequest {
     return {
-      projectReference: isSet(object.projectReference) ? EntityRef.fromJSON(object.projectReference) : undefined,
+      workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
+      workflowTeam: isSet(object.workflowTeam) ? String(object.workflowTeam) : "",
+      projectNames: Array.isArray(object?.projectNames) ? object.projectNames.map((e: any) => String(e)) : [],
+      workflowPublic: isSet(object.workflowPublic) ? Boolean(object.workflowPublic) : undefined,
+      workflowRunRunnerType: isSet(object.workflowRunRunnerType)
+        ? craftingSchema_Runner_RunnerTypeFromJSON(object.workflowRunRunnerType)
+        : 0,
+      workflowRunLastStatus: isSet(object.workflowRunLastStatus) ? runStatusFromJSON(object.workflowRunLastStatus) : 0,
+      workflowLastActivityWindow: isSet(object.workflowLastActivityWindow)
+        ? workflowActivityWindowFromJSON(object.workflowLastActivityWindow)
+        : 0,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
 
   toJSON(message: WorkflowServiceListRequest): unknown {
     const obj: any = {};
-    message.projectReference !== undefined &&
-      (obj.projectReference = message.projectReference ? EntityRef.toJSON(message.projectReference) : undefined);
+    message.workflowName !== undefined && (obj.workflowName = message.workflowName);
+    message.workflowTeam !== undefined && (obj.workflowTeam = message.workflowTeam);
+    if (message.projectNames) {
+      obj.projectNames = message.projectNames.map((e) => e);
+    } else {
+      obj.projectNames = [];
+    }
+    message.workflowPublic !== undefined && (obj.workflowPublic = message.workflowPublic);
+    message.workflowRunRunnerType !== undefined &&
+      (obj.workflowRunRunnerType = craftingSchema_Runner_RunnerTypeToJSON(message.workflowRunRunnerType));
+    message.workflowRunLastStatus !== undefined &&
+      (obj.workflowRunLastStatus = runStatusToJSON(message.workflowRunLastStatus));
+    message.workflowLastActivityWindow !== undefined &&
+      (obj.workflowLastActivityWindow = workflowActivityWindowToJSON(message.workflowLastActivityWindow));
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -604,21 +778,31 @@ export const WorkflowServiceListRequest = {
 
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceListRequest>, I>>(object: I): WorkflowServiceListRequest {
     const message = createBaseWorkflowServiceListRequest();
-    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
-      ? EntityRef.fromPartial(object.projectReference)
+    message.workflowName = object.workflowName ?? "";
+    message.workflowTeam = object.workflowTeam ?? "";
+    message.projectNames = object.projectNames?.map((e) => e) || [];
+    message.workflowPublic = object.workflowPublic ?? undefined;
+    message.workflowRunRunnerType = object.workflowRunRunnerType ?? 0;
+    message.workflowRunLastStatus = object.workflowRunLastStatus ?? 0;
+    message.workflowLastActivityWindow = object.workflowLastActivityWindow ?? 0;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
       : undefined;
     return message;
   },
 };
 
 function createBaseWorkflowServiceListResponse(): WorkflowServiceListResponse {
-  return { result: [] };
+  return { result: [], pagination: undefined };
 }
 
 export const WorkflowServiceListResponse = {
   encode(message: WorkflowServiceListResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.result) {
       WorkflowItem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -637,6 +821,13 @@ export const WorkflowServiceListResponse = {
 
           message.result.push(WorkflowItem.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -647,7 +838,10 @@ export const WorkflowServiceListResponse = {
   },
 
   fromJSON(object: any): WorkflowServiceListResponse {
-    return { result: Array.isArray(object?.result) ? object.result.map((e: any) => WorkflowItem.fromJSON(e)) : [] };
+    return {
+      result: Array.isArray(object?.result) ? object.result.map((e: any) => WorkflowItem.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
   },
 
   toJSON(message: WorkflowServiceListResponse): unknown {
@@ -657,6 +851,8 @@ export const WorkflowServiceListResponse = {
     } else {
       obj.result = [];
     }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -667,6 +863,9 @@ export const WorkflowServiceListResponse = {
   fromPartial<I extends Exact<DeepPartial<WorkflowServiceListResponse>, I>>(object: I): WorkflowServiceListResponse {
     const message = createBaseWorkflowServiceListResponse();
     message.result = object.result?.map((e) => WorkflowItem.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
     return message;
   },
 };
