@@ -23,7 +23,8 @@ const (
 	// DefaultPage defines the default page number
 	DefaultPage = 1
 	// DefaultPageSize defines the default number of items per page
-	DefaultPageSize = 15
+	// TODO: change to 15 when all clients are updated
+	DefaultPageSize = 50
 )
 
 // OffsetPaginationError is the error type for page-based pagination
