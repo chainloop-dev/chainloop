@@ -135,6 +135,7 @@ message PolicyEvaluation {
   PolicyReference policy_reference = 10;
   bool skipped = 12;
   repeated string skip_reasons = 13;
+  PolicyReference group_reference = 15;
 }
 
 message PolicyViolation {
@@ -145,6 +146,7 @@ message PolicyViolation {
 message PolicyReference {
   string name = 1;
   map<string, string> digest = 2;
+  string organization = 3;
 }
 
 message WorkflowContractItem {
