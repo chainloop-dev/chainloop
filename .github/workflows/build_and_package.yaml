@@ -147,6 +147,7 @@ jobs:
           chainloop attestation reset --trigger cancellation
 
   github-release:
+    needs: release
     if: github.ref_type == 'tag' # Guard to make sure we are releasing once
     uses: chainloop-dev/chainloop/.github/workflows/release.yaml@main
     with:
