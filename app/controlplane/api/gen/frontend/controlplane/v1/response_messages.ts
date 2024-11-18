@@ -299,6 +299,7 @@ export interface PolicyEvaluation {
   policyReference?: PolicyReference;
   skipped: boolean;
   skipReasons: string[];
+  requirements: string[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1786,6 +1787,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     policyReference: undefined,
     skipped: false,
     skipReasons: [],
+    requirements: [],
   };
 }
 
@@ -1826,6 +1828,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.skipReasons) {
       writer.uint32(106).string(v!);
+    }
+    for (const v of message.requirements) {
+      writer.uint32(114).string(v!);
     }
     return writer;
   },
@@ -1927,6 +1932,13 @@ export const PolicyEvaluation = {
 
           message.skipReasons.push(reader.string());
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.requirements.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1962,6 +1974,7 @@ export const PolicyEvaluation = {
       policyReference: isSet(object.policyReference) ? PolicyReference.fromJSON(object.policyReference) : undefined,
       skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
+      requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
     };
   },
 
@@ -2002,6 +2015,11 @@ export const PolicyEvaluation = {
     } else {
       obj.skipReasons = [];
     }
+    if (message.requirements) {
+      obj.requirements = message.requirements.map((e) => e);
+    } else {
+      obj.requirements = [];
+    }
     return obj;
   },
 
@@ -2038,6 +2056,7 @@ export const PolicyEvaluation = {
       : undefined;
     message.skipped = object.skipped ?? false;
     message.skipReasons = object.skipReasons?.map((e) => e) || [];
+    message.requirements = object.requirements?.map((e) => e) || [];
     return message;
   },
 };

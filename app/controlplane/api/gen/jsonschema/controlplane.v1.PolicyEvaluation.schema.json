@@ -41,6 +41,12 @@
     "policy_reference": {
       "$ref": "controlplane.v1.PolicyReference.schema.json"
     },
+    "requirements": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "skip_reasons": {
       "items": {
         "type": "string"
