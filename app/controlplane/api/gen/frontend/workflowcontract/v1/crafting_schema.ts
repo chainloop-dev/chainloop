@@ -325,6 +325,8 @@ export interface PolicyAttachment {
    *     AGPL-3.0
    */
   with: { [key: string]: string };
+  /** List of requirements this policy contributes to satisfy */
+  requirements: string[];
 }
 
 export interface PolicyAttachment_WithEntry {
@@ -947,7 +949,7 @@ export const Policies = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, embedded: undefined, selector: undefined, disabled: false, with: {} };
+  return { ref: undefined, embedded: undefined, selector: undefined, disabled: false, with: {}, requirements: [] };
 }
 
 export const PolicyAttachment = {
@@ -967,6 +969,9 @@ export const PolicyAttachment = {
     Object.entries(message.with).forEach(([key, value]) => {
       PolicyAttachment_WithEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
     });
+    for (const v of message.requirements) {
+      writer.uint32(50).string(v!);
+    }
     return writer;
   },
 
@@ -1015,6 +1020,13 @@ export const PolicyAttachment = {
             message.with[entry5.key] = entry5.value;
           }
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.requirements.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1036,6 +1048,7 @@ export const PolicyAttachment = {
           return acc;
         }, {})
         : {},
+      requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
     };
   },
 
@@ -1051,6 +1064,11 @@ export const PolicyAttachment = {
       Object.entries(message.with).forEach(([k, v]) => {
         obj.with[k] = v;
       });
+    }
+    if (message.requirements) {
+      obj.requirements = message.requirements.map((e) => e);
+    } else {
+      obj.requirements = [];
     }
     return obj;
   },
@@ -1075,6 +1093,7 @@ export const PolicyAttachment = {
       }
       return acc;
     }, {});
+    message.requirements = object.requirements?.map((e) => e) || [];
     return message;
   },
 };

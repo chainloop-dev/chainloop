@@ -67,6 +67,13 @@
     "referenceName": {
       "type": "string"
     },
+    "requirements": {
+      "description": "List of requirements this policy contributes to satisfy",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "skipReasons": {
       "description": "Evaluation messages, intended to communicate evaluation errors (invalid input)",
       "items": {

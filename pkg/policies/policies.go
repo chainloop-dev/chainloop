@@ -193,7 +193,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		// Merged "skipped"
 		Skipped: skipped,
 		// Merged "skip_reason"
-		SkipReasons: reasons,
+		SkipReasons:  reasons,
+		Requirements: attachment.Requirements,
 	}, nil
 }
 
