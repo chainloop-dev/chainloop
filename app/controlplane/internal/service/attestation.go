@@ -470,19 +470,19 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 			}
 
 			if ev.PolicyReference != nil {
-				name, _ := ev.PolicyReference.GetAnnotations().AsMap()["organization"].(string)
+				orgName, _ := ev.PolicyReference.GetAnnotations().AsMap()["organization"].(string)
 				eval.PolicyReference = &cpAPI.PolicyReference{
 					Name:         ev.PolicyReference.Name,
 					Digest:       ev.PolicyReference.Digest,
-					Organization: name,
+					Organization: orgName,
 				}
 			}
 			if ev.GroupReference != nil {
-				name, _ := ev.GroupReference.GetAnnotations().AsMap()["organization"].(string)
+				orgName, _ := ev.GroupReference.GetAnnotations().AsMap()["organization"].(string)
 				eval.GroupReference = &cpAPI.PolicyReference{
 					Name:         ev.GroupReference.Name,
 					Digest:       ev.GroupReference.Digest,
-					Organization: name,
+					Organization: orgName,
 				}
 			}
 
