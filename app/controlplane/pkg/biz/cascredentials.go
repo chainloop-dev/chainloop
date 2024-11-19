@@ -28,7 +28,7 @@ type CASCredentialsUseCase struct {
 }
 
 func NewCASCredentialsUseCase(c *conf.Auth) (*CASCredentialsUseCase, error) {
-	const defaultExpirationTime = 10 * time.Second
+	const defaultExpirationTime = 30 * time.Second
 
 	builder, err := robotaccount.NewBuilder(
 		robotaccount.WithPrivateKey(c.CasRobotAccountPrivateKeyPath),
