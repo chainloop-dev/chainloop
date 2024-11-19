@@ -29,6 +29,7 @@ type AttestationStatusOpts struct {
 	*ActionsOpts
 	UseAttestationRemoteState bool
 	isPushed                  bool
+	LocalStatePath            string
 }
 
 type AttestationStatus struct {
@@ -66,7 +67,7 @@ type AttestationStatusResultMaterial struct {
 }
 
 func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
-	c, err := newCrafter(cfg.UseAttestationRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
+	c, err := newCrafter(&newCrafterStateOpts{enableRemoteState: cfg.UseAttestationRemoteState, localStatePath: cfg.LocalStatePath}, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

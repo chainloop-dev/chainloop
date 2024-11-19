@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ func newAttestationResetCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a, err := action.NewAttestationReset(actionOpts)
+			a, err := action.NewAttestationReset(&action.AttestationResetOpts{ActionsOpts: actionOpts, LocalStatePath: attestationLocalStatePath})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)
 			}

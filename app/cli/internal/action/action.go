@@ -46,9 +46,19 @@ func toTimePtr(t time.Time) *time.Time {
 }
 
 // load a crafter with either local or remote state
-func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.NewOpt) (*crafter.Crafter, error) {
+
+type newCrafterStateOpts struct {
+	enableRemoteState bool
+	localStatePath    string
+}
+
+func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...crafter.NewOpt) (*crafter.Crafter, error) {
 	var stateManager crafter.StateManager
 	var err error
+
+	if stateOpts == nil {
+		return nil, fmt.Errorf("missing state manager options")
+	}
 
 	// run opts to extract logger
 	c := &crafter.Crafter{}
@@ -56,15 +66,16 @@ func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.N
 		_ = opt(c)
 	}
 
-	switch enableRemoteState {
+	switch stateOpts.enableRemoteState {
 	case true:
 		stateManager, err = remote.New(pb.NewAttestationStateServiceClient(conn), c.Logger)
 	case false:
 		attestationStatePath := filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json")
-		if path := os.Getenv("CHAINLOOP_ATTESTATION_STATE_PATH"); path != "" {
+		if path := stateOpts.localStatePath; path != "" {
 			attestationStatePath = path
 		}
 
+		c.Logger.Debug().Str("path", attestationStatePath).Msg("using local state")
 		stateManager, err = filesystem.New(attestationStatePath)
 	}
 

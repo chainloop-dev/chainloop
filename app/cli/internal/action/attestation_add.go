@@ -36,6 +36,7 @@ type AttestationAddOpts struct {
 	ConnectionInsecure bool
 	// OCI registry credentials used for CONTAINER_IMAGE material type
 	RegistryServer, RegistryUsername, RegistryPassword string
+	LocalStatePath                                     string
 }
 
 type newCrafterOpts struct {
@@ -49,6 +50,7 @@ type AttestationAdd struct {
 	// optional CA certificate for the CAS connection
 	casCAPath          string
 	connectionInsecure bool
+	localStatePath     string
 	*newCrafterOpts
 }
 
@@ -65,6 +67,7 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 		casURI:             cfg.CASURI,
 		casCAPath:          cfg.CASCAPath,
 		connectionInsecure: cfg.ConnectionInsecure,
+		localStatePath:     cfg.LocalStatePath,
 	}, nil
 }
 
@@ -72,7 +75,7 @@ var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
 func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) error {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
 	if err != nil {
 		return fmt.Errorf("failed to load crafter: %w", err)
 	}
