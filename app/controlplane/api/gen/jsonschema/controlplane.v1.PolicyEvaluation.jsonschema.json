@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(group_reference)$": {
+      "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
+    },
     "^(material_name)$": {
       "type": "string"
     },
@@ -31,6 +34,9 @@
     },
     "description": {
       "type": "string"
+    },
+    "groupReference": {
+      "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
     },
     "materialName": {
       "type": "string"

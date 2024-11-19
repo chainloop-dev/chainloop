@@ -80,16 +80,22 @@ func newAttestationInitCmd() *cobra.Command {
 				return fmt.Errorf("failed to initialize attestation: %w", err)
 			}
 
-			// Initialize it
-			attestationID, err := a.Run(cmd.Context(), &action.AttestationInitRunOpts{
-				ContractRevision:             contractRevision,
-				ProjectName:                  projectName,
-				ProjectVersion:               projectVersion,
-				WorkflowName:                 workflowName,
-				NewWorkflowContractName:      newWorkflowcontractName,
-				ProjectVersionMarkAsReleased: projectVersionRelease,
-			})
+			var attestationID string
+			err = runWithBackoffRetry(
+				func() error {
+					// Initialize it
+					attestationID, err = a.Run(cmd.Context(), &action.AttestationInitRunOpts{
+						ContractRevision:             contractRevision,
+						ProjectName:                  projectName,
+						ProjectVersion:               projectVersion,
+						WorkflowName:                 workflowName,
+						NewWorkflowContractName:      newWorkflowcontractName,
+						ProjectVersionMarkAsReleased: projectVersionRelease,
+					})
 
+					return err
+				},
+			)
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationAlreadyExist) {
 					return err

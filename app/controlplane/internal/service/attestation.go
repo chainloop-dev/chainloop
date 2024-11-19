@@ -219,23 +219,25 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	// If we have an external CAS backend, we will push there the attestation
 	if !casBackend.Inline {
-		b := backoff.NewExponentialBackOff()
-		b.MaxElapsedTime = 1 * time.Minute
-		err := backoff.Retry(
-			func() error {
-				// reset context
-				ctx := context.Background()
-				d, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend, req.WorkflowRunId)
-				if err != nil {
-					return err
-				}
-				s.log.Infow("msg", "attestation uploaded to CAS", "digest", d.String(), "runID", req.WorkflowRunId)
-				return nil
-			}, b)
+		go func() {
+			b := backoff.NewExponentialBackOff()
+			b.MaxElapsedTime = 1 * time.Minute
+			err := backoff.Retry(
+				func() error {
+					// reset context
+					ctx := context.Background()
+					digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend, req.WorkflowRunId)
+					if err != nil {
+						return err
+					}
+					s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest.String(), "runID", req.WorkflowRunId)
+					return nil
+				}, b)
 
-		if err != nil {
-			_ = handleUseCaseErr(err, s.log)
-		}
+			if err != nil {
+				_ = handleUseCaseErr(err, s.log)
+			}
+		}()
 	}
 
 	// Store the attestation including the digest in the CAS backend (if exists)
@@ -471,9 +473,19 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 			}
 
 			if ev.PolicyReference != nil {
+				orgName, _ := ev.PolicyReference.GetAnnotations().AsMap()["organization"].(string)
 				eval.PolicyReference = &cpAPI.PolicyReference{
-					Name:   ev.PolicyReference.Name,
-					Digest: ev.PolicyReference.Digest,
+					Name:         ev.PolicyReference.Name,
+					Digest:       ev.PolicyReference.Digest,
+					Organization: orgName,
+				}
+			}
+			if ev.GroupReference != nil {
+				orgName, _ := ev.GroupReference.GetAnnotations().AsMap()["organization"].(string)
+				eval.GroupReference = &cpAPI.PolicyReference{
+					Name:         ev.GroupReference.Name,
+					Digest:       ev.GroupReference.Digest,
+					Organization: orgName,
 				}
 			}
 
