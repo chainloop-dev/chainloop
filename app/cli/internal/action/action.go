@@ -60,7 +60,12 @@ func newCrafter(enableRemoteState bool, conn *grpc.ClientConn, opts ...crafter.N
 	case true:
 		stateManager, err = remote.New(pb.NewAttestationStateServiceClient(conn), c.Logger)
 	case false:
-		stateManager, err = filesystem.New(filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json"))
+		attestationStatePath := filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json")
+		if path := os.Getenv("CHAINLOOP_ATTESTATION_STATE_PATH"); path != "" {
+			attestationStatePath = path
+		}
+
+		stateManager, err = filesystem.New(attestationStatePath)
 	}
 
 	if err != nil {
