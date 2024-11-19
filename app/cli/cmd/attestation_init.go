@@ -74,6 +74,7 @@ func newAttestationInitCmd() *cobra.Command {
 					DryRun:         attestationDryRun,
 					Force:          force,
 					UseRemoteState: useAttestationRemoteState,
+					LocalStatePath: attestationLocalStatePath,
 				},
 			)
 			if err != nil {
@@ -109,7 +110,7 @@ func newAttestationInitCmd() *cobra.Command {
 			logger.Info().Msg("Attestation initialized! now you can check its status or add materials to it")
 
 			// Show the status information
-			statusAction, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: actionOpts, UseAttestationRemoteState: useAttestationRemoteState})
+			statusAction, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: actionOpts, UseAttestationRemoteState: useAttestationRemoteState, LocalStatePath: attestationLocalStatePath})
 			if err != nil {
 				return newGracefulError(err)
 			}

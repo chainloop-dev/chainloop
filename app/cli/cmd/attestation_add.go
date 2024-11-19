@@ -72,6 +72,7 @@ func newAttestationAddCmd() *cobra.Command {
 					RegistryServer:     registryServer,
 					RegistryUsername:   registryUsername,
 					RegistryPassword:   registryPassword,
+					LocalStatePath:     attestationLocalStatePath,
 				},
 			)
 			if err != nil {

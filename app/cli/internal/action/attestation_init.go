@@ -37,6 +37,7 @@ type AttestationInitOpts struct {
 	// since it's a protection to make sure you don't override the state by mistake
 	Force          bool
 	UseRemoteState bool
+	LocalStatePath string
 }
 
 type AttestationInit struct {
@@ -58,7 +59,7 @@ func (e ErrRunnerContextNotFound) Error() string {
 }
 
 func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
-	c, err := newCrafter(cfg.UseRemoteState, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
+	c, err := newCrafter(&newCrafterStateOpts{enableRemoteState: cfg.UseRemoteState, localStatePath: cfg.LocalStatePath}, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

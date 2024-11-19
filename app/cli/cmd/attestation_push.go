@@ -65,7 +65,7 @@ func newAttestationPushCmd() *cobra.Command {
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
 				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle,
 				CLIVersion: info.Version, CLIDigest: info.Digest,
-				SignServerCAPath: signServerCAPath,
+				SignServerCAPath: signServerCAPath, LocalStatePath: attestationLocalStatePath,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)

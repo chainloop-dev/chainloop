@@ -29,22 +29,24 @@ const AttestationResetTriggerCancelled = "cancellation"
 
 type AttestationResetOpts struct {
 	*ActionsOpts
+	LocalStatePath string
 }
 
 type AttestationReset struct {
 	*ActionsOpts
 	*newCrafterOpts
+	localStatePath string
 }
 
-func NewAttestationReset(cfg *ActionsOpts) (*AttestationReset, error) {
+func NewAttestationReset(cfg *AttestationResetOpts) (*AttestationReset, error) {
 	return &AttestationReset{
 		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection, opts: []crafter.NewOpt{crafter.WithLogger(&cfg.Logger)}},
-		ActionsOpts:    cfg}, nil
+		ActionsOpts:    cfg.ActionsOpts, localStatePath: cfg.LocalStatePath}, nil
 }
 
 func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger, reason string) error {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(attestationID != "", action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: attestationID != "", localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
 	if err != nil {
 		return fmt.Errorf("failed to load crafter: %w", err)
 	}

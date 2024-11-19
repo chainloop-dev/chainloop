@@ -35,6 +35,7 @@ type AttestationPushOpts struct {
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
 	SignServerCAPath string
+	LocalStatePath   string
 }
 
 type AttestationResult struct {
@@ -47,6 +48,7 @@ type AttestationPush struct {
 	*ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
 	signServerCAPath                           string
+	localStatePath                             string
 	*newCrafterOpts
 }
 
@@ -59,6 +61,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 		cliDigest:        cfg.CLIDigest,
 		bundlePath:       cfg.BundlePath,
 		signServerCAPath: cfg.SignServerCAPath,
+		localStatePath:   cfg.LocalStatePath,
 		newCrafterOpts:   &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 	}, nil
 }
@@ -66,7 +69,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
 	useRemoteState := attestationID != ""
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(useRemoteState, action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: useRemoteState, localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -79,7 +82,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	// Retrieve attestation status
 	statusAction, err := NewAttestationStatus(&AttestationStatusOpts{
-		ActionsOpts: action.ActionsOpts, UseAttestationRemoteState: useRemoteState, isPushed: true,
+		ActionsOpts: action.ActionsOpts, UseAttestationRemoteState: useRemoteState, isPushed: true, LocalStatePath: action.localStatePath,
 	})
 
 	if err != nil {

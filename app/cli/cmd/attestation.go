@@ -26,6 +26,7 @@ import (
 var (
 	attAPIToken               string
 	useAttestationRemoteState bool
+	attestationLocalStatePath string
 	GracefulExit              bool
 	// attestationID is the unique identifier of the in-progress attestation
 	// this is required when use-attestation-remote-state is enabled
@@ -69,6 +70,7 @@ func newAttestationCmd() *cobra.Command {
 	cobra.CheckErr(cmd.PersistentFlags().MarkHidden("remote-state"))
 
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")
+	cmd.PersistentFlags().StringVar(&attestationLocalStatePath, "local-state-path", "", "path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json")
 
 	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(), newAttestationResetCmd())
 
