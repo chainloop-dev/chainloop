@@ -135,6 +135,7 @@ message PolicyEvaluation {
   PolicyReference policy_reference = 10;
   bool skipped = 12;
   repeated string skip_reasons = 13;
+  repeated string requirements = 14;
   PolicyReference group_reference = 15;
 }
 

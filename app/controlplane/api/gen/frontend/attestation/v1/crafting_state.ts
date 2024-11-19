@@ -148,6 +148,8 @@ export interface PolicyEvaluation {
   /** Group this evaluated policy belongs to, if any */
   policyReference?: PolicyEvaluation_Reference;
   groupReference?: PolicyEvaluation_Reference;
+  /** List of requirements this policy contributes to satisfy */
+  requirements: string[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -1337,6 +1339,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     skipReasons: [],
     policyReference: undefined,
     groupReference: undefined,
+    requirements: [],
   };
 }
 
@@ -1386,6 +1389,9 @@ export const PolicyEvaluation = {
     }
     if (message.groupReference !== undefined) {
       PolicyEvaluation_Reference.encode(message.groupReference, writer.uint32(130).fork()).ldelim();
+    }
+    for (const v of message.requirements) {
+      writer.uint32(138).string(v!);
     }
     return writer;
   },
@@ -1508,6 +1514,13 @@ export const PolicyEvaluation = {
 
           message.groupReference = PolicyEvaluation_Reference.decode(reader, reader.uint32());
           continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.requirements.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1550,6 +1563,9 @@ export const PolicyEvaluation = {
       groupReference: isSet(object.groupReference)
         ? PolicyEvaluation_Reference.fromJSON(object.groupReference)
         : undefined,
+      requirements: Array.isArray(object?.requirements)
+        ? object.requirements.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -1596,6 +1612,11 @@ export const PolicyEvaluation = {
     message.groupReference !== undefined && (obj.groupReference = message.groupReference
       ? PolicyEvaluation_Reference.toJSON(message.groupReference)
       : undefined);
+    if (message.requirements) {
+      obj.requirements = message.requirements.map((e) => e);
+    } else {
+      obj.requirements = [];
+    }
     return obj;
   },
 
@@ -1637,6 +1658,7 @@ export const PolicyEvaluation = {
     message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
       ? PolicyEvaluation_Reference.fromPartial(object.groupReference)
       : undefined;
+    message.requirements = object.requirements?.map((e) => e) || [];
     return message;
   },
 };

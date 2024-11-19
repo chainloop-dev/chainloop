@@ -299,6 +299,7 @@ export interface PolicyEvaluation {
   policyReference?: PolicyReference;
   skipped: boolean;
   skipReasons: string[];
+  requirements: string[];
   groupReference?: PolicyReference;
 }
 
@@ -1788,6 +1789,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     policyReference: undefined,
     skipped: false,
     skipReasons: [],
+    requirements: [],
     groupReference: undefined,
   };
 }
@@ -1829,6 +1831,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.skipReasons) {
       writer.uint32(106).string(v!);
+    }
+    for (const v of message.requirements) {
+      writer.uint32(114).string(v!);
     }
     if (message.groupReference !== undefined) {
       PolicyReference.encode(message.groupReference, writer.uint32(122).fork()).ldelim();
@@ -1933,6 +1938,13 @@ export const PolicyEvaluation = {
 
           message.skipReasons.push(reader.string());
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.requirements.push(reader.string());
+          continue;
         case 15:
           if (tag !== 122) {
             break;
@@ -1975,6 +1987,7 @@ export const PolicyEvaluation = {
       policyReference: isSet(object.policyReference) ? PolicyReference.fromJSON(object.policyReference) : undefined,
       skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
+      requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
       groupReference: isSet(object.groupReference) ? PolicyReference.fromJSON(object.groupReference) : undefined,
     };
   },
@@ -2016,6 +2029,11 @@ export const PolicyEvaluation = {
     } else {
       obj.skipReasons = [];
     }
+    if (message.requirements) {
+      obj.requirements = message.requirements.map((e) => e);
+    } else {
+      obj.requirements = [];
+    }
     message.groupReference !== undefined &&
       (obj.groupReference = message.groupReference ? PolicyReference.toJSON(message.groupReference) : undefined);
     return obj;
@@ -2054,6 +2072,7 @@ export const PolicyEvaluation = {
       : undefined;
     message.skipped = object.skipped ?? false;
     message.skipReasons = object.skipReasons?.map((e) => e) || [];
+    message.requirements = object.requirements?.map((e) => e) || [];
     message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
       ? PolicyReference.fromPartial(object.groupReference)
       : undefined;

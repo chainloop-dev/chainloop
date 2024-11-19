@@ -60,6 +60,7 @@ type PolicyEvaluation struct {
 	Skipped         bool                       `json:"skipped"`
 	SkipReasons     []string                   `json:"skip_reasons,omitempty"`
 	GroupReference  *intoto.ResourceDescriptor `json:"group_reference,omitempty"`
+	Requirements    []string                   `json:"requirements,omitempty"`
 }
 
 type PolicyViolation struct {
@@ -336,6 +337,7 @@ func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
 		SkipReasons:     ev.SkipReasons,
 		Skipped:         ev.Skipped,
 		GroupReference:  groupRef,
+		Requirements:    ev.Requirements,
 	}, nil
 }
 

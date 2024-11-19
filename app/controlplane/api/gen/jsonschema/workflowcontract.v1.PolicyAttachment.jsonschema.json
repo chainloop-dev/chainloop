@@ -16,6 +16,13 @@
       "description": "policy reference, it might be in URI format.",
       "type": "string"
     },
+    "requirements": {
+      "description": "List of requirements this policy contributes to satisfy",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "selector": {
       "$ref": "workflowcontract.v1.PolicyAttachment.MaterialSelector.jsonschema.json",
       "description": "rules to select a material or materials to be validated by the policy.\n If none provided, the whole statement will be injected to the policy"
