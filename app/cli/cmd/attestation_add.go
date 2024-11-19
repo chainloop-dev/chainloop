@@ -16,18 +16,14 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
@@ -90,30 +86,17 @@ func newAttestationAddCmd() *cobra.Command {
 
 			// In some cases, the attestation state is stored remotely. To control concurrency we use
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
-			return backoff.RetryNotify(
+			return runWithBackoffRetry(
 				func() error {
 					if err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations); err != nil {
-						if errors.Is(err, action.ErrAttestationNotInitialized) {
-							return err
-						}
-
-						// We want to retry if the error is a conflict
-						if v1.IsAttestationStateErrorConflict(err) {
-							return err
-						}
-
-						// if it's another kind of error we want to stop retrying
-						return backoff.Permanent(newGracefulError(err))
+						return err
 					}
 
 					logger.Info().Msg("material added to attestation")
 
 					return nil
 				},
-				backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(3*time.Minute)),
-				func(err error, delay time.Duration) {
-					logger.Err(err).Msgf("retrying in %s", delay)
-				})
+			)
 		},
 
 		PostRunE: func(cmd *cobra.Command, args []string) error {

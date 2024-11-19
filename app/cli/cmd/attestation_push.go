@@ -76,7 +76,14 @@ func newAttestationPushCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := a.Run(cmd.Context(), attestationID, annotations)
+			var res *action.AttestationResult
+			err = runWithBackoffRetry(
+				func() error {
+					res, err = a.Run(cmd.Context(), attestationID, annotations)
+					return err
+				},
+			)
+
 			if err != nil {
 				if errors.Is(err, action.ErrAttestationNotInitialized) {
 					return err
