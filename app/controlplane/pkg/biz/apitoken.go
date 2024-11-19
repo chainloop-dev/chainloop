@@ -87,6 +87,15 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 			authz.PolicyOrganizationRead,
 			// to create robot accounts
 			authz.PolicyRobotAccountCreate,
+
+			// to attach integrations
+			authz.PolicyAvailableIntegrationRead,
+			authz.PolicyAvailableIntegrationList,
+			authz.PolicyRegisteredIntegrationList,
+			authz.PolicyRegisteredIntegrationRead,
+			authz.PolicyRegisteredIntegrationAdd,
+			authz.PolicyAttachedIntegrationList,
+			authz.PolicyAttachedIntegrationAttach,
 		},
 	}
 
