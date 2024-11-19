@@ -299,6 +299,7 @@ export interface PolicyEvaluation {
   policyReference?: PolicyReference;
   skipped: boolean;
   skipReasons: string[];
+  groupReference?: PolicyReference;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -319,6 +320,7 @@ export interface PolicyViolation {
 export interface PolicyReference {
   name: string;
   digest: { [key: string]: string };
+  organization: string;
 }
 
 export interface PolicyReference_DigestEntry {
@@ -1786,6 +1788,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     policyReference: undefined,
     skipped: false,
     skipReasons: [],
+    groupReference: undefined,
   };
 }
 
@@ -1826,6 +1829,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.skipReasons) {
       writer.uint32(106).string(v!);
+    }
+    if (message.groupReference !== undefined) {
+      PolicyReference.encode(message.groupReference, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1927,6 +1933,13 @@ export const PolicyEvaluation = {
 
           message.skipReasons.push(reader.string());
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.groupReference = PolicyReference.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1962,6 +1975,7 @@ export const PolicyEvaluation = {
       policyReference: isSet(object.policyReference) ? PolicyReference.fromJSON(object.policyReference) : undefined,
       skipped: isSet(object.skipped) ? Boolean(object.skipped) : false,
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
+      groupReference: isSet(object.groupReference) ? PolicyReference.fromJSON(object.groupReference) : undefined,
     };
   },
 
@@ -2002,6 +2016,8 @@ export const PolicyEvaluation = {
     } else {
       obj.skipReasons = [];
     }
+    message.groupReference !== undefined &&
+      (obj.groupReference = message.groupReference ? PolicyReference.toJSON(message.groupReference) : undefined);
     return obj;
   },
 
@@ -2038,6 +2054,9 @@ export const PolicyEvaluation = {
       : undefined;
     message.skipped = object.skipped ?? false;
     message.skipReasons = object.skipReasons?.map((e) => e) || [];
+    message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
+      ? PolicyReference.fromPartial(object.groupReference)
+      : undefined;
     return message;
   },
 };
@@ -2254,7 +2273,7 @@ export const PolicyViolation = {
 };
 
 function createBasePolicyReference(): PolicyReference {
-  return { name: "", digest: {} };
+  return { name: "", digest: {}, organization: "" };
 }
 
 export const PolicyReference = {
@@ -2265,6 +2284,9 @@ export const PolicyReference = {
     Object.entries(message.digest).forEach(([key, value]) => {
       PolicyReference_DigestEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).ldelim();
     });
+    if (message.organization !== "") {
+      writer.uint32(26).string(message.organization);
+    }
     return writer;
   },
 
@@ -2292,6 +2314,13 @@ export const PolicyReference = {
             message.digest[entry2.key] = entry2.value;
           }
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.organization = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2310,6 +2339,7 @@ export const PolicyReference = {
           return acc;
         }, {})
         : {},
+      organization: isSet(object.organization) ? String(object.organization) : "",
     };
   },
 
@@ -2322,6 +2352,7 @@ export const PolicyReference = {
         obj.digest[k] = v;
       });
     }
+    message.organization !== undefined && (obj.organization = message.organization);
     return obj;
   },
 
@@ -2338,6 +2369,7 @@ export const PolicyReference = {
       }
       return acc;
     }, {});
+    message.organization = object.organization ?? "";
     return message;
   },
 };
