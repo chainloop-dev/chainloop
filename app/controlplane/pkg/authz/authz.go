@@ -87,8 +87,11 @@ var (
 	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
 	// Registered integrations
 	PolicyRegisteredIntegrationList = &Policy{ResourceRegisteredIntegration, ActionList}
+	PolicyRegisteredIntegrationRead = &Policy{ResourceRegisteredIntegration, ActionRead}
+	PolicyRegisteredIntegrationAdd  = &Policy{ResourceRegisteredIntegration, ActionCreate}
 	// Attached integrations
-	PolicyAttachedIntegrationList = &Policy{ResourceAttachedIntegration, ActionList}
+	PolicyAttachedIntegrationList   = &Policy{ResourceAttachedIntegration, ActionList}
+	PolicyAttachedIntegrationAttach = &Policy{ResourceAttachedIntegration, ActionCreate}
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
 	// Robot Account
@@ -171,9 +174,12 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
 	// Registered integrations
-	"/controlplane.v1.IntegrationsService/ListRegistrations": {PolicyRegisteredIntegrationList},
+	"/controlplane.v1.IntegrationsService/ListRegistrations":    {PolicyRegisteredIntegrationList},
+	"/controlplane.v1.IntegrationsService/DescribeRegistration": {PolicyRegisteredIntegrationRead},
+	"/controlplane.v1.IntegrationsService/Register":             {PolicyRegisteredIntegrationAdd},
 	// Attached integrations
 	"/controlplane.v1.IntegrationsService/ListAttachments": {PolicyAttachedIntegrationList},
+	"/controlplane.v1.IntegrationsService/Attach":          {PolicyAttachedIntegrationAttach},
 	// Metrics
 	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
 	// Robot Account
