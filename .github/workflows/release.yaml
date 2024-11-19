@@ -14,28 +14,16 @@ jobs:
   # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
   # it will create one with an empty contract ready for operators to be filled. Otherwise, if found, it will just
   # be ignored and the process will continue. For this to work it's using a pre-created API Token
-  onboard_workflow:
-    name: Onboard Chainloop Workflow
-    if: inputs.tag != null && github.event_name == 'workflow_call'
-    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@64839eb68c20fefda46929c6c6e893cdf0537619
-    with:
-      project: "chainloop"
-      workflow_name: "chainloop-vault-release"
-    secrets:
-      api_token: ${{ secrets.chainloop_token }}
-
   release:
     name: Record release from GitHub
-    if: inputs.tag != null && github.event_name == 'workflow_call'
     runs-on: ubuntu-latest
-    needs: onboard_workflow
     permissions:
       packages: write
       contents: write
     env:
       CHAINLOOP_TOKEN: ${{ secrets.chainloop_token }}
-      CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
-      CHAINLOOP_PROJECT: ${{ needs.onboard_workflow.outputs.project_name }}
+      CHAINLOOP_WORKFLOW_NAME: chainloop-vault-release
+      CHAINLOOP_PROJECT: chainloop
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
