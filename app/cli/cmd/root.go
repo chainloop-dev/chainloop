@@ -157,6 +157,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		},
 	}
 
+	rootCmd.SetOut(os.Stdout)
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	rootCmd.PersistentFlags().StringVarP(&flagCfgFile, "config", "c", "", "Path to an existing config file (default is $HOME/.config/chainloop/config.toml)")
