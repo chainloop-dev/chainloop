@@ -20,7 +20,7 @@ data:
         {{- toYaml .Values.controlplane.auth.allowList | nindent 8 }}
   {{- end }}
   config.yaml: |
-    enable_profiler: "{{ .Values.controlplane.enableProfiler }}"
+    enable_profiler: {{ .Values.controlplane.enableProfiler }}
     server:
       http:
         addr: "0.0.0.0:{{ .Values.controlplane.containerPorts.http }}"
