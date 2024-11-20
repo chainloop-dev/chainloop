@@ -45,7 +45,7 @@ func (RawFormat) Values() (kinds []string) {
 	return
 }
 
-func UnmarshalFromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) error {
+func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) error {
 	var validator *protovalidate.Validator
 	var err error
 

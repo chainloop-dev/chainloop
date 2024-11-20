@@ -313,7 +313,7 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 		// but we also want to keep the Body field populated for backward compatibility
 	} else if len(w.Body) == 0 {
 		contract := &schemav1.CraftingSchema{}
-		err := unmarshal.UnmarshalFromRaw(w.RawBody, w.RawBodyFormat, contract, true)
+		err := unmarshal.FromRaw(w.RawBody, w.RawBodyFormat, contract, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal raw body: %w", err)
 		}

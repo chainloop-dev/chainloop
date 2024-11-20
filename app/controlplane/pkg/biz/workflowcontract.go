@@ -476,7 +476,7 @@ func (uc *WorkflowContractUseCase) findProvider(providerName string) (*policies.
 // UnmarshalAndValidateRawContract Takes the raw contract + format and will unmarshal the contract and validate it
 func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*Contract, error) {
 	contract := &schemav1.CraftingSchema{}
-	err := unmarshal.UnmarshalFromRaw(raw, format, contract, true)
+	err := unmarshal.FromRaw(raw, format, contract, true)
 	if err != nil {
 		return nil, NewErrValidation(err)
 	}
