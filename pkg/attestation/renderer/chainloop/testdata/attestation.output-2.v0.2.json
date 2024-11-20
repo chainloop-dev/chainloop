@@ -4,7 +4,7 @@
     {
       "name": "chainloop.workflow.test-new-types",
       "digest": {
-        "sha256": "f468a33a5a4ae153c1c50949b771b6dd9034f663bf00a5fdfbef73f03886a8e1"
+        "sha256": "0824ac4c4e47e5a0db907af8d6ee1737348b6aa37c7a6f0e91f1c7c626214d3d"
       }
     },
     {
@@ -22,7 +22,8 @@
             "name": "upstream",
             "url": "git@cyberdyne.internal:skynet.git"
           }
-        ]
+        ],
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnPO+fCRC1aQ7uu5UhlAAAcwMQAFAxzNhnJwCso9KCMD+47FFY\n-----END PGP SIGNATURE-----\n\n"
       }
     },
     {

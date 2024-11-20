@@ -182,6 +182,7 @@ export interface Commit {
   message: string;
   date?: Date;
   remotes: Commit_Remote[];
+  signature: string;
 }
 
 export interface Commit_Remote {
@@ -1972,7 +1973,7 @@ export const PolicyEvaluation_Reference = {
 };
 
 function createBaseCommit(): Commit {
-  return { hash: "", authorEmail: "", authorName: "", message: "", date: undefined, remotes: [] };
+  return { hash: "", authorEmail: "", authorName: "", message: "", date: undefined, remotes: [], signature: "" };
 }
 
 export const Commit = {
@@ -1994,6 +1995,9 @@ export const Commit = {
     }
     for (const v of message.remotes) {
       Commit_Remote.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.signature !== "") {
+      writer.uint32(58).string(message.signature);
     }
     return writer;
   },
@@ -2047,6 +2051,13 @@ export const Commit = {
 
           message.remotes.push(Commit_Remote.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.signature = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2064,6 +2075,7 @@ export const Commit = {
       message: isSet(object.message) ? String(object.message) : "",
       date: isSet(object.date) ? fromJsonTimestamp(object.date) : undefined,
       remotes: Array.isArray(object?.remotes) ? object.remotes.map((e: any) => Commit_Remote.fromJSON(e)) : [],
+      signature: isSet(object.signature) ? String(object.signature) : "",
     };
   },
 
@@ -2079,6 +2091,7 @@ export const Commit = {
     } else {
       obj.remotes = [];
     }
+    message.signature !== undefined && (obj.signature = message.signature);
     return obj;
   },
 
@@ -2094,6 +2107,7 @@ export const Commit = {
     message.message = object.message ?? "";
     message.date = object.date ?? undefined;
     message.remotes = object.remotes?.map((e) => Commit_Remote.fromPartial(e)) || [];
+    message.signature = object.signature ?? "";
     return message;
   },
 };

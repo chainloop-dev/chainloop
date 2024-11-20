@@ -33,6 +33,9 @@
         "$ref": "attestation.v1.Commit.Remote.schema.json"
       },
       "type": "array"
+    },
+    "signature": {
+      "type": "string"
     }
   },
   "title": "Commit",

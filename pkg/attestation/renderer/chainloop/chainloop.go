@@ -228,7 +228,6 @@ func (p *ProvenancePredicateCommon) GetMetadata() *Metadata {
 }
 
 const (
-	rendererPrefix = "chainloop."
 	// Subject names
 	SubjectGitHead                  = "git.head"
 	subjectGitAnnotationAuthorEmail = "author.email"
@@ -236,4 +235,5 @@ const (
 	subjectGitAnnotationWhen        = "date"
 	subjectGitAnnotationMessage     = "message"
 	subjectGitAnnotationRemotes     = "remotes"
+	subjectGitAnnotationSignature   = "signature"
 )
