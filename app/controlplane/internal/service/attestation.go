@@ -111,7 +111,9 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 
 	// Find contract revision
 	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision))
-	if err != nil || contractVersion == nil {
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if contractVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
