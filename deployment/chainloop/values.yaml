@@ -149,6 +149,9 @@ controlplane:
     http: 8000
     grpc: 9000
     metrics: 5000
+  
+  ## @param controlplane.enableProfiler Enable pprof profiling on port 6060
+  enableProfiler: false
 
   ##
   ## TLS configuration
