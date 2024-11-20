@@ -181,6 +181,7 @@ message Commit {
   string message = 4 [(buf.validate.field).string.min_len = 1];
   google.protobuf.Timestamp date = 5;
   repeated Remote remotes = 6;
+  string signature = 7;
 
   message Remote {
     string name = 1 [(buf.validate.field).string.min_len = 1];

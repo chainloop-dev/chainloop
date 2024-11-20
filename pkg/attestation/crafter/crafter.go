@@ -220,8 +220,9 @@ type HeadCommit struct {
 	// Author of the commit
 	AuthorEmail, AuthorName string
 	// Commit Message
-	Message string
-	Remotes []*CommitRemote
+	Message   string
+	Remotes   []*CommitRemote
+	Signature string
 }
 
 type CommitRemote struct {
@@ -267,6 +268,7 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 		Date:        commit.Author.When,
 		Message:     commit.Message,
 		Remotes:     make([]*CommitRemote, 0),
+		Signature:   commit.PGPSignature,
 	}
 
 	remotes, err := repo.Remotes()
@@ -333,6 +335,7 @@ func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.
 			AuthorName:  headCommit.AuthorName,
 			Date:        timestamppb.New(headCommit.Date),
 			Message:     headCommit.Message,
+			Signature:   headCommit.Signature,
 		}
 
 		for _, r := range headCommit.Remotes {

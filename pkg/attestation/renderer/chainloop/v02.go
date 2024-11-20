@@ -192,6 +192,7 @@ func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
 		subjectGitAnnotationAuthorEmail: c.GetAuthorEmail(),
 		subjectGitAnnotationAuthorName:  c.GetAuthorName(),
 		subjectGitAnnotationMessage:     c.GetMessage(),
+		subjectGitAnnotationSignature:   c.GetSignature(),
 	}
 
 	if remotes := c.GetRemotes(); len(remotes) > 0 {
