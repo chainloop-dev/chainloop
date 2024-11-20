@@ -191,7 +191,7 @@ func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {
 		return fmt.Errorf("unsupported format: %s", raw.Format)
 	}
 
-	err := unmarshal.UnmarshalFromRaw(raw.Body, format, out)
+	err := unmarshal.UnmarshalFromRaw(raw.Body, format, out, false)
 	if err != nil {
 		return fmt.Errorf("error unmarshalling policy response: %w", err)
 	}

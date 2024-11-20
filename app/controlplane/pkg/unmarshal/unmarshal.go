@@ -45,10 +45,15 @@ func (RawFormat) Values() (kinds []string) {
 	return
 }
 
-func UnmarshalFromRaw(body []byte, format RawFormat, out proto.Message) error {
-	validator, err := protovalidate.New()
-	if err != nil {
-		return fmt.Errorf("could not create validator: %w", err)
+func UnmarshalFromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) error {
+	var validator *protovalidate.Validator
+	var err error
+
+	if doValidate {
+		validator, err = protovalidate.New()
+		if err != nil {
+			return fmt.Errorf("could not create validator: %w", err)
+		}
 	}
 
 	switch format {
@@ -77,10 +82,13 @@ func UnmarshalFromRaw(body []byte, format RawFormat, out proto.Message) error {
 		return fmt.Errorf("unsupported format: %s", format)
 	}
 
-	err = validator.Validate(out)
-	if err != nil {
-		return fmt.Errorf("error validating raw message: %w", err)
+	if validator != nil {
+		err = validator.Validate(out)
+		if err != nil {
+			return fmt.Errorf("error validating raw message: %w", err)
+		}
 	}
+
 	return nil
 }
 
