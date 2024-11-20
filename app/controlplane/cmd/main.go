@@ -36,11 +36,14 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
+	_ "net/http/pprof"
+
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/env"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -61,7 +64,12 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase, cfg *conf.Bootstrap) *app {
+	servers := []transport.Server{gs, hs, ms}
+	if cfg.EnableProfiler {
+		servers = append(servers, profilerSvc)
+	}
+
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -69,7 +77,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Version(Version),
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
-			kratos.Server(gs, hs, ms),
+			kratos.Server(servers...),
 		), expirer, plugins, tokenSync}
 }
 

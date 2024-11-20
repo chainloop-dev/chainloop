@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,16 +16,19 @@
 package server
 
 import (
-	"github.com/google/wire"
+	"time"
+
+	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// ProviderSet is server providers.
-var ProviderSet = wire.NewSet(
-	NewGRPCServer,
-	NewHTTPServer,
-	NewHTTPMetricsServer,
-	NewHTTPProfilerServer,
-	wire.Struct(new(Opts), "*"),
-)
+// HTTPMetricsServer is a HTTP server that exposes the metrics endpoint
+type HTTPProfilerServer struct {
+	*http.Server
+}
 
-var Version = "dev"
+// NewHTTPProfilerServer exposes the metrics endpoint in another port
+func NewHTTPProfilerServer(_ *Opts) (*HTTPProfilerServer, error) {
+	httpSrv := http.NewServer(http.Address("0.0.0.0:6060"), http.Timeout(10*time.Second))
+
+	return &HTTPProfilerServer{httpSrv}, nil
+}

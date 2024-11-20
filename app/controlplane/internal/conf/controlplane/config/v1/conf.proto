@@ -68,15 +68,18 @@ message Bootstrap {
 
   // providers for external policy repositories
   repeated PolicyProvider policy_providers = 12;
+
+  // Enable :6060 pprof endpoint
+  bool enable_profiler = 13;
 }
 
 message PolicyProvider {
   string name = 1 [(buf.validate.field) = {
     cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens.",
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')",
-      id: "name.dns-1123",
-    },
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "name.dns-1123"
+    }
   }];
   // default policies will be used for schema-less references eg `my-policy`. Only one provider can be the default one
   bool default = 2;

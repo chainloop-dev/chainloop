@@ -22,6 +22,10 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 )
 
+import (
+	_ "net/http/pprof"
+)
+
 // Injectors from wire.go:
 
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins, certificateAuthority ca.CertificateAuthority) (*app, func(), error) {
@@ -251,9 +255,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
+	httpProfilerServer, err := server.NewHTTPProfilerServer(opts)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
 	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, bootstrap)
 	return mainApp, func() {
 		cleanup()
 	}, nil

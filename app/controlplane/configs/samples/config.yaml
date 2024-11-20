@@ -88,3 +88,5 @@ onboarding:
 # Organizations with Prometheus integration enabled
 prometheus_integration:
   - org_name: "my-org"
+
+enable_profiler: true
