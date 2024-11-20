@@ -133,7 +133,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
-		return nil, nil
+		return nil, biz.NewErrNotFound("contract")
 	}
 
 	latestV, err := latestVersion(ctx, contract)
@@ -148,7 +148,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		} else if version == nil {
-			return nil, nil
+			return nil, biz.NewErrNotFound("contract")
 		}
 	}
 
