@@ -39,7 +39,7 @@ func NewVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Command line version",
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Printf("%s version %s\n", appName, Version)
+			fmt.Printf("%s version %s\n", appName, Version)
 		},
 	}
 }
