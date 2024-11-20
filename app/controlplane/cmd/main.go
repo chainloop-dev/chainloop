@@ -36,6 +36,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
+	_ "net/http/pprof"
+
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/env"

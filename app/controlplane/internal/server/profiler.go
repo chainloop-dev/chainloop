@@ -18,8 +18,6 @@ package server
 import (
 	"time"
 
-	_ "net/http/pprof"
-
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
