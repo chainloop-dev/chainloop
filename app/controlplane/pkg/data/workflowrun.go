@@ -49,7 +49,7 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 
 func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (run *biz.WorkflowRun, err error) {
 	// Create version and workflow in a transaction
-	tx, err := r.data.DB.Tx(ctx)
+	tx, err := r.data.DB.Debug().Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("starting transaction: %w", err)
 	}
@@ -67,15 +67,24 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("getting workflow: %w", err)
 	}
 
-	// Find or create version.
-	versionID, err := tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
-		OnConflict(
-			sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
-			// Since we are using a partial index, we need to explicitly craft the upsert query
-			sql.ConflictWhere(sql.IsNull(projectversion.FieldDeletedAt)),
-		).Ignore().ID(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("creating version: %w", err)
+	// load the version in advance to prevent locking if it already exists
+	versionID, err := tx.ProjectVersion.Query().
+		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).OnlyID(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("checking existing version: %w", err)
+	}
+
+	if versionID == uuid.Nil {
+		// Find or create version.
+		versionID, err = tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
+			OnConflict(
+				sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
+				// Since we are using a partial index, we need to explicitly craft the upsert query
+				sql.ConflictWhere(sql.IsNull(projectversion.FieldDeletedAt)),
+			).Ignore().ID(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("creating version: %w", err)
+		}
 	}
 
 	// Create workflow run
