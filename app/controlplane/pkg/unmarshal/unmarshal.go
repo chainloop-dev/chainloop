@@ -63,7 +63,11 @@ func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) 
 		}
 	case RawFormatYAML:
 		// protoyaml allows validating the contract while unmarshalling
-		yamlOpts := protoyaml.UnmarshalOptions{Validator: validator}
+		yamlOpts := protoyaml.UnmarshalOptions{}
+		if doValidate {
+			yamlOpts.Validator = validator
+		}
+
 		if err := yamlOpts.Unmarshal(body, out); err != nil {
 			return fmt.Errorf("error unmarshalling raw message: %w", err)
 		}
