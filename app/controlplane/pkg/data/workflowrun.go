@@ -48,6 +48,19 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 }
 
 func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (run *biz.WorkflowRun, err error) {
+	// Make this outside of the transaction to reduce the size of the blocking transaction
+	wf, err := r.data.DB.Workflow.Get(ctx, opts.WorkflowID)
+	if err != nil {
+		return nil, fmt.Errorf("getting workflow: %w", err)
+	}
+
+	// load the version in advance to prevent locking if it already exists
+	versionID, err := r.data.DB.ProjectVersion.Query().
+		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).OnlyID(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("checking existing version: %w", err)
+	}
+
 	// Create version and workflow in a transaction
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
@@ -60,19 +73,6 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 			r.log.Errorf("rolling back transaction: %v", err)
 		}
 	}()
-
-	// Find workflow to get the project
-	wf, err := tx.Workflow.Get(ctx, opts.WorkflowID)
-	if err != nil {
-		return nil, fmt.Errorf("getting workflow: %w", err)
-	}
-
-	// load the version in advance to prevent locking if it already exists
-	versionID, err := tx.ProjectVersion.Query().
-		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).OnlyID(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, fmt.Errorf("checking existing version: %w", err)
-	}
 
 	if versionID == uuid.Nil {
 		// Find or create version.
@@ -103,9 +103,11 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	}
 
 	// Update the workflow with the last run reference
+	// incrementing the runs count
 	_, err = tx.Workflow.UpdateOneID(wf.ID).
 		SetLatestWorkflowRunID(p.ID).
 		SetUpdatedAt(time.Now()).
+		AddRunsCount(1).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("updating workflow: %w", err)
