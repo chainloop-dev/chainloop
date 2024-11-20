@@ -49,7 +49,7 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 
 func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (run *biz.WorkflowRun, err error) {
 	// Create version and workflow in a transaction
-	tx, err := r.data.DB.Debug().Tx(ctx)
+	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("starting transaction: %w", err)
 	}
