@@ -29,7 +29,7 @@ type HTTPProfilerServer struct {
 }
 
 // NewHTTPProfilerServer exposes the metrics endpoint in another port
-func NewHTTPProfilerServer(opts *Opts) (*HTTPProfilerServer, error) {
+func NewHTTPProfilerServer(_ *Opts) (*HTTPProfilerServer, error) {
 	httpSrv := http.NewServer(http.Address("0.0.0.0:6060"), http.Timeout(10*time.Second))
 
 	return &HTTPProfilerServer{httpSrv}, nil
