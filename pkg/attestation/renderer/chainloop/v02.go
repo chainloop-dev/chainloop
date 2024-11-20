@@ -192,7 +192,11 @@ func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
 		subjectGitAnnotationAuthorEmail: c.GetAuthorEmail(),
 		subjectGitAnnotationAuthorName:  c.GetAuthorName(),
 		subjectGitAnnotationMessage:     c.GetMessage(),
-		subjectGitAnnotationSignature:   c.GetSignature(),
+	}
+
+	// add signature only if exists
+	if c.GetSignature() != "" {
+		annotationsRaw[subjectGitAnnotationSignature] = c.GetSignature()
 	}
 
 	if remotes := c.GetRemotes(); len(remotes) > 0 {
