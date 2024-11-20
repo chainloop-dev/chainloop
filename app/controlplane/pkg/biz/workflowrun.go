@@ -224,10 +224,6 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, err
 	}
 
-	if err := uc.wfRepo.IncRunsCounter(ctx, workflowUUID); err != nil {
-		return nil, err
-	}
-
 	return run, nil
 }
 
