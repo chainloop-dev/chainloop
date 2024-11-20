@@ -96,16 +96,18 @@ func TestValidateAnnotations(t *testing.T) {
 
 func TestPolicyAttachment(t *testing.T) {
 	testCases := []struct {
-		desc      string
-		policy    *v1.PolicyAttachment
-		wantErr   bool
-		violation string
+		desc           string
+		policy         *v1.PolicyAttachment
+		wantErr        bool
+		nviolations    int
+		firstViolation string
 	}{
 		{
-			desc:      "empty policy",
-			policy:    &v1.PolicyAttachment{},
-			wantErr:   true,
-			violation: "policy",
+			desc:           "empty policy",
+			policy:         &v1.PolicyAttachment{},
+			wantErr:        true,
+			nviolations:    1,
+			firstViolation: "policy",
 		},
 		{
 			desc:    "policy ref",
@@ -131,10 +133,11 @@ func TestPolicyAttachment(t *testing.T) {
 			desc: "invalid requirements",
 			policy: &v1.PolicyAttachment{
 				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},
-				Requirements: []string{"foo bar"},
+				Requirements: []string{"foo bar", "foo@bar@1.2.3", "foo @1.2", "123@123 "},
 			},
-			violation: "requirements[0]",
-			wantErr:   true,
+			nviolations:    4,
+			firstViolation: "requirements[0]",
+			wantErr:        true,
 		},
 	}
 
@@ -149,8 +152,9 @@ func TestPolicyAttachment(t *testing.T) {
 
 				valErr := &protovalidate.ValidationError{}
 				errors.As(err, &valErr)
-				assert.Equal(t, tc.violation, valErr.Violations[0].FieldPath)
-				assert.Contains(t, err.Error(), tc.violation)
+				assert.Equal(t, tc.nviolations, len(valErr.Violations))
+				assert.Equal(t, tc.firstViolation, valErr.Violations[0].FieldPath)
+				assert.Contains(t, err.Error(), tc.firstViolation)
 
 				return
 			}

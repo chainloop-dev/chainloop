@@ -170,7 +170,7 @@ message PolicyAttachment {
   // List of requirements this policy contributes to satisfy
   repeated string requirements = 6 [(buf.validate.field).repeated.items = {
     string: {
-      pattern: "^\\S+(@\\S$)?$", // whitespaces not allowed, lock is optional (@)
+      pattern: "^[^\\s@]+(@[^\\s@]+)?$", // whitespaces not allowed, lock is optional (@)
     }
   }];
 
