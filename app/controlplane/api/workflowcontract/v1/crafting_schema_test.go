@@ -120,6 +120,22 @@ func TestPolicyAttachment(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			desc: "valid requirements",
+			policy: &v1.PolicyAttachment{
+				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},
+				Requirements: []string{"foo", "foo@1.2.3", "foo_bar@PRODUCTION", "foo123@a.b", "1A-F4@__foo"},
+			},
+		},
+		{
+			desc: "invalid requirements",
+			policy: &v1.PolicyAttachment{
+				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},
+				Requirements: []string{"foo bar"},
+			},
+			violation: "requirements[0]",
+			wantErr:   true,
+		},
 	}
 
 	validator, err := protovalidate.New()
