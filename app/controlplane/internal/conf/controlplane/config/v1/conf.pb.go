@@ -1030,7 +1030,7 @@ type Data_Database struct {
 	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	//	sets the maximum amount of time a connection may be idle.
 	//
-	// default to 2
+	// default to 10
 	MaxIdleConns int32 `protobuf:"varint,3,opt,name=max_idle_conns,json=maxIdleConns,proto3" json:"max_idle_conns,omitempty"`
 	// if not set defaults to dynamic up to the max number of connections
 	// provided by the target database

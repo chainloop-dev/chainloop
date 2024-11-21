@@ -99,6 +99,8 @@ func NewData(c *NewConfig, logger log.Logger) (*Data, func(), error) {
 	return &Data{DB: db}, cleanup, nil
 }
 
+const defaultMaxIdleConns = 10
+
 func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
 	log.Debugf("connecting to db: driver=%s", c.Driver)
 	db, err := sql.Open(
@@ -109,8 +111,8 @@ func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
 		return nil, fmt.Errorf("error opening the connection, driver=%s:  %w", c.Driver, err)
 	}
 
-	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
-	// otherwise we keep it default
+	db.SetMaxIdleConns(defaultMaxIdleConns)
+	// override the default idle conns
 	if c.MaxIdleConns > 0 {
 		log.Debugf("setting max idle conns: %d", c.MaxIdleConns)
 		db.SetMaxIdleConns(c.MaxIdleConns)

@@ -133,7 +133,7 @@ message Data {
     string driver = 1;
     string source = 2;
     //  sets the maximum amount of time a connection may be idle.
-    // default to 2
+    // default to 10
     int32 max_idle_conns = 3;
     // if not set defaults to dynamic up to the max number of connections
     // provided by the target database
