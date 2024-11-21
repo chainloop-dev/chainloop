@@ -72,7 +72,8 @@ func (data *Data) SchemaLoad() error {
 }
 
 type NewConfig struct {
-	Driver, Source string
+	Driver, Source             string
+	MaxIdleConns, MaxOpenConns int
 }
 
 // NewData .
@@ -106,6 +107,18 @@ func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error opening the connection, driver=%s:  %w", c.Driver, err)
+	}
+
+	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
+	// otherwise we keep it default
+	if c.MaxIdleConns > 0 {
+		log.Debugf("setting max idle conns: %d", c.MaxIdleConns)
+		db.SetMaxIdleConns(c.MaxIdleConns)
+	}
+
+	if c.MaxOpenConns > 0 {
+		log.Debugf("setting max open conns: %d", c.MaxOpenConns)
+		db.SetMaxOpenConns(c.MaxOpenConns)
 	}
 
 	// Create an ent.Driver from `db`.

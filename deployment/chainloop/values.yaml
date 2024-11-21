@@ -217,6 +217,8 @@ controlplane:
   ## @param controlplane.externalDatabase.user Non-root username
   ## @param controlplane.externalDatabase.database Database name
   ## @param controlplane.externalDatabase.password Password for the non-root username
+  ## @extra controlplane.externalDatabase.maxOpenConns Maximum number of open connections to the database. Default: dynamic until reaching limit
+  ## @extra controlplane.externalDatabase.maxIdleConns Maximum number of connections in the idle connection pool. Default: 2
   ##
   externalDatabase:
     host: ""
@@ -224,6 +226,8 @@ controlplane:
     user: ""
     database: ""
     password: ""
+    # maxOpenConns: ""
+    # maxIdleConns: ""
 
   ## @section Control Plane Authentication
   auth:

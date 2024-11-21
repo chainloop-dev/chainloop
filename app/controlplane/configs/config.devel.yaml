@@ -51,6 +51,8 @@ data:
   database:
     driver: pgx
     source: postgresql://postgres:@${DB_HOST:0.0.0.0}/controlplane
+    # max_open_conns: 10
+    # max_idle_conns: 10
 
 # Development credentials for the SSO authentication roundtrip
 auth:

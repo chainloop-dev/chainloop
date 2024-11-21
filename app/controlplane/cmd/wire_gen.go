@@ -275,7 +275,7 @@ var (
 // wire.go:
 
 func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	return &data.NewConfig{Driver: in.Driver, Source: in.Source}
+	return &data.NewConfig{Driver: in.Driver, Source: in.Source, MaxIdleConns: int(in.MaxIdleConns), MaxOpenConns: int(in.MaxOpenConns)}
 }
 
 func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryConfig {
