@@ -63,7 +63,11 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 }
 
 func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	return &data.NewConfig{Driver: in.Driver, Source: in.Source}
+	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MaxIdleConns: int(in.MaxIdleConns), MaxOpenConns: int(in.MaxOpenConns)}
+	if in.MaxConnIdleTime != nil {
+		c.MaxConnIdleTime = in.MaxConnIdleTime.AsDuration()
+	}
+	return c
 }
 
 func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryConfig {

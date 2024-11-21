@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ func (data *Data) SchemaLoad() error {
 type NewConfig struct {
 	Driver, Source             string
 	MaxIdleConns, MaxOpenConns int
+	MaxConnIdleTime            time.Duration
 }
 
 // NewData .
@@ -99,7 +100,11 @@ func NewData(c *NewConfig, logger log.Logger) (*Data, func(), error) {
 	return &Data{DB: db}, cleanup, nil
 }
 
-const defaultMaxIdleConns = 10
+const (
+	DefaultMaxIdleConns = 10
+	DefaultMaxOpenConns = 50
+	DefaultMaxIdleTime  = 5 * time.Minute
+)
 
 func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
 	log.Debugf("connecting to db: driver=%s", c.Driver)
@@ -111,17 +116,29 @@ func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
 		return nil, fmt.Errorf("error opening the connection, driver=%s:  %w", c.Driver, err)
 	}
 
-	db.SetMaxIdleConns(defaultMaxIdleConns)
-	// override the default idle conns
-	if c.MaxIdleConns > 0 {
-		log.Debugf("setting max idle conns: %d", c.MaxIdleConns)
-		db.SetMaxIdleConns(c.MaxIdleConns)
+	maxOpenConns := DefaultMaxOpenConns
+	if c.MaxOpenConns > 0 {
+		maxOpenConns = c.MaxOpenConns
 	}
 
-	if c.MaxOpenConns > 0 {
-		log.Debugf("setting max open conns: %d", c.MaxOpenConns)
-		db.SetMaxOpenConns(c.MaxOpenConns)
+	log.Infof("DB: setting max open conns: %d", maxOpenConns)
+	db.SetMaxOpenConns(maxOpenConns)
+
+	maxIdleConns := DefaultMaxIdleConns
+	if c.MaxIdleConns > 0 {
+		maxIdleConns = c.MaxIdleConns
 	}
+
+	log.Infof("DB: setting max idle conns: %d", maxIdleConns)
+	db.SetMaxIdleConns(maxIdleConns)
+
+	maxIdleTime := DefaultMaxIdleTime
+	if c.MaxConnIdleTime > 0 {
+		maxIdleTime = c.MaxConnIdleTime
+	}
+
+	log.Infof("DB: setting max conn idle time: %v", maxIdleTime)
+	db.SetConnMaxIdleTime(maxIdleTime)
 
 	// Create an ent.Driver from `db`.
 	drv := entsql.OpenDB(dialect.Postgres, db)
