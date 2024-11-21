@@ -56,7 +56,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 
 	// load the version in advance to prevent locking if it already exists
 	versionID, err := r.data.DB.ProjectVersion.Query().
-		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).OnlyID(ctx)
+		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).FirstID(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("checking existing version: %w", err)
 	}
