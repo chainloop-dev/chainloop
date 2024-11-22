@@ -86,5 +86,8 @@ func (Workflow) Indexes() []ent.Index {
 		index.Fields("organization_id", "id").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),
+		index.Edges("contract").Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }
