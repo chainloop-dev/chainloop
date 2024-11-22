@@ -228,7 +228,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 			})
 	}
 
-	workflowRuns, err := wfRunsQuery.All(ctx)
+	workflowRuns, err := wfRunsQuery.WithVersion().All(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -252,14 +252,15 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	return result, cursor, nil
 }
 
-func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*biz.WorkflowRun, error) {
+func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*biz.WorkflowRun, error) {
+	q := r.data.DB.WorkflowRun.Query().WithWorkflow().Where(workflowrun.CreatedAtLTE(olderThan)).Where(workflowrun.StateEQ(biz.WorkflowRunInitialized))
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+
 	// TODO: Look into adding upper bound on the createdAt column to prevent full table scans
 	// For now this is fine especially because we have a composite index
-	workflowRuns, err := r.data.DB.WorkflowRun.Query().
-		WithWorkflow().
-		Where(workflowrun.CreatedAtLTE(olderThan)).
-		Where(workflowrun.StateEQ(biz.WorkflowRunInitialized)).
-		All(ctx)
+	workflowRuns, err := q.All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -316,16 +317,9 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 	}
 
 	// Load version preloaded or otherwise query it
-	var err error
-	version := wr.Edges.Version
-	if version == nil {
-		version, err = wr.QueryVersion().Only(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query version: %w", err)
-		}
+	if wr.Edges.Version != nil {
+		r.ProjectVersion = entProjectVersionToBiz(wr.Edges.Version)
 	}
-
-	r.ProjectVersion = entProjectVersionToBiz(version)
 
 	if backends := wr.Edges.CasBackends; backends != nil {
 		for _, b := range backends {

@@ -467,6 +467,14 @@ var (
 					Where: "deleted_at IS NULL",
 				},
 			},
+			{
+				Name:    "workflow_workflow_contract",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowsColumns[12]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
 		},
 	}
 	// WorkflowContractsColumns holds the columns for the "workflow_contracts" table.

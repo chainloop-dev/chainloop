@@ -396,7 +396,7 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 	workflows := schema.Edges.Workflows
 	if workflows == nil {
 		var err error
-		workflows, err = schema.QueryWorkflows().
+		workflows, err = schema.QueryWorkflows().WithProject().
 			Where(workflow.DeletedAtIsNil()).WithProject().
 			Select(workflowcontract.FieldID).All(ctx)
 		if err != nil {
