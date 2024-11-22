@@ -259,7 +259,6 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 		QueryWorkflows().
 		Where(workflow.ID(workflowID), workflow.DeletedAtIsNil()).
 		WithContract().WithOrganization().WithLatestWorkflowRun().
-		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Only(ctx)
 
 	if err != nil {
@@ -274,12 +273,16 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 
 // GetOrgScopedByProjectAndName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
-	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
-		Where(workflow.HasProjectWith(project.Name(projectName)), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().WithProject().WithLatestWorkflowRun().
-		Order(ent.Desc(workflow.FieldCreatedAt)).
-		Only(ctx)
+	p, err := r.data.DB.Project.Query().Where(project.Name(projectName), project.OrganizationIDEQ(orgID), project.DeletedAtIsNil()).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("project")
+		}
+		return nil, err
+	}
 
+	wf, err := r.data.DB.Workflow.Query().Where(workflow.ProjectIDEQ(p.ID), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
+		WithContract().WithOrganization().WithProject().WithLatestWorkflowRun().First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("workflow")
