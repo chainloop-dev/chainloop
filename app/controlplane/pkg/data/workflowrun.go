@@ -129,7 +129,7 @@ func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
 }
 
 func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.WorkflowRun, error) {
-	run, err := eagerLoadWorkflowRun(r.data.DB.Debug()).Where(workflowrun.ID(id)).Only(ctx)
+	run, err := eagerLoadWorkflowRun(r.data.DB).Where(workflowrun.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if run == nil {
