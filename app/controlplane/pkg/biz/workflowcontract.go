@@ -67,10 +67,22 @@ type WorkflowContractRepo interface {
 	List(ctx context.Context, orgID uuid.UUID) ([]*WorkflowContract, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
-	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*WorkflowContractWithVersion, error)
+	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
 	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractWithVersion, error)
 	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
 	SoftDelete(ctx context.Context, contractID uuid.UUID) error
+}
+
+type ContractQueryOpts struct {
+	SkipGetReferences bool
+}
+
+type ContractQueryOpt func(opts *ContractQueryOpts)
+
+func WithoutReferences() ContractQueryOpt {
+	return func(opts *ContractQueryOpts) {
+		opts.SkipGetReferences = true
+	}
 }
 
 type ContractCreateOpts struct {
@@ -222,7 +234,7 @@ func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opt
 	return nil, NewErrValidationStr("name already taken")
 }
 
-func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contractID string, revision int) (*WorkflowContractWithVersion, error) {
+func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contractID string, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -233,7 +245,7 @@ func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contract
 		return nil, err
 	}
 
-	return uc.repo.Describe(ctx, orgUUID, contractUUID, revision)
+	return uc.repo.Describe(ctx, orgUUID, contractUUID, revision, opts...)
 }
 
 func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionID string) (*WorkflowContractWithVersion, error) {

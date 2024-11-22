@@ -141,7 +141,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	// Find contract revision
-	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision))
+	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision), biz.WithoutReferences())
 	if err != nil || contractVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
