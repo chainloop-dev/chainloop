@@ -199,6 +199,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	if opts.ContractRevision == nil {
 		return nil, errors.New("contract revision cannot be nil")
 	}
+
 	contractRevision := opts.ContractRevision
 
 	if opts.ProjectVersion != "" {
