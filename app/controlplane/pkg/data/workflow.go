@@ -352,6 +352,7 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
 		Public:      w.Public,
 		Description: w.Description,
 		OrgID:       w.OrganizationID,
+		ProjectID:   w.ProjectID,
 	}
 
 	// Set p either pre-loaded or queried
