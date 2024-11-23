@@ -41,6 +41,8 @@ const (
 	FieldContractRevisionLatest = "contract_revision_latest"
 	// FieldVersionID holds the string denoting the version_id field in the database.
 	FieldVersionID = "version_id"
+	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
+	FieldWorkflowID = "workflow_id"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
@@ -57,7 +59,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "workflow" package.
 	WorkflowInverseTable = "workflows"
 	// WorkflowColumn is the table column denoting the workflow relation/edge.
-	WorkflowColumn = "workflow_workflowruns"
+	WorkflowColumn = "workflow_id"
 	// ContractVersionTable is the table that holds the contract_version relation/edge.
 	ContractVersionTable = "workflow_runs"
 	// ContractVersionInverseTable is the table name for the WorkflowContractVersion entity.
@@ -94,12 +96,12 @@ var Columns = []string{
 	FieldContractRevisionUsed,
 	FieldContractRevisionLatest,
 	FieldVersionID,
+	FieldWorkflowID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"workflow_workflowruns",
 	"workflow_run_contract_version",
 }
 
@@ -199,6 +201,11 @@ func ByContractRevisionLatest(opts ...sql.OrderTermOption) OrderOption {
 // ByVersionID orders the results by the version_id field.
 func ByVersionID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldVersionID, opts...).ToFunc()
+}
+
+// ByWorkflowID orders the results by the workflow_id field.
+func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
 }
 
 // ByWorkflowField orders the results by workflow field.

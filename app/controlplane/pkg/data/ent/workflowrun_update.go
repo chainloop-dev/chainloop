@@ -15,7 +15,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
@@ -230,25 +229,6 @@ func (wru *WorkflowRunUpdate) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpd
 	return wru
 }
 
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (wru *WorkflowRunUpdate) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.SetWorkflowID(id)
-	return wru
-}
-
-// SetNillableWorkflowID sets the "workflow" edge to the Workflow entity by ID if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableWorkflowID(id *uuid.UUID) *WorkflowRunUpdate {
-	if id != nil {
-		wru = wru.SetWorkflowID(*id)
-	}
-	return wru
-}
-
-// SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (wru *WorkflowRunUpdate) SetWorkflow(w *Workflow) *WorkflowRunUpdate {
-	return wru.SetWorkflowID(w.ID)
-}
-
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (wru *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetContractVersionID(id)
@@ -291,12 +271,6 @@ func (wru *WorkflowRunUpdate) SetVersion(p *ProjectVersion) *WorkflowRunUpdate {
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
 	return wru.mutation
-}
-
-// ClearWorkflow clears the "workflow" edge to the Workflow entity.
-func (wru *WorkflowRunUpdate) ClearWorkflow() *WorkflowRunUpdate {
-	wru.mutation.ClearWorkflow()
-	return wru
 }
 
 // ClearContractVersion clears the "contract_version" edge to the WorkflowContractVersion entity.
@@ -365,6 +339,9 @@ func (wru *WorkflowRunUpdate) check() error {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
+	}
+	if wru.mutation.WorkflowCleared() && len(wru.mutation.WorkflowIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
 	if wru.mutation.VersionCleared() && len(wru.mutation.VersionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
@@ -446,35 +423,6 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
-	}
-	if wru.mutation.WorkflowCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.WorkflowTable,
-			Columns: []string{workflowrun.WorkflowColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wru.mutation.WorkflowIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.WorkflowTable,
-			Columns: []string{workflowrun.WorkflowColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if wru.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -795,25 +743,6 @@ func (wruo *WorkflowRunUpdateOne) SetNillableVersionID(u *uuid.UUID) *WorkflowRu
 	return wruo
 }
 
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (wruo *WorkflowRunUpdateOne) SetWorkflowID(id uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.SetWorkflowID(id)
-	return wruo
-}
-
-// SetNillableWorkflowID sets the "workflow" edge to the Workflow entity by ID if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableWorkflowID(id *uuid.UUID) *WorkflowRunUpdateOne {
-	if id != nil {
-		wruo = wruo.SetWorkflowID(*id)
-	}
-	return wruo
-}
-
-// SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (wruo *WorkflowRunUpdateOne) SetWorkflow(w *Workflow) *WorkflowRunUpdateOne {
-	return wruo.SetWorkflowID(w.ID)
-}
-
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetContractVersionID(id)
@@ -856,12 +785,6 @@ func (wruo *WorkflowRunUpdateOne) SetVersion(p *ProjectVersion) *WorkflowRunUpda
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
 	return wruo.mutation
-}
-
-// ClearWorkflow clears the "workflow" edge to the Workflow entity.
-func (wruo *WorkflowRunUpdateOne) ClearWorkflow() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearWorkflow()
-	return wruo
 }
 
 // ClearContractVersion clears the "contract_version" edge to the WorkflowContractVersion entity.
@@ -943,6 +866,9 @@ func (wruo *WorkflowRunUpdateOne) check() error {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
+	}
+	if wruo.mutation.WorkflowCleared() && len(wruo.mutation.WorkflowIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
 	if wruo.mutation.VersionCleared() && len(wruo.mutation.VersionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
@@ -1041,35 +967,6 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
-	}
-	if wruo.mutation.WorkflowCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.WorkflowTable,
-			Columns: []string{workflowrun.WorkflowColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wruo.mutation.WorkflowIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowrun.WorkflowTable,
-			Columns: []string{workflowrun.WorkflowColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if wruo.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{

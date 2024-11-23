@@ -778,22 +778,6 @@ func (c *CASMappingClient) QueryCasBackend(cm *CASMapping) *CASBackendQuery {
 	return query
 }
 
-// QueryWorkflowRun queries the workflow_run edge of a CASMapping.
-func (c *CASMappingClient) QueryWorkflowRun(cm *CASMapping) *WorkflowRunQuery {
-	query := (&WorkflowRunClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cm.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
-			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.WorkflowRunTable, casmapping.WorkflowRunColumn),
-		)
-		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryOrganization queries the organization edge of a CASMapping.
 func (c *CASMappingClient) QueryOrganization(cm *CASMapping) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()

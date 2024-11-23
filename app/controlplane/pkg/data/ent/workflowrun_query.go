@@ -491,7 +491,7 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			wrq.withVersion != nil,
 		}
 	)
-	if wrq.withWorkflow != nil || wrq.withContractVersion != nil {
+	if wrq.withContractVersion != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -550,10 +550,7 @@ func (wrq *WorkflowRunQuery) loadWorkflow(ctx context.Context, query *WorkflowQu
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*WorkflowRun)
 	for i := range nodes {
-		if nodes[i].workflow_workflowruns == nil {
-			continue
-		}
-		fk := *nodes[i].workflow_workflowruns
+		fk := nodes[i].WorkflowID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -570,7 +567,7 @@ func (wrq *WorkflowRunQuery) loadWorkflow(ctx context.Context, query *WorkflowQu
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "workflow_workflowruns" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "workflow_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -728,6 +725,9 @@ func (wrq *WorkflowRunQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != workflowrun.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if wrq.withWorkflow != nil {
+			_spec.Node.AddColumnOnce(workflowrun.FieldWorkflowID)
 		}
 		if wrq.withVersion != nil {
 			_spec.Node.AddColumnOnce(workflowrun.FieldVersionID)

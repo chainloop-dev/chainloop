@@ -58,14 +58,15 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.Int("contract_revision_latest"),
 		// We have runs without data
 		field.UUID("version_id", uuid.UUID{}),
+		field.UUID("workflow_id", uuid.UUID{}).Immutable(),
 	}
 }
 
 // Edges of the WorkflowRun.
 func (WorkflowRun) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workflow", Workflow.Type).
-			Ref("workflowruns").
+		edge.From("workflow", Workflow.Type).Field("workflow_id").
+			Ref("workflowruns").Required().Immutable().
 			Unique(),
 		edge.To("contract_version", WorkflowContractVersion.Type).Unique().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		// A WorkflowRun can have multiple CASBackends associated to it

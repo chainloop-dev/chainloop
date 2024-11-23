@@ -107,6 +107,11 @@ func VersionID(v uuid.UUID) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldVersionID, v))
 }
 
+// WorkflowID applies equality check predicate on the "workflow_id" field. It's identical to WorkflowIDEQ.
+func WorkflowID(v uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldWorkflowID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -685,6 +690,26 @@ func VersionIDIn(vs ...uuid.UUID) predicate.WorkflowRun {
 // VersionIDNotIn applies the NotIn predicate on the "version_id" field.
 func VersionIDNotIn(vs ...uuid.UUID) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotIn(FieldVersionID, vs...))
+}
+
+// WorkflowIDEQ applies the EQ predicate on the "workflow_id" field.
+func WorkflowIDEQ(v uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldWorkflowID, v))
+}
+
+// WorkflowIDNEQ applies the NEQ predicate on the "workflow_id" field.
+func WorkflowIDNEQ(v uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldWorkflowID, v))
+}
+
+// WorkflowIDIn applies the In predicate on the "workflow_id" field.
+func WorkflowIDIn(vs ...uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldWorkflowID, vs...))
+}
+
+// WorkflowIDNotIn applies the NotIn predicate on the "workflow_id" field.
+func WorkflowIDNotIn(vs ...uuid.UUID) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldWorkflowID, vs...))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

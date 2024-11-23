@@ -12,7 +12,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -25,26 +24,26 @@ type CASMapping struct {
 	Digest string `json:"digest,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// WorkflowRunID holds the value of the "workflow_run_id" field.
+	WorkflowRunID uuid.UUID `json:"workflow_run_id,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASMappingQuery when eager-loading is set.
-	Edges                    CASMappingEdges `json:"edges"`
-	cas_mapping_cas_backend  *uuid.UUID
-	cas_mapping_workflow_run *uuid.UUID
-	cas_mapping_organization *uuid.UUID
-	selectValues             sql.SelectValues
+	Edges                   CASMappingEdges `json:"edges"`
+	cas_mapping_cas_backend *uuid.UUID
+	selectValues            sql.SelectValues
 }
 
 // CASMappingEdges holds the relations/edges for other nodes in the graph.
 type CASMappingEdges struct {
 	// CasBackend holds the value of the cas_backend edge.
 	CasBackend *CASBackend `json:"cas_backend,omitempty"`
-	// WorkflowRun holds the value of the workflow_run edge.
-	WorkflowRun *WorkflowRun `json:"workflow_run,omitempty"`
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // CasBackendOrErr returns the CasBackend value or an error if the edge
@@ -58,23 +57,12 @@ func (e CASMappingEdges) CasBackendOrErr() (*CASBackend, error) {
 	return nil, &NotLoadedError{edge: "cas_backend"}
 }
 
-// WorkflowRunOrErr returns the WorkflowRun value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e CASMappingEdges) WorkflowRunOrErr() (*WorkflowRun, error) {
-	if e.WorkflowRun != nil {
-		return e.WorkflowRun, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: workflowrun.Label}
-	}
-	return nil, &NotLoadedError{edge: "workflow_run"}
-}
-
 // OrganizationOrErr returns the Organization value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e CASMappingEdges) OrganizationOrErr() (*Organization, error) {
 	if e.Organization != nil {
 		return e.Organization, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: organization.Label}
 	}
 	return nil, &NotLoadedError{edge: "organization"}
@@ -89,13 +77,9 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case casmapping.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case casmapping.FieldID:
+		case casmapping.FieldID, casmapping.FieldWorkflowRunID, casmapping.FieldOrganizationID:
 			values[i] = new(uuid.UUID)
 		case casmapping.ForeignKeys[0]: // cas_mapping_cas_backend
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case casmapping.ForeignKeys[1]: // cas_mapping_workflow_run
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case casmapping.ForeignKeys[2]: // cas_mapping_organization
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -130,26 +114,24 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				cm.CreatedAt = value.Time
 			}
+		case casmapping.FieldWorkflowRunID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_run_id", values[i])
+			} else if value != nil {
+				cm.WorkflowRunID = *value
+			}
+		case casmapping.FieldOrganizationID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value != nil {
+				cm.OrganizationID = *value
+			}
 		case casmapping.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field cas_mapping_cas_backend", values[i])
 			} else if value.Valid {
 				cm.cas_mapping_cas_backend = new(uuid.UUID)
 				*cm.cas_mapping_cas_backend = *value.S.(*uuid.UUID)
-			}
-		case casmapping.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field cas_mapping_workflow_run", values[i])
-			} else if value.Valid {
-				cm.cas_mapping_workflow_run = new(uuid.UUID)
-				*cm.cas_mapping_workflow_run = *value.S.(*uuid.UUID)
-			}
-		case casmapping.ForeignKeys[2]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field cas_mapping_organization", values[i])
-			} else if value.Valid {
-				cm.cas_mapping_organization = new(uuid.UUID)
-				*cm.cas_mapping_organization = *value.S.(*uuid.UUID)
 			}
 		default:
 			cm.selectValues.Set(columns[i], values[i])
@@ -167,11 +149,6 @@ func (cm *CASMapping) Value(name string) (ent.Value, error) {
 // QueryCasBackend queries the "cas_backend" edge of the CASMapping entity.
 func (cm *CASMapping) QueryCasBackend() *CASBackendQuery {
 	return NewCASMappingClient(cm.config).QueryCasBackend(cm)
-}
-
-// QueryWorkflowRun queries the "workflow_run" edge of the CASMapping entity.
-func (cm *CASMapping) QueryWorkflowRun() *WorkflowRunQuery {
-	return NewCASMappingClient(cm.config).QueryWorkflowRun(cm)
 }
 
 // QueryOrganization queries the "organization" edge of the CASMapping entity.
@@ -207,6 +184,12 @@ func (cm *CASMapping) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(cm.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("workflow_run_id=")
+	builder.WriteString(fmt.Sprintf("%v", cm.WorkflowRunID))
+	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(fmt.Sprintf("%v", cm.OrganizationID))
 	builder.WriteByte(')')
 	return builder.String()
 }

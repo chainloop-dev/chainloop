@@ -39,19 +39,22 @@ func (CASMapping) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
+		field.UUID("workflow_run_id", uuid.UUID{}).Immutable(),
+		field.UUID("organization_id", uuid.UUID{}).Immutable(),
 	}
 }
 
 func (CASMapping) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("cas_backend", CASBackend.Type).Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("workflow_run", WorkflowRun.Type).Unique().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("organization", Organization.Type).Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("organization", Organization.Type).Field("organization_id").Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 
 func (CASMapping) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("digest"),
+		index.Fields("workflow_run_id"),
+		index.Fields("organization_id"),
 	}
 }
