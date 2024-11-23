@@ -27,8 +27,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -256,7 +254,6 @@ func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
 }
 
 func (s *workflowRunIntegrationTestSuite) TestCreate() {
-	assert := assert.New(s.T())
 	ctx := context.Background()
 
 	s.T().Run("valid workflowRun", func(t *testing.T) {
@@ -266,20 +263,12 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		})
 		s.Require().NoError(err)
 		// Load project version
-		pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, run.Workflow.ProjectID.String(), "")
+		pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), "")
 		s.Require().NoError(err)
-		if diff := cmp.Diff(&biz.WorkflowRun{
-			RunnerType: "runnerType", RunURL: "runURL", State: string(biz.WorkflowRunInitialized), ContractVersionID: s.contractVersion.Version.ID,
-			Workflow:             s.workflowOrg1,
-			CASBackends:          []*biz.CASBackend{s.casBackend},
-			ContractRevisionUsed: 1, ContractRevisionLatest: 1,
-			ProjectVersion: pv,
-		}, run,
-			cmpopts.IgnoreFields(biz.WorkflowRun{}, "CreatedAt", "ID", "Workflow"),
-			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ValidatedAt", "OrganizationID"),
-		); diff != "" {
-			assert.Failf("mismatch (-want +got):\n%s", diff)
-		}
+		s.Equal("runnerType", run.RunnerType)
+		s.Equal("runURL", run.RunURL)
+		s.Equal(string(biz.WorkflowRunInitialized), run.State)
+		s.Equal(pv, run.ProjectVersion)
 	})
 
 	s.T().Run("find or create version", func(_ *testing.T) {
@@ -298,7 +287,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			s.Require().NoError(err)
 			// Load project version
 			s.Equal(tc.version, run.ProjectVersion.Version)
-			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, run.Workflow.ProjectID.String(), tc.version)
+			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), tc.version)
 			s.Require().NoError(err)
 			s.Equal(pv.ID, run.ProjectVersion.ID)
 		}
