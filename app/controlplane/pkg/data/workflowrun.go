@@ -55,8 +55,8 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	}
 
 	// load the version in advance to prevent locking if it already exists
-	versionID, err := r.data.DB.ProjectVersion.Query().
-		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).FirstID(ctx)
+	version, err := r.data.DB.ProjectVersion.Query().
+		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("checking existing version: %w", err)
 	}
@@ -74,9 +74,9 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		}
 	}()
 
-	if versionID == uuid.Nil {
+	if version == nil {
 		// Find or create version.
-		versionID, err = tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
+		versionID, err := tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
 			OnConflict(
 				sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
 				// Since we are using a partial index, we need to explicitly craft the upsert query
@@ -85,12 +85,14 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		if err != nil {
 			return nil, fmt.Errorf("creating version: %w", err)
 		}
+
+		version = &ent.ProjectVersion{ID: versionID, Version: opts.ProjectVersion, ProjectID: wf.ProjectID, Prerelease: true}
 	}
 
 	// Create workflow run
 	p, err := tx.WorkflowRun.Create().
 		SetWorkflowID(opts.WorkflowID).
-		SetVersionID(versionID).
+		SetVersionID(version.ID).
 		SetContractVersionID(opts.SchemaVersionID).
 		SetRunURL(opts.RunURL).
 		SetRunnerType(opts.RunnerType).
@@ -117,12 +119,18 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("committing transaction: %w", err)
 	}
 
-	return r.FindByID(ctx, p.ID)
+	run, err = entWrToBizWr(ctx, p)
+	if err != nil {
+		return nil, fmt.Errorf("converting to biz: %w", err)
+	}
+
+	run.ProjectVersion = entProjectVersionToBiz(version)
+	return run, err
 }
 
 func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
 	return client.WorkflowRun.Query().
-		WithWorkflow(func(q *ent.WorkflowQuery) { q.WithOrganization() }).
+		WithWorkflow(func(q *ent.WorkflowQuery) { q.WithOrganization().WithProject() }).
 		WithVersion().
 		WithContractVersion().
 		WithCasBackends()
@@ -154,7 +162,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	run, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().Where(workflowrun.ID(id)).
-		WithWorkflow().WithContractVersion().WithCasBackends().
+		WithWorkflowAndProject().WithContractVersion().WithCasBackends().
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -208,8 +216,8 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	}
 
 	wfRunsQuery := wfQuery.QueryWorkflowruns().
-		Order(ent.Desc(workflowrun.FieldCreatedAt)).
-		Limit(p.Limit + 1).WithWorkflow()
+		Order(ent.Desc(workflowrun.FieldCreatedAt)).WithWorkflowAndProject().
+		Limit(p.Limit + 1)
 
 	// Append the state filter if present, i.e only running
 	if filters != nil && filters.Status != "" {
