@@ -169,17 +169,25 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	var orgName string
 	// Find the organization
-	org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	if org := usercontext.CurrentOrg(ctx); org != nil {
+		orgName = org.Name
+	}
+
+	if orgName == "" {
+		org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		orgName = org.Name
 	}
 
 	wRun := bizWorkFlowRunToPb(run)
 	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
 		WorkflowRun:  wRun,
-		Organization: org.Name,
+		Organization: orgName,
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil
