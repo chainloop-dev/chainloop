@@ -162,7 +162,6 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 		opt(c)
 	}
 
-	fmt.Println("OPTS", c)
 	var workflowReferences []*biz.WorkflowRef
 	if !c.SkipGetReferences {
 		workflowReferences, err = getWorkflowReferences(ctx, contract)
@@ -172,7 +171,6 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 	}
 
 	s := entContractToBizContract(contract, latestV, workflowReferences)
-
 	return &biz.WorkflowContractWithVersion{
 		Contract: s,
 		Version:  v,
