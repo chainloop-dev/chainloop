@@ -48,10 +48,11 @@ type WorkflowRun struct {
 	ContractRevisionLatest int `json:"contract_revision_latest,omitempty"`
 	// VersionID holds the value of the "version_id" field.
 	VersionID uuid.UUID `json:"version_id,omitempty"`
+	// WorkflowID holds the value of the "workflow_id" field.
+	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
-	workflow_workflowruns         *uuid.UUID
 	workflow_run_contract_version *uuid.UUID
 	selectValues                  sql.SelectValues
 }
@@ -126,11 +127,9 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
 			values[i] = new(sql.NullTime)
-		case workflowrun.FieldID, workflowrun.FieldVersionID:
+		case workflowrun.FieldID, workflowrun.FieldVersionID, workflowrun.FieldWorkflowID:
 			values[i] = new(uuid.UUID)
-		case workflowrun.ForeignKeys[0]: // workflow_workflowruns
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case workflowrun.ForeignKeys[1]: // workflow_run_contract_version
+		case workflowrun.ForeignKeys[0]: // workflow_run_contract_version
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -227,14 +226,13 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				wr.VersionID = *value
 			}
-		case workflowrun.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field workflow_workflowruns", values[i])
-			} else if value.Valid {
-				wr.workflow_workflowruns = new(uuid.UUID)
-				*wr.workflow_workflowruns = *value.S.(*uuid.UUID)
+		case workflowrun.FieldWorkflowID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_id", values[i])
+			} else if value != nil {
+				wr.WorkflowID = *value
 			}
-		case workflowrun.ForeignKeys[1]:
+		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
 			} else if value.Valid {
@@ -332,6 +330,9 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("version_id=")
 	builder.WriteString(fmt.Sprintf("%v", wr.VersionID))
+	builder.WriteString(", ")
+	builder.WriteString("workflow_id=")
+	builder.WriteString(fmt.Sprintf("%v", wr.WorkflowID))
 	builder.WriteByte(')')
 	return builder.String()
 }

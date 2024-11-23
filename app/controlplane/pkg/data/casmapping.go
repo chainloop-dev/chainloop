@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -68,7 +69,6 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 		Where(casmapping.Digest(digest)).
 		WithCasBackend().
 		WithOrganization().
-		WithWorkflowRun().
 		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
@@ -76,7 +76,15 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 
 	res := make([]*biz.CASMapping, 0, len(mappings))
 	for _, m := range mappings {
-		r, err := entCASMappingToBiz(m)
+		public, err := r.IsPublic(ctx, r.data.DB, m.WorkflowRunID)
+		if err != nil {
+			if biz.IsNotFound(err) {
+				return nil, nil
+			}
+
+			return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
+		}
+		r, err := entCASMappingToBiz(m, public)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert cas mapping: %w", err)
 		}
@@ -90,7 +98,7 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 // FindByID finds a CAS Mapping by ID
 // If not found, returns nil and no error
 func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMapping, error) {
-	backend, err := r.data.DB.CASMapping.Query().WithCasBackend().WithWorkflowRun().WithOrganization().
+	backend, err := r.data.DB.CASMapping.Query().WithCasBackend().
 		Where(casmapping.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -98,10 +106,38 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 		return nil, nil
 	}
 
-	return entCASMappingToBiz(backend)
+	public, err := r.IsPublic(ctx, r.data.DB, backend.WorkflowRunID)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
+	}
+
+	return entCASMappingToBiz(backend, public)
 }
 
-func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
+func (r *CASMappingRepo) IsPublic(ctx context.Context, client *ent.Client, runID uuid.UUID) (bool, error) {
+	// Check if the workflow is public
+	wr, err := client.WorkflowRun.Query().Where(workflowrun.ID(runID)).Select(workflowrun.FieldWorkflowID).First(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get workflow run: %w", err)
+	} else if wr == nil {
+		return false, nil
+	}
+
+	workflow, err := client.Workflow.Query().Where(workflow.ID(wr.WorkflowID)).Select(workflow.FieldPublic).First(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get workflow: %w", err)
+	} else if workflow == nil {
+		return false, nil
+	}
+
+	return workflow.Public, nil
+}
+
+func entCASMappingToBiz(input *ent.CASMapping, public bool) (*biz.CASMapping, error) {
 	if input == nil {
 		return nil, nil
 	}
@@ -112,33 +148,13 @@ func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
 		return nil, fmt.Errorf("failed to get cas backend: %w", err)
 	}
 
-	workflowRun, err := input.Edges.WorkflowRunOrErr()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow run: %w", err)
-	}
-
-	org, err := input.Edges.OrganizationOrErr()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get organization: %w", err)
-	}
-
-	// calculate public flag by querying the workflow
-	// this query is not efficient since it's done for each mapping
-	// but we know that the number of mappings per workflow is small
-	workflow, err := workflowRun.QueryWorkflow().Select(workflow.FieldPublic).Only(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow: %w", err)
-	} else if workflow == nil {
-		return nil, fmt.Errorf("workflow not found")
-	}
-
 	return &biz.CASMapping{
 		ID:            input.ID,
 		Digest:        input.Digest,
 		CASBackend:    entCASBackendToBiz(casBackend),
-		WorkflowRunID: workflowRun.ID,
-		OrgID:         org.ID,
+		WorkflowRunID: input.WorkflowRunID,
+		OrgID:         input.OrganizationID,
 		CreatedAt:     toTimePtr(input.CreatedAt),
-		Public:        workflow.Public,
+		Public:        public,
 	}, nil
 }

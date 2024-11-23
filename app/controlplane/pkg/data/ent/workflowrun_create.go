@@ -158,6 +158,12 @@ func (wrc *WorkflowRunCreate) SetVersionID(u uuid.UUID) *WorkflowRunCreate {
 	return wrc
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (wrc *WorkflowRunCreate) SetWorkflowID(u uuid.UUID) *WorkflowRunCreate {
+	wrc.mutation.SetWorkflowID(u)
+	return wrc
+}
+
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -168,20 +174,6 @@ func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 func (wrc *WorkflowRunCreate) SetNillableID(u *uuid.UUID) *WorkflowRunCreate {
 	if u != nil {
 		wrc.SetID(*u)
-	}
-	return wrc
-}
-
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (wrc *WorkflowRunCreate) SetWorkflowID(id uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetWorkflowID(id)
-	return wrc
-}
-
-// SetNillableWorkflowID sets the "workflow" edge to the Workflow entity by ID if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableWorkflowID(id *uuid.UUID) *WorkflowRunCreate {
-	if id != nil {
-		wrc = wrc.SetWorkflowID(*id)
 	}
 	return wrc
 }
@@ -301,6 +293,12 @@ func (wrc *WorkflowRunCreate) check() error {
 	if _, ok := wrc.mutation.VersionID(); !ok {
 		return &ValidationError{Name: "version_id", err: errors.New(`ent: missing required field "WorkflowRun.version_id"`)}
 	}
+	if _, ok := wrc.mutation.WorkflowID(); !ok {
+		return &ValidationError{Name: "workflow_id", err: errors.New(`ent: missing required field "WorkflowRun.workflow_id"`)}
+	}
+	if len(wrc.mutation.WorkflowIDs()) == 0 {
+		return &ValidationError{Name: "workflow", err: errors.New(`ent: missing required edge "WorkflowRun.workflow"`)}
+	}
 	if len(wrc.mutation.VersionIDs()) == 0 {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required edge "WorkflowRun.version"`)}
 	}
@@ -398,7 +396,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.workflow_workflowruns = &nodes[0]
+		_node.WorkflowID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := wrc.mutation.ContractVersionIDs(); len(nodes) > 0 {
@@ -708,6 +706,9 @@ func (u *WorkflowRunUpsertOne) UpdateNewValues() *WorkflowRunUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(workflowrun.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.WorkflowID(); exists {
+			s.SetIgnore(workflowrun.FieldWorkflowID)
 		}
 	}))
 	return u
@@ -1142,6 +1143,9 @@ func (u *WorkflowRunUpsertBulk) UpdateNewValues() *WorkflowRunUpsertBulk {
 			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(workflowrun.FieldCreatedAt)
+			}
+			if _, exists := b.mutation.WorkflowID(); exists {
+				s.SetIgnore(workflowrun.FieldWorkflowID)
 			}
 		}
 	}))

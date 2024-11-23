@@ -89,9 +89,9 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "digest", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "workflow_run_id", Type: field.TypeUUID},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
-		{Name: "cas_mapping_workflow_run", Type: field.TypeUUID, Nullable: true},
-		{Name: "cas_mapping_organization", Type: field.TypeUUID},
+		{Name: "organization_id", Type: field.TypeUUID},
 	}
 	// CasMappingsTable holds the schema information for the "cas_mappings" table.
 	CasMappingsTable = &schema.Table{
@@ -101,14 +101,8 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_mappings_cas_backends_cas_backend",
-				Columns:    []*schema.Column{CasMappingsColumns[3]},
-				RefColumns: []*schema.Column{CasBackendsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "cas_mappings_workflow_runs_workflow_run",
 				Columns:    []*schema.Column{CasMappingsColumns[4]},
-				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
+				RefColumns: []*schema.Column{CasBackendsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
@@ -123,6 +117,16 @@ var (
 				Name:    "casmapping_digest",
 				Unique:  false,
 				Columns: []*schema.Column{CasMappingsColumns[1]},
+			},
+			{
+				Name:    "casmapping_workflow_run_id",
+				Unique:  false,
+				Columns: []*schema.Column{CasMappingsColumns[3]},
+			},
+			{
+				Name:    "casmapping_organization_id",
+				Unique:  false,
+				Columns: []*schema.Column{CasMappingsColumns[5]},
 			},
 		},
 	}
@@ -556,7 +560,7 @@ var (
 		{Name: "contract_revision_used", Type: field.TypeInt},
 		{Name: "contract_revision_latest", Type: field.TypeInt},
 		{Name: "version_id", Type: field.TypeUUID},
-		{Name: "workflow_workflowruns", Type: field.TypeUUID, Nullable: true},
+		{Name: "workflow_id", Type: field.TypeUUID},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
 	}
 	// WorkflowRunsTable holds the schema information for the "workflow_runs" table.
@@ -601,12 +605,12 @@ var (
 				Columns: []*schema.Column{WorkflowRunsColumns[8]},
 			},
 			{
-				Name:    "workflowrun_workflow_workflowruns",
+				Name:    "workflowrun_workflow_id",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[13]},
 			},
 			{
-				Name:    "workflowrun_created_at_workflow_workflowruns",
+				Name:    "workflowrun_created_at_workflow_id",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[13]},
 			},
@@ -716,8 +720,7 @@ func init() {
 	APITokensTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
-	CasMappingsTable.ForeignKeys[1].RefTable = WorkflowRunsTable
-	CasMappingsTable.ForeignKeys[2].RefTable = OrganizationsTable
+	CasMappingsTable.ForeignKeys[1].RefTable = OrganizationsTable
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable

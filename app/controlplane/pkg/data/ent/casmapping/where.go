@@ -66,6 +66,16 @@ func CreatedAt(v time.Time) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// WorkflowRunID applies equality check predicate on the "workflow_run_id" field. It's identical to WorkflowRunIDEQ.
+func WorkflowRunID(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldEQ(FieldWorkflowRunID, v))
+}
+
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldEQ(FieldOrganizationID, v))
+}
+
 // DigestEQ applies the EQ predicate on the "digest" field.
 func DigestEQ(v string) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldEQ(FieldDigest, v))
@@ -171,6 +181,66 @@ func CreatedAtLTE(v time.Time) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// WorkflowRunIDEQ applies the EQ predicate on the "workflow_run_id" field.
+func WorkflowRunIDEQ(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldEQ(FieldWorkflowRunID, v))
+}
+
+// WorkflowRunIDNEQ applies the NEQ predicate on the "workflow_run_id" field.
+func WorkflowRunIDNEQ(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNEQ(FieldWorkflowRunID, v))
+}
+
+// WorkflowRunIDIn applies the In predicate on the "workflow_run_id" field.
+func WorkflowRunIDIn(vs ...uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldIn(FieldWorkflowRunID, vs...))
+}
+
+// WorkflowRunIDNotIn applies the NotIn predicate on the "workflow_run_id" field.
+func WorkflowRunIDNotIn(vs ...uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNotIn(FieldWorkflowRunID, vs...))
+}
+
+// WorkflowRunIDGT applies the GT predicate on the "workflow_run_id" field.
+func WorkflowRunIDGT(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldGT(FieldWorkflowRunID, v))
+}
+
+// WorkflowRunIDGTE applies the GTE predicate on the "workflow_run_id" field.
+func WorkflowRunIDGTE(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldGTE(FieldWorkflowRunID, v))
+}
+
+// WorkflowRunIDLT applies the LT predicate on the "workflow_run_id" field.
+func WorkflowRunIDLT(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldLT(FieldWorkflowRunID, v))
+}
+
+// WorkflowRunIDLTE applies the LTE predicate on the "workflow_run_id" field.
+func WorkflowRunIDLTE(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldLTE(FieldWorkflowRunID, v))
+}
+
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNotIn(FieldOrganizationID, vs...))
+}
+
 // HasCasBackend applies the HasEdge predicate on the "cas_backend" edge.
 func HasCasBackend() predicate.CASMapping {
 	return predicate.CASMapping(func(s *sql.Selector) {
@@ -186,29 +256,6 @@ func HasCasBackend() predicate.CASMapping {
 func HasCasBackendWith(preds ...predicate.CASBackend) predicate.CASMapping {
 	return predicate.CASMapping(func(s *sql.Selector) {
 		step := newCasBackendStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasWorkflowRun applies the HasEdge predicate on the "workflow_run" edge.
-func HasWorkflowRun() predicate.CASMapping {
-	return predicate.CASMapping(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, WorkflowRunTable, WorkflowRunColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasWorkflowRunWith applies the HasEdge predicate on the "workflow_run" edge with a given conditions (other predicates).
-func HasWorkflowRunWith(preds ...predicate.WorkflowRun) predicate.CASMapping {
-	return predicate.CASMapping(func(s *sql.Selector) {
-		step := newWorkflowRunStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
