@@ -247,7 +247,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
-	go func() {
+	go func(ctx context.Context) {
 		// Store the exploded attestation referrer information in the DB
 		if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
 			_ = handleUseCaseErr(err, s.log)
@@ -270,7 +270,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 				}
 			}
 		}
-	}()
+	}(context.Background()) // reset context
 
 	secretName := casBackend.SecretName
 

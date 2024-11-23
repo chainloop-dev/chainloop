@@ -129,7 +129,7 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 }
 
 func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...biz.ContractQueryOpt) (*biz.WorkflowContractWithVersion, error) {
-	contract, err := contractInOrg(ctx, r.data.DB.Debug(), orgID, &contractID, nil, opts...)
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil, opts...)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
