@@ -28,7 +28,7 @@ import (
 
 func newWorkflowWorkflowRunListCmd() *cobra.Command {
 	var paginationOpts = &options.PaginationOpts{
-		DefaultLimit: 20,
+		DefaultLimit: 50,
 	}
 
 	var workflowName, projectName, status string
