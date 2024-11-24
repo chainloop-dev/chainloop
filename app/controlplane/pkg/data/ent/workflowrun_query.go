@@ -356,8 +356,9 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 		withCasBackends:     wrq.withCasBackends.Clone(),
 		withVersion:         wrq.withVersion.Clone(),
 		// clone intermediate query.
-		sql:  wrq.sql.Clone(),
-		path: wrq.path,
+		sql:       wrq.sql.Clone(),
+		path:      wrq.path,
+		modifiers: append([]func(*sql.Selector){}, wrq.modifiers...),
 	}
 }
 

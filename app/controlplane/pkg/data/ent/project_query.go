@@ -330,8 +330,9 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		withWorkflows:    pq.withWorkflows.Clone(),
 		withVersions:     pq.withVersions.Clone(),
 		// clone intermediate query.
-		sql:  pq.sql.Clone(),
-		path: pq.path,
+		sql:       pq.sql.Clone(),
+		path:      pq.path,
+		modifiers: append([]func(*sql.Selector){}, pq.modifiers...),
 	}
 }
 

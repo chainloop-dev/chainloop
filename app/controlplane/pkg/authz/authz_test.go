@@ -91,11 +91,13 @@ func TestAddPolicies(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, p := range tc.policies {
-				ok := enforcer.HasPolicy(tc.subject.String(), p.Resource, p.Action)
+				ok, err := enforcer.HasPolicy(tc.subject.String(), p.Resource, p.Action)
+				assert.NoError(t, err)
 				assert.True(t, ok, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
 			}
 
-			gotLength := enforcer.GetFilteredPolicy(0, tc.subject.String())
+			gotLength, err := enforcer.GetFilteredPolicy(0, tc.subject.String())
+			assert.NoError(t, err)
 			assert.Len(t, gotLength, tc.wantNumberPolicies)
 		})
 	}
@@ -113,7 +115,8 @@ func TestAddPoliciesDuplication(t *testing.T) {
 
 	err := enforcer.AddPolicies(sub, want...)
 	require.NoError(t, err)
-	got := enforcer.GetFilteredPolicy(0, sub.String())
+	got, err := enforcer.GetFilteredPolicy(0, sub.String())
+	require.NoError(t, err)
 	assert.Len(t, got, 2)
 
 	// Update the list of policies we want to add by appending an extra one
@@ -121,7 +124,8 @@ func TestAddPoliciesDuplication(t *testing.T) {
 	// AddPolicies only add the policies that are not already present preventing duplication
 	err = enforcer.AddPolicies(sub, want...)
 	assert.NoError(t, err)
-	got = enforcer.GetFilteredPolicy(0, sub.String())
+	got, err = enforcer.GetFilteredPolicy(0, sub.String())
+	assert.NoError(t, err)
 	assert.Len(t, got, 3)
 }
 
@@ -145,7 +149,8 @@ func TestSyncRBACRoles(t *testing.T) {
 
 	// Make sure we are adding all the policies for the listed roles
 	for r, policies := range rolesMap {
-		got := e.GetFilteredPolicy(0, string(r))
+		got, err := e.GetFilteredPolicy(0, string(r))
+		assert.NoError(t, err)
 		assert.Len(t, got, len(policies))
 	}
 
@@ -178,7 +183,9 @@ func TestDoSync(t *testing.T) {
 	// load custom policies
 	err := doSync(e, policiesM)
 	assert.NoError(t, err)
-	assert.Len(t, e.GetPolicy(), 3)
+	got, err := e.GetPolicy()
+	assert.NoError(t, err)
+	assert.Len(t, got, 3)
 
 	// update stored map removing one item of one role
 	policiesM = map[Role][]*Policy{
@@ -192,7 +199,9 @@ func TestDoSync(t *testing.T) {
 
 	err = doSync(e, policiesM)
 	assert.NoError(t, err)
-	assert.Len(t, e.GetPolicy(), 2)
+	got, err = e.GetPolicy()
+	assert.NoError(t, err)
+	assert.Len(t, got, 2)
 
 	// or deleting a whole section
 	policiesM = map[Role][]*Policy{
@@ -203,7 +212,9 @@ func TestDoSync(t *testing.T) {
 
 	err = doSync(e, policiesM)
 	assert.NoError(t, err)
-	assert.Len(t, e.GetPolicy(), 1)
+	got, err = e.GetPolicy()
+	assert.NoError(t, err)
+	assert.Len(t, got, 1)
 }
 
 func TestClearPolicies(t *testing.T) {
@@ -223,17 +234,20 @@ func TestClearPolicies(t *testing.T) {
 	err = enforcer.AddPolicies(sub2, want...)
 	require.NoError(t, err)
 	// Each have 2 items
-	got := enforcer.GetFilteredPolicy(0, sub.String())
+	got, err := enforcer.GetFilteredPolicy(0, sub.String())
+	require.NoError(t, err)
 	assert.Len(t, got, 2)
 
 	// Clear all the policies for the subject
 	err = enforcer.ClearPolicies(sub)
 	assert.NoError(t, err)
 	// there should be no policies left for this user
-	got = enforcer.GetFilteredPolicy(0, sub.String())
+	got, err = enforcer.GetFilteredPolicy(0, sub.String())
+	require.NoError(t, err)
 	assert.Len(t, got, 0)
 	// but the other user should still have 2
-	got = enforcer.GetFilteredPolicy(0, sub2.String())
+	got, err = enforcer.GetFilteredPolicy(0, sub2.String())
+	require.NoError(t, err)
 	assert.Len(t, got, 2)
 }
 

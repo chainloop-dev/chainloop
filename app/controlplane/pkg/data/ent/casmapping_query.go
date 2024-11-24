@@ -305,8 +305,9 @@ func (cmq *CASMappingQuery) Clone() *CASMappingQuery {
 		withCasBackend:   cmq.withCasBackend.Clone(),
 		withOrganization: cmq.withOrganization.Clone(),
 		// clone intermediate query.
-		sql:  cmq.sql.Clone(),
-		path: cmq.path,
+		sql:       cmq.sql.Clone(),
+		path:      cmq.path,
+		modifiers: append([]func(*sql.Selector){}, cmq.modifiers...),
 	}
 }
 

@@ -280,8 +280,9 @@ func (uq *UserQuery) Clone() *UserQuery {
 		predicates:      append([]predicate.User{}, uq.predicates...),
 		withMemberships: uq.withMemberships.Clone(),
 		// clone intermediate query.
-		sql:  uq.sql.Clone(),
-		path: uq.path,
+		sql:       uq.sql.Clone(),
+		path:      uq.path,
+		modifiers: append([]func(*sql.Selector){}, uq.modifiers...),
 	}
 }
 

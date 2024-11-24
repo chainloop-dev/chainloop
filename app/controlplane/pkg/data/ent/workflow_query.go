@@ -455,8 +455,9 @@ func (wq *WorkflowQuery) Clone() *WorkflowQuery {
 		withLatestWorkflowRun:      wq.withLatestWorkflowRun.Clone(),
 		withReferrers:              wq.withReferrers.Clone(),
 		// clone intermediate query.
-		sql:  wq.sql.Clone(),
-		path: wq.path,
+		sql:       wq.sql.Clone(),
+		path:      wq.path,
+		modifiers: append([]func(*sql.Selector){}, wq.modifiers...),
 	}
 }
 
