@@ -83,11 +83,18 @@ func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUI
 
 // Create creates a new CAS backend in the given organization
 // If it's set as default, it will unset the previous default backend
-func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
+func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (b *biz.CASBackend, err error) {
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transaction: %w", err)
 	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	// 1 - unset default backend for all the other backends in the org
 	if opts.Default {
@@ -129,11 +136,18 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 	return r.FindByID(ctx, backend.ID)
 }
 
-func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
+func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (b *biz.CASBackend, err error) {
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transaction: %w", err)
 	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	// 1 - unset default backend for all the other backends in the org
 	if opts.Default {

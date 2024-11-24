@@ -145,7 +145,7 @@ func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID 
 	return entMembershipToBiz(m), nil
 }
 
-func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID) (*biz.Membership, error) {
+func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID) (mr *biz.Membership, err error) {
 	// Load membership to find user
 	m, err := r.loadMembership(ctx, membershipID)
 	if err != nil {
@@ -157,6 +157,13 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	// 1 - Set all the memberships to current=false
 	if err = tx.Membership.Update().Where(membership.HasUserWith(user.ID(m.Edges.User.ID))).
