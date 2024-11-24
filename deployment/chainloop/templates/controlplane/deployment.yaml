@@ -104,11 +104,16 @@ spec:
               path: /statusz
               port: http
             periodSeconds: 5
+            failureThreshold: 10
+            periodSeconds: 5
+            initialDelaySeconds: 10
           livenessProbe:
             httpGet:
               path: /statusz
               port: http
+            failureThreshold: 10
             periodSeconds: 5
+            initialDelaySeconds: 10
           readinessProbe:
             httpGet:
               path: /statusz?readiness=1
