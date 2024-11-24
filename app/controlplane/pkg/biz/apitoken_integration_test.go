@@ -121,12 +121,14 @@ func (s *apiTokenTestSuite) TestAuthzPolicies() {
 
 	subject := (&authz.SubjectAPIToken{ID: token.ID.String()}).String()
 	// load the policies associated with the token from the global enforcer
-	policies := s.Enforcer.GetFilteredPolicy(0, subject)
+	policies, err := s.Enforcer.GetFilteredPolicy(0, subject)
+	s.Require().NoError(err)
 
 	// Check that only default policies are loaded
 	s.Len(policies, len(s.APIToken.DefaultAuthzPolicies))
 	for _, p := range s.APIToken.DefaultAuthzPolicies {
-		ok := s.Enforcer.HasPolicy(subject, p.Resource, p.Action)
+		ok, err := s.Enforcer.HasPolicy(subject, p.Resource, p.Action)
+		s.NoError(err)
 		s.True(ok, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
 	}
 }
@@ -155,12 +157,14 @@ func (s *apiTokenTestSuite) TestRevoke() {
 	s.Run("the revoked token also get its policies cleared", func() {
 		sub := (&authz.SubjectAPIToken{ID: s.t2.ID.String()}).String()
 		// It has the default policies
-		gotPolicies := s.Enforcer.GetFilteredPolicy(0, sub)
+		gotPolicies, err := s.Enforcer.GetFilteredPolicy(0, sub)
+		s.NoError(err)
 		s.Len(gotPolicies, len(s.APIToken.DefaultAuthzPolicies))
-		err := s.APIToken.Revoke(ctx, s.org.ID, s.t2.ID.String())
+		err = s.APIToken.Revoke(ctx, s.org.ID, s.t2.ID.String())
 		s.NoError(err)
 		// once revoked, the policies are cleared
-		gotPolicies = s.Enforcer.GetFilteredPolicy(0, sub)
+		gotPolicies, err = s.Enforcer.GetFilteredPolicy(0, sub)
+		s.NoError(err)
 		s.Len(gotPolicies, 0)
 	})
 

@@ -258,7 +258,10 @@ func (e *Enforcer) ClearPolicies(sub *SubjectAPIToken) error {
 	}
 
 	// Get all the policies for the subject
-	policies := e.GetFilteredPolicy(0, sub.String())
+	policies, err := e.GetFilteredPolicy(0, sub.String())
+	if err != nil {
+		return fmt.Errorf("failed to get policies: %w", err)
+	}
 
 	if _, err := e.Enforcer.RemovePolicies(policies); err != nil {
 		return fmt.Errorf("failed to remove policies: %w", err)
@@ -362,7 +365,12 @@ func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
 
 	// Delete all the policies that are not in the roles map
 	// 1 - load the policies from the enforcer DB
-	for _, gotPolicies := range e.GetPolicy() {
+	policies, err := e.GetPolicy()
+	if err != nil {
+		return fmt.Errorf("failed to get policies: %w", err)
+	}
+
+	for _, gotPolicies := range policies {
 		role := gotPolicies[0]
 		policy := &Policy{Resource: gotPolicies[1], Action: gotPolicies[2]}
 
@@ -395,7 +403,7 @@ func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
 	}
 
 	// To finish we make sure that the admin role inherit all the policies from the viewer role
-	_, err := e.AddGroupingPolicy(string(RoleAdmin), string(RoleViewer))
+	_, err = e.AddGroupingPolicy(string(RoleAdmin), string(RoleViewer))
 	if err != nil {
 		return fmt.Errorf("failed to add grouping policy: %w", err)
 	}
