@@ -430,8 +430,9 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		withAPITokens:         oq.withAPITokens.Clone(),
 		withProjects:          oq.withProjects.Clone(),
 		// clone intermediate query.
-		sql:  oq.sql.Clone(),
-		path: oq.path,
+		sql:       oq.sql.Clone(),
+		path:      oq.path,
+		modifiers: append([]func(*sql.Selector){}, oq.modifiers...),
 	}
 }
 

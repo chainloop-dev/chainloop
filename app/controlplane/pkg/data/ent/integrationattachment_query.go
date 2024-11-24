@@ -305,8 +305,9 @@ func (iaq *IntegrationAttachmentQuery) Clone() *IntegrationAttachmentQuery {
 		withIntegration: iaq.withIntegration.Clone(),
 		withWorkflow:    iaq.withWorkflow.Clone(),
 		// clone intermediate query.
-		sql:  iaq.sql.Clone(),
-		path: iaq.path,
+		sql:       iaq.sql.Clone(),
+		path:      iaq.path,
+		modifiers: append([]func(*sql.Selector){}, iaq.modifiers...),
 	}
 }
 

@@ -328,8 +328,9 @@ func (rq *ReferrerQuery) Clone() *ReferrerQuery {
 		withReferences: rq.withReferences.Clone(),
 		withWorkflows:  rq.withWorkflows.Clone(),
 		// clone intermediate query.
-		sql:  rq.sql.Clone(),
-		path: rq.path,
+		sql:       rq.sql.Clone(),
+		path:      rq.path,
+		modifiers: append([]func(*sql.Selector){}, rq.modifiers...),
 	}
 }
 

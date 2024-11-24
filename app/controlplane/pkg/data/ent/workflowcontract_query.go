@@ -331,8 +331,9 @@ func (wcq *WorkflowContractQuery) Clone() *WorkflowContractQuery {
 		withOrganization: wcq.withOrganization.Clone(),
 		withWorkflows:    wcq.withWorkflows.Clone(),
 		// clone intermediate query.
-		sql:  wcq.sql.Clone(),
-		path: wcq.path,
+		sql:       wcq.sql.Clone(),
+		path:      wcq.path,
+		modifiers: append([]func(*sql.Selector){}, wcq.modifiers...),
 	}
 }
 

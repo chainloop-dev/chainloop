@@ -306,8 +306,9 @@ func (iq *IntegrationQuery) Clone() *IntegrationQuery {
 		withAttachments:  iq.withAttachments.Clone(),
 		withOrganization: iq.withOrganization.Clone(),
 		// clone intermediate query.
-		sql:  iq.sql.Clone(),
-		path: iq.path,
+		sql:       iq.sql.Clone(),
+		path:      iq.path,
+		modifiers: append([]func(*sql.Selector){}, iq.modifiers...),
 	}
 }
 
