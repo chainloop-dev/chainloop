@@ -95,10 +95,11 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	// Opt-in histogram metrics for the interceptor
 	grpc_prometheus.EnableHandlingTimeHistogram()
 
+	// NOTE: kratos middlewares will always be run before plain grpc unary interceptors
+	// If you want to change the behavior, please refer to wrappers.go and the Prometheus wrapper as example
 	var serverOpts = []grpc.ServerOption{
 		grpc.Middleware(craftMiddleware(opts)...),
 		grpc.UnaryInterceptor(
-			grpc_prometheus.UnaryServerInterceptor,
 			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
 		),
 	}
@@ -170,6 +171,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 
 	// User authentication
 	middlewares = append(middlewares,
+		usercontext.Prometheus(),
 		// If we require a logged in user we
 		selector.Server(
 			// 1 - Extract the currentUser/API token from the JWT
