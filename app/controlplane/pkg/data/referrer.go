@@ -45,12 +45,19 @@ func NewReferrerRepo(data *Data, wfRepo biz.WorkflowRepo, logger log.Logger) biz
 
 type storedReferrerMap map[string]*ent.Referrer
 
-func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) error {
+func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) (err error) {
 	// Start transaction
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction: %w", err)
 	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	// find the workflow
 	wf, err := r.workflowRepo.FindByID(ctx, workflowID)

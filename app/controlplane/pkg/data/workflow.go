@@ -314,11 +314,18 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 }
 
 // Soft delete workflow, attachments and related projects (if applicable)
-func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	// soft-delete attachments associated with this workflow
 	if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasWorkflowWith(workflow.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
