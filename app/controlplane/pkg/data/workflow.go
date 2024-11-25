@@ -168,6 +168,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.Wo
 	// Apply pagination options and execute the query
 	workflows, err := wfQuery.
 		WithLatestWorkflowRun().
+		WithProject().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Limit(pagination.Limit()).
 		Offset(pagination.Offset()).
@@ -258,8 +259,7 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 	workflow, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.ID(workflowID), workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().WithLatestWorkflowRun().
-		Order(ent.Desc(workflow.FieldCreatedAt)).
+		WithContract().WithOrganization().WithLatestWorkflowRun().WithProject().
 		Only(ctx)
 
 	if err != nil {
@@ -274,12 +274,16 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 
 // GetOrgScopedByProjectAndName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
-	wf, err := orgScopedQuery(r.data.DB, orgID).QueryWorkflows().
-		Where(workflow.HasProjectWith(project.Name(projectName)), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
-		WithContract().WithOrganization().WithProject().WithLatestWorkflowRun().
-		Order(ent.Desc(workflow.FieldCreatedAt)).
-		Only(ctx)
+	p, err := r.data.DB.Project.Query().Where(project.Name(projectName), project.OrganizationIDEQ(orgID), project.DeletedAtIsNil()).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("project")
+		}
+		return nil, err
+	}
 
+	wf, err := r.data.DB.Workflow.Query().Where(workflow.ProjectIDEQ(p.ID), workflow.Name(workflowName), workflow.DeletedAtIsNil()).
+		WithContract().WithOrganization().WithProject().WithLatestWorkflowRun().WithProject().First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("workflow")
@@ -297,7 +301,7 @@ func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID)
 func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflow, error) {
 	workflow, err := r.data.DB.Workflow.Query().
 		Where(workflow.DeletedAtIsNil(), workflow.ID(id)).
-		WithContract().WithOrganization().WithLatestWorkflowRun().
+		WithContract().WithOrganization().WithLatestWorkflowRun().WithProject().
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -310,11 +314,18 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 }
 
 // Soft delete workflow, attachments and related projects (if applicable)
-func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
 	tx, err := r.data.DB.Tx(ctx)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		// Unblock the row if there was an error
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	// soft-delete attachments associated with this workflow
 	if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasWorkflowWith(workflow.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
@@ -348,22 +359,13 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
 		Public:      w.Public,
 		Description: w.Description,
 		OrgID:       w.OrganizationID,
+		ProjectID:   w.ProjectID,
 	}
 
-	// Set project either pre-loaded or queried
-	if project := w.Edges.Project; project != nil {
-		wf.Project = project.Name
-	} else {
-		project, err := w.QueryProject().Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		wf.Project = project.Name
-		wf.ProjectID = project.ID
-	}
-
-	if wf.Project == "" {
-		return nil, fmt.Errorf("workflow %s has no project", w.ID)
+	// Set p either pre-loaded or queried
+	if p := w.Edges.Project; p != nil {
+		wf.Project = p.Name
+		wf.ProjectID = p.ID
 	}
 
 	if contract := w.Edges.Contract; contract != nil {

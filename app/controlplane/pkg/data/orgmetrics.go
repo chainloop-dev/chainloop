@@ -115,7 +115,7 @@ func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uui
 
 func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, tw *biz.TimeWindow) ([]*biz.TopWorkflowsByRunsCountItem, error) {
 	var runs []struct {
-		WorkflowID string `json:"workflow_workflowruns"`
+		WorkflowID string `json:"workflow_id"`
 		State      string
 		Count      int32
 	}

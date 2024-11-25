@@ -455,8 +455,9 @@ func (wq *WorkflowQuery) Clone() *WorkflowQuery {
 		withLatestWorkflowRun:      wq.withLatestWorkflowRun.Clone(),
 		withReferrers:              wq.withReferrers.Clone(),
 		// clone intermediate query.
-		sql:  wq.sql.Clone(),
-		path: wq.path,
+		sql:       wq.sql.Clone(),
+		path:      wq.path,
+		modifiers: append([]func(*sql.Selector){}, wq.modifiers...),
 	}
 }
 
@@ -764,6 +765,9 @@ func (wq *WorkflowQuery) loadWorkflowruns(ctx context.Context, query *WorkflowRu
 		}
 	}
 	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(workflowrun.FieldWorkflowID)
+	}
 	query.Where(predicate.WorkflowRun(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(workflow.WorkflowrunsColumn), fks...))
 	}))
@@ -772,13 +776,10 @@ func (wq *WorkflowQuery) loadWorkflowruns(ctx context.Context, query *WorkflowRu
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.workflow_workflowruns
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "workflow_workflowruns" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.WorkflowID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "workflow_workflowruns" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "workflow_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

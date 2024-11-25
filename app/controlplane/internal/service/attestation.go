@@ -110,7 +110,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 	}
 
 	// Find contract revision
-	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision))
+	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision), biz.WithoutReferences())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if contractVersion == nil {
@@ -141,7 +141,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	// Find contract revision
-	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision))
+	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision), biz.WithoutReferences())
 	if err != nil || contractVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -169,17 +169,25 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	var orgName string
 	// Find the organization
-	org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	if org := usercontext.CurrentOrg(ctx); org != nil {
+		orgName = org.Name
+	}
+
+	if orgName == "" {
+		org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		orgName = org.Name
 	}
 
 	wRun := bizWorkFlowRunToPb(run)
 	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
 		WorkflowRun:  wRun,
-		Organization: org.Name,
+		Organization: orgName,
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil
@@ -247,26 +255,30 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
-
-	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	if !casBackend.Inline {
-		// Store the mappings in the DB
-		references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
-		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+	go func(ctx context.Context) {
+		// Store the exploded attestation referrer information in the DB
+		if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
+			_ = handleUseCaseErr(err, s.log)
+			return
 		}
 
-		for _, ref := range references {
-			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
-			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
-				return nil, handleUseCaseErr(err, s.log)
+		if !casBackend.Inline {
+			// Store the mappings in the DB
+			references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
+			if err != nil {
+				_ = handleUseCaseErr(err, s.log)
+				return
+			}
+
+			for _, ref := range references {
+				s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
+				if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
+					_ = handleUseCaseErr(err, s.log)
+					return
+				}
 			}
 		}
-	}
+	}(context.Background()) // reset context
 
 	secretName := casBackend.SecretName
 
@@ -301,7 +313,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
 	}, nil
 }
-
 func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationServiceCancelRequest) (*cpAPI.AttestationServiceCancelResponse, error) {
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {

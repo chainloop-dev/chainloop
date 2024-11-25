@@ -70,7 +70,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "workflowrun" package.
 	WorkflowrunsInverseTable = "workflow_runs"
 	// WorkflowrunsColumn is the table column denoting the workflowruns relation/edge.
-	WorkflowrunsColumn = "workflow_workflowruns"
+	WorkflowrunsColumn = "workflow_id"
 	// OrganizationTable is the table that holds the organization relation/edge.
 	OrganizationTable = "workflows"
 	// OrganizationInverseTable is the table name for the Organization entity.

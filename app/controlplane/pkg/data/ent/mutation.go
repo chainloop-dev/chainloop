@@ -1943,11 +1943,10 @@ type CASMappingMutation struct {
 	id                  *uuid.UUID
 	digest              *string
 	created_at          *time.Time
+	workflow_run_id     *uuid.UUID
 	clearedFields       map[string]struct{}
 	cas_backend         *uuid.UUID
 	clearedcas_backend  bool
-	workflow_run        *uuid.UUID
-	clearedworkflow_run bool
 	organization        *uuid.UUID
 	clearedorganization bool
 	done                bool
@@ -2131,6 +2130,78 @@ func (m *CASMappingMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetWorkflowRunID sets the "workflow_run_id" field.
+func (m *CASMappingMutation) SetWorkflowRunID(u uuid.UUID) {
+	m.workflow_run_id = &u
+}
+
+// WorkflowRunID returns the value of the "workflow_run_id" field in the mutation.
+func (m *CASMappingMutation) WorkflowRunID() (r uuid.UUID, exists bool) {
+	v := m.workflow_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowRunID returns the old "workflow_run_id" field's value of the CASMapping entity.
+// If the CASMapping object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASMappingMutation) OldWorkflowRunID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowRunID: %w", err)
+	}
+	return oldValue.WorkflowRunID, nil
+}
+
+// ResetWorkflowRunID resets all changes to the "workflow_run_id" field.
+func (m *CASMappingMutation) ResetWorkflowRunID() {
+	m.workflow_run_id = nil
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (m *CASMappingMutation) SetOrganizationID(u uuid.UUID) {
+	m.organization = &u
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *CASMappingMutation) OrganizationID() (r uuid.UUID, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the CASMapping entity.
+// If the CASMapping object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASMappingMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *CASMappingMutation) ResetOrganizationID() {
+	m.organization = nil
+}
+
 // SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by id.
 func (m *CASMappingMutation) SetCasBackendID(id uuid.UUID) {
 	m.cas_backend = &id
@@ -2170,66 +2241,15 @@ func (m *CASMappingMutation) ResetCasBackend() {
 	m.clearedcas_backend = false
 }
 
-// SetWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by id.
-func (m *CASMappingMutation) SetWorkflowRunID(id uuid.UUID) {
-	m.workflow_run = &id
-}
-
-// ClearWorkflowRun clears the "workflow_run" edge to the WorkflowRun entity.
-func (m *CASMappingMutation) ClearWorkflowRun() {
-	m.clearedworkflow_run = true
-}
-
-// WorkflowRunCleared reports if the "workflow_run" edge to the WorkflowRun entity was cleared.
-func (m *CASMappingMutation) WorkflowRunCleared() bool {
-	return m.clearedworkflow_run
-}
-
-// WorkflowRunID returns the "workflow_run" edge ID in the mutation.
-func (m *CASMappingMutation) WorkflowRunID() (id uuid.UUID, exists bool) {
-	if m.workflow_run != nil {
-		return *m.workflow_run, true
-	}
-	return
-}
-
-// WorkflowRunIDs returns the "workflow_run" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// WorkflowRunID instead. It exists only for internal usage by the builders.
-func (m *CASMappingMutation) WorkflowRunIDs() (ids []uuid.UUID) {
-	if id := m.workflow_run; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetWorkflowRun resets all changes to the "workflow_run" edge.
-func (m *CASMappingMutation) ResetWorkflowRun() {
-	m.workflow_run = nil
-	m.clearedworkflow_run = false
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by id.
-func (m *CASMappingMutation) SetOrganizationID(id uuid.UUID) {
-	m.organization = &id
-}
-
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *CASMappingMutation) ClearOrganization() {
 	m.clearedorganization = true
+	m.clearedFields[casmapping.FieldOrganizationID] = struct{}{}
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
 func (m *CASMappingMutation) OrganizationCleared() bool {
 	return m.clearedorganization
-}
-
-// OrganizationID returns the "organization" edge ID in the mutation.
-func (m *CASMappingMutation) OrganizationID() (id uuid.UUID, exists bool) {
-	if m.organization != nil {
-		return *m.organization, true
-	}
-	return
 }
 
 // OrganizationIDs returns the "organization" edge IDs in the mutation.
@@ -2282,12 +2302,18 @@ func (m *CASMappingMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASMappingMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 4)
 	if m.digest != nil {
 		fields = append(fields, casmapping.FieldDigest)
 	}
 	if m.created_at != nil {
 		fields = append(fields, casmapping.FieldCreatedAt)
+	}
+	if m.workflow_run_id != nil {
+		fields = append(fields, casmapping.FieldWorkflowRunID)
+	}
+	if m.organization != nil {
+		fields = append(fields, casmapping.FieldOrganizationID)
 	}
 	return fields
 }
@@ -2301,6 +2327,10 @@ func (m *CASMappingMutation) Field(name string) (ent.Value, bool) {
 		return m.Digest()
 	case casmapping.FieldCreatedAt:
 		return m.CreatedAt()
+	case casmapping.FieldWorkflowRunID:
+		return m.WorkflowRunID()
+	case casmapping.FieldOrganizationID:
+		return m.OrganizationID()
 	}
 	return nil, false
 }
@@ -2314,6 +2344,10 @@ func (m *CASMappingMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDigest(ctx)
 	case casmapping.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case casmapping.FieldWorkflowRunID:
+		return m.OldWorkflowRunID(ctx)
+	case casmapping.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASMapping field %s", name)
 }
@@ -2336,6 +2370,20 @@ func (m *CASMappingMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case casmapping.FieldWorkflowRunID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowRunID(v)
+		return nil
+	case casmapping.FieldOrganizationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CASMapping field %s", name)
@@ -2392,18 +2440,21 @@ func (m *CASMappingMutation) ResetField(name string) error {
 	case casmapping.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
+	case casmapping.FieldWorkflowRunID:
+		m.ResetWorkflowRunID()
+		return nil
+	case casmapping.FieldOrganizationID:
+		m.ResetOrganizationID()
+		return nil
 	}
 	return fmt.Errorf("unknown CASMapping field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CASMappingMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.cas_backend != nil {
 		edges = append(edges, casmapping.EdgeCasBackend)
-	}
-	if m.workflow_run != nil {
-		edges = append(edges, casmapping.EdgeWorkflowRun)
 	}
 	if m.organization != nil {
 		edges = append(edges, casmapping.EdgeOrganization)
@@ -2419,10 +2470,6 @@ func (m *CASMappingMutation) AddedIDs(name string) []ent.Value {
 		if id := m.cas_backend; id != nil {
 			return []ent.Value{*id}
 		}
-	case casmapping.EdgeWorkflowRun:
-		if id := m.workflow_run; id != nil {
-			return []ent.Value{*id}
-		}
 	case casmapping.EdgeOrganization:
 		if id := m.organization; id != nil {
 			return []ent.Value{*id}
@@ -2433,7 +2480,7 @@ func (m *CASMappingMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CASMappingMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -2445,12 +2492,9 @@ func (m *CASMappingMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CASMappingMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.clearedcas_backend {
 		edges = append(edges, casmapping.EdgeCasBackend)
-	}
-	if m.clearedworkflow_run {
-		edges = append(edges, casmapping.EdgeWorkflowRun)
 	}
 	if m.clearedorganization {
 		edges = append(edges, casmapping.EdgeOrganization)
@@ -2464,8 +2508,6 @@ func (m *CASMappingMutation) EdgeCleared(name string) bool {
 	switch name {
 	case casmapping.EdgeCasBackend:
 		return m.clearedcas_backend
-	case casmapping.EdgeWorkflowRun:
-		return m.clearedworkflow_run
 	case casmapping.EdgeOrganization:
 		return m.clearedorganization
 	}
@@ -2478,9 +2520,6 @@ func (m *CASMappingMutation) ClearEdge(name string) error {
 	switch name {
 	case casmapping.EdgeCasBackend:
 		m.ClearCasBackend()
-		return nil
-	case casmapping.EdgeWorkflowRun:
-		m.ClearWorkflowRun()
 		return nil
 	case casmapping.EdgeOrganization:
 		m.ClearOrganization()
@@ -2495,9 +2534,6 @@ func (m *CASMappingMutation) ResetEdge(name string) error {
 	switch name {
 	case casmapping.EdgeCasBackend:
 		m.ResetCasBackend()
-		return nil
-	case casmapping.EdgeWorkflowRun:
-		m.ResetWorkflowRun()
 		return nil
 	case casmapping.EdgeOrganization:
 		m.ResetOrganization()
@@ -13602,27 +13638,51 @@ func (m *WorkflowRunMutation) ResetVersionID() {
 	m.version = nil
 }
 
-// SetWorkflowID sets the "workflow" edge to the Workflow entity by id.
-func (m *WorkflowRunMutation) SetWorkflowID(id uuid.UUID) {
-	m.workflow = &id
+// SetWorkflowID sets the "workflow_id" field.
+func (m *WorkflowRunMutation) SetWorkflowID(u uuid.UUID) {
+	m.workflow = &u
+}
+
+// WorkflowID returns the value of the "workflow_id" field in the mutation.
+func (m *WorkflowRunMutation) WorkflowID() (r uuid.UUID, exists bool) {
+	v := m.workflow
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowID returns the old "workflow_id" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldWorkflowID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowID: %w", err)
+	}
+	return oldValue.WorkflowID, nil
+}
+
+// ResetWorkflowID resets all changes to the "workflow_id" field.
+func (m *WorkflowRunMutation) ResetWorkflowID() {
+	m.workflow = nil
 }
 
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *WorkflowRunMutation) ClearWorkflow() {
 	m.clearedworkflow = true
+	m.clearedFields[workflowrun.FieldWorkflowID] = struct{}{}
 }
 
 // WorkflowCleared reports if the "workflow" edge to the Workflow entity was cleared.
 func (m *WorkflowRunMutation) WorkflowCleared() bool {
 	return m.clearedworkflow
-}
-
-// WorkflowID returns the "workflow" edge ID in the mutation.
-func (m *WorkflowRunMutation) WorkflowID() (id uuid.UUID, exists bool) {
-	if m.workflow != nil {
-		return *m.workflow, true
-	}
-	return
 }
 
 // WorkflowIDs returns the "workflow" edge IDs in the mutation.
@@ -13795,7 +13855,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -13832,6 +13892,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.version != nil {
 		fields = append(fields, workflowrun.FieldVersionID)
 	}
+	if m.workflow != nil {
+		fields = append(fields, workflowrun.FieldWorkflowID)
+	}
 	return fields
 }
 
@@ -13864,6 +13927,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.ContractRevisionLatest()
 	case workflowrun.FieldVersionID:
 		return m.VersionID()
+	case workflowrun.FieldWorkflowID:
+		return m.WorkflowID()
 	}
 	return nil, false
 }
@@ -13897,6 +13962,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldContractRevisionLatest(ctx)
 	case workflowrun.FieldVersionID:
 		return m.OldVersionID(ctx)
+	case workflowrun.FieldWorkflowID:
+		return m.OldWorkflowID(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -13989,6 +14056,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetVersionID(v)
+		return nil
+	case workflowrun.FieldWorkflowID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
@@ -14146,6 +14220,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldVersionID:
 		m.ResetVersionID()
+		return nil
+	case workflowrun.FieldWorkflowID:
+		m.ResetWorkflowID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

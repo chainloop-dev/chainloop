@@ -78,7 +78,7 @@ type WorkflowRunRepo interface {
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
-	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time) ([]*WorkflowRun, error)
+	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*WorkflowRun, error)
 	// Set run as expired
 	Expire(ctx context.Context, id uuid.UUID) error
 }
@@ -149,7 +149,8 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderThan time.Time) error {
 	uc.logger.Debugf("expiration sweep - runs older than %s", olderThan.Format(time.RFC822))
 
-	toExpire, err := uc.wfRunRepo.ListNotFinishedOlderThan(ctx, olderThan)
+	const maxNumberOfRunsToExpire = 100
+	toExpire, err := uc.wfRunRepo.ListNotFinishedOlderThan(ctx, olderThan, maxNumberOfRunsToExpire)
 	if err != nil {
 		return err
 	}
@@ -198,6 +199,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	if opts.ContractRevision == nil {
 		return nil, errors.New("contract revision cannot be nil")
 	}
+
 	contractRevision := opts.ContractRevision
 
 	if opts.ProjectVersion != "" {
@@ -221,10 +223,6 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			ProjectVersion:  opts.ProjectVersion,
 		})
 	if err != nil {
-		return nil, err
-	}
-
-	if err := uc.wfRepo.IncRunsCounter(ctx, workflowUUID); err != nil {
 		return nil, err
 	}
 

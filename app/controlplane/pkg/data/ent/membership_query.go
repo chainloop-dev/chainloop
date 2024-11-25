@@ -305,8 +305,9 @@ func (mq *MembershipQuery) Clone() *MembershipQuery {
 		withOrganization: mq.withOrganization.Clone(),
 		withUser:         mq.withUser.Clone(),
 		// clone intermediate query.
-		sql:  mq.sql.Clone(),
-		path: mq.path,
+		sql:       mq.sql.Clone(),
+		path:      mq.path,
+		modifiers: append([]func(*sql.Selector){}, mq.modifiers...),
 	}
 }
 

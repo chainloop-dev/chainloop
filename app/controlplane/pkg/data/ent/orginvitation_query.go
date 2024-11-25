@@ -304,8 +304,9 @@ func (oiq *OrgInvitationQuery) Clone() *OrgInvitationQuery {
 		withOrganization: oiq.withOrganization.Clone(),
 		withSender:       oiq.withSender.Clone(),
 		// clone intermediate query.
-		sql:  oiq.sql.Clone(),
-		path: oiq.path,
+		sql:       oiq.sql.Clone(),
+		path:      oiq.path,
+		modifiers: append([]func(*sql.Selector){}, oiq.modifiers...),
 	}
 }
 

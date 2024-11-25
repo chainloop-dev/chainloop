@@ -128,8 +128,8 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 	}, nil
 }
 
-func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int) (*biz.WorkflowContractWithVersion, error) {
-	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil)
+func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...biz.ContractQueryOpt) (*biz.WorkflowContractWithVersion, error) {
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil, opts...)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if contract == nil {
@@ -157,12 +157,20 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 		return nil, err
 	}
 
-	workflowReferences, err := getWorkflowReferences(ctx, contract)
-	if err != nil {
-		return nil, err
+	c := &biz.ContractQueryOpts{}
+	for _, opt := range opts {
+		opt(c)
 	}
-	s := entContractToBizContract(contract, latestV, workflowReferences)
 
+	var workflowReferences []*biz.WorkflowRef
+	if !c.SkipGetReferences {
+		workflowReferences, err = getWorkflowReferences(ctx, contract)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	s := entContractToBizContract(contract, latestV, workflowReferences)
 	return &biz.WorkflowContractWithVersion{
 		Contract: s,
 		Version:  v,
@@ -344,8 +352,8 @@ func latestVersion(ctx context.Context, contract *ent.WorkflowContract) (*ent.Wo
 	return contract.QueryVersions().Order(ent.Desc(workflowcontractversion.FieldRevision)).First(ctx)
 }
 
-func contractInOrg(ctx context.Context, client *ent.Client, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
-	return contractInOrgQuery(ctx, client.Organization.Query(), orgID, contractID, name)
+func contractInOrg(ctx context.Context, client *ent.Client, orgID uuid.UUID, contractID *uuid.UUID, name *string, opts ...biz.ContractQueryOpt) (*ent.WorkflowContract, error) {
+	return contractInOrgQuery(ctx, client.Organization.Query(), orgID, contractID, name, opts...)
 }
 
 func contractInOrgTx(ctx context.Context, tx *ent.Tx, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
@@ -353,7 +361,12 @@ func contractInOrgTx(ctx context.Context, tx *ent.Tx, orgID uuid.UUID, contractI
 }
 
 // It can be loaded via by ID or name
-func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
+func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uuid.UUID, contractID *uuid.UUID, name *string, opts ...biz.ContractQueryOpt) (*ent.WorkflowContract, error) {
+	c := &biz.ContractQueryOpts{}
+	for _, opt := range opts {
+		opt(c)
+	}
+
 	if contractID == nil && name == nil {
 		return nil, fmt.Errorf("either contractID or name must be provided")
 	}
@@ -361,10 +374,13 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 	query := q.
 		Where(organization.ID(orgID)).
 		QueryWorkflowContracts().
-		Where(workflowcontract.DeletedAtIsNil()).
-		WithWorkflows(func(q *ent.WorkflowQuery) {
+		Where(workflowcontract.DeletedAtIsNil())
+
+	if !c.SkipGetReferences {
+		query = query.WithWorkflows(func(q *ent.WorkflowQuery) {
 			q.Where(workflow.DeletedAtIsNil())
 		})
+	}
 
 	if contractID != nil {
 		query = query.Where(workflowcontract.ID(*contractID))
@@ -396,7 +412,7 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 	workflows := schema.Edges.Workflows
 	if workflows == nil {
 		var err error
-		workflows, err = schema.QueryWorkflows().
+		workflows, err = schema.QueryWorkflows().WithProject().
 			Where(workflow.DeletedAtIsNil()).WithProject().
 			Select(workflowcontract.FieldID).All(ctx)
 		if err != nil {

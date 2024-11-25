@@ -19,26 +19,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
-const (
-	// defaultPageSize is the default page size
-	defaultPageSize = 15
-	// defaultPage is the default page
-	defaultPage = 1
-)
-
-var (
-	// page is the current page number
-	page int
-	// pageSize is the number of workflows per page
-	pageSize int
-)
-
 func newWorkflowListCmd() *cobra.Command {
+	var paginationOpts = &options.OffsetPaginationOpts{}
+
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
@@ -47,26 +36,26 @@ func newWorkflowListCmd() *cobra.Command {
   chainloop workflow list
 
   # Specify the page and page size
-  chainloop workflow list --page 2 --page-size 10
+  chainloop workflow list --page 2 --limit 10
 
   # Output in json format to paginate using scripts
-  chainloop workflow list --page 2 --page-size 10 --output json
+  chainloop workflow list --page 2 --limit 10 --output json
 
   # Show the full report
   chainloop workflow list --full
 `,
 		PreRunE: func(_ *cobra.Command, _ []string) error {
-			if page < 1 {
+			if paginationOpts.Page < 1 {
 				return fmt.Errorf("--page must be greater or equal than 1")
 			}
-			if pageSize < 1 {
-				return fmt.Errorf("--page-size must be greater or equal than 1")
+			if paginationOpts.Limit < 1 {
+				return fmt.Errorf("--limit must be greater or equal than 1")
 			}
 
 			return nil
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			res, err := action.NewWorkflowList(actionOpts).Run(page, pageSize)
+			res, err := action.NewWorkflowList(actionOpts).Run(paginationOpts.Page, paginationOpts.Limit)
 			if err != nil {
 				return err
 			}
@@ -77,7 +66,11 @@ func newWorkflowListCmd() *cobra.Command {
 
 			pgResponse := res.Pagination
 
-			logger.Info().Msg(fmt.Sprintf("Showing %d out of %d", len(res.Workflows), pgResponse.TotalCount))
+			if pgResponse.TotalPages >= paginationOpts.Page {
+				inPage := min(paginationOpts.Limit, len(res.Workflows))
+				lowerBound := (paginationOpts.Page - 1) * paginationOpts.Limit
+				logger.Info().Msg(fmt.Sprintf("Showing [%d-%d] out of %d", lowerBound+1, lowerBound+inPage, pgResponse.TotalCount))
+			}
 
 			if pgResponse.TotalCount > pgResponse.Page*pgResponse.PageSize {
 				logger.Info().Msg(fmt.Sprintf("Next page available: %d", pgResponse.Page+1))
@@ -88,8 +81,7 @@ func newWorkflowListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&full, "full", false, "show the full report")
-	cmd.Flags().IntVar(&page, "page", defaultPage, "page number")
-	cmd.Flags().IntVar(&pageSize, "page-size", defaultPageSize, "number of workflows per page")
+	paginationOpts.AddFlags(cmd)
 
 	return cmd
 }

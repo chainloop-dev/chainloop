@@ -103,6 +103,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	// General info table
 	wf := run.Workflow
+	wr := run.WorkflowRun
 
 	gt := newTableWriter()
 	gt.SetTitle("Workflow")
@@ -110,9 +111,9 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	gt.AppendRow(table.Row{"Name", wf.Name})
 	gt.AppendRow(table.Row{"Team", wf.Team})
 	gt.AppendRow(table.Row{"Project", wf.Project})
+	gt.AppendRow(table.Row{"Version", versionString(wr.ProjectVersion)})
 	gt.AppendSeparator()
 
-	wr := run.WorkflowRun
 	gt.AppendRow(table.Row{"Workflow Run"})
 	gt.AppendSeparator()
 	gt.AppendRow(table.Row{"ID", wr.ID})

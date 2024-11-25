@@ -35,3 +35,27 @@ func (o *PaginationOpts) AddFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().IntVar(&o.Limit, "limit", defaultLimit, "number of items to show")
 	cmd.PersistentFlags().StringVar(&o.NextCursor, "next", "", "cursor to load the next page")
 }
+
+type OffsetPaginationOpts struct {
+	DefaultLimit int
+	DefaultPage  int
+	Limit        int
+	Page         int
+}
+
+var _ Interface = (*OffsetPaginationOpts)(nil)
+
+func (o *OffsetPaginationOpts) AddFlags(cmd *cobra.Command) {
+	defaultLimit := 50
+	if o.DefaultLimit != 0 {
+		defaultLimit = o.DefaultLimit
+	}
+
+	defaultPage := 1
+	if o.DefaultPage != 0 {
+		defaultPage = o.DefaultPage
+	}
+
+	cmd.PersistentFlags().IntVar(&o.Limit, "limit", defaultLimit, "number of items to show")
+	cmd.PersistentFlags().IntVar(&o.Page, "page", defaultPage, "page number")
+}

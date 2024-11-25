@@ -132,6 +132,14 @@ message Data {
   message Database {
     string driver = 1;
     string source = 2;
+    //  sets the maximum amount of time a connection may be idle.
+    // default to 10
+    int32 max_idle_conns = 3;
+    // if not set defaults to dynamic up to the max number of connections
+    // provided by the target database
+    int32 max_open_conns = 4;
+    // sets the maximum amount of time a connection may be idle
+    google.protobuf.Duration max_conn_idle_time = 5;
   }
   Database database = 1;
 }

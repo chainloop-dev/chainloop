@@ -279,8 +279,9 @@ func (atq *APITokenQuery) Clone() *APITokenQuery {
 		predicates:       append([]predicate.APIToken{}, atq.predicates...),
 		withOrganization: atq.withOrganization.Clone(),
 		// clone intermediate query.
-		sql:  atq.sql.Clone(),
-		path: atq.path,
+		sql:       atq.sql.Clone(),
+		path:      atq.path,
+		modifiers: append([]func(*sql.Selector){}, atq.modifiers...),
 	}
 }
 

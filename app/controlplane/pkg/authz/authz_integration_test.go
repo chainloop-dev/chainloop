@@ -47,12 +47,14 @@ func TestMultiReplicaPropagation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Make sure it propagates to the other one
-	got := enforcerA.GetFilteredPolicy(0, sub.String())
+	got, err := enforcerA.GetFilteredPolicy(0, sub.String())
+	require.NoError(t, err)
 	assert.Len(t, got, 2)
 
 	// it might take a bit for the policies to propagate to the other enforcer
 	err = fnWithRetry(func() error {
-		got = enforcerB.GetFilteredPolicy(0, sub.String())
+		got, err = enforcerB.GetFilteredPolicy(0, sub.String())
+		require.NoError(t, err)
 		if len(got) == 2 {
 			return nil
 		}
@@ -63,11 +65,14 @@ func TestMultiReplicaPropagation(t *testing.T) {
 
 	// Then delete them from the second one and check propagation again
 	require.NoError(t, enforcerB.ClearPolicies(sub))
-	assert.Len(t, enforcerB.GetFilteredPolicy(0, sub.String()), 0)
+	got, err = enforcerB.GetFilteredPolicy(0, sub.String())
+	require.NoError(t, err)
+	assert.Len(t, got, 0)
 
 	// Make sure it propagates to the other one
 	err = fnWithRetry(func() error {
-		got = enforcerA.GetFilteredPolicy(0, sub.String())
+		got, err = enforcerA.GetFilteredPolicy(0, sub.String())
+		require.NoError(t, err)
 		if len(got) == 0 {
 			return nil
 		}
@@ -75,7 +80,9 @@ func TestMultiReplicaPropagation(t *testing.T) {
 		return fmt.Errorf("policies not propagated yet")
 	})
 	require.NoError(t, err)
-	assert.Len(t, enforcerA.GetFilteredPolicy(0, sub.String()), 0)
+	got, err = enforcerA.GetFilteredPolicy(0, sub.String())
+	require.NoError(t, err)
+	assert.Len(t, got, 0)
 }
 
 func fnWithRetry(f func() error) error {

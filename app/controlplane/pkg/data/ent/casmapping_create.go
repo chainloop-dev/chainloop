@@ -15,7 +15,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -47,6 +46,18 @@ func (cmc *CASMappingCreate) SetNillableCreatedAt(t *time.Time) *CASMappingCreat
 	return cmc
 }
 
+// SetWorkflowRunID sets the "workflow_run_id" field.
+func (cmc *CASMappingCreate) SetWorkflowRunID(u uuid.UUID) *CASMappingCreate {
+	cmc.mutation.SetWorkflowRunID(u)
+	return cmc
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (cmc *CASMappingCreate) SetOrganizationID(u uuid.UUID) *CASMappingCreate {
+	cmc.mutation.SetOrganizationID(u)
+	return cmc
+}
+
 // SetID sets the "id" field.
 func (cmc *CASMappingCreate) SetID(u uuid.UUID) *CASMappingCreate {
 	cmc.mutation.SetID(u)
@@ -70,31 +81,6 @@ func (cmc *CASMappingCreate) SetCasBackendID(id uuid.UUID) *CASMappingCreate {
 // SetCasBackend sets the "cas_backend" edge to the CASBackend entity.
 func (cmc *CASMappingCreate) SetCasBackend(c *CASBackend) *CASMappingCreate {
 	return cmc.SetCasBackendID(c.ID)
-}
-
-// SetWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by ID.
-func (cmc *CASMappingCreate) SetWorkflowRunID(id uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetWorkflowRunID(id)
-	return cmc
-}
-
-// SetNillableWorkflowRunID sets the "workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
-func (cmc *CASMappingCreate) SetNillableWorkflowRunID(id *uuid.UUID) *CASMappingCreate {
-	if id != nil {
-		cmc = cmc.SetWorkflowRunID(*id)
-	}
-	return cmc
-}
-
-// SetWorkflowRun sets the "workflow_run" edge to the WorkflowRun entity.
-func (cmc *CASMappingCreate) SetWorkflowRun(w *WorkflowRun) *CASMappingCreate {
-	return cmc.SetWorkflowRunID(w.ID)
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (cmc *CASMappingCreate) SetOrganizationID(id uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetOrganizationID(id)
-	return cmc
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
@@ -155,6 +141,12 @@ func (cmc *CASMappingCreate) check() error {
 	if _, ok := cmc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CASMapping.created_at"`)}
 	}
+	if _, ok := cmc.mutation.WorkflowRunID(); !ok {
+		return &ValidationError{Name: "workflow_run_id", err: errors.New(`ent: missing required field "CASMapping.workflow_run_id"`)}
+	}
+	if _, ok := cmc.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "CASMapping.organization_id"`)}
+	}
 	if len(cmc.mutation.CasBackendIDs()) == 0 {
 		return &ValidationError{Name: "cas_backend", err: errors.New(`ent: missing required edge "CASMapping.cas_backend"`)}
 	}
@@ -205,6 +197,10 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_spec.SetField(casmapping.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
+	if value, ok := cmc.mutation.WorkflowRunID(); ok {
+		_spec.SetField(casmapping.FieldWorkflowRunID, field.TypeUUID, value)
+		_node.WorkflowRunID = value
+	}
 	if nodes := cmc.mutation.CasBackendIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -222,23 +218,6 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_node.cas_mapping_cas_backend = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := cmc.mutation.WorkflowRunIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   casmapping.WorkflowRunTable,
-			Columns: []string{casmapping.WorkflowRunColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.cas_mapping_workflow_run = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := cmc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -253,7 +232,7 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.cas_mapping_organization = &nodes[0]
+		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -330,6 +309,12 @@ func (u *CASMappingUpsertOne) UpdateNewValues() *CASMappingUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(casmapping.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.WorkflowRunID(); exists {
+			s.SetIgnore(casmapping.FieldWorkflowRunID)
+		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(casmapping.FieldOrganizationID)
 		}
 	}))
 	return u
@@ -550,6 +535,12 @@ func (u *CASMappingUpsertBulk) UpdateNewValues() *CASMappingUpsertBulk {
 			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(casmapping.FieldCreatedAt)
+			}
+			if _, exists := b.mutation.WorkflowRunID(); exists {
+				s.SetIgnore(casmapping.FieldWorkflowRunID)
+			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(casmapping.FieldOrganizationID)
 			}
 		}
 	}))
