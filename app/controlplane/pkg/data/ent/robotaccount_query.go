@@ -280,8 +280,9 @@ func (raq *RobotAccountQuery) Clone() *RobotAccountQuery {
 		predicates:   append([]predicate.RobotAccount{}, raq.predicates...),
 		withWorkflow: raq.withWorkflow.Clone(),
 		// clone intermediate query.
-		sql:  raq.sql.Clone(),
-		path: raq.path,
+		sql:       raq.sql.Clone(),
+		path:      raq.path,
+		modifiers: append([]func(*sql.Selector){}, raq.modifiers...),
 	}
 }
 

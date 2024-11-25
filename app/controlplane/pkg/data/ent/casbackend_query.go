@@ -306,8 +306,9 @@ func (cbq *CASBackendQuery) Clone() *CASBackendQuery {
 		withOrganization: cbq.withOrganization.Clone(),
 		withWorkflowRun:  cbq.withWorkflowRun.Clone(),
 		// clone intermediate query.
-		sql:  cbq.sql.Clone(),
-		path: cbq.path,
+		sql:       cbq.sql.Clone(),
+		path:      cbq.path,
+		modifiers: append([]func(*sql.Selector){}, cbq.modifiers...),
 	}
 }
 

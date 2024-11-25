@@ -280,8 +280,9 @@ func (wcvq *WorkflowContractVersionQuery) Clone() *WorkflowContractVersionQuery 
 		predicates:   append([]predicate.WorkflowContractVersion{}, wcvq.predicates...),
 		withContract: wcvq.withContract.Clone(),
 		// clone intermediate query.
-		sql:  wcvq.sql.Clone(),
-		path: wcvq.path,
+		sql:       wcvq.sql.Clone(),
+		path:      wcvq.path,
+		modifiers: append([]func(*sql.Selector){}, wcvq.modifiers...),
 	}
 }
 

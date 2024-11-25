@@ -305,8 +305,9 @@ func (pvq *ProjectVersionQuery) Clone() *ProjectVersionQuery {
 		withProject: pvq.withProject.Clone(),
 		withRuns:    pvq.withRuns.Clone(),
 		// clone intermediate query.
-		sql:  pvq.sql.Clone(),
-		path: pvq.path,
+		sql:       pvq.sql.Clone(),
+		path:      pvq.path,
+		modifiers: append([]func(*sql.Selector){}, pvq.modifiers...),
 	}
 }
 
