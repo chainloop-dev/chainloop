@@ -1,0 +1,3 @@
+-- remove constraints for performance reasons 
+ALTER TABLE public.workflow_run_cas_backends DROP CONSTRAINT workflow_run_cas_backends_workflow_run_id;
+ALTER TABLE public.workflow_run_cas_backends DROP CONSTRAINT workflow_run_cas_backends_cas_backend_id;
