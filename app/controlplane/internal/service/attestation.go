@@ -255,8 +255,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
-	//
-	// 	// Store the exploded attestation referrer information in the DB
+
+	// Store the exploded attestation referrer information in the DB
 	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
