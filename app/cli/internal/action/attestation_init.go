@@ -218,10 +218,7 @@ func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, cli
 			Logger: logger,
 		})
 		if err != nil {
-			// Temporarily skip if policy groups still use old schema
-			// TODO: remove this check in next release
-			logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", pgAtt.GetRef())
-			return nil
+			return fmt.Errorf("failed to load policy group: %w", err)
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
 
