@@ -260,21 +260,21 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
-	//
-	// 	if !casBackend.Inline {
-	// 		// Store the mappings in the DB
-	// 		references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
-	// 		if err != nil {
-	// 			return nil, handleUseCaseErr(err, s.log)
-	// 		}
-	//
-	// 		for _, ref := range references {
-	// 			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
-	// 			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
-	// 				return nil, handleUseCaseErr(err, s.log)
-	// 			}
-	// 		}
-	// 	}
+
+	if !casBackend.Inline {
+		// Store the mappings in the DB
+		references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		for _, ref := range references {
+			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", req.WorkflowRunId, "casBackend", casBackend.ID.String())
+			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), req.WorkflowRunId); err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
+		}
+	}
 
 	secretName := casBackend.SecretName
 
