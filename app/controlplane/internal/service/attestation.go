@@ -278,7 +278,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 				}
 			}
 		}
-	}(context.Background()) // reset context
+	}(ctx)
 
 	secretName := casBackend.SecretName
 
