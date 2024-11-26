@@ -58,10 +58,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			Logger: pgv.logger,
 		})
 		if err != nil {
-			// Temporarily skip if policy groups still use old schema
-			// TODO: remove this check in next release
-			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
-			return result, nil
+			return nil, NewPolicyError(err)
 		}
 
 		// matches group arguments against spec and apply defaults
