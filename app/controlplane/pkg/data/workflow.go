@@ -229,10 +229,6 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 			)
 		}
 
-		if opts.WorkflowDescription != "" {
-			wfQuery = wfQuery.Where(workflow.DescriptionContains(opts.WorkflowDescription))
-		}
-
 		if len(opts.WorkflowProjectNames) != 0 {
 			wfQuery = wfQuery.Where(workflow.HasProjectWith(project.NameIn(opts.WorkflowProjectNames...)))
 		}
@@ -244,6 +240,10 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 		}
 		if opts.WorkflowName != "" {
 			orConditions = append(orConditions, workflow.NameContains(opts.WorkflowName))
+		}
+
+		if opts.WorkflowDescription != "" {
+			wfQuery = wfQuery.Where(workflow.DescriptionContains(opts.WorkflowDescription))
 		}
 
 		if len(orConditions) > 0 {
