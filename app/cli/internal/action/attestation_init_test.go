@@ -67,8 +67,7 @@ func TestEnrichMaterials(t *testing.T) {
 			name:        "wrong policy group",
 			materials:   []*v1.CraftingSchema_Material{},
 			policyGroup: "file://testdata/idontexist.yaml",
-			// TODO: Fix this condition in next release
-			expectErr: false,
+			expectErr:   true,
 		},
 		{
 			name:        "name-less materials are not added",
