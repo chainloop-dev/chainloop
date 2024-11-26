@@ -43,22 +43,9 @@ func NewReferrerRepo(data *Data, wfRepo biz.WorkflowRepo, logger log.Logger) biz
 	}
 }
 
-type storedReferrerMap map[string]*ent.Referrer
+type storedReferrerMap map[string]uuid.UUID
 
 func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) (err error) {
-	// Start transaction
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create transaction: %w", err)
-	}
-
-	defer func() {
-		// Unblock the row if there was an error
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
 	// find the workflow
 	wf, err := r.workflowRepo.FindByID(ctx, workflowID)
 	if err != nil {
@@ -69,50 +56,54 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 
 	storedMap := make(storedReferrerMap)
 
-	for _, r := range referrers {
+	for _, ref := range referrers {
 		// Check if it exists already, if not create it
-		err := tx.Referrer.Create().
-			SetDigest(r.Digest).SetKind(r.Kind).SetDownloadable(r.Downloadable).
-			SetMetadata(r.Metadata).SetAnnotations(r.Annotations).
+		storedID := r.data.DB.Referrer.Create().
+			SetDigest(ref.Digest).SetKind(ref.Kind).SetDownloadable(ref.Downloadable).
+			SetMetadata(ref.Metadata).SetAnnotations(ref.Annotations).
 			AddWorkflowIDs(workflowID).
 			OnConflictColumns(
 				referrer.FieldDigest, referrer.FieldKind,
-			).UpdateNewValues().Exec(ctx)
+			).UpdateNewValues().IDX(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create referrer: %w", err)
 		}
 
-		storedRef, err := tx.Referrer.Query().Where(referrer.Digest(r.Digest), referrer.Kind(r.Kind)).Only(ctx)
+		storedRef, err := r.data.DB.Referrer.Query().Select(referrer.FieldID).Where(referrer.ID(storedID)).First(ctx)
 		if err != nil {
+			return fmt.Errorf("failed to load referrer: %w", err)
+		} else if storedRef == nil {
 			return fmt.Errorf("failed to load referrer: %w", err)
 		}
 
 		// Store it in the map
-		storedMap[r.MapID()] = storedRef
+		storedMap[ref.MapID()] = storedRef.ID
 	}
 
 	// 2 - define the relationship between referrers
-	for _, r := range referrers {
+	for _, parentRef := range referrers {
 		// This is the current item stored in DB
-		storedReferrer := storedMap[r.MapID()]
+		storedReferrer := storedMap[parentRef.MapID()]
 		// Iterate on the items it refer to (references)
-		for _, ref := range r.References {
+		var references []uuid.UUID
+		for _, ref := range parentRef.References {
 			// amd find it in the DB
 			storedReference, ok := storedMap[ref.MapID()]
 			if !ok {
 				return fmt.Errorf("referrer %v not found", ref)
 			}
 
-			// Create the relationship
-			_, err := storedReferrer.Update().AddReferenceIDs(storedReference.ID).Save(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to create referrer relationship: %w", err)
-			}
+			references = append(references, storedReference)
 		}
-	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		if len(references) == 0 {
+			continue
+		}
+
+		// Create the relationship
+		if err := r.data.DB.Referrer.UpdateOneID(storedReferrer).AddReferenceIDs(references...).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to create referrer relationship: %w", err)
+		}
 	}
 
 	return nil
