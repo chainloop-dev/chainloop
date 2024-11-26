@@ -154,6 +154,8 @@ jobs:
       tag: ${{ github.ref_name }}
     secrets:
       chainloop_token: ${{ secrets.CHAINLOOP_TOKEN }}
+      cosign_key: ${{ secrets.COSIGN_KEY }}
+      cosign_pass: ${{ secrets.COSIGN_PASSWORD }}
     permissions:
       packages: write
       contents: write
