@@ -380,6 +380,17 @@ func (s *workflowListIntegrationTestSuite) TestList() {
 		s.Len(workflows, 1)
 	})
 
+	s.Run("list workflows with description, workflow name and team filter", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: "this is a different description for workflow"})
+		require.NoError(s.T(), err)
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowName: "different", WorkflowDescription: "different", WorkflowTeam: "different"}, nil)
+		s.NoError(err)
+		s.Len(workflows, 1)
+	})
+
 	s.Run("list workflows with workflow team filter", func() {
 		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description})
 		require.NoError(s.T(), err)

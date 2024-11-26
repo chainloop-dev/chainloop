@@ -243,7 +243,7 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 		}
 
 		if opts.WorkflowDescription != "" {
-			wfQuery = wfQuery.Where(workflow.DescriptionContains(opts.WorkflowDescription))
+			orConditions = append(orConditions, workflow.DescriptionContains(opts.WorkflowDescription))
 		}
 
 		if len(orConditions) > 0 {
