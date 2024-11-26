@@ -36,7 +36,10 @@ migration_apply: check-atlas-tool migration_hash
 .PHONY: migration_sync
 # sync migration files with the current ent schema
 migration_sync: check-atlas-tool migration_hash
-	atlas migrate diff --dir ${local_migrations_dir} --to "ent://pkg/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public"
+	atlas migrate diff --dir ${local_migrations_dir} --to "ent://pkg/data/ent/schema" --dev-url "docker://postgres/15/test?search_path=public" --config file://atlas.hcl --env dev
+
+migration_lint: check-atlas-tool migration_hash
+	atlas migrate lint --dir ${local_migrations_dir} --dev-url "docker://postgres/15/test?search_path=public" --latest 1 --config file://atlas.hcl --env dev
 
 .PHONY: migration_new
 # generate an empty migration file
