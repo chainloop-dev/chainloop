@@ -63,7 +63,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 }
 
 func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
+	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MaxIdleConns: int(in.MaxIdleConns), MaxOpenConns: int(in.MaxOpenConns)}
 	if in.MaxConnIdleTime != nil {
 		c.MaxConnIdleTime = in.MaxConnIdleTime.AsDuration()
 	}
