@@ -83,104 +83,88 @@ func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUI
 
 // Create creates a new CAS backend in the given organization
 // If it's set as default, it will unset the previous default backend
-func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (b *biz.CASBackend, err error) {
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create transaction: %w", err)
-	}
+func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
+	var (
+		backend *ent.CASBackend
+		err     error
+	)
+	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// 1 - unset default backend for all the other backends in the org
+		if opts.Default {
+			if err := tx.CASBackend.Update().
+				Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
+				Where(casbackend.Default(true)).
+				SetDefault(false).
+				Exec(ctx); err != nil {
+				return fmt.Errorf("failed to clear previous default backend: %w", err)
+			}
+		}
 
-	defer func() {
-		// Unblock the row if there was an error
+		// 2 - create the new backend and set it as default if needed
+		backend, err = tx.CASBackend.Create().
+			SetName(opts.Name).
+			SetOrganizationID(opts.OrgID).
+			SetLocation(opts.Location).
+			SetDescription(opts.Description).
+			SetFallback(opts.Fallback).
+			SetProvider(opts.Provider).
+			SetDefault(opts.Default).
+			SetSecretName(opts.SecretName).
+			SetMaxBlobSizeBytes(opts.MaxBytes).
+			Save(ctx)
 		if err != nil {
-			_ = tx.Rollback()
+			if ent.IsConstraintError(err) {
+				return biz.NewErrAlreadyExists(err)
+			}
+
+			return fmt.Errorf("failed to create backend: %w", err)
 		}
-	}()
-
-	// 1 - unset default backend for all the other backends in the org
-	if opts.Default {
-		if err := tx.CASBackend.Update().
-			Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
-			Where(casbackend.Default(true)).
-			SetDefault(false).
-			Exec(ctx); err != nil {
-			return nil, fmt.Errorf("failed to clear previous default backend: %w", err)
-		}
-	}
-
-	// 2 - create the new backend and set it as default if needed
-	backend, err := tx.CASBackend.Create().
-		SetName(opts.Name).
-		SetOrganizationID(opts.OrgID).
-		SetLocation(opts.Location).
-		SetDescription(opts.Description).
-		SetFallback(opts.Fallback).
-		SetProvider(opts.Provider).
-		SetDefault(opts.Default).
-		SetSecretName(opts.SecretName).
-		SetMaxBlobSizeBytes(opts.MaxBytes).
-		Save(ctx)
-	if err != nil {
-		if ent.IsConstraintError(err) {
-			return nil, biz.NewErrAlreadyExists(err)
-		}
-
-		return nil, fmt.Errorf("failed to create backend: %w", err)
-	}
-
-	// 3 - commit the transaction
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	// Return the backend from the DB to have consistent marshalled object
 	return r.FindByID(ctx, backend.ID)
 }
 
-func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (b *biz.CASBackend, err error) {
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create transaction: %w", err)
-	}
+func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
+	var (
+		backend *ent.CASBackend
+		err     error
+	)
+	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// 1 - unset default backend for all the other backends in the org
+		if opts.Default {
+			if err := tx.CASBackend.Update().
+				Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
+				Where(casbackend.Default(true)).
+				SetDefault(false).
+				Exec(ctx); err != nil {
+				return fmt.Errorf("failed to clear previous default backend: %w", err)
+			}
+		}
 
-	defer func() {
-		// Unblock the row if there was an error
+		// 2 - Chain the list of updates
+		// TODO: allow setting values as empty, currently it's not possible.
+		// We do it in other models by providing pointers to string + setNillableX methods
+		updateChain := tx.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
+		if opts.Description != "" {
+			updateChain = updateChain.SetDescription(opts.Description)
+		}
+
+		// If secretName is provided we set it
+		if opts.SecretName != "" {
+			updateChain = updateChain.SetSecretName(opts.SecretName)
+		}
+
+		backend, err = updateChain.Save(ctx)
 		if err != nil {
-			_ = tx.Rollback()
+			return err
 		}
-	}()
-
-	// 1 - unset default backend for all the other backends in the org
-	if opts.Default {
-		if err := tx.CASBackend.Update().
-			Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
-			Where(casbackend.Default(true)).
-			SetDefault(false).
-			Exec(ctx); err != nil {
-			return nil, fmt.Errorf("failed to clear previous default backend: %w", err)
-		}
-	}
-
-	// 2 - Chain the list of updates
-	// TODO: allow setting values as empty, currently it's not possible.
-	// We do it in other models by providing pointers to string + setNillableX methods
-	updateChain := tx.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
-	if opts.Description != "" {
-		updateChain = updateChain.SetDescription(opts.Description)
-	}
-
-	// If secretName is provided we set it
-	if opts.SecretName != "" {
-		updateChain = updateChain.SetSecretName(opts.SecretName)
-	}
-
-	backend, err := updateChain.Save(ctx)
-	if err != nil {
+		return nil
+	}); err != nil {
 		return nil, err
-	}
-
-	// 3 - commit the transaction
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return r.FindByID(ctx, backend.ID)

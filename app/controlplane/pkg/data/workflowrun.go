@@ -61,62 +61,52 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("checking existing version: %w", err)
 	}
 
+	var p *ent.WorkflowRun
 	// Create version and workflow in a transaction
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("starting transaction: %w", err)
-	}
+	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		if version == nil {
+			// Find or create version.
+			versionID, err := tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
+				OnConflict(
+					sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
+					// Since we are using a partial index, we need to explicitly craft the upsert query
+					sql.ConflictWhere(sql.IsNull(projectversion.FieldDeletedAt)),
+				).Ignore().ID(ctx)
+			if err != nil {
+				return fmt.Errorf("creating version: %w", err)
+			}
 
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-			r.log.Errorf("rolling back transaction: %v", err)
-		}
-	}()
-
-	if version == nil {
-		// Find or create version.
-		versionID, err := tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
-			OnConflict(
-				sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
-				// Since we are using a partial index, we need to explicitly craft the upsert query
-				sql.ConflictWhere(sql.IsNull(projectversion.FieldDeletedAt)),
-			).Ignore().ID(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("creating version: %w", err)
+			version = &ent.ProjectVersion{ID: versionID, Version: opts.ProjectVersion, ProjectID: wf.ProjectID, Prerelease: true}
 		}
 
-		version = &ent.ProjectVersion{ID: versionID, Version: opts.ProjectVersion, ProjectID: wf.ProjectID, Prerelease: true}
-	}
+		// Create workflow run
+		p, err = tx.WorkflowRun.Create().
+			SetWorkflowID(opts.WorkflowID).
+			SetVersionID(version.ID).
+			SetContractVersionID(opts.SchemaVersionID).
+			SetRunURL(opts.RunURL).
+			SetRunnerType(opts.RunnerType).
+			AddCasBackendIDs(opts.Backends...).
+			SetContractRevisionLatest(opts.LatestRevision).
+			SetContractRevisionUsed(opts.UsedRevision).
+			Save(ctx)
+		if err != nil {
+			return err
+		}
 
-	// Create workflow run
-	p, err := tx.WorkflowRun.Create().
-		SetWorkflowID(opts.WorkflowID).
-		SetVersionID(version.ID).
-		SetContractVersionID(opts.SchemaVersionID).
-		SetRunURL(opts.RunURL).
-		SetRunnerType(opts.RunnerType).
-		AddCasBackendIDs(opts.Backends...).
-		SetContractRevisionLatest(opts.LatestRevision).
-		SetContractRevisionUsed(opts.UsedRevision).
-		Save(ctx)
-	if err != nil {
+		// Update the workflow with the last run reference
+		// incrementing the runs count
+		_, err = tx.Workflow.UpdateOneID(wf.ID).
+			SetLatestWorkflowRunID(p.ID).
+			SetUpdatedAt(time.Now()).
+			AddRunsCount(1).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("updating workflow: %w", err)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
-	}
-
-	// Update the workflow with the last run reference
-	// incrementing the runs count
-	_, err = tx.Workflow.UpdateOneID(wf.ID).
-		SetLatestWorkflowRunID(p.ID).
-		SetUpdatedAt(time.Now()).
-		AddRunsCount(1).
-		Save(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("updating workflow: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("committing transaction: %w", err)
 	}
 
 	run, err = entWrToBizWr(ctx, p)

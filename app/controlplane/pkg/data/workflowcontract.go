@@ -78,29 +78,31 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*bi
 }
 
 func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCreateOpts) (*biz.WorkflowContract, error) {
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, err
-	}
+	var (
+		contract *ent.WorkflowContract
+		version  *ent.WorkflowContractVersion
+		err      error
+	)
 
-	contract, err := tx.WorkflowContract.Create().
-		SetName(opts.Name).SetOrganizationID(opts.OrgID).
-		SetNillableDescription(opts.Description).
-		Save(ctx)
-	if err != nil {
-		return nil, rollback(tx, err)
-	}
+	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		contract, err = tx.WorkflowContract.Create().
+			SetName(opts.Name).SetOrganizationID(opts.OrgID).
+			SetNillableDescription(opts.Description).
+			Save(ctx)
+		if err != nil {
+			return handleError(err)
+		}
 
-	// Add version
-	version, err := tx.WorkflowContractVersion.Create().
-		SetRawBody(opts.Contract.Raw).
-		SetRawBodyFormat(opts.Contract.Format).
-		SetContract(contract).Save(ctx)
-	if err != nil {
-		return nil, rollback(tx, err)
-	}
-
-	if err := tx.Commit(); err != nil {
+		// Add version
+		version, err = tx.WorkflowContractVersion.Create().
+			SetRawBody(opts.Contract.Raw).
+			SetRawBodyFormat(opts.Contract.Format).
+			SetContract(contract).Save(ctx)
+		if err != nil {
+			return handleError(err)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -180,54 +182,55 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 // Update will add a new version of the contract.
 // NOTE: ContractVersions are immutable
 func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	contract, err := contractInOrgTx(ctx, tx, orgID, nil, &name)
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
 
-		return nil, rollback(tx, err)
+		return nil, handleError(err)
 	}
 
 	if contract == nil {
 		return nil, nil
 	}
 
-	contract, err = contract.Update().SetNillableDescription(opts.Description).Save(ctx)
-	if err != nil {
-		return nil, rollback(tx, err)
-	}
+	var (
+		lv                 *ent.WorkflowContractVersion
+		workflowReferences []*biz.WorkflowRef
+	)
 
-	lv, err := latestVersion(ctx, contract)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a revision only if we are providing a new contract and it has changed
-	if opts.Contract != nil && !bytes.Equal(lv.RawBody, opts.Contract.Raw) {
-		// TODO: Add pessimist locking to make sure we are incrementing the latest revision
-		lv, err = tx.WorkflowContractVersion.Create().
-			SetRawBody(opts.Contract.Raw).
-			SetRawBodyFormat(opts.Contract.Format).
-			SetContract(contract).
-			SetRevision(lv.Revision + 1).
-			Save(ctx)
+	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		contract, err = contract.Update().SetNillableDescription(opts.Description).Save(ctx)
 		if err != nil {
-			return nil, rollback(tx, err)
+			return handleError(err)
 		}
-	}
 
-	workflowReferences, err := getWorkflowReferences(ctx, contract)
-	if err != nil {
-		return nil, err
-	}
+		lv, err = latestVersion(ctx, contract)
+		if err != nil {
+			return handleError(err)
+		}
 
-	if err := tx.Commit(); err != nil {
+		// Create a revision only if we are providing a new contract and it has changed
+		if opts.Contract != nil && !bytes.Equal(lv.RawBody, opts.Contract.Raw) {
+			// TODO: Add pessimist locking to make sure we are incrementing the latest revision
+			lv, err = tx.WorkflowContractVersion.Create().
+				SetRawBody(opts.Contract.Raw).
+				SetRawBodyFormat(opts.Contract.Format).
+				SetContract(contract).
+				SetRevision(lv.Revision + 1).
+				Save(ctx)
+			if err != nil {
+				return handleError(err)
+			}
+		}
+
+		workflowReferences, err = getWorkflowReferences(ctx, contract)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -333,13 +336,8 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 	}, nil
 }
 
-// rollback calls to tx.Rollback and wraps the given error
-// with the rollback error if occurred.
-func rollback(tx *ent.Tx, err error) error {
-	if rerr := tx.Rollback(); rerr != nil {
-		err = fmt.Errorf("%w: %w", err, rerr)
-	}
-
+// wraps the given error
+func handleError(err error) error {
 	// If the error is a constraint error, we return a more specific error to indicate the client that's a duplicate
 	if ent.IsConstraintError(err) {
 		return biz.NewErrAlreadyExists(err)
@@ -354,10 +352,6 @@ func latestVersion(ctx context.Context, contract *ent.WorkflowContract) (*ent.Wo
 
 func contractInOrg(ctx context.Context, client *ent.Client, orgID uuid.UUID, contractID *uuid.UUID, name *string, opts ...biz.ContractQueryOpt) (*ent.WorkflowContract, error) {
 	return contractInOrgQuery(ctx, client.Organization.Query(), orgID, contractID, name, opts...)
-}
-
-func contractInOrgTx(ctx context.Context, tx *ent.Tx, orgID uuid.UUID, contractID *uuid.UUID, name *string) (*ent.WorkflowContract, error) {
-	return contractInOrgQuery(ctx, tx.Organization.Query(), orgID, contractID, name)
 }
 
 // It can be loaded via by ID or name
