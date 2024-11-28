@@ -11,6 +11,7 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
       - POSTGRESQL_DATABASE=controlplane
       - POSTGRESQL_USERNAME=postgres
+      - POSTGRESQL_SHARED_PRELOAD_LIBRARIES=pgaudit,pg_stat_statements
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 2s

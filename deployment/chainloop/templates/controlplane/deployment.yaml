@@ -103,7 +103,6 @@ spec:
             httpGet:
               path: /statusz
               port: http
-            periodSeconds: 5
             failureThreshold: 10
             periodSeconds: 5
             initialDelaySeconds: 10

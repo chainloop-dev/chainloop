@@ -366,10 +366,7 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 		pr := loader.ProviderParts(att.GetRef())
 		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, token)
 		if err != nil {
-			// Temporarily skip if policy groups still use old schema
-			// TODO: remove this check in next release
-			uc.logger.Warnf("policy group '%s' skipped since it's not found or it might use an old schema version", att.GetRef())
-			return nil, nil
+			return nil, NewErrValidation(fmt.Errorf("failed to get policy group: %w", err))
 		}
 		if remoteGroup.PolicyGroup != nil {
 			// validate group arguments
