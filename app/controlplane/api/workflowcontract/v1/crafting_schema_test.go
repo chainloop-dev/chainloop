@@ -126,16 +126,16 @@ func TestPolicyAttachment(t *testing.T) {
 			desc: "valid requirements",
 			policy: &v1.PolicyAttachment{
 				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},
-				Requirements: []string{"foo", "foo@1.2.3", "foo_bar@PRODUCTION", "foo123@a.b", "1A-F4@__foo"},
+				Requirements: []string{"fw/bar", "fw/foo@1.2.3", "myfw/foo_bar@PRODUCTION", "my-fw-123/foo123@a.b", "SOC2-rev4/1A-F4@__foo"},
 			},
 		},
 		{
 			desc: "invalid requirements",
 			policy: &v1.PolicyAttachment{
 				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},
-				Requirements: []string{"foo bar", "foo@bar@1.2.3", "foo @1.2", "123@123 "},
+				Requirements: []string{"foo bar", "foo@bar@1.2.3", "foo @1.2", "123@123 ", "foo"},
 			},
-			nviolations:    4,
+			nviolations:    5,
 			firstViolation: "requirements[0]",
 			wantErr:        true,
 		},
