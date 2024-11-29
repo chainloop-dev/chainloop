@@ -472,6 +472,14 @@ var (
 				},
 			},
 			{
+				Name:    "workflow_organization_id",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowsColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
+			{
 				Name:    "workflow_workflow_contract",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowsColumns[12]},
@@ -593,11 +601,21 @@ var (
 				Name:    "workflowrun_created_at_id",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[0]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						WorkflowRunsColumns[1].Name: true,
+					},
+				},
 			},
 			{
 				Name:    "workflowrun_created_at_state",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[3]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						WorkflowRunsColumns[1].Name: true,
+					},
+				},
 			},
 			{
 				Name:    "workflowrun_attestation_digest",
@@ -613,6 +631,11 @@ var (
 				Name:    "workflowrun_created_at_workflow_id",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[13]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						WorkflowRunsColumns[1].Name: true,
+					},
+				},
 			},
 		},
 	}
