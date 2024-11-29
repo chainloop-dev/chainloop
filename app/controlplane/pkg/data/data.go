@@ -21,8 +21,6 @@ import (
 	"io"
 	"time"
 
-	"database/sql"
-
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 
@@ -33,7 +31,9 @@ import (
 	"github.com/google/wire"
 
 	// Load PGX driver
-	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 // ProviderSet is data providers.
@@ -73,7 +73,7 @@ func (data *Data) SchemaLoad() error {
 
 type NewConfig struct {
 	Driver, Source             string
-	MaxIdleConns, MaxOpenConns int
+	MinOpenConns, MaxOpenConns int32
 	MaxConnIdleTime            time.Duration
 }
 
@@ -100,47 +100,38 @@ func NewData(c *NewConfig, logger log.Logger) (*Data, func(), error) {
 	return &Data{DB: db}, cleanup, nil
 }
 
-const (
-	DefaultMaxIdleConns = 10
-	DefaultMaxOpenConns = 50
-	DefaultMaxIdleTime  = 5 * time.Minute
-)
-
 func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
+	if c.Driver != "pgx" {
+		return nil, fmt.Errorf("unsupported driver: %s", c.Driver)
+	}
+
 	log.Debugf("connecting to db: driver=%s", c.Driver)
-	db, err := sql.Open(
-		c.Driver,
-		c.Source,
-	)
+	poolConfig, err := pgxpool.ParseConfig(c.Source)
 	if err != nil {
-		return nil, fmt.Errorf("error opening the connection, driver=%s:  %w", c.Driver, err)
+		log.Fatal(err)
 	}
 
-	maxOpenConns := DefaultMaxOpenConns
 	if c.MaxOpenConns > 0 {
-		maxOpenConns = c.MaxOpenConns
+		log.Infof("DB: setting max open conns: %d", c.MaxOpenConns)
+		poolConfig.MaxConns = c.MaxOpenConns
 	}
 
-	log.Infof("DB: setting max open conns: %d", maxOpenConns)
-	db.SetMaxOpenConns(maxOpenConns)
-
-	maxIdleConns := DefaultMaxIdleConns
-	if c.MaxIdleConns > 0 {
-		maxIdleConns = c.MaxIdleConns
+	if n := c.MinOpenConns; n > 0 {
+		log.Infof("DB: setting min open conns: %v", n)
+		poolConfig.MinConns = c.MinOpenConns
 	}
 
-	log.Infof("DB: setting max idle conns: %d", maxIdleConns)
-	db.SetMaxIdleConns(maxIdleConns)
-
-	maxIdleTime := DefaultMaxIdleTime
-	if c.MaxConnIdleTime > 0 {
-		maxIdleTime = c.MaxConnIdleTime
+	if t := c.MaxConnIdleTime; t > 0 {
+		log.Infof("DB: setting max conn idle time: %v", t)
+		poolConfig.MaxConnIdleTime = t
 	}
 
-	log.Infof("DB: setting max conn idle time: %v", maxIdleTime)
-	db.SetConnMaxIdleTime(maxIdleTime)
+	pool, err := pgxpool.NewWithConfig(context.TODO(), poolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating the pool: %w", err)
+	}
 
-	// Create an ent.Driver from `db`.
+	db := stdlib.OpenDBFromPool(pool)
 	drv := entsql.OpenDB(dialect.Postgres, db)
 	client := ent.NewClient(ent.Driver(drv))
 
