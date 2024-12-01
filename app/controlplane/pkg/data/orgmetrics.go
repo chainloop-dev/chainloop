@@ -44,7 +44,7 @@ func NewOrgMetricsRepo(data *Data, l log.Logger) biz.OrgMetricsRepo {
 
 func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow) (int32, error) {
 	total, err := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows().
+		QueryWorkflows().WithProject().
 		QueryWorkflowruns().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
@@ -66,7 +66,7 @@ func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UU
 	}
 
 	if err := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows().
+		QueryWorkflows().WithProject().
 		QueryWorkflowruns().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
@@ -124,7 +124,6 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 	if err := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().
-		WithWorkflow().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
 			workflowrun.CreatedAtLTE(tw.To),
@@ -146,7 +145,7 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 				return nil, err
 			}
 
-			wf, err := orgScopedQuery(repo.data.DB, orgID).QueryWorkflows().Where(workflow.ID(workflowID)).First(ctx)
+			wf, err := orgScopedQuery(repo.data.DB, orgID).QueryWorkflows().WithProject().Where(workflow.ID(workflowID)).First(ctx)
 			if err != nil {
 				if ent.IsNotFound(err) {
 					continue
