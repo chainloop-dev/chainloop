@@ -163,10 +163,11 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 		if err = tx.Membership.UpdateOneID(membershipID).SetCurrent(true).Exec(ctx); err != nil {
 			return err
 		}
+		return nil
 	}); err != nil {
 		return nil, err
 	}
-	
+
 	// Reload returned data
 	m, err = r.loadMembership(ctx, membershipID)
 	if err != nil {

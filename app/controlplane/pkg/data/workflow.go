@@ -62,7 +62,6 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 	var entwf *ent.Workflow
 	// Create project and workflow in a transaction
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-
 		// Find or create project.
 		projectID, err := tx.Project.Create().SetName(opts.Project).SetOrganizationID(orgUUID).
 			OnConflict(
