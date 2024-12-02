@@ -17,7 +17,6 @@ package data
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"time"
