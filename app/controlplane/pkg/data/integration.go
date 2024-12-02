@@ -112,29 +112,18 @@ func (r *IntegrationRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, 
 	return entIntegrationToBiz(integration), nil
 }
 
-func (r *IntegrationRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		// Unblock the row if there was an error
-		if err != nil {
-			_ = tx.Rollback()
+func (r *IntegrationRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// soft-delete attachments associated with this workflow
+		if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasIntegrationWith(integration.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+			return err
 		}
-	}()
 
-	// soft-delete attachments associated with this workflow
-	if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasIntegrationWith(integration.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
-		return err
-	}
-
-	if err := tx.Integration.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+		if err := tx.Integration.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func entIntegrationToBiz(i *ent.Integration) *biz.Integration {

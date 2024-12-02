@@ -152,31 +152,19 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 		return nil, err
 	}
 
-	// For the found user, we must, in a transaction.
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		// Unblock the row if there was an error
-		if err != nil {
-			_ = tx.Rollback()
+	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// 1 - Set all the memberships to current=false
+		if err = tx.Membership.Update().Where(membership.HasUserWith(user.ID(m.Edges.User.ID))).
+			SetCurrent(false).Exec(ctx); err != nil {
+			return err
 		}
-	}()
 
-	// 1 - Set all the memberships to current=false
-	if err = tx.Membership.Update().Where(membership.HasUserWith(user.ID(m.Edges.User.ID))).
-		SetCurrent(false).Exec(ctx); err != nil {
-		return nil, err
-	}
-
-	// 2 - Set the referenced membership to current=true
-	if err = tx.Membership.UpdateOneID(membershipID).SetCurrent(true).Exec(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+		// 2 - Set the referenced membership to current=true
+		if err = tx.Membership.UpdateOneID(membershipID).SetCurrent(true).Exec(ctx); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 

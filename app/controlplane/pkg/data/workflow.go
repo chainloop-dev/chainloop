@@ -59,51 +59,40 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, err
 	}
 
+	var entwf *ent.Workflow
 	// Create project and workflow in a transaction
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("starting transaction: %w", err)
-	}
-
-	defer func() {
+	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// Find or create project.
+		projectID, err := tx.Project.Create().SetName(opts.Project).SetOrganizationID(orgUUID).
+			OnConflict(
+				sql.ConflictColumns(project.FieldName, project.FieldOrganizationID),
+				// Since we are using a partial index, we need to explicitly craft the upsert query
+				sql.ConflictWhere(sql.IsNull(project.FieldDeletedAt)),
+			).Ignore().ID(ctx)
 		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				r.log.Errorf("rolling back transaction: %v", rbErr)
+			return fmt.Errorf("creating project: %w", err)
+		}
+
+		entwf, err = tx.Workflow.Create().
+			SetName(opts.Name).
+			SetProjectID(projectID).
+			SetTeam(opts.Team).
+			SetPublic(opts.Public).
+			SetName(opts.Name).
+			SetContractID(contractUUID).
+			SetOrganizationID(orgUUID).
+			SetDescription(opts.Description).
+			Save(ctx)
+		if err != nil {
+			if ent.IsConstraintError(err) {
+				return biz.NewErrAlreadyExists(err)
 			}
+
+			return fmt.Errorf("failed to create workflow: %w", err)
 		}
-	}()
-
-	// Find or create project.
-	projectID, err := tx.Project.Create().SetName(opts.Project).SetOrganizationID(orgUUID).
-		OnConflict(
-			sql.ConflictColumns(project.FieldName, project.FieldOrganizationID),
-			// Since we are using a partial index, we need to explicitly craft the upsert query
-			sql.ConflictWhere(sql.IsNull(project.FieldDeletedAt)),
-		).Ignore().ID(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("creating project: %w", err)
-	}
-
-	entwf, err := tx.Workflow.Create().
-		SetName(opts.Name).
-		SetProjectID(projectID).
-		SetTeam(opts.Team).
-		SetPublic(opts.Public).
-		SetName(opts.Name).
-		SetContractID(contractUUID).
-		SetOrganizationID(orgUUID).
-		SetDescription(opts.Description).
-		Save(ctx)
-	if err != nil {
-		if ent.IsConstraintError(err) {
-			return nil, biz.NewErrAlreadyExists(err)
-		}
-
-		return nil, fmt.Errorf("failed to create workflow: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("committing transaction: %w", err)
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	return r.FindByID(ctx, entwf.ID)
@@ -315,41 +304,30 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 
 // Soft delete workflow, attachments and related projects (if applicable)
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
-	tx, err := r.data.DB.Tx(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		// Unblock the row if there was an error
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
-	// soft-delete attachments associated with this workflow
-	if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasWorkflowWith(workflow.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
-		return err
-	}
-
-	// Soft delete workflow
-	wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Save(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Soft delete project if it has no more workflows
-	// TODO: in the future, we'll handle this separately through explicit user action
-	if wfTotal, err := wf.QueryProject().QueryWorkflows().Where(workflow.DeletedAtIsNil()).Count(ctx); err != nil {
-		return err
-	} else if wfTotal == 0 {
-		// soft deleted project if it has no more workflows
-		if err := tx.Project.UpdateOneID(wf.ProjectID).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// soft-delete attachments associated with this workflow
+		if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasWorkflowWith(workflow.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
 			return err
 		}
-	}
 
-	return tx.Commit()
+		// Soft delete workflow
+		wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Save(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Soft delete project if it has no more workflows
+		// TODO: in the future, we'll handle this separately through explicit user action
+		if wfTotal, err := wf.QueryProject().QueryWorkflows().Where(workflow.DeletedAtIsNil()).Count(ctx); err != nil {
+			return err
+		} else if wfTotal == 0 {
+			// soft deleted project if it has no more workflows
+			if err := tx.Project.UpdateOneID(wf.ProjectID).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
