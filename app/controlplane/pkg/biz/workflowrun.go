@@ -22,7 +22,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"

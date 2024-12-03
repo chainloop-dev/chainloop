@@ -11,7 +11,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	pagination "github.com/chainloop-dev/chainloop/app/controlplane/internal/pagination"
+	pagination "github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	time "time"
 
