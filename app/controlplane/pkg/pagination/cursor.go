@@ -25,28 +25,51 @@ import (
 	"github.com/google/uuid"
 )
 
-type CursorOptions struct {
-	Cursor *Cursor
-	Limit  int
-}
+// DefaultCursorLimit is the default number of items per page for cursor-based pagination
+const DefaultCursorLimit = 10
 
+// Cursor is a struct that holds the timestamp and identifier of a record
 type Cursor struct {
 	Timestamp *time.Time
 	ID        *uuid.UUID
 }
 
-const defaultLimit = 10
+// CursorOptions is a struct that holds the cursor and limit for pagination
+type CursorOptions struct {
+	Cursor *Cursor
+	Limit  int
+}
+
+// CursorPaginationError is the error type for cursor-based pagination
+type CursorPaginationError struct {
+	err error
+}
+
+// NewCursorPaginationError creates a new CursorPaginationError with the provided error
+func NewCursorPaginationError(err error) CursorPaginationError {
+	return CursorPaginationError{err}
+}
+
+// Error returns the error message
+func (e CursorPaginationError) Error() string {
+	return e.err.Error()
+}
+
+// IsCursorPaginationError checks if the error is an CursorPaginationError
+func IsCursorPaginationError(err error) bool {
+	return errors.As(err, &CursorPaginationError{})
+}
 
 func NewCursor(c string, l int) (*CursorOptions, error) {
 	var cursor *Cursor
-	var limit = defaultLimit
+	var limit = DefaultCursorLimit
 
 	if c != "" {
-		time, uuid, err := decodeCursor(c)
+		timestamp, id, err := decodeCursor(c)
 		if err != nil {
-			return nil, fmt.Errorf("decoding cursor: %w", err)
+			return nil, NewCursorPaginationError(fmt.Errorf("decoding cursor: %w", err))
 		}
-		cursor = &Cursor{Timestamp: time, ID: uuid}
+		cursor = &Cursor{Timestamp: timestamp, ID: id}
 	}
 
 	if l > 0 {
@@ -59,6 +82,7 @@ func NewCursor(c string, l int) (*CursorOptions, error) {
 	}, nil
 }
 
+// decodeCursor decodes a base64 encoded cursor into a timestamp and identifier
 func decodeCursor(encodedCursor string) (*time.Time, *uuid.UUID, error) {
 	byt, err := base64.StdEncoding.DecodeString(encodedCursor)
 	if err != nil {
@@ -76,12 +100,12 @@ func decodeCursor(encodedCursor string) (*time.Time, *uuid.UUID, error) {
 	}
 
 	rawID := arrStr[1]
-	uuid, err := uuid.Parse(rawID)
+	id, err := uuid.Parse(rawID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &timestamp, &uuid, nil
+	return &timestamp, &id, nil
 }
 
 // EncodeCursor generates a base64 encoded representation of a timestamp + identifier

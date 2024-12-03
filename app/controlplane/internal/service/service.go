@@ -142,7 +142,8 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 	switch {
 	case errors.Is(err, context.Canceled):
 		return errors.ClientClosed("client closed", err.Error())
-	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err) || biz.IsErrInvalidTimeWindow(err) || pagination.IsOffsetPaginationError(err):
+	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err) || biz.IsErrInvalidTimeWindow(err) ||
+		pagination.IsOffsetPaginationError(err) || pagination.IsCursorPaginationError(err):
 		return errors.BadRequest("invalid", err.Error())
 	case biz.IsNotFound(err):
 		return errors.NotFound("not found", err.Error())
