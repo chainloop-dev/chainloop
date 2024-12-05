@@ -104,6 +104,15 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		if err != nil {
 			return fmt.Errorf("updating workflow: %w", err)
 		}
+
+		// Update the project version if any incrementing the runs count
+		_, err = tx.ProjectVersion.UpdateOneID(version.ID).
+			AddWorkflowRunCount(1).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("updating project version: %w", err)
+		}
+
 		return nil
 	}); err != nil {
 		return nil, err
@@ -112,6 +121,13 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	run, err = entWrToBizWr(ctx, p)
 	if err != nil {
 		return nil, fmt.Errorf("converting to biz: %w", err)
+	}
+
+	// Reload the project version since the count has changed
+	// and the version is not reloaded in the transaction
+	version, err = r.data.DB.ProjectVersion.Query().Where(projectversion.ID(version.ID)).First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reloading project version: %w", err)
 	}
 
 	run.ProjectVersion = entProjectVersionToBiz(version)

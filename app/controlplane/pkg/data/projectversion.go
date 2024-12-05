@@ -79,8 +79,9 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 
 func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
 	return &biz.ProjectVersion{
-		ID:         v.ID,
-		Version:    v.Version,
-		Prerelease: v.Prerelease,
+		ID:                v.ID,
+		Version:           v.Version,
+		Prerelease:        v.Prerelease,
+		TotalWorkflowRuns: v.WorkflowRunCount,
 	}
 }

@@ -80,6 +80,27 @@ func (pvu *ProjectVersionUpdate) SetNillablePrerelease(b *bool) *ProjectVersionU
 	return pvu
 }
 
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (pvu *ProjectVersionUpdate) SetWorkflowRunCount(i int) *ProjectVersionUpdate {
+	pvu.mutation.ResetWorkflowRunCount()
+	pvu.mutation.SetWorkflowRunCount(i)
+	return pvu
+}
+
+// SetNillableWorkflowRunCount sets the "workflow_run_count" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillableWorkflowRunCount(i *int) *ProjectVersionUpdate {
+	if i != nil {
+		pvu.SetWorkflowRunCount(*i)
+	}
+	return pvu
+}
+
+// AddWorkflowRunCount adds i to the "workflow_run_count" field.
+func (pvu *ProjectVersionUpdate) AddWorkflowRunCount(i int) *ProjectVersionUpdate {
+	pvu.mutation.AddWorkflowRunCount(i)
+	return pvu
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pvu *ProjectVersionUpdate) SetProject(p *Project) *ProjectVersionUpdate {
 	return pvu.SetProjectID(p.ID)
@@ -193,6 +214,12 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if value, ok := pvu.mutation.Prerelease(); ok {
 		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
+	}
+	if value, ok := pvu.mutation.WorkflowRunCount(); ok {
+		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
+	}
+	if value, ok := pvu.mutation.AddedWorkflowRunCount(); ok {
+		_spec.AddField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 	}
 	if pvu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -335,6 +362,27 @@ func (pvuo *ProjectVersionUpdateOne) SetNillablePrerelease(b *bool) *ProjectVers
 	if b != nil {
 		pvuo.SetPrerelease(*b)
 	}
+	return pvuo
+}
+
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (pvuo *ProjectVersionUpdateOne) SetWorkflowRunCount(i int) *ProjectVersionUpdateOne {
+	pvuo.mutation.ResetWorkflowRunCount()
+	pvuo.mutation.SetWorkflowRunCount(i)
+	return pvuo
+}
+
+// SetNillableWorkflowRunCount sets the "workflow_run_count" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillableWorkflowRunCount(i *int) *ProjectVersionUpdateOne {
+	if i != nil {
+		pvuo.SetWorkflowRunCount(*i)
+	}
+	return pvuo
+}
+
+// AddWorkflowRunCount adds i to the "workflow_run_count" field.
+func (pvuo *ProjectVersionUpdateOne) AddWorkflowRunCount(i int) *ProjectVersionUpdateOne {
+	pvuo.mutation.AddWorkflowRunCount(i)
 	return pvuo
 }
 
@@ -481,6 +529,12 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 	}
 	if value, ok := pvuo.mutation.Prerelease(); ok {
 		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
+	}
+	if value, ok := pvuo.mutation.WorkflowRunCount(); ok {
+		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
+	}
+	if value, ok := pvuo.mutation.AddedWorkflowRunCount(); ok {
+		_spec.AddField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 	}
 	if pvuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

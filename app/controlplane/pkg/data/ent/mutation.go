@@ -7266,22 +7266,24 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 // ProjectVersionMutation represents an operation that mutates the ProjectVersion nodes in the graph.
 type ProjectVersionMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *uuid.UUID
-	version        *string
-	created_at     *time.Time
-	deleted_at     *time.Time
-	prerelease     *bool
-	clearedFields  map[string]struct{}
-	project        *uuid.UUID
-	clearedproject bool
-	runs           map[uuid.UUID]struct{}
-	removedruns    map[uuid.UUID]struct{}
-	clearedruns    bool
-	done           bool
-	oldValue       func(context.Context) (*ProjectVersion, error)
-	predicates     []predicate.ProjectVersion
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	version               *string
+	created_at            *time.Time
+	deleted_at            *time.Time
+	prerelease            *bool
+	workflow_run_count    *int
+	addworkflow_run_count *int
+	clearedFields         map[string]struct{}
+	project               *uuid.UUID
+	clearedproject        bool
+	runs                  map[uuid.UUID]struct{}
+	removedruns           map[uuid.UUID]struct{}
+	clearedruns           bool
+	done                  bool
+	oldValue              func(context.Context) (*ProjectVersion, error)
+	predicates            []predicate.ProjectVersion
 }
 
 var _ ent.Mutation = (*ProjectVersionMutation)(nil)
@@ -7581,6 +7583,62 @@ func (m *ProjectVersionMutation) ResetPrerelease() {
 	m.prerelease = nil
 }
 
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (m *ProjectVersionMutation) SetWorkflowRunCount(i int) {
+	m.workflow_run_count = &i
+	m.addworkflow_run_count = nil
+}
+
+// WorkflowRunCount returns the value of the "workflow_run_count" field in the mutation.
+func (m *ProjectVersionMutation) WorkflowRunCount() (r int, exists bool) {
+	v := m.workflow_run_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowRunCount returns the old "workflow_run_count" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldWorkflowRunCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowRunCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowRunCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowRunCount: %w", err)
+	}
+	return oldValue.WorkflowRunCount, nil
+}
+
+// AddWorkflowRunCount adds i to the "workflow_run_count" field.
+func (m *ProjectVersionMutation) AddWorkflowRunCount(i int) {
+	if m.addworkflow_run_count != nil {
+		*m.addworkflow_run_count += i
+	} else {
+		m.addworkflow_run_count = &i
+	}
+}
+
+// AddedWorkflowRunCount returns the value that was added to the "workflow_run_count" field in this mutation.
+func (m *ProjectVersionMutation) AddedWorkflowRunCount() (r int, exists bool) {
+	v := m.addworkflow_run_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWorkflowRunCount resets all changes to the "workflow_run_count" field.
+func (m *ProjectVersionMutation) ResetWorkflowRunCount() {
+	m.workflow_run_count = nil
+	m.addworkflow_run_count = nil
+}
+
 // ClearProject clears the "project" edge to the Project entity.
 func (m *ProjectVersionMutation) ClearProject() {
 	m.clearedproject = true
@@ -7696,7 +7754,7 @@ func (m *ProjectVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectVersionMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.version != nil {
 		fields = append(fields, projectversion.FieldVersion)
 	}
@@ -7711,6 +7769,9 @@ func (m *ProjectVersionMutation) Fields() []string {
 	}
 	if m.prerelease != nil {
 		fields = append(fields, projectversion.FieldPrerelease)
+	}
+	if m.workflow_run_count != nil {
+		fields = append(fields, projectversion.FieldWorkflowRunCount)
 	}
 	return fields
 }
@@ -7730,6 +7791,8 @@ func (m *ProjectVersionMutation) Field(name string) (ent.Value, bool) {
 		return m.ProjectID()
 	case projectversion.FieldPrerelease:
 		return m.Prerelease()
+	case projectversion.FieldWorkflowRunCount:
+		return m.WorkflowRunCount()
 	}
 	return nil, false
 }
@@ -7749,6 +7812,8 @@ func (m *ProjectVersionMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldProjectID(ctx)
 	case projectversion.FieldPrerelease:
 		return m.OldPrerelease(ctx)
+	case projectversion.FieldWorkflowRunCount:
+		return m.OldWorkflowRunCount(ctx)
 	}
 	return nil, fmt.Errorf("unknown ProjectVersion field %s", name)
 }
@@ -7793,6 +7858,13 @@ func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPrerelease(v)
 		return nil
+	case projectversion.FieldWorkflowRunCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowRunCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)
 }
@@ -7800,13 +7872,21 @@ func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *ProjectVersionMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addworkflow_run_count != nil {
+		fields = append(fields, projectversion.FieldWorkflowRunCount)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *ProjectVersionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case projectversion.FieldWorkflowRunCount:
+		return m.AddedWorkflowRunCount()
+	}
 	return nil, false
 }
 
@@ -7815,6 +7895,13 @@ func (m *ProjectVersionMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *ProjectVersionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case projectversion.FieldWorkflowRunCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWorkflowRunCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion numeric field %s", name)
 }
@@ -7865,6 +7952,9 @@ func (m *ProjectVersionMutation) ResetField(name string) error {
 		return nil
 	case projectversion.FieldPrerelease:
 		m.ResetPrerelease()
+		return nil
+	case projectversion.FieldWorkflowRunCount:
+		m.ResetWorkflowRunCount()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)
