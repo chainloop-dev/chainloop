@@ -39,7 +39,8 @@
             "TWISTCLI_SCAN_JSON",
             "GHAS_CODE_SCAN",
             "GHAS_SECRET_SCAN",
-            "GHAS_DEPENDENCY_SCAN"
+            "GHAS_DEPENDENCY_SCAN",
+            "JACOCO_XML"
           ],
           "title": "Material Type",
           "type": "string"
@@ -106,7 +107,8 @@
             "TWISTCLI_SCAN_JSON",
             "GHAS_CODE_SCAN",
             "GHAS_SECRET_SCAN",
-            "GHAS_DEPENDENCY_SCAN"
+            "GHAS_DEPENDENCY_SCAN",
+            "JACOCO_XML"
           ],
           "title": "Material Type",
           "type": "string"

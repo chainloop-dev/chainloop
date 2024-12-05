@@ -148,6 +148,8 @@ export enum CraftingSchema_Material_MaterialType {
   GHAS_SECRET_SCAN = 21,
   /** GHAS_DEPENDENCY_SCAN - https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28 */
   GHAS_DEPENDENCY_SCAN = 22,
+  /** JACOCO_XML - Jacoco coverage reports https://www.jacoco.org/userdoc/importexport.html */
+  JACOCO_XML = 23,
   UNRECOGNIZED = -1,
 }
 
@@ -222,6 +224,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 22:
     case "GHAS_DEPENDENCY_SCAN":
       return CraftingSchema_Material_MaterialType.GHAS_DEPENDENCY_SCAN;
+    case 23:
+    case "JACOCO_XML":
+      return CraftingSchema_Material_MaterialType.JACOCO_XML;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -277,6 +282,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "GHAS_SECRET_SCAN";
     case CraftingSchema_Material_MaterialType.GHAS_DEPENDENCY_SCAN:
       return "GHAS_DEPENDENCY_SCAN";
+    case CraftingSchema_Material_MaterialType.JACOCO_XML:
+      return "JACOCO_XML";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

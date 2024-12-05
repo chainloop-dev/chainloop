@@ -121,6 +121,8 @@ message CraftingSchema {
       GHAS_SECRET_SCAN = 21;
       // https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28
       GHAS_DEPENDENCY_SCAN = 22;
+      // Jacoco coverage reports https://www.jacoco.org/userdoc/importexport.html
+      JACOCO_XML = 23;
     }
   }
 }
