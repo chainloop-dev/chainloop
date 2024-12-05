@@ -16,12 +16,14 @@
 package cmd
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"hash"
 	"io"
 	"os"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -38,8 +40,30 @@ func NewVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Command line version",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s version %s\n", appName, Version)
+		RunE: func(_ *cobra.Command, _ []string) error {
+			var version = struct {
+				Client string `json:"client"`
+				Server string `json:"server"`
+			}{
+				Client: Version,
+				Server: "unknown",
+			}
+
+			if actionOpts.CPConnection != nil {
+				res, err := pb.NewStatusServiceClient(actionOpts.CPConnection).Infoz(context.Background(), &pb.InfozRequest{})
+				if err == nil {
+					version.Server = res.Version
+				}
+			}
+
+			if flagOutputFormat == formatJSON {
+				return encodeJSON(version)
+			}
+
+			fmt.Printf("Client Version: %s\n", version.Client)
+			fmt.Printf("Server Version: %s\n", version.Server)
+
+			return nil
 		},
 	}
 }
