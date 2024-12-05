@@ -41,16 +41,27 @@ func NewVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Command line version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Client Version: %s\n", Version)
+			var version = struct {
+				Client string `json:"client"`
+				Server string `json:"server"`
+			}{
+				Client: Version,
+				Server: "unknown",
+			}
+
 			if actionOpts.CPConnection != nil {
 				res, err := pb.NewStatusServiceClient(actionOpts.CPConnection).Infoz(context.Background(), &pb.InfozRequest{})
-				var serverVersion = "unknown"
 				if err == nil {
-					serverVersion = res.Version
+					version.Server = res.Version
 				}
-
-				fmt.Printf("Server Version: %s\n", serverVersion)
 			}
+
+			if flagOutputFormat == formatJSON {
+				return encodeJSON(version)
+			}
+
+			fmt.Printf("Client Version: %s\n", version.Client)
+			fmt.Printf("Server Version: %s\n", version.Server)
 
 			return nil
 		},
