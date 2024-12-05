@@ -104,6 +104,8 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 		}
 	}
 
+	// For XML based materials, we need to ingest them and read as json-like structure
+
 	// if raw material is empty (container images, for example), let's create an empty json
 	if len(rawMaterial) == 0 {
 		rawMaterial = []byte(`{}`)
