@@ -81,6 +81,11 @@ func Prerelease(v bool) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldPrerelease, v))
 }
 
+// WorkflowRunCount applies equality check predicate on the "workflow_run_count" field. It's identical to WorkflowRunCountEQ.
+func WorkflowRunCount(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldWorkflowRunCount, v))
+}
+
 // VersionEQ applies the EQ predicate on the "version" field.
 func VersionEQ(v string) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldVersion, v))
@@ -264,6 +269,46 @@ func PrereleaseEQ(v bool) predicate.ProjectVersion {
 // PrereleaseNEQ applies the NEQ predicate on the "prerelease" field.
 func PrereleaseNEQ(v bool) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldNEQ(FieldPrerelease, v))
+}
+
+// WorkflowRunCountEQ applies the EQ predicate on the "workflow_run_count" field.
+func WorkflowRunCountEQ(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldWorkflowRunCount, v))
+}
+
+// WorkflowRunCountNEQ applies the NEQ predicate on the "workflow_run_count" field.
+func WorkflowRunCountNEQ(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNEQ(FieldWorkflowRunCount, v))
+}
+
+// WorkflowRunCountIn applies the In predicate on the "workflow_run_count" field.
+func WorkflowRunCountIn(vs ...int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldIn(FieldWorkflowRunCount, vs...))
+}
+
+// WorkflowRunCountNotIn applies the NotIn predicate on the "workflow_run_count" field.
+func WorkflowRunCountNotIn(vs ...int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNotIn(FieldWorkflowRunCount, vs...))
+}
+
+// WorkflowRunCountGT applies the GT predicate on the "workflow_run_count" field.
+func WorkflowRunCountGT(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGT(FieldWorkflowRunCount, v))
+}
+
+// WorkflowRunCountGTE applies the GTE predicate on the "workflow_run_count" field.
+func WorkflowRunCountGTE(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGTE(FieldWorkflowRunCount, v))
+}
+
+// WorkflowRunCountLT applies the LT predicate on the "workflow_run_count" field.
+func WorkflowRunCountLT(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLT(FieldWorkflowRunCount, v))
+}
+
+// WorkflowRunCountLTE applies the LTE predicate on the "workflow_run_count" field.
+func WorkflowRunCountLTE(v int) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLTE(FieldWorkflowRunCount, v))
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

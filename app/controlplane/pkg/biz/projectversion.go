@@ -26,10 +26,16 @@ import (
 )
 
 type ProjectVersion struct {
-	ID         uuid.UUID
-	Version    string
+	// ID is the UUID of the project version.
+	ID uuid.UUID
+	// Version is the version of the project.
+	Version string
+	// Prerelease indicates whether the version is a prerelease.
 	Prerelease bool
-	CreatedAt  *time.Time
+	// TotalWorkflowRuns is the total number of workflow runs for this version.
+	TotalWorkflowRuns int
+	// CreatedAt is the time when the project version was created.
+	CreatedAt *time.Time
 }
 
 type ProjectVersionRepo interface {

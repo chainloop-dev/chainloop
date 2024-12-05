@@ -88,6 +88,20 @@ func (pvc *ProjectVersionCreate) SetNillablePrerelease(b *bool) *ProjectVersionC
 	return pvc
 }
 
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (pvc *ProjectVersionCreate) SetWorkflowRunCount(i int) *ProjectVersionCreate {
+	pvc.mutation.SetWorkflowRunCount(i)
+	return pvc
+}
+
+// SetNillableWorkflowRunCount sets the "workflow_run_count" field if the given value is not nil.
+func (pvc *ProjectVersionCreate) SetNillableWorkflowRunCount(i *int) *ProjectVersionCreate {
+	if i != nil {
+		pvc.SetWorkflowRunCount(*i)
+	}
+	return pvc
+}
+
 // SetID sets the "id" field.
 func (pvc *ProjectVersionCreate) SetID(u uuid.UUID) *ProjectVersionCreate {
 	pvc.mutation.SetID(u)
@@ -169,6 +183,10 @@ func (pvc *ProjectVersionCreate) defaults() {
 		v := projectversion.DefaultPrerelease
 		pvc.mutation.SetPrerelease(v)
 	}
+	if _, ok := pvc.mutation.WorkflowRunCount(); !ok {
+		v := projectversion.DefaultWorkflowRunCount
+		pvc.mutation.SetWorkflowRunCount(v)
+	}
 	if _, ok := pvc.mutation.ID(); !ok {
 		v := projectversion.DefaultID()
 		pvc.mutation.SetID(v)
@@ -193,6 +211,9 @@ func (pvc *ProjectVersionCreate) check() error {
 	}
 	if _, ok := pvc.mutation.Prerelease(); !ok {
 		return &ValidationError{Name: "prerelease", err: errors.New(`ent: missing required field "ProjectVersion.prerelease"`)}
+	}
+	if _, ok := pvc.mutation.WorkflowRunCount(); !ok {
+		return &ValidationError{Name: "workflow_run_count", err: errors.New(`ent: missing required field "ProjectVersion.workflow_run_count"`)}
 	}
 	if len(pvc.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectVersion.project"`)}
@@ -248,6 +269,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 	if value, ok := pvc.mutation.Prerelease(); ok {
 		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
 		_node.Prerelease = value
+	}
+	if value, ok := pvc.mutation.WorkflowRunCount(); ok {
+		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
+		_node.WorkflowRunCount = value
 	}
 	if nodes := pvc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -376,6 +401,24 @@ func (u *ProjectVersionUpsert) UpdatePrerelease() *ProjectVersionUpsert {
 	return u
 }
 
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (u *ProjectVersionUpsert) SetWorkflowRunCount(v int) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldWorkflowRunCount, v)
+	return u
+}
+
+// UpdateWorkflowRunCount sets the "workflow_run_count" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdateWorkflowRunCount() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldWorkflowRunCount)
+	return u
+}
+
+// AddWorkflowRunCount adds v to the "workflow_run_count" field.
+func (u *ProjectVersionUpsert) AddWorkflowRunCount(v int) *ProjectVersionUpsert {
+	u.Add(projectversion.FieldWorkflowRunCount, v)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -476,6 +519,27 @@ func (u *ProjectVersionUpsertOne) SetPrerelease(v bool) *ProjectVersionUpsertOne
 func (u *ProjectVersionUpsertOne) UpdatePrerelease() *ProjectVersionUpsertOne {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.UpdatePrerelease()
+	})
+}
+
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (u *ProjectVersionUpsertOne) SetWorkflowRunCount(v int) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetWorkflowRunCount(v)
+	})
+}
+
+// AddWorkflowRunCount adds v to the "workflow_run_count" field.
+func (u *ProjectVersionUpsertOne) AddWorkflowRunCount(v int) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.AddWorkflowRunCount(v)
+	})
+}
+
+// UpdateWorkflowRunCount sets the "workflow_run_count" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdateWorkflowRunCount() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateWorkflowRunCount()
 	})
 }
 
@@ -746,6 +810,27 @@ func (u *ProjectVersionUpsertBulk) SetPrerelease(v bool) *ProjectVersionUpsertBu
 func (u *ProjectVersionUpsertBulk) UpdatePrerelease() *ProjectVersionUpsertBulk {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.UpdatePrerelease()
+	})
+}
+
+// SetWorkflowRunCount sets the "workflow_run_count" field.
+func (u *ProjectVersionUpsertBulk) SetWorkflowRunCount(v int) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetWorkflowRunCount(v)
+	})
+}
+
+// AddWorkflowRunCount adds v to the "workflow_run_count" field.
+func (u *ProjectVersionUpsertBulk) AddWorkflowRunCount(v int) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.AddWorkflowRunCount(v)
+	})
+}
+
+// UpdateWorkflowRunCount sets the "workflow_run_count" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdateWorkflowRunCount() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateWorkflowRunCount()
 	})
 }
 

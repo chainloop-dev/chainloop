@@ -29,6 +29,8 @@ type ProjectVersion struct {
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// Prerelease holds the value of the "prerelease" field.
 	Prerelease bool `json:"prerelease,omitempty"`
+	// WorkflowRunCount holds the value of the "workflow_run_count" field.
+	WorkflowRunCount int `json:"workflow_run_count,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectVersionQuery when eager-loading is set.
 	Edges        ProjectVersionEdges `json:"edges"`
@@ -73,6 +75,8 @@ func (*ProjectVersion) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case projectversion.FieldPrerelease:
 			values[i] = new(sql.NullBool)
+		case projectversion.FieldWorkflowRunCount:
+			values[i] = new(sql.NullInt64)
 		case projectversion.FieldVersion:
 			values[i] = new(sql.NullString)
 		case projectversion.FieldCreatedAt, projectversion.FieldDeletedAt:
@@ -129,6 +133,12 @@ func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field prerelease", values[i])
 			} else if value.Valid {
 				pv.Prerelease = value.Bool
+			}
+		case projectversion.FieldWorkflowRunCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_run_count", values[i])
+			} else if value.Valid {
+				pv.WorkflowRunCount = int(value.Int64)
 			}
 		default:
 			pv.selectValues.Set(columns[i], values[i])
@@ -190,6 +200,9 @@ func (pv *ProjectVersion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("prerelease=")
 	builder.WriteString(fmt.Sprintf("%v", pv.Prerelease))
+	builder.WriteString(", ")
+	builder.WriteString("workflow_run_count=")
+	builder.WriteString(fmt.Sprintf("%v", pv.WorkflowRunCount))
 	builder.WriteByte(')')
 	return builder.String()
 }
