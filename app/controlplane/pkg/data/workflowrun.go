@@ -123,6 +123,13 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("converting to biz: %w", err)
 	}
 
+	// Reload the project version since the count has changed
+	// and the version is not reloaded in the transaction
+	version, err = r.data.DB.ProjectVersion.Query().Where(projectversion.ID(version.ID)).First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reloading project version: %w", err)
+	}
+
 	run.ProjectVersion = entProjectVersionToBiz(version)
 	return run, err
 }
