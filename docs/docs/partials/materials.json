@@ -34,6 +34,11 @@
     "id": "JUNIT_XML"
   },
   {
+    "name": "JaCoCo XML Report",
+    "link": "https://www.jacoco.org/jacoco/trunk/doc/",
+    "id": "JACOCO_XML"
+  },
+  {
     "name": "Helm Chart",
     "link": "https://helm.sh/docs/topics/charts/",
     "id": "HELM_CHART",

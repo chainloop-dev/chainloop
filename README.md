@@ -140,6 +140,7 @@ Chainloop supports the collection of the following list of evidence types. For t
 - [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#45-profile-5-vex)
 - [Gitlab Security report](https://docs.gitlab.com/ee/user/application_security/)
 - [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
+- [JaCoCo XML coverage reports](https://www.jacoco.org/jacoco/trunk/doc/)
 - Attestation: existing Chainloop attestations.
 - Artifact Type: It represents a software artifact.
 - Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.
