@@ -7,6 +7,13 @@ title: Quickstart
 
 This quickstart will guide you through the process of installing the Chainloop CLI and performing your first attestation.
 
+:::info
+By default, the Chainloop CLI comes pre-configured to talk to Chainloop's platform instance, which is currently on early access. To get an account, please request access [here](https://app.chainloop.dev/request-access), and we'll get back to you shortly.
+
+Alternatively, you can run your instance of Chainloop through our labs [docker-compose setup](https://github.com/chainloop-dev/chainloop/tree/main/devel#labs-environments) or in Kubernetes following [this guide](/guides/deployment/k8s/).
+:::
+
+
 1. Install CLI by running:
 
     ```bash
@@ -20,10 +27,11 @@ This quickstart will guide you through the process of installing the Chainloop C
     chainloop auth login
     ```
 
-    Once logged in and will have access to any operation with the controlplane, like for example inspecting your organization
+    Once logged in, your next step would be to create a Chainloop organization. Think of organizations as workspaces or namespaces. To create an organization with a random suffix, run:
 
     ```bash
-    chainloop organization describe
+    chainloop organization create --name quickstart-$((RANDOM % 90000 + 10000))
+    # INF Organization "quickstart-10122" created!
     ```
 
 3. Create API Token to perform the attestation process:
