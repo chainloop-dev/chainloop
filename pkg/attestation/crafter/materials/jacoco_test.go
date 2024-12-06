@@ -89,7 +89,7 @@ func TestJacocoCraft(t *testing.T) {
 
 			// The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:0a13680c120ff5d4d8bec97dee72e8a35e640ad265a72aca9d80222ddc1fb810", Name: "jacoco.xml",
+				Id: "test", Digest: "sha256:d622d9dbebbd6f2bd7bf9a867e91bbd2662ebd4ea500d9f518e76f5f3d86c8e0", Name: "jacoco.xml",
 			}, got.GetArtifact())
 		})
 	}
