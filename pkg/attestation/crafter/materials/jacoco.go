@@ -26,6 +26,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	"github.com/rs/zerolog"
 )
 
@@ -41,18 +42,6 @@ func NewJacocoCrafter(schema *schemaapi.CraftingSchema_Material, backend *cascli
 	}
 }
 
-type JacocoCounter struct {
-	Type    string `xml:"type,attr"`
-	Missed  int    `xml:"missed,attr"`
-	Covered int    `xml:"covered,attr"`
-}
-
-type JacocoReport struct {
-	XMLName  xml.Name         `xml:"report"`
-	Name     string           `xml:"name,attr"`
-	Counters []*JacocoCounter `xml:"counter"`
-}
-
 func (c *JacocoCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -65,7 +54,7 @@ func (c *JacocoCrafter) Craft(ctx context.Context, filePath string) (*api.Attest
 		return nil, fmt.Errorf("can't read the file: %w", err)
 	}
 
-	var report JacocoReport
+	var report jacoco.Report
 
 	if err := xml.Unmarshal(bytes, &report); err != nil {
 		return nil, fmt.Errorf("invalid Jacoco report file: %w", ErrInvalidMaterialType)
@@ -76,7 +65,7 @@ func (c *JacocoCrafter) Craft(ctx context.Context, filePath string) (*api.Attest
 	}
 	// At least "instruction" counter should be available according to the documentation
 	// https://www.eclemma.org/jacoco/trunk/doc/counters.html
-	if !slices.ContainsFunc(report.Counters, func(counter *JacocoCounter) bool {
+	if !slices.ContainsFunc(report.Counters, func(counter *jacoco.Counter) bool {
 		return counter.Type == "INSTRUCTION"
 	}) {
 		return nil, fmt.Errorf("invalid Jacoco report file: %w", ErrInvalidMaterialType)

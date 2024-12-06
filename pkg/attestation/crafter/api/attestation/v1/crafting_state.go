@@ -18,13 +18,16 @@ package v1
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/joshdk/go-junit"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -105,6 +108,27 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	}
 
 	// For XML based materials, we need to ingest them and read as json-like structure
+	switch m.MaterialType {
+	case v1.CraftingSchema_Material_JUNIT_XML:
+		suites, err := junit.Ingest(rawMaterial)
+		if err != nil {
+			return nil, fmt.Errorf("failed to ingest junit xml: %w", err)
+		}
+		// this will render a json array
+		rawMaterial, err = json.Marshal(suites)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal junit xml: %w", err)
+		}
+	case v1.CraftingSchema_Material_JACOCO_XML:
+		var report jacoco.Report
+		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
+			return nil, fmt.Errorf("invalid Jacoco report file: %w", err)
+		}
+		rawMaterial, err = json.Marshal(&report)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal to json Jacoco report file: %w", err)
+		}
+	}
 
 	// if raw material is empty (container images, for example), let's create an empty json
 	if len(rawMaterial) == 0 {

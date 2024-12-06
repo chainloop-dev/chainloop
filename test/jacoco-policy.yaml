@@ -1,0 +1,11 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: jacoco-policy-test
+spec:
+  policies:
+    -  kind: JACOCO_XML
+       embedded: |
+         package main
+         import rego.v1
+         result := {"violations":[], "skipped": true, "skip_reason":"hello jacoco"}
