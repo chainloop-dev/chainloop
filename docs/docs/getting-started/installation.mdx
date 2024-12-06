@@ -6,6 +6,7 @@ title: Installation
 import Image from "@theme/IdealImage";
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import EarlyAccess from "../partials/_early-access-callout.mdx";
 
 Chainloop is comprised of two main components
 
@@ -64,9 +65,9 @@ cd chainloop && make -C app/cli build
 </TabItem>
 </Tabs>
 
-## Deploy Chainloop
+## Deploy Chainloop Server components
 
-**To run a Chainloop instance** on your Kubernetes cluster follow [these instructions](/guides/deployment/k8s).
+<EarlyAccess />
 
 ## Configure CLI
 
@@ -86,6 +87,13 @@ Authenticate to the Control Plane by running
 
 ```bash
 $ chainloop auth login
+```
+
+Once logged in, your next step would be to create a Chainloop organization. Think of organizations as workspaces or namespaces.
+
+```bash
+$ chainloop organization create --name my-organization
+# INF Organization "my-organization" created!
 ```
 
 That's all!
