@@ -184,7 +184,7 @@ controlplane:
   #  policy_providers:
   #    - name: my-provider
   #      default: true
-  #      host: http://my-host:8002/v1/policies
+  #      url: http://my-host:8002/v1
 
   # Database migration
   ## @param controlplane.migration.image.registry [default: REGISTRY_NAME] Image registry
