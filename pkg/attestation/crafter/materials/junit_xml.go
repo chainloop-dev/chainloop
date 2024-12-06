@@ -17,10 +17,9 @@ package materials
 
 import (
 	"context"
-	"encoding/xml"
+	"errors"
 	"fmt"
-	"io"
-	"os"
+	"io/fs"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
@@ -51,25 +50,17 @@ func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 }
 
 func (i *JUnitXMLCrafter) validate(filePath string) error {
-	f, err := os.Open(filePath)
+	suites, err := junit.IngestFile(filePath)
 	if err != nil {
-		return fmt.Errorf("can't open the file: %w", err)
-	}
-	defer f.Close()
-
-	bytes, err := io.ReadAll(f)
-	if err != nil {
-		return fmt.Errorf("can't read the file: %w", err)
-	}
-
-	if err := xml.Unmarshal(bytes, &junit.Suite{}); err != nil {
-		return fmt.Errorf("invalid JUnit XML file: %w", ErrInvalidMaterialType)
-	}
-
-	_, err = junit.IngestReader(f)
-	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("invalid file path: %w", err)
+		}
 		i.logger.Debug().Err(err).Msgf("error decoding file: %s", filePath)
 		return fmt.Errorf("invalid JUnit XML file: %w", ErrInvalidMaterialType)
+	}
+
+	if len(suites) == 0 {
+		return fmt.Errorf("invalid JUnit XML file, no suites found: %w", ErrInvalidMaterialType)
 	}
 
 	return nil

@@ -39,6 +39,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_CSAF_SECURITY_INCIDENT_RESPONSE,
 	CraftingSchema_Material_GITLAB_SECURITY_REPORT,
 	CraftingSchema_Material_JUNIT_XML,
+	CraftingSchema_Material_JACOCO_XML,
 	CraftingSchema_Material_HELM_CHART,
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_BLACKDUCK_SCA_JSON,

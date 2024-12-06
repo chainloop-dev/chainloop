@@ -171,6 +171,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewSPDXJSONCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_JUNIT_XML:
 		crafter, err = NewJUnitXMLCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_JACOCO_XML:
+		crafter = NewJacocoCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_OPENVEX:
 		crafter, err = NewOpenVEXCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CSAF_VEX:
