@@ -60,7 +60,7 @@ func (i *JUnitXMLCrafter) validate(filePath string) error {
 	}
 
 	if len(suites) == 0 {
-		return fmt.Errorf("Invalid JUnit XML file, no suites found: %w", ErrInvalidMaterialType)
+		return fmt.Errorf("invalid JUnit XML file, no suites found: %w", ErrInvalidMaterialType)
 	}
 
 	return nil
