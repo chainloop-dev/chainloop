@@ -246,7 +246,7 @@ INF push completed
 Attestation Digest: sha256:8a0b3a9db0372fdf571dbe85c8a9b5202f473ca97e9dbcdf77c3f9b423ea3b9c
 ```
 
-Contract-less and auto-discovery and two features that walk hand by hand. They compose a new way of adding pieces of evidences to an existing contract in a frictionless way. You can see it in action in our [quickstart](../quickstart.md) guide.
+Contract-less and auto-discovery and two features that walk hand by hand. They compose a new way of adding pieces of evidences to an existing contract in a frictionless way. You can see it in action in our [quickstart](../quickstart.mdx) guide.
 
 ## Remote State
 
