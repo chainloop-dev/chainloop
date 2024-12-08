@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/log"
@@ -38,24 +39,16 @@ func NewAuditorUseCase(p *auditor.AuditLogPublisher, logger log.Logger) *Auditor
 }
 
 // Dispatch logs an entry to the audit log asynchronously.
-func (uc *AuditorUseCase) Dispatch(_ context.Context, entry auditor.LogEntry, orgID *uuid.UUID) {
-	// TODO: extract user information
+func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, orgID *uuid.UUID) {
 	// dynamically load user information from the context
-	// user := entities.CurrentUser(ctx)
-	// reset context so it can run in background
 	opts := []auditor.GeneratorOption{}
-	// if user != nil {
-	// 	var actorType auditor.ActorType
-	// 	if user.ServiceAccount {
-	// 		actorType = auditor.ActorTypeAPIToken
-	// 	} else {
-	// 		actorType = auditor.ActorTypeUser
-	// 	}
-
-	// 	opts = append(opts, auditor.WithActor(actorType, user.ID, user.Email))
-	// } else {
-	// 	opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, ""))
-	// }
+	if user := entities.CurrentUser(ctx); user != nil {
+		parsedUUID, _ := uuid.Parse(user.ID)
+		opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, parsedUUID, user.Email))
+	} else if apiToken := entities.CurrentAPIToken(ctx); apiToken != nil {
+		parsedUUID, _ := uuid.Parse(apiToken.ID)
+		opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, parsedUUID, ""))
+	}
 
 	if orgID != nil {
 		opts = append(opts, auditor.WithOrgID(*orgID))
