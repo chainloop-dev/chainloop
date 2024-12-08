@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/google/uuid"
@@ -72,6 +73,8 @@ func (p *UserSignedUp) Description() string {
 
 type UserLoggedIn struct {
 	*UserBase
+	// This timestamp can be used to generate a new digest for the user and burst the cache
+	LoggedIn time.Time
 }
 
 func (p *UserLoggedIn) ActionType() string {
@@ -80,4 +83,12 @@ func (p *UserLoggedIn) ActionType() string {
 
 func (p *UserLoggedIn) Description() string {
 	return fmt.Sprintf("%s has logged in", p.Email)
+}
+
+func (p *UserLoggedIn) ActionInfo() (json.RawMessage, error) {
+	if p.UserID == nil || p.Email == "" || p.LoggedIn.IsZero() {
+		return nil, errors.New("user id and email are required")
+	}
+
+	return json.Marshal(&p)
 }

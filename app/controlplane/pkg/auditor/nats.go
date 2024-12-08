@@ -64,6 +64,11 @@ func NewAuditLogPublisher(conn *nats.Conn, logger log.Logger) (*AuditLogPublishe
 }
 
 func (n *AuditLogPublisher) Publish(data *EventPayload) error {
+	// If the connection is nil, we don't want to publish anything
+	if n == nil || n.conn == nil {
+		return nil
+	}
+
 	jsonPayload, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event payload: %w", err)

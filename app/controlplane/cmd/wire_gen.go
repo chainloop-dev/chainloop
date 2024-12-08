@@ -57,12 +57,25 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v := bootstrap.Onboarding
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, v, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
+	bootstrap_NatsServer := bootstrap.NatsServer
+	conn, err := newNatsConnection(bootstrap_NatsServer)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
 		OrganizationUseCase: organizationUseCase,
 		OnboardingConfig:    v,
 		Logger:              logger,
+		AuditorUseCase:      auditorUseCase,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
@@ -115,18 +128,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	confServer := bootstrap.Server
-	bootstrap_NatsServer := bootstrap.NatsServer
-	conn, err := newNatsConnection(bootstrap_NatsServer)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
 	if err != nil {
 		cleanup()
