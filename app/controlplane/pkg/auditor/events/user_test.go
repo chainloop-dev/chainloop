@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -67,6 +68,7 @@ func TestUserEvents(t *testing.T) {
 					UserID: uuidPtr(userUUID),
 					Email:  testEmail,
 				},
+				LoggedIn: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
 			expected: "testdata/user_logs_in.json",
 		},
