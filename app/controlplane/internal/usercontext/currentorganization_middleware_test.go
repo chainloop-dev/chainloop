@@ -20,6 +20,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
@@ -66,7 +67,7 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 			usecase := bizMocks.NewUserOrgFinder(t)
 			ctx := context.Background()
 			if tc.loggedIn {
-				ctx = WithCurrentUser(ctx, &User{ID: wantUser.ID})
+				ctx = entities.WithCurrentUser(ctx, &entities.User{ID: wantUser.ID})
 			}
 
 			if tc.loggedIn {
@@ -88,7 +89,7 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 
 					if !tc.skipped {
 						// Check that the wrapped handler contains the org
-						assert.Equal(t, CurrentOrg(ctx).ID, wantMembership.Org.ID)
+						assert.Equal(t, entities.CurrentOrg(ctx).ID, wantMembership.Org.ID)
 						assert.Equal(t, CurrentAuthzSubject(ctx), string(authz.RoleViewer))
 					}
 

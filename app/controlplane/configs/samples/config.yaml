@@ -30,6 +30,10 @@ cas_server:
   # Where to redirect the user to download artifacts from the CAS
   download_url: http://0.0.0.0:8001/download
 
+# nats endpoint where to send events
+nats_server:
+  uri: nats://0.0.0.0:4222
+
 # Where to store credentials such as OCI registries or third party integrations secrets
 credentials_service:
   vault:

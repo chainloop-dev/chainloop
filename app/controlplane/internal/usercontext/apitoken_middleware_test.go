@@ -23,6 +23,7 @@ import (
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
@@ -139,8 +140,8 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 
 					if !tc.skipped {
 						// Check that the wrapped handler contains the user and org
-						assert.Equal(t, CurrentOrg(ctx).ID, wantOrg.ID)
-						assert.Equal(t, CurrentAPIToken(ctx).ID, wantToken.ID.String())
+						assert.Equal(t, entities.CurrentOrg(ctx).ID, wantOrg.ID)
+						assert.Equal(t, entities.CurrentAPIToken(ctx).ID, wantToken.ID.String())
 						assert.Equal(t, CurrentAuthzSubject(ctx), fmt.Sprintf("api-token:%s", wantToken.ID))
 					}
 

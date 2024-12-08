@@ -22,6 +22,7 @@ import (
 	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
@@ -29,7 +30,7 @@ import (
 func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			org := CurrentOrg(ctx)
+			org := entities.CurrentOrg(ctx)
 			if org == nil {
 				// Make sure that this middleware is ran after WithCurrentUser
 				return nil, errors.New("organization not found")

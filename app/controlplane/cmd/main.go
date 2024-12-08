@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca/ejbca"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca/fileca"
 	"github.com/getsentry/sentry-go"
+	"github.com/nats-io/nats.go"
 	flag "github.com/spf13/pflag"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -145,6 +147,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins, ca)
 	if err != nil {
 		panic(err)
@@ -176,6 +179,21 @@ type app struct {
 	runsExpirer      *biz.WorkflowRunExpirerUseCase
 	availablePlugins sdk.AvailablePlugins
 	tokenAuthSyncer  *biz.APITokenSyncerUseCase
+}
+
+// Connection to nats is optional, if not configured, pubsub will be disabled
+func newNatsConnection(c *conf.Bootstrap_NatsServer) (*nats.Conn, error) {
+	uri := c.GetUri()
+	if uri == "" {
+		return nil, nil
+	}
+
+	nc, err := nats.Connect(uri)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to nats: %w", err)
+	}
+
+	return nc, nil
 }
 
 func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {

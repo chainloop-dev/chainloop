@@ -71,6 +71,15 @@ message Bootstrap {
 
   // Enable :6060 pprof endpoint
   bool enable_profiler = 13;
+
+  // nats server configuration for sending events
+  NatsServer nats_server = 14;
+
+  message NatsServer {
+    // Connection URI
+    string uri = 1 [(buf.validate.field).string.min_len = 1];
+    // TODO: add authentication options
+  }
 }
 
 message PolicyProvider {

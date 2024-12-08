@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
@@ -65,9 +65,9 @@ func TestNewSentryContext(t *testing.T) {
 }
 
 func TestBuildAuthContext(t *testing.T) {
-	org := &usercontext.Org{ID: "org1", Name: "OrgName"}
-	user := &usercontext.User{ID: "user1"}
-	apiToken := &usercontext.APIToken{ID: "token1"}
+	org := &entities.Org{ID: "org1", Name: "OrgName"}
+	user := &entities.User{ID: "user1"}
+	apiToken := &entities.APIToken{ID: "token1"}
 	role := "admin"
 
 	t.Run("with user and org", func(t *testing.T) {

@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,8 +35,8 @@ func TestRequireCurrentUser(t *testing.T) {
 	})
 
 	t.Run("with user", func(t *testing.T) {
-		want := &usercontext.User{}
-		ctx = usercontext.WithCurrentUser(ctx, want)
+		want := &entities.User{}
+		ctx = entities.WithCurrentUser(ctx, want)
 		u, err := requireCurrentUser(ctx)
 		assert.NoError(t, err)
 		require.Equal(t, want, u)
@@ -54,8 +54,8 @@ func TestRequireCurrentOrg(t *testing.T) {
 	})
 
 	t.Run("with org", func(t *testing.T) {
-		want := &usercontext.Org{}
-		ctx = usercontext.WithCurrentOrg(ctx, want)
+		want := &entities.Org{}
+		ctx = entities.WithCurrentOrg(ctx, want)
 		o, err := requireCurrentOrg(ctx)
 		assert.NoError(t, err)
 		require.Equal(t, want, o)
@@ -73,8 +73,8 @@ func TestRequireAPIToken(t *testing.T) {
 	})
 
 	t.Run("with token", func(t *testing.T) {
-		want := &usercontext.APIToken{}
-		ctx = usercontext.WithCurrentAPIToken(ctx, want)
+		want := &entities.APIToken{}
+		ctx = entities.WithCurrentAPIToken(ctx, want)
 		got, err := requireAPIToken(ctx)
 		assert.NoError(t, err)
 		require.Equal(t, want, got)
@@ -115,15 +115,15 @@ func TestRequireCurrentUserOrAPIToken(t *testing.T) {
 	for _, tc := range tesCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx = context.Background()
-			wantUser := &usercontext.User{}
-			wantToken := &usercontext.APIToken{}
+			wantUser := &entities.User{}
+			wantToken := &entities.APIToken{}
 
 			if tc.hasUser {
-				ctx = usercontext.WithCurrentUser(ctx, wantUser)
+				ctx = entities.WithCurrentUser(ctx, wantUser)
 			}
 
 			if tc.hasToken {
-				ctx = usercontext.WithCurrentAPIToken(ctx, wantToken)
+				ctx = entities.WithCurrentAPIToken(ctx, wantToken)
 			}
 
 			gotUser, gotToken, err := requireCurrentUserOrAPIToken(ctx)

@@ -21,6 +21,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
 )
@@ -165,9 +166,9 @@ func TestCheckUserInAllowList(t *testing.T) {
 			m := CheckUserInAllowList(allowList)
 			ctx := context.Background()
 			if tc.email != "" {
-				ctx = WithCurrentUser(ctx, &User{Email: tc.email, ID: "124"})
+				ctx = entities.WithCurrentUser(ctx, &entities.User{Email: tc.email, ID: "124"})
 			} else if tc.isAPIToken {
-				ctx = WithCurrentAPIToken(ctx, &APIToken{ID: "124"})
+				ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: "124"})
 			}
 
 			if tc.runningRoute != "" {

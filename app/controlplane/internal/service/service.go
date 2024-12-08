@@ -20,6 +20,7 @@ import (
 	"io"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -57,8 +58,8 @@ var ProviderSet = wire.NewSet(
 	wire.Struct(new(NewAttestationStateServiceOpt), "*"),
 )
 
-func requireCurrentUser(ctx context.Context) (*usercontext.User, error) {
-	currentUser := usercontext.CurrentUser(ctx)
+func requireCurrentUser(ctx context.Context) (*entities.User, error) {
+	currentUser := entities.CurrentUser(ctx)
 	if currentUser == nil {
 		return nil, errors.NotFound("not found", "logged in user")
 	}
@@ -66,8 +67,8 @@ func requireCurrentUser(ctx context.Context) (*usercontext.User, error) {
 	return currentUser, nil
 }
 
-func requireAPIToken(ctx context.Context) (*usercontext.APIToken, error) {
-	token := usercontext.CurrentAPIToken(ctx)
+func requireAPIToken(ctx context.Context) (*entities.APIToken, error) {
+	token := entities.CurrentAPIToken(ctx)
 	if token == nil {
 		return nil, errors.NotFound("not found", "API token")
 	}
@@ -75,7 +76,7 @@ func requireAPIToken(ctx context.Context) (*usercontext.APIToken, error) {
 	return token, nil
 }
 
-func requireCurrentUserOrAPIToken(ctx context.Context) (*usercontext.User, *usercontext.APIToken, error) {
+func requireCurrentUserOrAPIToken(ctx context.Context) (*entities.User, *entities.APIToken, error) {
 	user, err := requireCurrentUser(ctx)
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, nil, err
@@ -93,8 +94,8 @@ func requireCurrentUserOrAPIToken(ctx context.Context) (*usercontext.User, *user
 	return user, apiToken, nil
 }
 
-func requireCurrentOrg(ctx context.Context) (*usercontext.Org, error) {
-	currentOrg := usercontext.CurrentOrg(ctx)
+func requireCurrentOrg(ctx context.Context) (*entities.Org, error) {
+	currentOrg := entities.CurrentOrg(ctx)
 	if currentOrg == nil {
 		return nil, errors.NotFound("not found", "current organization not set")
 	}

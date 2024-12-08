@@ -19,38 +19,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-type Org struct {
-	ID, Name  string
-	CreatedAt *time.Time
-}
-
-func WithCurrentOrg(ctx context.Context, org *Org) context.Context {
-	return context.WithValue(ctx, currentOrgCtxKey{}, org)
-}
-
-func CurrentOrg(ctx context.Context) *Org {
-	res := ctx.Value(currentOrgCtxKey{})
-	if res == nil {
-		return nil
-	}
-	return res.(*Org)
-}
-
-type currentOrgCtxKey struct{}
-
 func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
-			u := CurrentUser(ctx)
+			u := entities.CurrentUser(ctx)
 			if u == nil {
 				return handler(ctx, req)
 			}
@@ -61,7 +42,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				return nil, fmt.Errorf("error setting current org: %w", err)
 			}
 
-			org := CurrentOrg(ctx)
+			org := entities.CurrentOrg(ctx)
 			if org == nil {
 				return nil, errors.New("org not found")
 			}
@@ -74,7 +55,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 }
 
 // Find the current membership of the user and sets it on the context
-func setCurrentOrganization(ctx context.Context, user *User, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
+func setCurrentOrganization(ctx context.Context, user *entities.User, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
 	// We load the current organization
 	membership, err := userUC.CurrentMembership(ctx, user.ID)
 	if err != nil {
@@ -90,7 +71,7 @@ func setCurrentOrganization(ctx context.Context, user *User, userUC biz.UserOrgF
 		return nil, errors.New("org not found")
 	}
 
-	ctx = WithCurrentOrg(ctx, &Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
+	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
 
 	// Set the authorization subject that will be used to check the policies
 	ctx = WithAuthzSubject(ctx, string(membership.Role))
