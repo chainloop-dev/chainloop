@@ -11,6 +11,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
@@ -114,7 +115,19 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, v5...)
+	bootstrap_NatsServer := bootstrap.NatsServer
+	conn, err := newNatsConnection(bootstrap_NatsServer)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
