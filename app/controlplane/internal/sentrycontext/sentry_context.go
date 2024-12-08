@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -44,9 +45,9 @@ func NewSentryContext() middleware.Middleware {
 
 // addSentryContext adds context to Sentry for the current request
 func addSentryContext(ctx context.Context, req interface{}) {
-	org := usercontext.CurrentOrg(ctx)
-	user := usercontext.CurrentUser(ctx)
-	apiToken := usercontext.CurrentAPIToken(ctx)
+	org := entities.CurrentOrg(ctx)
+	user := entities.CurrentUser(ctx)
+	apiToken := entities.CurrentAPIToken(ctx)
 	role := usercontext.CurrentAuthzSubject(ctx)
 
 	// ConfigureScope allows to set context that will be sent along with the error if one occurs
@@ -57,7 +58,7 @@ func addSentryContext(ctx context.Context, req interface{}) {
 }
 
 // buildAuthContext creates a map of the user and membership information
-func buildAuthContext(user *usercontext.User, apiToken *usercontext.APIToken, org *usercontext.Org, role string) map[string]interface{} {
+func buildAuthContext(user *entities.User, apiToken *entities.APIToken, org *entities.Org, role string) map[string]interface{} {
 	if org == nil {
 		return nil
 	}
