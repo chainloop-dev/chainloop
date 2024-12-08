@@ -1,0 +1,15 @@
+{
+  "ActionType": "LoggedIn",
+  "TargetType": "User",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io has logged in",
+  "Info": {
+    "user_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "email": "john@cyberdyne.io"
+  },
+  "Digest": "sha256:6e8b2bbceada67559cceee9293ca1788e4d282945c83998f8534aa9ccceb4214"
+}
