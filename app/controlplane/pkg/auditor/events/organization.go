@@ -114,7 +114,7 @@ func (p *OrgUserInvited) ActionType() string {
 }
 
 func (p *OrgUserInvited) Description() string {
-	return fmt.Sprintf("{{ .ActorEmail }} has invited the user %s to the organization %s with role %s", p.ReceiverEmail, p.OrgName, p.Role)
+	return fmt.Sprintf("{{ .ActorEmail }} has invited %s to the organization %s with role %s", p.ReceiverEmail, p.OrgName, p.Role)
 }
 
 func (p *OrgUserInvited) ActionInfo() (json.RawMessage, error) {
