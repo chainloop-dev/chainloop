@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -51,10 +52,11 @@ type MembershipUseCase struct {
 	repo       MembershipRepo
 	orgUseCase *OrganizationUseCase
 	logger     *log.Helper
+	auditor    *AuditorUseCase
 }
 
-func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, logger log.Logger) *MembershipUseCase {
-	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger)}
+func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, logger log.Logger) *MembershipUseCase {
+	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger), auditor}
 }
 
 // LeaveAndDeleteOrg deletes a membership (and the org i) from the database associated with the current user
@@ -82,6 +84,13 @@ func (uc *MembershipUseCase) LeaveAndDeleteOrg(ctx context.Context, userID, memb
 	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
 		return fmt.Errorf("failed to delete membership: %w", err)
 	}
+
+	uc.auditor.Dispatch(ctx, &events.OrgUserLeft{
+		OrgBase: &events.OrgBase{
+			OrgID:   &m.OrganizationID,
+			OrgName: m.Org.Name,
+		},
+	}, &m.OrganizationID)
 
 	// Check number of members in the org
 	// If it's the only one, delete the org

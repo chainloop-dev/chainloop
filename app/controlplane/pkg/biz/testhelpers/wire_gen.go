@@ -41,6 +41,17 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
+	conn, err := newNatsConnection()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
@@ -52,8 +63,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		Logger:  logger,
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
-	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, arg, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, arg, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v := NewPolicyProviderConfig(bootstrap)
 	registry, err := policies.NewRegistry(logger, v...)
@@ -79,17 +90,6 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v2, organizationUseCase, orgMetricsUseCase, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
-	conn, err := newNatsConnection()
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -104,7 +104,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
-	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, logger)
+	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
