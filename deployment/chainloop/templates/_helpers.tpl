@@ -440,13 +440,3 @@ Compile all warning messages into a single one
 {{-   printf "\n\nVALUES VALIDATION:\n%s" $message -}}
 {{- end -}}
 {{- end -}}
-
-
-{{/*
-Return the Nats connection string
-*/}}
-{{- define "controlplane.nats.connection_string" -}}
-{{- $host := required "nats server hostname not set" .Values.controlplane.nats.host }}
-{{- $port := required "nats server port not set" .Values.controlplane.nats.port }}
-{{- printf "nats://%s:%d" $host ($port | int) }}
-{{- end -}}

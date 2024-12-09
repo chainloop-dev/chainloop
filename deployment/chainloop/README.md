@@ -529,16 +529,11 @@ chainloop config save \
 | `controlplane.containerPorts.http`             | controlplane HTTP container port                                                                                                                                                                                                                               | `8000`            |
 | `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                                                                                                                                                                               | `9000`            |
 | `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                                                                                                                                                                                 | `5000`            |
-| `controlplane.enableProfiler`                  | Enable pprof profiling on port 6060                                                                                                                                                                                                                            | `false`           |
 | `controlplane.tls.existingSecret`              | Existing secret name containing TLS certificate to be used by the controlplane grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key. | `""`              |
 | `controlplane.pluginsDir`                      | Directory where to look for plugins                                                                                                                                                                                                                            | `/plugins`        |
 | `controlplane.referrerSharedIndex`             | Configure the shared, public index API endpoint that can be used to discover metadata referrers                                                                                                                                                                |                   |
 | `controlplane.referrerSharedIndex.enabled`     | Enable index API endpoint                                                                                                                                                                                                                                      | `false`           |
 | `controlplane.referrerSharedIndex.allowedOrgs` | List of UUIDs of organizations that are allowed to publish to the shared index                                                                                                                                                                                 | `[]`              |
-| `controlplane.nats`                            | optional NATS configuration for events publishing.                                                                                                                                                                                                             |                   |
-| `controlplane.nats.enabled`                    | Enable events publishing through a Nats stream                                                                                                                                                                                                                 | `false`           |
-| `controlplane.nats.host`                       | NATS Host                                                                                                                                                                                                                                                      | `""`              |
-| `controlplane.nats.port`                       | NATS Port                                                                                                                                                                                                                                                      | `4222`            |
 | `controlplane.onboarding.name`                 | Name of the organization to onboard                                                                                                                                                                                                                            |                   |
 | `controlplane.onboarding.role`                 | Role of the organization to onboard                                                                                                                                                                                                                            |                   |
 | `controlplane.prometheus_org_metrics`          | List of organizations to expose metrics for using Prometheus                                                                                                                                                                                                   |                   |
@@ -549,17 +544,14 @@ chainloop config save \
 
 ### Control Plane Database
 
-| Name                                         | Description                                                                                           | Value  |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
-| `controlplane.externalDatabase`              | External PostgreSQL configuration. These values are only used when postgresql.enabled is set to false |        |
-| `controlplane.externalDatabase.host`         | Database host                                                                                         | `""`   |
-| `controlplane.externalDatabase.port`         | Database port number                                                                                  | `5432` |
-| `controlplane.externalDatabase.user`         | Non-root username                                                                                     | `""`   |
-| `controlplane.externalDatabase.database`     | Database name                                                                                         | `""`   |
-| `controlplane.externalDatabase.password`     | Password for the non-root username                                                                    | `""`   |
-| `controlplane.externalDatabase.maxOpenConns` | Maximum number of open connections to the database. Default: max(4, num_cpus)                         |        |
-| `controlplane.externalDatabase.minOpenConns` | Min number of connections. Default: 0                                                                 |        |
-| `controlplane.externalDatabase.maxIdleTime`  | Max time a connection may be idle. Default: 30m                                                       |        |
+| Name                                     | Description                                                                                           | Value  |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
+| `controlplane.externalDatabase`          | External PostgreSQL configuration. These values are only used when postgresql.enabled is set to false |        |
+| `controlplane.externalDatabase.host`     | Database host                                                                                         | `""`   |
+| `controlplane.externalDatabase.port`     | Database port number                                                                                  | `5432` |
+| `controlplane.externalDatabase.user`     | Non-root username                                                                                     | `""`   |
+| `controlplane.externalDatabase.database` | Database name                                                                                         | `""`   |
+| `controlplane.externalDatabase.password` | Password for the non-root username                                                                    | `""`   |
 
 ### Control Plane Authentication
 
