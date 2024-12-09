@@ -169,6 +169,15 @@ controlplane:
   referrerSharedIndex:
     enabled: false
     allowedOrgs: []
+  
+  ## @extra controlplane.nats optional NATS configuration for events publishing.
+  ## @param controlplane.nats.enabled Enable events publishing through a Nats stream
+  ## @param controlplane.nats.host NATS Host
+  ## @param controlplane.nats.port NATS Port
+  nats:
+    enabled: false
+    host: ""
+    port: 4222
 
   ## @extra controlplane.onboarding.name Name of the organization to onboard
   ## @extra controlplane.onboarding.role Role of the organization to onboard
