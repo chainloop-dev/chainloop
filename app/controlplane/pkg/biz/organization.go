@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -49,9 +50,10 @@ type OrganizationUseCase struct {
 	integrationUC     *IntegrationUseCase
 	membershipRepo    MembershipRepo
 	onboardingConfig  []*config.OnboardingSpec
+	auditor           *AuditorUseCase
 }
 
-func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*config.OnboardingSpec, l log.Logger) *OrganizationUseCase {
+func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, auditor *AuditorUseCase, iUC *IntegrationUseCase, mRepo MembershipRepo, onboardingConfig []*config.OnboardingSpec, l log.Logger) *OrganizationUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -62,6 +64,7 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, iU
 		integrationUC:     iUC,
 		membershipRepo:    mRepo,
 		onboardingConfig:  onboardingConfig,
+		auditor:           auditor,
 	}
 }
 
@@ -146,6 +149,15 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 			return nil, fmt.Errorf("failed to create fallback backend: %w", err)
 		}
 	}
+
+	orgUUID, err := uuid.Parse(org.ID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	uc.auditor.Dispatch(ctx, &events.OrgCreated{
+		OrgBase: &events.OrgBase{OrgID: &orgUUID, OrgName: org.Name}}, &orgUUID,
+	)
 
 	return org, nil
 }

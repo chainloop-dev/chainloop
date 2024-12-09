@@ -42,12 +42,20 @@ func NewAuditorUseCase(p *auditor.AuditLogPublisher, logger log.Logger) *Auditor
 func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, orgID *uuid.UUID) {
 	// dynamically load user information from the context
 	opts := []auditor.GeneratorOption{}
+	var gotActor bool
 	if user := entities.CurrentUser(ctx); user != nil {
 		parsedUUID, _ := uuid.Parse(user.ID)
 		opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, parsedUUID, user.Email))
+		gotActor = true
 	} else if apiToken := entities.CurrentAPIToken(ctx); apiToken != nil {
 		parsedUUID, _ := uuid.Parse(apiToken.ID)
 		opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, parsedUUID, ""))
+		gotActor = true
+	}
+
+	if !gotActor && entry.RequiresActor() {
+		uc.log.Warn("failed to get actor information, required by the audit log entry")
+		return
 	}
 
 	if orgID != nil {
