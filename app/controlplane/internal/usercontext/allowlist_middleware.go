@@ -22,6 +22,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 )
@@ -36,12 +37,12 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 			}
 
 			// API tokens skip the allowlist since they are meant to represent a service
-			if token := CurrentAPIToken(ctx); token != nil {
+			if token := entities.CurrentAPIToken(ctx); token != nil {
 				return handler(ctx, req)
 			}
 
 			// Make sure that this middleware is ran after WithCurrentUser
-			user := CurrentUser(ctx)
+			user := entities.CurrentUser(ctx)
 			if user == nil {
 				return nil, v1.ErrorAllowListErrorNotInList("user not found")
 			}

@@ -20,6 +20,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
@@ -101,7 +102,7 @@ func TestWithCurrentUserMiddleware(t *testing.T) {
 
 					if !tc.skipped {
 						// Check that the wrapped handler contains the user
-						assert.Equal(t, CurrentUser(ctx).ID, wantUser.ID)
+						assert.Equal(t, entities.CurrentUser(ctx).ID, wantUser.ID)
 					}
 
 					return nil, nil

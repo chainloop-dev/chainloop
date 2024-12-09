@@ -16,6 +16,9 @@ server:
     #   certificate: "../../devel/devkeys/selfsigned/controlplane.crt"
     #   private_key: "../../devel/devkeys/selfsigned/controlplane.key"
 
+nats_server:
+  uri: nats://0.0.0.0:4222
+
 certificate_authority:
   file_ca:
     cert_path: ${FILE_CA_CERT_PATH:../../devel/devkeys/ca.pub}

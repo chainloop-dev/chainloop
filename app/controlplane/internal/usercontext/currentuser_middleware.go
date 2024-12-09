@@ -19,38 +19,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
-
-// Utils to get and set information from context
-type User struct {
-	Email, ID string
-	CreatedAt *time.Time
-}
-
-func WithCurrentUser(ctx context.Context, user *User) context.Context {
-	return context.WithValue(ctx, currentUserCtxKey{}, user)
-}
-
-// RequestID tries to retrieve requestID from the given context.
-// If it doesn't exist, an empty string is returned.
-func CurrentUser(ctx context.Context) *User {
-	res := ctx.Value(currentUserCtxKey{})
-	if res == nil {
-		return nil
-	}
-	return res.(*User)
-}
-
-type currentUserCtxKey struct{}
 
 // Middleware that injects the current user + organization to the context
 func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
@@ -102,5 +80,5 @@ func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string
 		return nil, errors.New("user not found")
 	}
 
-	return WithCurrentUser(ctx, &User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt}), nil
+	return entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt}), nil
 }

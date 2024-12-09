@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -171,7 +172,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	var orgName string
 	// Find the organization
-	if org := usercontext.CurrentOrg(ctx); org != nil {
+	if org := entities.CurrentOrg(ctx); org != nil {
 		orgName = org.Name
 	}
 

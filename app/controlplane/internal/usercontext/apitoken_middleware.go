@@ -19,24 +19,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
-
-type APIToken struct {
-	ID        string
-	CreatedAt *time.Time
-	Token     string
-}
 
 // Store the authorization subject
 func WithAuthzSubject(ctx context.Context, subject string) context.Context {
@@ -51,19 +45,6 @@ func CurrentAuthzSubject(ctx context.Context) string {
 	return res.(string)
 }
 
-func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
-	return context.WithValue(ctx, currentAPITokenCtxKey{}, token)
-}
-
-func CurrentAPIToken(ctx context.Context) *APIToken {
-	res := ctx.Value(currentAPITokenCtxKey{})
-	if res == nil {
-		return nil
-	}
-	return res.(*APIToken)
-}
-
-type currentAPITokenCtxKey struct{}
 type currentAuthzSubjectKey struct{}
 
 // Middleware that injects the API-Token + organization to the context
@@ -204,8 +185,8 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Set the current organization and API-Token in the context
-	ctx = WithCurrentOrg(ctx, &Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-	ctx = WithCurrentAPIToken(ctx, &APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt, Token: token.JWT})
+	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt, Token: token.JWT})
 
 	// Set the authorization subject that will be used to check the policies
 	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}

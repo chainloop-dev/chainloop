@@ -78,6 +78,7 @@ require (
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/muesli/reflow v0.3.0
+	github.com/nats-io/nats.go v1.34.0
 	github.com/open-policy-agent/opa v0.68.0
 	github.com/openvex/go-vex v0.2.5
 	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
@@ -163,6 +164,8 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/user v0.3.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
+	github.com/nats-io/nkeys v0.4.7 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.0 // indirect

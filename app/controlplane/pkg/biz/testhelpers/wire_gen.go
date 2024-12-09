@@ -8,6 +8,7 @@ package testhelpers
 
 import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
@@ -18,6 +19,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/nats-io/nats.go"
 	"testing"
 )
 
@@ -77,12 +79,24 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v2, organizationUseCase, orgMetricsUseCase, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
+	conn, err := newNatsConnection()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
 		OrganizationUseCase: organizationUseCase,
 		OnboardingConfig:    arg,
 		Logger:              logger,
+		AuditorUseCase:      auditorUseCase,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
@@ -165,3 +179,10 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 var (
 	_wireReferrerSharedIndexValue = &conf.ReferrerSharedIndex{}
 )
+
+// wire.go:
+
+// Connection to nats is optional, if not configured, pubsub will be disabled
+func newNatsConnection() (*nats.Conn, error) {
+	return nil, nil
+}

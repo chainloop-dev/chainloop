@@ -22,6 +22,8 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -52,6 +54,7 @@ type UserUseCase struct {
 	membershipUseCase   *MembershipUseCase
 	organizationUseCase *OrganizationUseCase
 	onboardingConfig    []*config.OnboardingSpec
+	auditorUC           *AuditorUseCase
 }
 
 type NewUserUseCaseParams struct {
@@ -60,6 +63,7 @@ type NewUserUseCaseParams struct {
 	OrganizationUseCase *OrganizationUseCase
 	OnboardingConfig    []*config.OnboardingSpec
 	Logger              log.Logger
+	AuditorUseCase      *AuditorUseCase
 }
 
 func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
@@ -69,6 +73,7 @@ func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
 		organizationUseCase: opts.OrganizationUseCase,
 		onboardingConfig:    opts.OnboardingConfig,
 		logger:              log.NewHelper(opts.Logger),
+		auditorUC:           opts.AuditorUseCase,
 	}
 }
 
@@ -107,6 +112,17 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, di
 	if err != nil {
 		return nil, err
 	} else if u != nil {
+		uuid, _ := uuid.Parse(u.ID)
+		// set the context user so it can be used in the auditor
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
+		uc.auditorUC.Dispatch(ctx, &events.UserLoggedIn{
+			UserBase: &events.UserBase{
+				UserID: &uuid,
+				Email:  u.Email,
+			},
+			LoggedIn: time.Now(),
+		}, nil)
+
 		return u, nil
 	}
 
@@ -114,6 +130,16 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, di
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
+
+	// set the context user so it can be used in the auditor
+	ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
+	uuid, _ := uuid.Parse(u.ID)
+	uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
+		UserBase: &events.UserBase{
+			UserID: &uuid,
+			Email:  u.Email,
+		},
+	}, nil)
 
 	// Check if we should auto-onboard the user
 	if disableAutoOnboarding == nil || (len(disableAutoOnboarding) > 0 && !disableAutoOnboarding[0]) {
