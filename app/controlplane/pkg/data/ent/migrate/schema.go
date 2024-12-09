@@ -599,9 +599,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "workflowrun_created_at_id",
+				Name:    "workflowrun_workflow_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[0]},
+				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -609,9 +609,19 @@ var (
 				},
 			},
 			{
-				Name:    "workflowrun_created_at_state",
+				Name:    "workflowrun_workflow_id_state_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[3]},
+				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						WorkflowRunsColumns[1].Name: true,
+					},
+				},
+			},
+			{
+				Name:    "workflowrun_state_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -627,16 +637,6 @@ var (
 				Name:    "workflowrun_workflow_id",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[13]},
-			},
-			{
-				Name:    "workflowrun_created_at_workflow_id",
-				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[1], WorkflowRunsColumns[13]},
-				Annotation: &entsql.IndexAnnotation{
-					DescColumns: map[string]bool{
-						WorkflowRunsColumns[1].Name: true,
-					},
-				},
 			},
 		},
 	}
