@@ -55,6 +55,7 @@ type LogEntry interface {
 	TargetID() *uuid.UUID
 	// Description returns a templatable string, see the DescriptionVariables struct.
 	Description() string
+	RequiresActor() bool
 }
 
 type DescriptionVariables struct {

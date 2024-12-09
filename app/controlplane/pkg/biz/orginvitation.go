@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -32,6 +34,7 @@ type OrgInvitationUseCase struct {
 	repo     OrgInvitationRepo
 	mRepo    MembershipRepo
 	userRepo UserRepo
+	auditor  *AuditorUseCase
 }
 
 type OrgInvitation struct {
@@ -54,10 +57,10 @@ type OrgInvitationRepo interface {
 	ChangeStatus(ctx context.Context, ID uuid.UUID, status OrgInvitationStatus) error
 }
 
-func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, l log.Logger) (*OrgInvitationUseCase, error) {
+func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, l log.Logger) (*OrgInvitationUseCase, error) {
 	return &OrgInvitationUseCase{
 		logger: servicelogger.ScopedHelper(l, "biz/orgInvitation"),
-		repo:   r, mRepo: mRepo, userRepo: uRepo,
+		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC,
 	}, nil
 }
 
@@ -153,6 +156,16 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 		return nil, fmt.Errorf("error creating invitation: %w", err)
 	}
 
+	// 7 - Audit the event
+	uc.auditor.Dispatch(ctx, &events.OrgUserInvited{
+		OrgBase: &events.OrgBase{
+			OrgID:   &orgUUID,
+			OrgName: invitation.Org.Name,
+		},
+		ReceiverEmail: receiverEmail,
+		Role:          string(opts.role),
+	}, &orgUUID)
+
 	return invitation, nil
 }
 
@@ -236,6 +249,16 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 			if _, err := uc.mRepo.Create(ctx, orgUUID, userUUID, false, role); err != nil {
 				return fmt.Errorf("error creating membership for user %s: %w", receiverEmail, err)
 			}
+
+			// the user joins the org
+			// set the context user so it can be used in the auditor
+			ctx = entities.WithCurrentUser(ctx, &entities.User{Email: user.Email, ID: user.ID})
+			uc.auditor.Dispatch(ctx, &events.OrgUserJoined{
+				OrgBase: &events.OrgBase{
+					OrgID:   &orgUUID,
+					OrgName: invitation.Org.Name,
+				},
+			}, &orgUUID)
 		}
 
 		uc.logger.Infow("msg", "Accepting invitation", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID, "role", role)

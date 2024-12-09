@@ -43,20 +43,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	providers := loader.LoadProviders(readerWriter)
 	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
-	integrationRepo := data.NewIntegrationRepo(dataData, logger)
-	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
-	workflowRepo := data.NewWorkflowRepo(dataData, logger)
-	newIntegrationUseCaseOpts := &biz.NewIntegrationUseCaseOpts{
-		IRepo:   integrationRepo,
-		IaRepo:  integrationAttachmentRepo,
-		WfRepo:  workflowRepo,
-		CredsRW: readerWriter,
-		Logger:  logger,
-	}
-	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
-	v := bootstrap.Onboarding
-	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, integrationUseCase, membershipRepo, v, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, logger)
 	bootstrap_NatsServer := bootstrap.NatsServer
 	conn, err := newNatsConnection(bootstrap_NatsServer)
 	if err != nil {
@@ -69,6 +55,20 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
+	integrationRepo := data.NewIntegrationRepo(dataData, logger)
+	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
+	workflowRepo := data.NewWorkflowRepo(dataData, logger)
+	newIntegrationUseCaseOpts := &biz.NewIntegrationUseCaseOpts{
+		IRepo:   integrationRepo,
+		IaRepo:  integrationAttachmentRepo,
+		WfRepo:  workflowRepo,
+		CredsRW: readerWriter,
+		Logger:  logger,
+	}
+	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
+	v := bootstrap.Onboarding
+	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, v, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, logger)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -122,7 +122,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v5 := serviceOpts(logger)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
-	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, logger)
+	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
