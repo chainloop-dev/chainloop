@@ -78,13 +78,13 @@ func (WorkflowRun) Edges() []ent.Edge {
 
 func (WorkflowRun) Indexes() []ent.Index {
 	return []ent.Index{
-		// Cursor pagination support
-		index.Fields("created_at", "id").Annotations(entsql.DescColumns("created_at")),
+		// Workflow List
+		index.Fields("workflow_id", "created_at").Annotations(entsql.DescColumns("created_at")),
+		index.Fields("workflow_id", "state", "created_at").Annotations(entsql.DescColumns("created_at")),
 		// Expiration job
-		index.Fields("created_at", "state").Annotations(entsql.DescColumns("created_at")),
+		index.Fields("state", "created_at").Annotations(entsql.DescColumns("created_at")),
+		// Referrer
 		index.Fields("attestation_digest"),
 		index.Edges("workflow"),
-		// DailyRun counts
-		index.Edges("workflow").Fields("created_at").Annotations(entsql.DescColumns("created_at")),
 	}
 }
