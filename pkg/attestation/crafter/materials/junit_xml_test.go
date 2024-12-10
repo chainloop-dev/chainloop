@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -69,6 +70,7 @@ func TestJUnitXMLCraft(t *testing.T) {
 		name     string
 		filePath string
 		wantErr  string
+		digest   string
 	}{
 		{
 			name:     "invalid path",
@@ -78,16 +80,22 @@ func TestJUnitXMLCraft(t *testing.T) {
 		{
 			name:     "invalid artifact type",
 			filePath: "./testdata/simple.txt",
-			wantErr:  "unexpected material type",
+			wantErr:  "invalid JUnit XML file",
 		},
 		{
 			name:     "invalid artifact type",
 			filePath: "./testdata/junit-invalid.xml",
-			wantErr:  "unexpected material type",
+			wantErr:  "invalid JUnit XML file",
 		},
 		{
 			name:     "valid artifact type",
 			filePath: "./testdata/junit.xml",
+			digest:   "sha256:e9c941b25c06d8bd98205122cbc827504c6d03d37b7f4afd7ed03b3eeec789e2",
+		},
+		{
+			name:     "valid artifact type zip",
+			filePath: "./testdata/tests.zip",
+			digest:   "sha256:1b00f89a6f23f2e99c207ce90e11dcd41ac4e754d44e81f50f295e858692e96b",
 		},
 	}
 
@@ -125,9 +133,9 @@ func TestJUnitXMLCraft(t *testing.T) {
 			assert.True(got.UploadedToCas)
 
 			// The result includes the digest reference
-			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:e9c941b25c06d8bd98205122cbc827504c6d03d37b7f4afd7ed03b3eeec789e2", Name: "junit.xml",
-			})
+			assert.Equal(&attestationApi.Attestation_Material_Artifact{
+				Id: "test", Digest: tc.digest, Name: filepath.Base(tc.filePath),
+			}, got.GetArtifact())
 		})
 	}
 }

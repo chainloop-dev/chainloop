@@ -26,8 +26,8 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
+	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	intoto "github.com/in-toto/attestation/go/v1"
-	"github.com/joshdk/go-junit"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -85,7 +85,8 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 			rawMaterial = m.GetArtifact().GetContent()
 		} else if value == "" {
 			return nil, errors.New("artifact path required")
-		} else if m.MaterialType != v1.CraftingSchema_Material_HELM_CHART {
+		} else if m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
+			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML {
 			// read content from local filesystem (except for tgz charts)
 			rawMaterial, err = os.ReadFile(value)
 			if err != nil {
@@ -110,7 +111,7 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	// For XML based materials, we need to ingest them and read as json-like structure
 	switch m.MaterialType {
 	case v1.CraftingSchema_Material_JUNIT_XML:
-		suites, err := junit.Ingest(rawMaterial)
+		suites, err := materialsjunit.Ingest(value)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ingest junit xml: %w", err)
 		}
