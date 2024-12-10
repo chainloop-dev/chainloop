@@ -86,5 +86,7 @@ func (WorkflowRun) Indexes() []ent.Index {
 		// Referrer
 		index.Fields("attestation_digest"),
 		index.Edges("workflow"),
+		// Workflow run counts per project version
+		index.Fields("version_id", "workflow_id"),
 	}
 }

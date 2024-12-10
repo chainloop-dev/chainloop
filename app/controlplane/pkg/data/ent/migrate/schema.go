@@ -638,6 +638,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[13]},
 			},
+			{
+				Name:    "workflowrun_version_id_workflow_id",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowRunsColumns[12], WorkflowRunsColumns[13]},
+			},
 		},
 	}
 	// ReferrerReferencesColumns holds the columns for the "referrer_references" table.
