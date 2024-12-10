@@ -86,5 +86,7 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Edges("workflow"),
 		// DailyRun counts
 		index.Edges("workflow").Fields("created_at").Annotations(entsql.DescColumns("created_at")),
+		// Workflow run counts per project version
+		index.Fields("version_id", "workflow_id"),
 	}
 }
