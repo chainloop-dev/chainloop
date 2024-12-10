@@ -34,8 +34,8 @@ const (
 	OrgType                    auditor.TargetType = "Organization"
 	userJoinedOrgActionType    string             = "UserJoined"
 	userLeftOrgActionType      string             = "UserLeft"
-	userInvitedToOrgActionType string             = "UserInvited"
-	orgCreatedActionType       string             = "OrgCreated"
+	userInvitedToOrgActionType string             = "InvitationCreated"
+	orgCreatedActionType       string             = "OrganizationCreated"
 )
 
 type OrgBase struct {
