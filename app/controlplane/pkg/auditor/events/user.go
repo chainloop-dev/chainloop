@@ -30,17 +30,20 @@ var (
 	_ auditor.LogEntry = (*UserLoggedIn)(nil)
 )
 
-const UserType auditor.TargetType = "User"
-
 const (
-	userSignedUpActionType = "SignedUp"
-	userLoggedInActionType = "LoggedIn"
+	UserType               auditor.TargetType = "User"
+	UserSignedUpActionType string             = "SignedUp"
+	UserLoggedInActionType string             = "LoggedIn"
 )
 
 // UserBase is the base struct for policy events
 type UserBase struct {
 	UserID *uuid.UUID `json:"user_id,omitempty"`
 	Email  string     `json:"email,omitempty"`
+}
+
+func (p *UserBase) RequiresActor() bool {
+	return true
 }
 
 func (p *UserBase) TargetType() auditor.TargetType {
@@ -64,7 +67,7 @@ type UserSignedUp struct {
 }
 
 func (p *UserSignedUp) ActionType() string {
-	return userSignedUpActionType
+	return UserSignedUpActionType
 }
 
 func (p *UserSignedUp) Description() string {
@@ -78,7 +81,7 @@ type UserLoggedIn struct {
 }
 
 func (p *UserLoggedIn) ActionType() string {
-	return userLoggedInActionType
+	return UserLoggedInActionType
 }
 
 func (p *UserLoggedIn) Description() string {

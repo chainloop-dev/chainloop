@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	repoM "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,14 +34,15 @@ type organizationTestSuite struct {
 
 func (s *organizationTestSuite) TestCreateWithRandomName() {
 	repo := repoM.NewOrganizationRepo(s.T())
-	uc := biz.NewOrganizationUseCase(repo, nil, nil, nil, nil, log.NewStdLogger(io.Discard))
+	l := log.NewStdLogger(io.Discard)
+	uc := biz.NewOrganizationUseCase(repo, nil, biz.NewAuditorUseCase(nil, l), nil, nil, nil, l)
 
 	s.Run("the org exists, we retry", func() {
 		ctx := context.Background()
 		// the first one fails because it already exists
 		repo.On("Create", ctx, mock.Anything).Once().Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
 		// but the second call creates the org
-		repo.On("Create", ctx, mock.Anything).Once().Return(&biz.Organization{Name: "foobar"}, nil)
+		repo.On("Create", ctx, mock.Anything).Once().Return(&biz.Organization{Name: "foobar", ID: uuid.NewString()}, nil)
 		got, err := uc.CreateWithRandomName(ctx)
 		s.NoError(err)
 		s.Equal("foobar", got.Name)
