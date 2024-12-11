@@ -36,14 +36,14 @@ func Ingest(filePath string) ([]junit.Suite, error) {
 	// read first chunk
 	f, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("opening file %q: %v", filePath, err)
+		return nil, fmt.Errorf("opening file %q: %w", filePath, err)
 	}
 	r := bufio.NewReader(f)
 
 	buf := make([]byte, 512)
 	_, err = io.ReadFull(r, buf)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return nil, fmt.Errorf("reading file %q: %v", filePath, err)
+		return nil, fmt.Errorf("reading file %q: %w", filePath, err)
 	}
 	_ = f.Close()
 
