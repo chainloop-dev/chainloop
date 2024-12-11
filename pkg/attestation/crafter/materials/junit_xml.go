@@ -17,14 +17,12 @@ package materials
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	junit "github.com/joshdk/go-junit"
+	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	"github.com/rs/zerolog"
 )
 
@@ -50,13 +48,9 @@ func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 }
 
 func (i *JUnitXMLCrafter) validate(filePath string) error {
-	suites, err := junit.IngestFile(filePath)
+	suites, err := materialsjunit.Ingest(filePath)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("invalid file path: %w", err)
-		}
-		i.logger.Debug().Err(err).Msgf("error decoding file: %s", filePath)
-		return fmt.Errorf("invalid JUnit XML file: %w", ErrInvalidMaterialType)
+		return fmt.Errorf("failed to ingest JUnit XML: %w", err)
 	}
 
 	if len(suites) == 0 {
