@@ -17,31 +17,45 @@ package junit
 
 import (
 	"archive/zip"
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/joshdk/go-junit"
 )
 
 func Ingest(filePath string) ([]junit.Suite, error) {
 	var suites []junit.Suite
-	// check if it's a zip file and try to ingest all its contents
-	mime, err := mimetype.DetectFile(filePath)
+
+	// read first chunk
+	f, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("could not detect mime type: %w", err)
+		return nil, fmt.Errorf("opening file %q: %v", filePath, err)
 	}
-	switch {
-	case mime.Is("application/zip"):
+	r := bufio.NewReader(f)
+
+	buf := make([]byte, 512)
+	_, err = io.ReadFull(r, buf)
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return nil, fmt.Errorf("reading file %q: %v", filePath, err)
+	}
+	_ = f.Close()
+
+	// check if it's a zip file and try to ingest all its contents
+	mime := http.DetectContentType(buf)
+	switch strings.Split(mime, ";")[0] {
+	case "application/zip":
 		suites, err = ingestArchive(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("could not ingest JUnit XML: %w", err)
 		}
-	case mime.Is("text/xml"):
+	case "text/xml", "application/xml":
 		suites, err = junit.IngestFile(filePath)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
