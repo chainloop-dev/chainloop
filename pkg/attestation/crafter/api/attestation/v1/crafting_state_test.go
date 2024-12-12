@@ -67,7 +67,9 @@ func TestNormalizeOutput(t *testing.T) {
 				Artifact: &Attestation_Material_Artifact{
 					Name: "name", Digest: "deadbeef", IsSubject: true, Content: []byte("content"),
 				},
-				MainComponent: "the-main-component",
+				MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
+					Name: "the-main-component",
+				},
 			},
 		},
 	}
@@ -168,7 +170,9 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 						Artifact: &Attestation_Material_Artifact{
 							Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Content: []byte("{}"),
 						},
-						MainComponent: "the-main-component",
+						MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
+							Name: "the-main-component",
+						},
 					},
 				},
 				InlineCas: true,
