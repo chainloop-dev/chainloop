@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(has_latest_tag)$": {
+      "$ref": "google.protobuf.BoolValue.jsonschema.json",
+      "description": "Indicates if the image has the latest tag. The image being checked\n might not explicitly have the latest tag, but it could also be tagged\n with the latest tag."
+    },
     "^(is_subject)$": {
       "type": "boolean"
     },
@@ -18,6 +22,10 @@
   "properties": {
     "digest": {
       "type": "string"
+    },
+    "hasLatestTag": {
+      "$ref": "google.protobuf.BoolValue.jsonschema.json",
+      "description": "Indicates if the image has the latest tag. The image being checked\n might not explicitly have the latest tag, but it could also be tagged\n with the latest tag."
     },
     "id": {
       "type": "string"

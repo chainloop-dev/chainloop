@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -39,6 +41,8 @@ const (
 	// notarySignatureMimeType is the MIME type for Notary signatures on OCI artifacts.
 	// https://github.com/notaryproject/specifications/blob/main/specs/signature-specification.md#oci-signatures
 	notarySignatureMimeType = "application/vnd.cncf.notary.signature"
+	// latestTag is the tag name for the latest image.
+	latestTag = "latest"
 )
 
 // signatureProvider is the type for the signature provider of a container image.
@@ -108,9 +112,16 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	// Check if the signature tag exists for the image digest
 	signatureInfo := i.checkForSignature(ref, descriptor)
 
+	// Check if the image is tagged as "latest"
+	hasLatestTag := i.hasLatestTag(ref, remoteRef.DigestStr())
+
 	containerImage := &api.Attestation_Material_ContainerImage{
-		Id: i.input.Name, Name: repoName, Digest: remoteRef.DigestStr(), IsSubject: i.input.Output,
-		Tag: ref.Identifier(),
+		Id:           i.input.Name,
+		Name:         repoName,
+		Digest:       remoteRef.DigestStr(),
+		IsSubject:    i.input.Output,
+		Tag:          ref.Identifier(),
+		HasLatestTag: wrapperspb.Bool(hasLatestTag),
 	}
 
 	// If the signature digest exists, add it to the material
@@ -238,4 +249,33 @@ func (i *OCIImageCrafter) fetchSignatureManifest(originalRef name.Reference, dig
 		provider: provider,
 		payload:  base64.StdEncoding.EncodeToString(signatureManifest.Manifest),
 	}
+}
+
+// hasLatestTag checks if the image has a "latest" tag.
+func (i *OCIImageCrafter) hasLatestTag(ref name.Reference, currentDigest string) bool {
+	// Check first if the image has a "latest" tag already
+	if ref.Identifier() == latestTag {
+		i.logger.Debug().Str("name", ref.String()).Msg("image has a 'latest' tag")
+		return true
+	}
+	// Try to retrieve the same image with the "latest" tag
+	latestRef, err := name.NewTag(fmt.Sprintf("%s:%s", ref.Context().Name(), latestTag))
+	if err != nil {
+		i.logger.Debug().Err(err).Msg("failed to create new tag reference")
+		return false
+	}
+	// Check if the "latest" tag exists and points to the same digest
+	latestDesc, err := remote.Get(latestRef, remote.WithAuthFromKeychain(i.keychain))
+	if err != nil {
+		i.logger.Debug().Err(err).Msg("failed to fetch latest tag or the tag does not exist")
+		return false
+	}
+	// If the "latest" tag points to the same digest, it's a "latest" tag
+	if latestDesc.Digest.String() == currentDigest {
+		i.logger.Debug().Str("name", latestRef.String()).Msg("image has a 'latest' tag")
+		return true
+	}
+
+	i.logger.Debug().Str("name", latestRef.String()).Msg("image does not have a 'latest' tag")
+	return false
 }
