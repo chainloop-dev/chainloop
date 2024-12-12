@@ -42,6 +42,16 @@ var (
 	ErrBaseUploadAndCraft = errors.New("upload and craft error")
 )
 
+// SBOMMainComponentInfo is a struct that holds the main component information for a SBOM
+type SBOMMainComponentInfo struct {
+	// name of the main component the SBOM is about
+	name string
+	// kind specifies the type of component
+	kind string
+	// version of the component
+	version string
+}
+
 type crafterCommon struct {
 	logger *zerolog.Logger
 	input  *schemaapi.CraftingSchema_Material

@@ -264,6 +264,9 @@ func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusResultMate
 	case *v1.Attestation_Material_Artifact_:
 		o.Value = m.Artifact.GetName()
 		o.Hash = m.Artifact.GetDigest()
+	case *v1.Attestation_Material_SbomArtifact:
+		o.Value = m.SbomArtifact.GetArtifact().GetName()
+		o.Hash = m.SbomArtifact.GetArtifact().GetDigest()
 	default:
 		return fmt.Errorf("unknown material type: %T", m)
 	}

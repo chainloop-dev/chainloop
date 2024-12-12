@@ -1,0 +1,22 @@
+{
+  "$id": "attestation.v1.Attestation.Material.SBOMArtifact.MainComponent.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The main component of the SBOM",
+  "properties": {
+    "kind": {
+      "description": "The kind of the main component",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the main component",
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of the main component",
+      "type": "string"
+    }
+  },
+  "title": "Main Component",
+  "type": "object"
+}

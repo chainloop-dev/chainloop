@@ -35,15 +35,18 @@ import (
 const AnnotationPrefix = "chainloop."
 
 var (
-	AnnotationMaterialType        = CreateAnnotation("material.type")
-	AnnotationMaterialName        = CreateAnnotation("material.name")
-	AnnotationMaterialSignature   = CreateAnnotation("material.signature")
-	AnnotationSignatureDigest     = CreateAnnotation("material.signature.digest")
-	AnnotationSignatureProvider   = CreateAnnotation("material.signature.provider")
-	AnnotationMaterialCAS         = CreateAnnotation("material.cas")
-	AnnotationMaterialInlineCAS   = CreateAnnotation("material.cas.inline")
-	AnnotationContainerTag        = CreateAnnotation("material.image.tag")
-	AnnotationsContainerLatestTag = CreateAnnotation("material.image.is_latest_tag")
+	AnnotationMaterialType              = CreateAnnotation("material.type")
+	AnnotationMaterialName              = CreateAnnotation("material.name")
+	AnnotationMaterialSignature         = CreateAnnotation("material.signature")
+	AnnotationSignatureDigest           = CreateAnnotation("material.signature.digest")
+	AnnotationSignatureProvider         = CreateAnnotation("material.signature.provider")
+	AnnotationMaterialCAS               = CreateAnnotation("material.cas")
+	AnnotationMaterialInlineCAS         = CreateAnnotation("material.cas.inline")
+	AnnotationContainerTag              = CreateAnnotation("material.image.tag")
+	AnnotationsContainerLatestTag       = CreateAnnotation("material.image.is_latest_tag")
+	AnnotationsSBOMMainComponentName    = CreateAnnotation("material.sbom.main_component.name")
+	AnnotationsSBOMMainComponentType    = CreateAnnotation("material.sbom.main_component.type")
+	AnnotationsSBOMMainComponentVersion = CreateAnnotation("material.sbom.main_component.version")
 )
 
 type NormalizedMaterialOutput struct {
@@ -72,6 +75,11 @@ func (m *Attestation_Material) NormalizedOutput() (*NormalizedMaterialOutput, er
 		return &NormalizedMaterialOutput{a.Name, a.Digest, a.IsSubject, a.Content}, nil
 	}
 
+	if a := m.GetSbomArtifact(); a != nil {
+		ar := a.GetArtifact()
+		return &NormalizedMaterialOutput{ar.Name, ar.Digest, ar.IsSubject, ar.Content}, nil
+	}
+
 	return nil, fmt.Errorf("unknown material: %s", m.MaterialType)
 }
 
@@ -81,7 +89,8 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	var err error
 
 	// nolint: gocritic
-	if m.GetArtifact() != nil {
+	switch {
+	case m.GetArtifact() != nil:
 		if m.InlineCas {
 			rawMaterial = m.GetArtifact().GetContent()
 		} else if value == "" {
@@ -93,6 +102,12 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read material content: %w", err)
 			}
+		}
+	case m.GetSbomArtifact() != nil:
+		if m.InlineCas {
+			rawMaterial = m.GetSbomArtifact().GetArtifact().GetContent()
+		} else if value == "" {
+			return nil, errors.New("sbom artifact path required")
 		}
 	}
 
@@ -223,6 +238,16 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 		}
 
 		annotationsM[AnnotationsContainerLatestTag] = m.GetContainerImage().GetHasLatestTag().GetValue()
+	}
+
+	// Set specials annotations for SBOM artifacts
+	if m.GetSbomArtifact() != nil {
+		// Main component information
+		if mainComponent := m.GetSbomArtifact().GetMainComponent(); mainComponent != nil {
+			annotationsM[AnnotationsSBOMMainComponentName] = mainComponent.GetName()
+			annotationsM[AnnotationsSBOMMainComponentType] = mainComponent.GetKind()
+			annotationsM[AnnotationsSBOMMainComponentVersion] = mainComponent.GetVersion()
+		}
 	}
 
 	// Custom annotations, it does not override the built-in ones

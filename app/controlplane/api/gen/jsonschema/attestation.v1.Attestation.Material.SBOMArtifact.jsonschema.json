@@ -1,0 +1,23 @@
+{
+  "$id": "attestation.v1.Attestation.Material.SBOMArtifact.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(main_component)$": {
+      "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.MainComponent.jsonschema.json",
+      "description": "The Main component if any the SBOM is related to"
+    }
+  },
+  "properties": {
+    "artifact": {
+      "$ref": "attestation.v1.Attestation.Material.Artifact.jsonschema.json",
+      "description": "The actual SBOM artifact"
+    },
+    "mainComponent": {
+      "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.MainComponent.jsonschema.json",
+      "description": "The Main component if any the SBOM is related to"
+    }
+  },
+  "title": "SBOM Artifact",
+  "type": "object"
+}

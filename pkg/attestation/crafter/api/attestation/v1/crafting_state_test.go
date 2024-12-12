@@ -60,6 +60,24 @@ func TestNormalizeOutput(t *testing.T) {
 		},
 	}
 
+	sbomArtifactMaterial := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+		M: &Attestation_Material_SbomArtifact{
+			SbomArtifact: &Attestation_Material_SBOMArtifact{
+				Artifact: &Attestation_Material_Artifact{
+					Name: "name", Digest: "deadbeef", IsSubject: true, Content: []byte("content"),
+				},
+				MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
+					Name: "the-main-component",
+				},
+			},
+		},
+	}
+
+	sbomArtifactMaterialWant := &NormalizedMaterialOutput{
+		Name: "name", Digest: "deadbeef", IsOutput: true, Content: []byte("content"),
+	}
+
 	keyValWant := &NormalizedMaterialOutput{
 		Content: []byte("value"),
 	}
@@ -93,6 +111,11 @@ func TestNormalizeOutput(t *testing.T) {
 			name:     "keyval material",
 			material: keyValMaterial,
 			want:     keyValWant,
+		},
+		{
+			name:     "sbom artifact material",
+			material: sbomArtifactMaterial,
+			want:     sbomArtifactMaterialWant,
 		},
 	}
 
@@ -136,6 +159,23 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 						Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Tag: "latest",
 					},
 				},
+			},
+		},
+		{
+			name: "sbom artifact material",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				M: &Attestation_Material_SbomArtifact{
+					SbomArtifact: &Attestation_Material_SBOMArtifact{
+						Artifact: &Attestation_Material_Artifact{
+							Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Content: []byte("{}"),
+						},
+						MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
+							Name: "the-main-component",
+						},
+					},
+				},
+				InlineCas: true,
 			},
 		},
 	}
