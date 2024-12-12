@@ -64,7 +64,8 @@
           "id": "skynet-control-plane",
           "name": "index.docker.io/bitnami/nginx",
           "digest": "sha256:580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a",
-          "isSubject": true
+          "isSubject": true,
+          "hasLatestTag": false
         },
         "addedAt": "2023-05-03T17:22:49.616972571Z",
         "materialType": "CONTAINER_IMAGE"

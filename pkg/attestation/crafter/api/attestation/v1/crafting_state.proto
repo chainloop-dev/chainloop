@@ -20,6 +20,7 @@ package attestation.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1";
@@ -71,6 +72,10 @@ message Attestation {
       string signature_provider = 7;
       // Base64 encoded signature payload, aka the OCI Signature Manifest
       string signature = 8;
+      // Indicates if the image has the latest tag. The image being checked
+      // might not explicitly have the latest tag, but it could also be tagged
+      // with the latest tag.
+      google.protobuf.BoolValue has_latest_tag = 9;
     }
 
     message Artifact {

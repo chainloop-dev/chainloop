@@ -2,6 +2,7 @@
 import _m0 from "protobufjs/minimal";
 import { Struct } from "../../google/protobuf/struct";
 import { Timestamp } from "../../google/protobuf/timestamp";
+import { BoolValue } from "../../google/protobuf/wrappers";
 import {
   CraftingSchema,
   CraftingSchema_Material_MaterialType,
@@ -81,6 +82,12 @@ export interface Attestation_Material_ContainerImage {
   signatureProvider: string;
   /** Base64 encoded signature payload, aka the OCI Signature Manifest */
   signature: string;
+  /**
+   * Indicates if the image has the latest tag. The image being checked
+   * might not explicitly have the latest tag, but it could also be tagged
+   * with the latest tag.
+   */
+  hasLatestTag?: boolean;
 }
 
 export interface Attestation_Material_Artifact {
@@ -990,6 +997,7 @@ function createBaseAttestation_Material_ContainerImage(): Attestation_Material_C
     signatureDigest: "",
     signatureProvider: "",
     signature: "",
+    hasLatestTag: undefined,
   };
 }
 
@@ -1018,6 +1026,9 @@ export const Attestation_Material_ContainerImage = {
     }
     if (message.signature !== "") {
       writer.uint32(66).string(message.signature);
+    }
+    if (message.hasLatestTag !== undefined) {
+      BoolValue.encode({ value: message.hasLatestTag! }, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -1085,6 +1096,13 @@ export const Attestation_Material_ContainerImage = {
 
           message.signature = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.hasLatestTag = BoolValue.decode(reader, reader.uint32()).value;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1104,6 +1122,7 @@ export const Attestation_Material_ContainerImage = {
       signatureDigest: isSet(object.signatureDigest) ? String(object.signatureDigest) : "",
       signatureProvider: isSet(object.signatureProvider) ? String(object.signatureProvider) : "",
       signature: isSet(object.signature) ? String(object.signature) : "",
+      hasLatestTag: isSet(object.hasLatestTag) ? Boolean(object.hasLatestTag) : undefined,
     };
   },
 
@@ -1117,6 +1136,7 @@ export const Attestation_Material_ContainerImage = {
     message.signatureDigest !== undefined && (obj.signatureDigest = message.signatureDigest);
     message.signatureProvider !== undefined && (obj.signatureProvider = message.signatureProvider);
     message.signature !== undefined && (obj.signature = message.signature);
+    message.hasLatestTag !== undefined && (obj.hasLatestTag = message.hasLatestTag);
     return obj;
   },
 
@@ -1138,6 +1158,7 @@ export const Attestation_Material_ContainerImage = {
     message.signatureDigest = object.signatureDigest ?? "";
     message.signatureProvider = object.signatureProvider ?? "";
     message.signature = object.signature ?? "";
+    message.hasLatestTag = object.hasLatestTag ?? undefined;
     return message;
   },
 };

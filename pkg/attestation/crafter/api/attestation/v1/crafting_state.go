@@ -35,14 +35,15 @@ import (
 const AnnotationPrefix = "chainloop."
 
 var (
-	AnnotationMaterialType      = CreateAnnotation("material.type")
-	AnnotationMaterialName      = CreateAnnotation("material.name")
-	AnnotationMaterialSignature = CreateAnnotation("material.signature")
-	AnnotationSignatureDigest   = CreateAnnotation("material.signature.digest")
-	AnnotationSignatureProvider = CreateAnnotation("material.signature.provider")
-	AnnotationMaterialCAS       = CreateAnnotation("material.cas")
-	AnnotationMaterialInlineCAS = CreateAnnotation("material.cas.inline")
-	AnnotationContainerTag      = CreateAnnotation("material.image.tag")
+	AnnotationMaterialType        = CreateAnnotation("material.type")
+	AnnotationMaterialName        = CreateAnnotation("material.name")
+	AnnotationMaterialSignature   = CreateAnnotation("material.signature")
+	AnnotationSignatureDigest     = CreateAnnotation("material.signature.digest")
+	AnnotationSignatureProvider   = CreateAnnotation("material.signature.provider")
+	AnnotationMaterialCAS         = CreateAnnotation("material.cas")
+	AnnotationMaterialInlineCAS   = CreateAnnotation("material.cas.inline")
+	AnnotationContainerTag        = CreateAnnotation("material.image.tag")
+	AnnotationsContainerLatestTag = CreateAnnotation("material.image.is_latest_tag")
 )
 
 type NormalizedMaterialOutput struct {
@@ -220,6 +221,8 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 		if sigPayload := m.GetContainerImage().GetSignature(); sigPayload != "" {
 			annotationsM[AnnotationMaterialSignature] = sigPayload
 		}
+
+		annotationsM[AnnotationsContainerLatestTag] = m.GetContainerImage().GetHasLatestTag().GetValue()
 	}
 
 	// Custom annotations, it does not override the built-in ones

@@ -4,7 +4,7 @@
     {
       "name": "chainloop.workflow.test-new-types",
       "digest": {
-        "sha256": "0824ac4c4e47e5a0db907af8d6ee1737348b6aa37c7a6f0e91f1c7c626214d3d"
+        "sha256": "0e7d32b3751e0cf1a029897c8451811daf28720db84f353e005661ac877916ac"
       }
     },
     {
@@ -32,6 +32,7 @@
         "sha256": "fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4"
       },
       "annotations": {
+        "chainloop.material.image.is_latest_tag": false,
         "chainloop.material.image.tag": "devel",
         "chainloop.material.name": "image",
         "chainloop.material.type": "CONTAINER_IMAGE"
@@ -47,6 +48,7 @@
     "materials": [
       {
         "annotations": {
+          "chainloop.material.image.is_latest_tag": false,
           "chainloop.material.image.tag": "devel",
           "chainloop.material.name": "image",
           "chainloop.material.type": "CONTAINER_IMAGE"
