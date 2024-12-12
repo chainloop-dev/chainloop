@@ -113,7 +113,7 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	signatureInfo := i.checkForSignature(ref, descriptor)
 
 	// Check if the image is tagged as "latest"
-	hasLatestTag := i.hasLatestTag(ref, remoteRef.DigestStr())
+	hasLatestTag := i.isLatestTag(ref, remoteRef.DigestStr())
 
 	containerImage := &api.Attestation_Material_ContainerImage{
 		Id:           i.input.Name,
@@ -251,8 +251,8 @@ func (i *OCIImageCrafter) fetchSignatureManifest(originalRef name.Reference, dig
 	}
 }
 
-// hasLatestTag checks if the image has a "latest" tag.
-func (i *OCIImageCrafter) hasLatestTag(ref name.Reference, currentDigest string) bool {
+// isLatestTag checks if the image has been tagged with the "latest" tag.
+func (i *OCIImageCrafter) isLatestTag(ref name.Reference, currentDigest string) bool {
 	// Check first if the image has a "latest" tag already
 	if ref.Identifier() == latestTag {
 		i.logger.Debug().Str("name", ref.String()).Msg("image has a 'latest' tag")
