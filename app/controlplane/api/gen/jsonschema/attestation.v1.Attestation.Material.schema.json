@@ -52,6 +52,9 @@
         }
       ]
     },
+    "^(sbomArtifact)$": {
+      "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.schema.json"
+    },
     "^(uploadedToCas)$": {
       "description": "Whether the material has been uploaded to the CAS",
       "type": "boolean"
@@ -119,6 +122,9 @@
           "type": "integer"
         }
       ]
+    },
+    "sbom_artifact": {
+      "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.schema.json"
     },
     "string": {
       "$ref": "attestation.v1.Attestation.Material.KeyVal.schema.json"

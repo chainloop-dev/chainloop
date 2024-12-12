@@ -40,6 +40,7 @@ message Attestation {
       KeyVal string = 1;
       ContainerImage container_image = 2;
       Artifact artifact = 3;
+      SBOMArtifact sbom_artifact = 4;
     }
 
     google.protobuf.Timestamp added_at = 5;
@@ -90,6 +91,13 @@ message Attestation {
       // Inline content of the artifact.
       // This is optional and is used for small artifacts that can be stored inline in the attestation
       bytes content = 5;
+    }
+
+    message SBOMArtifact {
+      // The actual SBOM artifact
+      Artifact artifact = 1;
+      // The Main component if any the SBOM is related to
+      string main_component = 2;
     }
   }
 

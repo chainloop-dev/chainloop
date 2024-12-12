@@ -46,6 +46,7 @@ export interface Attestation_Material {
   string?: Attestation_Material_KeyVal | undefined;
   containerImage?: Attestation_Material_ContainerImage | undefined;
   artifact?: Attestation_Material_Artifact | undefined;
+  sbomArtifact?: Attestation_Material_SBOMArtifact | undefined;
   addedAt?: Date;
   materialType: CraftingSchema_Material_MaterialType;
   /** Whether the material has been uploaded to the CAS */
@@ -106,6 +107,13 @@ export interface Attestation_Material_Artifact {
    * This is optional and is used for small artifacts that can be stored inline in the attestation
    */
   content: Uint8Array;
+}
+
+export interface Attestation_Material_SBOMArtifact {
+  /** The actual SBOM artifact */
+  artifact?: Attestation_Material_Artifact;
+  /** The Main component if any the SBOM is related to */
+  mainComponent: string;
 }
 
 export interface Attestation_EnvVarsEntry {
@@ -660,6 +668,7 @@ function createBaseAttestation_Material(): Attestation_Material {
     string: undefined,
     containerImage: undefined,
     artifact: undefined,
+    sbomArtifact: undefined,
     addedAt: undefined,
     materialType: 0,
     uploadedToCas: false,
@@ -678,6 +687,9 @@ export const Attestation_Material = {
     }
     if (message.artifact !== undefined) {
       Attestation_Material_Artifact.encode(message.artifact, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.sbomArtifact !== undefined) {
+      Attestation_Material_SBOMArtifact.encode(message.sbomArtifact, writer.uint32(34).fork()).ldelim();
     }
     if (message.addedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.addedAt), writer.uint32(42).fork()).ldelim();
@@ -724,6 +736,13 @@ export const Attestation_Material = {
           }
 
           message.artifact = Attestation_Material_Artifact.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sbomArtifact = Attestation_Material_SBOMArtifact.decode(reader, reader.uint32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -779,6 +798,9 @@ export const Attestation_Material = {
         ? Attestation_Material_ContainerImage.fromJSON(object.containerImage)
         : undefined,
       artifact: isSet(object.artifact) ? Attestation_Material_Artifact.fromJSON(object.artifact) : undefined,
+      sbomArtifact: isSet(object.sbomArtifact)
+        ? Attestation_Material_SBOMArtifact.fromJSON(object.sbomArtifact)
+        : undefined,
       addedAt: isSet(object.addedAt) ? fromJsonTimestamp(object.addedAt) : undefined,
       materialType: isSet(object.materialType) ? craftingSchema_Material_MaterialTypeFromJSON(object.materialType) : 0,
       uploadedToCas: isSet(object.uploadedToCas) ? Boolean(object.uploadedToCas) : false,
@@ -801,6 +823,9 @@ export const Attestation_Material = {
       : undefined);
     message.artifact !== undefined &&
       (obj.artifact = message.artifact ? Attestation_Material_Artifact.toJSON(message.artifact) : undefined);
+    message.sbomArtifact !== undefined && (obj.sbomArtifact = message.sbomArtifact
+      ? Attestation_Material_SBOMArtifact.toJSON(message.sbomArtifact)
+      : undefined);
     message.addedAt !== undefined && (obj.addedAt = message.addedAt.toISOString());
     message.materialType !== undefined &&
       (obj.materialType = craftingSchema_Material_MaterialTypeToJSON(message.materialType));
@@ -829,6 +854,9 @@ export const Attestation_Material = {
       : undefined;
     message.artifact = (object.artifact !== undefined && object.artifact !== null)
       ? Attestation_Material_Artifact.fromPartial(object.artifact)
+      : undefined;
+    message.sbomArtifact = (object.sbomArtifact !== undefined && object.sbomArtifact !== null)
+      ? Attestation_Material_SBOMArtifact.fromPartial(object.sbomArtifact)
       : undefined;
     message.addedAt = object.addedAt ?? undefined;
     message.materialType = object.materialType ?? 0;
@@ -1272,6 +1300,84 @@ export const Attestation_Material_Artifact = {
     message.digest = object.digest ?? "";
     message.isSubject = object.isSubject ?? false;
     message.content = object.content ?? new Uint8Array(0);
+    return message;
+  },
+};
+
+function createBaseAttestation_Material_SBOMArtifact(): Attestation_Material_SBOMArtifact {
+  return { artifact: undefined, mainComponent: "" };
+}
+
+export const Attestation_Material_SBOMArtifact = {
+  encode(message: Attestation_Material_SBOMArtifact, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.artifact !== undefined) {
+      Attestation_Material_Artifact.encode(message.artifact, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.mainComponent !== "") {
+      writer.uint32(18).string(message.mainComponent);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Attestation_Material_SBOMArtifact {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestation_Material_SBOMArtifact();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.artifact = Attestation_Material_Artifact.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.mainComponent = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Attestation_Material_SBOMArtifact {
+    return {
+      artifact: isSet(object.artifact) ? Attestation_Material_Artifact.fromJSON(object.artifact) : undefined,
+      mainComponent: isSet(object.mainComponent) ? String(object.mainComponent) : "",
+    };
+  },
+
+  toJSON(message: Attestation_Material_SBOMArtifact): unknown {
+    const obj: any = {};
+    message.artifact !== undefined &&
+      (obj.artifact = message.artifact ? Attestation_Material_Artifact.toJSON(message.artifact) : undefined);
+    message.mainComponent !== undefined && (obj.mainComponent = message.mainComponent);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Attestation_Material_SBOMArtifact>, I>>(
+    base?: I,
+  ): Attestation_Material_SBOMArtifact {
+    return Attestation_Material_SBOMArtifact.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Attestation_Material_SBOMArtifact>, I>>(
+    object: I,
+  ): Attestation_Material_SBOMArtifact {
+    const message = createBaseAttestation_Material_SBOMArtifact();
+    message.artifact = (object.artifact !== undefined && object.artifact !== null)
+      ? Attestation_Material_Artifact.fromPartial(object.artifact)
+      : undefined;
+    message.mainComponent = object.mainComponent ?? "";
     return message;
   },
 };
