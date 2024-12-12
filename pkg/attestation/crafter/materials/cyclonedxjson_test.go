@@ -65,12 +65,14 @@ func TestNewCyclonedxJSONCrafter(t *testing.T) {
 
 func TestCyclonedxJSONCraft(t *testing.T) {
 	testCases := []struct {
-		name              string
-		filePath          string
-		wantErr           string
-		wantFilename      string
-		wantDigest        string
-		wantMainComponent string
+		name                     string
+		filePath                 string
+		wantErr                  string
+		wantFilename             string
+		wantDigest               string
+		wantMainComponent        string
+		wantMainComponentKind    string
+		wantMainComponentVersion string
 	}{
 		{
 			name:     "invalid path",
@@ -88,17 +90,21 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
-			name:         "1.4 version",
-			filePath:     "./testdata/sbom.cyclonedx.json",
-			wantDigest:   "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
-			wantFilename: "sbom.cyclonedx.json",
+			name:                  "1.4 version",
+			filePath:              "./testdata/sbom.cyclonedx.json",
+			wantDigest:            "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+			wantFilename:          "sbom.cyclonedx.json",
+			wantMainComponent:     ".",
+			wantMainComponentKind: "file",
 		},
 		{
-			name:              "1.5 version",
-			filePath:          "./testdata/sbom.cyclonedx-1.5.json",
-			wantDigest:        "sha256:5ca3508f02893b0419b266927f66c7b9dd8b11dbea7faf7cdb9169df8f69d8e3",
-			wantFilename:      "sbom.cyclonedx-1.5.json",
-			wantMainComponent: "ghcr.io/chainloop-dev/chainloop/control-plane",
+			name:                     "1.5 version",
+			filePath:                 "./testdata/sbom.cyclonedx-1.5.json",
+			wantDigest:               "sha256:5ca3508f02893b0419b266927f66c7b9dd8b11dbea7faf7cdb9169df8f69d8e3",
+			wantFilename:             "sbom.cyclonedx-1.5.json",
+			wantMainComponent:        "ghcr.io/chainloop-dev/chainloop/control-plane",
+			wantMainComponentKind:    "container",
+			wantMainComponentVersion: "v0.55.0",
 		},
 	}
 
@@ -137,7 +143,11 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 					Artifact: &attestationApi.Attestation_Material_Artifact{
 						Id: "test", Digest: tc.wantDigest, Name: tc.wantFilename,
 					},
-					MainComponent: tc.wantMainComponent,
+					MainComponent: &attestationApi.Attestation_Material_SBOMArtifact_MainComponent{
+						Name:    tc.wantMainComponent,
+						Kind:    tc.wantMainComponentKind,
+						Version: tc.wantMainComponentVersion,
+					},
 				},
 				got.GetSbomArtifact(),
 			)

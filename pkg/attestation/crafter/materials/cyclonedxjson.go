@@ -18,7 +18,6 @@ package materials
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -75,71 +74,69 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		return nil, fmt.Errorf("error crafting material: %w", err)
 	}
 
+	res := m
+	res.M = &api.Attestation_Material_SbomArtifact{
+		SbomArtifact: &api.Attestation_Material_SBOMArtifact{
+			Artifact: m.GetArtifact(),
+		},
+	}
+
 	// Include the main component information if available
-	mainComponent, err := i.extractMainComponent(v)
+	mainComponent, err := i.extractMainComponent(f)
 	if err != nil {
 		i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
 	}
 
-	res := m
-	res.M = &api.Attestation_Material_SbomArtifact{
-		SbomArtifact: &api.Attestation_Material_SBOMArtifact{
-			Artifact:      m.GetArtifact(),
-			MainComponent: mainComponent,
-		},
+	// If the main component is available, include it in the material
+	if mainComponent != nil {
+		res.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
+			Name:    mainComponent.name,
+			Kind:    mainComponent.kind,
+			Version: mainComponent.version,
+		}
 	}
 
 	return res, nil
 }
 
 // extractMainComponent inspects the SBOM and extracts the main component if any and available
-func (i *CyclonedxJSONCrafter) extractMainComponent(v interface{}) (string, error) {
-	// Helper function to extract and validate keys from the map
-	extractKey := func(m map[string]interface{}, key string) (map[string]interface{}, error) {
-		val, ok := m[key].(map[string]interface{})
-		if !ok {
-			return nil, errors.New("invalid cyclonedx sbom file")
-		}
-		return val, nil
+func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainComponentInfo, error) {
+	// Define the structure of the main component in the SBOM locally to perform an unmarshal
+	type mainComponentStruct struct {
+		Metadata struct {
+			Component struct {
+				Name    string `json:"name"`
+				Type    string `json:"type"`
+				Version string `json:"version"`
+			} `json:"component"`
+		} `json:"metadata"`
 	}
 
-	// Cast the incoming interface to a map
-	m, ok := v.(map[string]interface{})
-	if !ok {
-		return "", errors.New("invalid cyclonedx sbom file")
-	}
-
-	// Extract metadata and component maps. The metadata field is not required
-	metadata, err := extractKey(m, "metadata")
+	var mainComponent mainComponentStruct
+	err := json.Unmarshal(rawFile, &mainComponent)
 	if err != nil {
-		return "", err
-	}
-	component, err := extractKey(metadata, "component")
-	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("error extracting main component: %w", err)
 	}
 
-	// Extract and validate name
-	name, ok := component["name"].(string)
-	if !ok {
-		return "", errors.New("couldn't extract name from metadata")
-	}
-	kind, ok := component["type"].(string)
-	if !ok {
-		return "", errors.New("couldn't extract type from metadata")
-	}
-
-	// If the main component is not a container, return the name as is
-	if kind != containerComponentKind {
-		return name, nil
+	component := mainComponent.Metadata.Component
+	if component.Type != containerComponentKind {
+		return &SBOMMainComponentInfo{
+			name:    component.Name,
+			kind:    component.Type,
+			version: component.Version,
+		}, nil
 	}
 
 	// Standardize the name to have the full repository name including the registry and
 	// sanitize the name to remove the possible tag from the repository name
-	stdName, err := remotename.NewRepository(strings.Split(name, ":")[0])
+	stdName, err := remotename.NewRepository(strings.Split(component.Name, ":")[0])
 	if err != nil {
-		return "", fmt.Errorf("couldn't parse OCI image repository name: %w", err)
+		return nil, fmt.Errorf("couldn't parse OCI image repository name: %w", err)
 	}
 
-	return stdName.String(), nil
+	return &SBOMMainComponentInfo{
+		name:    stdName.String(),
+		kind:    component.Type,
+		version: component.Version,
+	}, nil
 }

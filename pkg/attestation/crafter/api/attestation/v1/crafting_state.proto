@@ -97,7 +97,17 @@ message Attestation {
       // The actual SBOM artifact
       Artifact artifact = 1;
       // The Main component if any the SBOM is related to
-      string main_component = 2;
+      MainComponent main_component = 2;
+
+      // The main component of the SBOM
+      message MainComponent {
+        // The name of the main component
+        string name = 1;
+        // The version of the main component
+        string version = 2;
+        // The kind of the main component
+        string kind = 3;
+      }
     }
   }
 

@@ -4,8 +4,8 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(mainComponent)$": {
-      "description": "The Main component if any the SBOM is related to",
-      "type": "string"
+      "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.MainComponent.schema.json",
+      "description": "The Main component if any the SBOM is related to"
     }
   },
   "properties": {
@@ -14,8 +14,8 @@
       "description": "The actual SBOM artifact"
     },
     "main_component": {
-      "description": "The Main component if any the SBOM is related to",
-      "type": "string"
+      "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.MainComponent.schema.json",
+      "description": "The Main component if any the SBOM is related to"
     }
   },
   "title": "SBOM Artifact",

@@ -35,16 +35,18 @@ import (
 const AnnotationPrefix = "chainloop."
 
 var (
-	AnnotationMaterialType           = CreateAnnotation("material.type")
-	AnnotationMaterialName           = CreateAnnotation("material.name")
-	AnnotationMaterialSignature      = CreateAnnotation("material.signature")
-	AnnotationSignatureDigest        = CreateAnnotation("material.signature.digest")
-	AnnotationSignatureProvider      = CreateAnnotation("material.signature.provider")
-	AnnotationMaterialCAS            = CreateAnnotation("material.cas")
-	AnnotationMaterialInlineCAS      = CreateAnnotation("material.cas.inline")
-	AnnotationContainerTag           = CreateAnnotation("material.image.tag")
-	AnnotationsContainerLatestTag    = CreateAnnotation("material.image.is_latest_tag")
-	AnnotationsSBOMMainComponentName = CreateAnnotation("material.sbom.main_component_name")
+	AnnotationMaterialType              = CreateAnnotation("material.type")
+	AnnotationMaterialName              = CreateAnnotation("material.name")
+	AnnotationMaterialSignature         = CreateAnnotation("material.signature")
+	AnnotationSignatureDigest           = CreateAnnotation("material.signature.digest")
+	AnnotationSignatureProvider         = CreateAnnotation("material.signature.provider")
+	AnnotationMaterialCAS               = CreateAnnotation("material.cas")
+	AnnotationMaterialInlineCAS         = CreateAnnotation("material.cas.inline")
+	AnnotationContainerTag              = CreateAnnotation("material.image.tag")
+	AnnotationsContainerLatestTag       = CreateAnnotation("material.image.is_latest_tag")
+	AnnotationsSBOMMainComponentName    = CreateAnnotation("material.sbom.main_component.name")
+	AnnotationsSBOMMainComponentType    = CreateAnnotation("material.sbom.main_component.type")
+	AnnotationsSBOMMainComponentVersion = CreateAnnotation("material.sbom.main_component.version")
 )
 
 type NormalizedMaterialOutput struct {
@@ -240,8 +242,11 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 
 	// Set specials annotations for SBOM artifacts
 	if m.GetSbomArtifact() != nil {
-		if mainComponent := m.GetSbomArtifact().GetMainComponent(); mainComponent != "" {
-			annotationsM[AnnotationsSBOMMainComponentName] = mainComponent
+		// Main component information
+		if mainComponent := m.GetSbomArtifact().GetMainComponent(); mainComponent != nil {
+			annotationsM[AnnotationsSBOMMainComponentName] = mainComponent.GetName()
+			annotationsM[AnnotationsSBOMMainComponentType] = mainComponent.GetKind()
+			annotationsM[AnnotationsSBOMMainComponentVersion] = mainComponent.GetVersion()
 		}
 	}
 
