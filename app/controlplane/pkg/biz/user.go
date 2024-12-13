@@ -46,6 +46,7 @@ type UserRepo interface {
 type UserOrgFinder interface {
 	FindByID(ctx context.Context, userID string) (*User, error)
 	CurrentMembership(ctx context.Context, userID string) (*Membership, error)
+	MembershipInOrg(ctx context.Context, userID string, orgName string) (*Membership, error)
 }
 
 type UserUseCase struct {
@@ -157,6 +158,17 @@ func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, erro
 		return nil, NewErrInvalidUUID(err)
 	}
 	return uc.userRepo.FindByID(ctx, userUUID)
+}
+
+func (uc *UserUseCase) MembershipInOrg(ctx context.Context, userID string, orgName string) (*Membership, error) {
+	m, err := uc.membershipUseCase.FindByOrgNameAndUser(ctx, orgName, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return nil, NewErrNotFound("user does not have this org associated")
+	}
+
+	return m, nil
 }
 
 // Find the membership associated with the user that's marked as current

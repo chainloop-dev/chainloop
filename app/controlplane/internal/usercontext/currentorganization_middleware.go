@@ -36,10 +36,22 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				return handler(ctx, req)
 			}
 
-			var err error
-			ctx, err = setCurrentOrganization(ctx, u, userUseCase, logger)
+			orgName, err := getOrganizationName(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("error setting current org: %w", err)
+				return nil, err
+			}
+
+			if orgName != "" {
+				ctx, err = setCurrentOrganizationFromHeader(ctx, u, orgName, userUseCase)
+				if err != nil {
+					return nil, fmt.Errorf("error setting current org: %w", err)
+				}
+			} else {
+				// If no organization name is provided, we use the DB to find the current organization
+				ctx, err = setCurrentOrganizationFromDB(ctx, u, userUseCase, logger)
+				if err != nil {
+					return nil, fmt.Errorf("error setting current org: %w", err)
+				}
 			}
 
 			org := entities.CurrentOrg(ctx)
@@ -54,8 +66,17 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 	}
 }
 
+func setCurrentOrganizationFromHeader(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder) (context.Context, error) {
+	membership, err := userUC.MembershipInOrg(ctx, user.ID, orgName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find membership: %w", err)
+	}
+
+	return entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt}), nil
+}
+
 // Find the current membership of the user and sets it on the context
-func setCurrentOrganization(ctx context.Context, user *entities.User, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
+func setCurrentOrganizationFromDB(ctx context.Context, user *entities.User, userUC biz.UserOrgFinder, logger *log.Helper) (context.Context, error) {
 	// We load the current organization
 	membership, err := userUC.CurrentMembership(ctx, user.ID)
 	if err != nil {
