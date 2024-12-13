@@ -40,9 +40,9 @@ func GetRawToken(ctx context.Context) (string, error) {
 func getOrganizationName(ctx context.Context) (string, error) {
 	const OrganizationHeader = "Chainloop-Organization"
 	header, ok := transport.FromServerContext(ctx)
-	if !ok {
-		return "", jwt.ErrMissingJwtToken
+	if ok {
+		return header.RequestHeader().Get(OrganizationHeader), nil
 	}
 
-	return header.RequestHeader().Get(OrganizationHeader), nil
+	return "", nil
 }
