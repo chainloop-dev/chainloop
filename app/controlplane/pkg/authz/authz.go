@@ -101,6 +101,7 @@ var (
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
 	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
 	PolicyWorkflowContractUpdate = &Policy{ResourceWorkflowContract, ActionUpdate}
+	PolicyWorkflowContractCreate = &Policy{ResourceWorkflowContract, ActionCreate}
 	// WorkflowRun
 	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
 	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
@@ -196,6 +197,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.WorkflowContractService/List":     {PolicyWorkflowContractList},
 	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
 	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
+	"/controlplane.v1.WorkflowContractService/Create":   {PolicyWorkflowContractCreate},
 	// Get current information about an organization
 	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead},
 	// Listing, create or selecting an organization does not have any required permissions,
