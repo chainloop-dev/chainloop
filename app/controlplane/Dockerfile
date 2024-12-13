@@ -1,4 +1,4 @@
-FROM golang:1.22@sha256:fcae9e0e7313c6467a7c6632ebb5e5fab99bd39bd5eb6ee34a211353e647827a AS builder
+FROM golang:1.23@sha256:70031844b8c225351d0bb63e2c383f80db85d92ba894e3da7e13bcf80efa9a37 AS builder
 
 # Not linked libraries since it will be injected into a scratch container
 ENV CGO_ENABLED=0
