@@ -291,7 +291,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.23.1"
+          go-version: "1.23.4"
 
       - name: Configure AWS credentials to push container images
         uses: aws-actions/configure-aws-credentials@v1
