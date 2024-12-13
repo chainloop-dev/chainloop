@@ -38,7 +38,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 
 			orgName, err := getOrganizationName(ctx)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error getting organization name: %w", err)
 			}
 
 			if orgName != "" {
@@ -48,6 +48,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				}
 			} else {
 				// If no organization name is provided, we use the DB to find the current organization
+				// DEPRECATED: in favor of header based org selection
 				ctx, err = setCurrentOrganizationFromDB(ctx, u, userUseCase, logger)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org: %w", err)
@@ -72,7 +73,9 @@ func setCurrentOrganizationFromHeader(ctx context.Context, user *entities.User, 
 		return nil, fmt.Errorf("failed to find membership: %w", err)
 	}
 
-	return entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt}), nil
+	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
+	// Set the authorization subject that will be used to check the policies
+	return WithAuthzSubject(ctx, string(membership.Role)), nil
 }
 
 // Find the current membership of the user and sets it on the context
