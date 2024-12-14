@@ -16,15 +16,16 @@
 package junit
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bufio"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/joshdk/go-junit"
@@ -51,9 +52,14 @@ func Ingest(filePath string) ([]junit.Suite, error) {
 	mime := http.DetectContentType(buf)
 	switch strings.Split(mime, ";")[0] {
 	case "application/zip":
-		suites, err = ingestArchive(filePath)
+		suites, err = ingestZipArchive(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("could not ingest JUnit XML: %w", err)
+			return nil, fmt.Errorf("could not ingest Zip archive : %w", err)
+		}
+	case "application/x-gzip":
+		suites, err = ingestGzipArchive(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("could not ingest GZip archive: %w", err)
 		}
 	case "text/xml", "application/xml":
 		suites, err = junit.IngestFile(filePath)
@@ -70,52 +76,74 @@ func Ingest(filePath string) ([]junit.Suite, error) {
 	return suites, nil
 }
 
-func ingestArchive(filename string) ([]junit.Suite, error) {
+func ingestGzipArchive(filename string) ([]junit.Suite, error) {
+	result := make([]junit.Suite, 0)
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("can't open the file: %w", err)
+	}
+	defer f.Close()
+
+	// Decompress the file if possible
+	uncompressedStream, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("can't uncompress file, unexpected material type: %w", err)
+	}
+
+	// Create a tar reader
+	tarReader := tar.NewReader(uncompressedStream)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				// Reached the end of tar archive
+				break
+			}
+			return nil, fmt.Errorf("can't read tar header: %w", err)
+		}
+		// Check if the file is a regular file
+		if header.Typeflag != tar.TypeReg || !strings.HasSuffix(header.Name, ".xml") {
+			continue // Skip if it's not a regular file
+		}
+
+		suites, err := junit.IngestReader(tarReader)
+		if err != nil {
+			return nil, fmt.Errorf("can't ingest JUnit XML file %q: %w", header.Name, err)
+		}
+		result = append(result, suites...)
+	}
+
+	return result, nil
+}
+
+func ingestZipArchive(filename string) ([]junit.Suite, error) {
+	result := make([]junit.Suite, 0)
+
 	archive, err := zip.OpenReader(filename)
 	if err != nil {
 		return nil, fmt.Errorf("could not open zip archive: %w", err)
 	}
 	defer archive.Close()
-	dir, err := os.MkdirTemp("", "junit")
-	if err != nil {
-		return nil, fmt.Errorf("could not create temporary directory: %w", err)
-	}
+
 	for _, zf := range archive.File {
-		if zf.FileInfo().IsDir() {
+		if zf.FileInfo().IsDir() || !strings.HasSuffix(zf.Name, ".xml") {
 			continue
-		}
-		// extract file to dir
-		// nolint: gosec
-		path := filepath.Join(dir, zf.Name)
-
-		// Check for ZipSlip (Directory traversal)
-		if !strings.HasPrefix(path, filepath.Clean(dir)+string(os.PathSeparator)) {
-			return nil, fmt.Errorf("illegal file path: %s", path)
-		}
-
-		f, err := os.Create(path)
-		if err != nil {
-			return nil, fmt.Errorf("could not open file %s: %w", path, err)
 		}
 
 		rc, err := zf.Open()
 		if err != nil {
-			return nil, fmt.Errorf("could not open file %s: %w", path, err)
+			return nil, fmt.Errorf("could not open file %q: %w", zf.Name, err)
 		}
 
-		_, err = f.ReadFrom(rc)
+		suites, err := junit.IngestReader(rc)
 		if err != nil {
-			return nil, fmt.Errorf("could not read file %s: %w", path, err)
+			return nil, fmt.Errorf("could not ingest JUnit XML file %q: %w", zf.Name, err)
 		}
 
-		rc.Close()
-		f.Close()
+		result = append(result, suites...)
+		_ = rc.Close()
 	}
 
-	suites, err := junit.IngestDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("could not ingest JUnit XML: %w", err)
-	}
-
-	return suites, nil
+	return result, nil
 }
