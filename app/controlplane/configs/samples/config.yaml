@@ -29,6 +29,7 @@ cas_server:
     addr: 0.0.0.0:9001
   # Where to redirect the user to download artifacts from the CAS
   download_url: http://0.0.0.0:8001/download
+  default_entry_max_size: 1GB
 
 # nats endpoint where to send events
 nats_server:

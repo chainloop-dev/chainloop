@@ -40,7 +40,12 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
-	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
+	bootstrap_CASServer := NewCASBackendConfig()
+	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, bootstrap_CASServer, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	conn, err := newNatsConnection()
 	if err != nil {
 		cleanup()

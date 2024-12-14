@@ -58,6 +58,11 @@ message Bootstrap {
     // In the form of [scheme]://[host]/path i.e https://cas.chainloop.dev/download
     // https://github.com/chainloop-dev/chainloop/blob/126f47b6c0803eac844b8e3e1a21d582f00e4dc6/app/artifact-cas/internal/service/download.go#L34
     string download_url = 3;
+
+    // Default max size for each entry in the CAS backend
+    // the format is a number followed by a unit, like 100MB, 1GB, etc
+    // Default is 100MB
+    string default_entry_max_size = 4;
   }
 
   // Configuration for onboarding users in organizations with specific roles

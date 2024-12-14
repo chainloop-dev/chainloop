@@ -41,6 +41,9 @@ data:
         addr: {{ printf "%s-api:%.0f" (include "chainloop.cas.fullname" .) (coalesce .Values.cas.serviceAPI.port .Values.cas.serviceAPI.ports.http) }}
       insecure: {{ empty (include "controlplane.tls-secret-name" .) }}
       download_url: {{ include "chainloop.cas.external_url" . }}/download
+      {{- if .Values.cas.defaultMaxEntrySize }}
+      default_entry_max_size: {{ .Values.cas.defaultMaxEntrySize | quote }}
+      {{- end }}
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
     referrer_shared_index:
       {{- toYaml .Values.controlplane.referrerSharedIndex | nindent 6 }}

@@ -201,6 +201,12 @@ func NewConfData(db *TestDatabase, t *testing.T) *conf.Data {
 	}
 }
 
+func NewCASBackendConfig() *conf.Bootstrap_CASServer {
+	return &conf.Bootstrap_CASServer{
+		DefaultEntryMaxSize: "100MB",
+	}
+}
+
 func NewPromSpec() []*conf.PrometheusIntegrationSpec {
 	return []*conf.PrometheusIntegrationSpec{}
 }

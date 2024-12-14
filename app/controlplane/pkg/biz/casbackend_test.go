@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -171,6 +172,99 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 	})
 }
 
+func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
+	assert := assert.New(s.T())
+	const defaultErrorMsg = "byte quantity must be a positive integer with a unit of measurement like M, MB, MiB, G, GiB, or GB"
+
+	tests := []struct {
+		name        string
+		config      *conf.Bootstrap_CASServer
+		expectError bool
+		errorMsg    string
+		wantSize    int64 // Expected size in bytes after parsing
+	}{
+		{
+			name:        "nil config uses default",
+			config:      nil,
+			expectError: false,
+			wantSize:    100 * 1024 * 1024, // 100MB default
+		},
+		{
+			name: "valid size - megabytes",
+			config: &conf.Bootstrap_CASServer{
+				DefaultEntryMaxSize: "100MB",
+			},
+			expectError: false,
+			wantSize:    100 * 1024 * 1024,
+		},
+		{
+			name: "valid size - gigabytes",
+			config: &conf.Bootstrap_CASServer{
+				DefaultEntryMaxSize: "2GB",
+			},
+			expectError: false,
+			wantSize:    2 * 1024 * 1024 * 1024,
+		},
+		{
+			name: "invalid size format",
+			config: &conf.Bootstrap_CASServer{
+				DefaultEntryMaxSize: "invalid",
+			},
+			expectError: true,
+			errorMsg:    defaultErrorMsg,
+			wantSize:    0,
+		},
+		{
+			name: "negative size",
+			config: &conf.Bootstrap_CASServer{
+				DefaultEntryMaxSize: "-100MB",
+			},
+			expectError: true,
+			errorMsg:    defaultErrorMsg,
+			wantSize:    0,
+		},
+		{
+			name: "zero size",
+			config: &conf.Bootstrap_CASServer{
+				DefaultEntryMaxSize: "0",
+			},
+			expectError: true,
+			errorMsg:    defaultErrorMsg,
+			wantSize:    0,
+		},
+		{
+			name: "missing unit",
+			config: &conf.Bootstrap_CASServer{
+				DefaultEntryMaxSize: "100",
+			},
+			expectError: true,
+			errorMsg:    defaultErrorMsg,
+			wantSize:    0,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			useCase, err := biz.NewCASBackendUseCase(s.repo, s.credsRW,
+				backends.Providers{
+					"OCI": s.backendProvider,
+				}, tc.config, nil)
+
+			if tc.expectError {
+				assert.Error(err)
+				if tc.errorMsg != "" {
+					assert.Contains(err.Error(), tc.errorMsg)
+				}
+				assert.Nil(useCase)
+			} else {
+				assert.NoError(err)
+				assert.NotNil(useCase)
+				assert.Equal(tc.wantSize, useCase.MaxBytesDefault)
+			}
+		})
+	}
+}
+
 // Run all the tests
 func TestCASBackend(t *testing.T) {
 	suite.Run(t, new(casBackendTestSuite))
@@ -188,9 +282,11 @@ func (s *casBackendTestSuite) SetupTest() {
 	s.repo = bizMocks.NewCASBackendRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
-	s.useCase = biz.NewCASBackendUseCase(s.repo, s.credsRW,
+	var err error
+	s.useCase, err = biz.NewCASBackendUseCase(s.repo, s.credsRW,
 		backends.Providers{
 			"OCI": s.backendProvider,
-		}, nil,
+		}, nil, nil,
 	)
+	s.Require().NoError(err)
 }

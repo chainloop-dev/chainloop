@@ -927,6 +927,9 @@ cas:
   ## @param cas.replicaCount Number of replicas
   replicaCount: 2
 
+  ## @extra cas.defaultMaxEntrySize Maximum size for each entry in the CAS backend, default 100MB
+  # defaultMaxEntrySize: 100MB
+
   ## @param cas.image.registry [default: REGISTRY_NAME] Image registry
   ## @param cas.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip cas.image.tag
