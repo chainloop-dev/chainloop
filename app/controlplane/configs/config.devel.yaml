@@ -43,7 +43,7 @@ cas_server:
     addr: 0.0.0.0:9001
   insecure: true
   download_url: http://0.0.0.0:8001/download
-
+  default_max_bytes: 300MB
 credentials_service:
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}

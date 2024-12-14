@@ -42,7 +42,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	providers := loader.LoadProviders(readerWriter)
-	casBackendUseCase := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, logger)
+	bootstrap_CASServer := bootstrap.CasServer
+	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, bootstrap_CASServer, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	bootstrap_NatsServer := bootstrap.NatsServer
 	conn, err := newNatsConnection(bootstrap_NatsServer)
 	if err != nil {
@@ -86,7 +91,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	bootstrap_CASServer := bootstrap.CasServer
 	v2 := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v2...)
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)

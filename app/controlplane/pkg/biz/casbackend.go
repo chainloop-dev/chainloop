@@ -23,6 +23,8 @@ import (
 	"io"
 	"time"
 
+	"code.cloudfoundry.org/bytefmt"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
@@ -36,7 +38,6 @@ import (
 type CASBackendProvider string
 
 const (
-	CASBackendDefaultMaxBytes int64 = 100 * 1024 * 1024 // 100MB
 	// Inline, embedded CAS backend
 	CASBackendInline                CASBackendProvider = "INLINE"
 	CASBackendInlineDefaultMaxBytes int64              = 500 * 1024 // 500KB
@@ -111,18 +112,28 @@ type CASBackendReader interface {
 }
 
 type CASBackendUseCase struct {
-	repo      CASBackendRepo
-	logger    *log.Helper
-	credsRW   credentials.ReaderWriter
-	providers backend.Providers
+	repo            CASBackendRepo
+	logger          *log.Helper
+	credsRW         credentials.ReaderWriter
+	providers       backend.Providers
+	MaxBytesDefault int64
 }
 
-func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, l log.Logger) *CASBackendUseCase {
+func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, c *conf.Bootstrap_CASServer, l log.Logger) (*CASBackendUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, providers}
+	var maxBytesDefault uint64 = 100 * 1024 * 1024 // 100MB
+	if c.GetDefaultMaxBytes() != "" {
+		var err error
+		maxBytesDefault, err = bytefmt.ToBytes(c.DefaultMaxBytes)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CAS backend default max bytes: %w", err)
+		}
+	}
+
+	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, providers, int64(maxBytesDefault)}, nil
 }
 
 func (uc *CASBackendUseCase) List(ctx context.Context, orgID string) ([]*CASBackend, error) {
@@ -253,7 +264,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 	}
 
 	backend, err := uc.repo.Create(ctx, &CASBackendCreateOpts{
-		MaxBytes: CASBackendDefaultMaxBytes,
+		MaxBytes: uc.MaxBytesDefault,
 		Name:     name,
 		CASBackendOpts: &CASBackendOpts{
 			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
