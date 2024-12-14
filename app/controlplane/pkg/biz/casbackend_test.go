@@ -192,7 +192,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		{
 			name: "valid size - megabytes",
 			config: &conf.Bootstrap_CASServer{
-				DefaultMaxBytes: "100MB",
+				DefaultEntryMaxSize: "100MB",
 			},
 			expectError: false,
 			wantSize:    100 * 1024 * 1024,
@@ -200,7 +200,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		{
 			name: "valid size - gigabytes",
 			config: &conf.Bootstrap_CASServer{
-				DefaultMaxBytes: "2GB",
+				DefaultEntryMaxSize: "2GB",
 			},
 			expectError: false,
 			wantSize:    2 * 1024 * 1024 * 1024,
@@ -208,7 +208,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		{
 			name: "invalid size format",
 			config: &conf.Bootstrap_CASServer{
-				DefaultMaxBytes: "invalid",
+				DefaultEntryMaxSize: "invalid",
 			},
 			expectError: true,
 			errorMsg:    defaultErrorMsg,
@@ -217,7 +217,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		{
 			name: "negative size",
 			config: &conf.Bootstrap_CASServer{
-				DefaultMaxBytes: "-100MB",
+				DefaultEntryMaxSize: "-100MB",
 			},
 			expectError: true,
 			errorMsg:    defaultErrorMsg,
@@ -226,7 +226,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		{
 			name: "zero size",
 			config: &conf.Bootstrap_CASServer{
-				DefaultMaxBytes: "0",
+				DefaultEntryMaxSize: "0",
 			},
 			expectError: true,
 			errorMsg:    defaultErrorMsg,
@@ -235,7 +235,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		{
 			name: "missing unit",
 			config: &conf.Bootstrap_CASServer{
-				DefaultMaxBytes: "100",
+				DefaultEntryMaxSize: "100",
 			},
 			expectError: true,
 			errorMsg:    defaultErrorMsg,

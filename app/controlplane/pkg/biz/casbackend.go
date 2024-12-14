@@ -125,9 +125,9 @@ func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter,
 	}
 
 	var maxBytesDefault uint64 = 100 * 1024 * 1024 // 100MB
-	if c.GetDefaultMaxBytes() != "" {
+	if c.GetDefaultEntryMaxSize() != "" {
 		var err error
-		maxBytesDefault, err = bytefmt.ToBytes(c.DefaultMaxBytes)
+		maxBytesDefault, err = bytefmt.ToBytes(c.DefaultEntryMaxSize)
 		if err != nil {
 			return nil, fmt.Errorf("invalid CAS backend default max bytes: %w", err)
 		}

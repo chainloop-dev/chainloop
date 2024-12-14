@@ -203,7 +203,7 @@ func NewConfData(db *TestDatabase, t *testing.T) *conf.Data {
 
 func NewCASBackendConfig() *conf.Bootstrap_CASServer {
 	return &conf.Bootstrap_CASServer{
-		DefaultMaxBytes: "100MB",
+		DefaultEntryMaxSize: "100MB",
 	}
 }
 
