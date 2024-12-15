@@ -28,8 +28,8 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 		Use:     "add",
 		Aliases: []string{"attach"},
 		Short:   "Attach an existing registered integration to a workflow",
-		Example: `  chainloop integration attached add --workflow deadbeef --integration beefdoingwell --opt projectName=MyProject --opt projectVersion=1.0.0`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Example: `  chainloop integration attached add --workflow deadbeef --project my-project --integration beefdoingwell --opt projectName=MyProject --opt projectVersion=1.0.0`,
+		RunE: func(_ *cobra.Command, args []string) error {
 			// Find the integration to extract the kind of integration we care about
 			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationName)
 			if err != nil {
@@ -67,7 +67,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 	cmd.Flags().StringVar(&workflowName, "workflow", "", "name of the workflow to attach this integration")
 	cobra.CheckErr(cmd.MarkFlagRequired("workflow"))
 
-	cmd.Flags().StringVar(&workflowName, "project", "", "name of the project the workflow belongs to")
+	cmd.Flags().StringVar(&projectName, "project", "", "name of the project the workflow belongs to")
 	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 
 	// StringSlice seems to struggle with comma-separated values such as p12 jsonKeys provided as passwords
