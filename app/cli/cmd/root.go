@@ -111,6 +111,13 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			actionOpts = newActionOpts(logger, conn)
+			// If no organization is set in viper, try to get it from current context
+			if viper.GetString(confOptions.organization.viperKey) == "" {
+				currentContext, err := action.NewConfigCurrentContext(actionOpts).Run()
+				if err == nil && currentContext.CurrentMembership != nil {
+					viper.Set(confOptions.organization.viperKey, currentContext.CurrentMembership.Org.Name)
+				}
+			}
 
 			if !isTelemetryDisabled() {
 				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
@@ -188,6 +195,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	// Override the oauth authentication requirement for the CLI by providing an API token
 	rootCmd.PersistentFlags().StringVarP(&apiToken, "token", "t", "", fmt.Sprintf("API token. NOTE: Alternatively use the env variable %s", tokenEnvVarName))
+
+	rootCmd.PersistentFlags().StringP(confOptions.organization.flagName, "n", "", "organization name")
+	cobra.CheckErr(viper.BindPFlag(confOptions.organization.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.organization.flagName)))
 
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
