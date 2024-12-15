@@ -29,7 +29,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 		Aliases: []string{"attach"},
 		Short:   "Attach an existing registered integration to a workflow",
 		Example: `  chainloop integration attached add --workflow deadbeef --project my-project --integration beefdoingwell --opt projectName=MyProject --opt projectVersion=1.0.0`,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			// Find the integration to extract the kind of integration we care about
 			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationName)
 			if err != nil {
