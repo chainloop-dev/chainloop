@@ -88,6 +88,10 @@ func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.
 	return &policy, createRef(url, policyName, providerDigest, orgName), nil
 }
 
+func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, token string) error {
+	panic("sdf")
+}
+
 // ResolveGroup calls remote provider for retrieving a policy group definition
 func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schemaapi.PolicyGroup, *PolicyReference, error) {
 	if groupName == "" || token == "" {

@@ -359,6 +359,19 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	return nil
 }
 
+func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(providerName string, att *schemav1.PolicyAttachment, token string) error {
+	provider, err := uc.findProvider(providerName)
+	if err != nil {
+		return err
+	}
+
+	if err = provider.ValidateAttachment(att, token); err != nil {
+		return fmt.Errorf("invalid attachment: %w", err)
+	}
+
+	return nil
+}
+
 func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
 	var policy *schemav1.Policy
 
@@ -370,6 +383,11 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAtt
 	// [chainloop://][provider:][org_name/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		pr := loader.ProviderParts(att.GetRef())
+		// Validate attachment
+		if err := uc.ValidatePolicyAttachment(pr.Provider, att, token); err != nil {
+			return nil, err
+		}
+
 		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, pr.OrgName, token)
 		if err != nil {
 			return nil, err
