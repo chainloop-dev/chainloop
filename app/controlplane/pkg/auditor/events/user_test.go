@@ -17,7 +17,6 @@ package events_test
 
 import (
 	"encoding/json"
-	"flag"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,15 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var updateGolden bool
-
-func TestMain(m *testing.M) {
-	flag.BoolVar(&updateGolden, "update-golden", false, "update the expected golden files")
-	// Parse the flags
-	flag.Parse()
-	os.Exit(m.Run())
-}
 
 func TestUserEvents(t *testing.T) {
 	userUUID, err := uuid.Parse("1089bb36-e27b-428b-8009-d015c8737c54")
@@ -59,7 +49,7 @@ func TestUserEvents(t *testing.T) {
 					Email:  testEmail,
 				},
 			},
-			expected: "testdata/user_signs_up.json",
+			expected: "testdata/users/user_signs_up.json",
 		},
 		{
 			name: "User logs in",
@@ -70,7 +60,7 @@ func TestUserEvents(t *testing.T) {
 				},
 				LoggedIn: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			expected: "testdata/user_logs_in.json",
+			expected: "testdata/users/user_logs_in.json",
 		},
 	}
 

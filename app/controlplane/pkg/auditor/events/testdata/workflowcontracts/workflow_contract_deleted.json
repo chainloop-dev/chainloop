@@ -1,0 +1,15 @@
+{
+  "ActionType": "WorkflowContractDeleted",
+  "TargetType": "WorkflowContract",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "API_TOKEN",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io has deleted the workflow contract test-contract",
+  "Info": {
+    "workflow_contract_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_contract_name": "test-contract"
+  },
+  "Digest": "sha256:6ecfc282f25617197cb98e5ee9a3695fd9f12de8a1b54fc01e90ed40cf024421"
+}

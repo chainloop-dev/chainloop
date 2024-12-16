@@ -1,0 +1,17 @@
+{
+  "ActionType": "WorkflowContractContractDetached",
+  "TargetType": "WorkflowContract",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "API Token 2089bb36-e27b-428b-8009-d015c8737c55 has detached the workflow test-workflow from the workflow contract test-contract",
+  "Info": {
+    "workflow_contract_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_contract_name": "test-contract",
+    "workflow_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_name": "test-workflow"
+  },
+  "Digest": "sha256:3abb7051833ec7052a7339ec632eed241c9adf216efe8f3f276d01ba29cc3732"
+}
