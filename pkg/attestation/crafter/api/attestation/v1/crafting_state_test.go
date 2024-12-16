@@ -136,6 +136,7 @@ func TestNormalizeOutput(t *testing.T) {
 func TestGetEvaluableContentWithMetadata(t *testing.T) {
 	cases := []struct {
 		name     string
+		filename string
 		material *Attestation_Material
 	}{
 		{
@@ -178,11 +179,28 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 				InlineCas: true,
 			},
 		},
+		{
+			name: "sbom artifact material not inline",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				M: &Attestation_Material_SbomArtifact{
+					SbomArtifact: &Attestation_Material_SBOMArtifact{
+						Artifact: &Attestation_Material_Artifact{
+							Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Content: []byte("{}"),
+						},
+						MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
+							Name: "the-main-component",
+						},
+					},
+				},
+			},
+			filename: "testdata/sbom.cyclonedx.json",
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			content, err := tc.material.GetEvaluableContent("")
+			content, err := tc.material.GetEvaluableContent(tc.filename)
 			assert.NoError(t, err)
 			decoder := json.NewDecoder(bytes.NewReader(content))
 
