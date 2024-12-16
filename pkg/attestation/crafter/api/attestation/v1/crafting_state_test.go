@@ -187,7 +187,7 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 				M: &Attestation_Material_SbomArtifact{
 					SbomArtifact: &Attestation_Material_SBOMArtifact{
 						Artifact: &Attestation_Material_Artifact{
-							Name: "name", Digest: "sha256:deadbeef", IsSubject: true, Content: []byte("{}"),
+							Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
 						},
 						MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
 							Name: "the-main-component",
