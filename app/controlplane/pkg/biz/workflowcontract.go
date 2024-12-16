@@ -302,7 +302,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 	wfContractPreUpdate, err := uc.repo.FindByNameInOrg(ctx, orgUUID, name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find contract %s in org %s", name, orgUUID)
+		return nil, fmt.Errorf("failed to find contract %s in org %s: %w", name, orgUUID, err)
 	}
 
 	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
