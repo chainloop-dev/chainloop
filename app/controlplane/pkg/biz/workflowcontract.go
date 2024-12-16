@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
+
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
@@ -103,10 +105,11 @@ type WorkflowContractUseCase struct {
 	repo           WorkflowContractRepo
 	logger         *log.Helper
 	policyRegistry *policies.Registry
+	auditorUC      *AuditorUseCase
 }
 
-func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *policies.Registry, logger log.Logger) *WorkflowContractUseCase {
-	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, logger: log.NewHelper(logger)}
+func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *policies.Registry, auditorUC *AuditorUseCase, logger log.Logger) *WorkflowContractUseCase {
+	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, auditorUC: auditorUC, logger: log.NewHelper(logger)}
 }
 
 func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*WorkflowContract, error) {
@@ -203,6 +206,14 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		return nil, fmt.Errorf("failed to create contract: %w", err)
 	}
 
+	// Dispatch the event
+	uc.auditorUC.Dispatch(ctx, &events.WorkflowContractCreated{
+		WorkflowContractBase: &events.WorkflowContractBase{
+			WorkflowContractID:   &c.ID,
+			WorkflowContractName: c.Name,
+		},
+	}, &orgUUID)
+
 	return c, nil
 }
 
@@ -289,6 +300,11 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		contract = c
 	}
 
+	wfContractPreUpdate, err := uc.repo.FindByNameInOrg(ctx, orgUUID, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find contract %s in org %s", name, orgUUID)
+	}
+
 	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
 	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
@@ -296,6 +312,23 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	} else if c == nil {
 		return nil, NewErrNotFound("contract")
 	}
+
+	// Dispatch the event
+	eventPayload := &events.WorkflowContractUpdated{
+		WorkflowContractBase: &events.WorkflowContractBase{
+			WorkflowContractID:   &c.Contract.ID,
+			WorkflowContractName: c.Contract.Name,
+		},
+		NewDescription: opts.Description,
+	}
+
+	// Check if the revisions have changed
+	if wfContractPreUpdate.LatestRevision != c.Version.Revision {
+		eventPayload.NewRevision = &c.Version.Revision
+		eventPayload.NewRevisionID = &c.Version.ID
+	}
+
+	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
 	return c, nil
 }
@@ -415,7 +448,19 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 	}
 
 	// Check that the workflow to delete belongs to the provided organization
-	return uc.repo.SoftDelete(ctx, contractUUID)
+	if err := uc.repo.SoftDelete(ctx, contractUUID); err != nil {
+		return fmt.Errorf("failed to delete contract: %w", err)
+	}
+
+	// Dispatch the event
+	uc.auditorUC.Dispatch(ctx, &events.WorkflowContractDeleted{
+		WorkflowContractBase: &events.WorkflowContractBase{
+			WorkflowContractID:   &contract.ID,
+			WorkflowContractName: contract.Name,
+		},
+	}, &orgUUID)
+
+	return nil
 }
 
 type RemotePolicy struct {

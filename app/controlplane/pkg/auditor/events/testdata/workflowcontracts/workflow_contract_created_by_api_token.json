@@ -1,0 +1,15 @@
+{
+  "ActionType": "WorkflowContractCreated",
+  "TargetType": "WorkflowContract",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "API Token 2089bb36-e27b-428b-8009-d015c8737c55 has created the workflow contract test-contract",
+  "Info": {
+    "workflow_contract_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_contract_name": "test-contract"
+  },
+  "Digest": "sha256:5036a6f579dbad881aeb656e4e6a402cff272e154ff5b9e7aa1631004458c07a"
+}
