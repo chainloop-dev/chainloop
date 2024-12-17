@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -95,7 +94,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 			if err != nil && !biz.IsNotFound(err) {
 				return nil, handleUseCaseErr(err, s.log)
 			} else if err != nil {
-				return nil, v1.ErrorUserNotMemberOfOrgErrorNotInOrg("user is not a member of organization %s", orgName)
+				return nil, pb.ErrorUserNotMemberOfOrgErrorNotInOrg("user is not a member of organization %s", orgName)
 			}
 
 			res.CurrentMembership = bizMembershipToPb(m)
