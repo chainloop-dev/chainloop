@@ -274,6 +274,12 @@ enum UserWithNoMembershipError {
   USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG = 1 [(errors.code) = 403];
 }
 
+enum UserNotMemberOfOrgError {
+  option (errors.default_code) = 500;
+  USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED = 0;
+  USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG = 1 [(errors.code) = 403];
+}
+
 // EntityRef is a reference to an entity in the system that can be either by name or ID
 message EntityRef {
   oneof ref {

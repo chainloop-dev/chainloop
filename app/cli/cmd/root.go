@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
@@ -72,13 +73,29 @@ type parsedToken struct {
 // Environment variable prefix for vipers
 const envPrefix = "CHAINLOOP"
 
+func Execute(l zerolog.Logger) error {
+	rootCmd := NewRootCmd(l)
+	if err := rootCmd.Execute(); err != nil {
+		// The local file is pointing to the wrong organization, we remove it
+		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
+			if err := setLocalOrganization(""); err != nil {
+				logger.Debug().Err(err).Msg("failed to remove organization from config")
+			}
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           appName,
 		Short:         "Chainloop Command Line Interface",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var err error
 			logger, err = initLogger(l)
 			if err != nil {
@@ -105,11 +122,31 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
+
+			// If no organization is set in local configuration, we load it from server and save it
+			if viper.GetString(confOptions.organization.viperKey) == "" {
+				conn, err := grpcconn.New(controlplaneURL, apiToken, opts...)
+				if err != nil {
+					return err
+				}
+
+				currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn)).Run()
+				if err == nil && currentContext.CurrentMembership != nil {
+					if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
+						return fmt.Errorf("writing config file: %w", err)
+					}
+				}
+			}
+
+			// reload the connection now that we have the org name
+			if orgName := viper.GetString(confOptions.organization.viperKey); orgName != "" {
+				opts = append(opts, grpcconn.WithOrgName(orgName))
+			}
+
 			conn, err := grpcconn.New(controlplaneURL, apiToken, opts...)
 			if err != nil {
 				return err
 			}
-
 			actionOpts = newActionOpts(logger, conn)
 
 			if !isTelemetryDisabled() {
@@ -152,7 +189,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			return nil
 		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
 			return cleanup(actionOpts.CPConnection)
 		},
 	}
@@ -188,6 +225,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	// Override the oauth authentication requirement for the CLI by providing an API token
 	rootCmd.PersistentFlags().StringVarP(&apiToken, "token", "t", "", fmt.Sprintf("API token. NOTE: Alternatively use the env variable %s", tokenEnvVarName))
+
+	rootCmd.PersistentFlags().StringP(confOptions.organization.flagName, "n", "", "organization name")
+	cobra.CheckErr(viper.BindPFlag(confOptions.organization.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.organization.flagName)))
 
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
@@ -452,4 +492,10 @@ func hashControlPlaneURL() string {
 
 func apiInsecure() bool {
 	return viper.GetBool(confOptions.insecure.viperKey)
+}
+
+// setLocalOrganization updates the local organization configuration
+func setLocalOrganization(orgName string) error {
+	viper.Set(confOptions.organization.viperKey, orgName)
+	return viper.WriteConfig()
 }

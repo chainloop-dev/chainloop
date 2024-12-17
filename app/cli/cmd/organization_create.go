@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
@@ -32,6 +33,11 @@ func newOrganizationCreateCmd() *cobra.Command {
 			org, err := action.NewOrgCreate(actionOpts).Run(context.Background(), name)
 			if err != nil {
 				return err
+			}
+
+			// set the local state
+			if err := setLocalOrganization(name); err != nil {
+				return fmt.Errorf("writing config file: %w", err)
 			}
 
 			logger.Info().Msgf("Organization %q created!", org.Name)

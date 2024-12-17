@@ -179,6 +179,39 @@ export function userWithNoMembershipErrorToJSON(object: UserWithNoMembershipErro
   }
 }
 
+export enum UserNotMemberOfOrgError {
+  USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED = 0,
+  USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function userNotMemberOfOrgErrorFromJSON(object: any): UserNotMemberOfOrgError {
+  switch (object) {
+    case 0:
+    case "USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED":
+      return UserNotMemberOfOrgError.USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED;
+    case 1:
+    case "USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG":
+      return UserNotMemberOfOrgError.USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return UserNotMemberOfOrgError.UNRECOGNIZED;
+  }
+}
+
+export function userNotMemberOfOrgErrorToJSON(object: UserNotMemberOfOrgError): string {
+  switch (object) {
+    case UserNotMemberOfOrgError.USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED:
+      return "USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED";
+    case UserNotMemberOfOrgError.USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG:
+      return "USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG";
+    case UserNotMemberOfOrgError.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface WorkflowItem {
   id: string;
   name: string;

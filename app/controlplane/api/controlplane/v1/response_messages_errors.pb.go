@@ -58,3 +58,27 @@ func IsUserWithNoMembershipErrorNotInOrg(err error) bool {
 func ErrorUserWithNoMembershipErrorNotInOrg(format string, args ...interface{}) *errors.Error {
 	return errors.New(403, UserWithNoMembershipError_USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG.String(), fmt.Sprintf(format, args...))
 }
+
+func IsUserNotMemberOfOrgErrorUnspecified(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == UserNotMemberOfOrgError_USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED.String() && e.Code == 500
+}
+
+func ErrorUserNotMemberOfOrgErrorUnspecified(format string, args ...interface{}) *errors.Error {
+	return errors.New(500, UserNotMemberOfOrgError_USER_NOT_MEMBER_OF_ORG_ERROR_UNSPECIFIED.String(), fmt.Sprintf(format, args...))
+}
+
+func IsUserNotMemberOfOrgErrorNotInOrg(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == UserNotMemberOfOrgError_USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG.String() && e.Code == 403
+}
+
+func ErrorUserNotMemberOfOrgErrorNotInOrg(format string, args ...interface{}) *errors.Error {
+	return errors.New(403, UserNotMemberOfOrgError_USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG.String(), fmt.Sprintf(format, args...))
+}

@@ -66,6 +66,11 @@ func newOrganizationLeaveCmd() *cobra.Command {
 				return fmt.Errorf("deleting membership: %w", err)
 			}
 
+			// set the local state
+			if err := setLocalOrganization(""); err != nil {
+				return fmt.Errorf("writing config file: %w", err)
+			}
+
 			logger.Info().Msg("Membership deleted")
 			return nil
 		},

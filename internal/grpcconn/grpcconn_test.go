@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ import (
 )
 
 func TestGetRequestMetadata(t *testing.T) {
-	want := map[string]string{"authorization": "Bearer token"}
-	auth := newTokenAuth("token", false)
+	const wantOrg = "org-1"
+	want := map[string]string{"authorization": "Bearer token", "Chainloop-Organization": wantOrg}
+	auth := newTokenAuth("token", false, wantOrg)
 	got, err := auth.GetRequestMetadata(context.TODO())
 	assert.NoError(t, err)
 
@@ -41,7 +42,7 @@ func TestRequireTransportSecurity(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		auth := newTokenAuth("token", tc.insecure)
+		auth := newTokenAuth("token", tc.insecure, "org-1")
 		assert.Equal(t, tc.want, auth.RequireTransportSecurity())
 	}
 }

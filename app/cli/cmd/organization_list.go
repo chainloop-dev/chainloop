@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const UserWithNoOrganizationMsg = "you are not part of any organization, please run \"chainloop organization create --name ORG_NAME\" to create one"
@@ -50,11 +51,15 @@ func orgMembershipTableOutput(items []*action.MembershipItem) error {
 		return nil
 	}
 
+	// Get the current organization from viper configuration
+	currentOrg := viper.GetString(confOptions.organization.viperKey)
+
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"Name", "Current", "Role", "Joined At"})
+	t.AppendHeader(table.Row{"Name", "Current", "Default", "Role", "Joined At"})
 
 	for _, i := range items {
-		t.AppendRow(table.Row{i.Org.Name, i.Current, i.Role, i.CreatedAt.Format(time.RFC822)})
+		current := i.Org.Name == currentOrg
+		t.AppendRow(table.Row{i.Org.Name, current, i.Default, i.Role, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 
