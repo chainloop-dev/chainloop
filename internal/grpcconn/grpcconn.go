@@ -30,6 +30,7 @@ import (
 type newOptionalArg struct {
 	caFilePath string
 	insecure   bool
+	orgName    string
 }
 
 type Option func(*newOptionalArg)
@@ -46,6 +47,12 @@ func WithInsecure(insecure bool) Option {
 	}
 }
 
+func WithOrgName(orgName string) Option {
+	return func(opt *newOptionalArg) {
+		opt.orgName = orgName
+	}
+}
+
 // Simple wrapper around grpc.Dial that returns a grpc.ClientConn
 // It sets up the connection with the correct credentials headers
 func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
@@ -56,7 +63,7 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 
 	var opts []grpc.DialOption
 	if authToken != "" {
-		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure)
+		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure, optionalArgs.orgName)
 
 		opts = []grpc.DialOption{
 			grpc.WithPerRPCCredentials(grpcCreds),
@@ -112,18 +119,21 @@ func appendCAFromFile(path string, certsPool *x509.CertPool) error {
 type tokenAuth struct {
 	token    string
 	insecure bool
+	orgName  string
 }
 
 // Implementation of PerRPCCredentials interface that sends a bearer token in each request.
 // https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
-func newTokenAuth(token string, insecure bool) *tokenAuth {
-	return &tokenAuth{token, insecure}
+func newTokenAuth(token string, insecure bool, orgName string) *tokenAuth {
+	return &tokenAuth{token, insecure, orgName}
 }
 
 // Return value is mapped to request headers.
 func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
+	const OrganizationHeader = "Chainloop-Organization"
 	return map[string]string{
-		"authorization": "Bearer " + t.token,
+		"authorization":    "Bearer " + t.token,
+		OrganizationHeader: t.orgName,
 	}, nil
 }
 

@@ -163,7 +163,7 @@ func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, erro
 func (uc *UserUseCase) MembershipInOrg(ctx context.Context, userID string, orgName string) (*Membership, error) {
 	m, err := uc.membershipUseCase.FindByOrgNameAndUser(ctx, orgName, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find membership: %w", err)
+		return nil, err
 	} else if m == nil {
 		return nil, NewErrNotFound("user does not have this org associated")
 	}

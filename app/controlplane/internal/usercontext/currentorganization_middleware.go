@@ -36,7 +36,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				return handler(ctx, req)
 			}
 
-			orgName, err := getOrganizationName(ctx)
+			orgName, err := GetOrganizationNameFromHeader(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("error getting organization name: %w", err)
 			}
@@ -44,7 +44,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 			if orgName != "" {
 				ctx, err = setCurrentOrganizationFromHeader(ctx, u, orgName, userUseCase)
 				if err != nil {
-					return nil, fmt.Errorf("error setting current org: %w", err)
+					return nil, v1.ErrorUserNotMemberOfOrgErrorNotInOrg("user is not a member of organization %s", orgName)
 				}
 			} else {
 				// If no organization name is provided, we use the DB to find the current organization

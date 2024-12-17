@@ -34,7 +34,7 @@ type OrgItem struct {
 
 type MembershipItem struct {
 	ID        string     `json:"id"`
-	Current   bool       `json:"current"`
+	Default   bool       `json:"current"`
 	CreatedAt *time.Time `json:"joinedAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`
 	Org       *OrgItem
@@ -96,7 +96,7 @@ func pbMembershipItemToAction(in *pb.OrgMembershipItem) *MembershipItem {
 		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		UpdatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
 		Org:       pbOrgItemToAction(in.Org),
-		Current:   in.Current,
+		Default:   in.Current,
 		Role:      pbRoleToString(in.Role),
 		User:      pbUserItemToAction(in.User),
 	}

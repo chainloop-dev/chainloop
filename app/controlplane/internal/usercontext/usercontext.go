@@ -37,7 +37,7 @@ func GetRawToken(ctx context.Context) (string, error) {
 	return auths[1], nil
 }
 
-func getOrganizationName(ctx context.Context) (string, error) {
+func GetOrganizationNameFromHeader(ctx context.Context) (string, error) {
 	const OrganizationHeader = "Chainloop-Organization"
 	header, ok := transport.FromServerContext(ctx)
 	if ok {

@@ -34,10 +34,9 @@ import (
 func main() {
 	// Couldn't find an easier way to disable the timestamp
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, FormatTimestamp: func(interface{}) string { return "" }})
-	rootCmd := cmd.NewRootCmd(logger)
 
 	// Run the command
-	if err := rootCmd.Execute(); err != nil {
+	if err := cmd.Execute(logger); err != nil {
 		msg, exitCode := errorInfo(err, logger)
 		logger.Error().Msg(msg)
 		os.Exit(exitCode)
@@ -90,8 +89,8 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		msg = "your authentication token has expired, please run chainloop auth login again"
 	case isWrappedErr(st, jwtMiddleware.ErrMissingJwtToken):
 		msg = "authentication required, please run \"chainloop auth login\""
-	case v1.IsUserWithNoMembershipErrorNotInOrg(err):
-		msg = cmd.UserWithNoOrganizationMsg
+	case v1.IsUserNotMemberOfOrgErrorNotInOrg(err), v1.IsUserWithNoMembershipErrorNotInOrg(err):
+		msg = "the organization you are trying to access does not exist, please run \"chainloop auth login\""
 	case errors.As(err, &cmd.GracefulError{}):
 		// Graceful recovery if the flag is set and the received error is marked as recoverable
 		if cmd.GracefulExit {
