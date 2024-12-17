@@ -139,7 +139,8 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, tok
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return ErrNotFound
+			// Ignore endpoint not found as it might not be implemented by the provider
+			return nil
 		}
 
 		return fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
