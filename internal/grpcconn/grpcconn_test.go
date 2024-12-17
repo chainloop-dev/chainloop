@@ -24,7 +24,7 @@ import (
 
 func TestGetRequestMetadata(t *testing.T) {
 	const wantOrg = "org-1"
-	want := map[string]string{"authorization": "Bearer token", "Chainloop-Org": wantOrg}
+	want := map[string]string{"authorization": "Bearer token", "Chainloop-Organization": wantOrg}
 	auth := newTokenAuth("token", false, wantOrg)
 	got, err := auth.GetRequestMetadata(context.TODO())
 	assert.NoError(t, err)
