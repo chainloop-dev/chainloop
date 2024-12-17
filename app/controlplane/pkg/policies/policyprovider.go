@@ -138,7 +138,7 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, tok
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNotFound {
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusMethodNotAllowed {
 			// Ignore endpoint not found as it might not be implemented by the provider
 			return nil
 		}
