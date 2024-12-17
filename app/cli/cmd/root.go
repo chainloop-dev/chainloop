@@ -78,8 +78,7 @@ func Execute(l zerolog.Logger) error {
 	if err := rootCmd.Execute(); err != nil {
 		// The local file is pointing to the wrong organization, we remove it
 		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
-			viper.Set(confOptions.organization.viperKey, "")
-			if err := viper.WriteConfig(); err != nil {
+			if err := setLocalOrganization(""); err != nil {
 				logger.Debug().Err(err).Msg("failed to remove organization from config")
 			}
 		}
@@ -133,8 +132,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 				currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn)).Run()
 				if err == nil && currentContext.CurrentMembership != nil {
-					viper.Set(confOptions.organization.viperKey, currentContext.CurrentMembership.Org.Name)
-					if err := viper.WriteConfig(); err != nil {
+					if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
 						return fmt.Errorf("writing config file: %w", err)
 					}
 				}
@@ -494,4 +492,10 @@ func hashControlPlaneURL() string {
 
 func apiInsecure() bool {
 	return viper.GetBool(confOptions.insecure.viperKey)
+}
+
+// setLocalOrganization updates the local organization configuration
+func setLocalOrganization(orgName string) error {
+	viper.Set(confOptions.organization.viperKey, orgName)
+	return viper.WriteConfig()
 }

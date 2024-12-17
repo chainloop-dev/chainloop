@@ -20,7 +20,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func newOrganizationSet() *cobra.Command {
@@ -47,9 +46,8 @@ func newOrganizationSet() *cobra.Command {
 				return fmt.Errorf("organization %s not found", orgName)
 			}
 
-			// Set local state
-			viper.Set(confOptions.organization.viperKey, orgName)
-			if err := viper.WriteConfig(); err != nil {
+			// set the local state
+			if err := setLocalOrganization(orgName); err != nil {
 				return fmt.Errorf("writing config file: %w", err)
 			}
 
