@@ -88,11 +88,14 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	var rawMaterial []byte
 	var err error
 
-	// nolint: gocritic
-	switch {
-	case m.GetArtifact() != nil:
+	artifact := m.GetArtifact()
+	if artifact == nil && m.GetSbomArtifact() != nil {
+		artifact = m.GetSbomArtifact().GetArtifact()
+	}
+
+	if artifact != nil {
 		if m.InlineCas {
-			rawMaterial = m.GetArtifact().GetContent()
+			rawMaterial = artifact.GetContent()
 		} else if value == "" {
 			return nil, errors.New("artifact path required")
 		} else if m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
@@ -102,12 +105,6 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read material content: %w", err)
 			}
-		}
-	case m.GetSbomArtifact() != nil:
-		if m.InlineCas {
-			rawMaterial = m.GetSbomArtifact().GetArtifact().GetContent()
-		} else if value == "" {
-			return nil, errors.New("sbom artifact path required")
 		}
 	}
 
@@ -277,6 +274,8 @@ func (m *Attestation_Material) GetID() string {
 		return m.GetArtifact().GetId()
 	} else if m.GetContainerImage() != nil {
 		return m.GetContainerImage().GetId()
+	} else if m.GetSbomArtifact() != nil {
+		return m.GetSbomArtifact().GetArtifact().GetId()
 	}
 	return ""
 }

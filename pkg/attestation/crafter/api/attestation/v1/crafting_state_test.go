@@ -135,8 +135,10 @@ func TestNormalizeOutput(t *testing.T) {
 
 func TestGetEvaluableContentWithMetadata(t *testing.T) {
 	cases := []struct {
-		name     string
-		material *Attestation_Material
+		name      string
+		filename  string
+		material  *Attestation_Material
+		testField string
 	}{
 		{
 			name: "artifact based material",
@@ -178,11 +180,29 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 				InlineCas: true,
 			},
 		},
+		{
+			name: "sbom artifact material not inline",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				M: &Attestation_Material_SbomArtifact{
+					SbomArtifact: &Attestation_Material_SBOMArtifact{
+						Artifact: &Attestation_Material_Artifact{
+							Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+						},
+						MainComponent: &Attestation_Material_SBOMArtifact_MainComponent{
+							Name: "the-main-component",
+						},
+					},
+				},
+			},
+			filename:  "testdata/sbom.cyclonedx.json",
+			testField: "bomFormat",
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			content, err := tc.material.GetEvaluableContent("")
+			content, err := tc.material.GetEvaluableContent(tc.filename)
 			assert.NoError(t, err)
 			decoder := json.NewDecoder(bytes.NewReader(content))
 
@@ -191,6 +211,10 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, decodedMaterial["chainloop_metadata"].(map[string]any)["name"], "name")
+
+			if tc.testField != "" {
+				assert.NotEmpty(t, decodedMaterial[tc.testField])
+			}
 		})
 	}
 }
