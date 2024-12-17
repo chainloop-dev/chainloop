@@ -16,6 +16,7 @@
 package policies
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,6 +32,7 @@ import (
 
 const (
 	policiesEndpoint = "policies"
+	validateAction   = "validate"
 	groupsEndpoint   = "groups"
 
 	digestParam  = "digest"
@@ -48,6 +50,15 @@ type ProviderResponse struct {
 	Data   map[string]any `json:"data"`
 	Digest string         `json:"digest"`
 	Raw    *RawMessage    `json:"raw"`
+}
+
+type ValidateRequest struct {
+	PolicyAttachment string `json:"policy_attachment"`
+}
+
+type ValidateResponse struct {
+	Valid            bool     `json:"valid"`
+	ValidationErrors []string `json:"validationErrors"`
 }
 
 type RawMessage struct {
@@ -89,7 +100,69 @@ func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.
 }
 
 func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, token string) error {
-	panic("sdf")
+	endpoint, err := url.JoinPath(p.url, policiesEndpoint, validateAction)
+	if err != nil {
+		return fmt.Errorf("invalid url: %w", err)
+	}
+	url, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("error parsing policy provider URL: %w", err)
+	}
+
+	attBody, err := protojson.Marshal(att)
+	if err != nil {
+		return fmt.Errorf("error serializing policy attachment: %w", err)
+	}
+
+	validateReq := &ValidateRequest{
+		PolicyAttachment: string(attBody),
+	}
+
+	reqBody, err := json.Marshal(validateReq)
+	if err != nil {
+		return fmt.Errorf("error serializing policy validation request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url.String(), bytes.NewReader(reqBody))
+	if err != nil {
+		return fmt.Errorf("error creating policy request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/json")
+
+	// make the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error executing policy request: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return ErrNotFound
+		}
+
+		return fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
+	}
+
+	resBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading validation response: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	// unmarshall response
+	var response ValidateResponse
+	if err := json.Unmarshal(resBytes, &response); err != nil {
+		return fmt.Errorf("error unmarshalling validation response: %w", err)
+	}
+
+	if !response.Valid {
+		return fmt.Errorf("validation failures: %v", response.ValidationErrors)
+	}
+
+	return nil
 }
 
 // ResolveGroup calls remote provider for retrieving a policy group definition
