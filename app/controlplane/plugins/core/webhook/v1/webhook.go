@@ -69,7 +69,8 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	}
 
 	// Test the webhook URL and extract some information from it to use it as reference for the user
-	resp, err := http.Get(request.WebhookURL)
+	i.Logger.Info("testing webhook URL POST with empty body")
+	resp, err := http.Post(request.WebhookURL, "application/json", nil)
 	if err != nil {
 		return nil, fmt.Errorf("invalid webhook URL: %w", err)
 	}
