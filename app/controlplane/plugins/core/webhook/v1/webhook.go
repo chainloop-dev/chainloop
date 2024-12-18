@@ -95,7 +95,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	return &sdk.RegistrationResponse{
 		Configuration: config,
 		// We treat the webhook URL as a sensitive field so we store it in the credentials storage
-		Credentials: &sdk.Credentials{Password: request.WebhookURL},
+		Credentials: &sdk.Credentials{URL: request.WebhookURL},
 	}, nil
 }
 
@@ -124,7 +124,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("generating summary table: %w", err)
 	}
 
-	webhookURL := req.RegistrationInfo.Credentials.Password
+	webhookURL := req.RegistrationInfo.Credentials.URL
 	if err := executeWebhook(webhookURL, []byte(summary), "New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
