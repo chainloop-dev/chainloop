@@ -247,7 +247,12 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
 			color = text.Colors{text.FgHiGreen}
 		}
 
-		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, color.Sprint(prefix+strings.Join(violations, prefix)))})
+		// Color the violations text before joining
+		for i, v := range violations {
+			violations[i] = color.Sprint(v)
+		}
+
+		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, prefix+strings.Join(violations, prefix))})
 	}
 }
 
