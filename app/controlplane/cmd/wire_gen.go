@@ -43,7 +43,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	providers := loader.LoadProviders(readerWriter)
 	bootstrap_CASServer := bootstrap.CasServer
-	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, bootstrap_CASServer, logger)
+	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
+	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -310,4 +311,13 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 
 func serviceOpts(l log.Logger) []service.NewOpt {
 	return []service.NewOpt{service.WithLogger(l)}
+}
+
+func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {
+	if in == nil {
+		return &biz.CASServerDefaultOpts{}
+	}
+	return &biz.CASServerDefaultOpts{
+		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
+	}
 }
