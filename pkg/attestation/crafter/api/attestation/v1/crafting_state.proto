@@ -58,6 +58,8 @@ message Attestation {
     message KeyVal {
       string id = 1 [(buf.validate.field).string.min_len = 1];
       string value = 2 [(buf.validate.field).string.min_len = 1];
+
+      string digest = 3;
     }
 
     message ContainerImage {

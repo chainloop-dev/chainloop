@@ -462,6 +462,10 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 		}
 
 		m.Value = string(material.Content)
+		hash, ok := material.Digest["sha256"]
+		if ok {
+			m.Hash = &crv1.Hash{Algorithm: "sha256", Hex: hash}
+		}
 
 		return m, nil
 	}

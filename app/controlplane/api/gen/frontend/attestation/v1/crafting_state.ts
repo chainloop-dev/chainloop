@@ -68,6 +68,7 @@ export interface Attestation_Material_AnnotationsEntry {
 export interface Attestation_Material_KeyVal {
   id: string;
   value: string;
+  digest: string;
 }
 
 export interface Attestation_Material_ContainerImage {
@@ -958,7 +959,7 @@ export const Attestation_Material_AnnotationsEntry = {
 };
 
 function createBaseAttestation_Material_KeyVal(): Attestation_Material_KeyVal {
-  return { id: "", value: "" };
+  return { id: "", value: "", digest: "" };
 }
 
 export const Attestation_Material_KeyVal = {
@@ -968,6 +969,9 @@ export const Attestation_Material_KeyVal = {
     }
     if (message.value !== "") {
       writer.uint32(18).string(message.value);
+    }
+    if (message.digest !== "") {
+      writer.uint32(26).string(message.digest);
     }
     return writer;
   },
@@ -993,6 +997,13 @@ export const Attestation_Material_KeyVal = {
 
           message.value = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1003,13 +1014,18 @@ export const Attestation_Material_KeyVal = {
   },
 
   fromJSON(object: any): Attestation_Material_KeyVal {
-    return { id: isSet(object.id) ? String(object.id) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      value: isSet(object.value) ? String(object.value) : "",
+      digest: isSet(object.digest) ? String(object.digest) : "",
+    };
   },
 
   toJSON(message: Attestation_Material_KeyVal): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.value !== undefined && (obj.value = message.value);
+    message.digest !== undefined && (obj.digest = message.digest);
     return obj;
   },
 
@@ -1021,6 +1037,7 @@ export const Attestation_Material_KeyVal = {
     const message = createBaseAttestation_Material_KeyVal();
     message.id = object.id ?? "";
     message.value = object.value ?? "";
+    message.digest = object.digest ?? "";
     return message;
   },
 };

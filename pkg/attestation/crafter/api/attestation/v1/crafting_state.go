@@ -68,7 +68,7 @@ func (m *Attestation_Material) NormalizedOutput() (*NormalizedMaterialOutput, er
 	}
 
 	if a := m.GetString_(); a != nil {
-		return &NormalizedMaterialOutput{Content: []byte(a.Value)}, nil
+		return &NormalizedMaterialOutput{Content: []byte(a.Value), Digest: a.GetDigest()}, nil
 	}
 
 	if a := m.GetArtifact(); a != nil {
