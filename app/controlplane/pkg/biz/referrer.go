@@ -280,10 +280,12 @@ func extractReferrers(att *dsse.Envelope, repo ReferrerRepo) ([]*Referrer, error
 	attestationReferrer.Annotations = predicate.GetAnnotations()
 	attestationReferrer.Metadata = map[string]string{
 		// workflow name, team and project
-		"name":         predicate.GetMetadata().Name,
-		"team":         predicate.GetMetadata().Team,
-		"project":      predicate.GetMetadata().Project,
-		"organization": predicate.GetMetadata().Organization,
+		"name":             predicate.GetMetadata().Name,
+		"team":             predicate.GetMetadata().Team,
+		"project":          predicate.GetMetadata().Project,
+		"organization":     predicate.GetMetadata().Organization,
+		"contract_name":    predicate.GetMetadata().ContractName,
+		"contract_version": predicate.GetMetadata().ContractVersion,
 	}
 
 	// Create new referrers for each material
