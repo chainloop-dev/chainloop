@@ -126,6 +126,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		Project:        workflow.GetProject(),
 		Team:           workflow.GetTeam(),
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
+		ContractName:   workflow.ContractName,
 	}
 
 	if opts.ProjectVersion != "" {

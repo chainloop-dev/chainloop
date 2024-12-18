@@ -238,6 +238,8 @@ export interface WorkflowMetadata {
   /** Not required since we might be doing a dry-run */
   workflowRunId: string;
   schemaRevision: string;
+  /** contract name (contract version is "schema_revision") */
+  contractName: string;
   /** organization name */
   organization: string;
 }
@@ -2514,6 +2516,7 @@ function createBaseWorkflowMetadata(): WorkflowMetadata {
     workflowId: "",
     workflowRunId: "",
     schemaRevision: "",
+    contractName: "",
     organization: "",
   };
 }
@@ -2543,6 +2546,9 @@ export const WorkflowMetadata = {
     }
     if (message.schemaRevision !== "") {
       writer.uint32(58).string(message.schemaRevision);
+    }
+    if (message.contractName !== "") {
+      writer.uint32(90).string(message.contractName);
     }
     if (message.organization !== "") {
       writer.uint32(66).string(message.organization);
@@ -2613,6 +2619,13 @@ export const WorkflowMetadata = {
 
           message.schemaRevision = reader.string();
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.contractName = reader.string();
+          continue;
         case 8:
           if (tag !== 66) {
             break;
@@ -2639,6 +2652,7 @@ export const WorkflowMetadata = {
       workflowId: isSet(object.workflowId) ? String(object.workflowId) : "",
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
       schemaRevision: isSet(object.schemaRevision) ? String(object.schemaRevision) : "",
+      contractName: isSet(object.contractName) ? String(object.contractName) : "",
       organization: isSet(object.organization) ? String(object.organization) : "",
     };
   },
@@ -2654,6 +2668,7 @@ export const WorkflowMetadata = {
     message.workflowId !== undefined && (obj.workflowId = message.workflowId);
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.schemaRevision !== undefined && (obj.schemaRevision = message.schemaRevision);
+    message.contractName !== undefined && (obj.contractName = message.contractName);
     message.organization !== undefined && (obj.organization = message.organization);
     return obj;
   },
@@ -2674,6 +2689,7 @@ export const WorkflowMetadata = {
     message.workflowId = object.workflowId ?? "";
     message.workflowRunId = object.workflowRunId ?? "";
     message.schemaRevision = object.schemaRevision ?? "";
+    message.contractName = object.contractName ?? "";
     message.organization = object.organization ?? "";
     return message;
   },

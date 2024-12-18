@@ -104,6 +104,8 @@
       }
     ],
     "metadata": {
+      "contractName": "",
+      "contractVersion": "4",
       "finishedAt": "2023-10-20T12:58:10.562093962Z",
       "initializedAt": "2023-10-20T12:57:10.562093962Z",
       "name": "test-new-types",

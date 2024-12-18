@@ -109,10 +109,12 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"name":         "only-sbom",
-						"organization": "",
-						"team":         "",
-						"project":      "foo",
+						"contractName":    "",
+						"contractVersion": "",
+						"name":            "only-sbom",
+						"organization":    "",
+						"team":            "",
+						"project":         "foo",
 					},
 					Annotations: map[string]string{
 						"branch":   "stable",
@@ -158,10 +160,12 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						},
 					},
 					Metadata: map[string]string{
-						"name":         "test",
-						"organization": "",
-						"team":         "",
-						"project":      "bar",
+						"contractName":    "",
+						"contractVersion": "",
+						"name":            "test",
+						"organization":    "",
+						"team":            "",
+						"project":         "bar",
 					},
 					Annotations: map[string]string{
 						"version": "oss",
@@ -189,10 +193,12 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"name":         "only-sbom",
-						"organization": "",
-						"team":         "",
-						"project":      "foo",
+						"contractName":    "",
+						"contractVersion": "",
+						"name":            "only-sbom",
+						"organization":    "",
+						"team":            "",
+						"project":         "foo",
 					},
 					Annotations: map[string]string{
 						"branch":   "stable",
@@ -248,10 +254,12 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"name":         "test-new-types",
-						"organization": "my-org",
-						"team":         "my-team",
-						"project":      "test",
+						"contractName":    "",
+						"contractVersion": "",
+						"name":            "test-new-types",
+						"organization":    "my-org",
+						"team":            "my-team",
+						"project":         "test",
 					},
 					References: []*Referrer{
 						{

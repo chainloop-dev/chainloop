@@ -77,14 +77,16 @@ type ProvenancePredicateCommon struct {
 }
 
 type Metadata struct {
-	Name          string     `json:"name"`
-	Project       string     `json:"project"`
-	Team          string     `json:"team"`
-	InitializedAt *time.Time `json:"initializedAt"`
-	FinishedAt    *time.Time `json:"finishedAt"`
-	WorkflowRunID string     `json:"workflowRunID"`
-	WorkflowID    string     `json:"workflowID"`
-	Organization  string     `json:"organization"`
+	Name            string     `json:"name"`
+	Project         string     `json:"project"`
+	Team            string     `json:"team"`
+	InitializedAt   *time.Time `json:"initializedAt"`
+	FinishedAt      *time.Time `json:"finishedAt"`
+	WorkflowRunID   string     `json:"workflowRunID"`
+	WorkflowID      string     `json:"workflowID"`
+	Organization    string     `json:"organization"`
+	ContractName    string     `json:"contractName"`
+	ContractVersion string     `json:"contractVersion"`
 }
 
 type Maintainer struct {
@@ -124,14 +126,16 @@ func getChainloopMeta(att *v1.Attestation) *Metadata {
 	wfMeta := att.GetWorkflow()
 
 	return &Metadata{
-		InitializedAt: &initializedAt,
-		FinishedAt:    &finishedAt,
-		Name:          wfMeta.GetName(),
-		Team:          wfMeta.GetTeam(),
-		Project:       wfMeta.GetProject(),
-		WorkflowRunID: wfMeta.GetWorkflowRunId(),
-		WorkflowID:    wfMeta.GetWorkflowId(),
-		Organization:  wfMeta.GetOrganization(),
+		InitializedAt:   &initializedAt,
+		FinishedAt:      &finishedAt,
+		Name:            wfMeta.GetName(),
+		Team:            wfMeta.GetTeam(),
+		Project:         wfMeta.GetProject(),
+		WorkflowRunID:   wfMeta.GetWorkflowRunId(),
+		WorkflowID:      wfMeta.GetWorkflowId(),
+		Organization:    wfMeta.GetOrganization(),
+		ContractName:    wfMeta.GetContractName(),
+		ContractVersion: wfMeta.GetSchemaRevision(),
 	}
 }
 
