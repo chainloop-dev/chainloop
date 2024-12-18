@@ -58,6 +58,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
+			NewCASServerOptions,
 		),
 	)
 }

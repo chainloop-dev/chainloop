@@ -207,6 +207,12 @@ func NewCASBackendConfig() *conf.Bootstrap_CASServer {
 	}
 }
 
+func NewCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {
+	return &biz.CASServerDefaultOpts{
+		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
+	}
+}
+
 func NewPromSpec() []*conf.PrometheusIntegrationSpec {
 	return []*conf.PrometheusIntegrationSpec{}
 }

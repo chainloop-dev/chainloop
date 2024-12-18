@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
@@ -119,13 +118,18 @@ type CASBackendUseCase struct {
 	MaxBytesDefault int64
 }
 
-func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, c *conf.Bootstrap_CASServer, l log.Logger) (*CASBackendUseCase, error) {
+// CASServerDefaultOpts holds the default options for the CAS server
+type CASServerDefaultOpts struct {
+	DefaultEntryMaxSize string
+}
+
+func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, c *CASServerDefaultOpts, l log.Logger) (*CASBackendUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
 	var maxBytesDefault uint64 = 100 * 1024 * 1024 // 100MB
-	if c.GetDefaultEntryMaxSize() != "" {
+	if c != nil && c.DefaultEntryMaxSize != "" {
 		var err error
 		maxBytesDefault, err = bytefmt.ToBytes(c.DefaultEntryMaxSize)
 		if err != nil {
