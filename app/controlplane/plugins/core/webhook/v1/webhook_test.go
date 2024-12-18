@@ -32,18 +32,13 @@ func TestValidateRegistrationInput(t *testing.T) {
 		},
 		{
 			name:  "ok, all properties",
-			input: map[string]interface{}{"webhook": "http://repo.io", "username": "u"},
+			input: map[string]interface{}{"webhook": "http://repo.io"},
 		},
 		{
 			name:  "ok, only required properties",
 			input: map[string]interface{}{"webhook": "http://repo.io"},
 		},
-		{
-			name:   "not ok, empty username",
-			input:  map[string]interface{}{"webhook": "http://repo.io", "username": ""},
-			errMsg: "length must be >= 1, but got 0",
-		},
-		{
+		 {
 			name:  "ok, webhook with path",
 			input: map[string]interface{}{"webhook": "http://repo/foo/bar"},
 		},
@@ -81,19 +76,16 @@ func TestRegister(t *testing.T) {
 	testCases := []struct {
 		name       string
 		webhookURL string
-		username   string
 		wantErr    bool
 	}{
 		{
 			name:       "valid registration",
 			webhookURL: "http://example.com",
-			username:   "user",
 			wantErr:    false,
 		},
 		{
 			name:       "invalid registration, invalid webhook URL",
 			webhookURL: "http://invalid-url",
-			username:   "user",
 			wantErr:    true,
 		},
 	}
@@ -104,7 +96,7 @@ func TestRegister(t *testing.T) {
 			require.NoError(t, err)
 
 			req := &sdk.RegistrationRequest{
-				Payload: sdk.Configuration([]byte(`{"webhook":"` + tc.webhookURL + `", "username":"` + tc.username + `"}`)),
+				Payload: sdk.Configuration([]byte(`{"webhook":"` + tc.webhookURL + `"}`)),
 			}
 
 			resp, err := integration.Register(context.Background(), req)
@@ -132,19 +124,16 @@ func TestExecute(t *testing.T) {
 	testCases := []struct {
 		name       string
 		webhookURL string
-		username   string
 		wantErr    bool
 	}{
 		{
 			name:       "valid execution",
 			webhookURL: "http://example.com",
-			username:   "user",
 			wantErr:    false,
 		},
 		{
 			name:       "invalid execution, invalid webhook URL",
 			webhookURL: "http://invalid-url",
-			username:   "user",
 			wantErr:    true,
 		},
 	}
@@ -157,7 +146,7 @@ func TestExecute(t *testing.T) {
 			req := &sdk.ExecutionRequest{
 				RegistrationInfo: &sdk.RegistrationResponse{
 					Credentials: &sdk.Credentials{Password: tc.webhookURL},
-					Configuration: sdk.Configuration([]byte(`{"name":"webhook", "owner":"owner", "username":"` + tc.username + `"}`)),
+					Configuration: sdk.Configuration([]byte(`{"name":"webhook"}`)),
 				},
 				Input: &sdk.ExecuteInput{
 					Attestation: &sdk.ExecuteAttestation{
