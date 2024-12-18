@@ -66,6 +66,8 @@
       }
     ],
     "metadata": {
+      "contractName": "",
+      "contractVersion": "1",
       "finishedAt": "2023-05-03T17:25:12.743426076Z",
       "initializedAt": "2023-05-03T17:22:12.743426076Z",
       "name": "foo",
