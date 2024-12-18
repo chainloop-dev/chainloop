@@ -21,7 +21,6 @@ type Integration struct {
 // 1 - API schema definitions
 type registrationRequest struct {
 	WebhookURL string `json:"webhook" jsonschema:"format=uri,description=URL of the webhook"`
-	Username   string `json:"username,omitempty" jsonschema:"minLength=1,description=Override the default username of the webhook"`
 }
 
 type attachmentRequest struct{}
@@ -30,10 +29,6 @@ type attachmentRequest struct{}
 type registrationState struct {
 	// Information from the webhook
 	WebhookName  string `json:"name"`
-	WebhookOwner string `json:"owner"`
-
-	// Username to be used while posting the message
-	Username string `json:"username,omitempty"`
 }
 
 func New(l log.Logger) (sdk.FanOut, error) {
@@ -91,8 +86,6 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	// Configuration State
 	config, err := sdk.ToConfig(&registrationState{
 		WebhookName:  webHookInfo.Name,
-		WebhookOwner: webHookInfo.User.Username,
-		Username:     request.Username,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
@@ -131,7 +124,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	}
 
 	webhookURL := req.RegistrationInfo.Credentials.Password
-	if err := executeWebhook(webhookURL, config.Username, []byte(summary), "New Attestation Received"); err != nil {
+	if err := executeWebhook(webhookURL, []byte(summary), "New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 
@@ -157,14 +150,13 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 // --boundary
 // Content-Disposition: form-data; name="files[0]"; filename="statement.json"
 // --boundary
-func executeWebhook(webhookURL, usernameOverride string, statement []byte, msgContent string) error {
+func executeWebhook(webhookURL string, statement []byte, msgContent string) error {
 	var b bytes.Buffer
 	multipartWriter := multipart.NewWriter(&b)
 
 	// webhook POST payload JSON
 	payload := payloadJSON{
 		Content:  msgContent,
-		Username: usernameOverride,
 		Attachments: []payloadAttachment{
 			{
 				ID:       0,
@@ -200,10 +192,16 @@ func executeWebhook(webhookURL, usernameOverride string, statement []byte, msgCo
 	// Needed to dump the content of the multipartWriter to the buffer
 	multipartWriter.Close()
 
-	// #nosec G107 - we are using a constant API URL that is not user input at this stage
-	r, err := http.Post(webhookURL, multipartWriter.FormDataContentType(), &b)
+	req, err := http.NewRequest("POST", webhookURL, &b)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
+
+	client := &http.Client{}
+	r, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("executing request: %w", err)
 	}
 	defer r.Body.Close()
 
@@ -217,7 +215,6 @@ func executeWebhook(webhookURL, usernameOverride string, statement []byte, msgCo
 
 type payloadJSON struct {
 	Content     string              `json:"content"`
-	Username    string              `json:"username,omitempty"`
 	Attachments []payloadAttachment `json:"attachments"`
 }
 
