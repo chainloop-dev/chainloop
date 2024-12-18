@@ -28,7 +28,7 @@ type attachmentRequest struct{}
 // 2 - Configuration state
 type registrationState struct {
 	// Information from the webhook
-	WebhookName  string `json:"name"`
+	WebhookName string `json:"name"`
 }
 
 func New(l log.Logger) (sdk.FanOut, error) {
@@ -86,7 +86,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 
 	// Configuration State
 	config, err := sdk.ToConfig(&registrationState{
-		WebhookName:  webHookInfo.Name,
+		WebhookName: webHookInfo.Name,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
@@ -129,6 +129,20 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 
+	// Handle SBOM and JUNIT materials
+	for _, material := range req.Input.Materials {
+		switch material.Type {
+		case sdk.MaterialTypeSBOM:
+			if err := executeWebhook(webhookURL, material.Content, "New SBOM Material Received"); err != nil {
+				return fmt.Errorf("error executing webhook for SBOM: %w", err)
+			}
+		case sdk.MaterialTypeJUNIT:
+			if err := executeWebhook(webhookURL, material.Content, "New JUNIT Material Received"); err != nil {
+				return fmt.Errorf("error executing webhook for JUNIT: %w", err)
+			}
+		}
+	}
+
 	i.Logger.Info("execution finished")
 	return nil
 }
@@ -157,7 +171,7 @@ func executeWebhook(webhookURL string, statement []byte, msgContent string) erro
 
 	// webhook POST payload JSON
 	payload := payloadJSON{
-		Content:  msgContent,
+		Content: msgContent,
 		Attachments: []payloadAttachment{
 			{
 				ID:       0,

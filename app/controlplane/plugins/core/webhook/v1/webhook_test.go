@@ -124,6 +124,7 @@ func TestExecute(t *testing.T) {
 	testCases := []struct {
 		name       string
 		webhookURL string
+		material   *sdk.ExecuteMaterial
 		wantErr    bool
 	}{
 		{
@@ -136,6 +137,24 @@ func TestExecute(t *testing.T) {
 			webhookURL: "http://invalid-url",
 			wantErr:    true,
 		},
+		{
+			name:       "valid execution with SBOM material",
+			webhookURL: "http://example.com",
+			material: &sdk.ExecuteMaterial{
+				Type:    sdk.MaterialTypeSBOM,
+				Content: []byte(`{"sbom": "content"}`),
+			},
+			wantErr: false,
+		},
+		{
+			name:       "valid execution with JUNIT material",
+			webhookURL: "http://example.com",
+			material: &sdk.ExecuteMaterial{
+				Type:    sdk.MaterialTypeJUNIT,
+				Content: []byte(`<testsuites></testsuites>`),
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -145,13 +164,14 @@ func TestExecute(t *testing.T) {
 
 			req := &sdk.ExecutionRequest{
 				RegistrationInfo: &sdk.RegistrationResponse{
-					Credentials: &sdk.Credentials{Password: tc.webhookURL},
+					Credentials:   &sdk.Credentials{URL: tc.webhookURL},
 					Configuration: sdk.Configuration([]byte(`{"name":"webhook"}`)),
 				},
 				Input: &sdk.ExecuteInput{
 					Attestation: &sdk.ExecuteAttestation{
 						Envelope: &dsse.Envelope{},
 					},
+					Materials: []*sdk.ExecuteMaterial{tc.material},
 				},
 			}
 
