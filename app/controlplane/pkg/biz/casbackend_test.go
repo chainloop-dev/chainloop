@@ -20,7 +20,6 @@ import (
 	"errors"
 	"testing"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -178,7 +177,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 
 	tests := []struct {
 		name        string
-		config      *conf.Bootstrap_CASServer
+		config      *biz.CASServerDefaultOpts
 		expectError bool
 		errorMsg    string
 		wantSize    int64 // Expected size in bytes after parsing
@@ -191,7 +190,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		},
 		{
 			name: "valid size - megabytes",
-			config: &conf.Bootstrap_CASServer{
+			config: &biz.CASServerDefaultOpts{
 				DefaultEntryMaxSize: "100MB",
 			},
 			expectError: false,
@@ -199,7 +198,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		},
 		{
 			name: "valid size - gigabytes",
-			config: &conf.Bootstrap_CASServer{
+			config: &biz.CASServerDefaultOpts{
 				DefaultEntryMaxSize: "2GB",
 			},
 			expectError: false,
@@ -207,7 +206,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		},
 		{
 			name: "invalid size format",
-			config: &conf.Bootstrap_CASServer{
+			config: &biz.CASServerDefaultOpts{
 				DefaultEntryMaxSize: "invalid",
 			},
 			expectError: true,
@@ -216,7 +215,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		},
 		{
 			name: "negative size",
-			config: &conf.Bootstrap_CASServer{
+			config: &biz.CASServerDefaultOpts{
 				DefaultEntryMaxSize: "-100MB",
 			},
 			expectError: true,
@@ -225,7 +224,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		},
 		{
 			name: "zero size",
-			config: &conf.Bootstrap_CASServer{
+			config: &biz.CASServerDefaultOpts{
 				DefaultEntryMaxSize: "0",
 			},
 			expectError: true,
@@ -234,7 +233,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 		},
 		{
 			name: "missing unit",
-			config: &conf.Bootstrap_CASServer{
+			config: &biz.CASServerDefaultOpts{
 				DefaultEntryMaxSize: "100",
 			},
 			expectError: true,

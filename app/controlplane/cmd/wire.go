@@ -61,6 +61,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newPolicyProviderConfig,
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
+			newCASServerOptions,
 		),
 	)
 }
@@ -84,5 +85,14 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 func serviceOpts(l log.Logger) []service.NewOpt {
 	return []service.NewOpt{
 		service.WithLogger(l),
+	}
+}
+
+func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {
+	if in == nil {
+		return &biz.CASServerDefaultOpts{}
+	}
+	return &biz.CASServerDefaultOpts{
+		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
 	}
 }
