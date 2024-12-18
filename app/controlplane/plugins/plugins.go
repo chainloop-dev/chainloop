@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/guac/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/slack-webhook/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/smtp/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/core/webhook/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	plugin_sdk "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/plugin"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -70,6 +71,7 @@ func Load(pluginsDir string, l log.Logger) (plugins sdk.AvailablePlugins, err er
 		discord.New,
 		guac.New,
 		slack.New,
+		webhook.New,
 	}
 
 	// Load plugins in memory from the array above
