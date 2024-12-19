@@ -193,6 +193,12 @@ func materialsTable(status *action.AttestationStatusResult, full bool) error {
 			}
 		}
 
+		evs := status.PolicyEvaluations[m.Name]
+		if len(evs) > 0 {
+			mt.AppendRow(table.Row{"Policies", "------"})
+			policiesTable(evs, mt)
+		}
+
 		mt.AppendSeparator()
 	}
 	mt.Render()

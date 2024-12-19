@@ -82,7 +82,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&runID, "id", "", "workflow Run ID")
-	cmd.Flags().StringVar(&attestationDigest, "digest", "", "content digest of the attestation")
+	cmd.Flags().StringVarP(&attestationDigest, "digest", "d", "", "content digest of the attestation")
 
 	cmd.Flags().BoolVar(&verifyAttestation, "verify", false, "verify the attestation")
 	cmd.Flags().StringVar(&publicKey, "key", "", fmt.Sprintf("public key used to verify the attestation. Note: You can also use env variable %s", signingKeyEnvVarName))
@@ -156,6 +156,12 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 			gt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
 		}
 	}
+
+	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]
+	if len(evs) > 0 {
+		gt.AppendRow(table.Row{"Policies", "------"})
+		policiesTable(evs, gt)
+	}
 	gt.Render()
 
 	predicateV1Table(att)
@@ -183,7 +189,9 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 				if m.Tag != "" {
 					v = fmt.Sprintf("%s:%s", v, m.Tag)
 				}
-				mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
+				if v != "" {
+					mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
+				}
 			}
 
 			if m.Hash != "" {
@@ -198,8 +206,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			}
 			evs := att.PolicyEvaluations[m.Name]
 			if len(evs) > 0 {
-				mt.AppendSeparator()
-				mt.AppendRow(table.Row{"Policies"})
+				mt.AppendRow(table.Row{"Policies", "------"})
 				policiesTable(evs, mt)
 			}
 			mt.AppendSeparator()
@@ -220,29 +227,32 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 		}
 		mt.Render()
 	}
-
-	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]
-	if len(evs) > 0 {
-		mt := newTableWriter()
-		mt.SetTitle("Attestation policies")
-		policiesTable(evs, mt)
-		mt.Render()
-	}
 }
 
 func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
 	for _, ev := range evs {
-		mt.AppendSeparator()
-		mt.AppendRow(table.Row{"Policy", ev.Name})
+		color := text.Colors{text.FgHiRed}
 		var violations []string
+		var prefix = ""
 		if len(ev.Violations) > 0 {
 			for _, v := range ev.Violations {
 				violations = append(violations, v.Message)
 			}
+			// For multiple violations, we want to indent the list
+			if len(violations) > 1 {
+				prefix = "\n  - "
+			}
 		} else {
-			violations = append(violations, "None")
+			violations = append(violations, "Ok")
+			color = text.Colors{text.FgHiGreen}
 		}
-		mt.AppendRow(table.Row{"Violations", fmt.Sprint(strings.Join(violations, "\n"))})
+
+		// Color the violations text before joining
+		for i, v := range violations {
+			violations[i] = color.Sprint(v)
+		}
+
+		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, prefix+strings.Join(violations, prefix))})
 	}
 }
 
