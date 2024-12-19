@@ -24,9 +24,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -66,8 +67,8 @@ type registrationState struct {
 // webhookPayload defines the JSON schema for the webhook payload
 type webhookPayload struct {
 	Metadata *sdk.ChainloopMetadata `json:"Metadata"`
-	Data     json.RawMessage        `json:"Data"`     // e.g., SBOM or attestation JSON
-	Kind     string                 `json:"Kind"`      // e.g., "SBOM_CYCLONEDX", "ATTESTATION"
+	Data     json.RawMessage        `json:"Data"` // e.g., SBOM or attestation JSON
+	Kind     string                 `json:"Kind"` // e.g., "SBOM_CYCLONEDX", "ATTESTATION"
 }
 
 // New initializes the webhook integration
@@ -88,7 +89,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 		sdk.WithInputMaterial(schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create FanOut integration: %w", err)
 	}
 
 	return &Integration{
@@ -104,16 +105,19 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 	// Parse the registration payload
 	var regReq registrationRequest
 	if err := sdk.FromConfig(req.Payload, &regReq); err != nil {
+		i.Logger.Errorw("failed to parse registration payload", "error", err)
 		return nil, fmt.Errorf("invalid registration request: %w", err)
 	}
 
 	// Validate the URL
 	if err := validateURL(regReq.URL); err != nil {
+		i.Logger.Errorw("invalid webhook URL", "error", err, "url", regReq.URL)
 		return nil, fmt.Errorf("invalid webhook URL: %w", err)
 	}
 
 	// Optionally, perform a test request to ensure the webhook URL is reachable
 	if err := testWebhookURL(i.client, regReq.URL); err != nil {
+		i.Logger.Errorw("unable to reach webhook URL", "error", err, "url", regReq.URL)
 		return nil, fmt.Errorf("unable to reach webhook URL: %w", err)
 	}
 
@@ -125,6 +129,7 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 	// No additional state needed
 	rawConfig, err := sdk.ToConfig(&registrationState{})
 	if err != nil {
+		i.Logger.Errorw("failed to marshal registration state", "error", err)
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
 
@@ -139,18 +144,32 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 	// Parse the attachment payload
 	var attachReq attachmentRequest
 	if err := sdk.FromConfig(req.Payload, &attachReq); err != nil {
+		i.Logger.Errorw("failed to parse attachment payload", "error", err)
 		return nil, fmt.Errorf("invalid attachment request: %w", err)
 	}
 
 	// Split the materials string into a slice
 	materials := []string{}
 	if attachReq.Materials != "" {
-		materials = append(materials, attachReq.Materials)
+		// Trim spaces and split by comma
+		splitMaterials := strings.Split(attachReq.Materials, ",")
+		for _, m := range splitMaterials {
+			trimmed := strings.TrimSpace(m)
+			if trimmed == "" {
+				i.Logger.Warn("encountered empty material after trimming")
+				continue
+			}
+			materials = append(materials, trimmed)
+		}
+		if len(materials) == 0 {
+			i.Logger.Warn("no valid materials provided after parsing")
+		}
 	}
 
 	// Store the materials in the attachment state
 	rawConfig, err := sdk.ToConfig(&attachmentState{Materials: materials})
 	if err != nil {
+		i.Logger.Errorw("failed to marshal attachment state", "error", err)
 		return nil, fmt.Errorf("marshalling attachment state: %w", err)
 	}
 
@@ -163,6 +182,7 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
 	// Extract the webhook URL from credentials
 	if req.RegistrationInfo.Credentials == nil || req.RegistrationInfo.Credentials.URL == "" {
+		i.Logger.Error("missing webhook URL in credentials")
 		return errors.New("missing webhook URL in credentials")
 	}
 	webhookURL := req.RegistrationInfo.Credentials.URL
@@ -170,6 +190,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 	// Extract the materials from the attachment state
 	var attachState attachmentState
 	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachState); err != nil {
+		i.Logger.Errorw("invalid attachment state", "error", err)
 		return fmt.Errorf("invalid attachment state: %w", err)
 	}
 
@@ -177,19 +198,40 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 	if req.Input.Attestation != nil {
 		statementJSON, err := json.Marshal(req.Input.Attestation)
 		if err != nil {
+			i.Logger.Errorw("failed to marshal attestation", "error", err)
 			return fmt.Errorf("marshalling attestation: %w", err)
 		}
 		if err := i.sendWebhook(ctx, webhookURL, "ATTESTATION", statementJSON, req.ChainloopMetadata); err != nil {
+			i.Logger.Errorw("failed to send attestation webhook", "error", err)
 			return err
 		}
 	}
 
 	// Send each SBOM if present and specified in the attachment state
 	for _, material := range req.Input.Materials {
+		// Validate material type
+		if material.Type == "" {
+			i.Logger.Warn("encountered material with empty type, skipping")
+			continue
+		}
+
+		// Skip if the material is not in the attachment state
+		if len(attachState.Materials) > 0 && !contains(attachState.Materials, material.Type) {
+			i.Logger.Debugw("material type not attached, skipping", "type", material.Type)
+			continue
+		}
+
+		// Validate material content
+		if len(material.Content) == 0 {
+			i.Logger.Warnw("encountered material with empty content, skipping", "type", material.Type)
+			continue
+		}
+
 		encodedContent := base64.StdEncoding.EncodeToString(material.Content)
 		// create json message with the content
 		jsonMsg := fmt.Sprintf(`{"content": "%s"}`, encodedContent)
 		if err := i.sendWebhook(ctx, webhookURL, material.Type, json.RawMessage(jsonMsg), req.ChainloopMetadata); err != nil {
+			i.Logger.Errorw("failed to send SBOM webhook", "error", err, "type", material.Type)
 			return err
 		}
 	}
@@ -205,33 +247,45 @@ func (i *Integration) sendWebhook(ctx context.Context, url, kind string, payload
 		Kind:     kind,
 	})
 	if err != nil {
+		i.Logger.Errorw("failed to marshal webhook payload", "error", err, "kind", kind)
 		return fmt.Errorf("marshalling webhook payload: %w", err)
 	}
 
 	reqHTTP, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
+		i.Logger.Errorw("failed to create HTTP request", "error", err, "url", url)
 		return fmt.Errorf("creating HTTP request: %w", err)
 	}
 	reqHTTP.Header.Set("Content-Type", "application/json")
 
 	resp, err := i.client.Do(reqHTTP)
 	if err != nil {
+		i.Logger.Errorw("failed to send HTTP request to webhook", "error", err, "url", url)
 		return fmt.Errorf("sending HTTP request to webhook: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			i.Logger.Warnw("failed to close response body", "error", err)
+		}
+	}()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("webhook responded with status code %d", resp.StatusCode)
+	// Read response body for more detailed error messages
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		i.Logger.Warnw("failed to read response body", "error", err)
 	}
 
-	i.Logger.Infow("msg", "sent payload to webhook", "url", url, "status", resp.StatusCode)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		i.Logger.Errorw("webhook responded with non-success status code", "status", resp.StatusCode, "body", string(body))
+		return fmt.Errorf("webhook responded with status code %d: %s", resp.StatusCode, string(body))
+	}
 
 	return nil
 }
 
 // isBinary checks if the content is binary data
 func isBinary(content []byte) bool {
-	// Simple heuristic: check for non-printable characters
+	// Simple heuristic: check for null bytes
 	for _, b := range content {
 		if b == 0 {
 			return true
@@ -264,10 +318,17 @@ func testWebhookURL(client *http.Client, webhookURL string) error {
 	if err != nil {
 		return fmt.Errorf("performing POST request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			// Log the error but do not return it as it's during cleanup
+			// Assuming there's a global logger or adjust as needed
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return fmt.Errorf("webhook URL responded with status code %d", resp.StatusCode)
+		// Read response body for more context
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("webhook URL responded with status code %d: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
