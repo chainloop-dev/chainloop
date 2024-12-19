@@ -1,7 +1,7 @@
 // File: app/controlplane/plugins/core/webhook/v1/webhook.go
 
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024 Shebash.io
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ type registrationState struct {
 // webhookPayload defines the JSON schema for the webhook payload
 type webhookPayload struct {
 	Metadata *sdk.ChainloopMetadata `json:"Metadata"`
-	Data     string                 `json:"Data"`      // Raw blob as string (can be base64 if binary)
+	Data     json.RawMessage        `json:"Data"`     // e.g., SBOM or attestation JSON
 	Kind     string                 `json:"Kind"`      // e.g., "SBOM_CYCLONEDX", "ATTESTATION"
 }
 
@@ -175,38 +175,33 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 
 	// Send attestation if present
 	if req.Input.Attestation != nil {
-		envelopeJSON, err := json.Marshal(req.Input.Attestation.Envelope)
+		statementJSON, err := json.Marshal(req.Input.Attestation)
 		if err != nil {
 			return fmt.Errorf("marshalling attestation: %w", err)
 		}
-		if err := i.sendWebhook(ctx, webhookURL, "ATTESTATION", envelopeJSON, req.ChainloopMetadata); err != nil {
+		if err := i.sendWebhook(ctx, webhookURL, "ATTESTATION", statementJSON, req.ChainloopMetadata); err != nil {
 			return err
 		}
 	}
-	// attachmentStage 
-	i.Logger.Infow("msg", "attachmentState", "attachmentState", attachState)
-	// log the things in the materials
-	i.Logger.Infow("msg", "materials", "materials", req.Input.Materials)
+
 	// Send each SBOM if present and specified in the attachment state
 	for _, material := range req.Input.Materials {
-		// log the things in the materials
-		i.Logger.Infow("msg", "material", "material", material)
-		
 		encodedContent := base64.StdEncoding.EncodeToString(material.Content)
-		if err := i.sendWebhook(ctx, webhookURL, "SBOM", []byte(encodedContent), req.ChainloopMetadata); err != nil {
+		// create json message with the content
+		jsonMsg := fmt.Sprintf(`{"content": "%s"}`, encodedContent)
+		if err := i.sendWebhook(ctx, webhookURL, material.Type, json.RawMessage(jsonMsg), req.ChainloopMetadata); err != nil {
 			return err
 		}
-		
 	}
 
 	return nil
 }
 
 // sendWebhook sends a webhook with the specified kind and payload
-func (i *Integration) sendWebhook(ctx context.Context, url, kind string, payload []byte, metadata *sdk.ChainloopMetadata) error {
+func (i *Integration) sendWebhook(ctx context.Context, url, kind string, payload json.RawMessage, metadata *sdk.ChainloopMetadata) error {
 	payloadBytes, err := json.Marshal(webhookPayload{
 		Metadata: metadata,
-		Data:     string(payload),
+		Data:     payload,
 		Kind:     kind,
 	})
 	if err != nil {
