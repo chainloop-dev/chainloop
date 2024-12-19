@@ -45,16 +45,17 @@ type AttestationStatus struct {
 }
 
 type AttestationStatusResult struct {
-	AttestationID     string                            `json:"attestationID"`
-	InitializedAt     *time.Time                        `json:"initializedAt"`
-	WorkflowMeta      *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
-	Materials         []AttestationStatusResultMaterial `json:"materials"`
-	EnvVars           map[string]string                 `json:"envVars"`
-	RunnerContext     *AttestationResultRunnerContext   `json:"runnerContext"`
-	DryRun            bool                              `json:"dryRun"`
-	Annotations       []*Annotation                     `json:"annotations"`
-	IsPushed          bool                              `json:"isPushed"`
-	PolicyEvaluations map[string][]*PolicyEvaluation    `json:"policy_evaluations,omitempty"`
+	AttestationID       string                            `json:"attestationID"`
+	InitializedAt       *time.Time                        `json:"initializedAt"`
+	WorkflowMeta        *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
+	Materials           []AttestationStatusResultMaterial `json:"materials"`
+	EnvVars             map[string]string                 `json:"envVars"`
+	RunnerContext       *AttestationResultRunnerContext   `json:"runnerContext"`
+	DryRun              bool                              `json:"dryRun"`
+	Annotations         []*Annotation                     `json:"annotations"`
+	IsPushed            bool                              `json:"isPushed"`
+	PolicyEvaluations   map[string][]*PolicyEvaluation    `json:"policy_evaluations,omitempty"`
+	HasPolicyViolations bool                              `json:"hasPolicyViolations"`
 }
 
 type AttestationResultRunnerContext struct {
@@ -148,6 +149,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		if err != nil {
 			return nil, fmt.Errorf("getting policy evaluations: %w", err)
 		}
+
+		res.HasPolicyViolations = len(res.PolicyEvaluations) > 0
 	}
 
 	if v := workflowMeta.GetVersion(); v != nil {
