@@ -40,15 +40,16 @@ type AttestationStatus struct {
 }
 
 type AttestationStatusResult struct {
-	AttestationID string                            `json:"attestationID"`
-	InitializedAt *time.Time                        `json:"initializedAt"`
-	WorkflowMeta  *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
-	Materials     []AttestationStatusResultMaterial `json:"materials"`
-	EnvVars       map[string]string                 `json:"envVars"`
-	RunnerContext *AttestationResultRunnerContext   `json:"runnerContext"`
-	DryRun        bool                              `json:"dryRun"`
-	Annotations   []*Annotation                     `json:"annotations"`
-	IsPushed      bool                              `json:"isPushed"`
+	AttestationID     string                            `json:"attestationID"`
+	InitializedAt     *time.Time                        `json:"initializedAt"`
+	WorkflowMeta      *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
+	Materials         []AttestationStatusResultMaterial `json:"materials"`
+	EnvVars           map[string]string                 `json:"envVars"`
+	RunnerContext     *AttestationResultRunnerContext   `json:"runnerContext"`
+	DryRun            bool                              `json:"dryRun"`
+	Annotations       []*Annotation                     `json:"annotations"`
+	IsPushed          bool                              `json:"isPushed"`
+	PolicyEvaluations map[string][]*PolicyEvaluation    `json:"policy_evaluations,omitempty"`
 }
 
 type AttestationResultRunnerContext struct {
@@ -111,6 +112,18 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
 		IsPushed:      action.isPushed,
 	}
+
+	// grouped by material name
+	evaluations := make(map[string][]*PolicyEvaluation)
+	for _, v := range att.GetPolicyEvaluations() {
+		if existing, ok := evaluations[v.MaterialName]; ok {
+			evaluations[v.MaterialName] = append(existing, policyEvaluationStateToActionForStatus(v))
+		} else {
+			evaluations[v.MaterialName] = []*PolicyEvaluation{policyEvaluationStateToActionForStatus(v)}
+		}
+	}
+
+	res.PolicyEvaluations = evaluations
 
 	if v := workflowMeta.GetVersion(); v != nil {
 		res.WorkflowMeta.ProjectVersion = &ProjectVersion{
@@ -276,4 +289,32 @@ func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusResultMate
 	o.Tag = w.GetContainerImage().GetTag()
 
 	return nil
+}
+
+func policyEvaluationStateToActionForStatus(in *v1.PolicyEvaluation) *PolicyEvaluation {
+	var pr *PolicyReference
+	if in.PolicyReference != nil {
+		pr = &PolicyReference{
+			Name: in.PolicyReference.Name,
+		}
+	}
+
+	violations := make([]*PolicyViolation, 0, len(in.Violations))
+	for _, v := range in.Violations {
+		violations = append(violations, &PolicyViolation{
+			Subject: v.Subject,
+			Message: v.Message,
+		})
+	}
+
+	return &PolicyEvaluation{
+		Name:            in.Name,
+		MaterialName:    in.MaterialName,
+		Description:     in.Description,
+		Annotations:     in.Annotations,
+		PolicyReference: pr,
+		Violations:      violations,
+		Skipped:         in.Skipped,
+		SkipReasons:     in.SkipReasons,
+	}
 }
