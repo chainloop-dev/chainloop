@@ -18,9 +18,11 @@ package materials
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 type StringCrafter struct {
@@ -38,11 +40,15 @@ func NewStringCrafter(materialSchema *schemaapi.CraftingSchema_Material) (*Strin
 }
 
 func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation_Material, error) {
+	hash, _, err := cr_v1.SHA256(strings.NewReader(value))
+	if err != nil {
+		return nil, fmt.Errorf("generating digest: %w", err)
+	}
 	return &api.Attestation_Material{
 		MaterialType: i.input.Type,
 		M: &api.Attestation_Material_String_{
 			String_: &api.Attestation_Material_KeyVal{
-				Id: i.input.Name, Value: value,
+				Id: i.input.Name, Value: value, Digest: hash.String(),
 			},
 		},
 	}, nil
