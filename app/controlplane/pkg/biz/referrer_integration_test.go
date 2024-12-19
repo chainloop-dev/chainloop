@@ -243,6 +243,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerAtt.Kind, got.Kind)
 		// It has metadata
 		s.Equal(map[string]string{
+			"contractName": "", "contractVersion": "",
 			"name":         "test-new-types",
 			"project":      "test",
 			"team":         "my-team",

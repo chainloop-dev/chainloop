@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(contractName)$": {
+      "description": "contract name (contract version is \"schema_revision\")",
+      "type": "string"
+    },
     "^(projectVersion)$": {
       "description": "kept for backwards compatibility with remote state storage",
       "type": "string"
@@ -18,6 +22,10 @@
     }
   },
   "properties": {
+    "contract_name": {
+      "description": "contract name (contract version is \"schema_revision\")",
+      "type": "string"
+    },
     "name": {
       "type": "string"
     },

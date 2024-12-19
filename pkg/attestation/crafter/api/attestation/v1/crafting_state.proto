@@ -232,6 +232,8 @@ message WorkflowMetadata {
   string workflow_id = 5 [(buf.validate.field).string.min_len = 1];
   string workflow_run_id = 6; // Not required since we might be doing a dry-run
   string schema_revision = 7 [(buf.validate.field).string.min_len = 1];
+  // contract name (contract version is "schema_revision")
+  string contract_name = 11 [(buf.validate.field).string.min_len = 1];
   // organization name
   string organization = 8 [(buf.validate.field).string.min_len = 1];
 }

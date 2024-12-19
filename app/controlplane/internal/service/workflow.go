@@ -239,6 +239,7 @@ func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 		Id: wf.ID.String(), Name: wf.Name, CreatedAt: timestamppb.New(*wf.CreatedAt),
 		Project: wf.Project, Team: wf.Team, RunsCount: int32(wf.RunsCounter), Public: wf.Public,
 		Description: wf.Description, ContractRevisionLatest: int32(wf.ContractRevisionLatest),
+		ContractName: wf.ContractName,
 	}
 
 	if wf.ContractID != uuid.Nil {
