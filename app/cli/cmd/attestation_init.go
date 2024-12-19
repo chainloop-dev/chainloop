@@ -115,7 +115,7 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			res, err := statusAction.Run(cmd.Context(), attestationID)
+			res, err := statusAction.Run(cmd.Context(), attestationID, action.WithSkipPolicyEvaluation())
 			if err != nil {
 				return newGracefulError(err)
 			}
