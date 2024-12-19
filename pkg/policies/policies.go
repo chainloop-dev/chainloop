@@ -567,12 +567,12 @@ func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.L
 		}
 
 		if policyEval.Skipped {
-			logger.Warn().Msgf("policy evaluation skipped (%s) for %s. Reasons: %s", policyEval.Name, subject, policyEval.SkipReasons)
+			logger.Debug().Msgf("policy evaluation skipped (%s) for %s. Reasons: %s", policyEval.Name, subject, policyEval.SkipReasons)
 		}
 		if len(policyEval.Violations) > 0 {
-			logger.Warn().Msgf("found policy violations (%s) for %s", policyEval.Name, subject)
+			logger.Debug().Msgf("found policy violations (%s) for %s", policyEval.Name, subject)
 			for _, v := range policyEval.Violations {
-				logger.Warn().Msgf(" - %s", v.Message)
+				logger.Debug().Msgf(" - %s", v.Message)
 			}
 		}
 	}

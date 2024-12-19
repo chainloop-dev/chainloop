@@ -40,7 +40,8 @@ type AttestationStatus struct {
 	*ActionsOpts
 	c *crafter.Crafter
 	// Do not show information about the project version release status
-	isPushed bool
+	isPushed             bool
+	skipPolicyEvaluation bool
 }
 
 type AttestationStatusResult struct {
@@ -84,7 +85,19 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 	}, nil
 }
 
-func (action *AttestationStatus) Run(ctx context.Context, attestationID string) (*AttestationStatusResult, error) {
+func WithSkipPolicyEvaluation() func(*AttestationStatus) {
+	return func(opts *AttestationStatus) {
+		opts.skipPolicyEvaluation = true
+	}
+}
+
+type AttestationStatusOpt func(*AttestationStatus)
+
+func (action *AttestationStatus) Run(ctx context.Context, attestationID string, opts ...AttestationStatusOpt) (*AttestationStatusResult, error) {
+	for _, opt := range opts {
+		opt(action)
+	}
+
 	c := action.c
 
 	if initialized, err := c.AlreadyInitialized(ctx, attestationID); err != nil {
@@ -118,21 +131,23 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		IsPushed:      action.isPushed,
 	}
 
-	// We need to render the statement to get the policy evaluations
-	attClient := pb.NewAttestationServiceClient(action.CPConnection)
-	renderer, err := renderer.NewAttestationRenderer(c.CraftingState, attClient, "", "", nil, renderer.WithLogger(action.Logger))
-	if err != nil {
-		return nil, fmt.Errorf("rendering statement: %w", err)
-	}
+	if !action.skipPolicyEvaluation {
+		// We need to render the statement to get the policy evaluations
+		attClient := pb.NewAttestationServiceClient(action.CPConnection)
+		renderer, err := renderer.NewAttestationRenderer(c.CraftingState, attClient, "", "", nil, renderer.WithLogger(action.Logger))
+		if err != nil {
+			return nil, fmt.Errorf("rendering statement: %w", err)
+		}
 
-	statement, err := renderer.RenderStatement(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("rendering statement: %w", err)
-	}
+		statement, err := renderer.RenderStatement(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("rendering statement: %w", err)
+		}
 
-	res.PolicyEvaluations, err = action.getPolicyEvaluations(ctx, c, statement)
-	if err != nil {
-		return nil, fmt.Errorf("getting policy evaluations: %w", err)
+		res.PolicyEvaluations, err = action.getPolicyEvaluations(ctx, c, statement)
+		if err != nil {
+			return nil, fmt.Errorf("getting policy evaluations: %w", err)
+		}
 	}
 
 	if v := workflowMeta.GetVersion(); v != nil {
