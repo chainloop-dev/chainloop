@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"time"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 )
 
 type AttestationStatusOpts struct {
@@ -58,8 +61,8 @@ type AttestationResultRunnerContext struct {
 }
 
 type AttestationStatusWorkflowMeta struct {
-	WorkflowID, Name, Team, Project, ContractRevision, Organization string
-	ProjectVersion                                                  *ProjectVersion
+	WorkflowID, Name, Team, Project, ContractRevision, ContractName, Organization string
+	ProjectVersion                                                                *ProjectVersion
 }
 
 type AttestationStatusResultMaterial struct {
@@ -106,6 +109,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			Project:          workflowMeta.GetProject(),
 			Team:             workflowMeta.GetTeam(),
 			ContractRevision: workflowMeta.GetSchemaRevision(),
+			ContractName:     workflowMeta.GetContractName(),
 		},
 		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:        c.CraftingState.DryRun,
@@ -120,6 +124,31 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 			evaluations[v.MaterialName] = append(existing, policyEvaluationStateToActionForStatus(v))
 		} else {
 			evaluations[v.MaterialName] = []*PolicyEvaluation{policyEvaluationStateToActionForStatus(v)}
+		}
+	}
+
+	// Attestation level policies
+	attClient := pb.NewAttestationServiceClient(action.CPConnection)
+	renderer, err := renderer.NewAttestationRenderer(c.CraftingState, attClient, "", "", nil, renderer.WithLogger(action.Logger))
+	if err != nil {
+		return nil, err
+	}
+
+	statement, err := renderer.RenderStatement(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	attestationEvaluations, err := c.EvaluateAttestationPolicies(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
+	}
+
+	for _, v := range attestationEvaluations {
+		if existing, ok := evaluations[chainloop.AttPolicyEvaluation]; ok {
+			evaluations[chainloop.AttPolicyEvaluation] = append(existing, policyEvaluationStateToActionForStatus(v))
+		} else {
+			evaluations[chainloop.AttPolicyEvaluation] = []*PolicyEvaluation{policyEvaluationStateToActionForStatus(v)}
 		}
 	}
 
@@ -157,6 +186,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	for _, err := range errors {
 		combinedErrs += (*err).Error() + "\n"
 	}
+
 	if len(errors) > 0 && !c.CraftingState.DryRun {
 		return nil, fmt.Errorf("error resolving env vars: %s", combinedErrs)
 	}

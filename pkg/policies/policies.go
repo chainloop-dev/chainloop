@@ -129,9 +129,9 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	if opts.name != "" {
-		pv.logger.Info().Msgf("evaluating policy %s against %s", policy.Metadata.Name, opts.name)
+		pv.logger.Debug().Msgf("evaluating policy %s against %s", policy.Metadata.Name, opts.name)
 	} else {
-		pv.logger.Info().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
+		pv.logger.Debug().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
 	args, err := ComputeArguments(policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings, pv.logger)

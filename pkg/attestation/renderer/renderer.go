@@ -94,6 +94,16 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.
 	return r, nil
 }
 
+// Render the in-toto statement without envelope nor validation so it can be used for example for policy evaluation
+func (ab *AttestationRenderer) RenderStatement(ctx context.Context) (*intoto.Statement, error) {
+	statement, err := ab.renderer.Statement(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("generating in-toto statement: %w", err)
+	}
+
+	return statement, nil
+}
+
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.
 // NOTE: It currently only supports cosign key based signing.
 func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, error) {

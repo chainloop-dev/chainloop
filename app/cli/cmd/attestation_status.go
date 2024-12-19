@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 )
 
 var full bool
@@ -91,7 +92,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	}
 
 	gt.AppendRow(table.Row{"Version", projectVersion})
-	gt.AppendRow(table.Row{"Contract Revision", meta.ContractRevision})
+	gt.AppendRow(table.Row{"Contract", fmt.Sprintf("%s (revision %s)", meta.ContractName, meta.ContractRevision)})
 	if status.RunnerContext.JobURL != "" {
 		gt.AppendRow(table.Row{"Runner Type", status.RunnerContext.RunnerType})
 		gt.AppendRow(table.Row{"Runner URL", status.RunnerContext.JobURL})
@@ -108,6 +109,11 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		}
 	}
 
+	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
+	if len(evs) > 0 {
+		gt.AppendRow(table.Row{"Policies", "------"})
+		policiesTable(evs, gt)
+	}
 	gt.Render()
 
 	if err := materialsTable(status, full); err != nil {
