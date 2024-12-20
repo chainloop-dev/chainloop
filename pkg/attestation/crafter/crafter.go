@@ -608,6 +608,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, statement *in
 	}
 
 	policyResults = append(policyResults, policyGroupResults...)
+
 	return policyResults, nil
 }
 

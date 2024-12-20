@@ -54,7 +54,7 @@ type AttestationRenderer struct {
 }
 
 type r interface {
-	Statement(ctx context.Context) (*intoto.Statement, error)
+	Statement(ctx context.Context, opts ...chainloop.RenderOpt) (*intoto.Statement, error)
 }
 
 type Opt func(*AttestationRenderer)
@@ -94,9 +94,9 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.
 	return r, nil
 }
 
-// Render the in-toto statement without envelope nor validation so it can be used for example for policy evaluation
-func (ab *AttestationRenderer) RenderStatement(ctx context.Context) (*intoto.Statement, error) {
-	statement, err := ab.renderer.Statement(ctx)
+// Render the in-toto statement skipping validations, dsse envelope wrapping nor signing
+func (ab *AttestationRenderer) RenderStatement(ctx context.Context, opts ...chainloop.RenderOpt) (*intoto.Statement, error) {
+	statement, err := ab.renderer.Statement(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("generating in-toto statement: %w", err)
 	}

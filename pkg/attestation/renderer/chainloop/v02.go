@@ -86,8 +86,24 @@ func NewChainloopRendererV02(att *v1.Attestation, schema *schemaapi.CraftingSche
 	}
 }
 
-func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) {
+type RenderOptions struct {
+	evaluatePolicies bool
+}
+
+type RenderOpt func(*RenderOptions)
+
+func WithSkipPolicyEvaluation(skip bool) RenderOpt {
+	return func(o *RenderOptions) {
+		o.evaluatePolicies = !skip
+	}
+}
+
+func (r *RendererV02) Statement(ctx context.Context, opts ...RenderOpt) (*intoto.Statement, error) {
 	var evaluations []*v1.PolicyEvaluation
+	options := &RenderOptions{evaluatePolicies: true}
+	for _, opt := range opts {
+		opt(options)
+	}
 
 	subject, err := r.subject()
 	if err != nil {
@@ -106,27 +122,29 @@ func (r *RendererV02) Statement(ctx context.Context) (*intoto.Statement, error) 
 		Predicate:     predicate,
 	}
 
-	// Validate policy groups
-	pgv := policies.NewPolicyGroupVerifier(r.schema, r.attClient, r.logger)
-	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
-	if err != nil {
-		return nil, fmt.Errorf("error applying policy groups to statement: %w", err)
-	}
-	evaluations = append(evaluations, policyGroupResults...)
+	if options.evaluatePolicies {
+		// Validate policy groups
+		pgv := policies.NewPolicyGroupVerifier(r.schema, r.attClient, r.logger)
+		policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
+		if err != nil {
+			return nil, fmt.Errorf("error applying policy groups to statement: %w", err)
+		}
+		evaluations = append(evaluations, policyGroupResults...)
 
-	// validate attestation-level policies
-	pv := policies.NewPolicyVerifier(r.schema, r.attClient, r.logger)
-	policyResults, err := pv.VerifyStatement(ctx, statement)
-	if err != nil {
-		return nil, fmt.Errorf("applying policies to statement: %w", err)
-	}
-	evaluations = append(evaluations, policyResults...)
-	// log policy violations
-	policies.LogPolicyEvaluations(evaluations, r.logger)
+		// validate attestation-level policies
+		pv := policies.NewPolicyVerifier(r.schema, r.attClient, r.logger)
+		policyResults, err := pv.VerifyStatement(ctx, statement)
+		if err != nil {
+			return nil, fmt.Errorf("applying policies to statement: %w", err)
+		}
+		evaluations = append(evaluations, policyResults...)
+		// log policy violations
+		policies.LogPolicyEvaluations(evaluations, r.logger)
 
-	// insert attestation level policy results into statement
-	if err = addPolicyResults(statement, evaluations); err != nil {
-		return nil, fmt.Errorf("adding policy results to statement: %w", err)
+		// insert attestation level policy results into statement
+		if err = addPolicyResults(statement, evaluations); err != nil {
+			return nil, fmt.Errorf("adding policy results to statement: %w", err)
+		}
 	}
 
 	return statement, nil

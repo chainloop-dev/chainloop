@@ -140,7 +140,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
 
-		statement, err := renderer.RenderStatement(ctx)
+		// We do not want to evaluate policies here during render since we want to do it in a separate step
+		statement, err := renderer.RenderStatement(ctx, chainloop.WithSkipPolicyEvaluation(true))
 		if err != nil {
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
