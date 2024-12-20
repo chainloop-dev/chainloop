@@ -35,6 +35,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-containerregistry/pkg/authn"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -590,6 +591,25 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 
 	c.Logger.Debug().Str("key", m.Name).Msg("added to state")
 	return nil
+}
+
+func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, statement *intoto.Statement) ([]*api.PolicyEvaluation, error) {
+	// evaluate attestation-level policies
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
+	policyResults, err := pv.VerifyStatement(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("evaluating policies in statement: %w", err)
+	}
+
+	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
+	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("evaluating policy groups in statement: %w", err)
+	}
+
+	policyResults = append(policyResults, policyGroupResults...)
+
+	return policyResults, nil
 }
 
 func (c *Crafter) ValidateAttestation() error {

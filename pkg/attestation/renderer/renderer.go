@@ -54,7 +54,7 @@ type AttestationRenderer struct {
 }
 
 type r interface {
-	Statement(ctx context.Context) (*intoto.Statement, error)
+	Statement(ctx context.Context, opts ...chainloop.RenderOpt) (*intoto.Statement, error)
 }
 
 type Opt func(*AttestationRenderer)
@@ -92,6 +92,16 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.
 	r.renderer = chainloop.NewChainloopRendererV02(state.GetAttestation(), state.GetInputSchema(), builderVersion, builderDigest, attClient, &r.logger)
 
 	return r, nil
+}
+
+// Render the in-toto statement skipping validations, dsse envelope wrapping nor signing
+func (ab *AttestationRenderer) RenderStatement(ctx context.Context, opts ...chainloop.RenderOpt) (*intoto.Statement, error) {
+	statement, err := ab.renderer.Statement(ctx, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("generating in-toto statement: %w", err)
+	}
+
+	return statement, nil
 }
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.
