@@ -34,8 +34,8 @@ import (
 type Organization struct {
 	ID, Name  string
 	CreatedAt *time.Time
-	// BlockOnPolicyFailure blocks the workflow run if policy evaluation fails
-	BlockOnPolicyFailure bool
+	// BlockOnPolicyViolation blocks the workflow run if policy evaluation fails
+	BlockOnPolicyViolation bool
 }
 
 type OrganizationRepo interface {

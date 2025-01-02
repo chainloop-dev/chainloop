@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	// Identifier of this attestation instance
 	var attestationID string
-	var blockOnPolicyFailure bool
+	var blockOnPolicyViolation bool
 
 	// Init in the control plane if needed including the runner context
 	if !action.dryRun {
@@ -175,7 +175,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowRun := runResp.GetResult().GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		workflowMeta.Organization = runResp.GetResult().GetOrganization()
-		blockOnPolicyFailure = runResp.GetResult().GetBlockOnPolicyFailure()
+		blockOnPolicyViolation = runResp.GetResult().GetBlockOnPolicyViolation()
 		if v := workflowMeta.Version; v != nil {
 			workflowMeta.Version.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
 		}
@@ -188,12 +188,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo:               workflowMeta,
-		SchemaV1:             contractVersion.GetV1(),
-		DryRun:               action.dryRun,
-		AttestationID:        attestationID,
-		Runner:               discoveredRunner,
-		BlockOnPolicyFailure: blockOnPolicyFailure,
+		WfInfo:                 workflowMeta,
+		SchemaV1:               contractVersion.GetV1(),
+		DryRun:                 action.dryRun,
+		AttestationID:          attestationID,
+		Runner:                 discoveredRunner,
+		BlockOnPolicyViolation: blockOnPolicyViolation,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

@@ -3,8 +3,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
-    "^(blockOnPolicyFailure)$": {
-      "description": "fail the attestation if policy evaluation fails",
+    "^(blockOnPolicyViolation)$": {
+      "description": "fail the attestation if there is a violation in any policy",
       "type": "boolean"
     },
     "^(workflowRun)$": {
@@ -12,8 +12,8 @@
     }
   },
   "properties": {
-    "block_on_policy_failure": {
-      "description": "fail the attestation if policy evaluation fails",
+    "block_on_policy_violation": {
+      "description": "fail the attestation if there is a violation in any policy",
       "type": "boolean"
     },
     "organization": {

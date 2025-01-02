@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -129,8 +129,8 @@ message AttestationServiceInitResponse {
     WorkflowRunItem workflow_run = 2;
     // organization name
     string organization = 3;
-    // fail the attestation if policy evaluation fails
-    bool block_on_policy_failure = 4;
+    // fail the attestation if there is a violation in any policy
+    bool block_on_policy_violation = 4;
   }
 }
 

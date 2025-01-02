@@ -126,10 +126,10 @@ func init() {
 	organizationDescCreatedAt := organizationFields[2].Descriptor()
 	// organization.DefaultCreatedAt holds the default value on creation for the created_at field.
 	organization.DefaultCreatedAt = organizationDescCreatedAt.Default.(func() time.Time)
-	// organizationDescBlockOnPolicyFailure is the schema descriptor for block_on_policy_failure field.
-	organizationDescBlockOnPolicyFailure := organizationFields[3].Descriptor()
-	// organization.DefaultBlockOnPolicyFailure holds the default value on creation for the block_on_policy_failure field.
-	organization.DefaultBlockOnPolicyFailure = organizationDescBlockOnPolicyFailure.Default.(bool)
+	// organizationDescBlockOnPolicyViolation is the schema descriptor for block_on_policy_violation field.
+	organizationDescBlockOnPolicyViolation := organizationFields[3].Descriptor()
+	// organization.DefaultBlockOnPolicyViolation holds the default value on creation for the block_on_policy_violation field.
+	organization.DefaultBlockOnPolicyViolation = organizationDescBlockOnPolicyViolation.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
 	organizationDescID := organizationFields[0].Descriptor()
 	// organization.DefaultID holds the default value on creation for the id field.

@@ -3,7 +3,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
-    "^(block_on_policy_failure)$": {
+    "^(block_on_policy_violation)$": {
       "description": "fail the attestation if policy evaluation fails",
       "type": "boolean"
     },
@@ -19,10 +19,6 @@
     },
     "^(finished_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
-    },
-    "^(has_policy_violations)$": {
-      "description": "Whether the attestation has policy violations",
-      "type": "boolean"
     },
     "^(initialized_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
@@ -71,7 +67,7 @@
       },
       "type": "object"
     },
-    "blockOnPolicyFailure": {
+    "blockOnPolicyViolation": {
       "description": "fail the attestation if policy evaluation fails",
       "type": "boolean"
     },
@@ -87,10 +83,6 @@
     },
     "finishedAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
-    },
-    "hasPolicyViolations": {
-      "description": "Whether the attestation has policy violations",
-      "type": "boolean"
     },
     "head": {
       "$ref": "attestation.v1.Commit.jsonschema.json",

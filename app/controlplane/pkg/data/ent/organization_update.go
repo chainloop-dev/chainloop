@@ -36,16 +36,16 @@ func (ou *OrganizationUpdate) Where(ps ...predicate.Organization) *OrganizationU
 	return ou
 }
 
-// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
-func (ou *OrganizationUpdate) SetBlockOnPolicyFailure(b bool) *OrganizationUpdate {
-	ou.mutation.SetBlockOnPolicyFailure(b)
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (ou *OrganizationUpdate) SetBlockOnPolicyViolation(b bool) *OrganizationUpdate {
+	ou.mutation.SetBlockOnPolicyViolation(b)
 	return ou
 }
 
-// SetNillableBlockOnPolicyFailure sets the "block_on_policy_failure" field if the given value is not nil.
-func (ou *OrganizationUpdate) SetNillableBlockOnPolicyFailure(b *bool) *OrganizationUpdate {
+// SetNillableBlockOnPolicyViolation sets the "block_on_policy_violation" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableBlockOnPolicyViolation(b *bool) *OrganizationUpdate {
 	if b != nil {
-		ou.SetBlockOnPolicyFailure(*b)
+		ou.SetBlockOnPolicyViolation(*b)
 	}
 	return ou
 }
@@ -349,8 +349,8 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ou.mutation.BlockOnPolicyFailure(); ok {
-		_spec.SetField(organization.FieldBlockOnPolicyFailure, field.TypeBool, value)
+	if value, ok := ou.mutation.BlockOnPolicyViolation(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -689,16 +689,16 @@ type OrganizationUpdateOne struct {
 	modifiers []func(*sql.UpdateBuilder)
 }
 
-// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
-func (ouo *OrganizationUpdateOne) SetBlockOnPolicyFailure(b bool) *OrganizationUpdateOne {
-	ouo.mutation.SetBlockOnPolicyFailure(b)
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (ouo *OrganizationUpdateOne) SetBlockOnPolicyViolation(b bool) *OrganizationUpdateOne {
+	ouo.mutation.SetBlockOnPolicyViolation(b)
 	return ouo
 }
 
-// SetNillableBlockOnPolicyFailure sets the "block_on_policy_failure" field if the given value is not nil.
-func (ouo *OrganizationUpdateOne) SetNillableBlockOnPolicyFailure(b *bool) *OrganizationUpdateOne {
+// SetNillableBlockOnPolicyViolation sets the "block_on_policy_violation" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableBlockOnPolicyViolation(b *bool) *OrganizationUpdateOne {
 	if b != nil {
-		ouo.SetBlockOnPolicyFailure(*b)
+		ouo.SetBlockOnPolicyViolation(*b)
 	}
 	return ouo
 }
@@ -1032,8 +1032,8 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			}
 		}
 	}
-	if value, ok := ouo.mutation.BlockOnPolicyFailure(); ok {
-		_spec.SetField(organization.FieldBlockOnPolicyFailure, field.TypeBool, value)
+	if value, ok := ouo.mutation.BlockOnPolicyViolation(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

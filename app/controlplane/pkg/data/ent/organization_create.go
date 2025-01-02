@@ -51,16 +51,16 @@ func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
-// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
-func (oc *OrganizationCreate) SetBlockOnPolicyFailure(b bool) *OrganizationCreate {
-	oc.mutation.SetBlockOnPolicyFailure(b)
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (oc *OrganizationCreate) SetBlockOnPolicyViolation(b bool) *OrganizationCreate {
+	oc.mutation.SetBlockOnPolicyViolation(b)
 	return oc
 }
 
-// SetNillableBlockOnPolicyFailure sets the "block_on_policy_failure" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableBlockOnPolicyFailure(b *bool) *OrganizationCreate {
+// SetNillableBlockOnPolicyViolation sets the "block_on_policy_violation" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableBlockOnPolicyViolation(b *bool) *OrganizationCreate {
 	if b != nil {
-		oc.SetBlockOnPolicyFailure(*b)
+		oc.SetBlockOnPolicyViolation(*b)
 	}
 	return oc
 }
@@ -223,9 +223,9 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := oc.mutation.BlockOnPolicyFailure(); !ok {
-		v := organization.DefaultBlockOnPolicyFailure
-		oc.mutation.SetBlockOnPolicyFailure(v)
+	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
+		v := organization.DefaultBlockOnPolicyViolation
+		oc.mutation.SetBlockOnPolicyViolation(v)
 	}
 	if _, ok := oc.mutation.ID(); !ok {
 		v := organization.DefaultID()
@@ -241,8 +241,8 @@ func (oc *OrganizationCreate) check() error {
 	if _, ok := oc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
 	}
-	if _, ok := oc.mutation.BlockOnPolicyFailure(); !ok {
-		return &ValidationError{Name: "block_on_policy_failure", err: errors.New(`ent: missing required field "Organization.block_on_policy_failure"`)}
+	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
+		return &ValidationError{Name: "block_on_policy_violation", err: errors.New(`ent: missing required field "Organization.block_on_policy_violation"`)}
 	}
 	return nil
 }
@@ -288,9 +288,9 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := oc.mutation.BlockOnPolicyFailure(); ok {
-		_spec.SetField(organization.FieldBlockOnPolicyFailure, field.TypeBool, value)
-		_node.BlockOnPolicyFailure = value
+	if value, ok := oc.mutation.BlockOnPolicyViolation(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
+		_node.BlockOnPolicyViolation = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -456,15 +456,15 @@ type (
 	}
 )
 
-// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
-func (u *OrganizationUpsert) SetBlockOnPolicyFailure(v bool) *OrganizationUpsert {
-	u.Set(organization.FieldBlockOnPolicyFailure, v)
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldBlockOnPolicyViolation, v)
 	return u
 }
 
-// UpdateBlockOnPolicyFailure sets the "block_on_policy_failure" field to the value that was provided on create.
-func (u *OrganizationUpsert) UpdateBlockOnPolicyFailure() *OrganizationUpsert {
-	u.SetExcluded(organization.FieldBlockOnPolicyFailure)
+// UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateBlockOnPolicyViolation() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldBlockOnPolicyViolation)
 	return u
 }
 
@@ -522,17 +522,17 @@ func (u *OrganizationUpsertOne) Update(set func(*OrganizationUpsert)) *Organizat
 	return u
 }
 
-// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
-func (u *OrganizationUpsertOne) SetBlockOnPolicyFailure(v bool) *OrganizationUpsertOne {
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (u *OrganizationUpsertOne) SetBlockOnPolicyViolation(v bool) *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.SetBlockOnPolicyFailure(v)
+		s.SetBlockOnPolicyViolation(v)
 	})
 }
 
-// UpdateBlockOnPolicyFailure sets the "block_on_policy_failure" field to the value that was provided on create.
-func (u *OrganizationUpsertOne) UpdateBlockOnPolicyFailure() *OrganizationUpsertOne {
+// UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateBlockOnPolicyViolation() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.UpdateBlockOnPolicyFailure()
+		s.UpdateBlockOnPolicyViolation()
 	})
 }
 
@@ -757,17 +757,17 @@ func (u *OrganizationUpsertBulk) Update(set func(*OrganizationUpsert)) *Organiza
 	return u
 }
 
-// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
-func (u *OrganizationUpsertBulk) SetBlockOnPolicyFailure(v bool) *OrganizationUpsertBulk {
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (u *OrganizationUpsertBulk) SetBlockOnPolicyViolation(v bool) *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.SetBlockOnPolicyFailure(v)
+		s.SetBlockOnPolicyViolation(v)
 	})
 }
 
-// UpdateBlockOnPolicyFailure sets the "block_on_policy_failure" field to the value that was provided on create.
-func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyFailure() *OrganizationUpsertBulk {
+// UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyViolation() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.UpdateBlockOnPolicyFailure()
+		s.UpdateBlockOnPolicyViolation()
 	})
 }
 

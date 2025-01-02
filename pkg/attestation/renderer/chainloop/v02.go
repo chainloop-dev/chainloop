@@ -44,11 +44,11 @@ type ProvenancePredicateV02 struct {
 	// Map materials and policies
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Whether the attestation has policy violations
-	HasPolicyViolations bool `json:"has_policy_violations"`
+	PolicyHasViolations bool `json:"policy_has_violations"`
 	// Whether we want to block the attestation on policy violations
-	BlockOnPolicyFailureStrategy string `json:"blocked_on_policy_failure_strategy"`
+	PolicyBlockOnViolation bool `json:"policy_block_on_violation"`
 	// Whether the attestation was blocked due to policy violations
-	BlockedOnPolicyFailure bool `json:"blocked_on_policy_failure"`
+	PolicyAttBlocked bool `json:"policy_attestation_blocked,omitempty"`
 }
 
 type PolicyEvaluation struct {
@@ -193,7 +193,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)
 	}
 
-	policies, err := mappedPolicyEvaluations(r.att)
+	policies, hasViolations, err := mappedPolicyEvaluations(r.att)
 	if err != nil {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
@@ -202,6 +202,11 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
 		Materials:                 normalizedMaterials,
 		PolicyEvaluations:         policies,
+		PolicyHasViolations:       hasViolations,
+		PolicyBlockOnViolation:    r.att.GetBlockOnPolicyViolation(),
+		// For now we assume that we are blocking if the enforcement is there and there are some violations
+		// in the future this value might be false if we offer some manual overrides
+		PolicyAttBlocked: hasViolations && r.att.GetBlockOnPolicyViolation(),
 	}
 
 	// transform to structpb.Struct in a two steps process
@@ -220,9 +225,11 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	return predicate, nil
 }
 
-// collect all policy evaluations grouped by material
-func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluation, error) {
+// collect all policy evaluations grouped by material and returns if there is a policy violation
+func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluation, bool, error) {
+	var hasPolicyViolations bool
 	result := map[string][]*PolicyEvaluation{}
+
 	for _, p := range att.GetPolicyEvaluations() {
 		keyName := p.MaterialName
 		if keyName == "" {
@@ -231,12 +238,17 @@ func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluatio
 
 		ev, err := renderEvaluation(p)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
+
+		if len(ev.Violations) > 0 {
+			hasPolicyViolations = true
+		}
+
 		result[keyName] = append(result[keyName], ev)
 	}
 
-	return result, nil
+	return result, hasPolicyViolations, nil
 }
 
 func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {

@@ -177,11 +177,10 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	wRun := bizWorkFlowRunToPb(run)
 	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
-		WorkflowRun:          wRun,
-		Organization:         org.Name,
-		BlockOnPolicyFailure: org.BlockOnPolicyFailure,
+		WorkflowRun:            wRun,
+		Organization:           org.Name,
+		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
 	}
-
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil
 }

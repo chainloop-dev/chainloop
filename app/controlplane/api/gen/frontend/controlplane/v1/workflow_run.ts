@@ -102,8 +102,8 @@ export interface AttestationServiceInitResponse_Result {
   workflowRun?: WorkflowRunItem;
   /** organization name */
   organization: string;
-  /** fail the attestation if policy evaluation fails */
-  blockOnPolicyFailure: boolean;
+  /** fail the attestation if there is a violation in any policy */
+  blockOnPolicyViolation: boolean;
 }
 
 export interface AttestationServiceStoreRequest {
@@ -1193,7 +1193,7 @@ export const AttestationServiceInitResponse = {
 };
 
 function createBaseAttestationServiceInitResponse_Result(): AttestationServiceInitResponse_Result {
-  return { workflowRun: undefined, organization: "", blockOnPolicyFailure: false };
+  return { workflowRun: undefined, organization: "", blockOnPolicyViolation: false };
 }
 
 export const AttestationServiceInitResponse_Result = {
@@ -1204,8 +1204,8 @@ export const AttestationServiceInitResponse_Result = {
     if (message.organization !== "") {
       writer.uint32(26).string(message.organization);
     }
-    if (message.blockOnPolicyFailure === true) {
-      writer.uint32(32).bool(message.blockOnPolicyFailure);
+    if (message.blockOnPolicyViolation === true) {
+      writer.uint32(32).bool(message.blockOnPolicyViolation);
     }
     return writer;
   },
@@ -1236,7 +1236,7 @@ export const AttestationServiceInitResponse_Result = {
             break;
           }
 
-          message.blockOnPolicyFailure = reader.bool();
+          message.blockOnPolicyViolation = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1251,7 +1251,7 @@ export const AttestationServiceInitResponse_Result = {
     return {
       workflowRun: isSet(object.workflowRun) ? WorkflowRunItem.fromJSON(object.workflowRun) : undefined,
       organization: isSet(object.organization) ? String(object.organization) : "",
-      blockOnPolicyFailure: isSet(object.blockOnPolicyFailure) ? Boolean(object.blockOnPolicyFailure) : false,
+      blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
     };
   },
 
@@ -1260,7 +1260,7 @@ export const AttestationServiceInitResponse_Result = {
     message.workflowRun !== undefined &&
       (obj.workflowRun = message.workflowRun ? WorkflowRunItem.toJSON(message.workflowRun) : undefined);
     message.organization !== undefined && (obj.organization = message.organization);
-    message.blockOnPolicyFailure !== undefined && (obj.blockOnPolicyFailure = message.blockOnPolicyFailure);
+    message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
     return obj;
   },
 
@@ -1278,7 +1278,7 @@ export const AttestationServiceInitResponse_Result = {
       ? WorkflowRunItem.fromPartial(object.workflowRun)
       : undefined;
     message.organization = object.organization ?? "";
-    message.blockOnPolicyFailure = object.blockOnPolicyFailure ?? false;
+    message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
     return message;
   },
 };
