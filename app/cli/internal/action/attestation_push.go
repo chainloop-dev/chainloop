@@ -160,6 +160,19 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, err
 	}
 
+	// execute policy evaluations
+	// We do not want to evaluate policies here during render since we want to do it in a separate step
+	statement, err := renderer.RenderStatement(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("rendering statement: %w", err)
+	}
+
+	// Add attestation-level policy evaluations
+	if err := crafter.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
+		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
+	}
+
+	// render final attestation with all the evaluated policies inside
 	envelope, err := renderer.Render(ctx)
 	if err != nil {
 		return nil, err

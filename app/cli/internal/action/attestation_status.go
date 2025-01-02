@@ -141,7 +141,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		}
 
 		// We do not want to evaluate policies here during render since we want to do it in a separate step
-		statement, err := renderer.RenderStatement(ctx, chainloop.WithSkipPolicyEvaluation(true))
+		statement, err := renderer.RenderStatement(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
@@ -206,7 +206,6 @@ func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *cr
 	evaluations := make(map[string][]*PolicyEvaluation)
 
 	// Add attestation-level policy evaluations
-	// TODO: run somewhere else
 	if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
 		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 	}
