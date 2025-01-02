@@ -27,7 +27,6 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/pkg/policies"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -86,25 +85,7 @@ func NewChainloopRendererV02(att *v1.Attestation, schema *schemaapi.CraftingSche
 	}
 }
 
-type RenderOptions struct {
-	evaluatePolicies bool
-}
-
-type RenderOpt func(*RenderOptions)
-
-func WithSkipPolicyEvaluation(skip bool) RenderOpt {
-	return func(o *RenderOptions) {
-		o.evaluatePolicies = !skip
-	}
-}
-
-func (r *RendererV02) Statement(ctx context.Context, opts ...RenderOpt) (*intoto.Statement, error) {
-	var evaluations []*v1.PolicyEvaluation
-	options := &RenderOptions{evaluatePolicies: true}
-	for _, opt := range opts {
-		opt(options)
-	}
-
+func (r *RendererV02) Statement(_ context.Context) (*intoto.Statement, error) {
 	subject, err := r.subject()
 	if err != nil {
 		return nil, fmt.Errorf("error creating subject: %w", err)
@@ -122,86 +103,7 @@ func (r *RendererV02) Statement(ctx context.Context, opts ...RenderOpt) (*intoto
 		Predicate:     predicate,
 	}
 
-	if options.evaluatePolicies {
-		// Validate policy groups
-		pgv := policies.NewPolicyGroupVerifier(r.schema, r.attClient, r.logger)
-		policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
-		if err != nil {
-			return nil, fmt.Errorf("error applying policy groups to statement: %w", err)
-		}
-		evaluations = append(evaluations, policyGroupResults...)
-
-		// validate attestation-level policies
-		pv := policies.NewPolicyVerifier(r.schema, r.attClient, r.logger)
-		policyResults, err := pv.VerifyStatement(ctx, statement)
-		if err != nil {
-			return nil, fmt.Errorf("applying policies to statement: %w", err)
-		}
-		evaluations = append(evaluations, policyResults...)
-		// log policy violations
-		policies.LogPolicyEvaluations(evaluations, r.logger)
-
-		// insert attestation level policy results into statement
-		if err = addPolicyResults(statement, evaluations); err != nil {
-			return nil, fmt.Errorf("adding policy results to statement: %w", err)
-		}
-	}
-
 	return statement, nil
-}
-
-// addPolicyResults adds policy evaluation results to the statement. It does it by deserializing the predicate from a structpb.Struct,
-// filling PolicyEvaluations, and serializing it again to a structpb.Struct object, using JSON as an intermediate representation.
-// Note that this is needed because intoto predicates are generic structpb.Struct
-func addPolicyResults(statement *intoto.Statement, policyResults []*v1.PolicyEvaluation) error {
-	if len(policyResults) == 0 {
-		return nil
-	}
-
-	predicate := statement.Predicate
-	// marshall to json
-	jsonPredicate, err := protojson.Marshal(predicate)
-	if err != nil {
-		return fmt.Errorf("marshalling predicate: %w", err)
-	}
-
-	// unmarshall to our typed predicate object
-	var p ProvenancePredicateV02
-	err = json.Unmarshal(jsonPredicate, &p)
-	if err != nil {
-		return fmt.Errorf("unmarshalling predicate: %w", err)
-	}
-
-	// insert policy evaluations for attestation
-	if p.PolicyEvaluations == nil {
-		p.PolicyEvaluations = make(map[string][]*PolicyEvaluation)
-	}
-	attEvaluations := make([]*PolicyEvaluation, 0, len(policyResults))
-	for _, ev := range policyResults {
-		renderedEv, err := renderEvaluation(ev)
-		if err != nil {
-			return fmt.Errorf("rendering evaluation: %w", err)
-		}
-		attEvaluations = append(attEvaluations, renderedEv)
-	}
-	p.PolicyEvaluations[AttPolicyEvaluation] = attEvaluations
-
-	// marshall back to JSON
-	jsonPredicate, err = json.Marshal(p)
-	if err != nil {
-		return fmt.Errorf("marshalling predicate: %w", err)
-	}
-
-	// finally unmarshal from JSON to structpb.Struct.
-	var finalPredicate structpb.Struct
-	err = protojson.Unmarshal(jsonPredicate, &finalPredicate)
-	if err != nil {
-		return fmt.Errorf("unmarshalling predicate: %w", err)
-	}
-
-	statement.Predicate = &finalPredicate
-
-	return nil
 }
 
 func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
@@ -285,7 +187,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)
 	}
 
-	policies, err := policyEvaluationsFromMaterials(r.att)
+	policies, err := mappedPolicyEvaluations(r.att)
 	if err != nil {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
@@ -313,14 +215,19 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 }
 
 // collect all policy evaluations grouped by material
-func policyEvaluationsFromMaterials(att *v1.Attestation) (map[string][]*PolicyEvaluation, error) {
+func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluation, error) {
 	result := map[string][]*PolicyEvaluation{}
 	for _, p := range att.GetPolicyEvaluations() {
+		keyName := p.MaterialName
+		if keyName == "" {
+			keyName = AttPolicyEvaluation
+		}
+
 		ev, err := renderEvaluation(p)
 		if err != nil {
 			return nil, err
 		}
-		result[p.MaterialName] = append(result[p.MaterialName], ev)
+		result[keyName] = append(result[keyName], ev)
 	}
 
 	return result, nil

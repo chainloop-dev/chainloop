@@ -593,23 +593,38 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	return nil
 }
 
-func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, statement *intoto.Statement) ([]*api.PolicyEvaluation, error) {
+// EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state
+func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement) error {
 	// evaluate attestation-level policies
 	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
-	policyResults, err := pv.VerifyStatement(ctx, statement)
+	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
-		return nil, fmt.Errorf("evaluating policies in statement: %w", err)
+		return fmt.Errorf("evaluating policies in statement: %w", err)
 	}
 
 	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
 	if err != nil {
-		return nil, fmt.Errorf("evaluating policy groups in statement: %w", err)
+		return fmt.Errorf("evaluating policy groups in statement: %w", err)
 	}
 
-	policyResults = append(policyResults, policyGroupResults...)
+	policyEvaluations = append(policyEvaluations, policyGroupResults...)
 
-	return policyResults, nil
+	// Since we are going to override the state, we want to keep the existing material-type policy evaluations
+	for _, ev := range c.CraftingState.Attestation.PolicyEvaluations {
+		// We can not use kind = ATTESTATION since that's a valid material kind
+		if ev.MaterialName != "" {
+			policyEvaluations = append(policyEvaluations, ev)
+		}
+	}
+
+	c.CraftingState.Attestation.PolicyEvaluations = policyEvaluations
+
+	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
+		return fmt.Errorf("failed to persist crafting state: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Crafter) ValidateAttestation() error {
