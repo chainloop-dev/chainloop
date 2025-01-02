@@ -146,7 +146,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
 
-		res.PolicyEvaluations, err = action.getPolicyEvaluations(ctx, c, statement)
+		res.PolicyEvaluations, err = action.getPolicyEvaluations(ctx, c, attestationID, statement)
 		if err != nil {
 			return nil, fmt.Errorf("getting policy evaluations: %w", err)
 		}
@@ -201,30 +201,27 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations
-func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *crafter.Crafter, statement *intoto.Statement) (map[string][]*PolicyEvaluation, error) {
+func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *crafter.Crafter, attestationID string, statement *intoto.Statement) (map[string][]*PolicyEvaluation, error) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
 
-	// Add material-level policy evaluations
-	for _, v := range c.CraftingState.Attestation.GetPolicyEvaluations() {
-		if existing, ok := evaluations[v.MaterialName]; ok {
-			evaluations[v.MaterialName] = append(existing, policyEvaluationStateToActionForStatus(v))
-		} else {
-			evaluations[v.MaterialName] = []*PolicyEvaluation{policyEvaluationStateToActionForStatus(v)}
-		}
-	}
-
 	// Add attestation-level policy evaluations
-	attestationEvaluations, err := c.EvaluateAttestationPolicies(ctx, statement)
-	if err != nil {
+	// TODO: run somewhere else
+	if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
 		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 	}
 
-	for _, v := range attestationEvaluations {
-		if existing, ok := evaluations[chainloop.AttPolicyEvaluation]; ok {
-			evaluations[chainloop.AttPolicyEvaluation] = append(existing, policyEvaluationStateToActionForStatus(v))
+	// map evaluations
+	for _, v := range c.CraftingState.Attestation.GetPolicyEvaluations() {
+		keyName := v.MaterialName
+		if keyName == "" {
+			keyName = chainloop.AttPolicyEvaluation
+		}
+
+		if existing, ok := evaluations[keyName]; ok {
+			evaluations[keyName] = append(existing, policyEvaluationStateToActionForStatus(v))
 		} else {
-			evaluations[chainloop.AttPolicyEvaluation] = []*PolicyEvaluation{policyEvaluationStateToActionForStatus(v)}
+			evaluations[keyName] = []*PolicyEvaluation{policyEvaluationStateToActionForStatus(v)}
 		}
 	}
 
