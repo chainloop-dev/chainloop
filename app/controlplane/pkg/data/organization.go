@@ -81,5 +81,5 @@ func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
-	return &biz.Organization{Name: eu.Name, ID: eu.ID.String(), CreatedAt: toTimePtr(eu.CreatedAt)}
+	return &biz.Organization{Name: eu.Name, ID: eu.ID.String(), CreatedAt: toTimePtr(eu.CreatedAt), BlockOnPolicyFailure: eu.BlockOnPolicyFailure}
 }

@@ -3,11 +3,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(block_on_policy_failure)$": {
+      "description": "fail the attestation if policy evaluation fails",
+      "type": "boolean"
+    },
     "^(workflow_run)$": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
     }
   },
   "properties": {
+    "blockOnPolicyFailure": {
+      "description": "fail the attestation if policy evaluation fails",
+      "type": "boolean"
+    },
     "organization": {
       "description": "organization name",
       "type": "string"

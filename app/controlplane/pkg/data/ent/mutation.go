@@ -5483,6 +5483,7 @@ type OrganizationMutation struct {
 	id                        *uuid.UUID
 	name                      *string
 	created_at                *time.Time
+	block_on_policy_failure   *bool
 	clearedFields             map[string]struct{}
 	memberships               map[uuid.UUID]struct{}
 	removedmemberships        map[uuid.UUID]struct{}
@@ -5684,6 +5685,42 @@ func (m *OrganizationMutation) OldCreatedAt(ctx context.Context) (v time.Time, e
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *OrganizationMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (m *OrganizationMutation) SetBlockOnPolicyFailure(b bool) {
+	m.block_on_policy_failure = &b
+}
+
+// BlockOnPolicyFailure returns the value of the "block_on_policy_failure" field in the mutation.
+func (m *OrganizationMutation) BlockOnPolicyFailure() (r bool, exists bool) {
+	v := m.block_on_policy_failure
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockOnPolicyFailure returns the old "block_on_policy_failure" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldBlockOnPolicyFailure(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockOnPolicyFailure is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockOnPolicyFailure requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockOnPolicyFailure: %w", err)
+	}
+	return oldValue.BlockOnPolicyFailure, nil
+}
+
+// ResetBlockOnPolicyFailure resets all changes to the "block_on_policy_failure" field.
+func (m *OrganizationMutation) ResetBlockOnPolicyFailure() {
+	m.block_on_policy_failure = nil
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -6098,12 +6135,15 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
 	if m.created_at != nil {
 		fields = append(fields, organization.FieldCreatedAt)
+	}
+	if m.block_on_policy_failure != nil {
+		fields = append(fields, organization.FieldBlockOnPolicyFailure)
 	}
 	return fields
 }
@@ -6117,6 +6157,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case organization.FieldCreatedAt:
 		return m.CreatedAt()
+	case organization.FieldBlockOnPolicyFailure:
+		return m.BlockOnPolicyFailure()
 	}
 	return nil, false
 }
@@ -6130,6 +6172,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldName(ctx)
 	case organization.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case organization.FieldBlockOnPolicyFailure:
+		return m.OldBlockOnPolicyFailure(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -6152,6 +6196,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case organization.FieldBlockOnPolicyFailure:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockOnPolicyFailure(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -6207,6 +6258,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case organization.FieldBlockOnPolicyFailure:
+		m.ResetBlockOnPolicyFailure()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

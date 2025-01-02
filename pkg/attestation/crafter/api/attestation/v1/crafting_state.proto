@@ -123,6 +123,9 @@ message Attestation {
 
   // Policies that materials in this attestation were validated against
   repeated PolicyEvaluation policy_evaluations = 10;
+
+  // fail the attestation if policy evaluation fails
+  bool block_on_policy_failure = 13;
 }
 
 // A policy executed against an attestation or material
@@ -151,8 +154,8 @@ message PolicyEvaluation {
   // chainloop://my-provider.com/foo@sha256:1234
   // NOTE: embedded policies will not have a reference
   // Deprecated: use policy_reference instead
-  string reference_digest = 10 [deprecated=true];
-  string reference_name = 11 [deprecated=true];
+  string reference_digest = 10 [deprecated = true];
+  string reference_name = 11 [deprecated = true];
 
   string description = 5;
   map<string, string> annotations = 6;
@@ -185,7 +188,7 @@ message PolicyEvaluation {
   }
 
   message Reference {
-    string name = 1[(buf.validate.field) = {
+    string name = 1 [(buf.validate.field) = {
       cel: {
         message: "must contain only lowercase letters, numbers, and hyphens."
         expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"

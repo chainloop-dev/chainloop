@@ -51,6 +51,20 @@ func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (oc *OrganizationCreate) SetBlockOnPolicyFailure(b bool) *OrganizationCreate {
+	oc.mutation.SetBlockOnPolicyFailure(b)
+	return oc
+}
+
+// SetNillableBlockOnPolicyFailure sets the "block_on_policy_failure" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableBlockOnPolicyFailure(b *bool) *OrganizationCreate {
+	if b != nil {
+		oc.SetBlockOnPolicyFailure(*b)
+	}
+	return oc
+}
+
 // SetID sets the "id" field.
 func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
 	oc.mutation.SetID(u)
@@ -209,6 +223,10 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := oc.mutation.BlockOnPolicyFailure(); !ok {
+		v := organization.DefaultBlockOnPolicyFailure
+		oc.mutation.SetBlockOnPolicyFailure(v)
+	}
 	if _, ok := oc.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		oc.mutation.SetID(v)
@@ -222,6 +240,9 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
+	}
+	if _, ok := oc.mutation.BlockOnPolicyFailure(); !ok {
+		return &ValidationError{Name: "block_on_policy_failure", err: errors.New(`ent: missing required field "Organization.block_on_policy_failure"`)}
 	}
 	return nil
 }
@@ -266,6 +287,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := oc.mutation.CreatedAt(); ok {
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := oc.mutation.BlockOnPolicyFailure(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyFailure, field.TypeBool, value)
+		_node.BlockOnPolicyFailure = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -431,6 +456,18 @@ type (
 	}
 )
 
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (u *OrganizationUpsert) SetBlockOnPolicyFailure(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldBlockOnPolicyFailure, v)
+	return u
+}
+
+// UpdateBlockOnPolicyFailure sets the "block_on_policy_failure" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateBlockOnPolicyFailure() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldBlockOnPolicyFailure)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -483,6 +520,20 @@ func (u *OrganizationUpsertOne) Update(set func(*OrganizationUpsert)) *Organizat
 		set(&OrganizationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (u *OrganizationUpsertOne) SetBlockOnPolicyFailure(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetBlockOnPolicyFailure(v)
+	})
+}
+
+// UpdateBlockOnPolicyFailure sets the "block_on_policy_failure" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateBlockOnPolicyFailure() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateBlockOnPolicyFailure()
+	})
 }
 
 // Exec executes the query.
@@ -704,6 +755,20 @@ func (u *OrganizationUpsertBulk) Update(set func(*OrganizationUpsert)) *Organiza
 		set(&OrganizationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (u *OrganizationUpsertBulk) SetBlockOnPolicyFailure(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetBlockOnPolicyFailure(v)
+	})
+}
+
+// UpdateBlockOnPolicyFailure sets the "block_on_policy_failure" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyFailure() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateBlockOnPolicyFailure()
+	})
 }
 
 // Exec executes the query.

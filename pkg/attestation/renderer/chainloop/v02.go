@@ -43,6 +43,12 @@ type ProvenancePredicateV02 struct {
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+	// Whether the attestation has policy violations
+	HasPolicyViolations bool `json:"has_policy_violations"`
+	// Whether we want to block the attestation on policy violations
+	BlockOnPolicyFailureStrategy string `json:"blocked_on_policy_failure_strategy"`
+	// Whether the attestation was blocked due to policy violations
+	BlockedOnPolicyFailure bool `json:"blocked_on_policy_failure"`
 }
 
 type PolicyEvaluation struct {

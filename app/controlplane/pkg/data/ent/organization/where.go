@@ -66,6 +66,11 @@ func CreatedAt(v time.Time) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// BlockOnPolicyFailure applies equality check predicate on the "block_on_policy_failure" field. It's identical to BlockOnPolicyFailureEQ.
+func BlockOnPolicyFailure(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldBlockOnPolicyFailure, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldName, v))
@@ -169,6 +174,16 @@ func CreatedAtLT(v time.Time) predicate.Organization {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.Organization {
 	return predicate.Organization(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// BlockOnPolicyFailureEQ applies the EQ predicate on the "block_on_policy_failure" field.
+func BlockOnPolicyFailureEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldBlockOnPolicyFailure, v))
+}
+
+// BlockOnPolicyFailureNEQ applies the NEQ predicate on the "block_on_policy_failure" field.
+func BlockOnPolicyFailureNEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldBlockOnPolicyFailure, v))
 }
 
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.

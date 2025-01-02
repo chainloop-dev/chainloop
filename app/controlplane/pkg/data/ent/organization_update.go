@@ -36,6 +36,20 @@ func (ou *OrganizationUpdate) Where(ps ...predicate.Organization) *OrganizationU
 	return ou
 }
 
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (ou *OrganizationUpdate) SetBlockOnPolicyFailure(b bool) *OrganizationUpdate {
+	ou.mutation.SetBlockOnPolicyFailure(b)
+	return ou
+}
+
+// SetNillableBlockOnPolicyFailure sets the "block_on_policy_failure" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableBlockOnPolicyFailure(b *bool) *OrganizationUpdate {
+	if b != nil {
+		ou.SetBlockOnPolicyFailure(*b)
+	}
+	return ou
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ou *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	ou.mutation.AddMembershipIDs(ids...)
@@ -334,6 +348,9 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ou.mutation.BlockOnPolicyFailure(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyFailure, field.TypeBool, value)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -672,6 +689,20 @@ type OrganizationUpdateOne struct {
 	modifiers []func(*sql.UpdateBuilder)
 }
 
+// SetBlockOnPolicyFailure sets the "block_on_policy_failure" field.
+func (ouo *OrganizationUpdateOne) SetBlockOnPolicyFailure(b bool) *OrganizationUpdateOne {
+	ouo.mutation.SetBlockOnPolicyFailure(b)
+	return ouo
+}
+
+// SetNillableBlockOnPolicyFailure sets the "block_on_policy_failure" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableBlockOnPolicyFailure(b *bool) *OrganizationUpdateOne {
+	if b != nil {
+		ouo.SetBlockOnPolicyFailure(*b)
+	}
+	return ouo
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ouo *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	ouo.mutation.AddMembershipIDs(ids...)
@@ -1000,6 +1031,9 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ouo.mutation.BlockOnPolicyFailure(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyFailure, field.TypeBool, value)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

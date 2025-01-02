@@ -41,6 +41,7 @@ func (Organization) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
+		field.Bool("block_on_policy_failure").Default(false),
 	}
 }
 

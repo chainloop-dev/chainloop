@@ -30,6 +30,10 @@ export interface Attestation {
   head?: Commit;
   /** Policies that materials in this attestation were validated against */
   policyEvaluations: PolicyEvaluation[];
+  /** Whether the attestation has policy violations */
+  hasPolicyViolations: boolean;
+  /** fail the attestation if policy evaluation fails */
+  blockOnPolicyFailure: boolean;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -292,6 +296,8 @@ function createBaseAttestation(): Attestation {
     runnerType: 0,
     head: undefined,
     policyEvaluations: [],
+    hasPolicyViolations: false,
+    blockOnPolicyFailure: false,
   };
 }
 
@@ -326,6 +332,12 @@ export const Attestation = {
     }
     for (const v of message.policyEvaluations) {
       PolicyEvaluation.encode(v!, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.hasPolicyViolations === true) {
+      writer.uint32(88).bool(message.hasPolicyViolations);
+    }
+    if (message.blockOnPolicyFailure === true) {
+      writer.uint32(104).bool(message.blockOnPolicyFailure);
     }
     return writer;
   },
@@ -416,6 +428,20 @@ export const Attestation = {
 
           message.policyEvaluations.push(PolicyEvaluation.decode(reader, reader.uint32()));
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.hasPolicyViolations = reader.bool();
+          continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.blockOnPolicyFailure = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -454,6 +480,8 @@ export const Attestation = {
       policyEvaluations: Array.isArray(object?.policyEvaluations)
         ? object.policyEvaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
         : [],
+      hasPolicyViolations: isSet(object.hasPolicyViolations) ? Boolean(object.hasPolicyViolations) : false,
+      blockOnPolicyFailure: isSet(object.blockOnPolicyFailure) ? Boolean(object.blockOnPolicyFailure) : false,
     };
   },
 
@@ -489,6 +517,8 @@ export const Attestation = {
     } else {
       obj.policyEvaluations = [];
     }
+    message.hasPolicyViolations !== undefined && (obj.hasPolicyViolations = message.hasPolicyViolations);
+    message.blockOnPolicyFailure !== undefined && (obj.blockOnPolicyFailure = message.blockOnPolicyFailure);
     return obj;
   },
 
@@ -531,6 +561,8 @@ export const Attestation = {
     message.runnerType = object.runnerType ?? 0;
     message.head = (object.head !== undefined && object.head !== null) ? Commit.fromPartial(object.head) : undefined;
     message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
+    message.hasPolicyViolations = object.hasPolicyViolations ?? false;
+    message.blockOnPolicyFailure = object.blockOnPolicyFailure ?? false;
     return message;
   },
 };

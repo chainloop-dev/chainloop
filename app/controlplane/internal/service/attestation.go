@@ -27,7 +27,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -132,6 +131,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
 
+	org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	if err := checkAuthRequirements(robotAccount, req.GetWorkflowName()); err != nil {
 		return nil, err
 	}
@@ -170,26 +174,14 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	var orgName string
-	// Find the organization
-	if org := entities.CurrentOrg(ctx); org != nil {
-		orgName = org.Name
-	}
-
-	if orgName == "" {
-		org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
-		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-		orgName = org.Name
-	}
-
 	wRun := bizWorkFlowRunToPb(run)
 	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
-		WorkflowRun:  wRun,
-		Organization: orgName,
+		WorkflowRun:          wRun,
+		Organization:         org.Name,
+		BlockOnPolicyFailure: org.BlockOnPolicyFailure,
 	}
+
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil
 }

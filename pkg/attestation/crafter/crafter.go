@@ -143,6 +143,8 @@ type InitOpts struct {
 	// Identifier of the attestation state
 	AttestationID string
 	Runner        SupportedRunner
+	// fail the attestation if policy evaluation fails
+	BlockOnPolicyFailure bool
 }
 
 // Initialize the crafter with a remote or local schema
@@ -153,7 +155,7 @@ func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
 		return errors.New("workflow metadata is nil")
 	}
 
-	return c.initCraftingStateFile(ctx, opts.AttestationID, opts.SchemaV1, opts.WfInfo, opts.DryRun, opts.Runner.ID(), opts.Runner.RunURI())
+	return c.initCraftingStateFile(ctx, opts.AttestationID, opts.SchemaV1, opts.WfInfo, opts.DryRun, opts.Runner.ID(), opts.Runner.RunURI(), opts.BlockOnPolicyFailure)
 }
 
 func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool, error) {
@@ -169,9 +171,10 @@ func (c *Crafter) initCraftingStateFile(
 	dryRun bool,
 	runnerType schemaapi.CraftingSchema_Runner_RunnerType,
 	jobURL string,
+	blockOnPolicyFailure bool,
 ) error {
 	// Generate Crafting state
-	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL)
+	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL, blockOnPolicyFailure)
 	if err != nil {
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
@@ -321,7 +324,7 @@ func sanitizeRemoteURL(remoteURL string) (string, error) {
 	return uri.String(), nil
 }
 
-func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string) (*api.CraftingState, error) {
+func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string, blockOnPolicyFailure bool) (*api.CraftingState, error) {
 	// Get git commit hash
 	headCommit, err := gracefulGitRepoHead(cwd)
 	if err != nil {
@@ -351,11 +354,12 @@ func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.
 	return &api.CraftingState{
 		InputSchema: schema,
 		Attestation: &api.Attestation{
-			InitializedAt: timestamppb.New(time.Now()),
-			Workflow:      wf,
-			RunnerType:    runnerType,
-			RunnerUrl:     jobURL,
-			Head:          headCommitP,
+			InitializedAt:        timestamppb.New(time.Now()),
+			Workflow:             wf,
+			RunnerType:           runnerType,
+			RunnerUrl:            jobURL,
+			Head:                 headCommitP,
+			BlockOnPolicyFailure: blockOnPolicyFailure,
 		},
 		DryRun: dryRun,
 	}, nil

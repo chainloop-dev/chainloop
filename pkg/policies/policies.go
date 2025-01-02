@@ -577,3 +577,12 @@ func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.L
 		}
 	}
 }
+
+func HasPolicyViolations(evaluations []*v12.PolicyEvaluation) bool {
+	for _, eval := range evaluations {
+		if len(eval.Violations) > 0 {
+			return true
+		}
+	}
+	return false
+}
