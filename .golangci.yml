@@ -57,7 +57,8 @@ linters-settings:
       limitations under the License.
     values:
       regexp:
-        copyright-year: 202[3|4|5]
+        # support of single or range-based years i.e 2024 2024-2025 2024-2026
+        copyright-year: "202[0-9](-202[0-9])?"
   forbidigo:
     forbid:
       - ^print.*$
