@@ -247,17 +247,104 @@ policyGroups:
 ```
 
 As we introduced earlier, policy groups define both materials and policies applied to them. Once they are included to a contract,
-they become part of the contract. From this point of view, they can be seen as subcontracts.
+they become part of the contract. From this point of view, they can be seen as subcontracts, as they can also be used to enforce materials to be present in the attestation.
+For example, after applying the above contract, doing an `attestation push` would fail until the required material is provided:
+
+```shell
+$ chainloop att init --workflow mywf --project myproject
+INF Attestation initialized! now you can check its status or add materials to it
+┌────────────────┬──────────────────────────────────────┐
+│ Initialized At │ 30 Dec 24 12:26 UTC                  │
+├────────────────┼──────────────────────────────────────┤
+│ Attestation ID │ a52f082c-ca4a-4952-bb07-fa9117c04a90 │
+│ Organization   │ my-org                               │
+│ Name           │ mywf                                 │
+│ Project        │ myproject                            │
+│ Version        │ v0.148.0 (prerelease)                │
+│ Contract       │ myproject-mywf (revision 76)         │
+└────────────────┴──────────────────────────────────────┘
+┌────────────────────────────────┐
+│ Materials                      │
+├──────────┬─────────────────────┤
+│ Name     │ sbom                │
+│ Type     │ SBOM_CYCLONEDX_JSON │
+│ Set      │ No                  │
+│ Required │ Yes                 │
+└──────────┴─────────────────────┘
+
+$ chainloop att push
+ERR some materials have not been crafted yet: sbom
+exit status 1
+```
 
 ### Policy group parameters
 
 In the same way as [policies](policies#policy-arguments), groups can accept arguments, which are specified in the `inputs` section.
 Then those inputs can be passed down to policies using interpolation.
 
-In the example above, `bannedComponents` input parameter (which is mandatory) is passed to the underlying policy with the expression `{{ inputs.banneComponents }}`
+In the example above, `bannedComponents` input parameter (which is mandatory) is passed to the underlying policy with the expression `{{ inputs.bannedComponents }}`
 ```yaml
         - ref: sbom-banned-components
           with:
             components: {{ inputs.bannedComponents }}
 ```
 
+### Using placeholders in material names
+In the previous example, our policy group enforces a `sbom` material. But what if our contract requires multiple SBOMs (because we are building several images in the same pipeline, for example)?
+By using parameters and placeholders in material names, we can add as many instances of the same policy group as we need:
+
+```yaml
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: sbom-quality
+spec:
+  inputs:
+    - name: container_name
+      description: name of the enforced material
+      required: true
+  policies:
+    materials:
+      - name: "{{ inputs.container_name }}" # This will materialize when doing an `attestation init`
+        type: SBOM_CYCLONEDX_JSON
+```
+In our contract:
+```yaml
+schemaVersion: v1
+materials: []
+policyGroups:
+  - ref: file://groups/sbom-quality-group.yaml
+    with:
+      container_name: "sbom-from-image-1"
+  - ref: file://groups/sbom-quality-group.yaml
+    with:
+      container_name: "sbom-from-image-2"
+```
+And finally, in our attestation, we can see the new configuration applied:
+```shell
+$ chainloop att init --workflow mywf --project myproject
+INF Attestation initialized! now you can check its status or add materials to it
+┌────────────────┬──────────────────────────────────────┐
+│ Initialized At │ 30 Dec 24 13:21 UTC                  │
+├────────────────┼──────────────────────────────────────┤
+│ Attestation ID │ 0837859e-0abf-414e-b205-d455da6dfe7e │
+│ Organization   │ my-org                               │
+│ Name           │ mywf                                 │
+│ Project        │ myproject                            │
+│ Version        │ v0.148.0 (prerelease)                │
+│ Contract       │ myproject-mywf (revision 77)         │
+└────────────────┴──────────────────────────────────────┘
+┌────────────────────────────────┐
+│ Materials                      │
+├──────────┬─────────────────────┤
+│ Name     │ sbom-from-image-1   │
+│ Type     │ SBOM_CYCLONEDX_JSON │
+│ Set      │ No                  │
+│ Required │ Yes                 │
+├──────────┼─────────────────────┤
+│ Name     │ sbom-from-image-2   │
+│ Type     │ SBOM_CYCLONEDX_JSON │
+│ Set      │ No                  │
+│ Required │ Yes                 │
+└──────────┴─────────────────────┘
+```
