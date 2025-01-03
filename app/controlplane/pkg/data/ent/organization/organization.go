@@ -19,6 +19,8 @@ const (
 	FieldName = "name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldBlockOnPolicyViolation holds the string denoting the block_on_policy_violation field in the database.
+	FieldBlockOnPolicyViolation = "block_on_policy_violation"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -91,6 +93,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldCreatedAt,
+	FieldBlockOnPolicyViolation,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -106,6 +109,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultBlockOnPolicyViolation holds the default value on creation for the "block_on_policy_violation" field.
+	DefaultBlockOnPolicyViolation bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -126,6 +131,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByBlockOnPolicyViolation orders the results by the block_on_policy_violation field.
+func ByBlockOnPolicyViolation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlockOnPolicyViolation, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

@@ -30,6 +30,8 @@ export interface Attestation {
   head?: Commit;
   /** Policies that materials in this attestation were validated against */
   policyEvaluations: PolicyEvaluation[];
+  /** fail the attestation if policy evaluation fails */
+  blockOnPolicyViolation: boolean;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -292,6 +294,7 @@ function createBaseAttestation(): Attestation {
     runnerType: 0,
     head: undefined,
     policyEvaluations: [],
+    blockOnPolicyViolation: false,
   };
 }
 
@@ -326,6 +329,9 @@ export const Attestation = {
     }
     for (const v of message.policyEvaluations) {
       PolicyEvaluation.encode(v!, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.blockOnPolicyViolation === true) {
+      writer.uint32(104).bool(message.blockOnPolicyViolation);
     }
     return writer;
   },
@@ -416,6 +422,13 @@ export const Attestation = {
 
           message.policyEvaluations.push(PolicyEvaluation.decode(reader, reader.uint32()));
           continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.blockOnPolicyViolation = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -454,6 +467,7 @@ export const Attestation = {
       policyEvaluations: Array.isArray(object?.policyEvaluations)
         ? object.policyEvaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
         : [],
+      blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
     };
   },
 
@@ -489,6 +503,7 @@ export const Attestation = {
     } else {
       obj.policyEvaluations = [];
     }
+    message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
     return obj;
   },
 
@@ -531,6 +546,7 @@ export const Attestation = {
     message.runnerType = object.runnerType ?? 0;
     message.head = (object.head !== undefined && object.head !== null) ? Commit.fromPartial(object.head) : undefined;
     message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
+    message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
     return message;
   },
 };

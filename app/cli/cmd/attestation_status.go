@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 
@@ -83,6 +84,9 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	gt.AppendSeparator()
 	meta := status.WorkflowMeta
 	gt.AppendRow(table.Row{"Attestation ID", status.AttestationID})
+	if status.Digest != "" {
+		gt.AppendRow(table.Row{"Digest", status.Digest})
+	}
 	gt.AppendRow(table.Row{"Organization", meta.Organization})
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Project", meta.Project})
@@ -111,6 +115,14 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 
 	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
+		var blockingColor text.Color
+		var blockingText = "ADVISORY"
+		if status.MustBlockOnPolicyViolations {
+			blockingColor = text.FgHiYellow
+			blockingText = "ENFORCED"
+		}
+
+		gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
 		gt.AppendRow(table.Row{"Policies", "------"})
 		policiesTable(evs, gt)
 	}

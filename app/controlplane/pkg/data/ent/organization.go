@@ -22,6 +22,8 @@ type Organization struct {
 	Name string `json:"name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// BlockOnPolicyViolation holds the value of the "block_on_policy_violation" field.
+	BlockOnPolicyViolation bool `json:"block_on_policy_violation,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -117,6 +119,8 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case organization.FieldBlockOnPolicyViolation:
+			values[i] = new(sql.NullBool)
 		case organization.FieldName:
 			values[i] = new(sql.NullString)
 		case organization.FieldCreatedAt:
@@ -155,6 +159,12 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				o.CreatedAt = value.Time
+			}
+		case organization.FieldBlockOnPolicyViolation:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field block_on_policy_violation", values[i])
+			} else if value.Valid {
+				o.BlockOnPolicyViolation = value.Bool
 			}
 		default:
 			o.selectValues.Set(columns[i], values[i])
@@ -232,6 +242,9 @@ func (o *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(o.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("block_on_policy_violation=")
+	builder.WriteString(fmt.Sprintf("%v", o.BlockOnPolicyViolation))
 	builder.WriteByte(')')
 	return builder.String()
 }

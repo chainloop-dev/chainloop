@@ -97,6 +97,9 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 			logger.Debug().Msg("GracefulErrorExit enabled (exitCode 0). If you want to disable it set --graceful-exit=false")
 			exitCode = 0
 		}
+	case errors.Is(err, cmd.ErrBlockedByPolicyViolation):
+		// default exit code for policy violations
+		exitCode = 3
 	}
 
 	return msg, exitCode

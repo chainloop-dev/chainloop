@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,18 +94,17 @@ func newAttestationPushCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			// In JSON format, we encode the full attestation
-			if flagOutputFormat == formatJSON {
-				return encodeJSON(res)
-			}
+			res.Status.Digest = res.Digest
 
 			// In TABLE format, we render the attestation status
 			if err := encodeOutput(res.Status, fullStatusTable); err != nil {
 				return fmt.Errorf("failed to render output: %w", err)
 			}
 
-			if res.Digest != "" {
-				fmt.Printf("Attestation Digest: %s", res.Digest)
+			// We do a final check to see if the attestation has policy violations
+			// and fail the command if needed
+			if res.Status.HasPolicyViolations && res.Status.MustBlockOnPolicyViolations {
+				return ErrBlockedByPolicyViolation
 			}
 
 			return nil
@@ -123,3 +122,5 @@ func newAttestationPushCmd() *cobra.Command {
 
 	return cmd
 }
+
+var ErrBlockedByPolicyViolation = errors.New("the operator requires that the attestation process must have all policies passing before continue, please fix them and try again")

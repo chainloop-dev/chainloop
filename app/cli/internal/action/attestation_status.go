@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,17 +45,20 @@ type AttestationStatus struct {
 }
 
 type AttestationStatusResult struct {
-	AttestationID       string                            `json:"attestationID"`
-	InitializedAt       *time.Time                        `json:"initializedAt"`
-	WorkflowMeta        *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
-	Materials           []AttestationStatusResultMaterial `json:"materials"`
-	EnvVars             map[string]string                 `json:"envVars"`
-	RunnerContext       *AttestationResultRunnerContext   `json:"runnerContext"`
-	DryRun              bool                              `json:"dryRun"`
-	Annotations         []*Annotation                     `json:"annotations"`
-	IsPushed            bool                              `json:"isPushed"`
-	PolicyEvaluations   map[string][]*PolicyEvaluation    `json:"policy_evaluations,omitempty"`
-	HasPolicyViolations bool                              `json:"hasPolicyViolations"`
+	AttestationID               string                            `json:"attestationID"`
+	InitializedAt               *time.Time                        `json:"initializedAt"`
+	WorkflowMeta                *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
+	Materials                   []AttestationStatusResultMaterial `json:"materials"`
+	EnvVars                     map[string]string                 `json:"envVars"`
+	RunnerContext               *AttestationResultRunnerContext   `json:"runnerContext"`
+	DryRun                      bool                              `json:"dryRun"`
+	Annotations                 []*Annotation                     `json:"annotations"`
+	IsPushed                    bool                              `json:"isPushed"`
+	PolicyEvaluations           map[string][]*PolicyEvaluation    `json:"policy_evaluations,omitempty"`
+	HasPolicyViolations         bool                              `json:"has_policy_violations"`
+	MustBlockOnPolicyViolations bool                              `json:"must_block_on_policy_violations"`
+	// This might only be set if the attestation is pushed
+	Digest string `json:"digest"`
 }
 
 type AttestationResultRunnerContext struct {
@@ -126,10 +129,11 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			ContractRevision: workflowMeta.GetSchemaRevision(),
 			ContractName:     workflowMeta.GetContractName(),
 		},
-		InitializedAt: toTimePtr(att.InitializedAt.AsTime()),
-		DryRun:        c.CraftingState.DryRun,
-		Annotations:   pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
-		IsPushed:      action.isPushed,
+		InitializedAt:               toTimePtr(att.InitializedAt.AsTime()),
+		DryRun:                      c.CraftingState.DryRun,
+		Annotations:                 pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
+		IsPushed:                    action.isPushed,
+		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
 	}
 
 	if !action.skipPolicyEvaluation {
@@ -146,12 +150,10 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
 
-		res.PolicyEvaluations, err = action.getPolicyEvaluations(ctx, c, attestationID, statement)
+		res.PolicyEvaluations, res.HasPolicyViolations, err = action.getPolicyEvaluations(ctx, c, attestationID, statement)
 		if err != nil {
 			return nil, fmt.Errorf("getting policy evaluations: %w", err)
 		}
-
-		res.HasPolicyViolations = len(res.PolicyEvaluations) > 0
 	}
 
 	if v := workflowMeta.GetVersion(); v != nil {
@@ -200,14 +202,15 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 	return res, nil
 }
 
-// getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations
-func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *crafter.Crafter, attestationID string, statement *intoto.Statement) (map[string][]*PolicyEvaluation, error) {
+// getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
+func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *crafter.Crafter, attestationID string, statement *intoto.Statement) (map[string][]*PolicyEvaluation, bool, error) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
+	var hasViolations bool
 
 	// Add attestation-level policy evaluations
 	if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
-		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
+		return nil, false, fmt.Errorf("evaluating attestation policies: %w", err)
 	}
 
 	// map evaluations
@@ -217,6 +220,10 @@ func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *cr
 			keyName = chainloop.AttPolicyEvaluation
 		}
 
+		if len(v.GetViolations()) > 0 {
+			hasViolations = true
+		}
+
 		if existing, ok := evaluations[keyName]; ok {
 			evaluations[keyName] = append(existing, policyEvaluationStateToActionForStatus(v))
 		} else {
@@ -224,7 +231,7 @@ func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *cr
 		}
 	}
 
-	return evaluations, nil
+	return evaluations, hasViolations, nil
 }
 
 // populateMaterials populates the materials in the attestation result regardless of where they are defined

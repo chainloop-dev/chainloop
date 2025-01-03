@@ -109,12 +109,14 @@
       "finishedAt": "2023-10-20T12:58:10.562093962Z",
       "initializedAt": "2023-10-20T12:57:10.562093962Z",
       "name": "test-new-types",
+      "organization": "my-org",
       "project": "test",
       "team": "",
       "workflowID": "ab98be70-041b-4a82-97f3-daa56f61262b",
-      "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8",
-      "organization": "my-org"
+      "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8"
     },
+    "policy_block_on_violation": false,
+    "policy_has_violations": false,
     "runnerType": "RUNNER_TYPE_UNSPECIFIED"
   }
 }

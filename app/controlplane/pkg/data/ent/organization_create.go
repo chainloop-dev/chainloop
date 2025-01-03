@@ -51,6 +51,20 @@ func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (oc *OrganizationCreate) SetBlockOnPolicyViolation(b bool) *OrganizationCreate {
+	oc.mutation.SetBlockOnPolicyViolation(b)
+	return oc
+}
+
+// SetNillableBlockOnPolicyViolation sets the "block_on_policy_violation" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableBlockOnPolicyViolation(b *bool) *OrganizationCreate {
+	if b != nil {
+		oc.SetBlockOnPolicyViolation(*b)
+	}
+	return oc
+}
+
 // SetID sets the "id" field.
 func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
 	oc.mutation.SetID(u)
@@ -209,6 +223,10 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
+		v := organization.DefaultBlockOnPolicyViolation
+		oc.mutation.SetBlockOnPolicyViolation(v)
+	}
 	if _, ok := oc.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		oc.mutation.SetID(v)
@@ -222,6 +240,9 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
+	}
+	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
+		return &ValidationError{Name: "block_on_policy_violation", err: errors.New(`ent: missing required field "Organization.block_on_policy_violation"`)}
 	}
 	return nil
 }
@@ -266,6 +287,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := oc.mutation.CreatedAt(); ok {
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := oc.mutation.BlockOnPolicyViolation(); ok {
+		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
+		_node.BlockOnPolicyViolation = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -431,6 +456,18 @@ type (
 	}
 )
 
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldBlockOnPolicyViolation, v)
+	return u
+}
+
+// UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateBlockOnPolicyViolation() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldBlockOnPolicyViolation)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -483,6 +520,20 @@ func (u *OrganizationUpsertOne) Update(set func(*OrganizationUpsert)) *Organizat
 		set(&OrganizationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (u *OrganizationUpsertOne) SetBlockOnPolicyViolation(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetBlockOnPolicyViolation(v)
+	})
+}
+
+// UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateBlockOnPolicyViolation() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateBlockOnPolicyViolation()
+	})
 }
 
 // Exec executes the query.
@@ -704,6 +755,20 @@ func (u *OrganizationUpsertBulk) Update(set func(*OrganizationUpsert)) *Organiza
 		set(&OrganizationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
+func (u *OrganizationUpsertBulk) SetBlockOnPolicyViolation(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetBlockOnPolicyViolation(v)
+	})
+}
+
+// UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyViolation() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateBlockOnPolicyViolation()
+	})
 }
 
 // Exec executes the query.
