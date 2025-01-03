@@ -140,6 +140,11 @@ A Discord webhook plugin will
 - Get the Webhook URL from the state stored during the registration phase
 - Craft message to send to the Discord webhook
 
+A generic webhook plugin will
+
+- Get the Webhook URL from the state stored during the registration phase
+- Send the Attestation to the webhook, Additionally, it will send SBOM materials if on attachment phase send_sbom is set to true.
+
 ## How to create a new plugin
 
 We offer a [starter template](https://github.com/chainloop-dev/chainloop/tree/main/app/controlplane/plugins/core/template) that can be used as baseline. Just copy it to a new folder i.e `core/my-plugin/v1` to get started.

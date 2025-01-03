@@ -15,6 +15,7 @@ Below you can find the list of currently available integrations. If you can't fi
 | [guac](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/guac/v1/README.md) | 1.0 | Export Attestation and SBOMs metadata to a blob storage backend so guacsec/guac can consume it | SBOM_CYCLONEDX_JSON, SBOM_SPDX_JSON |
 | [slack-webhook](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/slack-webhook/v1/README.md) | 1.0 | Send attestations to Slack |  |
 | [smtp](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/smtp/v1/README.md) | 1.0 | Send emails with information about a received attestation |  |
+| [webhook](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/webhook/v1/README.md) | 1.0 | Send Attestation and SBOMs to a generic POST webhook URL | SBOM_CYCLONEDX_JSON, SBOM_SPDX_JSON |
 
 ## How to use integrations
 
