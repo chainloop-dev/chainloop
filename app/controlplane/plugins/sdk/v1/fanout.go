@@ -443,7 +443,8 @@ type SchemaProperty struct {
 	// If the property is required
 	Required bool
 	// Optional format (email, host)
-	Format string
+	Format  string
+	Default string
 }
 
 func CompileJSONSchema(in []byte) (*schema_validator.Schema, error) {
@@ -493,12 +494,19 @@ func CalculatePropertiesMap(s *schema_validator.Schema, m *SchemaPropertiesMap) 
 			}
 
 			var required = requiredMap[k]
+
+			var defaultVal string
+			if v.Default != nil && !required {
+				defaultVal = fmt.Sprintf("%v", v.Default)
+			}
+
 			(*m)[k] = &SchemaProperty{
 				Name:        k,
 				Type:        v.Types[0],
 				Required:    required,
 				Description: v.Description,
 				Format:      v.Format,
+				Default:     defaultVal,
 			}
 		}
 	}

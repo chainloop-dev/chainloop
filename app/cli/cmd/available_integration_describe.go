@@ -122,12 +122,12 @@ func renderSchemaTable(tableTitle string, properties sdk.SchemaPropertiesMap) er
 			color = text.Colors{text.FgHiYellow}
 		}
 
-		required := "no"
-		if v.Required {
-			required = "yes"
+		var requiredInfo = color.Sprint(hBool(v.Required))
+		if v.Default != "" && !v.Required {
+			requiredInfo = fmt.Sprintf("%s (default: %s)", requiredInfo, v.Default)
 		}
 
-		t.AppendRow(table.Row{color.Sprint(v.Name), color.Sprint(propertyType), color.Sprint(required), v.Description})
+		t.AppendRow(table.Row{color.Sprint(v.Name), color.Sprint(propertyType), requiredInfo, v.Description})
 	}
 
 	t.Render()
