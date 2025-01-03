@@ -58,6 +58,8 @@ jobs:
 #          tar -czf reports/build.tar.gz build
 
       - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
+        env:
+          ACTIONS_STEP_DEBUG: true
         with:
           path: .
           format: cyclonedx-json
