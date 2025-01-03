@@ -59,7 +59,7 @@ jobs:
 
       - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
         env:
-          RUNNER_DEBUG: true
+          RUNNER_DEBUG: "1"
           ACTIONS_STEP_DEBUG: true
         with:
           path: .
