@@ -65,7 +65,7 @@ jobs:
           path: .
           format: cyclonedx-json
           upload-artifact: false
-          config: docs/.syft.yaml
+#          config: docs/.syft.yaml
           output-file: docs/reports/sbom.cyclonedx.json
 
       - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
