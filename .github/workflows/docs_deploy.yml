@@ -52,9 +52,9 @@ jobs:
 #      - name: Deploy
 #        run: netlify deploy --prod
 
-#      - name: Generate reports
-#        run: |
-#          mkdir -p reports
+      - name: Generate reports
+        run: |
+          mkdir -p reports
 #          tar -czf reports/build.tar.gz build
 
       - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
