@@ -71,12 +71,14 @@
       "finishedAt": "2023-05-03T17:25:12.743426076Z",
       "initializedAt": "2023-05-03T17:22:12.743426076Z",
       "name": "foo",
+      "organization": "",
       "project": "bar",
       "team": "",
-      "organization": "",
       "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184",
       "workflowRunID": ""
     },
+    "policy_block_on_violation": false,
+    "policy_has_violations": false,
     "runnerType": "GITHUB_ACTION"
   }
 }
