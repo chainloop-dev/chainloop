@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,12 +49,12 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 
 	// We'll store the attestation in the private only index
 	ctx := context.Background()
-	s.T().Run("public endpoint fails if feature not enabled", func(t *testing.T) {
+	s.Run("public endpoint fails if feature not enabled", func() {
 		_, err := s.Referrer.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
 		s.ErrorContains(err, "not enabled")
 	})
 
-	s.T().Run("storing it associated with a private workflow keeps it private and not in the index", func(t *testing.T) {
+	s.Run("storing it associated with a private workflow keeps it private and not in the index", func() {
 		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, s.workflow1.ID.String())
 		require.NoError(s.T(), err)
 		ref, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
@@ -243,11 +243,15 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerAtt.Kind, got.Kind)
 		// It has metadata
 		s.Equal(map[string]string{
-			"contractName": "", "contractVersion": "",
-			"name":         "test-new-types",
-			"project":      "test",
-			"team":         "my-team",
-			"organization": "my-org",
+			"contractName":             "",
+			"contractVersion":          "",
+			"name":                     "test-new-types",
+			"project":                  "test",
+			"team":                     "my-team",
+			"organization":             "my-org",
+			"hasPolicyViolations":      "false",
+			"projectVersion":           "",
+			"projectVersionPrerelease": "false",
 		}, got.Metadata)
 		// it has all the references
 		require.Len(t, got.References, 6)
