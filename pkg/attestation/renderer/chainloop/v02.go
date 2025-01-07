@@ -364,6 +364,10 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEval
 	return p.PolicyEvaluations
 }
 
+func (p *ProvenancePredicateV02) HasPolicyViolations() bool {
+	return p.PolicyHasViolations
+}
+
 // Translate a ResourceDescriptor to a NormalizedMaterial
 func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial, error) {
 	m := &NormalizedMaterial{}
