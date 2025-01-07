@@ -231,10 +231,17 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 
 func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
 	for _, ev := range evs {
-		color := text.Colors{text.FgHiRed}
-		var violations []string
-		var prefix = ""
-		if len(ev.Violations) > 0 {
+		msg := ""
+
+		switch {
+		case ev.Skipped:
+			msg = text.Colors{text.FgHiYellow}.Sprintf("skipped - %s", strings.Join(ev.SkipReasons, ", "))
+		case len(ev.Violations) == 0:
+			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
+		case len(ev.Violations) > 0:
+			color := text.Colors{text.FgHiRed}
+			var violations []string
+			var prefix = ""
 			for _, v := range ev.Violations {
 				violations = append(violations, v.Message)
 			}
@@ -242,17 +249,16 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
 			if len(violations) > 1 {
 				prefix = "\n  - "
 			}
-		} else {
-			violations = append(violations, "Ok")
-			color = text.Colors{text.FgHiGreen}
+
+			// Color the violations text before joining
+			for i, v := range violations {
+				violations[i] = color.Sprint(v)
+			}
+
+			msg = strings.Join(violations, prefix)
 		}
 
-		// Color the violations text before joining
-		for i, v := range violations {
-			violations[i] = color.Sprint(v)
-		}
-
-		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, prefix+strings.Join(violations, prefix))})
+		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, msg)})
 	}
 }
 
