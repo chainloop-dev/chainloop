@@ -206,7 +206,7 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 
 	// string materials don't have an artifact nor container, so a name is not available.
 	if name == "" {
-		name = m.GetID()
+		name = m.GetId()
 	}
 
 	// Required, built-in annotations
@@ -267,10 +267,6 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 	}
 
 	return material, nil
-}
-
-func (m *Attestation_Material) GetID() string {
-	return m.GetId()
 }
 
 func CreateAnnotation(name string) string {

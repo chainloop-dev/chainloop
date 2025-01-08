@@ -301,7 +301,7 @@ func populateAdditionalMaterials(attsMaterials map[string]*v1.Attestation_Materi
 func attMaterialToAction(m *v1.Attestation_Material) (*AttestationStatusMaterial, error) {
 	res := &AttestationStatusMaterial{
 		Material: &Material{
-			Name:        m.GetID(),
+			Name:        m.GetId(),
 			Type:        m.GetMaterialType().String(),
 			Annotations: stateAnnotationToAction(m.Annotations),
 		},
