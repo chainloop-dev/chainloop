@@ -525,11 +525,6 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return nil, err
 	}
 
-	// Set the additional fields known in the context of the contract
-	mt.Id = m.Name
-	mt.Output = m.Output
-	mt.Required = !m.Optional
-
 	// 4 - Populate annotations from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
 	// b) we do not allow adding annotations that are not defined in the contract

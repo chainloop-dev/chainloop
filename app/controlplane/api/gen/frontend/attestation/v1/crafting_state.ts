@@ -71,12 +71,14 @@ export interface Attestation_Material_AnnotationsEntry {
 }
 
 export interface Attestation_Material_KeyVal {
+  /** @deprecated */
   id: string;
   value: string;
   digest: string;
 }
 
 export interface Attestation_Material_ContainerImage {
+  /** @deprecated */
   id: string;
   name: string;
   digest: string;
@@ -98,7 +100,11 @@ export interface Attestation_Material_ContainerImage {
 }
 
 export interface Attestation_Material_Artifact {
-  /** ID of the artifact */
+  /**
+   * ID of the artifact
+   *
+   * @deprecated
+   */
   id: string;
   /** filename, use for record purposes */
   name: string;

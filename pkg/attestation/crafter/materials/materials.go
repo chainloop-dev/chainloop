@@ -235,5 +235,10 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		m.Annotations[annotation.Name] = annotation.Value
 	}
 
+	// Set the additional fields known in the context of the contract
+	m.Id = materialSchema.Name
+	m.Output = materialSchema.Output
+	m.Required = !materialSchema.Optional
+
 	return m, nil
 }
