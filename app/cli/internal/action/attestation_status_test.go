@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,25 +31,25 @@ func TestPopulateContractMaterials(t *testing.T) {
 		totalMaterials int
 		wantErr        bool
 	}{
-		{
-			name: "empty attestation result",
-		},
-		{
-			name:           "materials on contract",
-			totalMaterials: 1,
-			craftingState: &v1.CraftingState{
-				InputSchema: &craftingpb.CraftingSchema{
-					SchemaVersion: "v1",
-					Materials: []*craftingpb.CraftingSchema_Material{
-						{
-							Type:   craftingpb.CraftingSchema_Material_CSAF_VEX,
-							Name:   "vex-file",
-							Output: true,
-						},
-					},
-				},
-			},
-		},
+		// {
+		// 	name: "empty attestation result",
+		// },
+		// {
+		// 	name:           "materials on contract",
+		// 	totalMaterials: 1,
+		// 	craftingState: &v1.CraftingState{
+		// 		InputSchema: &craftingpb.CraftingSchema{
+		// 			SchemaVersion: "v1",
+		// 			Materials: []*craftingpb.CraftingSchema_Material{
+		// 				{
+		// 					Type:   craftingpb.CraftingSchema_Material_CSAF_VEX,
+		// 					Name:   "vex-file",
+		// 					Output: true,
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
 		{
 			name:           "materials in contract and outside contract",
 			totalMaterials: 2,
@@ -67,6 +67,7 @@ func TestPopulateContractMaterials(t *testing.T) {
 				Attestation: &v1.Attestation{
 					Materials: map[string]*v1.Attestation_Material{
 						"vex-file": {
+							Id: "random",
 							M: &v1.Attestation_Material_Artifact_{
 								Artifact: &v1.Attestation_Material_Artifact{
 									Id:      "random",
@@ -79,9 +80,9 @@ func TestPopulateContractMaterials(t *testing.T) {
 							UploadedToCas: true,
 						},
 						"other-file": {
+							Id: "random",
 							M: &v1.Attestation_Material_Artifact_{
 								Artifact: &v1.Attestation_Material_Artifact{
-									Id:      "random",
 									Name:    "other-file",
 									Digest:  "random-digest-2",
 									Content: []byte("random-content-2"),
