@@ -130,6 +130,13 @@ func TestPolicyAttachment(t *testing.T) {
 			},
 		},
 		{
+			desc: "valid requirements with organization",
+			policy: &v1.PolicyAttachment{
+				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},
+				Requirements: []string{"org-name/fw/bar", "org-name/fw/foo@1.2.3", "org-name/myfw/foo_bar@PRODUCTION", "org-name/my-fw-123/foo123@a.b", "org-name/SOC2-rev4/1A-F4@__foo"},
+			},
+		},
+		{
 			desc: "invalid requirements",
 			policy: &v1.PolicyAttachment{
 				Policy:       &v1.PolicyAttachment_Ref{Ref: "reference"},

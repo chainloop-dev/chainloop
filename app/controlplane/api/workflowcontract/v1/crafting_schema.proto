@@ -172,7 +172,7 @@ message PolicyAttachment {
   // List of requirements this policy contributes to satisfy
   repeated string requirements = 6 [(buf.validate.field).repeated.items = {
     string: {
-      pattern: "^([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$", // whitespaces not allowed, framework prefix (/) and version are optional (@)
+      pattern: "^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$", // whitespaces not allowed, organization names (/) optional, framework prefix (/) and version are optional (@)
     }
   }];
 
