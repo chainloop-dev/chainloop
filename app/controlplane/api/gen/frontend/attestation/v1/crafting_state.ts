@@ -45,6 +45,7 @@ export interface Attestation_AnnotationsEntry {
 }
 
 export interface Attestation_Material {
+  id: string;
   string?: Attestation_Material_KeyVal | undefined;
   containerImage?: Attestation_Material_ContainerImage | undefined;
   artifact?: Attestation_Material_Artifact | undefined;
@@ -60,6 +61,8 @@ export interface Attestation_Material {
   inlineCas: boolean;
   /** Annotations for the material */
   annotations: { [key: string]: string };
+  output: boolean;
+  required: boolean;
 }
 
 export interface Attestation_Material_AnnotationsEntry {
@@ -694,6 +697,7 @@ export const Attestation_AnnotationsEntry = {
 
 function createBaseAttestation_Material(): Attestation_Material {
   return {
+    id: "",
     string: undefined,
     containerImage: undefined,
     artifact: undefined,
@@ -703,11 +707,16 @@ function createBaseAttestation_Material(): Attestation_Material {
     uploadedToCas: false,
     inlineCas: false,
     annotations: {},
+    output: false,
+    required: false,
   };
 }
 
 export const Attestation_Material = {
   encode(message: Attestation_Material, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(98).string(message.id);
+    }
     if (message.string !== undefined) {
       Attestation_Material_KeyVal.encode(message.string, writer.uint32(10).fork()).ldelim();
     }
@@ -735,6 +744,12 @@ export const Attestation_Material = {
     Object.entries(message.annotations).forEach(([key, value]) => {
       Attestation_Material_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
+    if (message.output === true) {
+      writer.uint32(80).bool(message.output);
+    }
+    if (message.required === true) {
+      writer.uint32(88).bool(message.required);
+    }
     return writer;
   },
 
@@ -745,6 +760,13 @@ export const Attestation_Material = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -811,6 +833,20 @@ export const Attestation_Material = {
             message.annotations[entry9.key] = entry9.value;
           }
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.output = reader.bool();
+          continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.required = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -822,6 +858,7 @@ export const Attestation_Material = {
 
   fromJSON(object: any): Attestation_Material {
     return {
+      id: isSet(object.id) ? String(object.id) : "",
       string: isSet(object.string) ? Attestation_Material_KeyVal.fromJSON(object.string) : undefined,
       containerImage: isSet(object.containerImage)
         ? Attestation_Material_ContainerImage.fromJSON(object.containerImage)
@@ -840,11 +877,14 @@ export const Attestation_Material = {
           return acc;
         }, {})
         : {},
+      output: isSet(object.output) ? Boolean(object.output) : false,
+      required: isSet(object.required) ? Boolean(object.required) : false,
     };
   },
 
   toJSON(message: Attestation_Material): unknown {
     const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
     message.string !== undefined &&
       (obj.string = message.string ? Attestation_Material_KeyVal.toJSON(message.string) : undefined);
     message.containerImage !== undefined && (obj.containerImage = message.containerImage
@@ -866,6 +906,8 @@ export const Attestation_Material = {
         obj.annotations[k] = v;
       });
     }
+    message.output !== undefined && (obj.output = message.output);
+    message.required !== undefined && (obj.required = message.required);
     return obj;
   },
 
@@ -875,6 +917,7 @@ export const Attestation_Material = {
 
   fromPartial<I extends Exact<DeepPartial<Attestation_Material>, I>>(object: I): Attestation_Material {
     const message = createBaseAttestation_Material();
+    message.id = object.id ?? "";
     message.string = (object.string !== undefined && object.string !== null)
       ? Attestation_Material_KeyVal.fromPartial(object.string)
       : undefined;
@@ -900,6 +943,8 @@ export const Attestation_Material = {
       },
       {},
     );
+    message.output = object.output ?? false;
+    message.required = object.required ?? false;
     return message;
   },
 };

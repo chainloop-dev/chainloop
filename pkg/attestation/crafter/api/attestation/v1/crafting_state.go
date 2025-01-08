@@ -270,14 +270,7 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 }
 
 func (m *Attestation_Material) GetID() string {
-	if m.GetArtifact() != nil {
-		return m.GetArtifact().GetId()
-	} else if m.GetContainerImage() != nil {
-		return m.GetContainerImage().GetId()
-	} else if m.GetSbomArtifact() != nil {
-		return m.GetSbomArtifact().GetArtifact().GetId()
-	}
-	return ""
+	return m.GetId()
 }
 
 func CreateAnnotation(name string) string {

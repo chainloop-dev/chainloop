@@ -89,7 +89,9 @@ func newAttestationAddCmd() *cobra.Command {
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
 				func() error {
-					if err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations); err != nil {
+					// TODO: take the material output and show render it
+					_, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
+					if err != nil {
 						return err
 					}
 

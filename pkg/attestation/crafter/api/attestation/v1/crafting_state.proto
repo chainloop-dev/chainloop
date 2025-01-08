@@ -36,6 +36,7 @@ message Attestation {
   map<string, string> annotations = 5 [(buf.validate.field).map.values.string.min_len = 1];
 
   message Material {
+    string id = 12 [(buf.validate.field).string.min_len = 1];
     oneof m {
       KeyVal string = 1;
       ContainerImage container_image = 2;
@@ -54,6 +55,8 @@ message Attestation {
 
     // Annotations for the material
     map<string, string> annotations = 9 [(buf.validate.field).map.values.string.min_len = 1];
+    bool output = 10;
+    bool required = 11;
 
     message KeyVal {
       string id = 1 [(buf.validate.field).string.min_len = 1];
