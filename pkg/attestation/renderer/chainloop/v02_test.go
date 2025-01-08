@@ -37,7 +37,7 @@ func TestRenderV02(t *testing.T) {
 		outputPath string
 	}{
 		{
-			name:       "basic",
+			name:       "default with policy violations",
 			sourcePath: "testdata/attestation.source.json",
 			outputPath: "testdata/attestation.output.v0.2.json",
 		},

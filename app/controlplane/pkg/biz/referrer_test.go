@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,12 +109,15 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"contractName":    "",
-						"contractVersion": "",
-						"name":            "only-sbom",
-						"organization":    "",
-						"team":            "",
-						"project":         "foo",
+						"contractName":             "",
+						"contractVersion":          "",
+						"name":                     "only-sbom",
+						"organization":             "",
+						"team":                     "",
+						"project":                  "foo",
+						"projectVersion":           "",
+						"projectVersionPrerelease": "false",
+						"hasPolicyViolations":      "false",
 					},
 					Annotations: map[string]string{
 						"branch":   "stable",
@@ -160,12 +163,15 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						},
 					},
 					Metadata: map[string]string{
-						"contractName":    "",
-						"contractVersion": "",
-						"name":            "test",
-						"organization":    "",
-						"team":            "",
-						"project":         "bar",
+						"contractName":             "",
+						"contractVersion":          "",
+						"name":                     "test",
+						"organization":             "",
+						"team":                     "",
+						"project":                  "bar",
+						"projectVersion":           "",
+						"projectVersionPrerelease": "false",
+						"hasPolicyViolations":      "false",
 					},
 					Annotations: map[string]string{
 						"version": "oss",
@@ -193,12 +199,15 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"contractName":    "",
-						"contractVersion": "",
-						"name":            "only-sbom",
-						"organization":    "",
-						"team":            "",
-						"project":         "foo",
+						"contractName":             "",
+						"contractVersion":          "",
+						"name":                     "only-sbom",
+						"organization":             "",
+						"team":                     "",
+						"project":                  "foo",
+						"projectVersion":           "",
+						"projectVersionPrerelease": "false",
+						"hasPolicyViolations":      "false",
 					},
 					Annotations: map[string]string{
 						"branch":   "stable",
@@ -254,12 +263,15 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					Metadata: map[string]string{
-						"contractName":    "",
-						"contractVersion": "",
-						"name":            "test-new-types",
-						"organization":    "my-org",
-						"team":            "my-team",
-						"project":         "test",
+						"contractName":             "",
+						"contractVersion":          "",
+						"name":                     "test-new-types",
+						"organization":             "my-org",
+						"team":                     "my-team",
+						"project":                  "test",
+						"projectVersion":           "",
+						"projectVersionPrerelease": "false",
+						"hasPolicyViolations":      "false",
 					},
 					References: []*Referrer{
 						{
