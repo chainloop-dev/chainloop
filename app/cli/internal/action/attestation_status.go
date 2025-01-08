@@ -335,6 +335,7 @@ func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusResultMate
 	switch m := w.GetM().(type) {
 	case *v1.Attestation_Material_String_:
 		o.Value = m.String_.GetValue()
+		o.Hash = m.String_.GetDigest()
 	case *v1.Attestation_Material_ContainerImage_:
 		o.Value = m.ContainerImage.GetName()
 		o.Hash = m.ContainerImage.GetDigest()
