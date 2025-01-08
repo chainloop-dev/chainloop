@@ -31,25 +31,25 @@ func TestPopulateContractMaterials(t *testing.T) {
 		totalMaterials int
 		wantErr        bool
 	}{
-		// {
-		// 	name: "empty attestation result",
-		// },
-		// {
-		// 	name:           "materials on contract",
-		// 	totalMaterials: 1,
-		// 	craftingState: &v1.CraftingState{
-		// 		InputSchema: &craftingpb.CraftingSchema{
-		// 			SchemaVersion: "v1",
-		// 			Materials: []*craftingpb.CraftingSchema_Material{
-		// 				{
-		// 					Type:   craftingpb.CraftingSchema_Material_CSAF_VEX,
-		// 					Name:   "vex-file",
-		// 					Output: true,
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
+		{
+			name: "empty attestation result",
+		},
+		{
+			name:           "materials on contract",
+			totalMaterials: 1,
+			craftingState: &v1.CraftingState{
+				InputSchema: &craftingpb.CraftingSchema{
+					SchemaVersion: "v1",
+					Materials: []*craftingpb.CraftingSchema_Material{
+						{
+							Type:   craftingpb.CraftingSchema_Material_CSAF_VEX,
+							Name:   "vex-file",
+							Output: true,
+						},
+					},
+				},
+			},
+		},
 		{
 			name:           "materials in contract and outside contract",
 			totalMaterials: 2,
