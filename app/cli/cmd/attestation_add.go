@@ -62,7 +62,7 @@ func newAttestationAddCmd() *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
 					ActionsOpts:        actionOpts,

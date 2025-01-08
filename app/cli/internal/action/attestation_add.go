@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -142,7 +141,6 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	// 2. If materialName is not empty, check if the material is in the contract. If it is, add material from contract
 	// 2.1. If materialType is empty, try to guess the material kind with auto-detected kind and materialName
 	// 3. If materialType is not empty, add material contract free with materialType and materialName
-	var kind schemaapi.CraftingSchema_Material_MaterialType
 	var mt *api.Attestation_Material
 	switch {
 	case materialName == "" && materialType == "":
@@ -150,7 +148,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		if err != nil {
 			return nil, fmt.Errorf("adding material: %w", err)
 		}
-		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
+		action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 	case materialName != "":
 		switch {
 		// If the material is in the contract, add it from the contract
@@ -162,7 +160,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 			if err != nil {
 				return nil, fmt.Errorf("adding material: %w", err)
 			}
-			action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
+			action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 		// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
 		default:
 			mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
