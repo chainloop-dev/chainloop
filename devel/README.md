@@ -47,7 +47,7 @@ Once you have the pre-required services up and running, you should be able to ru
 These components are built using [Go](https://go.dev/), have a `Makefile` and a `make run` target for convenience.
 
 - run controlplane `make -C app/controlplane run`
-- run CAS `make -C app/cas run`
+- run CAS `make -C app/artifact-cas run`
 
 ### 4 - Using the CLI pointing to the local environment
 
