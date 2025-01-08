@@ -113,16 +113,16 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		}
 	}
 
+	var blockingColor text.Color
+	var blockingText = "ADVISORY"
+	if status.MustBlockOnPolicyViolations {
+		blockingColor = text.FgHiYellow
+		blockingText = "ENFORCED"
+	}
+	gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
+
 	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
-		var blockingColor text.Color
-		var blockingText = "ADVISORY"
-		if status.MustBlockOnPolicyViolations {
-			blockingColor = text.FgHiYellow
-			blockingText = "ENFORCED"
-		}
-
-		gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
 		gt.AppendRow(table.Row{"Policies", "------"})
 		policiesTable(evs, gt)
 	}
