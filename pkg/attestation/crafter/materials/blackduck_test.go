@@ -97,7 +97,7 @@ func TestBlackduckJSONCraft(t *testing.T) {
 
 			// The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: tc.wantDigest, Name: tc.wantFilename,
+				Digest: tc.wantDigest, Name: tc.wantFilename,
 			}, got.GetArtifact())
 		})
 	}

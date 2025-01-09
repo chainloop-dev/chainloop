@@ -126,7 +126,6 @@ func TestAttestationCraft(t *testing.T) {
 	assert.True(got.UploadedToCas)
 
 	// The result includes the digest reference
-	assert.Equal("test", got.GetArtifact().Id)
 	assert.Equal("sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", got.GetArtifact().Digest)
 
 	uploader.AssertExpectations(t)

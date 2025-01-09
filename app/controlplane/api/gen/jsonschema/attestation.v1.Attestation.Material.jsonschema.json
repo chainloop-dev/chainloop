@@ -80,6 +80,9 @@
     "containerImage": {
       "$ref": "attestation.v1.Attestation.Material.ContainerImage.jsonschema.json"
     },
+    "id": {
+      "type": "string"
+    },
     "inlineCas": {
       "description": "If the material content has been injected inline in the attestation\n leveraging a form of inline CAS",
       "type": "boolean"
@@ -122,6 +125,12 @@
           "type": "integer"
         }
       ]
+    },
+    "output": {
+      "type": "boolean"
+    },
+    "required": {
+      "type": "boolean"
     },
     "sbomArtifact": {
       "$ref": "attestation.v1.Attestation.Material.SBOMArtifact.jsonschema.json"

@@ -116,7 +116,6 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	hasLatestTag := i.isLatestTag(ref, remoteRef.DigestStr())
 
 	containerImage := &api.Attestation_Material_ContainerImage{
-		Id:           i.input.Name,
 		Name:         repoName,
 		Digest:       remoteRef.DigestStr(),
 		IsSubject:    i.input.Output,

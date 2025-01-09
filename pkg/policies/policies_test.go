@@ -436,10 +436,9 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			name:     "attachment with filter, policy with type, matched material",
 			policies: []*v12.PolicyAttachment{attFilteredPolicyTyped},
 			material: &v1.Attestation_Material{
+				Id: "sbom",
 				M: &v1.Attestation_Material_Artifact_{
-					Artifact: &v1.Attestation_Material_Artifact{
-						Id: "sbom",
-					},
+					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON},
 			result: 1,
@@ -448,10 +447,9 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			name:     "attachment with filter, policy with type, unmatched material",
 			policies: []*v12.PolicyAttachment{attFilteredPolicyTyped},
 			material: &v1.Attestation_Material{
+				Id: "not-the-sbom-you-expect",
 				M: &v1.Attestation_Material_Artifact_{
-					Artifact: &v1.Attestation_Material_Artifact{
-						Id: "not-the-sbom-you-expect",
-					},
+					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON},
 			result: 0,
@@ -460,10 +458,9 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			name:     "attachment with no filter, policy without type, matched material",
 			policies: []*v12.PolicyAttachment{attFilteredPolicyNotTyped},
 			material: &v1.Attestation_Material{
+				Id: "custom-material",
 				M: &v1.Attestation_Material_Artifact_{
-					Artifact: &v1.Attestation_Material_Artifact{
-						Id: "custom-material",
-					},
+					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_ATTESTATION},
 			result: 1,
@@ -472,10 +469,9 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			name:     "attachment with no filter, policy without type, unmatched material",
 			policies: []*v12.PolicyAttachment{attFilteredPolicyNotTyped},
 			material: &v1.Attestation_Material{
+				Id: "not-the-material-you-expect",
 				M: &v1.Attestation_Material_Artifact_{
-					Artifact: &v1.Attestation_Material_Artifact{
-						Id: "not-the-material-you-expect",
-					},
+					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_ATTESTATION},
 			result: 0,
@@ -484,10 +480,9 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			name:     "multi-kind policy",
 			policies: []*v12.PolicyAttachment{attMultikind},
 			material: &v1.Attestation_Material{
+				Id: "custom-material",
 				M: &v1.Attestation_Material_Artifact_{
-					Artifact: &v1.Attestation_Material_Artifact{
-						Id: "custom-material",
-					},
+					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_ATTESTATION,
 			},
@@ -497,10 +492,9 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			name:     "multi-kind policy with no matches",
 			policies: []*v12.PolicyAttachment{attMultikind},
 			material: &v1.Attestation_Material{
+				Id: "custom-material",
 				M: &v1.Attestation_Material_Artifact_{
-					Artifact: &v1.Attestation_Material_Artifact{
-						Id: "custom-material",
-					},
+					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_SARIF,
 			},
@@ -1069,8 +1063,8 @@ func (s *testSuite) TestContainerMaterial() {
 				},
 			}
 			material := &v1.Attestation_Material{
+				Id: "material-1729779925030105000",
 				M: &v1.Attestation_Material_ContainerImage_{ContainerImage: &v1.Attestation_Material_ContainerImage{
-					Id:                "material-1729779925030105000",
 					Tag:               tc.tag,
 					SignatureProvider: "cosign",
 				}},

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -206,7 +206,7 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 
 	// string materials don't have an artifact nor container, so a name is not available.
 	if name == "" {
-		name = m.GetID()
+		name = m.GetId()
 	}
 
 	// Required, built-in annotations
@@ -267,17 +267,6 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 	}
 
 	return material, nil
-}
-
-func (m *Attestation_Material) GetID() string {
-	if m.GetArtifact() != nil {
-		return m.GetArtifact().GetId()
-	} else if m.GetContainerImage() != nil {
-		return m.GetContainerImage().GetId()
-	} else if m.GetSbomArtifact() != nil {
-		return m.GetSbomArtifact().GetArtifact().GetId()
-	}
-	return ""
 }
 
 func CreateAnnotation(name string) string {

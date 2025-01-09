@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func newAttestationAddCmd() *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
 					ActionsOpts:        actionOpts,
@@ -89,7 +89,9 @@ func newAttestationAddCmd() *cobra.Command {
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
 				func() error {
-					if err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations); err != nil {
+					// TODO: take the material output and show render it
+					_, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
+					if err != nil {
 						return err
 					}
 

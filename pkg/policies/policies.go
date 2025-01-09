@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 		}
 
 		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetID()},
+			&evalOpts{kind: material.MaterialType, name: material.GetId()},
 		)
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -452,7 +452,7 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, nil
 	}
 
-	if filteredName != "" && filteredName != material.GetID() {
+	if filteredName != "" && filteredName != material.GetId() {
 		// a filer exists and doesn't match
 		return false, nil
 	}
