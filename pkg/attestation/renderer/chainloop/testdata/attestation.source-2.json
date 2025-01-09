@@ -38,8 +38,8 @@
     },
     "materials": {
       "image": {
+        "id": "image",
         "containerImage": {
-          "id": "image",
           "name": "index.docker.io/bitnami/nginx",
           "digest": "sha256:fbd9335f55d83d8aaf9ab1a539b0f2a87b444e8c54f34c9a1ca9d7df15605db4",
           "isSubject": true,
@@ -50,8 +50,8 @@
         "materialType": "CONTAINER_IMAGE"
       },
       "rootfs": {
+        "id": "rootfs",
         "artifact": {
-          "id": "rootfs",
           "name": "download.gif",
           "digest": "sha256:385c4188b9c080499413f2e0fa0b3951ed107b5f0cb35c2f2b1f07a7be9a7512"
         },
@@ -60,8 +60,8 @@
         "uploadedToCas": true
       },
       "sarif": {
+        "id": "sarif",
         "artifact": {
-          "id": "sarif",
           "name": "report.sarif",
           "digest": "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95"
         },
@@ -70,8 +70,8 @@
         "uploadedToCas": true
       },
       "sbom": {
+        "id": "sbom",
         "artifact": {
-          "id": "sbom",
           "name": "sbom.cyclonedx.json",
           "digest": "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
         },
@@ -80,8 +80,8 @@
         "uploadedToCas": true
       },
       "vex": {
+        "id": "vex",
         "artifact": {
-          "id": "vex",
           "name": "openvex_v0.2.0.json",
           "digest": "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2"
         },
