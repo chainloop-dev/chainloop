@@ -930,6 +930,9 @@ cas:
   ## @extra cas.defaultMaxEntrySize Maximum size for each entry in the CAS backend, default 100MB
   # defaultMaxEntrySize: 100MB
 
+  ## @extra cas.externalURL Optional External URL for the CAS service. If not set it will be derived from the ingress and service configuration
+  # externalURL: ""
+
   ## @param cas.image.registry [default: REGISTRY_NAME] Image registry
   ## @param cas.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip cas.image.tag
