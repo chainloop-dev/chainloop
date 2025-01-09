@@ -70,7 +70,6 @@ func TestPopulateContractMaterials(t *testing.T) {
 							Id: "random",
 							M: &v1.Attestation_Material_Artifact_{
 								Artifact: &v1.Attestation_Material_Artifact{
-									Id:      "random",
 									Name:    "vex-file",
 									Digest:  "random-digest",
 									Content: []byte("random-content"),

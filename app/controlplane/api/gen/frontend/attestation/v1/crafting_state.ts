@@ -71,15 +71,11 @@ export interface Attestation_Material_AnnotationsEntry {
 }
 
 export interface Attestation_Material_KeyVal {
-  /** @deprecated */
-  id: string;
   value: string;
   digest: string;
 }
 
 export interface Attestation_Material_ContainerImage {
-  /** @deprecated */
-  id: string;
   name: string;
   digest: string;
   isSubject: boolean;
@@ -100,12 +96,6 @@ export interface Attestation_Material_ContainerImage {
 }
 
 export interface Attestation_Material_Artifact {
-  /**
-   * ID of the artifact
-   *
-   * @deprecated
-   */
-  id: string;
   /** filename, use for record purposes */
   name: string;
   /**
@@ -1028,14 +1018,11 @@ export const Attestation_Material_AnnotationsEntry = {
 };
 
 function createBaseAttestation_Material_KeyVal(): Attestation_Material_KeyVal {
-  return { id: "", value: "", digest: "" };
+  return { value: "", digest: "" };
 }
 
 export const Attestation_Material_KeyVal = {
   encode(message: Attestation_Material_KeyVal, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
     if (message.value !== "") {
       writer.uint32(18).string(message.value);
     }
@@ -1052,13 +1039,6 @@ export const Attestation_Material_KeyVal = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1084,7 +1064,6 @@ export const Attestation_Material_KeyVal = {
 
   fromJSON(object: any): Attestation_Material_KeyVal {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
       value: isSet(object.value) ? String(object.value) : "",
       digest: isSet(object.digest) ? String(object.digest) : "",
     };
@@ -1092,7 +1071,6 @@ export const Attestation_Material_KeyVal = {
 
   toJSON(message: Attestation_Material_KeyVal): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
     message.value !== undefined && (obj.value = message.value);
     message.digest !== undefined && (obj.digest = message.digest);
     return obj;
@@ -1104,7 +1082,6 @@ export const Attestation_Material_KeyVal = {
 
   fromPartial<I extends Exact<DeepPartial<Attestation_Material_KeyVal>, I>>(object: I): Attestation_Material_KeyVal {
     const message = createBaseAttestation_Material_KeyVal();
-    message.id = object.id ?? "";
     message.value = object.value ?? "";
     message.digest = object.digest ?? "";
     return message;
@@ -1113,7 +1090,6 @@ export const Attestation_Material_KeyVal = {
 
 function createBaseAttestation_Material_ContainerImage(): Attestation_Material_ContainerImage {
   return {
-    id: "",
     name: "",
     digest: "",
     isSubject: false,
@@ -1127,9 +1103,6 @@ function createBaseAttestation_Material_ContainerImage(): Attestation_Material_C
 
 export const Attestation_Material_ContainerImage = {
   encode(message: Attestation_Material_ContainerImage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
     if (message.name !== "") {
       writer.uint32(18).string(message.name);
     }
@@ -1164,13 +1137,6 @@ export const Attestation_Material_ContainerImage = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1238,7 +1204,6 @@ export const Attestation_Material_ContainerImage = {
 
   fromJSON(object: any): Attestation_Material_ContainerImage {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       digest: isSet(object.digest) ? String(object.digest) : "",
       isSubject: isSet(object.isSubject) ? Boolean(object.isSubject) : false,
@@ -1252,7 +1217,6 @@ export const Attestation_Material_ContainerImage = {
 
   toJSON(message: Attestation_Material_ContainerImage): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.digest !== undefined && (obj.digest = message.digest);
     message.isSubject !== undefined && (obj.isSubject = message.isSubject);
@@ -1274,7 +1238,6 @@ export const Attestation_Material_ContainerImage = {
     object: I,
   ): Attestation_Material_ContainerImage {
     const message = createBaseAttestation_Material_ContainerImage();
-    message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.digest = object.digest ?? "";
     message.isSubject = object.isSubject ?? false;
@@ -1288,14 +1251,11 @@ export const Attestation_Material_ContainerImage = {
 };
 
 function createBaseAttestation_Material_Artifact(): Attestation_Material_Artifact {
-  return { id: "", name: "", digest: "", isSubject: false, content: new Uint8Array(0) };
+  return { name: "", digest: "", isSubject: false, content: new Uint8Array(0) };
 }
 
 export const Attestation_Material_Artifact = {
   encode(message: Attestation_Material_Artifact, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
     if (message.name !== "") {
       writer.uint32(18).string(message.name);
     }
@@ -1318,13 +1278,6 @@ export const Attestation_Material_Artifact = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1364,7 +1317,6 @@ export const Attestation_Material_Artifact = {
 
   fromJSON(object: any): Attestation_Material_Artifact {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       digest: isSet(object.digest) ? String(object.digest) : "",
       isSubject: isSet(object.isSubject) ? Boolean(object.isSubject) : false,
@@ -1374,7 +1326,6 @@ export const Attestation_Material_Artifact = {
 
   toJSON(message: Attestation_Material_Artifact): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.digest !== undefined && (obj.digest = message.digest);
     message.isSubject !== undefined && (obj.isSubject = message.isSubject);
@@ -1391,7 +1342,6 @@ export const Attestation_Material_Artifact = {
     object: I,
   ): Attestation_Material_Artifact {
     const message = createBaseAttestation_Material_Artifact();
-    message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.digest = object.digest ?? "";
     message.isSubject = object.isSubject ?? false;

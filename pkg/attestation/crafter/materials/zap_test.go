@@ -128,7 +128,7 @@ func TestNewZAPCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:7aa1273cbc367cd13cc7be0e97a939df47f9b35e1fc45b4b81b6152569b3565c", Name: "zap_scan.zip",
+				Digest: "sha256:7aa1273cbc367cd13cc7be0e97a939df47f9b35e1fc45b4b81b6152569b3565c", Name: "zap_scan.zip",
 			})
 		})
 	}

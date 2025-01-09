@@ -125,7 +125,7 @@ func TestOpenVEXCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2", Name: "openvex_v0.2.0.json",
+				Digest: "sha256:b4bd86d5855f94bcac0a92d3100ae7b85d050bd2e5fb9037a200e5f5f0b073a2", Name: "openvex_v0.2.0.json",
 			}, got.GetArtifact())
 		})
 	}

@@ -85,7 +85,6 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
-				Id:        input.Name,
 				Name:      result.filename,
 				Digest:    result.digest,
 				IsSubject: input.Output,

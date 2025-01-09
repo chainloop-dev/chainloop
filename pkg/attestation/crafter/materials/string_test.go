@@ -77,6 +77,6 @@ func TestStringCraft(t *testing.T) {
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
 	assert.False(got.UploadedToCas)
 	assert.Equal(got.GetString_(), &attestationApi.Attestation_Material_KeyVal{
-		Id: "test", Value: "value", Digest: "sha256:cd42404d52ad55ccfa9aca4adc828aa5800ad9d385a0671fbcbf724118320619",
+		Value: "value", Digest: "sha256:cd42404d52ad55ccfa9aca4adc828aa5800ad9d385a0671fbcbf724118320619",
 	})
 }

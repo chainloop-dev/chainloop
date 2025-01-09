@@ -17,10 +17,6 @@
       "description": "the digest is enough to retrieve the artifact since it's stored in a CAS\n which also has annotated the fileName",
       "type": "string"
     },
-    "id": {
-      "description": "ID of the artifact",
-      "type": "string"
-    },
     "isSubject": {
       "type": "boolean"
     },

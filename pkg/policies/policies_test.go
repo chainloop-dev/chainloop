@@ -1063,8 +1063,8 @@ func (s *testSuite) TestContainerMaterial() {
 				},
 			}
 			material := &v1.Attestation_Material{
+				Id: "material-1729779925030105000",
 				M: &v1.Attestation_Material_ContainerImage_{ContainerImage: &v1.Attestation_Material_ContainerImage{
-					Id:                "material-1729779925030105000",
 					Tag:               tc.tag,
 					SignatureProvider: "cosign",
 				}},

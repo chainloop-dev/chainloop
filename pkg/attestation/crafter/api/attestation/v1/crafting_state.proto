@@ -59,20 +59,12 @@ message Attestation {
     bool required = 11;
 
     message KeyVal {
-      string id = 1 [
-        (buf.validate.field).string.min_len = 1,
-        deprecated = true
-      ];
       string value = 2 [(buf.validate.field).string.min_len = 1];
 
       string digest = 3 [(buf.validate.field).string.min_len = 1];
     }
 
     message ContainerImage {
-      string id = 1 [
-        (buf.validate.field).string.min_len = 1,
-        deprecated = true
-      ];
       string name = 2 [(buf.validate.field).string.min_len = 1];
       string digest = 3 [(buf.validate.field).string.min_len = 1];
       bool is_subject = 4;
@@ -91,11 +83,6 @@ message Attestation {
     }
 
     message Artifact {
-      // ID of the artifact
-      string id = 1 [
-        (buf.validate.field).string.min_len = 1,
-        deprecated = true
-      ];
       // filename, use for record purposes
       string name = 2 [(buf.validate.field).string.min_len = 1];
       // the digest is enough to retrieve the artifact since it's stored in a CAS

@@ -250,7 +250,7 @@ func TestCSAFCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: tc.digest, Name: strings.Split(tc.filePath, "/")[2],
+				Digest: tc.digest, Name: strings.Split(tc.filePath, "/")[2],
 			}, got.GetArtifact())
 		})
 	}

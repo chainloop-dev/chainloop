@@ -53,9 +53,10 @@ func TestNormalizeOutput(t *testing.T) {
 
 	keyValMaterial := &Attestation_Material{
 		MaterialType: schemaapi.CraftingSchema_Material_STRING,
+		Id:           "id",
 		M: &Attestation_Material_String_{
 			String_: &Attestation_Material_KeyVal{
-				Id: "id", Value: "value",
+				Value: "value",
 			},
 		},
 	}
