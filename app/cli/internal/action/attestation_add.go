@@ -173,7 +173,6 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		return nil, fmt.Errorf("adding material: %w", err)
 	}
 
-	// TODO: remove from this PR
 	materialResult, err := attMaterialToAction(mt)
 	if err != nil {
 		return nil, fmt.Errorf("converting material to action: %w", err)
