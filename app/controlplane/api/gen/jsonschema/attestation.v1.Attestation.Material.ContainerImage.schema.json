@@ -27,6 +27,10 @@
       "$ref": "google.protobuf.BoolValue.schema.json",
       "description": "Indicates if the image has the latest tag. The image being checked\n might not explicitly have the latest tag, but it could also be tagged\n with the latest tag."
     },
+    "id": {
+      "description": "NOT USED, kept for compatibility with servers that still perform server-side validation``\n TODO: remove after some time",
+      "type": "string"
+    },
     "is_subject": {
       "type": "boolean"
     },

@@ -94,7 +94,7 @@ func TestEvidenceCraft(t *testing.T) {
 
 	// The result includes the digest reference
 	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-		Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
+		Id: "test", Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
 	})
 }
 
@@ -149,7 +149,7 @@ func assertEvidenceMaterial(t *testing.T, got *attestationApi.Attestation_Materi
 	assert.False(got.UploadedToCas)
 	// The result includes the digest and inline content
 	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-		Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
+		Id: "test", Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
 		// Inline content
 		Content: []byte("txt file"),
 	})

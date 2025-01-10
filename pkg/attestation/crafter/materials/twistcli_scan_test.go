@@ -123,7 +123,7 @@ func TestTwistCLIScanCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Digest: "sha256:91bae460738dfa58dda12edb54929b39005d415e778ed806477675038513908c", Name: "twistcli_scan.json",
+				Id: "test", Digest: "sha256:91bae460738dfa58dda12edb54929b39005d415e778ed806477675038513908c", Name: "twistcli_scan.json",
 			})
 		})
 	}

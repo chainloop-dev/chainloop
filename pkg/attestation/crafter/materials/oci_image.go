@@ -116,6 +116,8 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 	hasLatestTag := i.isLatestTag(ref, remoteRef.DigestStr())
 
 	containerImage := &api.Attestation_Material_ContainerImage{
+		// TODO: remove once we know servers are not running server-side validation
+		Id:           i.input.Name,
 		Name:         repoName,
 		Digest:       remoteRef.DigestStr(),
 		IsSubject:    i.input.Output,
@@ -132,7 +134,8 @@ func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attest
 
 	return &api.Attestation_Material{
 		MaterialType: i.input.Type,
-		M:            &api.Attestation_Material_ContainerImage_{ContainerImage: containerImage},
+		M: &api.Attestation_Material_ContainerImage_{
+			ContainerImage: containerImage},
 	}, nil
 }
 
