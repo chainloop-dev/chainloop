@@ -18,9 +18,20 @@ on:
 permissions: read-all
 
 jobs:
+  chainloop_init:
+    name: Chainloop Init
+    uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@64839eb68c20fefda46929c6c6e893cdf0537619
+    secrets:
+      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
+    with:
+      workflow_name: "chainloop-vault-scorecards"
+      project_name: "chainloop"
+
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
+    needs:
+      - chainloop_init
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
@@ -30,22 +41,10 @@ jobs:
       actions: read
 
     steps:
-      - name: Install Chainloop
-        run: |
-          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/install.sh | bash -s
-
       - name: "Checkout code"
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           persist-credentials: false
-
-      - name: Initialize Attestation
-        run: |
-          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT
-        env:
-          CHAINLOOP_WORKFLOW_NAME: "chainloop-vault-scorecards"
-          CHAINLOOP_PROJECT: "chainloop"
-          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
 
       - name: "Run analysis"
         uses: ossf/scorecard-action@0864cf19026789058feabb7e87baa5f140aac736 # v2.3.1
@@ -84,29 +83,13 @@ jobs:
         with:
           sarif_file: results.sarif
 
-      - name: Attest analysis
-        run: |
-          chainloop attestation add --name sarif-results --value results.sarif
-        env:
-          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-
-      - name: Finish and Record Attestation
-        if: ${{ success() }}
-        run: |
-          chainloop attestation push
-        env:
-          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-
-      - name: Mark attestation as failed
-        if: ${{ failure() }}
-        run: |
-          chainloop attestation reset
-        env:
-          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-
-      - name: Mark attestation as cancelled
-        if: ${{ cancelled() }}
-        run: |
-          chainloop attestation reset --trigger cancellation
-        env:
-          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+  chainloop_push:
+    name: Chainloop Push
+    uses: chainloop-dev/labs/.github/workflows/chainloop_push.yml@25c77318e739c60e86d3dfe7e864f51c665972dd
+    needs:
+      - analysis
+    secrets:
+      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
+    with:
+      attestation_name: "scorecards"
+      workflow_name: "chainloop-vault-scorecards"
