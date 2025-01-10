@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -90,14 +92,19 @@ func newAttestationAddCmd() *cobra.Command {
 			return runWithBackoffRetry(
 				func() error {
 					// TODO: take the material output and show render it
-					_, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
+					resp, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
 					if err != nil {
 						return err
 					}
 
 					logger.Info().Msg("material added to attestation")
 
-					return nil
+					policies, err := a.GetPolicyEvaluations(cmd.Context(), attestationID)
+					if err != nil {
+						return err
+					}
+
+					return printMaterialInfo(resp, policies)
 				},
 			)
 		},
@@ -137,4 +144,63 @@ func newAttestationAddCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// printMaterialInfo prints the material information in a table format.
+func printMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluations map[string][]*action.PolicyEvaluation) error {
+	if status == nil {
+		return nil
+	}
+
+	mt := newTableWriter()
+
+	mt.AppendRow(table.Row{"Name", status.Material.Name})
+	mt.AppendRow(table.Row{"Type", status.Material.Type})
+	// mt.AppendRow(table.Row{"Set", hBool(status.Set)})
+	mt.AppendRow(table.Row{"Required", hBool(status.Required)})
+
+	if status.IsOutput {
+		mt.AppendRow(table.Row{"Is output", "Yes"})
+	}
+
+	if status.Value != "" {
+		v := status.Value
+		if status.Tag != "" {
+			v = fmt.Sprintf("%s:%s", v, status.Tag)
+		}
+		mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
+	}
+
+	if status.Hash != "" {
+		mt.AppendRow(table.Row{"Digest", status.Hash})
+	}
+
+	if len(status.Material.Annotations) > 0 {
+		mt.AppendRow(table.Row{"Annotations", "------"})
+		for _, a := range status.Material.Annotations {
+			value := a.Value
+			if value == "" {
+				value = "[NOT SET]"
+			}
+			mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
+		}
+	}
+
+	if len(policyEvaluations) > 0 {
+		mt.AppendRow(table.Row{"Policies", "------"})
+		for _, evaluations := range policyEvaluations {
+			for _, ev := range evaluations {
+				if len(ev.Violations) > 0 {
+					for _, v := range ev.Violations {
+						mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, v.Message)})
+					}
+				}
+			}
+		}
+	}
+
+	mt.SetStyle(table.StyleLight)
+	mt.Style().Options.SeparateRows = true
+	mt.Render()
+	return nil
 }

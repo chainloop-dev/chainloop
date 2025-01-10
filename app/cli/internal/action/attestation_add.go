@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"google.golang.org/grpc"
 )
 
@@ -52,6 +53,19 @@ type AttestationAdd struct {
 	connectionInsecure bool
 	localStatePath     string
 	*newCrafterOpts
+}
+
+type AddMaterialInfo struct {
+	Name                string
+	Value               string
+	Hash                string
+	Tag                 string
+	Type                string
+	Annotations         []*Annotation
+	PolicyEvaluations   map[string][]*PolicyEvaluation
+	HasPolicyViolations bool
+	*Material
+	Set, IsOutput, Required bool
 }
 
 func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
@@ -179,4 +193,45 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 
 	return materialResult, nil
+}
+
+func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestationID string) (map[string][]*PolicyEvaluation, error) {
+	evaluations := make(map[string][]*PolicyEvaluation)
+
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
+		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
+		return nil, ErrAttestationNotInitialized
+	}
+
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
+		action.Logger.Err(err).Msg("loading existing attestation")
+		return nil, err
+	}
+
+	seen := make(map[string]struct{})
+
+	for _, v := range crafter.CraftingState.Attestation.GetPolicyEvaluations() {
+		keyName := v.MaterialName
+		if keyName == "" {
+			keyName = chainloop.AttPolicyEvaluation
+		}
+
+		// Create a unique key for this evaluation based on name and violations (ofcourse we dont want to show redundant policy so thats the reason for this ;)
+		uniqueKey := fmt.Sprintf("%s-%s", v.Name, v.GetViolations()[0].GetMessage())
+		if _, exists := seen[uniqueKey]; exists {
+			continue
+		}
+		seen[uniqueKey] = struct{}{}
+
+		eval := policyEvaluationStateToActionForStatus(v)
+		evaluations[keyName] = append(evaluations[keyName], eval)
+	}
+
+	return evaluations, nil
 }
