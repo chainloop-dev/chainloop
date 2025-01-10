@@ -54,6 +54,7 @@ export interface AttestationStateServiceInitializedResponse_Result {
 
 export interface AttestationStateServiceSaveRequest {
   workflowRunId: string;
+  /** We do not want to validate its content since it might depend on the client-side schema */
   attestationState?: CraftingState;
   /**
    * digest of the attestation state this update was performed on top of
