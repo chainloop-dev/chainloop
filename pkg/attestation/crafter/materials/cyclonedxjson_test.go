@@ -141,7 +141,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			ast.Equal(
 				&attestationApi.Attestation_Material_SBOMArtifact{
 					Artifact: &attestationApi.Attestation_Material_Artifact{
-						Digest: tc.wantDigest, Name: tc.wantFilename,
+						Id: "test", Digest: tc.wantDigest, Name: tc.wantFilename,
 					},
 					MainComponent: &attestationApi.Attestation_Material_SBOMArtifact_MainComponent{
 						Name:    tc.wantMainComponent,

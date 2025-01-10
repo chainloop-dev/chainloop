@@ -45,7 +45,7 @@ func TestCraft(t *testing.T) {
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
 	assert.False(got.UploadedToCas)
 	assert.Equal(got.GetString_(), &attestationApi.Attestation_Material_KeyVal{
-		Value: "test-value", Digest: "sha256:5b1406fffc9de5537eb35a845c99521f26fba0e772d58b42e09f4221b9e043ae",
+		Id: "test", Value: "test-value", Digest: "sha256:5b1406fffc9de5537eb35a845c99521f26fba0e772d58b42e09f4221b9e043ae",
 	})
 
 	// Timestamp

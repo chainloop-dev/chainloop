@@ -125,7 +125,7 @@ func TestSARIFCraft(t *testing.T) {
 
 			// // The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Digest: "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95", Name: "report.sarif",
+				Id: "test", Digest: "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95", Name: "report.sarif",
 			}, got.GetArtifact())
 		})
 	}

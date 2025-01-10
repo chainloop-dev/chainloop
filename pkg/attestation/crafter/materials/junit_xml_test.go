@@ -134,7 +134,7 @@ func TestJUnitXMLCraft(t *testing.T) {
 
 			// The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Digest: tc.digest, Name: filepath.Base(tc.filePath),
+				Id: "test", Digest: tc.digest, Name: filepath.Base(tc.filePath),
 			}, got.GetArtifact())
 		})
 	}
