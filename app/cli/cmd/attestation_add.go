@@ -156,7 +156,6 @@ func printMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluatio
 
 	mt.AppendRow(table.Row{"Name", status.Material.Name})
 	mt.AppendRow(table.Row{"Type", status.Material.Type})
-	// mt.AppendRow(table.Row{"Set", hBool(status.Set)})
 	mt.AppendRow(table.Row{"Required", hBool(status.Required)})
 
 	if status.IsOutput {
