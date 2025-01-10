@@ -17,6 +17,10 @@
       "description": "the digest is enough to retrieve the artifact since it's stored in a CAS\n which also has annotated the fileName",
       "type": "string"
     },
+    "id": {
+      "description": "NOT USED, kept for compatibility with servers that still perform server-side validation``\n TODO: remove after some time",
+      "type": "string"
+    },
     "is_subject": {
       "type": "boolean"
     },

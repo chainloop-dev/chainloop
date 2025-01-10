@@ -85,6 +85,8 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
+				// TODO: remove once we know servers are not running server-side validation
+				Id:        input.Name,
 				Name:      result.filename,
 				Digest:    result.digest,
 				IsSubject: input.Output,
