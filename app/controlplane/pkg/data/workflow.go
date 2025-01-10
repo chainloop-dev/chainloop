@@ -157,6 +157,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.Wo
 	// Apply pagination options and execute the query
 	workflows, err := wfQuery.
 		WithLatestWorkflowRun().
+		WithContract().
 		WithProject().
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		Limit(pagination.Limit()).
