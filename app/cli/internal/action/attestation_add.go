@@ -183,7 +183,6 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 // GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations
 func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestationID string) (map[string][]*PolicyEvaluation, error) {
-
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
