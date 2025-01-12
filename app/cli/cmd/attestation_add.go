@@ -29,6 +29,8 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
+const NotSet = "[NOT SET]"
+
 func newAttestationAddCmd() *cobra.Command {
 	var name, value, kind string
 	var artifactCASConn *grpc.ClientConn
@@ -104,7 +106,7 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					return printMaterialInfo(resp, policies)
+					return displayMaterialInfo(resp, policies)
 				},
 			)
 		},
@@ -146,8 +148,8 @@ func newAttestationAddCmd() *cobra.Command {
 	return cmd
 }
 
-// printMaterialInfo prints the material information in a table format.
-func printMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluations map[string][]*action.PolicyEvaluation) error {
+// displayMaterialInfo prints the material information in a table format.
+func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluations map[string][]*action.PolicyEvaluation) error {
 	if status == nil {
 		return nil
 	}
@@ -179,7 +181,7 @@ func printMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluatio
 		for _, a := range status.Material.Annotations {
 			value := a.Value
 			if value == "" {
-				value = "[NOT SET]"
+				value = NotSet
 			}
 			mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
 		}

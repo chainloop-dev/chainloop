@@ -107,7 +107,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		for _, a := range status.Annotations {
 			value := a.Value
 			if value == "" {
-				value = "[NOT SET]"
+				value = NotSet
 			}
 			gt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
 		}
@@ -204,7 +204,7 @@ func materialsTable(status *action.AttestationStatusResult, full bool) error {
 			for _, a := range m.Annotations {
 				value := a.Value
 				if value == "" {
-					value = "[NOT SET]"
+					value = NotSet
 				}
 
 				mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})

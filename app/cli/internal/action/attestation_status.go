@@ -26,7 +26,6 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
-	intoto "github.com/in-toto/attestation/go/v1"
 )
 
 type AttestationStatusOpts struct {
@@ -150,7 +149,12 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
 
-		res.PolicyEvaluations, res.HasPolicyViolations, err = action.getPolicyEvaluations(ctx, c, attestationID, statement)
+		// Add attestation-level policy evaluations
+		if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
+			return nil, fmt.Errorf("evaluating attestation policies: %w", err)
+		}
+
+		res.PolicyEvaluations, res.HasPolicyViolations, err = getPolicyEvaluations(c)
 		if err != nil {
 			return nil, fmt.Errorf("getting policy evaluations: %w", err)
 		}
@@ -203,15 +207,10 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
-func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *crafter.Crafter, attestationID string, statement *intoto.Statement) (map[string][]*PolicyEvaluation, bool, error) {
+func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool, error) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
 	var hasViolations bool
-
-	// Add attestation-level policy evaluations
-	if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
-		return nil, false, fmt.Errorf("evaluating attestation policies: %w", err)
-	}
 
 	// map evaluations
 	for _, v := range c.CraftingState.Attestation.GetPolicyEvaluations() {
