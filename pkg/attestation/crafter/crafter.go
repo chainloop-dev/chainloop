@@ -558,6 +558,17 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return nil, fmt.Errorf("validation error: %w", err)
 	}
 
+	// Remove existing policy evaluations for this material
+	// since the value might have changed
+	filteredEvals := make([]*api.PolicyEvaluation, 0)
+	for _, eval := range c.CraftingState.Attestation.PolicyEvaluations {
+		if eval.MaterialName != m.Name {
+			filteredEvals = append(filteredEvals, eval)
+		}
+	}
+
+	c.CraftingState.Attestation.PolicyEvaluations = filteredEvals
+
 	// Validate policy groups
 	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
