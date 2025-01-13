@@ -106,7 +106,7 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					return displayMaterialInfo(resp, policies)
+					return displayMaterialInfo(resp, policies[resp.Name])
 				},
 			)
 		},
@@ -149,7 +149,7 @@ func newAttestationAddCmd() *cobra.Command {
 }
 
 // displayMaterialInfo prints the material information in a table format.
-func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluations map[string][]*action.PolicyEvaluation) error {
+func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluations []*action.PolicyEvaluation) error {
 	if status == nil {
 		return nil
 	}
@@ -190,11 +190,10 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 	if len(policyEvaluations) > 0 {
 		mt.AppendRow(table.Row{"Policies", "------"})
 		for _, evaluations := range policyEvaluations {
-			for _, ev := range evaluations {
-				if len(ev.Violations) > 0 {
-					for _, v := range ev.Violations {
-						mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, v.Message)})
-					}
+			ev := evaluations
+			if len(ev.Violations) > 0 {
+				for _, v := range ev.Violations {
+					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, v.Message)})
 				}
 			}
 		}
