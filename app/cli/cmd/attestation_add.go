@@ -188,17 +188,10 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 	}
 
 	if len(policyEvaluations) > 0 {
-		mt.AppendRow(table.Row{"Policies", "------"})
-		for _, evaluations := range policyEvaluations {
-			ev := evaluations
-			if len(ev.Violations) > 0 {
-				for _, v := range ev.Violations {
-					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, v.Message)})
-				}
-			}
-		}
+		mt.AppendRow(table.Row{"Policy evaluations", "------"})
 	}
 
+	policiesTable(policyEvaluations, mt)
 	mt.SetStyle(table.StyleLight)
 	mt.Style().Options.SeparateRows = true
 	mt.Render()
