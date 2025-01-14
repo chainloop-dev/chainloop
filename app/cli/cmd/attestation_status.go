@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -172,6 +174,11 @@ func materialsTable(status *action.AttestationStatusResult, full bool) error {
 	if len(status.Materials) == 0 {
 		return nil
 	}
+
+	// Sort materials by name for consistent output
+	slices.SortFunc(status.Materials, func(a, b action.AttestationStatusMaterial) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	mt := newTableWriter()
 	mt.SetTitle("Materials")
