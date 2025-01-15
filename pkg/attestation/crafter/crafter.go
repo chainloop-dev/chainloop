@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -557,6 +558,12 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	if err := c.validator.Validate(mt); err != nil {
 		return nil, fmt.Errorf("validation error: %w", err)
 	}
+
+	// Remove existing policy evaluations for this material
+	// since the value might have changed
+	c.CraftingState.Attestation.PolicyEvaluations = slices.DeleteFunc(c.CraftingState.Attestation.PolicyEvaluations, func(i *api.PolicyEvaluation) bool {
+		return i.MaterialName == m.Name
+	})
 
 	// Validate policy groups
 	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
