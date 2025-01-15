@@ -180,3 +180,30 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 	return materialResult, nil
 }
+
+// GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations
+func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestationID string) (map[string][]*PolicyEvaluation, error) {
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
+		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
+		return nil, ErrAttestationNotInitialized
+	}
+
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
+		action.Logger.Err(err).Msg("loading existing attestation")
+		return nil, err
+	}
+
+	policyEvaluations, _, err := getPolicyEvaluations(crafter)
+
+	if err != nil {
+		return nil, fmt.Errorf("getting policy evaluations: %w", err)
+	}
+
+	return policyEvaluations, nil
+}
