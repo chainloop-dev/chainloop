@@ -106,7 +106,9 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					return displayMaterialInfo(resp, policies[resp.Name])
+					return encodeOutput(resp, func(s *action.AttestationStatusMaterial) error {
+						return displayMaterialInfo(s, policies[resp.Name])
+					})
 				},
 			)
 		},
