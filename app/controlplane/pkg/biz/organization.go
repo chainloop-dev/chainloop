@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,6 +72,8 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, au
 
 const RandomNameMaxTries = 10
 
+var reservedOrgNames = []string{"chainloop", "admin", "default"}
+
 type createOptions struct {
 	createInlineBackend bool
 }
@@ -130,6 +132,13 @@ var errOrgName = errors.New("org names must only contain lowercase letters, numb
 
 func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
 	uc.logger.Infow("msg", "Creating organization", "name", name)
+
+	// Check if the name is in the list of protected names
+	for _, protected := range reservedOrgNames {
+		if name == protected {
+			return nil, NewErrValidation(fmt.Errorf("organization name '%s' is reserved and cannot be used", name))
+		}
+	}
 
 	if err := ValidateIsDNS1123(name); err != nil {
 		return nil, NewErrValidation(errOrgName)
