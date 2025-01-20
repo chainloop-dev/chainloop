@@ -31,7 +31,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an existing organization",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			opts := &action.NewOrgUpdateOpts{}
 			if cmd.Flags().Changed("block") {
 				opts.BlockOnPolicyViolation = &blockOnPolicyViolation
