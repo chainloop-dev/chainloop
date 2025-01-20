@@ -44,13 +44,13 @@ type ProvenancePredicateV02 struct {
 	// Map materials and policies
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Whether the attestation has policy violations
-	PolicyHasViolations bool `json:"policy_has_violations"`
+	PolicyHasViolations bool `json:"policyHasViolations"`
 	// Whether we want to block the attestation on policy violations
-	PolicyCheckBlockingStrategy PolicyViolationBlockingStrategy `json:"policy_check_blocking_strategy"`
+	PolicyCheckBlockingStrategy PolicyViolationBlockingStrategy `json:"policyCheckBlockingStrategy"`
 	// Whether the policy check was bypassed
-	PolicyBlockBypassEnabled bool `json:"policy_block_bypass_enabled"`
+	PolicyBlockBypassEnabled bool `json:"policyBlockBypassEnabled"`
 	// Whether the attestation was blocked due to policy violations
-	PolicyAttBlocked bool `json:"policy_attestation_blocked"`
+	PolicyAttBlocked bool `json:"policyAttBlocked"`
 }
 
 type PolicyViolationBlockingStrategy string
