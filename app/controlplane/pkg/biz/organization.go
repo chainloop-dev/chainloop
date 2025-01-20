@@ -174,23 +174,23 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string, blockOnPolicyViolation *bool) (*Organization, error) {
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
 	// Make sure that the organization exists and that the user is a member of it
-	membership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
+	membership, err := uc.membershipRepo.FindByOrgNameAndUser(ctx, orgName, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find memberships: %w", err)
 	} else if membership == nil {
 		return nil, NewErrNotFound("organization")
+	}
+
+	orgUUID, err := uuid.Parse(membership.Org.ID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
 	}
 
 	// Perform the update
