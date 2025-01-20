@@ -32,6 +32,7 @@ func newAttestationPushCmd() *cobra.Command {
 		annotationsFlag                        []string
 		signServerCAPath                       string
 		signServerAuthUser, signServerAuthPass string
+		bypassPolicyCheck                      bool
 	)
 
 	cmd := &cobra.Command{
@@ -79,7 +80,7 @@ func newAttestationPushCmd() *cobra.Command {
 			var res *action.AttestationResult
 			err = runWithBackoffRetry(
 				func() error {
-					res, err = a.Run(cmd.Context(), attestationID, annotations)
+					res, err = a.Run(cmd.Context(), attestationID, annotations, bypassPolicyCheck)
 					return err
 				},
 			)
@@ -103,8 +104,15 @@ func newAttestationPushCmd() *cobra.Command {
 
 			// We do a final check to see if the attestation has policy violations
 			// and fail the command if needed
-			if res.Status.HasPolicyViolations && res.Status.MustBlockOnPolicyViolations {
-				return ErrBlockedByPolicyViolation
+			if res.Status.MustBlockOnPolicyViolations {
+				if bypassPolicyCheck {
+					logger.Warn().Msg(exceptionBypassPolicyCheck)
+					return nil
+				}
+
+				if res.Status.HasPolicyViolations {
+					return ErrBlockedByPolicyViolation
+				}
 			}
 
 			return nil
@@ -119,8 +127,11 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer communications")
 	cmd.Flags().StringVar(&signServerAuthUser, "signserver-auth-user", "", "")
 	cmd.Flags().StringVar(&signServerAuthPass, "signserver-auth-pass", "", "")
+	cmd.Flags().BoolVar(&bypassPolicyCheck, "exception_bypass_policy_check", false, "do not fail this command on policy violations enforcement")
 
 	return cmd
 }
 
-var ErrBlockedByPolicyViolation = errors.New("the operator requires that the attestation process must have all policies passing before continue, please fix them and try again")
+var ErrBlockedByPolicyViolation = errors.New("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --exception_bypass_policy_check")
+
+const exceptionBypassPolicyCheck = "Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --exception_bypass_policy_check as soon as possible."

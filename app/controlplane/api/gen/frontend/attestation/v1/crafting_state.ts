@@ -32,6 +32,8 @@ export interface Attestation {
   policyEvaluations: PolicyEvaluation[];
   /** fail the attestation if policy evaluation fails */
   blockOnPolicyViolation: boolean;
+  /** bypass policy check */
+  bypassPolicyCheck: boolean;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -315,6 +317,7 @@ function createBaseAttestation(): Attestation {
     head: undefined,
     policyEvaluations: [],
     blockOnPolicyViolation: false,
+    bypassPolicyCheck: false,
   };
 }
 
@@ -352,6 +355,9 @@ export const Attestation = {
     }
     if (message.blockOnPolicyViolation === true) {
       writer.uint32(104).bool(message.blockOnPolicyViolation);
+    }
+    if (message.bypassPolicyCheck === true) {
+      writer.uint32(112).bool(message.bypassPolicyCheck);
     }
     return writer;
   },
@@ -449,6 +455,13 @@ export const Attestation = {
 
           message.blockOnPolicyViolation = reader.bool();
           continue;
+        case 14:
+          if (tag !== 112) {
+            break;
+          }
+
+          message.bypassPolicyCheck = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -488,6 +501,7 @@ export const Attestation = {
         ? object.policyEvaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
         : [],
       blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
+      bypassPolicyCheck: isSet(object.bypassPolicyCheck) ? Boolean(object.bypassPolicyCheck) : false,
     };
   },
 
@@ -524,6 +538,7 @@ export const Attestation = {
       obj.policyEvaluations = [];
     }
     message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
+    message.bypassPolicyCheck !== undefined && (obj.bypassPolicyCheck = message.bypassPolicyCheck);
     return obj;
   },
 
@@ -567,6 +582,7 @@ export const Attestation = {
     message.head = (object.head !== undefined && object.head !== null) ? Commit.fromPartial(object.head) : undefined;
     message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
+    message.bypassPolicyCheck = object.bypassPolicyCheck ?? false;
     return message;
   },
 };

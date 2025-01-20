@@ -144,6 +144,8 @@ message Attestation {
 
   // fail the attestation if policy evaluation fails
   bool block_on_policy_violation = 13;
+  // bypass policy check
+  bool bypass_policy_check = 14;
 }
 
 // A policy executed against an attestation or material
