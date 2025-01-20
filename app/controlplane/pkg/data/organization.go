@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -73,6 +74,16 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	}
 
 	return entOrgToBizOrg(org), nil
+}
+
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*biz.Organization, error) {
+	org, err := r.data.DB.Organization.UpdateOneID(id).SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update organization: %w", err)
+	}
+
+	// Reload the object to include the relations
+	return r.FindByID(ctx, org.ID)
 }
 
 // Delete deletes an organization by ID.

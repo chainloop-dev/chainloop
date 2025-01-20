@@ -116,10 +116,10 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	}
 
 	var blockingColor text.Color
-	var blockingText = "ADVISORY"
+	var blockingText = action.PolicyViolationBlockingStrategyAdvisory
 	if status.MustBlockOnPolicyViolations {
 		blockingColor = text.FgHiYellow
-		blockingText = "ENFORCED"
+		blockingText = action.PolicyViolationBlockingStrategyEnforced
 	}
 	gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
 

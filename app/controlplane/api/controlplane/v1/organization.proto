@@ -24,6 +24,8 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 
 service OrganizationService {
   rpc Create(OrganizationServiceCreateRequest) returns (OrganizationServiceCreateResponse);
+  rpc Update(OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
+
   // List members in the organization
   rpc ListMemberships(OrganizationServiceListMembershipsRequest) returns (OrganizationServiceListMembershipsResponse);
   // Delete member from the organization
@@ -59,5 +61,15 @@ message OrganizationServiceCreateRequest {
 }
 
 message OrganizationServiceCreateResponse {
+  OrgItem result = 1;
+}
+
+message OrganizationServiceUpdateRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  // "optional" allow us to detect if the value is explicitly set
+  optional bool block_on_policy_violation = 2;
+}
+
+message OrganizationServiceUpdateResponse {
   OrgItem result = 1;
 }

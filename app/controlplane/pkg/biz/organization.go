@@ -42,6 +42,7 @@ type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -173,6 +174,36 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgID string, blockOnPolicyViolation *bool) (*Organization, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// Make sure that the organization exists and that the user is a member of it
+	membership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find memberships: %w", err)
+	} else if membership == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	// Perform the update
+	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
+}
+
 func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organization, error) {
 	orgUUID, err := uuid.Parse(id)
 	if err != nil {
@@ -180,6 +211,17 @@ func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organi
 	}
 
 	org, err := uc.orgRepo.FindByID(ctx, orgUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
+}
+
+func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Organization, error) {
+	org, err := uc.orgRepo.FindByName(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find organization: %w", err)
 	} else if org == nil {
