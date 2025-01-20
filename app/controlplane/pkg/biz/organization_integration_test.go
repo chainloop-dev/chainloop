@@ -116,13 +116,6 @@ func (s *OrgIntegrationTestSuite) TestCreateAddsInlineCASBackend() {
 func (s *OrgIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 
-	s.Run("invalid org ID", func() {
-		// Invalid org ID
-		_, err := s.Organization.Update(ctx, s.user.ID, "invalid", nil)
-		s.Error(err)
-		s.True(biz.IsErrInvalidUUID(err))
-	})
-
 	s.Run("org non existent", func() {
 		// org not found
 		_, err := s.Organization.Update(ctx, s.user.ID, uuid.NewString(), nil)
@@ -133,13 +126,13 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 	s.Run("org not accessible to user", func() {
 		org2, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
-		_, err = s.Organization.Update(ctx, s.user.ID, org2.ID, nil)
+		_, err = s.Organization.Update(ctx, s.user.ID, org2.Name, nil)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.Run("valid block on policy violation update", func() {
-		got, err := s.Organization.Update(ctx, s.user.ID, s.org.ID, toPtrBool(true))
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, toPtrBool(true))
 		s.NoError(err)
 		s.True(got.BlockOnPolicyViolation)
 	})
