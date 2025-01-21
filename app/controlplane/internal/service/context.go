@@ -118,9 +118,17 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 }
 
 func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
-	return &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt)}
+	return &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt), DefaultPolicyViolationStrategy: bizPolicyViolationBlockingStrategyToPb(m.BlockOnPolicyViolation)}
 }
 
 func bizUserToPb(u *biz.User) *pb.User {
 	return &pb.User{Id: u.ID, Email: u.Email, CreatedAt: timestamppb.New(*u.CreatedAt)}
+}
+
+func bizPolicyViolationBlockingStrategyToPb(blockOnPolicyViolation bool) pb.OrgItem_PolicyViolationBlockingStrategy {
+	if blockOnPolicyViolation {
+		return pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK
+	}
+
+	return pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY
 }

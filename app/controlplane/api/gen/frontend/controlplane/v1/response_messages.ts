@@ -472,6 +472,46 @@ export interface OrgItem {
   id: string;
   name: string;
   createdAt?: Date;
+  defaultPolicyViolationStrategy: OrgItem_PolicyViolationBlockingStrategy;
+}
+
+export enum OrgItem_PolicyViolationBlockingStrategy {
+  POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0,
+  POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK = 1,
+  POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function orgItem_PolicyViolationBlockingStrategyFromJSON(object: any): OrgItem_PolicyViolationBlockingStrategy {
+  switch (object) {
+    case 0:
+    case "POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED":
+      return OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED;
+    case 1:
+    case "POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK":
+      return OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK;
+    case 2:
+    case "POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY":
+      return OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return OrgItem_PolicyViolationBlockingStrategy.UNRECOGNIZED;
+  }
+}
+
+export function orgItem_PolicyViolationBlockingStrategyToJSON(object: OrgItem_PolicyViolationBlockingStrategy): string {
+  switch (object) {
+    case OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED:
+      return "POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED";
+    case OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK:
+      return "POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK";
+    case OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY:
+      return "POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY";
+    case OrgItem_PolicyViolationBlockingStrategy.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface CASBackendItem {
@@ -3166,7 +3206,7 @@ export const OrgMembershipItem = {
 };
 
 function createBaseOrgItem(): OrgItem {
-  return { id: "", name: "", createdAt: undefined };
+  return { id: "", name: "", createdAt: undefined, defaultPolicyViolationStrategy: 0 };
 }
 
 export const OrgItem = {
@@ -3179,6 +3219,9 @@ export const OrgItem = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.defaultPolicyViolationStrategy !== 0) {
+      writer.uint32(32).int32(message.defaultPolicyViolationStrategy);
     }
     return writer;
   },
@@ -3211,6 +3254,13 @@ export const OrgItem = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.defaultPolicyViolationStrategy = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3225,6 +3275,9 @@ export const OrgItem = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      defaultPolicyViolationStrategy: isSet(object.defaultPolicyViolationStrategy)
+        ? orgItem_PolicyViolationBlockingStrategyFromJSON(object.defaultPolicyViolationStrategy)
+        : 0,
     };
   },
 
@@ -3233,6 +3286,10 @@ export const OrgItem = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.defaultPolicyViolationStrategy !== undefined &&
+      (obj.defaultPolicyViolationStrategy = orgItem_PolicyViolationBlockingStrategyToJSON(
+        message.defaultPolicyViolationStrategy,
+      ));
     return obj;
   },
 
@@ -3245,6 +3302,7 @@ export const OrgItem = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.createdAt = object.createdAt ?? undefined;
+    message.defaultPolicyViolationStrategy = object.defaultPolicyViolationStrategy ?? 0;
     return message;
   },
 };

@@ -125,6 +125,36 @@ func (_m *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.O
 	return r0, r1
 }
 
+// Update provides a mock function with given fields: ctx, id, blockOnPolicyViolation
+func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*biz.Organization, error) {
+	ret := _m.Called(ctx, id, blockOnPolicyViolation)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *biz.Organization
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool) (*biz.Organization, error)); ok {
+		return rf(ctx, id, blockOnPolicyViolation)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool) *biz.Organization); ok {
+		r0 = rf(ctx, id, blockOnPolicyViolation)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*biz.Organization)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool) error); ok {
+		r1 = rf(ctx, id, blockOnPolicyViolation)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewOrganizationRepo creates a new instance of OrganizationRepo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewOrganizationRepo(t interface {

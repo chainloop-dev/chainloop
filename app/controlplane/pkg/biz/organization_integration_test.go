@@ -113,6 +113,31 @@ func (s *OrgIntegrationTestSuite) TestCreateAddsInlineCASBackend() {
 	})
 }
 
+func (s *OrgIntegrationTestSuite) TestUpdate() {
+	ctx := context.Background()
+
+	s.Run("org non existent", func() {
+		// org not found
+		_, err := s.Organization.Update(ctx, s.user.ID, uuid.NewString(), nil)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("org not accessible to user", func() {
+		org2, err := s.Organization.CreateWithRandomName(ctx)
+		require.NoError(s.T(), err)
+		_, err = s.Organization.Update(ctx, s.user.ID, org2.Name, nil)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("valid block on policy violation update", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, toPtrBool(true))
+		s.NoError(err)
+		s.True(got.BlockOnPolicyViolation)
+	})
+}
+
 // We are doing an integration test here because there are some database constraints
 // and delete cascades that we want to validate that they work too
 func (s *OrgIntegrationTestSuite) TestDeleteOrg() {

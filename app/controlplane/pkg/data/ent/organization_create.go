@@ -456,6 +456,18 @@ type (
 	}
 )
 
+// SetName sets the "name" field.
+func (u *OrganizationUpsert) SetName(v string) *OrganizationUpsert {
+	u.Set(organization.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateName() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldName)
+	return u
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldBlockOnPolicyViolation, v)
@@ -484,9 +496,6 @@ func (u *OrganizationUpsertOne) UpdateNewValues() *OrganizationUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(organization.FieldID)
-		}
-		if _, exists := u.create.mutation.Name(); exists {
-			s.SetIgnore(organization.FieldName)
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(organization.FieldCreatedAt)
@@ -520,6 +529,20 @@ func (u *OrganizationUpsertOne) Update(set func(*OrganizationUpsert)) *Organizat
 		set(&OrganizationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetName sets the "name" field.
+func (u *OrganizationUpsertOne) SetName(v string) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateName() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateName()
+	})
 }
 
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
@@ -719,9 +742,6 @@ func (u *OrganizationUpsertBulk) UpdateNewValues() *OrganizationUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(organization.FieldID)
 			}
-			if _, exists := b.mutation.Name(); exists {
-				s.SetIgnore(organization.FieldName)
-			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(organization.FieldCreatedAt)
 			}
@@ -755,6 +775,20 @@ func (u *OrganizationUpsertBulk) Update(set func(*OrganizationUpsert)) *Organiza
 		set(&OrganizationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetName sets the "name" field.
+func (u *OrganizationUpsertBulk) SetName(v string) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateName() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateName()
+	})
 }
 
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.

@@ -1,0 +1,22 @@
+{
+  "$id": "controlplane.v1.OrganizationServiceUpdateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(blockOnPolicyViolation)$": {
+      "description": "\"optional\" allow us to detect if the value is explicitly set",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "block_on_policy_violation": {
+      "description": "\"optional\" allow us to detect if the value is explicitly set",
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "Organization Service Update Request",
+  "type": "object"
+}

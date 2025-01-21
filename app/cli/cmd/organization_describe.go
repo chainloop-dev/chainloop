@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	gt.AppendSeparator()
 
 	if m := config.CurrentMembership; m != nil {
-		gt.AppendRow(table.Row{"Organization", fmt.Sprintf("%s (role=%s)", m.Org.Name, m.Role)})
+		gt.AppendRow(table.Row{"Organization", fmt.Sprintf("%s (role=%s)\nPolicy strategy=%s", m.Org.Name, m.Role, m.Org.PolicyViolationBlockingStrategy)})
 	}
 
 	backend := config.CurrentCASBackend
