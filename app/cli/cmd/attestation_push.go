@@ -127,7 +127,7 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer communications")
 	cmd.Flags().StringVar(&signServerAuthUser, "signserver-auth-user", "", "")
 	cmd.Flags().StringVar(&signServerAuthPass, "signserver-auth-pass", "", "")
-	cmd.Flags().BoolVar(&bypassPolicyCheck, "exception_bypass_policy_check", false, "do not fail this command on policy violations enforcement")
+	cmd.Flags().BoolVar(&bypassPolicyCheck, "exception-bypass-policy-check", false, "do not fail this command on policy violations enforcement")
 
 	return cmd
 }
