@@ -44,12 +44,21 @@ type ProvenancePredicateV02 struct {
 	// Map materials and policies
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Whether the attestation has policy violations
-	PolicyHasViolations bool `json:"policy_has_violations"`
+	PolicyHasViolations bool `json:"policyHasViolations"`
 	// Whether we want to block the attestation on policy violations
-	PolicyBlockOnViolation bool `json:"policy_block_on_violation"`
+	PolicyCheckBlockingStrategy PolicyViolationBlockingStrategy `json:"policyCheckBlockingStrategy"`
+	// Whether the policy check was bypassed
+	PolicyBlockBypassEnabled bool `json:"policyBlockBypassEnabled"`
 	// Whether the attestation was blocked due to policy violations
-	PolicyAttBlocked bool `json:"policy_attestation_blocked,omitempty"`
+	PolicyAttBlocked bool `json:"policyAttBlocked"`
 }
+
+type PolicyViolationBlockingStrategy string
+
+const (
+	PolicyViolationBlockingStrategyEnforced PolicyViolationBlockingStrategy = "ENFORCED"
+	PolicyViolationBlockingStrategyAdvisory PolicyViolationBlockingStrategy = "ADVISORY"
+)
 
 type PolicyEvaluation struct {
 	Name            string                     `json:"name"`
@@ -198,15 +207,19 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
 
+	policyCheckBlockingStrategy := PolicyViolationBlockingStrategyAdvisory
+	if r.att.GetBlockOnPolicyViolation() {
+		policyCheckBlockingStrategy = PolicyViolationBlockingStrategyEnforced
+	}
+
 	p := ProvenancePredicateV02{
-		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
-		Materials:                 normalizedMaterials,
-		PolicyEvaluations:         policies,
-		PolicyHasViolations:       hasViolations,
-		PolicyBlockOnViolation:    r.att.GetBlockOnPolicyViolation(),
-		// For now we assume that we are blocking if the enforcement is there and there are some violations
-		// in the future this value might be false if we offer some manual overrides
-		PolicyAttBlocked: hasViolations && r.att.GetBlockOnPolicyViolation(),
+		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),
+		Materials:                   normalizedMaterials,
+		PolicyEvaluations:           policies,
+		PolicyHasViolations:         hasViolations,
+		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
+		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
+		PolicyAttBlocked:            hasViolations && r.att.GetBlockOnPolicyViolation() && !r.att.GetBypassPolicyCheck(),
 	}
 
 	// transform to structpb.Struct in a two steps process

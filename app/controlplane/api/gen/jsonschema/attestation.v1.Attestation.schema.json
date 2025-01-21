@@ -7,6 +7,10 @@
       "description": "fail the attestation if policy evaluation fails",
       "type": "boolean"
     },
+    "^(bypassPolicyCheck)$": {
+      "description": "bypass policy check",
+      "type": "boolean"
+    },
     "^(envVars)$": {
       "additionalProperties": {
         "type": "string"
@@ -69,6 +73,10 @@
     },
     "block_on_policy_violation": {
       "description": "fail the attestation if policy evaluation fails",
+      "type": "boolean"
+    },
+    "bypass_policy_check": {
+      "description": "bypass policy check",
       "type": "boolean"
     },
     "env_vars": {

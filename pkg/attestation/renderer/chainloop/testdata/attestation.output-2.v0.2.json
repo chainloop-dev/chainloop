@@ -117,8 +117,10 @@
       "workflowID": "ab98be70-041b-4a82-97f3-daa56f61262b",
       "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8"
     },
-    "policy_block_on_violation": false,
-    "policy_has_violations": false,
+    "policyAttBlocked": false,
+    "policyBlockBypassEnabled": false,
+    "policyCheckBlockingStrategy": "ADVISORY",
+    "policyHasViolations": false,
     "runnerType": "RUNNER_TYPE_UNSPECIFIED"
   }
 }
