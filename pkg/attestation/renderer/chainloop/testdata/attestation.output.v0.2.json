@@ -82,17 +82,16 @@
     "policyAttBlocked": false,
     "policyBlockBypassEnabled": false,
     "policyCheckBlockingStrategy": "ADVISORY",
-    "policyHasViolations": true,
-    "policy_evaluations": {
+    "policyEvaluations": {
       "sbom": [
         {
           "annotations": {
             "category": "sbom"
           },
           "description": "Checks that the SBOM is not older than a specified threshold. Supports CycloneDX.\n",
-          "material_name": "sbom",
+          "materialName": "sbom",
           "name": "sbom-freshness",
-          "policy_reference": {
+          "policyReference": {
             "annotations": {
               "name": "sbom-freshness",
               "organization": ""
@@ -117,6 +116,7 @@
         }
       ]
     },
+    "policyHasViolations": true,
     "runnerType": "GITHUB_ACTION"
   }
 }
