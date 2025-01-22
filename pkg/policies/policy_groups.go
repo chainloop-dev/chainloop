@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			}
 
 			ev, err := pgv.evaluatePolicyAttachment(ctx, policyAtt, subject,
-				&evalOpts{kind: material.MaterialType, name: material.GetID(), bindings: groupArgs},
+				&evalOpts{kind: material.MaterialType, name: material.GetId(), bindings: groupArgs},
 			)
 			if err != nil {
 				return nil, NewPolicyError(err)
@@ -211,7 +211,7 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 			return nil, err
 		}
 
-		if gm.Name != "" && gm.Name != material.GetID() {
+		if gm.Name != "" && gm.Name != material.GetId() {
 			continue
 		}
 

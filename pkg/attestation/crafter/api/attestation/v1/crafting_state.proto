@@ -36,6 +36,7 @@ message Attestation {
   map<string, string> annotations = 5 [(buf.validate.field).map.values.string.min_len = 1];
 
   message Material {
+    string id = 12 [(buf.validate.field).string.min_len = 1];
     oneof m {
       KeyVal string = 1;
       ContainerImage container_image = 2;
@@ -54,16 +55,28 @@ message Attestation {
 
     // Annotations for the material
     map<string, string> annotations = 9 [(buf.validate.field).map.values.string.min_len = 1];
+    bool output = 10;
+    bool required = 11;
 
     message KeyVal {
-      string id = 1 [(buf.validate.field).string.min_len = 1];
+      // NOT USED, kept for compatibility with servers that still perform server-side validation``
+      // TODO: remove after some time
+      string id = 1 [
+        (buf.validate.field).string.min_len = 1,
+        deprecated = true
+      ];
       string value = 2 [(buf.validate.field).string.min_len = 1];
 
       string digest = 3 [(buf.validate.field).string.min_len = 1];
     }
 
     message ContainerImage {
-      string id = 1 [(buf.validate.field).string.min_len = 1];
+      // NOT USED, kept for compatibility with servers that still perform server-side validation``
+      // TODO: remove after some time
+      string id = 1 [
+        (buf.validate.field).string.min_len = 1,
+        deprecated = true
+      ];
       string name = 2 [(buf.validate.field).string.min_len = 1];
       string digest = 3 [(buf.validate.field).string.min_len = 1];
       bool is_subject = 4;
@@ -82,8 +95,13 @@ message Attestation {
     }
 
     message Artifact {
-      // ID of the artifact
-      string id = 1 [(buf.validate.field).string.min_len = 1];
+      // NOT USED, kept for compatibility with servers that still perform server-side validation``
+      // TODO: remove after some time
+      string id = 1 [
+        (buf.validate.field).string.min_len = 1,
+        deprecated = true
+      ];
+
       // filename, use for record purposes
       string name = 2 [(buf.validate.field).string.min_len = 1];
       // the digest is enough to retrieve the artifact since it's stored in a CAS
@@ -126,6 +144,8 @@ message Attestation {
 
   // fail the attestation if policy evaluation fails
   bool block_on_policy_violation = 13;
+  // bypass policy check
+  bool bypass_policy_check = 14;
 }
 
 // A policy executed against an attestation or material

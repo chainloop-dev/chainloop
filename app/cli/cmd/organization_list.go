@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,11 +55,11 @@ func orgMembershipTableOutput(items []*action.MembershipItem) error {
 	currentOrg := viper.GetString(confOptions.organization.viperKey)
 
 	t := newTableWriter()
-	t.AppendHeader(table.Row{"Name", "Current", "Default", "Role", "Joined At"})
+	t.AppendHeader(table.Row{"Name", "Current", "Default", "Role", "Default Policy strategy", "Joined At"})
 
 	for _, i := range items {
 		current := i.Org.Name == currentOrg
-		t.AppendRow(table.Row{i.Org.Name, current, i.Default, i.Role, i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.Org.Name, current, i.Default, i.Role, i.Org.PolicyViolationBlockingStrategy, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

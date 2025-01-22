@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,10 +157,9 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 
 			material := &api.Attestation_Material{
 				MaterialType: tc.materialType,
+				Id:           tc.materialName,
 				M: &api.Attestation_Material_Artifact_{
-					Artifact: &api.Attestation_Material_Artifact{
-						Id: tc.materialName,
-					},
+					Artifact: &api.Attestation_Material_Artifact{},
 				},
 			}
 
@@ -326,7 +325,8 @@ func (s *groupsTestSuite) TestGroupInputs() {
 			mName = tc.materialName
 		}
 		material := &api.Attestation_Material{
-			M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{Id: mName,
+			Id: mName,
+			M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{
 				Content: []byte(`{}`), // content not validated in this context
 			}},
 			MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,

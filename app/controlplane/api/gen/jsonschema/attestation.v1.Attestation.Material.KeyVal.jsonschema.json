@@ -7,6 +7,7 @@
       "type": "string"
     },
     "id": {
+      "description": "NOT USED, kept for compatibility with servers that still perform server-side validation``\n TODO: remove after some time",
       "type": "string"
     },
     "value": {

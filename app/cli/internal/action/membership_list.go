@@ -28,8 +28,9 @@ type MembershipList struct {
 }
 
 type OrgItem struct {
-	ID, Name  string
-	CreatedAt *time.Time
+	ID, Name                        string
+	CreatedAt                       *time.Time
+	PolicyViolationBlockingStrategy string
 }
 
 type MembershipItem struct {
@@ -79,11 +80,19 @@ func (action *MembershipList) ListMembers(ctx context.Context) ([]*MembershipIte
 }
 
 func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
-	return &OrgItem{
+	i := &OrgItem{
 		ID:        in.Id,
 		Name:      in.Name,
 		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
 	}
+
+	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {
+		i.PolicyViolationBlockingStrategy = PolicyViolationBlockingStrategyEnforced
+	} else {
+		i.PolicyViolationBlockingStrategy = PolicyViolationBlockingStrategyAdvisory
+	}
+
+	return i
 }
 
 func pbMembershipItemToAction(in *pb.OrgMembershipItem) *MembershipItem {

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package chainloop
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"os"
+	"path/filepath"
 	"testing"
 
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -30,6 +32,16 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+var updateGolden bool
+
+// go test ./renderer/chainloop/... --update-golden
+func TestMain(m *testing.M) {
+	flag.BoolVar(&updateGolden, "update-golden", false, "update the expected golden files")
+	// Parse the flags
+	flag.Parse()
+	os.Exit(m.Run())
+}
+
 func TestRenderV02(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -37,7 +49,7 @@ func TestRenderV02(t *testing.T) {
 		outputPath string
 	}{
 		{
-			name:       "basic",
+			name:       "default with policy violations",
 			sourcePath: "testdata/attestation.source.json",
 			outputPath: "testdata/attestation.output.v0.2.json",
 		},
@@ -50,15 +62,6 @@ func TestRenderV02(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Load expected resulting output
-			raw, err := os.ReadFile(tc.outputPath)
-			require.NoError(t, err)
-			var want *intoto.Statement
-			err = json.Unmarshal(raw, &want)
-			require.NoError(t, err)
-			wantRaw, err := json.MarshalIndent(want, "", "  ")
-			require.NoError(t, err)
-
 			// Initialize renderer
 			state := &api.CraftingState{}
 			stateRaw, err := os.ReadFile(tc.sourcePath)
@@ -70,9 +73,25 @@ func TestRenderV02(t *testing.T) {
 			// Compare result
 			statement, err := renderer.Statement(context.TODO())
 			require.NoError(t, err)
-			rawStatement, err := json.MarshalIndent(statement, "", "  ")
+			gotRawStatement, err := json.MarshalIndent(statement, "", "  ")
 			require.NoError(t, err)
-			assert.Equal(t, string(wantRaw), string(rawStatement))
+
+			// Update test files
+			if updateGolden {
+				err := os.WriteFile(filepath.Clean(tc.outputPath), gotRawStatement, 0600)
+				require.NoError(t, err)
+			}
+
+			// Load expected resulting output
+			raw, err := os.ReadFile(tc.outputPath)
+			require.NoError(t, err)
+			var want *intoto.Statement
+			err = json.Unmarshal(raw, &want)
+			require.NoError(t, err)
+			wantRaw, err := json.MarshalIndent(want, "", "  ")
+			require.NoError(t, err)
+
+			assert.Equal(t, string(wantRaw), string(gotRawStatement))
 		})
 	}
 }

@@ -5,11 +5,47 @@
   "patternProperties": {
     "^(created_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(default_policy_violation_strategy)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED",
+            "POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK",
+            "POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY"
+          ],
+          "title": "Policy Violation Blocking Strategy",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
     }
   },
   "properties": {
     "createdAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "defaultPolicyViolationStrategy": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED",
+            "POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK",
+            "POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY"
+          ],
+          "title": "Policy Violation Blocking Strategy",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
     },
     "id": {
       "type": "string"

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,6 +66,10 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 		{"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", false},
 		// over the max size
 		{"aabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", true},
+		// reserved names
+		{"chainloop", true},
+		{"admin", true},
+		{"default", true},
 	}
 
 	for _, tc := range testCases {
@@ -106,6 +110,31 @@ func (s *OrgIntegrationTestSuite) TestCreateAddsInlineCASBackend() {
 		b, err := s.CASBackend.FindDefaultBackend(ctx, org.ID)
 		s.NoError(err)
 		s.True(b.Inline)
+	})
+}
+
+func (s *OrgIntegrationTestSuite) TestUpdate() {
+	ctx := context.Background()
+
+	s.Run("org non existent", func() {
+		// org not found
+		_, err := s.Organization.Update(ctx, s.user.ID, uuid.NewString(), nil)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("org not accessible to user", func() {
+		org2, err := s.Organization.CreateWithRandomName(ctx)
+		require.NoError(s.T(), err)
+		_, err = s.Organization.Update(ctx, s.user.ID, org2.Name, nil)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("valid block on policy violation update", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, toPtrBool(true))
+		s.NoError(err)
+		s.True(got.BlockOnPolicyViolation)
 	})
 }
 

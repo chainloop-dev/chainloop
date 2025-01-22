@@ -66,7 +66,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	}, nil
 }
 
-func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string) (*AttestationResult, error) {
+func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string, bypassPolicyCheck bool) (*AttestationResult, error) {
 	useRemoteState := attestationID != ""
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: useRemoteState, localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
@@ -144,6 +144,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	// Indicate that we are done with the attestation
 	crafter.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
+	crafter.CraftingState.Attestation.BypassPolicyCheck = bypassPolicyCheck
 
 	sig, err := signer.GetSigner(action.keyPath, action.Logger, &signer.Opts{
 		SignServerCAPath: action.signServerCAPath,

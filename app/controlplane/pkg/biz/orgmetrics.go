@@ -170,6 +170,11 @@ func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(ctx context.Context, org
 		return nil, fmt.Errorf("finding organization: %w", err)
 	}
 
+	// Check if organization exists, return empty list if not
+	if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
 	// Default pagination option
 	paginationOpts, err := pagination.NewOffsetPaginationOpts(pagination.DefaultPage, 100)
 	if err != nil {

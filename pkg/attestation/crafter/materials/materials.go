@@ -85,6 +85,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		MaterialType: input.Type,
 		M: &api.Attestation_Material_Artifact_{
 			Artifact: &api.Attestation_Material_Artifact{
+				// TODO: remove once we know servers are not running server-side validation
 				Id:        input.Name,
 				Name:      result.filename,
 				Digest:    result.digest,
@@ -234,6 +235,11 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	for _, annotation := range materialSchema.Annotations {
 		m.Annotations[annotation.Name] = annotation.Value
 	}
+
+	// Set the additional fields known in the context of the contract
+	m.Id = materialSchema.Name
+	m.Output = materialSchema.Output
+	m.Required = !materialSchema.Optional
 
 	return m, nil
 }

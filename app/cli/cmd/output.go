@@ -50,7 +50,8 @@ type tabulatedData interface {
 		[]*action.CASBackendItem |
 		[]*action.OrgInvitationItem |
 		*action.APITokenItem |
-		[]*action.APITokenItem
+		[]*action.APITokenItem |
+		*action.AttestationStatusMaterial
 }
 
 var ErrOutputFormatNotImplemented = errors.New("format not implemented")

@@ -25,9 +25,7 @@
         "name": "skynet-sbom"
       }
     ],
-    "envAllowList": [
-      "CUSTOM_VAR"
-    ],
+    "envAllowList": ["CUSTOM_VAR"],
     "runner": {
       "type": "GITHUB_ACTION"
     }
@@ -36,23 +34,58 @@
     "initializedAt": "2023-05-03T17:22:12.743426076Z",
     "finishedAt": "2023-05-03T17:25:12.743426076Z",
     "workflow": {
-      "name": "foo",
-      "project": "bar",
-      "workflowId": "54ea7c5c-7592-48ac-9a9f-084b72447184",
-      "schemaRevision": "1"
+      "name": "skipped",
+      "project": "chainloop",
+      "version": {
+        "version": "v0.150.0",
+        "prerelease": true
+      },
+      "workflowId": "94208094-b8d3-4b38-b1f1-c609c47c49ea",
+      "workflowRunId": "e4cec971-6f4f-442a-8de0-d12ddc4667f2",
+      "schemaRevision": "1",
+      "contractName": "chainloop-skipped",
+      "organization": "foobar"
     },
+    "policyEvaluations": [
+      {
+        "name": "sbom-freshness",
+        "materialName": "sbom",
+        "sources": [],
+        "referenceDigest": "sha256:e9b750847ba8a5439a0a43963d22cb5c5a9568de5fdcd2db21d9615c76870c2a",
+        "referenceName": "file://policy-sbom-freshness.yaml",
+        "description": "Checks that the SBOM is not older than a specified threshold. Supports CycloneDX.\n",
+        "annotations": {
+          "category": "sbom"
+        },
+        "violations": [
+          {
+            "subject": "sbom-freshness",
+            "message": "SBOM created at: 2020-08-02T21:27:04Z which is too old (freshness limit set to 5 days)"
+          }
+        ],
+        "with": {
+          "limit": "5"
+        },
+        "type": "SBOM_CYCLONEDX_JSON",
+        "policyReference": {
+          "name": "sbom-freshness",
+          "digest": "sha256:e9b750847ba8a5439a0a43963d22cb5c5a9568de5fdcd2db21d9615c76870c2a",
+          "uri": "file://policy-sbom-freshness.yaml"
+        }
+      }
+    ],
     "materials": {
       "build-ref": {
+        "id": "build-ref",
         "string": {
-          "id": "build-ref",
           "value": "a-string"
         },
         "addedAt": "2023-05-03T17:23:27.113091137Z",
         "materialType": "STRING"
       },
       "rootfs": {
+        "id": "rootfs",
         "artifact": {
-          "id": "rootfs",
           "name": "Makefile",
           "digest": "sha256:cfc7d8e24d21ade921d720228ad1693de59dab45ff679606940be75b7bf660dc"
         },
@@ -60,8 +93,8 @@
         "materialType": "ARTIFACT"
       },
       "skynet-control-plane": {
+        "id": "skynet-control-plane",
         "containerImage": {
-          "id": "skynet-control-plane",
           "name": "index.docker.io/bitnami/nginx",
           "digest": "sha256:580ac09da7771920dfd0c214964e7bfe4c27903bcbe075769a4044a67c9a390a",
           "isSubject": true,
@@ -71,8 +104,8 @@
         "materialType": "CONTAINER_IMAGE"
       },
       "skynet-sbom": {
+        "id": "skynet-sbom",
         "artifact": {
-          "id": "skynet-sbom",
           "name": "sbom.cyclonedx.json",
           "digest": "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
         },

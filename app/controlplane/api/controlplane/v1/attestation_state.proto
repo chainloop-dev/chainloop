@@ -46,7 +46,8 @@ message AttestationStateServiceInitializedResponse {
 
 message AttestationStateServiceSaveRequest {
   string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];
-  attestation.v1.CraftingState attestation_state = 2 [(buf.validate.field).required = true];
+  // We do not want to validate its content since it might depend on the client-side schema
+  attestation.v1.CraftingState attestation_state = 2 [(buf.validate.field).ignore = IGNORE_ALWAYS];
   // digest of the attestation state this update was performed on top of
   // The digest might be empty the first time
   string base_digest = 3;

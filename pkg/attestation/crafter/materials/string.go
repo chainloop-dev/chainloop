@@ -48,7 +48,9 @@ func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation
 		MaterialType: i.input.Type,
 		M: &api.Attestation_Material_String_{
 			String_: &api.Attestation_Material_KeyVal{
-				Id: i.input.Name, Value: value, Digest: hash.String(),
+				// TODO: remove once we know servers are not running server-side validation
+				Id:    i.input.Name,
+				Value: value, Digest: hash.String(),
 			},
 		},
 	}, nil

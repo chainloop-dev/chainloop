@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,9 +67,9 @@ func TestPopulateContractMaterials(t *testing.T) {
 				Attestation: &v1.Attestation{
 					Materials: map[string]*v1.Attestation_Material{
 						"vex-file": {
+							Id: "random",
 							M: &v1.Attestation_Material_Artifact_{
 								Artifact: &v1.Attestation_Material_Artifact{
-									Id:      "random",
 									Name:    "vex-file",
 									Digest:  "random-digest",
 									Content: []byte("random-content"),
@@ -79,9 +79,9 @@ func TestPopulateContractMaterials(t *testing.T) {
 							UploadedToCas: true,
 						},
 						"other-file": {
+							Id: "random",
 							M: &v1.Attestation_Material_Artifact_{
 								Artifact: &v1.Attestation_Material_Artifact{
-									Id:      "random",
 									Name:    "other-file",
 									Digest:  "random-digest-2",
 									Content: []byte("random-content-2"),

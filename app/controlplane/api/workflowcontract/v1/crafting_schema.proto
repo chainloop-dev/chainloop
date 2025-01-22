@@ -172,7 +172,14 @@ message PolicyAttachment {
   // List of requirements this policy contributes to satisfy
   repeated string requirements = 6 [(buf.validate.field).repeated.items = {
     string: {
-      pattern: "^([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$", // whitespaces not allowed, framework prefix (/) and version are optional (@)
+      // The framework is required, while the organization name (optional) can be added at the beginning of the string, separated by a slash (/),
+      // and the version (optional) can be appended at the end using the "@" symbol.
+      // Format: [organization-name/]<framework-name>/requirement-name[@<version>]
+      // Examples:
+      // - "chainloop/owasp/owasp-top-10@2021"
+      // - "owasp/owasp-top-10"
+      // - "owasp/owasp-top-10@2021"
+      pattern: "^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$",
     }
   }];
 

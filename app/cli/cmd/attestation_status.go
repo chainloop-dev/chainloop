@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -107,22 +109,22 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		for _, a := range status.Annotations {
 			value := a.Value
 			if value == "" {
-				value = "[NOT SET]"
+				value = NotSet
 			}
 			gt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
 		}
 	}
 
+	var blockingColor text.Color
+	var blockingText = action.PolicyViolationBlockingStrategyAdvisory
+	if status.MustBlockOnPolicyViolations {
+		blockingColor = text.FgHiYellow
+		blockingText = action.PolicyViolationBlockingStrategyEnforced
+	}
+	gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
+
 	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
-		var blockingColor text.Color
-		var blockingText = "ADVISORY"
-		if status.MustBlockOnPolicyViolations {
-			blockingColor = text.FgHiYellow
-			blockingText = "ENFORCED"
-		}
-
-		gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
 		gt.AppendRow(table.Row{"Policies", "------"})
 		policiesTable(evs, gt)
 	}
@@ -173,6 +175,11 @@ func materialsTable(status *action.AttestationStatusResult, full bool) error {
 		return nil
 	}
 
+	// Sort materials by name for consistent output
+	slices.SortFunc(status.Materials, func(a, b action.AttestationStatusMaterial) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
 	mt := newTableWriter()
 	mt.SetTitle("Materials")
 
@@ -204,7 +211,7 @@ func materialsTable(status *action.AttestationStatusResult, full bool) error {
 			for _, a := range m.Annotations {
 				value := a.Value
 				if value == "" {
-					value = "[NOT SET]"
+					value = NotSet
 				}
 
 				mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})

@@ -229,6 +229,13 @@ message OrgItem {
   string id = 1;
   string name = 2;
   google.protobuf.Timestamp created_at = 3;
+  PolicyViolationBlockingStrategy default_policy_violation_strategy = 4;
+
+  enum PolicyViolationBlockingStrategy {
+    POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;
+    POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK = 1;
+    POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY = 2;
+  }
 }
 
 message CASBackendItem {

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	"github.com/chainloop-dev/chainloop/internal/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"google.golang.org/grpc"
 )
 
@@ -73,22 +73,22 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) error {
+func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) (*AttestationStatusMaterial, error) {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
 	if err != nil {
-		return fmt.Errorf("failed to load crafter: %w", err)
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
 
 	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
-		return fmt.Errorf("checking if attestation is already initialized: %w", err)
+		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
 	} else if !initialized {
-		return ErrAttestationNotInitialized
+		return nil, ErrAttestationNotInitialized
 	}
 
 	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
 		action.Logger.Err(err).Msg("loading existing attestation")
-		return err
+		return nil, err
 	}
 
 	// Default to inline CASBackend and override if we are not in dry-run mode
@@ -106,11 +106,11 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 			},
 		)
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("getting upload creds: %w", err)
 		}
 		b := creds.GetResult().GetBackend()
 		if b == nil {
-			return fmt.Errorf("no backend found in upload creds")
+			return nil, fmt.Errorf("no backend found in upload creds")
 		}
 		casBackend.Name = b.Provider
 		casBackend.MaxSize = b.GetLimits().MaxBytes
@@ -127,7 +127,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("creating CAS connection: %w", err)
 			}
 			defer artifactCASConn.Close()
 
@@ -141,37 +141,69 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	// 2. If materialName is not empty, check if the material is in the contract. If it is, add material from contract
 	// 2.1. If materialType is empty, try to guess the material kind with auto-detected kind and materialName
 	// 3. If materialType is not empty, add material contract free with materialType and materialName
-	var kind schemaapi.CraftingSchema_Material_MaterialType
+	var mt *api.Attestation_Material
 	switch {
 	case materialName == "" && materialType == "":
-		kind, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, "", materialValue, casBackend, annotations)
+		mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, "", materialValue, casBackend, annotations)
 		if err != nil {
-			return fmt.Errorf("adding material: %w", err)
+			return nil, fmt.Errorf("adding material: %w", err)
 		}
-		action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
+		action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 	case materialName != "":
 		switch {
 		// If the material is in the contract, add it from the contract
 		case crafter.IsMaterialInContract(materialName):
-			err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+			mt, err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
 		// If the material is not in the contract and the materialType is not provided, add material contract free with auto-detected kind, guessing the kind
 		case materialType == "":
-			kind, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+			mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations)
 			if err != nil {
-				return fmt.Errorf("adding material: %w", err)
+				return nil, fmt.Errorf("adding material: %w", err)
 			}
-			action.Logger.Info().Str("kind", kind.String()).Msg("material kind detected")
+			action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 		// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
 		default:
-			err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
+			mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
 		}
 	default:
-		err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
+		mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
 	}
 
 	if err != nil {
-		return fmt.Errorf("adding material: %w", err)
+		return nil, fmt.Errorf("adding material: %w", err)
 	}
 
-	return nil
+	materialResult, err := attMaterialToAction(mt)
+	if err != nil {
+		return nil, fmt.Errorf("converting material to action: %w", err)
+	}
+
+	return materialResult, nil
+}
+
+// GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations
+func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestationID string) (map[string][]*PolicyEvaluation, error) {
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
+		return nil, fmt.Errorf("checking if attestation is already initialized: %w", err)
+	} else if !initialized {
+		return nil, ErrAttestationNotInitialized
+	}
+
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
+		action.Logger.Err(err).Msg("loading existing attestation")
+		return nil, err
+	}
+
+	policyEvaluations, _, err := getPolicyEvaluations(crafter)
+
+	if err != nil {
+		return nil, fmt.Errorf("getting policy evaluations: %w", err)
+	}
+
+	return policyEvaluations, nil
 }

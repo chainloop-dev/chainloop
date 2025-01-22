@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -26,6 +28,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
+
+const NotSet = "[NOT SET]"
 
 func newAttestationAddCmd() *cobra.Command {
 	var name, value, kind string
@@ -62,7 +66,7 @@ func newAttestationAddCmd() *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
 					ActionsOpts:        actionOpts,
@@ -89,13 +93,22 @@ func newAttestationAddCmd() *cobra.Command {
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
 				func() error {
-					if err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations); err != nil {
+					// TODO: take the material output and show render it
+					resp, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
+					if err != nil {
 						return err
 					}
 
 					logger.Info().Msg("material added to attestation")
 
-					return nil
+					policies, err := a.GetPolicyEvaluations(cmd.Context(), attestationID)
+					if err != nil {
+						return err
+					}
+
+					return encodeOutput(resp, func(s *action.AttestationStatusMaterial) error {
+						return displayMaterialInfo(s, policies[resp.Name])
+					})
 				},
 			)
 		},
@@ -135,4 +148,54 @@ func newAttestationAddCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// displayMaterialInfo prints the material information in a table format.
+func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluations []*action.PolicyEvaluation) error {
+	if status == nil {
+		return nil
+	}
+
+	mt := newTableWriter()
+
+	mt.AppendRow(table.Row{"Name", status.Material.Name})
+	mt.AppendRow(table.Row{"Type", status.Material.Type})
+	mt.AppendRow(table.Row{"Required", hBool(status.Required)})
+
+	if status.IsOutput {
+		mt.AppendRow(table.Row{"Is output", "Yes"})
+	}
+
+	if status.Value != "" {
+		v := status.Value
+		if status.Tag != "" {
+			v = fmt.Sprintf("%s:%s", v, status.Tag)
+		}
+		mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
+	}
+
+	if status.Hash != "" {
+		mt.AppendRow(table.Row{"Digest", status.Hash})
+	}
+
+	if len(status.Material.Annotations) > 0 {
+		mt.AppendRow(table.Row{"Annotations", "------"})
+		for _, a := range status.Material.Annotations {
+			value := a.Value
+			if value == "" {
+				value = NotSet
+			}
+			mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
+		}
+	}
+
+	if len(policyEvaluations) > 0 {
+		mt.AppendRow(table.Row{"Policy evaluations", "------"})
+	}
+
+	policiesTable(policyEvaluations, mt)
+	mt.SetStyle(table.StyleLight)
+	mt.Style().Options.SeparateRows = true
+	mt.Render()
+	return nil
 }

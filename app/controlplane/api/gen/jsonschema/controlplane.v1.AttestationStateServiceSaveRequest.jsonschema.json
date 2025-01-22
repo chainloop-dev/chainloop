@@ -4,7 +4,8 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(attestation_state)$": {
-      "$ref": "attestation.v1.CraftingState.jsonschema.json"
+      "$ref": "attestation.v1.CraftingState.jsonschema.json",
+      "description": "We do not want to validate its content since it might depend on the client-side schema"
     },
     "^(base_digest)$": {
       "description": "digest of the attestation state this update was performed on top of\n The digest might be empty the first time",
@@ -16,7 +17,8 @@
   },
   "properties": {
     "attestationState": {
-      "$ref": "attestation.v1.CraftingState.jsonschema.json"
+      "$ref": "attestation.v1.CraftingState.jsonschema.json",
+      "description": "We do not want to validate its content since it might depend on the client-side schema"
     },
     "baseDigest": {
       "description": "digest of the attestation state this update was performed on top of\n The digest might be empty the first time",

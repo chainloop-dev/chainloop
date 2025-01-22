@@ -2,9 +2,9 @@
   "type": "https://in-toto.io/Statement/v1",
   "subject": [
     {
-      "name": "chainloop.workflow.foo",
+      "name": "chainloop.workflow.skipped",
       "digest": {
-        "sha256": "163c004d6210ba71f5b3e8c53f3e026ce245dbe3ddffc68e5bb1fe1f7e76d4c7"
+        "sha256": "d0c4d6f5a0c8d151588aaf35658040405a44428c2486c01f1f55ef8d29ece97f"
       }
     },
     {
@@ -66,19 +66,57 @@
       }
     ],
     "metadata": {
-      "contractName": "",
+      "contractName": "chainloop-skipped",
       "contractVersion": "1",
       "finishedAt": "2023-05-03T17:25:12.743426076Z",
       "initializedAt": "2023-05-03T17:22:12.743426076Z",
-      "name": "foo",
-      "organization": "",
-      "project": "bar",
+      "name": "skipped",
+      "organization": "foobar",
+      "project": "chainloop",
+      "projectVersion": "v0.150.0",
+      "projectVersionPrerelease": true,
       "team": "",
-      "workflowID": "54ea7c5c-7592-48ac-9a9f-084b72447184",
-      "workflowRunID": ""
+      "workflowID": "94208094-b8d3-4b38-b1f1-c609c47c49ea",
+      "workflowRunID": "e4cec971-6f4f-442a-8de0-d12ddc4667f2"
     },
-    "policy_block_on_violation": false,
-    "policy_has_violations": false,
+    "policyAttBlocked": false,
+    "policyBlockBypassEnabled": false,
+    "policyCheckBlockingStrategy": "ADVISORY",
+    "policyEvaluations": {
+      "sbom": [
+        {
+          "annotations": {
+            "category": "sbom"
+          },
+          "description": "Checks that the SBOM is not older than a specified threshold. Supports CycloneDX.\n",
+          "materialName": "sbom",
+          "name": "sbom-freshness",
+          "policyReference": {
+            "annotations": {
+              "name": "sbom-freshness",
+              "organization": ""
+            },
+            "digest": {
+              "sha256": "e9b750847ba8a5439a0a43963d22cb5c5a9568de5fdcd2db21d9615c76870c2a"
+            },
+            "name": "sbom-freshness",
+            "uri": "file://policy-sbom-freshness.yaml"
+          },
+          "skipped": false,
+          "type": "SBOM_CYCLONEDX_JSON",
+          "violations": [
+            {
+              "message": "SBOM created at: 2020-08-02T21:27:04Z which is too old (freshness limit set to 5 days)",
+              "subject": "sbom-freshness"
+            }
+          ],
+          "with": {
+            "limit": "5"
+          }
+        }
+      ]
+    },
+    "policyHasViolations": true,
     "runnerType": "GITHUB_ACTION"
   }
 }

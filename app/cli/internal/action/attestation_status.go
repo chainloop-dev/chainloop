@@ -26,7 +26,6 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
-	intoto "github.com/in-toto/attestation/go/v1"
 )
 
 type AttestationStatusOpts struct {
@@ -45,18 +44,18 @@ type AttestationStatus struct {
 }
 
 type AttestationStatusResult struct {
-	AttestationID               string                            `json:"attestationID"`
-	InitializedAt               *time.Time                        `json:"initializedAt"`
-	WorkflowMeta                *AttestationStatusWorkflowMeta    `json:"workflowMeta"`
-	Materials                   []AttestationStatusResultMaterial `json:"materials"`
-	EnvVars                     map[string]string                 `json:"envVars"`
-	RunnerContext               *AttestationResultRunnerContext   `json:"runnerContext"`
-	DryRun                      bool                              `json:"dryRun"`
-	Annotations                 []*Annotation                     `json:"annotations"`
-	IsPushed                    bool                              `json:"isPushed"`
-	PolicyEvaluations           map[string][]*PolicyEvaluation    `json:"policy_evaluations,omitempty"`
-	HasPolicyViolations         bool                              `json:"has_policy_violations"`
-	MustBlockOnPolicyViolations bool                              `json:"must_block_on_policy_violations"`
+	AttestationID               string                          `json:"attestationID"`
+	InitializedAt               *time.Time                      `json:"initializedAt"`
+	WorkflowMeta                *AttestationStatusWorkflowMeta  `json:"workflowMeta"`
+	Materials                   []AttestationStatusMaterial     `json:"materials"`
+	EnvVars                     map[string]string               `json:"envVars"`
+	RunnerContext               *AttestationResultRunnerContext `json:"runnerContext"`
+	DryRun                      bool                            `json:"dryRun"`
+	Annotations                 []*Annotation                   `json:"annotations"`
+	IsPushed                    bool                            `json:"isPushed"`
+	PolicyEvaluations           map[string][]*PolicyEvaluation  `json:"policy_evaluations,omitempty"`
+	HasPolicyViolations         bool                            `json:"has_policy_violations"`
+	MustBlockOnPolicyViolations bool                            `json:"must_block_on_policy_violations"`
 	// This might only be set if the attestation is pushed
 	Digest string `json:"digest"`
 }
@@ -71,7 +70,7 @@ type AttestationStatusWorkflowMeta struct {
 	ProjectVersion                                                                *ProjectVersion
 }
 
-type AttestationStatusResultMaterial struct {
+type AttestationStatusMaterial struct {
 	*Material
 	Set, IsOutput, Required bool
 }
@@ -150,7 +149,12 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			return nil, fmt.Errorf("rendering statement: %w", err)
 		}
 
-		res.PolicyEvaluations, res.HasPolicyViolations, err = action.getPolicyEvaluations(ctx, c, attestationID, statement)
+		// Add attestation-level policy evaluations
+		if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
+			return nil, fmt.Errorf("evaluating attestation policies: %w", err)
+		}
+
+		res.PolicyEvaluations, res.HasPolicyViolations, err = getPolicyEvaluations(c)
 		if err != nil {
 			return nil, fmt.Errorf("getting policy evaluations: %w", err)
 		}
@@ -203,15 +207,10 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
-func (action *AttestationStatus) getPolicyEvaluations(ctx context.Context, c *crafter.Crafter, attestationID string, statement *intoto.Statement) (map[string][]*PolicyEvaluation, bool, error) {
+func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool, error) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
 	var hasViolations bool
-
-	// Add attestation-level policy evaluations
-	if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
-		return nil, false, fmt.Errorf("evaluating attestation policies: %w", err)
-	}
 
 	// map evaluations
 	for _, v := range c.CraftingState.Attestation.GetPolicyEvaluations() {
@@ -255,7 +254,8 @@ func populateMaterials(craftingState *v1.CraftingState, res *AttestationStatusRe
 // populateContractMaterials populates the materials that are defined in the contract schema
 func populateContractMaterials(inputSchemaMaterials []*pbc.CraftingSchema_Material, attsMaterial map[string]*v1.Attestation_Material, res *AttestationStatusResult, visitedMaterials map[string]struct{}) error {
 	for _, m := range inputSchemaMaterials {
-		materialResult := &AttestationStatusResultMaterial{
+		// This one need to be crafter manually because it might not be in the attestation yet
+		materialResult := &AttestationStatusMaterial{
 			Material: &Material{
 				Name: m.Name, Type: m.Type.String(),
 				Annotations: pbAnnotationsToAction(m.Annotations),
@@ -284,24 +284,35 @@ func populateAdditionalMaterials(attsMaterials map[string]*v1.Attestation_Materi
 
 		// No need to check for name collisions, as it is not defined in the contract schema and it's
 		// autogenerated by the crafter
-		materialResult := &AttestationStatusResultMaterial{
-			Material: &Material{
-				Name:        name,
-				Type:        m.GetMaterialType().String(),
-				Annotations: stateAnnotationToAction(m.Annotations),
-			},
-			// No need to check if the material is optional or not, as it is not defined in the contract schema
-			// TODO: Make IsOutput configurable
-			IsOutput: false, Required: false,
-		}
-
-		if err := setMaterialValue(m, materialResult); err != nil {
+		materialResult, err := attMaterialToAction(m)
+		if err != nil {
 			return fmt.Errorf("setting material value: %w", err)
 		}
 
 		res.Materials = append(res.Materials, *materialResult)
+		visitedMaterials[name] = struct{}{}
 	}
+
 	return nil
+}
+
+// attMaterialToAction converts the attestation material to the action material
+func attMaterialToAction(m *v1.Attestation_Material) (*AttestationStatusMaterial, error) {
+	res := &AttestationStatusMaterial{
+		Material: &Material{
+			Name:        m.GetId(),
+			Type:        m.GetMaterialType().String(),
+			Annotations: stateAnnotationToAction(m.Annotations),
+		},
+		IsOutput: m.Output,
+		Required: m.Required,
+	}
+
+	if err := setMaterialValue(m, res); err != nil {
+		return nil, fmt.Errorf("setting material value: %w", err)
+	}
+
+	return res, nil
 }
 
 func pbAnnotationsToAction(in []*pbc.Annotation) []*Annotation {
@@ -331,10 +342,11 @@ func stateAnnotationToAction(in map[string]string) []*Annotation {
 	return res
 }
 
-func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusResultMaterial) error {
+func setMaterialValue(w *v1.Attestation_Material, o *AttestationStatusMaterial) error {
 	switch m := w.GetM().(type) {
 	case *v1.Attestation_Material_String_:
 		o.Value = m.String_.GetValue()
+		o.Hash = m.String_.GetDigest()
 	case *v1.Attestation_Material_ContainerImage_:
 		o.Value = m.ContainerImage.GetName()
 		o.Hash = m.ContainerImage.GetDigest()

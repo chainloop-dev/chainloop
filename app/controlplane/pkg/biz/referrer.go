@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -280,12 +280,15 @@ func extractReferrers(att *dsse.Envelope, repo ReferrerRepo) ([]*Referrer, error
 	attestationReferrer.Annotations = predicate.GetAnnotations()
 	attestationReferrer.Metadata = map[string]string{
 		// workflow name, team and project
-		"name":            predicate.GetMetadata().Name,
-		"team":            predicate.GetMetadata().Team,
-		"project":         predicate.GetMetadata().Project,
-		"organization":    predicate.GetMetadata().Organization,
-		"contractName":    predicate.GetMetadata().ContractName,
-		"contractVersion": predicate.GetMetadata().ContractVersion,
+		"name":                     predicate.GetMetadata().Name,
+		"team":                     predicate.GetMetadata().Team,
+		"project":                  predicate.GetMetadata().Project,
+		"hasPolicyViolations":      fmt.Sprintf("%t", predicate.HasPolicyViolations()),
+		"projectVersion":           predicate.GetMetadata().ProjectVersion,
+		"projectVersionPrerelease": fmt.Sprintf("%t", predicate.GetMetadata().ProjectVersionPrerelease),
+		"organization":             predicate.GetMetadata().Organization,
+		"contractName":             predicate.GetMetadata().ContractName,
+		"contractVersion":          predicate.GetMetadata().ContractVersion,
 	}
 
 	// Create new referrers for each material

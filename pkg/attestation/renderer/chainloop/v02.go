@@ -42,29 +42,38 @@ type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
-	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
 	// Whether the attestation has policy violations
-	PolicyHasViolations bool `json:"policy_has_violations"`
+	PolicyHasViolations bool `json:"policyHasViolations"`
 	// Whether we want to block the attestation on policy violations
-	PolicyBlockOnViolation bool `json:"policy_block_on_violation"`
+	PolicyCheckBlockingStrategy PolicyViolationBlockingStrategy `json:"policyCheckBlockingStrategy"`
+	// Whether the policy check was bypassed
+	PolicyBlockBypassEnabled bool `json:"policyBlockBypassEnabled"`
 	// Whether the attestation was blocked due to policy violations
-	PolicyAttBlocked bool `json:"policy_attestation_blocked,omitempty"`
+	PolicyAttBlocked bool `json:"policyAttBlocked"`
 }
+
+type PolicyViolationBlockingStrategy string
+
+const (
+	PolicyViolationBlockingStrategyEnforced PolicyViolationBlockingStrategy = "ENFORCED"
+	PolicyViolationBlockingStrategyAdvisory PolicyViolationBlockingStrategy = "ADVISORY"
+)
 
 type PolicyEvaluation struct {
 	Name            string                     `json:"name"`
-	MaterialName    string                     `json:"material_name,omitempty"`
+	MaterialName    string                     `json:"materialName,omitempty"`
 	Body            string                     `json:"body,omitempty"`
 	Sources         []string                   `json:"sources,omitempty"`
-	PolicyReference *intoto.ResourceDescriptor `json:"policy_reference,omitempty"`
+	PolicyReference *intoto.ResourceDescriptor `json:"policyReference,omitempty"`
 	Description     string                     `json:"description,omitempty"`
 	Annotations     map[string]string          `json:"annotations,omitempty"`
 	Violations      []*PolicyViolation         `json:"violations,omitempty"`
 	With            map[string]string          `json:"with,omitempty"`
 	Type            string                     `json:"type"`
 	Skipped         bool                       `json:"skipped"`
-	SkipReasons     []string                   `json:"skip_reasons,omitempty"`
-	GroupReference  *intoto.ResourceDescriptor `json:"group_reference,omitempty"`
+	SkipReasons     []string                   `json:"skipReasons,omitempty"`
+	GroupReference  *intoto.ResourceDescriptor `json:"groupReference,omitempty"`
 	Requirements    []string                   `json:"requirements,omitempty"`
 }
 
@@ -198,15 +207,19 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
 
+	policyCheckBlockingStrategy := PolicyViolationBlockingStrategyAdvisory
+	if r.att.GetBlockOnPolicyViolation() {
+		policyCheckBlockingStrategy = PolicyViolationBlockingStrategyEnforced
+	}
+
 	p := ProvenancePredicateV02{
-		ProvenancePredicateCommon: predicateCommon(r.builder, r.att),
-		Materials:                 normalizedMaterials,
-		PolicyEvaluations:         policies,
-		PolicyHasViolations:       hasViolations,
-		PolicyBlockOnViolation:    r.att.GetBlockOnPolicyViolation(),
-		// For now we assume that we are blocking if the enforcement is there and there are some violations
-		// in the future this value might be false if we offer some manual overrides
-		PolicyAttBlocked: hasViolations && r.att.GetBlockOnPolicyViolation(),
+		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),
+		Materials:                   normalizedMaterials,
+		PolicyEvaluations:           policies,
+		PolicyHasViolations:         hasViolations,
+		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
+		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
+		PolicyAttBlocked:            hasViolations && r.att.GetBlockOnPolicyViolation() && !r.att.GetBypassPolicyCheck(),
 	}
 
 	// transform to structpb.Struct in a two steps process
@@ -362,6 +375,10 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
 	return p.PolicyEvaluations
+}
+
+func (p *ProvenancePredicateV02) HasPolicyViolations() bool {
+	return p.PolicyHasViolations
 }
 
 // Translate a ResourceDescriptor to a NormalizedMaterial

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -71,6 +72,8 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, au
 }
 
 const RandomNameMaxTries = 10
+
+var reservedOrgNames = []string{"chainloop", "admin", "default"}
 
 type createOptions struct {
 	createInlineBackend bool
@@ -131,6 +134,13 @@ var errOrgName = errors.New("org names must only contain lowercase letters, numb
 func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
 	uc.logger.Infow("msg", "Creating organization", "name", name)
 
+	// Check if the name is in the list of protected names
+	for _, protected := range reservedOrgNames {
+		if name == protected {
+			return nil, NewErrValidation(fmt.Errorf("organization name '%s' is reserved and cannot be used", name))
+		}
+	}
+
 	if err := ValidateIsDNS1123(name); err != nil {
 		return nil, NewErrValidation(errOrgName)
 	}
@@ -164,6 +174,36 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool) (*Organization, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// Make sure that the organization exists and that the user is a member of it
+	membership, err := uc.membershipRepo.FindByOrgNameAndUser(ctx, orgName, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find memberships: %w", err)
+	} else if membership == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	orgUUID, err := uuid.Parse(membership.Org.ID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	// Perform the update
+	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
+}
+
 func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organization, error) {
 	orgUUID, err := uuid.Parse(id)
 	if err != nil {
@@ -171,6 +211,17 @@ func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organi
 	}
 
 	org, err := uc.orgRepo.FindByID(ctx, orgUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find organization: %w", err)
+	} else if org == nil {
+		return nil, NewErrNotFound("organization")
+	}
+
+	return org, nil
+}
+
+func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Organization, error) {
+	org, err := uc.orgRepo.FindByName(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find organization: %w", err)
 	} else if org == nil {

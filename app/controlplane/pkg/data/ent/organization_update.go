@@ -36,6 +36,20 @@ func (ou *OrganizationUpdate) Where(ps ...predicate.Organization) *OrganizationU
 	return ou
 }
 
+// SetName sets the "name" field.
+func (ou *OrganizationUpdate) SetName(s string) *OrganizationUpdate {
+	ou.mutation.SetName(s)
+	return ou
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableName(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetName(*s)
+	}
+	return ou
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (ou *OrganizationUpdate) SetBlockOnPolicyViolation(b bool) *OrganizationUpdate {
 	ou.mutation.SetBlockOnPolicyViolation(b)
@@ -348,6 +362,9 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ou.mutation.Name(); ok {
+		_spec.SetField(organization.FieldName, field.TypeString, value)
 	}
 	if value, ok := ou.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
@@ -687,6 +704,20 @@ type OrganizationUpdateOne struct {
 	hooks     []Hook
 	mutation  *OrganizationMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetName sets the "name" field.
+func (ouo *OrganizationUpdateOne) SetName(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetName(s)
+	return ouo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableName(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetName(*s)
+	}
+	return ouo
 }
 
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
@@ -1031,6 +1062,9 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ouo.mutation.Name(); ok {
+		_spec.SetField(organization.FieldName, field.TypeString, value)
 	}
 	if value, ok := ouo.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
