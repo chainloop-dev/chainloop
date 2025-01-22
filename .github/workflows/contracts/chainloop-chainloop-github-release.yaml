@@ -3,6 +3,11 @@ schemaVersion: v1
 policies:
   attestation:
     - ref: source-commit
+      with:
+        check_signature: yes
+    - ref: containers-with-sbom
+  materials:
+    - ref: artifact-signed
 policyGroups:
   - ref: sbom-quality
     with:

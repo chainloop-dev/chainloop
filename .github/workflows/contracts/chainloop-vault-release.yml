@@ -1,11 +1,12 @@
 # Contract for the chainloop-vault-build-and-package workflow
 schemaVersion: v1
-runner:
-  type: GITHUB_ACTION
-materials:
-  - type: ARTIFACT
-    name: goreleaser-output
-    output: true
 policies:
   attestation:
     - ref: source-commit
+      with:
+        check_signature: yes
+    - ref: containers-with-sbom
+  materials:
+    - ref: artifact-signed
+runner:
+  type: GITHUB_ACTION
