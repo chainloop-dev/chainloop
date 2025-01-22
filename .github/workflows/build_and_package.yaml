@@ -46,12 +46,19 @@ jobs:
       pull-requests: write
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-      GH_TOKEN: ${{ github.token }}
+      ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
+    outputs:
+      matrix: ${{ steps.attest_goreleaser.outputs.matrix }}
+
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@ef6a6b364bbad08abd36a5f8af60b595d12702f8 # main
         with:
           cosign-release: "v2.2.3"
+
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -87,14 +94,25 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_ENDPOINT: ${{ secrets.POSTHOG_ENDPOINT }}
 
-      - name: Finish and Record Attestation
-        if: ${{ success() }}
+      - name: Attest GoReleaser outputs
+        id: attest_goreleaser
         run: |
-          chainloop attestation status --full
-          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+          # goreleaser output resides in dist/artifacts.json
+          # Attest all built containers and manifests
+          images=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Docker Image" or .type=="Docker Manifest") | .path')
+          for entry in $images; do  
+            chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+          done
+          
+          # Attest CLI archives
+          archives=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Archive" or .type=="Signature") | .path')
+          for entry in $archives; do
+            chainloop attestation add --value $entry --attestation-id ${{ env.ATTESTATION_ID }}
+          done
+          
+          artifacts="$images\n$archives"
+          artifacts_json=$(printf '%s' "${artifacts[@]}" | jq -R . | jq -s --compact-output .)
+          echo "matrix=$artifacts_json" >> $GITHUB_OUTPUT
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
@@ -126,51 +144,8 @@ jobs:
       ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
     strategy:
       matrix:
-        bundle:
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane:latest
-            sbomName: sbom-controlplane-latest
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}
-            sbomName: sbom-controlplane-${{ github.ref_name }}
-            artifactName: controlplane-latest.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}-amd64
-            sbomName: sbom-controlplane-amd64
-            artifactName: controlplane-amd64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane:${{ github.ref_name }}-arm64
-            sbomName: sbom-controlplane-arm64
-            artifactName: controlplane-arm64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:latest
-            sbomName: sbom-controlplane-migrations-latest
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:${{ github.ref_name }}
-            sbomName: sbom-controlplane-migrations-${{ github.ref_name }}
-            artifactName: controlplane-migrations-latest.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:${{ github.ref_name }}-amd64
-            sbomName: sbom-controlplane-migrations-amd64
-            artifactName: controlplane-migrations-amd64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/control-plane-migrations:${{ github.ref_name }}-arm64
-            sbomName: sbom-controlplane-migrations-arm64
-            artifactName: controlplane-migrations-arm64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:latest
-            sbomName: sbom-cas-latest
-          - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}
-            sbomName: sbom-cas-${{ github.ref_name }}
-            artifactName: cas-latest.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}-amd64
-            sbomName: sbom-cas-amd64
-            artifactName: cas-amd64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/artifact-cas:${{ github.ref_name }}-arm64
-            sbomName: sbom-cas-arm64
-            artifactName: cas-arm64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/cli:latest
-            sbomName: sbom-cli-latest
-          - image: ghcr.io/chainloop-dev/chainloop/cli:${{ github.ref_name }}
-            sbomName: sbom-cli-${{ github.ref_name }}
-            artifactName: cli-latest.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/cli:${{ github.ref_name }}-amd64
-            sbomName: sbom-cli-amd64
-            artifactName: cli-amd64.cyclonedx.json
-          - image: ghcr.io/chainloop-dev/chainloop/cli:${{ github.ref_name }}-arm64
-            sbomName: sbom-cli-arm64
-            artifactName: cli-arm64.cyclonedx.json
+        artifact: ${{ fronJson(needs.release.outputs.matrix) }}
+
     steps:
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
@@ -187,15 +162,13 @@ jobs:
 
       - uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75 # v0.17.9
         with:
-          image: ${{ matrix.bundle.image }}
+          image: ${{ matrix.artifact }}
           format: cyclonedx-json
-          artifact-name: ${{ matrix.bundle.artifactName }}
           output-file: /tmp/sbom.cyclonedx.json
 
-      - name: Add SBOM and Image to attestation
+      - name: Add SBOM to attestation
         run: |
-          chainloop attestation add --name ${{ matrix.bundle.sbomName }} --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
-          chainloop attestation add --value ${{ matrix.bundle.image }} --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+          chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
 
   finish_attestation:
     name: Finish Attestation
