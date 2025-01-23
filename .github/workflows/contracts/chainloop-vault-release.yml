@@ -1,11 +1,22 @@
 # Contract for the chainloop-vault-build-and-package workflow
 schemaVersion: v1
-runner:
-  type: GITHUB_ACTION
-materials:
-  - type: ARTIFACT
-    name: goreleaser-output
-    output: true
 policies:
   attestation:
     - ref: source-commit
+      with:
+        check_signature: yes
+    - ref: containers-with-sbom
+  materials:
+    - ref: artifact-signed
+    - ref: sbom-banned-licenses
+      with:
+        licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+    - ref: sbom-banned-components
+      with:
+        components: log4j@2.14.1
+    - ref: sbom-ntia
+    - ref: sbom-with-licenses
+    - ref: sbom-freshness
+
+runner:
+  type: GITHUB_ACTION
