@@ -110,8 +110,8 @@ jobs:
             chainloop attestation add --value $entry --attestation-id ${{ env.ATTESTATION_ID }}
           done
           
-          artifacts="$images\n$archives"
-          artifacts_json=$(printf '%s' "${artifacts[@]}" | jq -R . | jq -s --compact-output .)
+          # convert them to json and join arrays
+          artifacts_json=$(jq -c -n --argjson arr1 "$(echo "$images" | jq -R -s -c 'split("\n") | map(select(length > 0))')" --argjson arr2 "$(echo "$archives" | jq -R -s -c 'split("\n") | map(select(length > 0))')" '$arr1 + $arr2')
           echo "matrix=$artifacts_json" >> $GITHUB_OUTPUT
 
       - name: Bump Chart and Dagger Version
