@@ -133,6 +133,8 @@ jobs:
     needs:
       - init_attestation
       - release
+    env:
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
     steps:
       - name: Install Chainloop
         run: |
