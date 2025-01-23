@@ -47,8 +47,6 @@ jobs:
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
-    outputs:
-      matrix: ${{ steps.attest_goreleaser.outputs.matrix }}
 
     steps:
       - name: Install Cosign
@@ -80,6 +78,11 @@ jobs:
         id: qemu
         uses: docker/setup-qemu-action@v3
 
+      - name: Install Syft
+        run: |
+          # Install Syft
+          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
+
       - name: Run GoReleaser
         id: release
         uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # v3.2.0
@@ -99,14 +102,20 @@ jobs:
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
-          images=$(cat dist/artifacts.json | jq -r '[.[] | select(.type=="Docker Image" or .type=="Docker Manifest") | {"type": "image", "path": .path}]')
+          images=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Docker Image" or .type=="Docker Manifest") | .path')
+          for entry in $images; do  
+            syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
+            chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+            chainloop attestation add --value /tmp/sbom.cyclonedx.json
+          done
           
           # Attest CLI archives
-          archives=$(cat dist/artifacts.json | jq -r '[.[] | select(.type=="Archive") | {"type": "archive", "path": .path}]')
-          
-          # convert them to json and join arrays
-          artifacts_json=$(jq -c -s 'add' <(echo "$images") <(echo "$archives"))
-          echo "matrix=$artifacts_json" >> $GITHUB_OUTPUT
+          archives=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Archive") | .path')
+          for entry in $archives; do
+            syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
+            chainloop attestation add --value $entry --attestation-id ${{ env.ATTESTATION_ID }}
+            chainloop attestation add --value /tmp/sbom.cyclonedx.json
+          done
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
@@ -126,57 +135,12 @@ jobs:
             automated
             helm
 
-  generate_sboms_and_attest:
-    name: ${{ matrix.artifact.path }}
-    permissions:
-      packages: read
-      contents: read
-    needs: release
-    runs-on: ubuntu-latest
-    env:
-      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-      ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
-    strategy:
-      matrix:
-        artifact: ${{ fromJson(needs.release.outputs.matrix) }}
-
-    steps:
-      - name: Docker login to Github Packages
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install Chainloop
-        run: |
-          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75 # v0.17.9
-        if: ${{ matrix.artifact.type == 'image' }}
-        with:
-          image: ${{ matrix.artifact.path }}
-          format: cyclonedx-json
-          output-file: /tmp/sbom.cyclonedx.json
-
-      - uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75 # v0.17.9
-        if: ${{ matrix.artifact.type == 'archive' }}
-        with:
-          file: ${{ matrix.artifact.path }}
-          format: cyclonedx-json
-          output-file: /tmp/sbom.cyclonedx.json
-
-      - name: Add Artifact and SBOM to attestation
-        run: |
-          chainloop attestation add --value ${{ matrix.artifact.path }} --attestation-id ${{ env.ATTESTATION_ID }}
-          chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
-
   finish_attestation:
     name: Finish Attestation
     runs-on: ubuntu-latest
-    needs: generate_sboms_and_attest
+    needs:
+      - init_attestation
+      - release
     steps:
       - name: Install Chainloop
         run: |
