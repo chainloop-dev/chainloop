@@ -133,7 +133,7 @@ jobs:
             helm
 
   generate_sboms_and_attest:
-    name: ${{ matrix.bundle.image }}
+    name: ${{ matrix.artifact }}
     permissions:
       packages: read
       contents: read
@@ -144,7 +144,7 @@ jobs:
       ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
     strategy:
       matrix:
-        artifact: ${{ fronJson(needs.release.outputs.matrix) }}
+        artifact: ${{ fromJson(needs.release.outputs.matrix) }}
 
     steps:
       - name: Docker login to Github Packages
