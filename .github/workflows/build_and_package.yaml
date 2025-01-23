@@ -105,7 +105,7 @@ jobs:
           done
           
           # Attest CLI archives
-          archives=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Archive" or .type=="Signature") | .path')
+          archives=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Archive") | .path')
           for entry in $archives; do
             chainloop attestation add --value $entry --attestation-id ${{ env.ATTESTATION_ID }}
           done
