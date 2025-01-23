@@ -103,10 +103,13 @@ jobs:
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
           images=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Docker Image" or .type=="Docker Manifest") | .path')
-          for entry in $images; do  
-            syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
-            chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-            chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+          for entry in $images; do
+            # exclude latest tag
+            if [[ $entry != *latest ]]; then
+              syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
+              chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+            fi
           done
 
       - name: Bump Chart and Dagger Version
