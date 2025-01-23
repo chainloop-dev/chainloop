@@ -76,4 +76,6 @@ jobs:
 
       - name: Test top level modules
         if: ${{ matrix.app == 'main-module' }}
-        run: make test
+        run: |
+          go test ./pkg/...
+          go test ./internal/...
