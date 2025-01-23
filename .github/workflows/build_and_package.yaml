@@ -106,7 +106,7 @@ jobs:
           for entry in $images; do  
             syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
             chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-            chainloop attestation add --value /tmp/sbom.cyclonedx.json
+            chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
           done
           
           # Attest CLI archives
@@ -114,7 +114,7 @@ jobs:
           for entry in $archives; do
             syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
             chainloop attestation add --value $entry --attestation-id ${{ env.ATTESTATION_ID }}
-            chainloop attestation add --value /tmp/sbom.cyclonedx.json
+            chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
           done
 
       - name: Bump Chart and Dagger Version
