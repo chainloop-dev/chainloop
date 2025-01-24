@@ -43,6 +43,9 @@ type ProvenancePredicateV02 struct {
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
+	// Used to read policy evaluations from old attestations
+	PolicyEvaluationsFallback map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+
 	// Whether the attestation has policy violations
 	PolicyHasViolations bool `json:"policyHasViolations"`
 	// Whether we want to block the attestation on policy violations
@@ -374,7 +377,11 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
-	return p.PolicyEvaluations
+	evs := p.PolicyEvaluations
+	if len(evs) == 0 && len(p.PolicyEvaluationsFallback) > 0 {
+		evs = p.PolicyEvaluationsFallback
+	}
+	return evs
 }
 
 func (p *ProvenancePredicateV02) HasPolicyViolations() bool {
