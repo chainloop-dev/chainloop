@@ -64,20 +64,40 @@ const (
 )
 
 type PolicyEvaluation struct {
-	Name            string                     `json:"name"`
-	MaterialName    string                     `json:"materialName,omitempty"`
-	Body            string                     `json:"body,omitempty"`
-	Sources         []string                   `json:"sources,omitempty"`
-	PolicyReference *intoto.ResourceDescriptor `json:"policyReference,omitempty"`
-	Description     string                     `json:"description,omitempty"`
-	Annotations     map[string]string          `json:"annotations,omitempty"`
-	Violations      []*PolicyViolation         `json:"violations,omitempty"`
-	With            map[string]string          `json:"with,omitempty"`
-	Type            string                     `json:"type"`
-	Skipped         bool                       `json:"skipped"`
-	SkipReasons     []string                   `json:"skipReasons,omitempty"`
-	GroupReference  *intoto.ResourceDescriptor `json:"groupReference,omitempty"`
-	Requirements    []string                   `json:"requirements,omitempty"`
+	Name         string `json:"name"`
+	MaterialName string `json:"materialName,omitempty"`
+	// Needed to read old attestations
+	MaterialNameFallback string                     `json:"material_name,omitempty"`
+	Body                 string                     `json:"body,omitempty"`
+	Sources              []string                   `json:"sources,omitempty"`
+	PolicyReference      *intoto.ResourceDescriptor `json:"policyReference,omitempty"`
+	// Support old attestations
+	PolicyReferenceFallback *intoto.ResourceDescriptor `json:"policy_reference,omitempty"`
+	Description             string                     `json:"description,omitempty"`
+	Annotations             map[string]string          `json:"annotations,omitempty"`
+	Violations              []*PolicyViolation         `json:"violations,omitempty"`
+	With                    map[string]string          `json:"with,omitempty"`
+	Type                    string                     `json:"type"`
+	Skipped                 bool                       `json:"skipped"`
+	SkipReasons             []string                   `json:"skipReasons,omitempty"`
+	GroupReference          *intoto.ResourceDescriptor `json:"groupReference,omitempty"`
+	Requirements            []string                   `json:"requirements,omitempty"`
+}
+
+func (e *PolicyEvaluation) GetPolicyReference() *intoto.ResourceDescriptor {
+	r := e.PolicyReference
+	if r == nil {
+		r = e.PolicyReferenceFallback
+	}
+	return r
+}
+
+func (e *PolicyEvaluation) GetMaterialName() string {
+	n := e.MaterialName
+	if n == "" {
+		n = e.MaterialNameFallback
+	}
+	return n
 }
 
 type PolicyViolation struct {
