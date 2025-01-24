@@ -43,6 +43,9 @@ type ProvenancePredicateV02 struct {
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Map materials and policies
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
+	// Used to read policy evaluations from old attestations
+	PolicyEvaluationsFallback map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+
 	// Whether the attestation has policy violations
 	PolicyHasViolations bool `json:"policyHasViolations"`
 	// Whether we want to block the attestation on policy violations
@@ -61,20 +64,40 @@ const (
 )
 
 type PolicyEvaluation struct {
-	Name            string                     `json:"name"`
-	MaterialName    string                     `json:"materialName,omitempty"`
-	Body            string                     `json:"body,omitempty"`
-	Sources         []string                   `json:"sources,omitempty"`
-	PolicyReference *intoto.ResourceDescriptor `json:"policyReference,omitempty"`
-	Description     string                     `json:"description,omitempty"`
-	Annotations     map[string]string          `json:"annotations,omitempty"`
-	Violations      []*PolicyViolation         `json:"violations,omitempty"`
-	With            map[string]string          `json:"with,omitempty"`
-	Type            string                     `json:"type"`
-	Skipped         bool                       `json:"skipped"`
-	SkipReasons     []string                   `json:"skipReasons,omitempty"`
-	GroupReference  *intoto.ResourceDescriptor `json:"groupReference,omitempty"`
-	Requirements    []string                   `json:"requirements,omitempty"`
+	Name         string `json:"name"`
+	MaterialName string `json:"materialName,omitempty"`
+	// Needed to read old attestations
+	MaterialNameFallback string                     `json:"material_name,omitempty"`
+	Body                 string                     `json:"body,omitempty"`
+	Sources              []string                   `json:"sources,omitempty"`
+	PolicyReference      *intoto.ResourceDescriptor `json:"policyReference,omitempty"`
+	// Support old attestations
+	PolicyReferenceFallback *intoto.ResourceDescriptor `json:"policy_reference,omitempty"`
+	Description             string                     `json:"description,omitempty"`
+	Annotations             map[string]string          `json:"annotations,omitempty"`
+	Violations              []*PolicyViolation         `json:"violations,omitempty"`
+	With                    map[string]string          `json:"with,omitempty"`
+	Type                    string                     `json:"type"`
+	Skipped                 bool                       `json:"skipped"`
+	SkipReasons             []string                   `json:"skipReasons,omitempty"`
+	GroupReference          *intoto.ResourceDescriptor `json:"groupReference,omitempty"`
+	Requirements            []string                   `json:"requirements,omitempty"`
+}
+
+func (e *PolicyEvaluation) GetPolicyReference() *intoto.ResourceDescriptor {
+	r := e.PolicyReference
+	if r == nil {
+		r = e.PolicyReferenceFallback
+	}
+	return r
+}
+
+func (e *PolicyEvaluation) GetMaterialName() string {
+	n := e.MaterialName
+	if n == "" {
+		n = e.MaterialNameFallback
+	}
+	return n
 }
 
 type PolicyViolation struct {
@@ -374,7 +397,11 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
-	return p.PolicyEvaluations
+	evs := p.PolicyEvaluations
+	if len(evs) == 0 && len(p.PolicyEvaluationsFallback) > 0 {
+		evs = p.PolicyEvaluationsFallback
+	}
+	return evs
 }
 
 func (p *ProvenancePredicateV02) HasPolicyViolations() bool {

@@ -274,3 +274,23 @@ func TestNormalizeMaterial(t *testing.T) {
 		})
 	}
 }
+
+func TestPolicyEvaluationsField(t *testing.T) {
+	raw, err := os.ReadFile("testdata/attestation-pe-snake.json")
+	require.NoError(t, err)
+
+	var st *intoto.Statement
+	err = json.Unmarshal(raw, &st)
+	require.NoError(t, err)
+
+	var predicate ProvenancePredicateV02
+	err = extractPredicate(st, &predicate)
+	require.NoError(t, err)
+
+	assert.Len(t, predicate.GetPolicyEvaluations(), 1)
+	evs := predicate.GetPolicyEvaluations()["sbom"]
+	assert.Len(t, evs, 1)
+	ev := evs[0]
+	assert.Equal(t, "sbom", ev.GetMaterialName())
+	assert.NotNil(t, ev.GetPolicyReference())
+}
