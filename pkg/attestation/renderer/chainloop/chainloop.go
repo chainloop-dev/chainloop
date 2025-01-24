@@ -199,6 +199,21 @@ func extractPredicate(statement *intoto.Statement, v *ProvenancePredicateV02) er
 		return fmt.Errorf("un-marshaling predicate: %w", err)
 	}
 
+	// Fix compatibility with old versions
+	if v.PolicyEvaluationsFallback != nil {
+		v.PolicyEvaluations = v.PolicyEvaluationsFallback
+	}
+	for _, v := range v.PolicyEvaluations {
+		for _, ev := range v {
+			if ev.MaterialNameFallback != "" {
+				ev.MaterialName = ev.MaterialNameFallback
+			}
+			if ev.PolicyReferenceFallback != nil {
+				ev.PolicyReference = ev.PolicyReferenceFallback
+			}
+		}
+	}
+
 	return nil
 }
 
