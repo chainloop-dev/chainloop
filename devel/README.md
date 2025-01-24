@@ -157,7 +157,7 @@ chainloop config save --insecure --control-plane localhost:9000 --artifact-cas l
 A new user and token has been created for you during bootstrap. An authentication token is available in the service logs (note that this is deactivated in production mode).
 Look for `DEVELOPMENT USER TOKEN` message in the container logs:
 ```
-> docker compose -f compose.labs.yaml logs control-plane | grep -A 1  "DEVELOPMENT USER TOKEN"
+> docker compose -f compose.labs.yml logs control-plane | grep -A 1  "DEVELOPMENT USER TOKEN"
 control-plane-1  | {"level":"info","ts":1724772518.38039,"component":"service","msg":"******************* DEVELOPMENT USER TOKEN *******************"}
 control-plane-1  | {"level":"info","ts":1724772518.3804584,"component":"service","msg":"Use chainloop 'auth login --skip-browser' and paste this token to start a headless session: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNzc4ZmExMzAtNjUzOS00ZTVmLThlYmYtMGQyZTkxYjRlNmM5IiwiaXNzIjoiY3AuY2hhaW5sb29wIiwiYXVkIjpbInVzZXItYXV0aC5jaGFpbmxvb3AiXSwiZXhwIjoxNzI3MzY0NTE4fQ.nyQtlR3bpc0VIna_UIKlXcx62gwG1dbuhkVm22fEXv4"}
 ```
