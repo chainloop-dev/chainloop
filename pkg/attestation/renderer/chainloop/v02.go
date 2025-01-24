@@ -84,22 +84,6 @@ type PolicyEvaluation struct {
 	Requirements            []string                   `json:"requirements,omitempty"`
 }
 
-func (e *PolicyEvaluation) GetPolicyReference() *intoto.ResourceDescriptor {
-	r := e.PolicyReference
-	if r == nil {
-		r = e.PolicyReferenceFallback
-	}
-	return r
-}
-
-func (e *PolicyEvaluation) GetMaterialName() string {
-	n := e.MaterialName
-	if n == "" {
-		n = e.MaterialNameFallback
-	}
-	return n
-}
-
 type PolicyViolation struct {
 	Subject string `json:"subject"`
 	Message string `json:"message"`
@@ -397,11 +381,7 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
-	evs := p.PolicyEvaluations
-	if len(evs) == 0 && len(p.PolicyEvaluationsFallback) > 0 {
-		evs = p.PolicyEvaluationsFallback
-	}
-	return evs
+	return p.PolicyEvaluations
 }
 
 func (p *ProvenancePredicateV02) HasPolicyViolations() bool {

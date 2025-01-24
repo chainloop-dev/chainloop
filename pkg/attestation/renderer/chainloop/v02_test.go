@@ -291,6 +291,6 @@ func TestPolicyEvaluationsField(t *testing.T) {
 	evs := predicate.GetPolicyEvaluations()["sbom"]
 	assert.Len(t, evs, 1)
 	ev := evs[0]
-	assert.Equal(t, "sbom", ev.GetMaterialName())
-	assert.NotNil(t, ev.GetPolicyReference())
+	assert.Equal(t, "sbom", ev.MaterialName)
+	assert.NotNil(t, ev.PolicyReference)
 }
