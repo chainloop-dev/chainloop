@@ -9,6 +9,7 @@
     },
     "^(projectVersion)$": {
       "description": "by project version",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     },
     "^(workflowName)$": {
@@ -27,6 +28,7 @@
     },
     "project_version": {
       "description": "by project version",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     },
     "status": {

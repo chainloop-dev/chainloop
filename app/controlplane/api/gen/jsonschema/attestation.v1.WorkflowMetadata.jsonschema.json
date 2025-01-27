@@ -5,6 +5,7 @@
   "patternProperties": {
     "^(contract_name)$": {
       "description": "contract name (contract version is \"schema_revision\")",
+      "minLength": 1,
       "type": "string"
     },
     "^(project_version)$": {
@@ -12,9 +13,11 @@
       "type": "string"
     },
     "^(schema_revision)$": {
+      "minLength": 1,
       "type": "string"
     },
     "^(workflow_id)$": {
+      "minLength": 1,
       "type": "string"
     },
     "^(workflow_run_id)$": {
@@ -24,13 +27,16 @@
   "properties": {
     "contractName": {
       "description": "contract name (contract version is \"schema_revision\")",
+      "minLength": 1,
       "type": "string"
     },
     "name": {
+      "minLength": 1,
       "type": "string"
     },
     "organization": {
       "description": "organization name",
+      "minLength": 1,
       "type": "string"
     },
     "project": {
@@ -41,6 +47,7 @@
       "type": "string"
     },
     "schemaRevision": {
+      "minLength": 1,
       "type": "string"
     },
     "team": {
@@ -51,6 +58,7 @@
       "description": "project version"
     },
     "workflowId": {
+      "minLength": 1,
       "type": "string"
     },
     "workflowRunId": {

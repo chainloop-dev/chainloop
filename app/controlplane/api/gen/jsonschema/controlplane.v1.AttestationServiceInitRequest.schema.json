@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(contractRevision)$": {
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
@@ -12,6 +12,7 @@
       "type": "string"
     },
     "^(projectName)$": {
+      "minLength": 1,
       "type": "string"
     },
     "^(projectVersion)$": {
@@ -19,12 +20,13 @@
       "type": "string"
     },
     "^(workflowName)$": {
+      "minLength": 1,
       "type": "string"
     }
   },
   "properties": {
     "contract_revision": {
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
@@ -32,6 +34,7 @@
       "type": "string"
     },
     "project_name": {
+      "minLength": 1,
       "type": "string"
     },
     "project_version": {
@@ -61,6 +64,7 @@
       ]
     },
     "workflow_name": {
+      "minLength": 1,
       "type": "string"
     }
   },

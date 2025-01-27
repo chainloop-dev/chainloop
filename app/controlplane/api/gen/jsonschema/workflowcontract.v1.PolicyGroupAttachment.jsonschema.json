@@ -6,6 +6,7 @@
   "properties": {
     "ref": {
       "description": "Group reference, it might be an URL or a provider reference",
+      "minLength": 1,
       "type": "string"
     },
     "with": {

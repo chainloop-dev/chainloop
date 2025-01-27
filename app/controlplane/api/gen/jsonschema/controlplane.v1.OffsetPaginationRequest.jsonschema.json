@@ -6,8 +6,8 @@
   "patternProperties": {
     "^(page_size)$": {
       "description": "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.",
-      "exclusiveMaximum": 2147483648,
-      "minimum": -2147483648,
+      "exclusiveMinimum": 0,
+      "maximum": 100,
       "type": "integer"
     }
   },
@@ -15,13 +15,13 @@
     "page": {
       "description": "The (zero-based) offset of the first item returned in the collection.",
       "exclusiveMaximum": 2147483648,
-      "minimum": -2147483648,
+      "minimum": 1,
       "type": "integer"
     },
     "pageSize": {
       "description": "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.",
-      "exclusiveMaximum": 2147483648,
-      "minimum": -2147483648,
+      "exclusiveMinimum": 0,
+      "maximum": 100,
       "type": "integer"
     }
   },

@@ -63,6 +63,7 @@
   "properties": {
     "annotations": {
       "additionalProperties": {
+        "minLength": 1,
         "type": "string"
       },
       "description": "Annotations for the attestation",
@@ -144,6 +145,10 @@
       "$ref": "attestation.v1.WorkflowMetadata.jsonschema.json"
     }
   },
+  "required": [
+    "initialized_at",
+    "workflow"
+  ],
   "title": "Attestation",
   "type": "object"
 }

@@ -5,6 +5,7 @@
   "patternProperties": {
     "^(pluginId)$": {
       "description": "Kind of integration to register\n This should match the ID of an existing plugin",
+      "minLength": 1,
       "type": "string"
     }
   },
@@ -19,13 +20,18 @@
     },
     "name": {
       "description": "unique, DNS-like name for the registration",
+      "minLength": 1,
       "type": "string"
     },
     "plugin_id": {
       "description": "Kind of integration to register\n This should match the ID of an existing plugin",
+      "minLength": 1,
       "type": "string"
     }
   },
+  "required": [
+    "config"
+  ],
   "title": "Integrations Service Register Request",
   "type": "object"
 }

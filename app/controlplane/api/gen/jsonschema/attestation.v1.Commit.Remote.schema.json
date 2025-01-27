@@ -4,9 +4,11 @@
   "additionalProperties": false,
   "properties": {
     "name": {
+      "minLength": 1,
       "type": "string"
     },
     "url": {
+      "minLength": 1,
       "type": "string"
     }
   },

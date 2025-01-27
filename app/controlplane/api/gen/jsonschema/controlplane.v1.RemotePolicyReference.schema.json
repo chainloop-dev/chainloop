@@ -2,8 +2,16 @@
   "$id": "controlplane.v1.RemotePolicyReference.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(orgName)$": {
+      "type": "string"
+    }
+  },
   "properties": {
     "digest": {
+      "type": "string"
+    },
+    "org_name": {
       "type": "string"
     },
     "url": {

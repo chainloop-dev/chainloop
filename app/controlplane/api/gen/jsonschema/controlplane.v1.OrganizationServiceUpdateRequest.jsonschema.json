@@ -14,6 +14,7 @@
       "type": "boolean"
     },
     "name": {
+      "minLength": 1,
       "type": "string"
     }
   },

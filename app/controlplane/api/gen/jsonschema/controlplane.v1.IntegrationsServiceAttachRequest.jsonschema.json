@@ -9,6 +9,7 @@
     },
     "^(project_name)$": {
       "description": "project name",
+      "minLength": 1,
       "type": "string"
     },
     "^(workflow_name)$": {
@@ -27,6 +28,7 @@
     },
     "projectName": {
       "description": "project name",
+      "minLength": 1,
       "type": "string"
     },
     "workflowName": {
@@ -34,6 +36,9 @@
       "type": "string"
     }
   },
+  "required": [
+    "config"
+  ],
   "title": "Integrations Service Attach Request",
   "type": "object"
 }

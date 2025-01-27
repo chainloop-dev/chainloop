@@ -202,7 +202,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		return nil, nil, fmt.Errorf("parsing digest: %w", err)
 	}
 
-	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), providerRef.OrgName, h)
+	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), resp.Reference.OrgName, h)
 
 	// cache result
 	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}

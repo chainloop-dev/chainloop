@@ -5,8 +5,8 @@
   "patternProperties": {
     "^(numWorkflows)$": {
       "description": "top x number of runs to return",
-      "exclusiveMaximum": 2147483648,
-      "minimum": -2147483648,
+      "maximum": 20,
+      "minimum": 1,
       "type": "integer"
     },
     "^(timeWindow)$": {
@@ -33,8 +33,8 @@
   "properties": {
     "num_workflows": {
       "description": "top x number of runs to return",
-      "exclusiveMaximum": 2147483648,
-      "minimum": -2147483648,
+      "maximum": 20,
+      "minimum": 1,
       "type": "integer"
     },
     "time_window": {

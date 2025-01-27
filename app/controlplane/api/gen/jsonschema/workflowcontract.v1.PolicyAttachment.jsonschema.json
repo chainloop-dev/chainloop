@@ -14,11 +14,13 @@
     },
     "ref": {
       "description": "policy reference, it might be in URI format.",
+      "minLength": 1,
       "type": "string"
     },
     "requirements": {
       "description": "List of requirements this policy contributes to satisfy",
       "items": {
+        "pattern": "^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$",
         "type": "string"
       },
       "type": "array"

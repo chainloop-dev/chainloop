@@ -16,6 +16,7 @@
       "type": "boolean"
     },
     "version": {
+      "minLength": 1,
       "type": "string"
     }
   },

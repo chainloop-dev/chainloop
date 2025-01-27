@@ -17,16 +17,22 @@
     },
     "location": {
       "description": "Location, e.g. bucket name, OCI bucket name, ...",
+      "minLength": 1,
       "type": "string"
     },
     "name": {
+      "minLength": 1,
       "type": "string"
     },
     "provider": {
       "description": "Type of the backend, OCI, S3, ...",
+      "minLength": 1,
       "type": "string"
     }
   },
+  "required": [
+    "credentials"
+  ],
   "title": "CAS Backend Service Create Request",
   "type": "object"
 }

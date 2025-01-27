@@ -52,6 +52,7 @@ export interface AttestationServiceGetPolicyResponse {
 export interface RemotePolicyReference {
   url: string;
   digest: string;
+  orgName: string;
 }
 
 export interface AttestationServiceGetPolicyGroupRequest {
@@ -534,7 +535,7 @@ export const AttestationServiceGetPolicyResponse = {
 };
 
 function createBaseRemotePolicyReference(): RemotePolicyReference {
-  return { url: "", digest: "" };
+  return { url: "", digest: "", orgName: "" };
 }
 
 export const RemotePolicyReference = {
@@ -544,6 +545,9 @@ export const RemotePolicyReference = {
     }
     if (message.digest !== "") {
       writer.uint32(18).string(message.digest);
+    }
+    if (message.orgName !== "") {
+      writer.uint32(26).string(message.orgName);
     }
     return writer;
   },
@@ -569,6 +573,13 @@ export const RemotePolicyReference = {
 
           message.digest = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.orgName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -582,6 +593,7 @@ export const RemotePolicyReference = {
     return {
       url: isSet(object.url) ? String(object.url) : "",
       digest: isSet(object.digest) ? String(object.digest) : "",
+      orgName: isSet(object.orgName) ? String(object.orgName) : "",
     };
   },
 
@@ -589,6 +601,7 @@ export const RemotePolicyReference = {
     const obj: any = {};
     message.url !== undefined && (obj.url = message.url);
     message.digest !== undefined && (obj.digest = message.digest);
+    message.orgName !== undefined && (obj.orgName = message.orgName);
     return obj;
   },
 
@@ -600,6 +613,7 @@ export const RemotePolicyReference = {
     const message = createBaseRemotePolicyReference();
     message.url = object.url ?? "";
     message.digest = object.digest ?? "";
+    message.orgName = object.orgName ?? "";
     return message;
   },
 };

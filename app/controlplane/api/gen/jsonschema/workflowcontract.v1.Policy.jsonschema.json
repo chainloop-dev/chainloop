@@ -5,14 +5,23 @@
   "description": "Represents a policy to be applied to a material or attestation",
   "patternProperties": {
     "^(api_version)$": {
+      "enum": [
+        "workflowcontract.chainloop.dev/v1"
+      ],
       "type": "string"
     }
   },
   "properties": {
     "apiVersion": {
+      "enum": [
+        "workflowcontract.chainloop.dev/v1"
+      ],
       "type": "string"
     },
     "kind": {
+      "enum": [
+        "Policy"
+      ],
       "type": "string"
     },
     "metadata": {
@@ -22,6 +31,10 @@
       "$ref": "workflowcontract.v1.PolicySpec.jsonschema.json"
     }
   },
+  "required": [
+    "metadata",
+    "spec"
+  ],
   "title": "Policy",
   "type": "object"
 }

@@ -143,7 +143,7 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		return nil, nil, fmt.Errorf("parsing digest: %w", err)
 	}
 
-	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), providerRef.OrgName, h)
+	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), resp.Reference.OrgName, h)
 	// cache result
 	remoteGroupCache[ref] = &groupWithReference{group: resp.GetGroup(), reference: reference}
 	return resp.GetGroup(), reference, nil

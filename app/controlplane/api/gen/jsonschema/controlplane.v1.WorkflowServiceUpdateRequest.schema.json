@@ -8,6 +8,7 @@
     },
     "^(projectName)$": {
       "description": "\"optional\" allow us to detect if the value is explicitly set\n and not just the default value",
+      "minLength": 1,
       "type": "string"
     }
   },
@@ -23,6 +24,7 @@
     },
     "project_name": {
       "description": "\"optional\" allow us to detect if the value is explicitly set\n and not just the default value",
+      "minLength": 1,
       "type": "string"
     },
     "public": {

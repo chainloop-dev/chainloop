@@ -4,6 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(project_name)$": {
+      "minLength": 1,
       "type": "string"
     }
   },
@@ -12,6 +13,7 @@
       "type": "string"
     },
     "projectName": {
+      "minLength": 1,
       "type": "string"
     }
   },

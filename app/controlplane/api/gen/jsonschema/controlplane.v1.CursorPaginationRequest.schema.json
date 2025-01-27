@@ -8,8 +8,8 @@
     },
     "limit": {
       "description": "Limit pagination to 100",
-      "exclusiveMaximum": 2147483648,
-      "minimum": -2147483648,
+      "maximum": 100,
+      "minimum": 2,
       "type": "integer"
     }
   },

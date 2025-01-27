@@ -77,6 +77,7 @@ message AttestationServiceGetPolicyResponse {
 message RemotePolicyReference {
   string url = 1;
   string digest = 2;
+  string org_name = 3;
 }
 
 message AttestationServiceGetPolicyGroupRequest {

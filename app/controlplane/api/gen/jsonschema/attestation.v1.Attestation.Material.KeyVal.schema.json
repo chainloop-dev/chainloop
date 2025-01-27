@@ -4,13 +4,16 @@
   "additionalProperties": false,
   "properties": {
     "digest": {
+      "minLength": 1,
       "type": "string"
     },
     "id": {
       "description": "NOT USED, kept for compatibility with servers that still perform server-side validation``\n TODO: remove after some time",
+      "minLength": 1,
       "type": "string"
     },
     "value": {
+      "minLength": 1,
       "type": "string"
     }
   },

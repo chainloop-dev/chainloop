@@ -9,6 +9,7 @@
   },
   "properties": {
     "digest": {
+      "minLength": 1,
       "type": "string"
     },
     "name": {
@@ -18,6 +19,7 @@
       "type": "string"
     },
     "uri": {
+      "minLength": 1,
       "type": "string"
     }
   },

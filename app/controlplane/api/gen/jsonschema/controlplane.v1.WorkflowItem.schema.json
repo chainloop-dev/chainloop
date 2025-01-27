@@ -8,7 +8,7 @@
     },
     "^(contractRevisionLatest)$": {
       "description": "Current, latest revision of the contract",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
@@ -19,7 +19,7 @@
       "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
     },
     "^(runsCount)$": {
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     }
@@ -30,7 +30,7 @@
     },
     "contract_revision_latest": {
       "description": "Current, latest revision of the contract",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
@@ -57,7 +57,7 @@
       "type": "boolean"
     },
     "runs_count": {
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },

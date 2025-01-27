@@ -8,6 +8,7 @@
       "type": "string"
     },
     "^(authorName)$": {
+      "minLength": 1,
       "type": "string"
     }
   },
@@ -17,15 +18,18 @@
       "type": "string"
     },
     "author_name": {
+      "minLength": 1,
       "type": "string"
     },
     "date": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
     "hash": {
+      "minLength": 1,
       "type": "string"
     },
     "message": {
+      "minLength": 1,
       "type": "string"
     },
     "remotes": {

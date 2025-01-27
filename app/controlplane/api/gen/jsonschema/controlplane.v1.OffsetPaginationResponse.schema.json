@@ -6,19 +6,19 @@
   "patternProperties": {
     "^(pageSize)$": {
       "description": "The number of results per page",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "^(totalCount)$": {
       "description": "The total number of results",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "^(totalPages)$": {
       "description": "The total number of pages",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     }
@@ -26,25 +26,25 @@
   "properties": {
     "page": {
       "description": "The current page number",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "page_size": {
       "description": "The number of results per page",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "total_count": {
       "description": "The total number of results",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "total_pages": {
       "description": "The total number of pages",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     }
