@@ -391,9 +391,8 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 	}
 
 	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: &cpAPI.RemotePolicyReference{
-		Url:     remotePolicy.ProviderRef.URL,
-		Digest:  remotePolicy.ProviderRef.Digest,
-		OrgName: remotePolicy.ProviderRef.OrgName,
+		Url:    remotePolicy.ProviderRef.URL,
+		Digest: remotePolicy.ProviderRef.Digest,
 	}}, nil
 }
 
@@ -409,9 +408,8 @@ func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.Atte
 	}
 
 	return &cpAPI.AttestationServiceGetPolicyGroupResponse{Group: remoteGroup.PolicyGroup, Reference: &cpAPI.RemotePolicyReference{
-		Url:     remoteGroup.ProviderRef.URL,
-		Digest:  remoteGroup.ProviderRef.Digest,
-		OrgName: remoteGroup.ProviderRef.OrgName,
+		Url:    remoteGroup.ProviderRef.URL,
+		Digest: remoteGroup.ProviderRef.Digest,
 	}}, nil
 }
 

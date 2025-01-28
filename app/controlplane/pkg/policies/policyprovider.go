@@ -68,9 +68,8 @@ type RawMessage struct {
 }
 
 type PolicyReference struct {
-	URL     string
-	Digest  string
-	OrgName string
+	URL    string
+	Digest string
 }
 
 var ErrNotFound = fmt.Errorf("policy not found")
@@ -297,8 +296,7 @@ func createRef(policyURL *url.URL, name, digest, orgName string) *PolicyReferenc
 		refURL = fmt.Sprintf("%s?org=%s", refURL, orgName)
 	}
 	return &PolicyReference{
-		URL:     refURL,
-		Digest:  digest,
-		OrgName: orgName,
+		URL:    refURL,
+		Digest: digest,
 	}
 }
