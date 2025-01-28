@@ -4,6 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(project_name)$": {
+      "minLength": 1,
       "type": "string"
     },
     "^(workflow_name)$": {
@@ -13,6 +14,7 @@
   },
   "properties": {
     "projectName": {
+      "minLength": 1,
       "type": "string"
     },
     "workflowName": {

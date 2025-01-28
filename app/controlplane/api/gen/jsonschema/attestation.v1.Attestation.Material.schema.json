@@ -66,6 +66,7 @@
     },
     "annotations": {
       "additionalProperties": {
+        "minLength": 1,
         "type": "string"
       },
       "description": "Annotations for the material",
@@ -81,6 +82,7 @@
       "$ref": "attestation.v1.Attestation.Material.ContainerImage.schema.json"
     },
     "id": {
+      "minLength": 1,
       "type": "string"
     },
     "inline_cas": {

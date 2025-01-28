@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,9 +47,10 @@ type PolicyProvider struct {
 
 type ProviderResponse struct {
 	// Deprecated: Raw is the preferred approach
-	Data   map[string]any `json:"data"`
-	Digest string         `json:"digest"`
-	Raw    *RawMessage    `json:"raw"`
+	Data             map[string]any `json:"data"`
+	Digest           string         `json:"digest"`
+	Raw              *RawMessage    `json:"raw"`
+	OrganizationName string         `json:"organizationName"`
 }
 
 type ValidateRequest struct {
@@ -91,7 +92,9 @@ func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing policy provider URL: %w", err)
 	}
-	providerDigest, err := p.queryProvider(url, digest, orgName, token, &policy)
+	// we want to override the orgName with the one in the response
+	// since we might have resolved it implicitly
+	providerDigest, orgName, err := p.queryProvider(url, digest, orgName, token, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
@@ -184,7 +187,9 @@ func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schema
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing policy provider URL: %w", err)
 	}
-	providerDigest, err := p.queryProvider(url, digest, orgName, token, &group)
+	// we want to override the orgName with the one in the response
+	// since we might have resolved it implicitly
+	providerDigest, orgName, err := p.queryProvider(url, digest, orgName, token, &group)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
@@ -192,7 +197,8 @@ func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schema
 	return &group, createRef(url, groupName, providerDigest, orgName), nil
 }
 
-func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token string, out proto.Message) (string, error) {
+// returns digest, orgname, error
+func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token string, out proto.Message) (string, string, error) {
 	query := url.Query()
 	if digest != "" {
 		query.Set(digestParam, digest)
@@ -206,7 +212,7 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
-		return "", fmt.Errorf("error creating policy request: %w", err)
+		return "", "", fmt.Errorf("error creating policy request: %w", err)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
@@ -214,46 +220,53 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 	// make the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("error executing policy request: %w", err)
+		return "", "", fmt.Errorf("error executing policy request: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return "", ErrNotFound
+			return "", "", ErrNotFound
 		}
 
-		return "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
+		return "", "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 	}
 
 	resBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("error reading policy response: %w", err)
+		return "", "", fmt.Errorf("error reading policy response: %w", err)
 	}
 
 	// unmarshall response
 	var response ProviderResponse
 	if err := json.Unmarshal(resBytes, &response); err != nil {
-		return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		return "", "", fmt.Errorf("error unmarshalling policy response: %w", err)
 	}
 
 	// if raw message is provided, just interpret it as a base64 encoded string
 	if response.Raw != nil {
 		if err := unmarshalFromRaw(response.Raw, out); err != nil {
-			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+			return "", "", fmt.Errorf("error unmarshalling policy response: %w", err)
 		}
 	} else if response.Data != nil {
 		// extract the policy payload from the query response
 		jsonPolicy, err := json.Marshal(response.Data)
 		if err != nil {
-			return "", fmt.Errorf("error marshalling policy response: %w", err)
+			return "", "", fmt.Errorf("error marshalling policy response: %w", err)
 		}
 
 		if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
-			return "", fmt.Errorf("error unmarshalling policy response: %w", err)
+			return "", "", fmt.Errorf("error unmarshalling policy response: %w", err)
 		}
 	}
 
-	return response.Digest, nil
+	// override the orgName with the one in the response if its provided
+	// this is mainly a protection against misconfiguration on the policy provider
+	// that might end up wiping out the orgName from the request
+	if response.OrganizationName != "" {
+		orgName = response.OrganizationName
+	}
+
+	return response.Digest, orgName, nil
 }
 
 func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {

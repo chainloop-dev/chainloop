@@ -5,13 +5,13 @@
   "patternProperties": {
     "^(contractRevisionLatest)$": {
       "description": "The latest revision available for this contract at the time of the run",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "^(contractRevisionUsed)$": {
       "description": "The revision of the contract used for this run",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
@@ -54,13 +54,13 @@
   "properties": {
     "contract_revision_latest": {
       "description": "The latest revision available for this contract at the time of the run",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
     "contract_revision_used": {
       "description": "The revision of the contract used for this run",
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },

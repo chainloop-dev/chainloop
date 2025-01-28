@@ -9,6 +9,7 @@
     },
     "^(policy_name)$": {
       "description": "Policy name (it must exist in the provider)",
+      "minLength": 1,
       "type": "string"
     }
   },
@@ -19,6 +20,7 @@
     },
     "policyName": {
       "description": "Policy name (it must exist in the provider)",
+      "minLength": 1,
       "type": "string"
     },
     "provider": {

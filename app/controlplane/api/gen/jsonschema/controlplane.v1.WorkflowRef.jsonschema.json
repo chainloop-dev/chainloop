@@ -4,17 +4,20 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(project_name)$": {
+      "minLength": 1,
       "type": "string"
     }
   },
   "properties": {
     "id": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     },
     "name": {
       "type": "string"
     },
     "projectName": {
+      "minLength": 1,
       "type": "string"
     }
   },

@@ -4,11 +4,13 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(workflow_run_id)$": {
+      "minLength": 1,
       "type": "string"
     }
   },
   "properties": {
     "workflowRunId": {
+      "minLength": 1,
       "type": "string"
     }
   },

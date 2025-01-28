@@ -6,12 +6,12 @@
     "^(max_bytes)$": {
       "anyOf": [
         {
-          "maximum": 9223372036854776000,
-          "minimum": -9223372036854776000,
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
           "type": "integer"
         },
         {
-          "pattern": "^[0-9]+$",
+          "pattern": "^-?[0-9]+$",
           "type": "string"
         }
       ],
@@ -22,12 +22,12 @@
     "maxBytes": {
       "anyOf": [
         {
-          "maximum": 9223372036854776000,
-          "minimum": -9223372036854776000,
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
           "type": "integer"
         },
         {
-          "pattern": "^[0-9]+$",
+          "pattern": "^-?[0-9]+$",
           "type": "string"
         }
       ],

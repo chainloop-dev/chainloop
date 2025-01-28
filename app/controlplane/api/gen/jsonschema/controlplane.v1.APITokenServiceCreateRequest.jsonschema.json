@@ -15,6 +15,7 @@
       "$ref": "google.protobuf.Duration.jsonschema.json"
     },
     "name": {
+      "minLength": 1,
       "type": "string"
     }
   },

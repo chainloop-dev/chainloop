@@ -8,6 +8,7 @@
       "type": "string"
     },
     "^(receiverEmail)$": {
+      "format": "email",
       "type": "string"
     }
   },
@@ -17,6 +18,7 @@
       "type": "string"
     },
     "receiver_email": {
+      "format": "email",
       "type": "string"
     },
     "role": {

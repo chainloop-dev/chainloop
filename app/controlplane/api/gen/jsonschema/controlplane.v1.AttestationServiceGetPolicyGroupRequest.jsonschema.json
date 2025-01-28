@@ -5,6 +5,7 @@
   "patternProperties": {
     "^(group_name)$": {
       "description": "Group name (it must exist in the provider)",
+      "minLength": 1,
       "type": "string"
     },
     "^(org_name)$": {
@@ -15,6 +16,7 @@
   "properties": {
     "groupName": {
       "description": "Group name (it must exist in the provider)",
+      "minLength": 1,
       "type": "string"
     },
     "orgName": {

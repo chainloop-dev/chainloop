@@ -19,6 +19,9 @@
     },
     "^(schema_version)$": {
       "description": "Version of the schema, do not confuse with the revision of the content",
+      "enum": [
+        "v1"
+      ],
       "type": "string"
     }
   },
@@ -58,6 +61,9 @@
     },
     "schemaVersion": {
       "description": "Version of the schema, do not confuse with the revision of the content",
+      "enum": [
+        "v1"
+      ],
       "type": "string"
     }
   },

@@ -15,10 +15,12 @@
     },
     "digest": {
       "description": "the digest is enough to retrieve the artifact since it's stored in a CAS\n which also has annotated the fileName",
+      "minLength": 1,
       "type": "string"
     },
     "id": {
       "description": "NOT USED, kept for compatibility with servers that still perform server-side validation``\n TODO: remove after some time",
+      "minLength": 1,
       "type": "string"
     },
     "is_subject": {
@@ -26,6 +28,7 @@
     },
     "name": {
       "description": "filename, use for record purposes",
+      "minLength": 1,
       "type": "string"
     }
   },

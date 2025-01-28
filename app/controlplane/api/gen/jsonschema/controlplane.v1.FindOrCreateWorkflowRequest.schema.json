@@ -8,9 +8,11 @@
       "type": "string"
     },
     "^(projectName)$": {
+      "minLength": 1,
       "type": "string"
     },
     "^(workflowName)$": {
+      "minLength": 1,
       "type": "string"
     }
   },
@@ -20,9 +22,11 @@
       "type": "string"
     },
     "project_name": {
+      "minLength": 1,
       "type": "string"
     },
     "workflow_name": {
+      "minLength": 1,
       "type": "string"
     }
   },

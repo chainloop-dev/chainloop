@@ -4,12 +4,14 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(certificate_signing_request)$": {
+      "minLength": 2,
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     }
   },
   "properties": {
     "certificateSigningRequest": {
+      "minLength": 2,
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     }

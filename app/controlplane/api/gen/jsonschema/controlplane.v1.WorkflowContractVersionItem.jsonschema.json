@@ -29,7 +29,7 @@
       "$ref": "controlplane.v1.WorkflowContractVersionItem.RawBody.jsonschema.json"
     },
     "revision": {
-      "exclusiveMaximum": 2147483648,
+      "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
     },
