@@ -8,6 +8,8 @@ on:
 # Limit to a single workflow
 concurrency: "deploy-to-prod"
 
+permissions: {}
+
 jobs:
   chainloop_init:
     name: Chainloop Init
