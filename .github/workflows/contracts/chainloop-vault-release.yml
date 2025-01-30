@@ -5,18 +5,17 @@ policies:
     - ref: source-commit
       with:
         check_signature: yes
+      requirements:
+        - chainloop-best-practices/commit-signed
     - ref: containers-with-sbom
   materials:
     - ref: artifact-signed
-    - ref: sbom-banned-licenses
-      with:
-        licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
-    - ref: sbom-banned-components
-      with:
-        components: log4j@2.14.1
-    - ref: sbom-ntia
-    - ref: sbom-with-licenses
-    - ref: sbom-freshness
-
+      requirements:
+        - chainloop-best-practices/container-signed
+policyGroups:
+  - ref: read-only-demo/sbom-quality
+    with:
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedComponents: log4j@2.14.1
 runner:
   type: GITHUB_ACTION

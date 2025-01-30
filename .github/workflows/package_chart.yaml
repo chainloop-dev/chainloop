@@ -49,6 +49,11 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3.5
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+        with:
+          cosign-release: 'v2.4.1'
+
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Initialize Attestation
@@ -58,23 +63,30 @@ jobs:
       - name: Package Chart
         run: helm package deployment/chainloop/
 
-      - name: Add Attestation (Helm Chart)
+      - name: Add Attestation (Helm Chart) and Push Chart
         run: |
           export CONTAINER_CP=$(cat deployment/chainloop/Chart.yaml | yq -r .annotations.images | yq -r '.[] | select(.name == "control-plane") | .image')
           export CONTAINER_CAS=$(cat deployment/chainloop/Chart.yaml | yq -r .annotations.images | yq -r '.[] | select(.name == "artifact-cas") | .image')
+          chart_version=$(cat deployment/chainloop/Chart.yaml | yq .version)
 
-          # Attest Chart
-          chainloop attestation add --name helm-chart --value chainloop*.tgz
           # Attest Control plane image
           chainloop attestation add --name control-plane-image --value "${CONTAINER_CP}"
           # Attest CAS image
           chainloop attestation add --name artifact-cas-image --value "${CONTAINER_CAS}"
-
-      - name: Push Chart
-        run: |
+          
+          # Push Chart
           for pkg in chainloop*.tgz; do
             helm push ${pkg} oci://ghcr.io/chainloop-dev/charts
           done
+          
+          # Sign Chart
+          cosign sign --tlog-upload=false --key env://COSIGN_PRIVATE_KEY ghcr.io/chainloop-dev/charts/chainloop:${chart_version}
+          
+          # Attest the Chart
+          chainloop attestation add --name helm-chart --value oci://ghcr.io/chainloop-dev/charts/chainloop:${chart_version}
+        env:
+          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_KEY}}
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
 
       - name: Finish and Record Attestation
         if: ${{ success() }}

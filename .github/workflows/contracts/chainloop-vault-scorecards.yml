@@ -9,3 +9,7 @@ materials:
 policies:
   attestation:
     - ref: source-commit
+      with:
+        check_signature: yes
+      requirements:
+        - chainloop-best-practices/commit-signed
