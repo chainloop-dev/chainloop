@@ -86,6 +86,11 @@ func WorkflowRunCount(v int) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldWorkflowRunCount, v))
 }
 
+// ReleasedAt applies equality check predicate on the "released_at" field. It's identical to ReleasedAtEQ.
+func ReleasedAt(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldReleasedAt, v))
+}
+
 // VersionEQ applies the EQ predicate on the "version" field.
 func VersionEQ(v string) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldVersion, v))
@@ -309,6 +314,56 @@ func WorkflowRunCountLT(v int) predicate.ProjectVersion {
 // WorkflowRunCountLTE applies the LTE predicate on the "workflow_run_count" field.
 func WorkflowRunCountLTE(v int) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldLTE(FieldWorkflowRunCount, v))
+}
+
+// ReleasedAtEQ applies the EQ predicate on the "released_at" field.
+func ReleasedAtEQ(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldReleasedAt, v))
+}
+
+// ReleasedAtNEQ applies the NEQ predicate on the "released_at" field.
+func ReleasedAtNEQ(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNEQ(FieldReleasedAt, v))
+}
+
+// ReleasedAtIn applies the In predicate on the "released_at" field.
+func ReleasedAtIn(vs ...time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldIn(FieldReleasedAt, vs...))
+}
+
+// ReleasedAtNotIn applies the NotIn predicate on the "released_at" field.
+func ReleasedAtNotIn(vs ...time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNotIn(FieldReleasedAt, vs...))
+}
+
+// ReleasedAtGT applies the GT predicate on the "released_at" field.
+func ReleasedAtGT(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGT(FieldReleasedAt, v))
+}
+
+// ReleasedAtGTE applies the GTE predicate on the "released_at" field.
+func ReleasedAtGTE(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGTE(FieldReleasedAt, v))
+}
+
+// ReleasedAtLT applies the LT predicate on the "released_at" field.
+func ReleasedAtLT(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLT(FieldReleasedAt, v))
+}
+
+// ReleasedAtLTE applies the LTE predicate on the "released_at" field.
+func ReleasedAtLTE(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLTE(FieldReleasedAt, v))
+}
+
+// ReleasedAtIsNil applies the IsNil predicate on the "released_at" field.
+func ReleasedAtIsNil() predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldIsNull(FieldReleasedAt))
+}
+
+// ReleasedAtNotNil applies the NotNil predicate on the "released_at" field.
+func ReleasedAtNotNil() predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNotNull(FieldReleasedAt))
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

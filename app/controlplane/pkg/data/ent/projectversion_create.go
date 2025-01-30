@@ -102,6 +102,20 @@ func (pvc *ProjectVersionCreate) SetNillableWorkflowRunCount(i *int) *ProjectVer
 	return pvc
 }
 
+// SetReleasedAt sets the "released_at" field.
+func (pvc *ProjectVersionCreate) SetReleasedAt(t time.Time) *ProjectVersionCreate {
+	pvc.mutation.SetReleasedAt(t)
+	return pvc
+}
+
+// SetNillableReleasedAt sets the "released_at" field if the given value is not nil.
+func (pvc *ProjectVersionCreate) SetNillableReleasedAt(t *time.Time) *ProjectVersionCreate {
+	if t != nil {
+		pvc.SetReleasedAt(*t)
+	}
+	return pvc
+}
+
 // SetID sets the "id" field.
 func (pvc *ProjectVersionCreate) SetID(u uuid.UUID) *ProjectVersionCreate {
 	pvc.mutation.SetID(u)
@@ -274,6 +288,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 		_node.WorkflowRunCount = value
 	}
+	if value, ok := pvc.mutation.ReleasedAt(); ok {
+		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
+		_node.ReleasedAt = value
+	}
 	if nodes := pvc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -419,6 +437,24 @@ func (u *ProjectVersionUpsert) AddWorkflowRunCount(v int) *ProjectVersionUpsert 
 	return u
 }
 
+// SetReleasedAt sets the "released_at" field.
+func (u *ProjectVersionUpsert) SetReleasedAt(v time.Time) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldReleasedAt, v)
+	return u
+}
+
+// UpdateReleasedAt sets the "released_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdateReleasedAt() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldReleasedAt)
+	return u
+}
+
+// ClearReleasedAt clears the value of the "released_at" field.
+func (u *ProjectVersionUpsert) ClearReleasedAt() *ProjectVersionUpsert {
+	u.SetNull(projectversion.FieldReleasedAt)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -540,6 +576,27 @@ func (u *ProjectVersionUpsertOne) AddWorkflowRunCount(v int) *ProjectVersionUpse
 func (u *ProjectVersionUpsertOne) UpdateWorkflowRunCount() *ProjectVersionUpsertOne {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.UpdateWorkflowRunCount()
+	})
+}
+
+// SetReleasedAt sets the "released_at" field.
+func (u *ProjectVersionUpsertOne) SetReleasedAt(v time.Time) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetReleasedAt(v)
+	})
+}
+
+// UpdateReleasedAt sets the "released_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdateReleasedAt() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateReleasedAt()
+	})
+}
+
+// ClearReleasedAt clears the value of the "released_at" field.
+func (u *ProjectVersionUpsertOne) ClearReleasedAt() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.ClearReleasedAt()
 	})
 }
 
@@ -831,6 +888,27 @@ func (u *ProjectVersionUpsertBulk) AddWorkflowRunCount(v int) *ProjectVersionUps
 func (u *ProjectVersionUpsertBulk) UpdateWorkflowRunCount() *ProjectVersionUpsertBulk {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.UpdateWorkflowRunCount()
+	})
+}
+
+// SetReleasedAt sets the "released_at" field.
+func (u *ProjectVersionUpsertBulk) SetReleasedAt(v time.Time) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetReleasedAt(v)
+	})
+}
+
+// UpdateReleasedAt sets the "released_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdateReleasedAt() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateReleasedAt()
+	})
+}
+
+// ClearReleasedAt clears the value of the "released_at" field.
+func (u *ProjectVersionUpsertBulk) ClearReleasedAt() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.ClearReleasedAt()
 	})
 }
 

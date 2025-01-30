@@ -71,6 +71,9 @@ message ProjectVersion {
   string id = 1;
   string version = 2;
   bool prerelease = 3;
+  google.protobuf.Timestamp created_at = 4;
+  // when it was marked as released
+  google.protobuf.Timestamp released_at = 5;
 }
 
 enum RunStatus {
