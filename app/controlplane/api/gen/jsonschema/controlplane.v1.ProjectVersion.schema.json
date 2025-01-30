@@ -2,12 +2,28 @@
   "$id": "controlplane.v1.ProjectVersion.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(releasedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "when it was marked as released"
+    }
+  },
   "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
     "id": {
       "type": "string"
     },
     "prerelease": {
       "type": "boolean"
+    },
+    "released_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "when it was marked as released"
     },
     "version": {
       "type": "string"

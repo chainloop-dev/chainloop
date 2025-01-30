@@ -262,6 +262,9 @@ export interface ProjectVersion {
   id: string;
   version: string;
   prerelease: boolean;
+  createdAt?: Date;
+  /** when it was marked as released */
+  releasedAt?: Date;
 }
 
 export interface AttestationItem {
@@ -1032,7 +1035,7 @@ export const WorkflowRunItem = {
 };
 
 function createBaseProjectVersion(): ProjectVersion {
-  return { id: "", version: "", prerelease: false };
+  return { id: "", version: "", prerelease: false, createdAt: undefined, releasedAt: undefined };
 }
 
 export const ProjectVersion = {
@@ -1045,6 +1048,12 @@ export const ProjectVersion = {
     }
     if (message.prerelease === true) {
       writer.uint32(24).bool(message.prerelease);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.releasedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.releasedAt), writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -1077,6 +1086,20 @@ export const ProjectVersion = {
 
           message.prerelease = reader.bool();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.releasedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1091,6 +1114,8 @@ export const ProjectVersion = {
       id: isSet(object.id) ? String(object.id) : "",
       version: isSet(object.version) ? String(object.version) : "",
       prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      releasedAt: isSet(object.releasedAt) ? fromJsonTimestamp(object.releasedAt) : undefined,
     };
   },
 
@@ -1099,6 +1124,8 @@ export const ProjectVersion = {
     message.id !== undefined && (obj.id = message.id);
     message.version !== undefined && (obj.version = message.version);
     message.prerelease !== undefined && (obj.prerelease = message.prerelease);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.releasedAt !== undefined && (obj.releasedAt = message.releasedAt.toISOString());
     return obj;
   },
 
@@ -1111,6 +1138,8 @@ export const ProjectVersion = {
     message.id = object.id ?? "";
     message.version = object.version ?? "";
     message.prerelease = object.prerelease ?? false;
+    message.createdAt = object.createdAt ?? undefined;
+    message.releasedAt = object.releasedAt ?? undefined;
     return message;
   },
 };

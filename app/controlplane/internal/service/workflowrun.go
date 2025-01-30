@@ -216,11 +216,21 @@ func bizProjectVersionToPb(v *biz.ProjectVersion) *pb.ProjectVersion {
 		return nil
 	}
 
-	return &pb.ProjectVersion{
+	pv := &pb.ProjectVersion{
 		Id:         v.ID.String(),
 		Version:    v.Version,
 		Prerelease: v.Prerelease,
 	}
+
+	if v.CreatedAt != nil {
+		pv.CreatedAt = timestamppb.New(*v.CreatedAt)
+	}
+
+	if v.ReleasedAt != nil {
+		pv.ReleasedAt = timestamppb.New(*v.ReleasedAt)
+	}
+
+	return pv
 }
 
 func bizWorkflowRunStatusToPb(st biz.WorkflowRunStatus) pb.RunStatus {
