@@ -127,11 +127,13 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer communications")
 	cmd.Flags().StringVar(&signServerAuthUser, "signserver-auth-user", "", "")
 	cmd.Flags().StringVar(&signServerAuthPass, "signserver-auth-pass", "", "")
-	cmd.Flags().BoolVar(&bypassPolicyCheck, "exception-bypass-policy-check", false, "do not fail this command on policy violations enforcement")
+	cmd.Flags().BoolVar(&bypassPolicyCheck, exceptionFlagName, false, "do not fail this command on policy violations enforcement")
 
 	return cmd
 }
 
-var ErrBlockedByPolicyViolation = errors.New("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --exception_bypass_policy_check")
+const exceptionFlagName = "exception-bypass-policy-check"
+
+var ErrBlockedByPolicyViolation = fmt.Errorf("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --%s", exceptionFlagName)
 
 const exceptionBypassPolicyCheck = "Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --exception_bypass_policy_check as soon as possible."
