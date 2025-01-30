@@ -39,7 +39,7 @@ You can think of it as an [**API for your organization's Software Supply Chain**
 
 ### Policy as code
 
-Security and compliance teams can [craft](https://docs.chainloop.dev/guides/rego-policies/) [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) policies, and [attach](https://docs.chainloop.dev/reference/policies) them to workflow contracts. Those policies will be automatically evaluated, and their results will be added to the attestation before signing and storage.
+Compliance and Security teams can [craft](https://docs.chainloop.dev/guides/rego-policies/) [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) policies, and [attach](https://docs.chainloop.dev/reference/policies) them to workflow contracts. Those policies will be automatically evaluated, and their results will be added to the attestation before signing and storage.
 
 
 ### We meet you where you are with third-party integrations
@@ -48,7 +48,7 @@ Operators can set up third-party integrations such as [Dependency-Track](https:/
 
 ![Chainloop Overview](./docs/img/overview-2.png)
 
-Security and compliance teams can mix and match with different integrations while **not requiring developers to make any changes on their side**!
+Compliance and Security teams can mix and match with different integrations while **not requiring developers to make any changes on their side**!
 
 To learn more and to find the list of available integrations, check our [integrations page](./devel/integrations.md).
 
