@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -90,6 +91,7 @@ func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			apitoken.Table:                apitoken.ValidColumn,
+			bundle.Table:                  bundle.ValidColumn,
 			casbackend.Table:              casbackend.ValidColumn,
 			casmapping.Table:              casmapping.ValidColumn,
 			integration.Table:             integration.ValidColumn,

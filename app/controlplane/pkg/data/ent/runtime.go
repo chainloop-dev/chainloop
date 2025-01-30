@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -40,6 +41,20 @@ func init() {
 	apitokenDescID := apitokenFields[0].Descriptor()
 	// apitoken.DefaultID holds the default value on creation for the id field.
 	apitoken.DefaultID = apitokenDescID.Default.(func() uuid.UUID)
+	bundleFields := schema.Bundle{}.Fields()
+	_ = bundleFields
+	// bundleDescCreatedAt is the schema descriptor for created_at field.
+	bundleDescCreatedAt := bundleFields[1].Descriptor()
+	// bundle.DefaultCreatedAt holds the default value on creation for the created_at field.
+	bundle.DefaultCreatedAt = bundleDescCreatedAt.Default.(func() time.Time)
+	// bundleDescBundle is the schema descriptor for bundle field.
+	bundleDescBundle := bundleFields[2].Descriptor()
+	// bundle.BundleValidator is a validator for the "bundle" field. It is called by the builders before save.
+	bundle.BundleValidator = bundleDescBundle.Validators[0].(func([]byte) error)
+	// bundleDescID is the schema descriptor for id field.
+	bundleDescID := bundleFields[0].Descriptor()
+	// bundle.DefaultID holds the default value on creation for the id field.
+	bundle.DefaultID = bundleDescID.Default.(func() uuid.UUID)
 	casbackendFields := schema.CASBackend{}.Fields()
 	_ = casbackendFields
 	// casbackendDescCreatedAt is the schema descriptor for created_at field.

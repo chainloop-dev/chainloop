@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
@@ -33,6 +34,7 @@ type WorkflowRunQuery struct {
 	withContractVersion *WorkflowContractVersionQuery
 	withCasBackends     *CASBackendQuery
 	withVersion         *ProjectVersionQuery
+	withBundle          *BundleQuery
 	withFKs             bool
 	modifiers           []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -152,6 +154,28 @@ func (wrq *WorkflowRunQuery) QueryVersion() *ProjectVersionQuery {
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
 			sqlgraph.To(projectversion.Table, projectversion.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.VersionTable, workflowrun.VersionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBundle chains the current query on the "bundle" edge.
+func (wrq *WorkflowRunQuery) QueryBundle() *BundleQuery {
+	query := (&BundleClient{config: wrq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wrq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wrq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
+			sqlgraph.To(bundle.Table, bundle.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, workflowrun.BundleTable, workflowrun.BundleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
 		return fromU, nil
@@ -355,6 +379,7 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 		withContractVersion: wrq.withContractVersion.Clone(),
 		withCasBackends:     wrq.withCasBackends.Clone(),
 		withVersion:         wrq.withVersion.Clone(),
+		withBundle:          wrq.withBundle.Clone(),
 		// clone intermediate query.
 		sql:       wrq.sql.Clone(),
 		path:      wrq.path,
@@ -403,6 +428,17 @@ func (wrq *WorkflowRunQuery) WithVersion(opts ...func(*ProjectVersionQuery)) *Wo
 		opt(query)
 	}
 	wrq.withVersion = query
+	return wrq
+}
+
+// WithBundle tells the query-builder to eager-load the nodes that are connected to
+// the "bundle" edge. The optional arguments are used to configure the query builder of the edge.
+func (wrq *WorkflowRunQuery) WithBundle(opts ...func(*BundleQuery)) *WorkflowRunQuery {
+	query := (&BundleClient{config: wrq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wrq.withBundle = query
 	return wrq
 }
 
@@ -485,11 +521,12 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*WorkflowRun{}
 		withFKs     = wrq.withFKs
 		_spec       = wrq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			wrq.withWorkflow != nil,
 			wrq.withContractVersion != nil,
 			wrq.withCasBackends != nil,
 			wrq.withVersion != nil,
+			wrq.withBundle != nil,
 		}
 	)
 	if wrq.withContractVersion != nil {
@@ -541,6 +578,12 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if query := wrq.withVersion; query != nil {
 		if err := wrq.loadVersion(ctx, query, nodes, nil,
 			func(n *WorkflowRun, e *ProjectVersion) { n.Edges.Version = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wrq.withBundle; query != nil {
+		if err := wrq.loadBundle(ctx, query, nodes, nil,
+			func(n *WorkflowRun, e *Bundle) { n.Edges.Bundle = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -695,6 +738,33 @@ func (wrq *WorkflowRunQuery) loadVersion(ctx context.Context, query *ProjectVers
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (wrq *WorkflowRunQuery) loadBundle(ctx context.Context, query *BundleQuery, nodes []*WorkflowRun, init func(*WorkflowRun), assign func(*WorkflowRun, *Bundle)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*WorkflowRun)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(bundle.FieldWorkflowrunID)
+	}
+	query.Where(predicate.Bundle(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(workflowrun.BundleColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.WorkflowrunID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "workflowrun_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

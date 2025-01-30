@@ -43,6 +43,27 @@ var (
 			},
 		},
 	}
+	// BundlesColumns holds the columns for the "bundles" table.
+	BundlesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "bundle", Type: field.TypeBytes},
+		{Name: "workflowrun_id", Type: field.TypeUUID, Unique: true},
+	}
+	// BundlesTable holds the schema information for the "bundles" table.
+	BundlesTable = &schema.Table{
+		Name:       "bundles",
+		Columns:    BundlesColumns,
+		PrimaryKey: []*schema.Column{BundlesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "bundles_workflow_runs_bundle",
+				Columns:    []*schema.Column{BundlesColumns[3]},
+				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// CasBackendsColumns holds the columns for the "cas_backends" table.
 	CasBackendsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -569,6 +590,7 @@ var (
 		{Name: "attestation_state", Type: field.TypeBytes, Nullable: true},
 		{Name: "contract_revision_used", Type: field.TypeInt},
 		{Name: "contract_revision_latest", Type: field.TypeInt},
+		{Name: "bundle_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "version_id", Type: field.TypeUUID},
 		{Name: "workflow_id", Type: field.TypeUUID},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
@@ -581,19 +603,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_runs_project_versions_runs",
-				Columns:    []*schema.Column{WorkflowRunsColumns[12]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[13]},
 				RefColumns: []*schema.Column{ProjectVersionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflow_runs_workflows_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[13]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[14]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflow_runs_workflow_contract_versions_contract_version",
-				Columns:    []*schema.Column{WorkflowRunsColumns[14]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[15]},
 				RefColumns: []*schema.Column{WorkflowContractVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -602,7 +624,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[14], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -612,7 +634,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_state_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[14], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -637,12 +659,12 @@ var (
 			{
 				Name:    "workflowrun_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[13]},
+				Columns: []*schema.Column{WorkflowRunsColumns[14]},
 			},
 			{
 				Name:    "workflowrun_version_id_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[12], WorkflowRunsColumns[13]},
+				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[14]},
 			},
 		},
 	}
@@ -724,6 +746,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		APITokensTable,
+		BundlesTable,
 		CasBackendsTable,
 		CasMappingsTable,
 		IntegrationsTable,
@@ -748,6 +771,7 @@ var (
 
 func init() {
 	APITokensTable.ForeignKeys[0].RefTable = OrganizationsTable
+	BundlesTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
 	CasMappingsTable.ForeignKeys[1].RefTable = OrganizationsTable

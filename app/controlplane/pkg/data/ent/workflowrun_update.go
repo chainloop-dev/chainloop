@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
@@ -268,6 +269,25 @@ func (wru *WorkflowRunUpdate) SetVersion(p *ProjectVersion) *WorkflowRunUpdate {
 	return wru.SetVersionID(p.ID)
 }
 
+// SetBundleID sets the "bundle" edge to the Bundle entity by ID.
+func (wru *WorkflowRunUpdate) SetBundleID(id uuid.UUID) *WorkflowRunUpdate {
+	wru.mutation.SetBundleID(id)
+	return wru
+}
+
+// SetNillableBundleID sets the "bundle" edge to the Bundle entity by ID if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableBundleID(id *uuid.UUID) *WorkflowRunUpdate {
+	if id != nil {
+		wru = wru.SetBundleID(*id)
+	}
+	return wru
+}
+
+// SetBundle sets the "bundle" edge to the Bundle entity.
+func (wru *WorkflowRunUpdate) SetBundle(b *Bundle) *WorkflowRunUpdate {
+	return wru.SetBundleID(b.ID)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
 	return wru.mutation
@@ -303,6 +323,12 @@ func (wru *WorkflowRunUpdate) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUp
 // ClearVersion clears the "version" edge to the ProjectVersion entity.
 func (wru *WorkflowRunUpdate) ClearVersion() *WorkflowRunUpdate {
 	wru.mutation.ClearVersion()
+	return wru
+}
+
+// ClearBundle clears the "bundle" edge to the Bundle entity.
+func (wru *WorkflowRunUpdate) ClearBundle() *WorkflowRunUpdate {
+	wru.mutation.ClearBundle()
 	return wru
 }
 
@@ -424,6 +450,9 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
+	if wru.mutation.BundleIDCleared() {
+		_spec.ClearField(workflowrun.FieldBundleID, field.TypeUUID)
+	}
 	if wru.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -520,6 +549,35 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wru.mutation.BundleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.BundleTable,
+			Columns: []string{workflowrun.BundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wru.mutation.BundleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.BundleTable,
+			Columns: []string{workflowrun.BundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -782,6 +840,25 @@ func (wruo *WorkflowRunUpdateOne) SetVersion(p *ProjectVersion) *WorkflowRunUpda
 	return wruo.SetVersionID(p.ID)
 }
 
+// SetBundleID sets the "bundle" edge to the Bundle entity by ID.
+func (wruo *WorkflowRunUpdateOne) SetBundleID(id uuid.UUID) *WorkflowRunUpdateOne {
+	wruo.mutation.SetBundleID(id)
+	return wruo
+}
+
+// SetNillableBundleID sets the "bundle" edge to the Bundle entity by ID if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableBundleID(id *uuid.UUID) *WorkflowRunUpdateOne {
+	if id != nil {
+		wruo = wruo.SetBundleID(*id)
+	}
+	return wruo
+}
+
+// SetBundle sets the "bundle" edge to the Bundle entity.
+func (wruo *WorkflowRunUpdateOne) SetBundle(b *Bundle) *WorkflowRunUpdateOne {
+	return wruo.SetBundleID(b.ID)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
 	return wruo.mutation
@@ -817,6 +894,12 @@ func (wruo *WorkflowRunUpdateOne) RemoveCasBackends(c ...*CASBackend) *WorkflowR
 // ClearVersion clears the "version" edge to the ProjectVersion entity.
 func (wruo *WorkflowRunUpdateOne) ClearVersion() *WorkflowRunUpdateOne {
 	wruo.mutation.ClearVersion()
+	return wruo
+}
+
+// ClearBundle clears the "bundle" edge to the Bundle entity.
+func (wruo *WorkflowRunUpdateOne) ClearBundle() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearBundle()
 	return wruo
 }
 
@@ -968,6 +1051,9 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
+	if wruo.mutation.BundleIDCleared() {
+		_spec.ClearField(workflowrun.FieldBundleID, field.TypeUUID)
+	}
 	if wruo.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1064,6 +1150,35 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wruo.mutation.BundleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.BundleTable,
+			Columns: []string{workflowrun.BundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wruo.mutation.BundleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.BundleTable,
+			Columns: []string{workflowrun.BundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

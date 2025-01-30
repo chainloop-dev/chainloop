@@ -43,6 +43,8 @@ const (
 	FieldVersionID = "version_id"
 	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
 	FieldWorkflowID = "workflow_id"
+	// FieldBundleID holds the string denoting the bundle_id field in the database.
+	FieldBundleID = "bundle_id"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
@@ -51,6 +53,8 @@ const (
 	EdgeCasBackends = "cas_backends"
 	// EdgeVersion holds the string denoting the version edge name in mutations.
 	EdgeVersion = "version"
+	// EdgeBundle holds the string denoting the bundle edge name in mutations.
+	EdgeBundle = "bundle"
 	// Table holds the table name of the workflowrun in the database.
 	Table = "workflow_runs"
 	// WorkflowTable is the table that holds the workflow relation/edge.
@@ -79,6 +83,13 @@ const (
 	VersionInverseTable = "project_versions"
 	// VersionColumn is the table column denoting the version relation/edge.
 	VersionColumn = "version_id"
+	// BundleTable is the table that holds the bundle relation/edge.
+	BundleTable = "bundles"
+	// BundleInverseTable is the table name for the Bundle entity.
+	// It exists in this package in order to avoid circular dependency with the "bundle" package.
+	BundleInverseTable = "bundles"
+	// BundleColumn is the table column denoting the bundle relation/edge.
+	BundleColumn = "workflowrun_id"
 )
 
 // Columns holds all SQL columns for workflowrun fields.
@@ -97,6 +108,7 @@ var Columns = []string{
 	FieldContractRevisionLatest,
 	FieldVersionID,
 	FieldWorkflowID,
+	FieldBundleID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -208,6 +220,11 @@ func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
 }
 
+// ByBundleID orders the results by the bundle_id field.
+func ByBundleID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBundleID, opts...).ToFunc()
+}
+
 // ByWorkflowField orders the results by workflow field.
 func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -242,6 +259,13 @@ func ByVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newVersionStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByBundleField orders the results by bundle field.
+func ByBundleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBundleStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newWorkflowStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -268,5 +292,12 @@ func newVersionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(VersionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, VersionTable, VersionColumn),
+	)
+}
+func newBundleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BundleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, BundleTable, BundleColumn),
 	)
 }

@@ -59,6 +59,8 @@ func (WorkflowRun) Fields() []ent.Field {
 		// We have runs without data
 		field.UUID("version_id", uuid.UUID{}),
 		field.UUID("workflow_id", uuid.UUID{}).Immutable(),
+		// Bundles are optional for failed workflow runs
+		field.UUID("bundle_id", uuid.UUID{}).Immutable().Optional(),
 	}
 }
 
@@ -73,6 +75,7 @@ func (WorkflowRun) Edges() []ent.Edge {
 		edge.To("cas_backends", CASBackend.Type),
 		// not required since we have old data
 		edge.From("version", ProjectVersion.Type).Field("version_id").Ref("runs").Unique().Required(),
+		edge.To("bundle", Bundle.Type).Unique(),
 	}
 }
 

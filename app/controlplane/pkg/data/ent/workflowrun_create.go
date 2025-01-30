@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -164,6 +165,20 @@ func (wrc *WorkflowRunCreate) SetWorkflowID(u uuid.UUID) *WorkflowRunCreate {
 	return wrc
 }
 
+// SetBundleID sets the "bundle_id" field.
+func (wrc *WorkflowRunCreate) SetBundleID(u uuid.UUID) *WorkflowRunCreate {
+	wrc.mutation.SetBundleID(u)
+	return wrc
+}
+
+// SetNillableBundleID sets the "bundle_id" field if the given value is not nil.
+func (wrc *WorkflowRunCreate) SetNillableBundleID(u *uuid.UUID) *WorkflowRunCreate {
+	if u != nil {
+		wrc.SetBundleID(*u)
+	}
+	return wrc
+}
+
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -220,6 +235,25 @@ func (wrc *WorkflowRunCreate) AddCasBackends(c ...*CASBackend) *WorkflowRunCreat
 // SetVersion sets the "version" edge to the ProjectVersion entity.
 func (wrc *WorkflowRunCreate) SetVersion(p *ProjectVersion) *WorkflowRunCreate {
 	return wrc.SetVersionID(p.ID)
+}
+
+// SetBundleID sets the "bundle" edge to the Bundle entity by ID.
+func (wrc *WorkflowRunCreate) SetBundleID(id uuid.UUID) *WorkflowRunCreate {
+	wrc.mutation.SetBundleID(id)
+	return wrc
+}
+
+// SetNillableBundleID sets the "bundle" edge to the Bundle entity by ID if the given value is not nil.
+func (wrc *WorkflowRunCreate) SetNillableBundleID(id *uuid.UUID) *WorkflowRunCreate {
+	if id != nil {
+		wrc = wrc.SetBundleID(*id)
+	}
+	return wrc
+}
+
+// SetBundle sets the "bundle" edge to the Bundle entity.
+func (wrc *WorkflowRunCreate) SetBundle(b *Bundle) *WorkflowRunCreate {
+	return wrc.SetBundleID(b.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
@@ -382,6 +416,10 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 		_node.ContractRevisionLatest = value
 	}
+	if value, ok := wrc.mutation.BundleID(); ok {
+		_spec.SetField(workflowrun.FieldBundleID, field.TypeUUID, value)
+		_node.BundleID = value
+	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -447,6 +485,22 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.VersionID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wrc.mutation.BundleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.BundleTable,
+			Columns: []string{workflowrun.BundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -709,6 +763,9 @@ func (u *WorkflowRunUpsertOne) UpdateNewValues() *WorkflowRunUpsertOne {
 		}
 		if _, exists := u.create.mutation.WorkflowID(); exists {
 			s.SetIgnore(workflowrun.FieldWorkflowID)
+		}
+		if _, exists := u.create.mutation.BundleID(); exists {
+			s.SetIgnore(workflowrun.FieldBundleID)
 		}
 	}))
 	return u
@@ -1146,6 +1203,9 @@ func (u *WorkflowRunUpsertBulk) UpdateNewValues() *WorkflowRunUpsertBulk {
 			}
 			if _, exists := b.mutation.WorkflowID(); exists {
 				s.SetIgnore(workflowrun.FieldWorkflowID)
+			}
+			if _, exists := b.mutation.BundleID(); exists {
+				s.SetIgnore(workflowrun.FieldBundleID)
 			}
 		}
 	}))

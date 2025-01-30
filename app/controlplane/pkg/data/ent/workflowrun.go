@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -50,6 +51,8 @@ type WorkflowRun struct {
 	VersionID uuid.UUID `json:"version_id,omitempty"`
 	// WorkflowID holds the value of the "workflow_id" field.
 	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
+	// BundleID holds the value of the "bundle_id" field.
+	BundleID uuid.UUID `json:"bundle_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -67,9 +70,11 @@ type WorkflowRunEdges struct {
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// Version holds the value of the version edge.
 	Version *ProjectVersion `json:"version,omitempty"`
+	// Bundle holds the value of the bundle edge.
+	Bundle *Bundle `json:"bundle,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -114,6 +119,17 @@ func (e WorkflowRunEdges) VersionOrErr() (*ProjectVersion, error) {
 	return nil, &NotLoadedError{edge: "version"}
 }
 
+// BundleOrErr returns the Bundle value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowRunEdges) BundleOrErr() (*Bundle, error) {
+	if e.Bundle != nil {
+		return e.Bundle, nil
+	} else if e.loadedTypes[4] {
+		return nil, &NotFoundError{label: bundle.Label}
+	}
+	return nil, &NotLoadedError{edge: "bundle"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -127,7 +143,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
 			values[i] = new(sql.NullTime)
-		case workflowrun.FieldID, workflowrun.FieldVersionID, workflowrun.FieldWorkflowID:
+		case workflowrun.FieldID, workflowrun.FieldVersionID, workflowrun.FieldWorkflowID, workflowrun.FieldBundleID:
 			values[i] = new(uuid.UUID)
 		case workflowrun.ForeignKeys[0]: // workflow_run_contract_version
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -232,6 +248,12 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				wr.WorkflowID = *value
 			}
+		case workflowrun.FieldBundleID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field bundle_id", values[i])
+			} else if value != nil {
+				wr.BundleID = *value
+			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
@@ -270,6 +292,11 @@ func (wr *WorkflowRun) QueryCasBackends() *CASBackendQuery {
 // QueryVersion queries the "version" edge of the WorkflowRun entity.
 func (wr *WorkflowRun) QueryVersion() *ProjectVersionQuery {
 	return NewWorkflowRunClient(wr.config).QueryVersion(wr)
+}
+
+// QueryBundle queries the "bundle" edge of the WorkflowRun entity.
+func (wr *WorkflowRun) QueryBundle() *BundleQuery {
+	return NewWorkflowRunClient(wr.config).QueryBundle(wr)
 }
 
 // Update returns a builder for updating this WorkflowRun.
@@ -333,6 +360,9 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("workflow_id=")
 	builder.WriteString(fmt.Sprintf("%v", wr.WorkflowID))
+	builder.WriteString(", ")
+	builder.WriteString("bundle_id=")
+	builder.WriteString(fmt.Sprintf("%v", wr.BundleID))
 	builder.WriteByte(')')
 	return builder.String()
 }
