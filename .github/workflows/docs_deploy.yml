@@ -46,10 +46,10 @@ jobs:
         run: yarn install
 
       - name: Build
-        run: netlify build
+        run: ./node_modules/.bin/netlify build
 
       - name: Deploy
-        run: netlify deploy --prod
+        run: ./node_modules/.bin/netlify deploy --prod
 
       - name: Generate reports
         run: |
