@@ -76,12 +76,12 @@ jobs:
       # install qemu binaries for multiarch builds (needed by goreleaser/buildx)
       - name: Setup qemu
         id: qemu
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
 
       - name: Install Syft
         run: |
           # Install Syft
-          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
+          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O - | sh -s -- -b /usr/local/bin
 
       - name: Run GoReleaser
         id: release

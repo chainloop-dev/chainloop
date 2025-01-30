@@ -14,6 +14,8 @@ on:
       cosign_pass:
         required: true
 
+permissions: {}
+
 jobs:
   # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
   # it will create one with an empty contract ready for operators to be filled. Otherwise, if found, it will just

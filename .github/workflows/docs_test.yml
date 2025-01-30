@@ -5,6 +5,9 @@ on:
   push:
     branches: ["main"]
     paths: ["docs/**"]
+
+permissions: {}
+
 jobs:
   docs_build_and_test:
     name: Documentation Build and Test

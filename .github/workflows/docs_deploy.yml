@@ -8,6 +8,8 @@ on:
 # Limit to a single workflow
 concurrency: "deploy-to-prod"
 
+permissions: {}
+
 jobs:
   chainloop_init:
     name: Chainloop Init
@@ -36,7 +38,7 @@ jobs:
       - name: Install Syft
         run: |
           # Install Syft
-          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/main/install.sh -O - | sh -s -- -b /usr/local/bin
+          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O - | sh -s -- -b /usr/local/bin
 
       - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
