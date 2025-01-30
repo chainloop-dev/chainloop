@@ -15,6 +15,12 @@ materials:
 policies:
   attestation:
     - ref: source-commit
+      with:
+        check_signature: yes
+      requirements:
+        - chainloop-best-practices/commit-signed
   materials:
     - ref: artifact-signed
-
+      requirements:
+        - chainloop-best-practices/container-signed
+        - chainloop-best-practices/helm-chart-signed
