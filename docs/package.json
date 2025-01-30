@@ -27,7 +27,8 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^3.4.0"
+    "@docusaurus/module-type-aliases": "^3.4.0",
+    "netlify-cli": "^18.0.3"
   },
   "browserslist": {
     "production": [
