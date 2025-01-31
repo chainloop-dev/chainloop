@@ -14,6 +14,9 @@
       },
       "type": "array"
     },
+    "^(policy_evaluation_status)$": {
+      "$ref": "controlplane.v1.AttestationItem.PolicyEvaluationStatus.jsonschema.json"
+    },
     "^(policy_evaluations)$": {
       "additionalProperties": {
         "$ref": "controlplane.v1.PolicyEvaluations.jsonschema.json"
@@ -55,6 +58,9 @@
         "$ref": "controlplane.v1.AttestationItem.Material.jsonschema.json"
       },
       "type": "array"
+    },
+    "policyEvaluationStatus": {
+      "$ref": "controlplane.v1.AttestationItem.PolicyEvaluationStatus.jsonschema.json"
     },
     "policyEvaluations": {
       "additionalProperties": {

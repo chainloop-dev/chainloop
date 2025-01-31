@@ -433,6 +433,8 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		return nil, fmt.Errorf("error extracting materials from attestation: %w", err)
 	}
 
+	policyEvaluationStatus := predicate.GetPolicyEvaluationStatus()
+
 	return &cpAPI.AttestationItem{
 		Envelope:           encodedAttestation,
 		EnvVars:            extractEnvVariables(predicate.GetEnvVars()),
@@ -440,6 +442,12 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		Materials:          materials,
 		Annotations:        predicate.GetAnnotations(),
 		PolicyEvaluations:  extractPolicyEvaluations(predicate.GetPolicyEvaluations()),
+		PolicyEvaluationStatus: &cpAPI.AttestationItem_PolicyEvaluationStatus{
+			Strategy:      string(policyEvaluationStatus.Strategy),
+			Bypassed:      policyEvaluationStatus.Bypassed,
+			Blocked:       policyEvaluationStatus.Blocked,
+			HasViolations: policyEvaluationStatus.HasViolations,
+		},
 	}, nil
 }
 
