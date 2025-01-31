@@ -277,6 +277,7 @@ export interface AttestationItem {
   materials: AttestationItem_Material[];
   annotations: { [key: string]: string };
   policyEvaluations: { [key: string]: PolicyEvaluations };
+  policyEvaluationStatus?: AttestationItem_PolicyEvaluationStatus;
 }
 
 export interface AttestationItem_AnnotationsEntry {
@@ -287,6 +288,13 @@ export interface AttestationItem_AnnotationsEntry {
 export interface AttestationItem_PolicyEvaluationsEntry {
   key: string;
   value?: PolicyEvaluations;
+}
+
+export interface AttestationItem_PolicyEvaluationStatus {
+  strategy: string;
+  bypassed: boolean;
+  blocked: boolean;
+  hasViolations: boolean;
 }
 
 export interface AttestationItem_EnvVariable {
@@ -1152,6 +1160,7 @@ function createBaseAttestationItem(): AttestationItem {
     materials: [],
     annotations: {},
     policyEvaluations: {},
+    policyEvaluationStatus: undefined,
   };
 }
 
@@ -1175,6 +1184,9 @@ export const AttestationItem = {
     Object.entries(message.policyEvaluations).forEach(([key, value]) => {
       AttestationItem_PolicyEvaluationsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).ldelim();
     });
+    if (message.policyEvaluationStatus !== undefined) {
+      AttestationItem_PolicyEvaluationStatus.encode(message.policyEvaluationStatus, writer.uint32(74).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -1233,6 +1245,13 @@ export const AttestationItem = {
             message.policyEvaluations[entry8.key] = entry8.value;
           }
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.policyEvaluationStatus = AttestationItem_PolicyEvaluationStatus.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1264,6 +1283,9 @@ export const AttestationItem = {
           return acc;
         }, {})
         : {},
+      policyEvaluationStatus: isSet(object.policyEvaluationStatus)
+        ? AttestationItem_PolicyEvaluationStatus.fromJSON(object.policyEvaluationStatus)
+        : undefined,
     };
   },
 
@@ -1294,6 +1316,9 @@ export const AttestationItem = {
         obj.policyEvaluations[k] = PolicyEvaluations.toJSON(v);
       });
     }
+    message.policyEvaluationStatus !== undefined && (obj.policyEvaluationStatus = message.policyEvaluationStatus
+      ? AttestationItem_PolicyEvaluationStatus.toJSON(message.policyEvaluationStatus)
+      : undefined);
     return obj;
   },
 
@@ -1324,6 +1349,10 @@ export const AttestationItem = {
       }
       return acc;
     }, {});
+    message.policyEvaluationStatus =
+      (object.policyEvaluationStatus !== undefined && object.policyEvaluationStatus !== null)
+        ? AttestationItem_PolicyEvaluationStatus.fromPartial(object.policyEvaluationStatus)
+        : undefined;
     return message;
   },
 };
@@ -1473,6 +1502,107 @@ export const AttestationItem_PolicyEvaluationsEntry = {
     message.value = (object.value !== undefined && object.value !== null)
       ? PolicyEvaluations.fromPartial(object.value)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseAttestationItem_PolicyEvaluationStatus(): AttestationItem_PolicyEvaluationStatus {
+  return { strategy: "", bypassed: false, blocked: false, hasViolations: false };
+}
+
+export const AttestationItem_PolicyEvaluationStatus = {
+  encode(message: AttestationItem_PolicyEvaluationStatus, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.strategy !== "") {
+      writer.uint32(10).string(message.strategy);
+    }
+    if (message.bypassed === true) {
+      writer.uint32(16).bool(message.bypassed);
+    }
+    if (message.blocked === true) {
+      writer.uint32(24).bool(message.blocked);
+    }
+    if (message.hasViolations === true) {
+      writer.uint32(32).bool(message.hasViolations);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationItem_PolicyEvaluationStatus {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationItem_PolicyEvaluationStatus();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.strategy = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bypassed = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.blocked = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.hasViolations = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationItem_PolicyEvaluationStatus {
+    return {
+      strategy: isSet(object.strategy) ? String(object.strategy) : "",
+      bypassed: isSet(object.bypassed) ? Boolean(object.bypassed) : false,
+      blocked: isSet(object.blocked) ? Boolean(object.blocked) : false,
+      hasViolations: isSet(object.hasViolations) ? Boolean(object.hasViolations) : false,
+    };
+  },
+
+  toJSON(message: AttestationItem_PolicyEvaluationStatus): unknown {
+    const obj: any = {};
+    message.strategy !== undefined && (obj.strategy = message.strategy);
+    message.bypassed !== undefined && (obj.bypassed = message.bypassed);
+    message.blocked !== undefined && (obj.blocked = message.blocked);
+    message.hasViolations !== undefined && (obj.hasViolations = message.hasViolations);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationItem_PolicyEvaluationStatus>, I>>(
+    base?: I,
+  ): AttestationItem_PolicyEvaluationStatus {
+    return AttestationItem_PolicyEvaluationStatus.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationItem_PolicyEvaluationStatus>, I>>(
+    object: I,
+  ): AttestationItem_PolicyEvaluationStatus {
+    const message = createBaseAttestationItem_PolicyEvaluationStatus();
+    message.strategy = object.strategy ?? "";
+    message.bypassed = object.bypassed ?? false;
+    message.blocked = object.blocked ?? false;
+    message.hasViolations = object.hasViolations ?? false;
     return message;
   },
 };
