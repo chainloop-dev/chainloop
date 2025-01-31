@@ -374,6 +374,8 @@ func (att *Attestation) Push(
 	// The passphrase to decrypt the private key
 	// +optional
 	passphrase *dagger.Secret,
+	// Whether not fail if the policy check fails
+	exceptionBypassPolicyCheck bool,
 ) (string, error) {
 	container := att.Container(0)
 	args := []string{
@@ -387,6 +389,9 @@ func (att *Attestation) Push(
 	}
 	if passphrase != nil {
 		container = container.WithSecretVariable("CHAINLOOP_SIGNING_PASSWORD", passphrase)
+	}
+	if exceptionBypassPolicyCheck {
+		args = append(args, "--exception-bypass-policy-check")
 	}
 
 	return container.WithExec(args, execOpts).Stdout(ctx)
