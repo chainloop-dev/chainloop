@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -174,7 +175,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// render final attestation with all the evaluated policies inside
-	envelope, err := renderer.Render(ctx)
+	envelope, bundle, err := renderer.Render(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +195,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	workflow := crafter.CraftingState.Attestation.GetWorkflow()
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, bundle, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
@@ -209,13 +210,15 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	return attestationResult, nil
 }
 
-func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, workflowRunID string, markVersionAsReleased bool) (string, error) {
+func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
 	encodedAttestation, err := encodeEnvelope(envelope)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
 	client := pb.NewAttestationServiceClient(conn)
+
+	// Store attestations
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 		Attestation:           encodedAttestation,
 		WorkflowRunId:         workflowRunID,
@@ -226,7 +229,13 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 		return "", fmt.Errorf("contacting the control plane: %w", err)
 	}
 
-	return resp.Result.Digest, nil
+	digest := resp.Result.Digest
+
+	// Store bundle (it will supersede attestations in next versions)
+
+	// if endpoint not implemented, just ignore for backwards compatibility
+
+	return digest, nil
 }
 
 func encodeEnvelope(e *dsse.Envelope) ([]byte, error) {

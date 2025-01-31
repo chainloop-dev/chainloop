@@ -106,51 +106,52 @@ func (ab *AttestationRenderer) RenderStatement(ctx context.Context) (*intoto.Sta
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.
 // NOTE: It currently only supports cosign key based signing.
-func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, error) {
+func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *protobundle.Bundle, error) {
 	ab.logger.Debug().Msg("generating in-toto statement")
 
 	statement, err := ab.renderer.Statement(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := statement.Validate(); err != nil {
-		return nil, fmt.Errorf("validating intoto statement: %w", err)
+		return nil, nil, fmt.Errorf("validating intoto statement: %w", err)
 	}
 
 	rawStatement, err := protojson.Marshal(statement)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	signedAtt, err := ab.dsseSigner.SignMessage(bytes.NewReader(rawStatement))
 	if err != nil {
-		return nil, fmt.Errorf("signing message: %w", err)
+		return nil, nil, fmt.Errorf("signing message: %w", err)
 	}
 
 	var dsseEnvelope dsse.Envelope
 	if err := json.Unmarshal(signedAtt, &dsseEnvelope); err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	// Create sigstore bundle for the contents of this attestation
+	bundle, err := ab.envelopeToBundle(dsseEnvelope)
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading bundle: %w", err)
+	}
+	json, err := protojson.Marshal(bundle)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshalling bundle: %w", err)
 	}
 
 	if ab.bundlePath != "" {
-		// Create sigstore bundle for the contents of this attestation
-		bundle, err := ab.envelopeToBundle(dsseEnvelope)
-		if err != nil {
-			return nil, fmt.Errorf("loading bundle: %w", err)
-		}
-		json, err := protojson.Marshal(bundle)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling bundle: %w", err)
-		}
-		ab.logger.Info().Msg(fmt.Sprintf("generating Sigstore bundle %s", ab.bundlePath))
+		ab.logger.Info().Msg(fmt.Sprintf("Storing Sigstore bundle %s", ab.bundlePath))
 		err = os.WriteFile(ab.bundlePath, json, 0600)
 		if err != nil {
-			return nil, fmt.Errorf("writing bundle: %w", err)
+			return nil, nil, fmt.Errorf("writing bundle: %w", err)
 		}
 	}
 
-	return &dsseEnvelope, nil
+	return &dsseEnvelope, bundle, nil
 }
 
 func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*protobundle.Bundle, error) {
