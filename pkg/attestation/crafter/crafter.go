@@ -622,7 +622,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 	}
 
 	// Eliminate duplicates by checking if they have been already evaluated
-	// since we
+	// by comparing the policy reference and its arguments
 	policyEvaluations = append(policyEvaluations, policyGroupResults...)
 	var filteredPolicyEvaluations []*api.PolicyEvaluation
 	for _, ev := range policyEvaluations {
