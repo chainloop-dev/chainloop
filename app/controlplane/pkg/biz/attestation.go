@@ -26,7 +26,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 )
 
 type AttestationUseCase struct {
@@ -50,20 +49,6 @@ func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.En
 	jsonContent, h, err := attestation.JSONEnvelopeWithDigest(envelope)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling the envelope: %w", err)
-	}
-
-	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(jsonContent), filename, h.String()); err != nil {
-		return nil, fmt.Errorf("uploading to CAS: %w", err)
-	}
-
-	return &h, nil
-}
-
-func (uc *AttestationUseCase) UploadBundleToCAS(ctx context.Context, bundle *protobundle.Bundle, backend *CASBackend, workflowRunID string) (*cr_v1.Hash, error) {
-	filename := fmt.Sprintf("bundle-%s.json", workflowRunID)
-	jsonContent, h, err := attestation.JSONBundleWithDigest(bundle)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling the bunle: %w", err)
 	}
 
 	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(jsonContent), filename, h.String()); err != nil {
