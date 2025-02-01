@@ -28,6 +28,9 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -211,35 +214,57 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 }
 
 func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
+	var digest string
+
 	encodedAttestation, err := encodeEnvelope(envelope)
+	if err != nil {
+		return "", fmt.Errorf("encoding attestation: %w", err)
+	}
+
+	encodedBundle, err := encodeBundle(bundle)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
 	client := pb.NewAttestationServiceClient(conn)
 
-	// Store attestations
-	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
-		Attestation:           encodedAttestation,
+	// Store bundle next versions will perform this in a single call)
+	bundleResp, err := client.StoreBundle(ctx, &pb.AttestationServiceStoreBundleRequest{
+		Bundle:                encodedBundle,
 		WorkflowRunId:         workflowRunID,
 		MarkVersionAsReleased: &markVersionAsReleased,
 	})
-
 	if err != nil {
-		return "", fmt.Errorf("contacting the control plane: %w", err)
+		// if endpoint not implemented, just ignore the error for backwards compatibility, and proceed with old attestation endpoint
+		if status.Code(err) != codes.Unimplemented {
+			return "", fmt.Errorf("storing attestation bundle: %w", err)
+		}
+
+		// Store attestations
+		attResp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
+			Attestation:           encodedAttestation,
+			WorkflowRunId:         workflowRunID,
+			MarkVersionAsReleased: &markVersionAsReleased,
+		})
+
+		if err != nil {
+			return "", fmt.Errorf("contacting the control plane: %w", err)
+		}
+
+		digest = attResp.Result.Digest
+	} else {
+		digest = bundleResp.Result.Digest
 	}
-
-	digest := resp.Result.Digest
-
-	// Store bundle (it will supersede attestations in next versions)
-
-	// if endpoint not implemented, just ignore for backwards compatibility
 
 	return digest, nil
 }
 
 func encodeEnvelope(e *dsse.Envelope) ([]byte, error) {
 	return json.Marshal(e)
+}
+
+func encodeBundle(b *protobundle.Bundle) ([]byte, error) {
+	return protojson.Marshal(b)
 }
 
 func decodeEnvelope(rawEnvelope []byte) (*dsse.Envelope, error) {

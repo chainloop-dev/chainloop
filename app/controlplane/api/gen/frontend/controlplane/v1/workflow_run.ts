@@ -114,11 +114,28 @@ export interface AttestationServiceStoreRequest {
   markVersionAsReleased?: boolean | undefined;
 }
 
+export interface AttestationServiceStoreBundleRequest {
+  /** encoded bundle */
+  bundle: Uint8Array;
+  workflowRunId: string;
+  /** mark the associated version as released */
+  markVersionAsReleased?: boolean | undefined;
+}
+
 export interface AttestationServiceStoreResponse {
   result?: AttestationServiceStoreResponse_Result;
 }
 
 export interface AttestationServiceStoreResponse_Result {
+  /** attestation digest */
+  digest: string;
+}
+
+export interface AttestationServiceStoreBundleResponse {
+  result?: AttestationServiceStoreBundleResponse_Result;
+}
+
+export interface AttestationServiceStoreBundleResponse_Result {
   /** attestation digest */
   digest: string;
 }
@@ -1370,6 +1387,95 @@ export const AttestationServiceStoreRequest = {
   },
 };
 
+function createBaseAttestationServiceStoreBundleRequest(): AttestationServiceStoreBundleRequest {
+  return { bundle: new Uint8Array(0), workflowRunId: "", markVersionAsReleased: undefined };
+}
+
+export const AttestationServiceStoreBundleRequest = {
+  encode(message: AttestationServiceStoreBundleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.bundle.length !== 0) {
+      writer.uint32(10).bytes(message.bundle);
+    }
+    if (message.workflowRunId !== "") {
+      writer.uint32(18).string(message.workflowRunId);
+    }
+    if (message.markVersionAsReleased !== undefined) {
+      writer.uint32(24).bool(message.markVersionAsReleased);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceStoreBundleRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceStoreBundleRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.bundle = reader.bytes();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.workflowRunId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.markVersionAsReleased = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceStoreBundleRequest {
+    return {
+      bundle: isSet(object.bundle) ? bytesFromBase64(object.bundle) : new Uint8Array(0),
+      workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
+      markVersionAsReleased: isSet(object.markVersionAsReleased) ? Boolean(object.markVersionAsReleased) : undefined,
+    };
+  },
+
+  toJSON(message: AttestationServiceStoreBundleRequest): unknown {
+    const obj: any = {};
+    message.bundle !== undefined &&
+      (obj.bundle = base64FromBytes(message.bundle !== undefined ? message.bundle : new Uint8Array(0)));
+    message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
+    message.markVersionAsReleased !== undefined && (obj.markVersionAsReleased = message.markVersionAsReleased);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceStoreBundleRequest>, I>>(
+    base?: I,
+  ): AttestationServiceStoreBundleRequest {
+    return AttestationServiceStoreBundleRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceStoreBundleRequest>, I>>(
+    object: I,
+  ): AttestationServiceStoreBundleRequest {
+    const message = createBaseAttestationServiceStoreBundleRequest();
+    message.bundle = object.bundle ?? new Uint8Array(0);
+    message.workflowRunId = object.workflowRunId ?? "";
+    message.markVersionAsReleased = object.markVersionAsReleased ?? undefined;
+    return message;
+  },
+};
+
 function createBaseAttestationServiceStoreResponse(): AttestationServiceStoreResponse {
   return { result: undefined };
 }
@@ -1488,6 +1594,131 @@ export const AttestationServiceStoreResponse_Result = {
     object: I,
   ): AttestationServiceStoreResponse_Result {
     const message = createBaseAttestationServiceStoreResponse_Result();
+    message.digest = object.digest ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestationServiceStoreBundleResponse(): AttestationServiceStoreBundleResponse {
+  return { result: undefined };
+}
+
+export const AttestationServiceStoreBundleResponse = {
+  encode(message: AttestationServiceStoreBundleResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      AttestationServiceStoreBundleResponse_Result.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceStoreBundleResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceStoreBundleResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = AttestationServiceStoreBundleResponse_Result.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceStoreBundleResponse {
+    return {
+      result: isSet(object.result) ? AttestationServiceStoreBundleResponse_Result.fromJSON(object.result) : undefined,
+    };
+  },
+
+  toJSON(message: AttestationServiceStoreBundleResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined &&
+      (obj.result = message.result ? AttestationServiceStoreBundleResponse_Result.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceStoreBundleResponse>, I>>(
+    base?: I,
+  ): AttestationServiceStoreBundleResponse {
+    return AttestationServiceStoreBundleResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceStoreBundleResponse>, I>>(
+    object: I,
+  ): AttestationServiceStoreBundleResponse {
+    const message = createBaseAttestationServiceStoreBundleResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? AttestationServiceStoreBundleResponse_Result.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAttestationServiceStoreBundleResponse_Result(): AttestationServiceStoreBundleResponse_Result {
+  return { digest: "" };
+}
+
+export const AttestationServiceStoreBundleResponse_Result = {
+  encode(message: AttestationServiceStoreBundleResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.digest !== "") {
+      writer.uint32(18).string(message.digest);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceStoreBundleResponse_Result {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceStoreBundleResponse_Result();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceStoreBundleResponse_Result {
+    return { digest: isSet(object.digest) ? String(object.digest) : "" };
+  },
+
+  toJSON(message: AttestationServiceStoreBundleResponse_Result): unknown {
+    const obj: any = {};
+    message.digest !== undefined && (obj.digest = message.digest);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceStoreBundleResponse_Result>, I>>(
+    base?: I,
+  ): AttestationServiceStoreBundleResponse_Result {
+    return AttestationServiceStoreBundleResponse_Result.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceStoreBundleResponse_Result>, I>>(
+    object: I,
+  ): AttestationServiceStoreBundleResponse_Result {
+    const message = createBaseAttestationServiceStoreBundleResponse_Result();
     message.digest = object.digest ?? "";
     return message;
   },
@@ -2265,6 +2496,10 @@ export interface AttestationService {
     request: DeepPartial<AttestationServiceStoreRequest>,
     metadata?: grpc.Metadata,
   ): Promise<AttestationServiceStoreResponse>;
+  StoreBundle(
+    request: DeepPartial<AttestationServiceStoreBundleRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<AttestationServiceStoreBundleResponse>;
   /**
    * There is another endpoint to get credentials via casCredentialsService.Get
    * This one is kept since it leverages robot-accounts in the context of a workflow
@@ -2297,6 +2532,7 @@ export class AttestationServiceClientImpl implements AttestationService {
     this.GetContract = this.GetContract.bind(this);
     this.Init = this.Init.bind(this);
     this.Store = this.Store.bind(this);
+    this.StoreBundle = this.StoreBundle.bind(this);
     this.GetUploadCreds = this.GetUploadCreds.bind(this);
     this.Cancel = this.Cancel.bind(this);
     this.GetPolicy = this.GetPolicy.bind(this);
@@ -2337,6 +2573,17 @@ export class AttestationServiceClientImpl implements AttestationService {
     metadata?: grpc.Metadata,
   ): Promise<AttestationServiceStoreResponse> {
     return this.rpc.unary(AttestationServiceStoreDesc, AttestationServiceStoreRequest.fromPartial(request), metadata);
+  }
+
+  StoreBundle(
+    request: DeepPartial<AttestationServiceStoreBundleRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<AttestationServiceStoreBundleResponse> {
+    return this.rpc.unary(
+      AttestationServiceStoreBundleDesc,
+      AttestationServiceStoreBundleRequest.fromPartial(request),
+      metadata,
+    );
   }
 
   GetUploadCreds(
@@ -2464,6 +2711,29 @@ export const AttestationServiceStoreDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = AttestationServiceStoreResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const AttestationServiceStoreBundleDesc: UnaryMethodDefinitionish = {
+  methodName: "StoreBundle",
+  service: AttestationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return AttestationServiceStoreBundleRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = AttestationServiceStoreBundleResponse.decode(data);
       return {
         ...value,
         toObject() {

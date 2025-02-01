@@ -13596,7 +13596,6 @@ type WorkflowRunMutation struct {
 	addcontract_revision_used   *int
 	contract_revision_latest    *int
 	addcontract_revision_latest *int
-	bundle_id                   *uuid.UUID
 	clearedFields               map[string]struct{}
 	workflow                    *uuid.UUID
 	clearedworkflow             bool
@@ -14317,55 +14316,6 @@ func (m *WorkflowRunMutation) ResetWorkflowID() {
 	m.workflow = nil
 }
 
-// SetBundleID sets the "bundle_id" field.
-func (m *WorkflowRunMutation) SetBundleID(u uuid.UUID) {
-	m.bundle_id = &u
-}
-
-// BundleID returns the value of the "bundle_id" field in the mutation.
-func (m *WorkflowRunMutation) BundleID() (r uuid.UUID, exists bool) {
-	v := m.bundle_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBundleID returns the old "bundle_id" field's value of the WorkflowRun entity.
-// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkflowRunMutation) OldBundleID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBundleID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBundleID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBundleID: %w", err)
-	}
-	return oldValue.BundleID, nil
-}
-
-// ClearBundleID clears the value of the "bundle_id" field.
-func (m *WorkflowRunMutation) ClearBundleID() {
-	m.bundle_id = nil
-	m.clearedFields[workflowrun.FieldBundleID] = struct{}{}
-}
-
-// BundleIDCleared returns if the "bundle_id" field was cleared in this mutation.
-func (m *WorkflowRunMutation) BundleIDCleared() bool {
-	_, ok := m.clearedFields[workflowrun.FieldBundleID]
-	return ok
-}
-
-// ResetBundleID resets all changes to the "bundle_id" field.
-func (m *WorkflowRunMutation) ResetBundleID() {
-	m.bundle_id = nil
-	delete(m.clearedFields, workflowrun.FieldBundleID)
-}
-
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *WorkflowRunMutation) ClearWorkflow() {
 	m.clearedworkflow = true
@@ -14586,7 +14536,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -14626,9 +14576,6 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.workflow != nil {
 		fields = append(fields, workflowrun.FieldWorkflowID)
 	}
-	if m.bundle_id != nil {
-		fields = append(fields, workflowrun.FieldBundleID)
-	}
 	return fields
 }
 
@@ -14663,8 +14610,6 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.VersionID()
 	case workflowrun.FieldWorkflowID:
 		return m.WorkflowID()
-	case workflowrun.FieldBundleID:
-		return m.BundleID()
 	}
 	return nil, false
 }
@@ -14700,8 +14645,6 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldVersionID(ctx)
 	case workflowrun.FieldWorkflowID:
 		return m.OldWorkflowID(ctx)
-	case workflowrun.FieldBundleID:
-		return m.OldBundleID(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -14802,13 +14745,6 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetWorkflowID(v)
 		return nil
-	case workflowrun.FieldBundleID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBundleID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -14887,9 +14823,6 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldAttestationState) {
 		fields = append(fields, workflowrun.FieldAttestationState)
 	}
-	if m.FieldCleared(workflowrun.FieldBundleID) {
-		fields = append(fields, workflowrun.FieldBundleID)
-	}
 	return fields
 }
 
@@ -14924,9 +14857,6 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldAttestationState:
 		m.ClearAttestationState()
-		return nil
-	case workflowrun.FieldBundleID:
-		m.ClearBundleID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
@@ -14974,9 +14904,6 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldWorkflowID:
 		m.ResetWorkflowID()
-		return nil
-	case workflowrun.FieldBundleID:
-		m.ResetBundleID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

@@ -450,9 +450,6 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if wru.mutation.BundleIDCleared() {
-		_spec.ClearField(workflowrun.FieldBundleID, field.TypeUUID)
-	}
 	if wru.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1050,9 +1047,6 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
-	}
-	if wruo.mutation.BundleIDCleared() {
-		_spec.ClearField(workflowrun.FieldBundleID, field.TypeUUID)
 	}
 	if wruo.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{

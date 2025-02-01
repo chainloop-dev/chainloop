@@ -112,11 +112,6 @@ func WorkflowID(v uuid.UUID) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldWorkflowID, v))
 }
 
-// BundleID applies equality check predicate on the "bundle_id" field. It's identical to BundleIDEQ.
-func BundleID(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldEQ(FieldBundleID, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -715,56 +710,6 @@ func WorkflowIDIn(vs ...uuid.UUID) predicate.WorkflowRun {
 // WorkflowIDNotIn applies the NotIn predicate on the "workflow_id" field.
 func WorkflowIDNotIn(vs ...uuid.UUID) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotIn(FieldWorkflowID, vs...))
-}
-
-// BundleIDEQ applies the EQ predicate on the "bundle_id" field.
-func BundleIDEQ(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldEQ(FieldBundleID, v))
-}
-
-// BundleIDNEQ applies the NEQ predicate on the "bundle_id" field.
-func BundleIDNEQ(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldNEQ(FieldBundleID, v))
-}
-
-// BundleIDIn applies the In predicate on the "bundle_id" field.
-func BundleIDIn(vs ...uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldIn(FieldBundleID, vs...))
-}
-
-// BundleIDNotIn applies the NotIn predicate on the "bundle_id" field.
-func BundleIDNotIn(vs ...uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldNotIn(FieldBundleID, vs...))
-}
-
-// BundleIDGT applies the GT predicate on the "bundle_id" field.
-func BundleIDGT(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldGT(FieldBundleID, v))
-}
-
-// BundleIDGTE applies the GTE predicate on the "bundle_id" field.
-func BundleIDGTE(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldGTE(FieldBundleID, v))
-}
-
-// BundleIDLT applies the LT predicate on the "bundle_id" field.
-func BundleIDLT(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldLT(FieldBundleID, v))
-}
-
-// BundleIDLTE applies the LTE predicate on the "bundle_id" field.
-func BundleIDLTE(v uuid.UUID) predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldLTE(FieldBundleID, v))
-}
-
-// BundleIDIsNil applies the IsNil predicate on the "bundle_id" field.
-func BundleIDIsNil() predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldIsNull(FieldBundleID))
-}
-
-// BundleIDNotNil applies the NotNil predicate on the "bundle_id" field.
-func BundleIDNotNil() predicate.WorkflowRun {
-	return predicate.WorkflowRun(sql.FieldNotNull(FieldBundleID))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

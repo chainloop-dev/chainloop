@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -76,6 +78,7 @@ type WorkflowRunRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
+	SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*WorkflowRun, error)
@@ -290,6 +293,40 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	}
 
 	return digest.String(), nil
+}
+
+func (uc *WorkflowRunUseCase) SaveBundle(ctx context.Context, wfRunID string, bundle *protobundle.Bundle) (string, error) {
+	runUUID, err := uuid.Parse(wfRunID)
+	if err != nil {
+		return "", NewErrInvalidUUID(err)
+	}
+
+	// Calculate the digest
+	bundleByes, digest, err := attestation.JSONBundleWithDigest(bundle)
+	if err != nil {
+		return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
+	}
+
+	// Save bundle
+	if err = uc.wfRunRepo.SaveBundle(ctx, runUUID, bundleByes); err != nil {
+		return "", fmt.Errorf("saving bundle: %w", err)
+	}
+
+	return digest.String(), nil
+}
+
+func (uc *WorkflowRunUseCase) EnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
+	sigstoreEnvelope := bundle.GetDsseEnvelope()
+	return &dsse.Envelope{
+		PayloadType: sigstoreEnvelope.PayloadType,
+		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
+		Signatures: []dsse.Signature{
+			{
+				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
+				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
+			},
+		},
+	}
 }
 
 type RunListFilters struct {

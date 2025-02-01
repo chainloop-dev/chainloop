@@ -43,8 +43,6 @@ const (
 	FieldVersionID = "version_id"
 	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
 	FieldWorkflowID = "workflow_id"
-	// FieldBundleID holds the string denoting the bundle_id field in the database.
-	FieldBundleID = "bundle_id"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
@@ -108,7 +106,6 @@ var Columns = []string{
 	FieldContractRevisionLatest,
 	FieldVersionID,
 	FieldWorkflowID,
-	FieldBundleID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -218,11 +215,6 @@ func ByVersionID(opts ...sql.OrderTermOption) OrderOption {
 // ByWorkflowID orders the results by the workflow_id field.
 func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
-}
-
-// ByBundleID orders the results by the bundle_id field.
-func ByBundleID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldBundleID, opts...).ToFunc()
 }
 
 // ByWorkflowField orders the results by workflow field.

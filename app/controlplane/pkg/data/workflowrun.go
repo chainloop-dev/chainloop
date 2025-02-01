@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
@@ -31,8 +32,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-
-	"entgo.io/ent/dialect/sql"
 )
 
 type WorkflowRunRepo struct {
@@ -189,6 +188,17 @@ func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att
 		return err
 	} else if run == nil {
 		return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+	}
+
+	return nil
+}
+
+// SaveBundle Save the bundle for a workflow run in the database
+func (r *WorkflowRunRepo) SaveBundle(ctx context.Context, wrID uuid.UUID, bundle []byte) error {
+	if err := r.data.DB.Bundle.Create().
+		SetBundle(bundle).SetWorkflowrunID(wrID).
+		Exec(ctx); err != nil {
+		return fmt.Errorf("saving bundle: %w", err)
 	}
 
 	return nil

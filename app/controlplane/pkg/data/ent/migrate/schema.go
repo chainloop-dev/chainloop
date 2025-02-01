@@ -590,7 +590,6 @@ var (
 		{Name: "attestation_state", Type: field.TypeBytes, Nullable: true},
 		{Name: "contract_revision_used", Type: field.TypeInt},
 		{Name: "contract_revision_latest", Type: field.TypeInt},
-		{Name: "bundle_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "version_id", Type: field.TypeUUID},
 		{Name: "workflow_id", Type: field.TypeUUID},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
@@ -603,19 +602,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_runs_project_versions_runs",
-				Columns:    []*schema.Column{WorkflowRunsColumns[13]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[12]},
 				RefColumns: []*schema.Column{ProjectVersionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflow_runs_workflows_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[14]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[13]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflow_runs_workflow_contract_versions_contract_version",
-				Columns:    []*schema.Column{WorkflowRunsColumns[15]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[14]},
 				RefColumns: []*schema.Column{WorkflowContractVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -624,7 +623,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[14], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -634,7 +633,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_state_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[14], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -659,12 +658,12 @@ var (
 			{
 				Name:    "workflowrun_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[14]},
+				Columns: []*schema.Column{WorkflowRunsColumns[13]},
 			},
 			{
 				Name:    "workflowrun_version_id_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[14]},
+				Columns: []*schema.Column{WorkflowRunsColumns[12], WorkflowRunsColumns[13]},
 			},
 		},
 	}

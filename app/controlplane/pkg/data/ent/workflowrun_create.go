@@ -165,20 +165,6 @@ func (wrc *WorkflowRunCreate) SetWorkflowID(u uuid.UUID) *WorkflowRunCreate {
 	return wrc
 }
 
-// SetBundleID sets the "bundle_id" field.
-func (wrc *WorkflowRunCreate) SetBundleID(u uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetBundleID(u)
-	return wrc
-}
-
-// SetNillableBundleID sets the "bundle_id" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableBundleID(u *uuid.UUID) *WorkflowRunCreate {
-	if u != nil {
-		wrc.SetBundleID(*u)
-	}
-	return wrc
-}
-
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -415,10 +401,6 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 	if value, ok := wrc.mutation.ContractRevisionLatest(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 		_node.ContractRevisionLatest = value
-	}
-	if value, ok := wrc.mutation.BundleID(); ok {
-		_spec.SetField(workflowrun.FieldBundleID, field.TypeUUID, value)
-		_node.BundleID = value
 	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -763,9 +745,6 @@ func (u *WorkflowRunUpsertOne) UpdateNewValues() *WorkflowRunUpsertOne {
 		}
 		if _, exists := u.create.mutation.WorkflowID(); exists {
 			s.SetIgnore(workflowrun.FieldWorkflowID)
-		}
-		if _, exists := u.create.mutation.BundleID(); exists {
-			s.SetIgnore(workflowrun.FieldBundleID)
 		}
 	}))
 	return u
@@ -1203,9 +1182,6 @@ func (u *WorkflowRunUpsertBulk) UpdateNewValues() *WorkflowRunUpsertBulk {
 			}
 			if _, exists := b.mutation.WorkflowID(); exists {
 				s.SetIgnore(workflowrun.FieldWorkflowID)
-			}
-			if _, exists := b.mutation.BundleID(); exists {
-				s.SetIgnore(workflowrun.FieldBundleID)
 			}
 		}
 	}))

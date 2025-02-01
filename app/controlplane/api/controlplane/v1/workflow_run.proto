@@ -30,6 +30,7 @@ service AttestationService {
   rpc GetContract(AttestationServiceGetContractRequest) returns (AttestationServiceGetContractResponse);
   rpc Init(AttestationServiceInitRequest) returns (AttestationServiceInitResponse);
   rpc Store(AttestationServiceStoreRequest) returns (AttestationServiceStoreResponse);
+  rpc StoreBundle(AttestationServiceStoreBundleRequest) returns (AttestationServiceStoreBundleResponse);
   // There is another endpoint to get credentials via casCredentialsService.Get
   // This one is kept since it leverages robot-accounts in the context of a workflow
   rpc GetUploadCreds(AttestationServiceGetUploadCredsRequest) returns (AttestationServiceGetUploadCredsResponse);
@@ -142,7 +143,24 @@ message AttestationServiceStoreRequest {
   optional bool mark_version_as_released = 3;
 }
 
+message AttestationServiceStoreBundleRequest {
+  // encoded bundle
+  bytes bundle = 1 [(buf.validate.field).bytes.min_len = 1];
+  string workflow_run_id = 2 [(buf.validate.field).string = {min_len: 1}];
+  // mark the associated version as released
+  optional bool mark_version_as_released = 3;
+}
+
 message AttestationServiceStoreResponse {
+  Result result = 1;
+
+  message Result {
+    // attestation digest
+    string digest = 2;
+  }
+}
+
+message AttestationServiceStoreBundleResponse {
   Result result = 1;
 
   message Result {

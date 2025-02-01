@@ -59,8 +59,6 @@ func (WorkflowRun) Fields() []ent.Field {
 		// We have runs without data
 		field.UUID("version_id", uuid.UUID{}),
 		field.UUID("workflow_id", uuid.UUID{}).Immutable(),
-		// Bundles are optional for failed workflow runs
-		field.UUID("bundle_id", uuid.UUID{}).Immutable().Optional(),
 	}
 }
 
