@@ -134,6 +134,7 @@ func newAttestationPushCmd() *cobra.Command {
 
 const exceptionFlagName = "exception-bypass-policy-check"
 
-var ErrBlockedByPolicyViolation = fmt.Errorf("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --%s", exceptionFlagName)
-
-const exceptionBypassPolicyCheck = "Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --exception_bypass_policy_check as soon as possible."
+var (
+	ErrBlockedByPolicyViolation = fmt.Errorf("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --%s", exceptionFlagName)
+	exceptionBypassPolicyCheck  = fmt.Sprintf("Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --%s as soon as possible.", exceptionFlagName)
+)
