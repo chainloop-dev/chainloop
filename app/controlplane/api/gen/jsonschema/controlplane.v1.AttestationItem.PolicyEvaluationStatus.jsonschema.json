@@ -1,0 +1,26 @@
+{
+  "$id": "controlplane.v1.AttestationItem.PolicyEvaluationStatus.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(has_violations)$": {
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "blocked": {
+      "type": "boolean"
+    },
+    "bypassed": {
+      "type": "boolean"
+    },
+    "hasViolations": {
+      "type": "boolean"
+    },
+    "strategy": {
+      "type": "string"
+    }
+  },
+  "title": "Policy Evaluation Status",
+  "type": "object"
+}

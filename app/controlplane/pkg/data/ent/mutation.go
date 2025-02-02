@@ -7825,6 +7825,7 @@ type ProjectVersionMutation struct {
 	prerelease            *bool
 	workflow_run_count    *int
 	addworkflow_run_count *int
+	released_at           *time.Time
 	clearedFields         map[string]struct{}
 	project               *uuid.UUID
 	clearedproject        bool
@@ -8189,6 +8190,55 @@ func (m *ProjectVersionMutation) ResetWorkflowRunCount() {
 	m.addworkflow_run_count = nil
 }
 
+// SetReleasedAt sets the "released_at" field.
+func (m *ProjectVersionMutation) SetReleasedAt(t time.Time) {
+	m.released_at = &t
+}
+
+// ReleasedAt returns the value of the "released_at" field in the mutation.
+func (m *ProjectVersionMutation) ReleasedAt() (r time.Time, exists bool) {
+	v := m.released_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReleasedAt returns the old "released_at" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldReleasedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReleasedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReleasedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReleasedAt: %w", err)
+	}
+	return oldValue.ReleasedAt, nil
+}
+
+// ClearReleasedAt clears the value of the "released_at" field.
+func (m *ProjectVersionMutation) ClearReleasedAt() {
+	m.released_at = nil
+	m.clearedFields[projectversion.FieldReleasedAt] = struct{}{}
+}
+
+// ReleasedAtCleared returns if the "released_at" field was cleared in this mutation.
+func (m *ProjectVersionMutation) ReleasedAtCleared() bool {
+	_, ok := m.clearedFields[projectversion.FieldReleasedAt]
+	return ok
+}
+
+// ResetReleasedAt resets all changes to the "released_at" field.
+func (m *ProjectVersionMutation) ResetReleasedAt() {
+	m.released_at = nil
+	delete(m.clearedFields, projectversion.FieldReleasedAt)
+}
+
 // ClearProject clears the "project" edge to the Project entity.
 func (m *ProjectVersionMutation) ClearProject() {
 	m.clearedproject = true
@@ -8304,7 +8354,7 @@ func (m *ProjectVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectVersionMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.version != nil {
 		fields = append(fields, projectversion.FieldVersion)
 	}
@@ -8322,6 +8372,9 @@ func (m *ProjectVersionMutation) Fields() []string {
 	}
 	if m.workflow_run_count != nil {
 		fields = append(fields, projectversion.FieldWorkflowRunCount)
+	}
+	if m.released_at != nil {
+		fields = append(fields, projectversion.FieldReleasedAt)
 	}
 	return fields
 }
@@ -8343,6 +8396,8 @@ func (m *ProjectVersionMutation) Field(name string) (ent.Value, bool) {
 		return m.Prerelease()
 	case projectversion.FieldWorkflowRunCount:
 		return m.WorkflowRunCount()
+	case projectversion.FieldReleasedAt:
+		return m.ReleasedAt()
 	}
 	return nil, false
 }
@@ -8364,6 +8419,8 @@ func (m *ProjectVersionMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldPrerelease(ctx)
 	case projectversion.FieldWorkflowRunCount:
 		return m.OldWorkflowRunCount(ctx)
+	case projectversion.FieldReleasedAt:
+		return m.OldReleasedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown ProjectVersion field %s", name)
 }
@@ -8415,6 +8472,13 @@ func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetWorkflowRunCount(v)
 		return nil
+	case projectversion.FieldReleasedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReleasedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)
 }
@@ -8463,6 +8527,9 @@ func (m *ProjectVersionMutation) ClearedFields() []string {
 	if m.FieldCleared(projectversion.FieldDeletedAt) {
 		fields = append(fields, projectversion.FieldDeletedAt)
 	}
+	if m.FieldCleared(projectversion.FieldReleasedAt) {
+		fields = append(fields, projectversion.FieldReleasedAt)
+	}
 	return fields
 }
 
@@ -8479,6 +8546,9 @@ func (m *ProjectVersionMutation) ClearField(name string) error {
 	switch name {
 	case projectversion.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case projectversion.FieldReleasedAt:
+		m.ClearReleasedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion nullable field %s", name)
@@ -8505,6 +8575,9 @@ func (m *ProjectVersionMutation) ResetField(name string) error {
 		return nil
 	case projectversion.FieldWorkflowRunCount:
 		m.ResetWorkflowRunCount()
+		return nil
+	case projectversion.FieldReleasedAt:
+		m.ResetReleasedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)

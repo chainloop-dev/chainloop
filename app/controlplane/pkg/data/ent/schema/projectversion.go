@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ func (ProjectVersion) Fields() []ent.Field {
 		field.UUID("project_id", uuid.UUID{}),
 		field.Bool("prerelease").Default(true),
 		field.Int("workflow_run_count").Default(0),
+		// When the version was released
+		field.Time("released_at").Optional(),
 	}
 }
 

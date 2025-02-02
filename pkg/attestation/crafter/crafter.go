@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -38,6 +39,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -619,7 +621,25 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 		return fmt.Errorf("evaluating policy groups in statement: %w", err)
 	}
 
+	// Eliminate duplicates by checking if they have been already evaluated
+	// by comparing the policy reference and its arguments
 	policyEvaluations = append(policyEvaluations, policyGroupResults...)
+	var filteredPolicyEvaluations []*api.PolicyEvaluation
+	for _, ev := range policyEvaluations {
+		var duplicated bool
+		for _, existing := range filteredPolicyEvaluations {
+			if proto.Equal(existing.PolicyReference, ev.PolicyReference) && reflect.DeepEqual(existing.With, ev.With) {
+				duplicated = true
+				break
+			}
+		}
+
+		if !duplicated {
+			filteredPolicyEvaluations = append(filteredPolicyEvaluations, ev)
+		}
+	}
+
+	policyEvaluations = filteredPolicyEvaluations
 
 	// Since we are going to override the state, we want to keep the existing material-type policy evaluations
 	for _, ev := range c.CraftingState.Attestation.PolicyEvaluations {

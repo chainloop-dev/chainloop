@@ -71,6 +71,9 @@ message ProjectVersion {
   string id = 1;
   string version = 2;
   bool prerelease = 3;
+  google.protobuf.Timestamp created_at = 4;
+  // when it was marked as released
+  google.protobuf.Timestamp released_at = 5;
 }
 
 enum RunStatus {
@@ -93,6 +96,14 @@ message AttestationItem {
   repeated Material materials = 5;
   map<string, string> annotations = 6;
   map<string, PolicyEvaluations> policy_evaluations = 8;
+  PolicyEvaluationStatus policy_evaluation_status = 9;
+
+  message PolicyEvaluationStatus {
+    string strategy = 1;
+    bool bypassed = 2;
+    bool blocked = 3;
+    bool has_violations = 4;
+  }
 
   message EnvVariable {
     string name = 1;

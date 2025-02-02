@@ -42,7 +42,18 @@ type NormalizablePredicate interface {
 	GetRunLink() string
 	GetMetadata() *Metadata
 	GetPolicyEvaluations() map[string][]*PolicyEvaluation
-	HasPolicyViolations() bool
+	GetPolicyEvaluationStatus() *PolicyEvaluationStatus
+}
+
+type PolicyEvaluationStatus struct {
+	// Whether we want to block the attestation on policy violations
+	Strategy PolicyViolationBlockingStrategy
+	// Whether the policy check was bypassed
+	Bypassed bool
+	// Whether the attestation was blocked due to policy violations
+	Blocked bool
+	// Whether the attestation has policy violations
+	HasViolations bool
 }
 
 type NormalizedMaterial struct {

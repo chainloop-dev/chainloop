@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,6 +57,15 @@ type WorkflowRunAttestationItem struct {
 	Digest string `json:"digest"`
 	// Policy violations
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
+	// Policy evaluation status
+	PolicyEvaluationStatus *PolicyEvaluationStatus `json:"policy_evaluation_status,omitempty"`
+}
+
+type PolicyEvaluationStatus struct {
+	Strategy      string `json:"strategy"`
+	Bypassed      bool   `json:"bypassed"`
+	Blocked       bool   `json:"blocked"`
+	HasViolations bool   `json:"has_violations"`
 }
 
 type Material struct {
@@ -204,6 +213,8 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		evaluations[k] = evs
 	}
 
+	policyEvaluationStatus := attestation.GetPolicyEvaluationStatus()
+
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
 		statement:         statement,
@@ -212,6 +223,12 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		Annotations:       annotations,
 		Digest:            attestation.DigestInCasBackend,
 		PolicyEvaluations: evaluations,
+		PolicyEvaluationStatus: &PolicyEvaluationStatus{
+			Strategy:      policyEvaluationStatus.Strategy,
+			Bypassed:      policyEvaluationStatus.Bypassed,
+			Blocked:       policyEvaluationStatus.Blocked,
+			HasViolations: policyEvaluationStatus.HasViolations,
+		},
 	}
 
 	return item, nil

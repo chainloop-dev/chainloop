@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -155,6 +155,12 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		for _, a := range att.Annotations {
 			gt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
 		}
+	}
+
+	gt.AppendRow(table.Row{"Policies violation strategy", att.PolicyEvaluationStatus.Strategy})
+	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
+		gt.AppendRow(table.Row{"Run Blocked", att.PolicyEvaluationStatus.Blocked})
+		gt.AppendRow(table.Row{"Policy enforcement bypassed", att.PolicyEvaluationStatus.Bypassed})
 	}
 
 	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]

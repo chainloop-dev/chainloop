@@ -101,6 +101,26 @@ func (pvu *ProjectVersionUpdate) AddWorkflowRunCount(i int) *ProjectVersionUpdat
 	return pvu
 }
 
+// SetReleasedAt sets the "released_at" field.
+func (pvu *ProjectVersionUpdate) SetReleasedAt(t time.Time) *ProjectVersionUpdate {
+	pvu.mutation.SetReleasedAt(t)
+	return pvu
+}
+
+// SetNillableReleasedAt sets the "released_at" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillableReleasedAt(t *time.Time) *ProjectVersionUpdate {
+	if t != nil {
+		pvu.SetReleasedAt(*t)
+	}
+	return pvu
+}
+
+// ClearReleasedAt clears the value of the "released_at" field.
+func (pvu *ProjectVersionUpdate) ClearReleasedAt() *ProjectVersionUpdate {
+	pvu.mutation.ClearReleasedAt()
+	return pvu
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pvu *ProjectVersionUpdate) SetProject(p *Project) *ProjectVersionUpdate {
 	return pvu.SetProjectID(p.ID)
@@ -220,6 +240,12 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if value, ok := pvu.mutation.AddedWorkflowRunCount(); ok {
 		_spec.AddField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
+	}
+	if value, ok := pvu.mutation.ReleasedAt(); ok {
+		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
+	}
+	if pvu.mutation.ReleasedAtCleared() {
+		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
 	}
 	if pvu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -386,6 +412,26 @@ func (pvuo *ProjectVersionUpdateOne) AddWorkflowRunCount(i int) *ProjectVersionU
 	return pvuo
 }
 
+// SetReleasedAt sets the "released_at" field.
+func (pvuo *ProjectVersionUpdateOne) SetReleasedAt(t time.Time) *ProjectVersionUpdateOne {
+	pvuo.mutation.SetReleasedAt(t)
+	return pvuo
+}
+
+// SetNillableReleasedAt sets the "released_at" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillableReleasedAt(t *time.Time) *ProjectVersionUpdateOne {
+	if t != nil {
+		pvuo.SetReleasedAt(*t)
+	}
+	return pvuo
+}
+
+// ClearReleasedAt clears the value of the "released_at" field.
+func (pvuo *ProjectVersionUpdateOne) ClearReleasedAt() *ProjectVersionUpdateOne {
+	pvuo.mutation.ClearReleasedAt()
+	return pvuo
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pvuo *ProjectVersionUpdateOne) SetProject(p *Project) *ProjectVersionUpdateOne {
 	return pvuo.SetProjectID(p.ID)
@@ -535,6 +581,12 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 	}
 	if value, ok := pvuo.mutation.AddedWorkflowRunCount(); ok {
 		_spec.AddField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
+	}
+	if value, ok := pvuo.mutation.ReleasedAt(); ok {
+		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
+	}
+	if pvuo.mutation.ReleasedAtCleared() {
+		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
 	}
 	if pvuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

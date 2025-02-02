@@ -384,8 +384,13 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEval
 	return p.PolicyEvaluations
 }
 
-func (p *ProvenancePredicateV02) HasPolicyViolations() bool {
-	return p.PolicyHasViolations
+func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {
+	return &PolicyEvaluationStatus{
+		Strategy:      p.PolicyCheckBlockingStrategy,
+		Bypassed:      p.PolicyBlockBypassEnabled,
+		Blocked:       p.PolicyAttBlocked,
+		HasViolations: p.PolicyHasViolations,
+	}
 }
 
 // Translate a ResourceDescriptor to a NormalizedMaterial

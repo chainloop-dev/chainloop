@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -54,7 +55,19 @@ func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *
 		updates = &biz.ProjectVersionUpdateOpts{}
 	}
 
-	res, err := r.data.DB.ProjectVersion.UpdateOneID(id).SetNillablePrerelease(updates.Prerelease).Save(ctx)
+	q := r.data.DB.ProjectVersion.UpdateOneID(id).SetNillablePrerelease(updates.Prerelease)
+	// we are setting the value either false or true
+	if updates.Prerelease != nil {
+		// We are marking it as a release
+		if !*updates.Prerelease {
+			q = q.SetReleasedAt(time.Now())
+		} else {
+			// We are resetting it to pre-release
+			q = q.ClearReleasedAt()
+		}
+	}
+
+	res, err := q.Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if res == nil {
@@ -78,10 +91,14 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 }
 
 func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
-	return &biz.ProjectVersion{
+	pv := &biz.ProjectVersion{
 		ID:                v.ID,
 		Version:           v.Version,
 		Prerelease:        v.Prerelease,
 		TotalWorkflowRuns: v.WorkflowRunCount,
+		CreatedAt:         toTimePtr(v.CreatedAt),
+		ReleasedAt:        toTimePtr(v.ReleasedAt),
 	}
+
+	return pv
 }

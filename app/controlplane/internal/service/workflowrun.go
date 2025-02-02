@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -216,11 +216,21 @@ func bizProjectVersionToPb(v *biz.ProjectVersion) *pb.ProjectVersion {
 		return nil
 	}
 
-	return &pb.ProjectVersion{
+	pv := &pb.ProjectVersion{
 		Id:         v.ID.String(),
 		Version:    v.Version,
 		Prerelease: v.Prerelease,
 	}
+
+	if v.CreatedAt != nil {
+		pv.CreatedAt = timestamppb.New(*v.CreatedAt)
+	}
+
+	if v.ReleasedAt != nil {
+		pv.ReleasedAt = timestamppb.New(*v.ReleasedAt)
+	}
+
+	return pv
 }
 
 func bizWorkflowRunStatusToPb(st biz.WorkflowRunStatus) pb.RunStatus {
