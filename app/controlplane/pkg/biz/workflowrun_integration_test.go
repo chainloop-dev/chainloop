@@ -160,13 +160,13 @@ func (s *workflowRunIntegrationTestSuite) TestSaveBundle() {
 	assert := assert.New(s.T())
 	bundle := testBundle(s.T(), "testdata/attestations/bundle.json")
 	ctx := context.TODO()
-	t.Run("non existing workflowRun", func(t *testing.T) {
+	t.Run("non existing workflowRun", func(_ *testing.T) {
 		_, err := s.WorkflowRun.SaveBundle(ctx, uuid.NewString(), bundle)
 		assert.Error(err)
 		assert.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("valid workflowRun", func(t *testing.T) {
+	s.T().Run("valid workflowRun", func(_ *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
