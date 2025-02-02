@@ -29,10 +29,12 @@ import (
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	v1 "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (s *workflowRunIntegrationTestSuite) TestList() {
@@ -150,6 +152,30 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: wantDigest})
+	})
+}
+
+func (s *workflowRunIntegrationTestSuite) TestSaveBundle() {
+	t := s.T()
+	assert := assert.New(s.T())
+	bundle := testBundle(s.T(), "testdata/attestations/bundle.json")
+	ctx := context.TODO()
+	t.Run("non existing workflowRun", func(t *testing.T) {
+		_, err := s.WorkflowRun.SaveBundle(ctx, uuid.NewString(), bundle)
+		assert.Error(err)
+		assert.True(biz.IsNotFound(err))
+	})
+
+	s.T().Run("valid workflowRun", func(t *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		})
+		assert.NoError(err)
+
+		d, err := s.WorkflowRun.SaveBundle(ctx, run.ID.String(), bundle)
+		assert.NoError(err)
+		wantDigest := "sha256:44d148ca718becb723f58c9b2d54badf22db9bdd2647513518c2a52c58933048"
+		assert.Equal(wantDigest, d)
 	})
 }
 
@@ -359,6 +385,14 @@ func testEnvelope(t *testing.T, path string) *dsse.Envelope {
 	var envelope *dsse.Envelope
 	require.NoError(t, json.Unmarshal(attJSON, &envelope))
 	return envelope
+}
+
+func testBundle(t *testing.T, path string) *v1.Bundle {
+	bundleJSON, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var bundle v1.Bundle
+	require.NoError(t, protojson.Unmarshal(bundleJSON, &bundle))
+	return &bundle
 }
 
 const (

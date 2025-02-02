@@ -301,6 +301,15 @@ func (uc *WorkflowRunUseCase) SaveBundle(ctx context.Context, wfRunID string, bu
 		return "", NewErrInvalidUUID(err)
 	}
 
+	// check workflow run exists
+	wr, err := uc.wfRunRepo.FindByID(ctx, runUUID)
+	if err != nil {
+		return "", fmt.Errorf("finding workflow run: %w", err)
+	}
+	if wr == nil {
+		return "", NewErrNotFound(fmt.Sprintf("workflow run not found: %s", wfRunID))
+	}
+
 	// Calculate the digest
 	bundleByes, digest, err := attestation.JSONBundleWithDigest(bundle)
 	if err != nil {
