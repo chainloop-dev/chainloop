@@ -15,7 +15,11 @@
   "properties": {
     "attestation": {
       "description": "encoded DSEE envelope",
-      "minLength": 2,
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "bundle": {
+      "description": "encoded Sigstore attestation bundle\n TODO. Add min_len constraint",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     },
