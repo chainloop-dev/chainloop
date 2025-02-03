@@ -195,7 +195,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	// Try unmarshaling a bundle first, falling back to plain dsse envelopes
+	// Try unmarshalling a bundle first, falling back to plain dsse envelopes
 	var bundle protobundle.Bundle
 	if req.GetBundle() != nil {
 		if err := protojson.Unmarshal(req.GetBundle(), &bundle); err != nil {
@@ -209,17 +209,9 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		}
 	}
 
-	digest, err := s.storeAttestation(ctx, &envelope, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
+	digest, err := s.storeAttestation(ctx, &envelope, &bundle, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	// save bundle after saving attestation
-	if bundle.GetDsseEnvelope() != nil {
-		_, err = s.wrUseCase.SaveBundle(ctx, req.WorkflowRunId, &bundle)
-		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
 	}
 
 	return &cpAPI.AttestationServiceStoreResponse{
@@ -227,6 +219,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}, nil
 }
 
+// Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
 func envelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 	sigstoreEnvelope := bundle.GetDsseEnvelope()
 	return &dsse.Envelope{
@@ -242,7 +235,7 @@ func envelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dsse.Envelope, robotAccount *usercontext.RobotAccount, workflowRunID string, markAsReleased *bool) (string, error) {
+func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dsse.Envelope, bundle *protobundle.Bundle, robotAccount *usercontext.RobotAccount, workflowRunID string, markAsReleased *bool) (string, error) {
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", workflowRunID)
 	if err != nil {
@@ -287,7 +280,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 	}
 
 	// Store the attestation including the digest in the CAS backend (if exists)
-	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope)
+	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope, bundle)
 	if err != nil {
 		return "", handleUseCaseErr(err, s.log)
 	}

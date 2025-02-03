@@ -255,7 +255,7 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope) (string, error) {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope, bundle *protobundle.Bundle) (string, error) {
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return "", NewErrInvalidUUID(err)
@@ -291,33 +291,17 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		return "", fmt.Errorf("saving attestation: %w", err)
 	}
 
-	return digest.String(), nil
-}
+	// Save bundle if provided. It might come as an empty struct
+	if bundle != nil && bundle.GetDsseEnvelope() != nil {
+		bundleByes, _, err := attestation.JSONBundleWithDigest(bundle)
+		if err != nil {
+			return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
+		}
 
-func (uc *WorkflowRunUseCase) SaveBundle(ctx context.Context, wfRunID string, bundle *protobundle.Bundle) (string, error) {
-	runUUID, err := uuid.Parse(wfRunID)
-	if err != nil {
-		return "", NewErrInvalidUUID(err)
-	}
-
-	// check workflow run exists
-	wr, err := uc.wfRunRepo.FindByID(ctx, runUUID)
-	if err != nil {
-		return "", fmt.Errorf("finding workflow run: %w", err)
-	}
-	if wr == nil {
-		return "", NewErrNotFound(fmt.Sprintf("workflow run not found: %s", wfRunID))
-	}
-
-	// Calculate the digest
-	bundleByes, digest, err := attestation.JSONBundleWithDigest(bundle)
-	if err != nil {
-		return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
-	}
-
-	// Save bundle
-	if err = uc.wfRunRepo.SaveBundle(ctx, runUUID, bundleByes); err != nil {
-		return "", fmt.Errorf("saving bundle: %w", err)
+		// Save bundle
+		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundleByes); err != nil {
+			return "", fmt.Errorf("saving bundle: %w", err)
+		}
 	}
 
 	return digest.String(), nil

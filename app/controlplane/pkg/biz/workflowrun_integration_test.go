@@ -24,6 +24,7 @@ import (
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	attestation2 "github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
@@ -132,7 +133,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	validEnvelope := testEnvelope(s.T(), "testdata/attestations/full.json")
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
-		_, err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope)
+		_, err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), validEnvelope, nil)
 		assert.Error(err)
 		assert.True(biz.IsNotFound(err))
 	})
@@ -143,7 +144,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		})
 		assert.NoError(err)
 
-		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope)
+		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, nil)
 		assert.NoError(err)
 		wantDigest := "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a"
 		assert.Equal(wantDigest, d)
@@ -153,29 +154,22 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.NoError(err)
 		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: wantDigest})
 	})
-}
 
-func (s *workflowRunIntegrationTestSuite) TestSaveBundle() {
-	t := s.T()
-	assert := assert.New(s.T())
 	bundle := testBundle(s.T(), "testdata/attestations/bundle.json")
-	ctx := context.TODO()
-	t.Run("non existing workflowRun", func(_ *testing.T) {
-		_, err := s.WorkflowRun.SaveBundle(ctx, uuid.NewString(), bundle)
-		assert.Error(err)
-		assert.True(biz.IsNotFound(err))
-	})
 
-	s.T().Run("valid workflowRun", func(_ *testing.T) {
+	s.T().Run("saves the bundle", func(_ *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
 		assert.NoError(err)
 
-		d, err := s.WorkflowRun.SaveBundle(ctx, run.ID.String(), bundle)
+		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, bundle)
 		assert.NoError(err)
-		wantDigest := "sha256:44d148ca718becb723f58c9b2d54badf22db9bdd2647513518c2a52c58933048"
+		wantDigest := "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a"
 		assert.Equal(wantDigest, d)
+		exists, err := s.Data.DB.Attestation.Query().Where(attestation2.WorkflowrunID(run.ID)).Exist(ctx)
+		assert.NoError(err)
+		assert.True(exists)
 	})
 }
 
@@ -434,7 +428,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			ProjectVersion: version1,
 		})
 	assert.NoError(err)
-	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), testEnvelope(t, "testdata/attestations/full.json"))
+	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), testEnvelope(t, "testdata/attestations/full.json"), nil)
 
 	assert.NoError(err)
 
@@ -444,7 +438,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			ProjectVersion: version1,
 		})
 	assert.NoError(err)
-	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), testEnvelope(t, "testdata/attestations/empty.json"))
+	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), testEnvelope(t, "testdata/attestations/empty.json"), nil)
 	assert.NoError(err)
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
@@ -453,7 +447,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			ProjectVersion: version2,
 		})
 	assert.NoError(err)
-	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), testEnvelope(t, "testdata/attestations/with-string.json"))
+	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), testEnvelope(t, "testdata/attestations/with-string.json"), nil)
 	assert.NoError(err)
 
 	s.version1, err = suite.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg2.ProjectID.String(), version1)
