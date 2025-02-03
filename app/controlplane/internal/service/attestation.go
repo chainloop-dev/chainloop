@@ -198,7 +198,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	// Try unmarshaling a bundle first, falling back to plain dsse envelopes
 	var bundle protobundle.Bundle
 	if err := protojson.Unmarshal(req.GetAttestation(), &bundle); err != nil {
-		if err := json.Unmarshal(req.Attestation, envelope); err != nil {
+		// trying with envelope instead
+		if err = json.Unmarshal(req.Attestation, envelope); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	} else {
