@@ -195,7 +195,7 @@ func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att
 
 // SaveBundle Save the bundle for a workflow run in the database
 func (r *WorkflowRunRepo) SaveBundle(ctx context.Context, wrID uuid.UUID, bundle []byte) error {
-	if err := r.data.DB.Bundle.Create().
+	if err := r.data.DB.Attestation.Create().
 		SetBundle(bundle).SetWorkflowrunID(wrID).
 		Exec(ctx); err != nil {
 		return fmt.Errorf("saving bundle: %w", err)
