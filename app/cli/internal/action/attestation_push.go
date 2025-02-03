@@ -28,8 +28,6 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -229,18 +227,13 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 	client := pb.NewAttestationServiceClient(conn)
 
 	// Store bundle next versions will perform this in a single call)
-	bundleResp, err := client.StoreBundle(ctx, &pb.AttestationServiceStoreBundleRequest{
-		Bundle:                encodedBundle,
+	bundleResp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
+		Attestation:           encodedBundle,
 		WorkflowRunId:         workflowRunID,
 		MarkVersionAsReleased: &markVersionAsReleased,
 	})
 	if err != nil {
-		// if endpoint not implemented, just ignore the error for backwards compatibility, and proceed with old attestation endpoint
-		if status.Code(err) != codes.Unimplemented {
-			return "", fmt.Errorf("storing attestation bundle: %w", err)
-		}
-
-		// Store attestations
+		// if endpoint doesn't accept the bundle, just ignore the error for backwards compatibility, and proceed with old attestation endpoint
 		attResp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 			Attestation:           encodedAttestation,
 			WorkflowRunId:         workflowRunID,
