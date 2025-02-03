@@ -109,7 +109,7 @@ func TestTemplatedGroups(t *testing.T) {
 	cases := []struct {
 		name             string
 		materials        []*v1.CraftingSchema_Material
-		group            string
+		groupFile        string
 		args             map[string]string
 		nMaterials       int
 		materialName     string
@@ -118,17 +118,24 @@ func TestTemplatedGroups(t *testing.T) {
 		{
 			name:         "interpolates material names, with defaults",
 			materials:    []*v1.CraftingSchema_Material{},
-			group:        "file://testdata/policy_group_with_arguments.yaml",
+			groupFile:    "file://testdata/policy_group_with_arguments.yaml",
 			nMaterials:   1,
 			materialName: "sbom",
 		},
 		{
 			name:         "interpolates material names, custom material name",
 			materials:    []*v1.CraftingSchema_Material{},
-			group:        "file://testdata/policy_group_with_arguments.yaml",
+			groupFile:    "file://testdata/policy_group_with_arguments.yaml",
 			args:         map[string]string{"sbom_name": "foo"},
-			nMaterials:   2,
+			nMaterials:   1,
 			materialName: "foo",
+		},
+		{
+			name:       "allows empty material name, making it anonymous",
+			materials:  []*v1.CraftingSchema_Material{},
+			groupFile:  "file://testdata/policy_group_with_arguments.yaml",
+			args:       map[string]string{"sbom_name": ""},
+			nMaterials: 0,
 		},
 		{
 			name: "interpolates material names, custom name, with material override",
@@ -138,9 +145,9 @@ func TestTemplatedGroups(t *testing.T) {
 				Optional: true,
 			},
 			},
-			group:            "file://testdata/policy_group_with_arguments.yaml",
+			groupFile:        "file://testdata/policy_group_with_arguments.yaml",
 			args:             map[string]string{"sbom_name": "foo"},
-			nMaterials:       2,
+			nMaterials:       1,
 			materialName:     "foo",
 			materialOptional: true,
 		},
@@ -153,19 +160,18 @@ func TestTemplatedGroups(t *testing.T) {
 				Materials: tc.materials,
 				PolicyGroups: []*v1.PolicyGroupAttachment{
 					{
-						Ref:  tc.group,
+						Ref:  tc.groupFile,
 						With: tc.args,
-					},
-					{
-						Ref: tc.group,
 					},
 				},
 			}
 			err := enrichContractMaterials(context.TODO(), &schema, nil, &l)
 			assert.NoError(t, err)
 			assert.Len(t, schema.Materials, tc.nMaterials)
-			assert.Equal(t, tc.materialName, schema.Materials[0].Name)
-			assert.Equal(t, tc.materialOptional, schema.Materials[0].Optional)
+			if tc.nMaterials > 0 {
+				assert.Equal(t, tc.materialName, schema.Materials[0].Name)
+				assert.Equal(t, tc.materialOptional, schema.Materials[0].Optional)
+			}
 		})
 	}
 }
