@@ -189,7 +189,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
-	var envelope *dsse.Envelope
+	var envelope dsse.Envelope
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
@@ -199,14 +199,14 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	var bundle protobundle.Bundle
 	if err := protojson.Unmarshal(req.GetAttestation(), &bundle); err != nil {
 		// trying with envelope instead
-		if err = json.Unmarshal(req.Attestation, envelope); err != nil {
+		if err = json.Unmarshal(req.Attestation, &envelope); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	} else {
-		envelope = envelopeFromBundle(&bundle)
+		envelope = *envelopeFromBundle(&bundle)
 	}
 
-	digest, err := s.storeAttestation(ctx, envelope, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
+	digest, err := s.storeAttestation(ctx, &envelope, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
