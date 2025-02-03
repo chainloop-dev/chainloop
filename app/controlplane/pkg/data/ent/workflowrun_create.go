@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -220,6 +221,25 @@ func (wrc *WorkflowRunCreate) AddCasBackends(c ...*CASBackend) *WorkflowRunCreat
 // SetVersion sets the "version" edge to the ProjectVersion entity.
 func (wrc *WorkflowRunCreate) SetVersion(p *ProjectVersion) *WorkflowRunCreate {
 	return wrc.SetVersionID(p.ID)
+}
+
+// SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
+func (wrc *WorkflowRunCreate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunCreate {
+	wrc.mutation.SetAttestationBundleID(id)
+	return wrc
+}
+
+// SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
+func (wrc *WorkflowRunCreate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunCreate {
+	if id != nil {
+		wrc = wrc.SetAttestationBundleID(*id)
+	}
+	return wrc
+}
+
+// SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
+func (wrc *WorkflowRunCreate) SetAttestationBundle(a *Attestation) *WorkflowRunCreate {
+	return wrc.SetAttestationBundleID(a.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
@@ -447,6 +467,22 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.VersionID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wrc.mutation.AttestationBundleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

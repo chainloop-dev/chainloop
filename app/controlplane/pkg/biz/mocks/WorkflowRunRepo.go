@@ -264,6 +264,24 @@ func (_m *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, at
 	return r0
 }
 
+// SaveBundle provides a mock function with given fields: ctx, ID, bundle
+func (_m *WorkflowRunRepo) SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error {
+	ret := _m.Called(ctx, ID, bundle)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveBundle")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []byte) error); ok {
+		r0 = rf(ctx, ID, bundle)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewWorkflowRunRepo creates a new instance of WorkflowRunRepo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewWorkflowRunRepo(t interface {

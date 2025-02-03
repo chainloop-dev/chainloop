@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
@@ -268,6 +269,25 @@ func (wru *WorkflowRunUpdate) SetVersion(p *ProjectVersion) *WorkflowRunUpdate {
 	return wru.SetVersionID(p.ID)
 }
 
+// SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
+func (wru *WorkflowRunUpdate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdate {
+	wru.mutation.SetAttestationBundleID(id)
+	return wru
+}
+
+// SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdate {
+	if id != nil {
+		wru = wru.SetAttestationBundleID(*id)
+	}
+	return wru
+}
+
+// SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
+func (wru *WorkflowRunUpdate) SetAttestationBundle(a *Attestation) *WorkflowRunUpdate {
+	return wru.SetAttestationBundleID(a.ID)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
 	return wru.mutation
@@ -303,6 +323,12 @@ func (wru *WorkflowRunUpdate) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUp
 // ClearVersion clears the "version" edge to the ProjectVersion entity.
 func (wru *WorkflowRunUpdate) ClearVersion() *WorkflowRunUpdate {
 	wru.mutation.ClearVersion()
+	return wru
+}
+
+// ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
+func (wru *WorkflowRunUpdate) ClearAttestationBundle() *WorkflowRunUpdate {
+	wru.mutation.ClearAttestationBundle()
 	return wru
 }
 
@@ -520,6 +546,35 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wru.mutation.AttestationBundleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wru.mutation.AttestationBundleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -782,6 +837,25 @@ func (wruo *WorkflowRunUpdateOne) SetVersion(p *ProjectVersion) *WorkflowRunUpda
 	return wruo.SetVersionID(p.ID)
 }
 
+// SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
+func (wruo *WorkflowRunUpdateOne) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdateOne {
+	wruo.mutation.SetAttestationBundleID(id)
+	return wruo
+}
+
+// SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdateOne {
+	if id != nil {
+		wruo = wruo.SetAttestationBundleID(*id)
+	}
+	return wruo
+}
+
+// SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
+func (wruo *WorkflowRunUpdateOne) SetAttestationBundle(a *Attestation) *WorkflowRunUpdateOne {
+	return wruo.SetAttestationBundleID(a.ID)
+}
+
 // Mutation returns the WorkflowRunMutation object of the builder.
 func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
 	return wruo.mutation
@@ -817,6 +891,12 @@ func (wruo *WorkflowRunUpdateOne) RemoveCasBackends(c ...*CASBackend) *WorkflowR
 // ClearVersion clears the "version" edge to the ProjectVersion entity.
 func (wruo *WorkflowRunUpdateOne) ClearVersion() *WorkflowRunUpdateOne {
 	wruo.mutation.ClearVersion()
+	return wruo
+}
+
+// ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
+func (wruo *WorkflowRunUpdateOne) ClearAttestationBundle() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearAttestationBundle()
 	return wruo
 }
 
@@ -1064,6 +1144,35 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wruo.mutation.AttestationBundleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wruo.mutation.AttestationBundleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

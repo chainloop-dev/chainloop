@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -76,6 +77,7 @@ type WorkflowRunRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
+	SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*WorkflowRun, error)
@@ -253,7 +255,7 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope) (string, error) {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope, bundle *protobundle.Bundle) (string, error) {
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return "", NewErrInvalidUUID(err)
@@ -287,6 +289,19 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 
 	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, digest.String()); err != nil {
 		return "", fmt.Errorf("saving attestation: %w", err)
+	}
+
+	// Save bundle if provided. It might come as an empty struct
+	if bundle != nil && bundle.GetDsseEnvelope() != nil {
+		bundleByes, _, err := attestation.JSONBundleWithDigest(bundle)
+		if err != nil {
+			return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
+		}
+
+		// Save bundle
+		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundleByes); err != nil {
+			return "", fmt.Errorf("saving bundle: %w", err)
+		}
 	}
 
 	return digest.String(), nil

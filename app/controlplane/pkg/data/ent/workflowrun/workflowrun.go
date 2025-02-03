@@ -51,6 +51,8 @@ const (
 	EdgeCasBackends = "cas_backends"
 	// EdgeVersion holds the string denoting the version edge name in mutations.
 	EdgeVersion = "version"
+	// EdgeAttestationBundle holds the string denoting the attestation_bundle edge name in mutations.
+	EdgeAttestationBundle = "attestation_bundle"
 	// Table holds the table name of the workflowrun in the database.
 	Table = "workflow_runs"
 	// WorkflowTable is the table that holds the workflow relation/edge.
@@ -79,6 +81,13 @@ const (
 	VersionInverseTable = "project_versions"
 	// VersionColumn is the table column denoting the version relation/edge.
 	VersionColumn = "version_id"
+	// AttestationBundleTable is the table that holds the attestation_bundle relation/edge.
+	AttestationBundleTable = "attestations"
+	// AttestationBundleInverseTable is the table name for the Attestation entity.
+	// It exists in this package in order to avoid circular dependency with the "attestation" package.
+	AttestationBundleInverseTable = "attestations"
+	// AttestationBundleColumn is the table column denoting the attestation_bundle relation/edge.
+	AttestationBundleColumn = "workflowrun_id"
 )
 
 // Columns holds all SQL columns for workflowrun fields.
@@ -242,6 +251,13 @@ func ByVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newVersionStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByAttestationBundleField orders the results by attestation_bundle field.
+func ByAttestationBundleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAttestationBundleStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newWorkflowStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -268,5 +284,12 @@ func newVersionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(VersionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, VersionTable, VersionColumn),
+	)
+}
+func newAttestationBundleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AttestationBundleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, AttestationBundleTable, AttestationBundleColumn),
 	)
 }

@@ -1,37 +1,33 @@
 {
-  "$id": "controlplane.v1.AttestationServiceStoreRequest.jsonschema.json",
+  "$id": "controlplane.v1.AttestationServiceStoreBundleRequest.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
-    "^(mark_version_as_released)$": {
+    "^(markVersionAsReleased)$": {
       "description": "mark the associated version as released",
       "type": "boolean"
     },
-    "^(workflow_run_id)$": {
+    "^(workflowRunId)$": {
       "minLength": 1,
       "type": "string"
     }
   },
   "properties": {
-    "attestation": {
-      "description": "encoded DSEE envelope",
-      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
-      "type": "string"
-    },
     "bundle": {
-      "description": "encoded Sigstore attestation bundle\n TODO. Add min_len constraint",
+      "description": "encoded bundle",
+      "minLength": 2,
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     },
-    "markVersionAsReleased": {
+    "mark_version_as_released": {
       "description": "mark the associated version as released",
       "type": "boolean"
     },
-    "workflowRunId": {
+    "workflow_run_id": {
       "minLength": 1,
       "type": "string"
     }
   },
-  "title": "Attestation Service Store Request",
+  "title": "Attestation Service Store Bundle Request",
   "type": "object"
 }

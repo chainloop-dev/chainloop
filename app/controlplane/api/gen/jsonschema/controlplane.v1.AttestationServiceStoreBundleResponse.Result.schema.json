@@ -1,0 +1,13 @@
+{
+  "$id": "controlplane.v1.AttestationServiceStoreBundleResponse.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digest": {
+      "description": "attestation digest",
+      "type": "string"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

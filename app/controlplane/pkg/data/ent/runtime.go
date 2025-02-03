@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -40,6 +41,20 @@ func init() {
 	apitokenDescID := apitokenFields[0].Descriptor()
 	// apitoken.DefaultID holds the default value on creation for the id field.
 	apitoken.DefaultID = apitokenDescID.Default.(func() uuid.UUID)
+	attestationFields := schema.Attestation{}.Fields()
+	_ = attestationFields
+	// attestationDescCreatedAt is the schema descriptor for created_at field.
+	attestationDescCreatedAt := attestationFields[1].Descriptor()
+	// attestation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	attestation.DefaultCreatedAt = attestationDescCreatedAt.Default.(func() time.Time)
+	// attestationDescBundle is the schema descriptor for bundle field.
+	attestationDescBundle := attestationFields[2].Descriptor()
+	// attestation.BundleValidator is a validator for the "bundle" field. It is called by the builders before save.
+	attestation.BundleValidator = attestationDescBundle.Validators[0].(func([]byte) error)
+	// attestationDescID is the schema descriptor for id field.
+	attestationDescID := attestationFields[0].Descriptor()
+	// attestation.DefaultID holds the default value on creation for the id field.
+	attestation.DefaultID = attestationDescID.Default.(func() uuid.UUID)
 	casbackendFields := schema.CASBackend{}.Fields()
 	_ = casbackendFields
 	// casbackendDescCreatedAt is the schema descriptor for created_at field.

@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.AttestationServiceStoreBundleResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.AttestationServiceStoreBundleResponse.Result.jsonschema.json"
+    }
+  },
+  "title": "Attestation Service Store Bundle Response",
+  "type": "object"
+}

@@ -72,7 +72,7 @@ func (s *rendererSuite) TestRender() {
 		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", s.sv)
 		s.Require().NoError(err)
 
-		envelope, err := renderer.Render(context.TODO())
+		envelope, _, err := renderer.Render(context.TODO())
 		s.NoError(err)
 
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
@@ -85,11 +85,24 @@ func (s *rendererSuite) TestRender() {
 		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", doubleWrapper)
 		s.Require().NoError(err)
 
-		envelope, err := renderer.Render(context.TODO())
+		envelope, _, err := renderer.Render(context.TODO())
 		s.NoError(err)
 
 		_, err = s.dsseVerifier.Verify(context.TODO(), envelope)
 		s.Error(err)
+	})
+
+	s.Run("generated bundle is always well-formed", func() {
+		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", s.sv)
+		s.Require().NoError(err)
+
+		_, bundle, err := renderer.Render(context.TODO())
+		s.Require().NoError(err)
+
+		s.Len(bundle.GetDsseEnvelope().GetSignatures(), 1)
+
+		// local signers don't generate verification material
+		s.Nil(bundle.GetVerificationMaterial().GetContent())
 	})
 }
 

@@ -107,8 +107,17 @@ export interface AttestationServiceInitResponse_Result {
 }
 
 export interface AttestationServiceStoreRequest {
-  /** encoded DSEE envelope */
+  /**
+   * encoded DSEE envelope
+   *
+   * @deprecated
+   */
   attestation: Uint8Array;
+  /**
+   * encoded Sigstore attestation bundle
+   * TODO. Add min_len constraint
+   */
+  bundle: Uint8Array;
   workflowRunId: string;
   /** mark the associated version as released */
   markVersionAsReleased?: boolean | undefined;
@@ -1284,13 +1293,21 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return { attestation: new Uint8Array(0), workflowRunId: "", markVersionAsReleased: undefined };
+  return {
+    attestation: new Uint8Array(0),
+    bundle: new Uint8Array(0),
+    workflowRunId: "",
+    markVersionAsReleased: undefined,
+  };
 }
 
 export const AttestationServiceStoreRequest = {
   encode(message: AttestationServiceStoreRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.attestation.length !== 0) {
       writer.uint32(10).bytes(message.attestation);
+    }
+    if (message.bundle.length !== 0) {
+      writer.uint32(34).bytes(message.bundle);
     }
     if (message.workflowRunId !== "") {
       writer.uint32(18).string(message.workflowRunId);
@@ -1314,6 +1331,13 @@ export const AttestationServiceStoreRequest = {
           }
 
           message.attestation = reader.bytes();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.bundle = reader.bytes();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1341,6 +1365,7 @@ export const AttestationServiceStoreRequest = {
   fromJSON(object: any): AttestationServiceStoreRequest {
     return {
       attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
+      bundle: isSet(object.bundle) ? bytesFromBase64(object.bundle) : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
       markVersionAsReleased: isSet(object.markVersionAsReleased) ? Boolean(object.markVersionAsReleased) : undefined,
     };
@@ -1350,6 +1375,8 @@ export const AttestationServiceStoreRequest = {
     const obj: any = {};
     message.attestation !== undefined &&
       (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
+    message.bundle !== undefined &&
+      (obj.bundle = base64FromBytes(message.bundle !== undefined ? message.bundle : new Uint8Array(0)));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.markVersionAsReleased !== undefined && (obj.markVersionAsReleased = message.markVersionAsReleased);
     return obj;
@@ -1364,6 +1391,7 @@ export const AttestationServiceStoreRequest = {
   ): AttestationServiceStoreRequest {
     const message = createBaseAttestationServiceStoreRequest();
     message.attestation = object.attestation ?? new Uint8Array(0);
+    message.bundle = object.bundle ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
     message.markVersionAsReleased = object.markVersionAsReleased ?? undefined;
     return message;

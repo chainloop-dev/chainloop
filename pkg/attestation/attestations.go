@@ -22,11 +22,28 @@ import (
 
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // JSONEnvelopeWithDigest returns the JSON content of the envelope and its digest.
 func JSONEnvelopeWithDigest(envelope *dsse.Envelope) ([]byte, cr_v1.Hash, error) {
 	jsonContent, err := json.Marshal(envelope)
+	if err != nil {
+		return nil, cr_v1.Hash{}, fmt.Errorf("marshaling the envelope: %w", err)
+	}
+
+	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonContent))
+	if err != nil {
+		return nil, cr_v1.Hash{}, fmt.Errorf("calculating the digest: %w", err)
+	}
+
+	return jsonContent, h, nil
+}
+
+// JSONBundleWithDigest returns the JSON content of the sigstore bundle and its digest.
+func JSONBundleWithDigest(bundle *protobundle.Bundle) ([]byte, cr_v1.Hash, error) {
+	jsonContent, err := protojson.Marshal(bundle)
 	if err != nil {
 		return nil, cr_v1.Hash{}, fmt.Errorf("marshaling the envelope: %w", err)
 	}
