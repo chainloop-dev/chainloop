@@ -212,13 +212,6 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 }
 
 func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
-	var digest string
-
-	encodedAttestation, err := encodeEnvelope(envelope)
-	if err != nil {
-		return "", fmt.Errorf("encoding attestation: %w", err)
-	}
-
 	encodedBundle, err := encodeBundle(bundle)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
@@ -227,14 +220,19 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 	client := pb.NewAttestationServiceClient(conn)
 
 	// Store bundle next versions will perform this in a single call)
-	bundleResp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
+	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 		Attestation:           encodedBundle,
 		WorkflowRunId:         workflowRunID,
 		MarkVersionAsReleased: &markVersionAsReleased,
 	})
 	if err != nil {
 		// if endpoint doesn't accept the bundle, just ignore the error for backwards compatibility, and proceed with old attestation endpoint
-		attResp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
+		encodedAttestation, err := encodeEnvelope(envelope)
+		if err != nil {
+			return "", fmt.Errorf("encoding attestation: %w", err)
+		}
+
+		resp, err = client.Store(ctx, &pb.AttestationServiceStoreRequest{
 			Attestation:           encodedAttestation,
 			WorkflowRunId:         workflowRunID,
 			MarkVersionAsReleased: &markVersionAsReleased,
@@ -243,13 +241,9 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 		if err != nil {
 			return "", fmt.Errorf("contacting the control plane: %w", err)
 		}
-
-		digest = attResp.Result.Digest
-	} else {
-		digest = bundleResp.Result.Digest
 	}
 
-	return digest, nil
+	return resp.Result.Digest, nil
 }
 
 func encodeEnvelope(e *dsse.Envelope) ([]byte, error) {

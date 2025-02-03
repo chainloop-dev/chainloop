@@ -211,6 +211,14 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// save bundle after saving attestation
+	if bundle.GetDsseEnvelope() != nil {
+		_, err = s.wrUseCase.SaveBundle(ctx, req.WorkflowRunId, &bundle)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	}
+
 	return &cpAPI.AttestationServiceStoreResponse{
 		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
 	}, nil
