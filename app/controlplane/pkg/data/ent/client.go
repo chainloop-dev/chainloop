@@ -17,7 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -43,8 +43,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// APIToken is the client for interacting with the APIToken builders.
 	APIToken *APITokenClient
-	// Bundle is the client for interacting with the Bundle builders.
-	Bundle *BundleClient
+	// Attestation is the client for interacting with the Attestation builders.
+	Attestation *AttestationClient
 	// CASBackend is the client for interacting with the CASBackend builders.
 	CASBackend *CASBackendClient
 	// CASMapping is the client for interacting with the CASMapping builders.
@@ -89,7 +89,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.APIToken = NewAPITokenClient(c.config)
-	c.Bundle = NewBundleClient(c.config)
+	c.Attestation = NewAttestationClient(c.config)
 	c.CASBackend = NewCASBackendClient(c.config)
 	c.CASMapping = NewCASMappingClient(c.config)
 	c.Integration = NewIntegrationClient(c.config)
@@ -199,7 +199,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                     ctx,
 		config:                  cfg,
 		APIToken:                NewAPITokenClient(cfg),
-		Bundle:                  NewBundleClient(cfg),
+		Attestation:             NewAttestationClient(cfg),
 		CASBackend:              NewCASBackendClient(cfg),
 		CASMapping:              NewCASMappingClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
@@ -236,7 +236,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                     ctx,
 		config:                  cfg,
 		APIToken:                NewAPITokenClient(cfg),
-		Bundle:                  NewBundleClient(cfg),
+		Attestation:             NewAttestationClient(cfg),
 		CASBackend:              NewCASBackendClient(cfg),
 		CASMapping:              NewCASMappingClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
@@ -282,7 +282,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.APIToken, c.Bundle, c.CASBackend, c.CASMapping, c.Integration,
+		c.APIToken, c.Attestation, c.CASBackend, c.CASMapping, c.Integration,
 		c.IntegrationAttachment, c.Membership, c.OrgInvitation, c.Organization,
 		c.Project, c.ProjectVersion, c.Referrer, c.RobotAccount, c.User, c.Workflow,
 		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
@@ -295,7 +295,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.APIToken, c.Bundle, c.CASBackend, c.CASMapping, c.Integration,
+		c.APIToken, c.Attestation, c.CASBackend, c.CASMapping, c.Integration,
 		c.IntegrationAttachment, c.Membership, c.OrgInvitation, c.Organization,
 		c.Project, c.ProjectVersion, c.Referrer, c.RobotAccount, c.User, c.Workflow,
 		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
@@ -309,8 +309,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *APITokenMutation:
 		return c.APIToken.mutate(ctx, m)
-	case *BundleMutation:
-		return c.Bundle.mutate(ctx, m)
+	case *AttestationMutation:
+		return c.Attestation.mutate(ctx, m)
 	case *CASBackendMutation:
 		return c.CASBackend.mutate(ctx, m)
 	case *CASMappingMutation:
@@ -497,107 +497,107 @@ func (c *APITokenClient) mutate(ctx context.Context, m *APITokenMutation) (Value
 	}
 }
 
-// BundleClient is a client for the Bundle schema.
-type BundleClient struct {
+// AttestationClient is a client for the Attestation schema.
+type AttestationClient struct {
 	config
 }
 
-// NewBundleClient returns a client for the Bundle from the given config.
-func NewBundleClient(c config) *BundleClient {
-	return &BundleClient{config: c}
+// NewAttestationClient returns a client for the Attestation from the given config.
+func NewAttestationClient(c config) *AttestationClient {
+	return &AttestationClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `bundle.Hooks(f(g(h())))`.
-func (c *BundleClient) Use(hooks ...Hook) {
-	c.hooks.Bundle = append(c.hooks.Bundle, hooks...)
+// A call to `Use(f, g, h)` equals to `attestation.Hooks(f(g(h())))`.
+func (c *AttestationClient) Use(hooks ...Hook) {
+	c.hooks.Attestation = append(c.hooks.Attestation, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `bundle.Intercept(f(g(h())))`.
-func (c *BundleClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Bundle = append(c.inters.Bundle, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `attestation.Intercept(f(g(h())))`.
+func (c *AttestationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Attestation = append(c.inters.Attestation, interceptors...)
 }
 
-// Create returns a builder for creating a Bundle entity.
-func (c *BundleClient) Create() *BundleCreate {
-	mutation := newBundleMutation(c.config, OpCreate)
-	return &BundleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Attestation entity.
+func (c *AttestationClient) Create() *AttestationCreate {
+	mutation := newAttestationMutation(c.config, OpCreate)
+	return &AttestationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Bundle entities.
-func (c *BundleClient) CreateBulk(builders ...*BundleCreate) *BundleCreateBulk {
-	return &BundleCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Attestation entities.
+func (c *AttestationClient) CreateBulk(builders ...*AttestationCreate) *AttestationCreateBulk {
+	return &AttestationCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *BundleClient) MapCreateBulk(slice any, setFunc func(*BundleCreate, int)) *BundleCreateBulk {
+func (c *AttestationClient) MapCreateBulk(slice any, setFunc func(*AttestationCreate, int)) *AttestationCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &BundleCreateBulk{err: fmt.Errorf("calling to BundleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &AttestationCreateBulk{err: fmt.Errorf("calling to AttestationClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*BundleCreate, rv.Len())
+	builders := make([]*AttestationCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &BundleCreateBulk{config: c.config, builders: builders}
+	return &AttestationCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Bundle.
-func (c *BundleClient) Update() *BundleUpdate {
-	mutation := newBundleMutation(c.config, OpUpdate)
-	return &BundleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Attestation.
+func (c *AttestationClient) Update() *AttestationUpdate {
+	mutation := newAttestationMutation(c.config, OpUpdate)
+	return &AttestationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *BundleClient) UpdateOne(b *Bundle) *BundleUpdateOne {
-	mutation := newBundleMutation(c.config, OpUpdateOne, withBundle(b))
-	return &BundleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *AttestationClient) UpdateOne(a *Attestation) *AttestationUpdateOne {
+	mutation := newAttestationMutation(c.config, OpUpdateOne, withAttestation(a))
+	return &AttestationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *BundleClient) UpdateOneID(id uuid.UUID) *BundleUpdateOne {
-	mutation := newBundleMutation(c.config, OpUpdateOne, withBundleID(id))
-	return &BundleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *AttestationClient) UpdateOneID(id uuid.UUID) *AttestationUpdateOne {
+	mutation := newAttestationMutation(c.config, OpUpdateOne, withAttestationID(id))
+	return &AttestationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Bundle.
-func (c *BundleClient) Delete() *BundleDelete {
-	mutation := newBundleMutation(c.config, OpDelete)
-	return &BundleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Attestation.
+func (c *AttestationClient) Delete() *AttestationDelete {
+	mutation := newAttestationMutation(c.config, OpDelete)
+	return &AttestationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *BundleClient) DeleteOne(b *Bundle) *BundleDeleteOne {
-	return c.DeleteOneID(b.ID)
+func (c *AttestationClient) DeleteOne(a *Attestation) *AttestationDeleteOne {
+	return c.DeleteOneID(a.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *BundleClient) DeleteOneID(id uuid.UUID) *BundleDeleteOne {
-	builder := c.Delete().Where(bundle.ID(id))
+func (c *AttestationClient) DeleteOneID(id uuid.UUID) *AttestationDeleteOne {
+	builder := c.Delete().Where(attestation.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &BundleDeleteOne{builder}
+	return &AttestationDeleteOne{builder}
 }
 
-// Query returns a query builder for Bundle.
-func (c *BundleClient) Query() *BundleQuery {
-	return &BundleQuery{
+// Query returns a query builder for Attestation.
+func (c *AttestationClient) Query() *AttestationQuery {
+	return &AttestationQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeBundle},
+		ctx:    &QueryContext{Type: TypeAttestation},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Bundle entity by its id.
-func (c *BundleClient) Get(ctx context.Context, id uuid.UUID) (*Bundle, error) {
-	return c.Query().Where(bundle.ID(id)).Only(ctx)
+// Get returns a Attestation entity by its id.
+func (c *AttestationClient) Get(ctx context.Context, id uuid.UUID) (*Attestation, error) {
+	return c.Query().Where(attestation.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *BundleClient) GetX(ctx context.Context, id uuid.UUID) *Bundle {
+func (c *AttestationClient) GetX(ctx context.Context, id uuid.UUID) *Attestation {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -605,44 +605,44 @@ func (c *BundleClient) GetX(ctx context.Context, id uuid.UUID) *Bundle {
 	return obj
 }
 
-// QueryWorkflowrun queries the workflowrun edge of a Bundle.
-func (c *BundleClient) QueryWorkflowrun(b *Bundle) *WorkflowRunQuery {
+// QueryWorkflowrun queries the workflowrun edge of a Attestation.
+func (c *AttestationClient) QueryWorkflowrun(a *Attestation) *WorkflowRunQuery {
 	query := (&WorkflowRunClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := b.ID
+		id := a.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(bundle.Table, bundle.FieldID, id),
+			sqlgraph.From(attestation.Table, attestation.FieldID, id),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, bundle.WorkflowrunTable, bundle.WorkflowrunColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, attestation.WorkflowrunTable, attestation.WorkflowrunColumn),
 		)
-		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // Hooks returns the client hooks.
-func (c *BundleClient) Hooks() []Hook {
-	return c.hooks.Bundle
+func (c *AttestationClient) Hooks() []Hook {
+	return c.hooks.Attestation
 }
 
 // Interceptors returns the client interceptors.
-func (c *BundleClient) Interceptors() []Interceptor {
-	return c.inters.Bundle
+func (c *AttestationClient) Interceptors() []Interceptor {
+	return c.inters.Attestation
 }
 
-func (c *BundleClient) mutate(ctx context.Context, m *BundleMutation) (Value, error) {
+func (c *AttestationClient) mutate(ctx context.Context, m *AttestationMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&BundleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AttestationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&BundleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AttestationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&BundleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AttestationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&BundleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&AttestationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Bundle mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Attestation mutation op: %q", m.Op())
 	}
 }
 
@@ -3469,15 +3469,15 @@ func (c *WorkflowRunClient) QueryVersion(wr *WorkflowRun) *ProjectVersionQuery {
 	return query
 }
 
-// QueryBundle queries the bundle edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryBundle(wr *WorkflowRun) *BundleQuery {
-	query := (&BundleClient{config: c.config}).Query()
+// QueryAttestationBundle queries the attestation_bundle edge of a WorkflowRun.
+func (c *WorkflowRunClient) QueryAttestationBundle(wr *WorkflowRun) *AttestationQuery {
+	query := (&AttestationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := wr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
-			sqlgraph.To(bundle.Table, bundle.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, workflowrun.BundleTable, workflowrun.BundleColumn),
+			sqlgraph.To(attestation.Table, attestation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, workflowrun.AttestationBundleTable, workflowrun.AttestationBundleColumn),
 		)
 		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
 		return fromV, nil
@@ -3513,15 +3513,15 @@ func (c *WorkflowRunClient) mutate(ctx context.Context, m *WorkflowRunMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		APIToken, Bundle, CASBackend, CASMapping, Integration, IntegrationAttachment,
-		Membership, OrgInvitation, Organization, Project, ProjectVersion, Referrer,
-		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
-		WorkflowRun []ent.Hook
+		APIToken, Attestation, CASBackend, CASMapping, Integration,
+		IntegrationAttachment, Membership, OrgInvitation, Organization, Project,
+		ProjectVersion, Referrer, RobotAccount, User, Workflow, WorkflowContract,
+		WorkflowContractVersion, WorkflowRun []ent.Hook
 	}
 	inters struct {
-		APIToken, Bundle, CASBackend, CASMapping, Integration, IntegrationAttachment,
-		Membership, OrgInvitation, Organization, Project, ProjectVersion, Referrer,
-		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
-		WorkflowRun []ent.Interceptor
+		APIToken, Attestation, CASBackend, CASMapping, Integration,
+		IntegrationAttachment, Membership, OrgInvitation, Organization, Project,
+		ProjectVersion, Referrer, RobotAccount, User, Workflow, WorkflowContract,
+		WorkflowContractVersion, WorkflowRun []ent.Interceptor
 	}
 )

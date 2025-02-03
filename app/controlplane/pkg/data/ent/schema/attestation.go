@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// Bundle represents attestation bundles
-type Bundle struct {
+// Attestation represents attestation bundles
+type Attestation struct {
 	ent.Schema
 }
 
-func (Bundle) Fields() []ent.Field {
+func (Attestation) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.Time("created_at").
@@ -42,9 +42,9 @@ func (Bundle) Fields() []ent.Field {
 	}
 }
 
-func (Bundle) Edges() []ent.Edge {
+func (Attestation) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workflowrun", WorkflowRun.Type).Field("workflowrun_id").Ref("bundle").
+		edge.From("workflowrun", WorkflowRun.Type).Field("workflowrun_id").Ref("attestation_bundle").
 			Immutable().Unique().Required(),
 	}
 }

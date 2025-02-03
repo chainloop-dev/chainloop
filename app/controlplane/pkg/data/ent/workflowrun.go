@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -68,8 +68,8 @@ type WorkflowRunEdges struct {
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// Version holds the value of the version edge.
 	Version *ProjectVersion `json:"version,omitempty"`
-	// Bundle holds the value of the bundle edge.
-	Bundle *Bundle `json:"bundle,omitempty"`
+	// AttestationBundle holds the value of the attestation_bundle edge.
+	AttestationBundle *Attestation `json:"attestation_bundle,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [5]bool
@@ -117,15 +117,15 @@ func (e WorkflowRunEdges) VersionOrErr() (*ProjectVersion, error) {
 	return nil, &NotLoadedError{edge: "version"}
 }
 
-// BundleOrErr returns the Bundle value or an error if the edge
+// AttestationBundleOrErr returns the AttestationBundle value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e WorkflowRunEdges) BundleOrErr() (*Bundle, error) {
-	if e.Bundle != nil {
-		return e.Bundle, nil
+func (e WorkflowRunEdges) AttestationBundleOrErr() (*Attestation, error) {
+	if e.AttestationBundle != nil {
+		return e.AttestationBundle, nil
 	} else if e.loadedTypes[4] {
-		return nil, &NotFoundError{label: bundle.Label}
+		return nil, &NotFoundError{label: attestation.Label}
 	}
-	return nil, &NotLoadedError{edge: "bundle"}
+	return nil, &NotLoadedError{edge: "attestation_bundle"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -286,9 +286,9 @@ func (wr *WorkflowRun) QueryVersion() *ProjectVersionQuery {
 	return NewWorkflowRunClient(wr.config).QueryVersion(wr)
 }
 
-// QueryBundle queries the "bundle" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryBundle() *BundleQuery {
-	return NewWorkflowRunClient(wr.config).QueryBundle(wr)
+// QueryAttestationBundle queries the "attestation_bundle" edge of the WorkflowRun entity.
+func (wr *WorkflowRun) QueryAttestationBundle() *AttestationQuery {
+	return NewWorkflowRunClient(wr.config).QueryAttestationBundle(wr)
 }
 
 // Update returns a builder for updating this WorkflowRun.

@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -188,14 +189,20 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
+	var envelope *dsse.Envelope
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	envelope := &dsse.Envelope{}
-	if err := json.Unmarshal(req.Attestation, envelope); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	// Try unmarshaling a bundle first, falling back to plain dsse envelopes
+	var bundle protobundle.Bundle
+	if err := protojson.Unmarshal(req.GetAttestation(), &bundle); err != nil {
+		if err := json.Unmarshal(req.Attestation, envelope); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	} else {
+		envelope = envelopeFromBundle(&bundle)
 	}
 
 	digest, err := s.storeAttestation(ctx, envelope, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
@@ -208,34 +215,18 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}, nil
 }
 
-func (s *AttestationService) StoreBundle(ctx context.Context, req *cpAPI.AttestationServiceStoreBundleRequest) (*cpAPI.AttestationServiceStoreBundleResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
-	if robotAccount == nil {
-		return nil, errors.NotFound("not found", "robot account not found")
+func envelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
+	sigstoreEnvelope := bundle.GetDsseEnvelope()
+	return &dsse.Envelope{
+		PayloadType: sigstoreEnvelope.PayloadType,
+		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
+		Signatures: []dsse.Signature{
+			{
+				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
+				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
+			},
+		},
 	}
-
-	var bundle protobundle.Bundle
-	if err := protojson.Unmarshal(req.GetBundle(), &bundle); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	envelope := s.wrUseCase.EnvelopeFromBundle(&bundle)
-
-	digest, err := s.storeAttestation(ctx, envelope, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	// save bundle after saving attestation
-	_, err = s.wrUseCase.SaveBundle(ctx, req.WorkflowRunId, &bundle)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	// return attestation digest for backwards compatibility
-	return &cpAPI.AttestationServiceStoreBundleResponse{
-		Result: &cpAPI.AttestationServiceStoreBundleResponse_Result{Digest: digest},
-	}, nil
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation

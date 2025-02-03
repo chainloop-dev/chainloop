@@ -9,8 +9,8 @@ import (
 // APIToken is the predicate function for apitoken builders.
 type APIToken func(*sql.Selector)
 
-// Bundle is the predicate function for bundle builders.
-type Bundle func(*sql.Selector)
+// Attestation is the predicate function for attestation builders.
+type Attestation func(*sql.Selector)
 
 // CASBackend is the predicate function for casbackend builders.
 type CASBackend func(*sql.Selector)

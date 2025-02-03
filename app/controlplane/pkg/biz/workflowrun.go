@@ -17,7 +17,6 @@ package biz
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -322,20 +321,6 @@ func (uc *WorkflowRunUseCase) SaveBundle(ctx context.Context, wfRunID string, bu
 	}
 
 	return digest.String(), nil
-}
-
-func (uc *WorkflowRunUseCase) EnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
-	sigstoreEnvelope := bundle.GetDsseEnvelope()
-	return &dsse.Envelope{
-		PayloadType: sigstoreEnvelope.PayloadType,
-		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
-		Signatures: []dsse.Signature{
-			{
-				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
-				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
-			},
-		},
-	}
 }
 
 type RunListFilters struct {

@@ -38,7 +38,6 @@ const (
 	AttestationService_GetContract_FullMethodName          = "/controlplane.v1.AttestationService/GetContract"
 	AttestationService_Init_FullMethodName                 = "/controlplane.v1.AttestationService/Init"
 	AttestationService_Store_FullMethodName                = "/controlplane.v1.AttestationService/Store"
-	AttestationService_StoreBundle_FullMethodName          = "/controlplane.v1.AttestationService/StoreBundle"
 	AttestationService_GetUploadCreds_FullMethodName       = "/controlplane.v1.AttestationService/GetUploadCreds"
 	AttestationService_Cancel_FullMethodName               = "/controlplane.v1.AttestationService/Cancel"
 	AttestationService_GetPolicy_FullMethodName            = "/controlplane.v1.AttestationService/GetPolicy"
@@ -53,7 +52,6 @@ type AttestationServiceClient interface {
 	GetContract(ctx context.Context, in *AttestationServiceGetContractRequest, opts ...grpc.CallOption) (*AttestationServiceGetContractResponse, error)
 	Init(ctx context.Context, in *AttestationServiceInitRequest, opts ...grpc.CallOption) (*AttestationServiceInitResponse, error)
 	Store(ctx context.Context, in *AttestationServiceStoreRequest, opts ...grpc.CallOption) (*AttestationServiceStoreResponse, error)
-	StoreBundle(ctx context.Context, in *AttestationServiceStoreBundleRequest, opts ...grpc.CallOption) (*AttestationServiceStoreBundleResponse, error)
 	// There is another endpoint to get credentials via casCredentialsService.Get
 	// This one is kept since it leverages robot-accounts in the context of a workflow
 	GetUploadCreds(ctx context.Context, in *AttestationServiceGetUploadCredsRequest, opts ...grpc.CallOption) (*AttestationServiceGetUploadCredsResponse, error)
@@ -107,15 +105,6 @@ func (c *attestationServiceClient) Store(ctx context.Context, in *AttestationSer
 	return out, nil
 }
 
-func (c *attestationServiceClient) StoreBundle(ctx context.Context, in *AttestationServiceStoreBundleRequest, opts ...grpc.CallOption) (*AttestationServiceStoreBundleResponse, error) {
-	out := new(AttestationServiceStoreBundleResponse)
-	err := c.cc.Invoke(ctx, AttestationService_StoreBundle_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *attestationServiceClient) GetUploadCreds(ctx context.Context, in *AttestationServiceGetUploadCredsRequest, opts ...grpc.CallOption) (*AttestationServiceGetUploadCredsResponse, error) {
 	out := new(AttestationServiceGetUploadCredsResponse)
 	err := c.cc.Invoke(ctx, AttestationService_GetUploadCreds_FullMethodName, in, out, opts...)
@@ -160,7 +149,6 @@ type AttestationServiceServer interface {
 	GetContract(context.Context, *AttestationServiceGetContractRequest) (*AttestationServiceGetContractResponse, error)
 	Init(context.Context, *AttestationServiceInitRequest) (*AttestationServiceInitResponse, error)
 	Store(context.Context, *AttestationServiceStoreRequest) (*AttestationServiceStoreResponse, error)
-	StoreBundle(context.Context, *AttestationServiceStoreBundleRequest) (*AttestationServiceStoreBundleResponse, error)
 	// There is another endpoint to get credentials via casCredentialsService.Get
 	// This one is kept since it leverages robot-accounts in the context of a workflow
 	GetUploadCreds(context.Context, *AttestationServiceGetUploadCredsRequest) (*AttestationServiceGetUploadCredsResponse, error)
@@ -186,9 +174,6 @@ func (UnimplementedAttestationServiceServer) Init(context.Context, *AttestationS
 }
 func (UnimplementedAttestationServiceServer) Store(context.Context, *AttestationServiceStoreRequest) (*AttestationServiceStoreResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Store not implemented")
-}
-func (UnimplementedAttestationServiceServer) StoreBundle(context.Context, *AttestationServiceStoreBundleRequest) (*AttestationServiceStoreBundleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StoreBundle not implemented")
 }
 func (UnimplementedAttestationServiceServer) GetUploadCreds(context.Context, *AttestationServiceGetUploadCredsRequest) (*AttestationServiceGetUploadCredsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUploadCreds not implemented")
@@ -287,24 +272,6 @@ func _AttestationService_Store_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AttestationService_StoreBundle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AttestationServiceStoreBundleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AttestationServiceServer).StoreBundle(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AttestationService_StoreBundle_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AttestationServiceServer).StoreBundle(ctx, req.(*AttestationServiceStoreBundleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AttestationService_GetUploadCreds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AttestationServiceGetUploadCredsRequest)
 	if err := dec(in); err != nil {
@@ -399,10 +366,6 @@ var AttestationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Store",
 			Handler:    _AttestationService_Store_Handler,
-		},
-		{
-			MethodName: "StoreBundle",
-			Handler:    _AttestationService_StoreBundle_Handler,
 		},
 		{
 			MethodName: "GetUploadCreds",

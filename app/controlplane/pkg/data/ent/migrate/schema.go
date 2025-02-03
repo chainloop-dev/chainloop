@@ -43,22 +43,22 @@ var (
 			},
 		},
 	}
-	// BundlesColumns holds the columns for the "bundles" table.
-	BundlesColumns = []*schema.Column{
+	// AttestationsColumns holds the columns for the "attestations" table.
+	AttestationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "bundle", Type: field.TypeBytes},
 		{Name: "workflowrun_id", Type: field.TypeUUID, Unique: true},
 	}
-	// BundlesTable holds the schema information for the "bundles" table.
-	BundlesTable = &schema.Table{
-		Name:       "bundles",
-		Columns:    BundlesColumns,
-		PrimaryKey: []*schema.Column{BundlesColumns[0]},
+	// AttestationsTable holds the schema information for the "attestations" table.
+	AttestationsTable = &schema.Table{
+		Name:       "attestations",
+		Columns:    AttestationsColumns,
+		PrimaryKey: []*schema.Column{AttestationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "bundles_workflow_runs_bundle",
-				Columns:    []*schema.Column{BundlesColumns[3]},
+				Symbol:     "attestations_workflow_runs_attestation_bundle",
+				Columns:    []*schema.Column{AttestationsColumns[3]},
 				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -746,7 +746,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		APITokensTable,
-		BundlesTable,
+		AttestationsTable,
 		CasBackendsTable,
 		CasMappingsTable,
 		IntegrationsTable,
@@ -771,7 +771,7 @@ var (
 
 func init() {
 	APITokensTable.ForeignKeys[0].RefTable = OrganizationsTable
-	BundlesTable.ForeignKeys[0].RefTable = WorkflowRunsTable
+	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
 	CasMappingsTable.ForeignKeys[1].RefTable = OrganizationsTable

@@ -9,13 +9,13 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
-// Bundle is the model entity for the Bundle schema.
-type Bundle struct {
+// Attestation is the model entity for the Attestation schema.
+type Attestation struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
@@ -26,13 +26,13 @@ type Bundle struct {
 	// WorkflowrunID holds the value of the "workflowrun_id" field.
 	WorkflowrunID uuid.UUID `json:"workflowrun_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the BundleQuery when eager-loading is set.
-	Edges        BundleEdges `json:"edges"`
+	// The values are being populated by the AttestationQuery when eager-loading is set.
+	Edges        AttestationEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// BundleEdges holds the relations/edges for other nodes in the graph.
-type BundleEdges struct {
+// AttestationEdges holds the relations/edges for other nodes in the graph.
+type AttestationEdges struct {
 	// Workflowrun holds the value of the workflowrun edge.
 	Workflowrun *WorkflowRun `json:"workflowrun,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -42,7 +42,7 @@ type BundleEdges struct {
 
 // WorkflowrunOrErr returns the Workflowrun value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e BundleEdges) WorkflowrunOrErr() (*WorkflowRun, error) {
+func (e AttestationEdges) WorkflowrunOrErr() (*WorkflowRun, error) {
 	if e.Workflowrun != nil {
 		return e.Workflowrun, nil
 	} else if e.loadedTypes[0] {
@@ -52,15 +52,15 @@ func (e BundleEdges) WorkflowrunOrErr() (*WorkflowRun, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Bundle) scanValues(columns []string) ([]any, error) {
+func (*Attestation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case bundle.FieldBundle:
+		case attestation.FieldBundle:
 			values[i] = new([]byte)
-		case bundle.FieldCreatedAt:
+		case attestation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case bundle.FieldID, bundle.FieldWorkflowrunID:
+		case attestation.FieldID, attestation.FieldWorkflowrunID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -70,89 +70,89 @@ func (*Bundle) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Bundle fields.
-func (b *Bundle) assignValues(columns []string, values []any) error {
+// to the Attestation fields.
+func (a *Attestation) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case bundle.FieldID:
+		case attestation.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				b.ID = *value
+				a.ID = *value
 			}
-		case bundle.FieldCreatedAt:
+		case attestation.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				b.CreatedAt = value.Time
+				a.CreatedAt = value.Time
 			}
-		case bundle.FieldBundle:
+		case attestation.FieldBundle:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field bundle", values[i])
 			} else if value != nil {
-				b.Bundle = *value
+				a.Bundle = *value
 			}
-		case bundle.FieldWorkflowrunID:
+		case attestation.FieldWorkflowrunID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field workflowrun_id", values[i])
 			} else if value != nil {
-				b.WorkflowrunID = *value
+				a.WorkflowrunID = *value
 			}
 		default:
-			b.selectValues.Set(columns[i], values[i])
+			a.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Bundle.
+// Value returns the ent.Value that was dynamically selected and assigned to the Attestation.
 // This includes values selected through modifiers, order, etc.
-func (b *Bundle) Value(name string) (ent.Value, error) {
-	return b.selectValues.Get(name)
+func (a *Attestation) Value(name string) (ent.Value, error) {
+	return a.selectValues.Get(name)
 }
 
-// QueryWorkflowrun queries the "workflowrun" edge of the Bundle entity.
-func (b *Bundle) QueryWorkflowrun() *WorkflowRunQuery {
-	return NewBundleClient(b.config).QueryWorkflowrun(b)
+// QueryWorkflowrun queries the "workflowrun" edge of the Attestation entity.
+func (a *Attestation) QueryWorkflowrun() *WorkflowRunQuery {
+	return NewAttestationClient(a.config).QueryWorkflowrun(a)
 }
 
-// Update returns a builder for updating this Bundle.
-// Note that you need to call Bundle.Unwrap() before calling this method if this Bundle
+// Update returns a builder for updating this Attestation.
+// Note that you need to call Attestation.Unwrap() before calling this method if this Attestation
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (b *Bundle) Update() *BundleUpdateOne {
-	return NewBundleClient(b.config).UpdateOne(b)
+func (a *Attestation) Update() *AttestationUpdateOne {
+	return NewAttestationClient(a.config).UpdateOne(a)
 }
 
-// Unwrap unwraps the Bundle entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Attestation entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (b *Bundle) Unwrap() *Bundle {
-	_tx, ok := b.config.driver.(*txDriver)
+func (a *Attestation) Unwrap() *Attestation {
+	_tx, ok := a.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Bundle is not a transactional entity")
+		panic("ent: Attestation is not a transactional entity")
 	}
-	b.config.driver = _tx.drv
-	return b
+	a.config.driver = _tx.drv
+	return a
 }
 
 // String implements the fmt.Stringer.
-func (b *Bundle) String() string {
+func (a *Attestation) String() string {
 	var builder strings.Builder
-	builder.WriteString("Bundle(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
+	builder.WriteString("Attestation(")
+	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(b.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("bundle=")
-	builder.WriteString(fmt.Sprintf("%v", b.Bundle))
+	builder.WriteString(fmt.Sprintf("%v", a.Bundle))
 	builder.WriteString(", ")
 	builder.WriteString("workflowrun_id=")
-	builder.WriteString(fmt.Sprintf("%v", b.WorkflowrunID))
+	builder.WriteString(fmt.Sprintf("%v", a.WorkflowrunID))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// Bundles is a parsable slice of Bundle.
-type Bundles []*Bundle
+// Attestations is a parsable slice of Attestation.
+type Attestations []*Attestation

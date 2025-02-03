@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
@@ -269,23 +269,23 @@ func (wru *WorkflowRunUpdate) SetVersion(p *ProjectVersion) *WorkflowRunUpdate {
 	return wru.SetVersionID(p.ID)
 }
 
-// SetBundleID sets the "bundle" edge to the Bundle entity by ID.
-func (wru *WorkflowRunUpdate) SetBundleID(id uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.SetBundleID(id)
+// SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
+func (wru *WorkflowRunUpdate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdate {
+	wru.mutation.SetAttestationBundleID(id)
 	return wru
 }
 
-// SetNillableBundleID sets the "bundle" edge to the Bundle entity by ID if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableBundleID(id *uuid.UUID) *WorkflowRunUpdate {
+// SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdate {
 	if id != nil {
-		wru = wru.SetBundleID(*id)
+		wru = wru.SetAttestationBundleID(*id)
 	}
 	return wru
 }
 
-// SetBundle sets the "bundle" edge to the Bundle entity.
-func (wru *WorkflowRunUpdate) SetBundle(b *Bundle) *WorkflowRunUpdate {
-	return wru.SetBundleID(b.ID)
+// SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
+func (wru *WorkflowRunUpdate) SetAttestationBundle(a *Attestation) *WorkflowRunUpdate {
+	return wru.SetAttestationBundleID(a.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
@@ -326,9 +326,9 @@ func (wru *WorkflowRunUpdate) ClearVersion() *WorkflowRunUpdate {
 	return wru
 }
 
-// ClearBundle clears the "bundle" edge to the Bundle entity.
-func (wru *WorkflowRunUpdate) ClearBundle() *WorkflowRunUpdate {
-	wru.mutation.ClearBundle()
+// ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
+func (wru *WorkflowRunUpdate) ClearAttestationBundle() *WorkflowRunUpdate {
+	wru.mutation.ClearAttestationBundle()
 	return wru
 }
 
@@ -553,28 +553,28 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wru.mutation.BundleCleared() {
+	if wru.mutation.AttestationBundleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   workflowrun.BundleTable,
-			Columns: []string{workflowrun.BundleColumn},
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wru.mutation.BundleIDs(); len(nodes) > 0 {
+	if nodes := wru.mutation.AttestationBundleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   workflowrun.BundleTable,
-			Columns: []string{workflowrun.BundleColumn},
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -837,23 +837,23 @@ func (wruo *WorkflowRunUpdateOne) SetVersion(p *ProjectVersion) *WorkflowRunUpda
 	return wruo.SetVersionID(p.ID)
 }
 
-// SetBundleID sets the "bundle" edge to the Bundle entity by ID.
-func (wruo *WorkflowRunUpdateOne) SetBundleID(id uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.SetBundleID(id)
+// SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
+func (wruo *WorkflowRunUpdateOne) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdateOne {
+	wruo.mutation.SetAttestationBundleID(id)
 	return wruo
 }
 
-// SetNillableBundleID sets the "bundle" edge to the Bundle entity by ID if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableBundleID(id *uuid.UUID) *WorkflowRunUpdateOne {
+// SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdateOne {
 	if id != nil {
-		wruo = wruo.SetBundleID(*id)
+		wruo = wruo.SetAttestationBundleID(*id)
 	}
 	return wruo
 }
 
-// SetBundle sets the "bundle" edge to the Bundle entity.
-func (wruo *WorkflowRunUpdateOne) SetBundle(b *Bundle) *WorkflowRunUpdateOne {
-	return wruo.SetBundleID(b.ID)
+// SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
+func (wruo *WorkflowRunUpdateOne) SetAttestationBundle(a *Attestation) *WorkflowRunUpdateOne {
+	return wruo.SetAttestationBundleID(a.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
@@ -894,9 +894,9 @@ func (wruo *WorkflowRunUpdateOne) ClearVersion() *WorkflowRunUpdateOne {
 	return wruo
 }
 
-// ClearBundle clears the "bundle" edge to the Bundle entity.
-func (wruo *WorkflowRunUpdateOne) ClearBundle() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearBundle()
+// ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
+func (wruo *WorkflowRunUpdateOne) ClearAttestationBundle() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearAttestationBundle()
 	return wruo
 }
 
@@ -1151,28 +1151,28 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wruo.mutation.BundleCleared() {
+	if wruo.mutation.AttestationBundleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   workflowrun.BundleTable,
-			Columns: []string{workflowrun.BundleColumn},
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wruo.mutation.BundleIDs(); len(nodes) > 0 {
+	if nodes := wruo.mutation.AttestationBundleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   workflowrun.BundleTable,
-			Columns: []string{workflowrun.BundleColumn},
+			Table:   workflowrun.AttestationBundleTable,
+			Columns: []string{workflowrun.AttestationBundleColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

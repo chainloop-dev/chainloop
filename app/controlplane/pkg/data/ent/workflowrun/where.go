@@ -804,21 +804,21 @@ func HasVersionWith(preds ...predicate.ProjectVersion) predicate.WorkflowRun {
 	})
 }
 
-// HasBundle applies the HasEdge predicate on the "bundle" edge.
-func HasBundle() predicate.WorkflowRun {
+// HasAttestationBundle applies the HasEdge predicate on the "attestation_bundle" edge.
+func HasAttestationBundle() predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, BundleTable, BundleColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, AttestationBundleTable, AttestationBundleColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasBundleWith applies the HasEdge predicate on the "bundle" edge with a given conditions (other predicates).
-func HasBundleWith(preds ...predicate.Bundle) predicate.WorkflowRun {
+// HasAttestationBundleWith applies the HasEdge predicate on the "attestation_bundle" edge with a given conditions (other predicates).
+func HasAttestationBundleWith(preds ...predicate.Attestation) predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {
-		step := newBundleStep()
+		step := newAttestationBundleStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

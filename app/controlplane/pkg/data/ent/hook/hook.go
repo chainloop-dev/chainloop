@@ -21,16 +21,16 @@ func (f APITokenFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.APITokenMutation", m)
 }
 
-// The BundleFunc type is an adapter to allow the use of ordinary
-// function as Bundle mutator.
-type BundleFunc func(context.Context, *ent.BundleMutation) (ent.Value, error)
+// The AttestationFunc type is an adapter to allow the use of ordinary
+// function as Attestation mutator.
+type AttestationFunc func(context.Context, *ent.AttestationMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f BundleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BundleMutation); ok {
+func (f AttestationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AttestationMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BundleMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AttestationMutation", m)
 }
 
 // The CASBackendFunc type is an adapter to allow the use of ordinary

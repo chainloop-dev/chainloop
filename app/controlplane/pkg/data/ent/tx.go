@@ -14,8 +14,8 @@ type Tx struct {
 	config
 	// APIToken is the client for interacting with the APIToken builders.
 	APIToken *APITokenClient
-	// Bundle is the client for interacting with the Bundle builders.
-	Bundle *BundleClient
+	// Attestation is the client for interacting with the Attestation builders.
+	Attestation *AttestationClient
 	// CASBackend is the client for interacting with the CASBackend builders.
 	CASBackend *CASBackendClient
 	// CASMapping is the client for interacting with the CASMapping builders.
@@ -180,7 +180,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.APIToken = NewAPITokenClient(tx.config)
-	tx.Bundle = NewBundleClient(tx.config)
+	tx.Attestation = NewAttestationClient(tx.config)
 	tx.CASBackend = NewCASBackendClient(tx.config)
 	tx.CASMapping = NewCASMappingClient(tx.config)
 	tx.Integration = NewIntegrationClient(tx.config)

@@ -13,7 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
@@ -26,17 +26,17 @@ import (
 // WorkflowRunQuery is the builder for querying WorkflowRun entities.
 type WorkflowRunQuery struct {
 	config
-	ctx                 *QueryContext
-	order               []workflowrun.OrderOption
-	inters              []Interceptor
-	predicates          []predicate.WorkflowRun
-	withWorkflow        *WorkflowQuery
-	withContractVersion *WorkflowContractVersionQuery
-	withCasBackends     *CASBackendQuery
-	withVersion         *ProjectVersionQuery
-	withBundle          *BundleQuery
-	withFKs             bool
-	modifiers           []func(*sql.Selector)
+	ctx                   *QueryContext
+	order                 []workflowrun.OrderOption
+	inters                []Interceptor
+	predicates            []predicate.WorkflowRun
+	withWorkflow          *WorkflowQuery
+	withContractVersion   *WorkflowContractVersionQuery
+	withCasBackends       *CASBackendQuery
+	withVersion           *ProjectVersionQuery
+	withAttestationBundle *AttestationQuery
+	withFKs               bool
+	modifiers             []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -161,9 +161,9 @@ func (wrq *WorkflowRunQuery) QueryVersion() *ProjectVersionQuery {
 	return query
 }
 
-// QueryBundle chains the current query on the "bundle" edge.
-func (wrq *WorkflowRunQuery) QueryBundle() *BundleQuery {
-	query := (&BundleClient{config: wrq.config}).Query()
+// QueryAttestationBundle chains the current query on the "attestation_bundle" edge.
+func (wrq *WorkflowRunQuery) QueryAttestationBundle() *AttestationQuery {
+	query := (&AttestationClient{config: wrq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := wrq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -174,8 +174,8 @@ func (wrq *WorkflowRunQuery) QueryBundle() *BundleQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, selector),
-			sqlgraph.To(bundle.Table, bundle.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, workflowrun.BundleTable, workflowrun.BundleColumn),
+			sqlgraph.To(attestation.Table, attestation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, workflowrun.AttestationBundleTable, workflowrun.AttestationBundleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wrq.driver.Dialect(), step)
 		return fromU, nil
@@ -370,16 +370,16 @@ func (wrq *WorkflowRunQuery) Clone() *WorkflowRunQuery {
 		return nil
 	}
 	return &WorkflowRunQuery{
-		config:              wrq.config,
-		ctx:                 wrq.ctx.Clone(),
-		order:               append([]workflowrun.OrderOption{}, wrq.order...),
-		inters:              append([]Interceptor{}, wrq.inters...),
-		predicates:          append([]predicate.WorkflowRun{}, wrq.predicates...),
-		withWorkflow:        wrq.withWorkflow.Clone(),
-		withContractVersion: wrq.withContractVersion.Clone(),
-		withCasBackends:     wrq.withCasBackends.Clone(),
-		withVersion:         wrq.withVersion.Clone(),
-		withBundle:          wrq.withBundle.Clone(),
+		config:                wrq.config,
+		ctx:                   wrq.ctx.Clone(),
+		order:                 append([]workflowrun.OrderOption{}, wrq.order...),
+		inters:                append([]Interceptor{}, wrq.inters...),
+		predicates:            append([]predicate.WorkflowRun{}, wrq.predicates...),
+		withWorkflow:          wrq.withWorkflow.Clone(),
+		withContractVersion:   wrq.withContractVersion.Clone(),
+		withCasBackends:       wrq.withCasBackends.Clone(),
+		withVersion:           wrq.withVersion.Clone(),
+		withAttestationBundle: wrq.withAttestationBundle.Clone(),
 		// clone intermediate query.
 		sql:       wrq.sql.Clone(),
 		path:      wrq.path,
@@ -431,14 +431,14 @@ func (wrq *WorkflowRunQuery) WithVersion(opts ...func(*ProjectVersionQuery)) *Wo
 	return wrq
 }
 
-// WithBundle tells the query-builder to eager-load the nodes that are connected to
-// the "bundle" edge. The optional arguments are used to configure the query builder of the edge.
-func (wrq *WorkflowRunQuery) WithBundle(opts ...func(*BundleQuery)) *WorkflowRunQuery {
-	query := (&BundleClient{config: wrq.config}).Query()
+// WithAttestationBundle tells the query-builder to eager-load the nodes that are connected to
+// the "attestation_bundle" edge. The optional arguments are used to configure the query builder of the edge.
+func (wrq *WorkflowRunQuery) WithAttestationBundle(opts ...func(*AttestationQuery)) *WorkflowRunQuery {
+	query := (&AttestationClient{config: wrq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	wrq.withBundle = query
+	wrq.withAttestationBundle = query
 	return wrq
 }
 
@@ -526,7 +526,7 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			wrq.withContractVersion != nil,
 			wrq.withCasBackends != nil,
 			wrq.withVersion != nil,
-			wrq.withBundle != nil,
+			wrq.withAttestationBundle != nil,
 		}
 	)
 	if wrq.withContractVersion != nil {
@@ -581,9 +581,9 @@ func (wrq *WorkflowRunQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			return nil, err
 		}
 	}
-	if query := wrq.withBundle; query != nil {
-		if err := wrq.loadBundle(ctx, query, nodes, nil,
-			func(n *WorkflowRun, e *Bundle) { n.Edges.Bundle = e }); err != nil {
+	if query := wrq.withAttestationBundle; query != nil {
+		if err := wrq.loadAttestationBundle(ctx, query, nodes, nil,
+			func(n *WorkflowRun, e *Attestation) { n.Edges.AttestationBundle = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -741,7 +741,7 @@ func (wrq *WorkflowRunQuery) loadVersion(ctx context.Context, query *ProjectVers
 	}
 	return nil
 }
-func (wrq *WorkflowRunQuery) loadBundle(ctx context.Context, query *BundleQuery, nodes []*WorkflowRun, init func(*WorkflowRun), assign func(*WorkflowRun, *Bundle)) error {
+func (wrq *WorkflowRunQuery) loadAttestationBundle(ctx context.Context, query *AttestationQuery, nodes []*WorkflowRun, init func(*WorkflowRun), assign func(*WorkflowRun, *Attestation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*WorkflowRun)
 	for i := range nodes {
@@ -749,10 +749,10 @@ func (wrq *WorkflowRunQuery) loadBundle(ctx context.Context, query *BundleQuery,
 		nodeids[nodes[i].ID] = nodes[i]
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(bundle.FieldWorkflowrunID)
+		query.ctx.AppendFieldOnce(attestation.FieldWorkflowrunID)
 	}
-	query.Where(predicate.Bundle(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(workflowrun.BundleColumn), fks...))
+	query.Where(predicate.Attestation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(workflowrun.AttestationBundleColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

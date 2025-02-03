@@ -14,7 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/bundle"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
@@ -47,7 +47,7 @@ const (
 
 	// Node types.
 	TypeAPIToken                = "APIToken"
-	TypeBundle                  = "Bundle"
+	TypeAttestation             = "Attestation"
 	TypeCASBackend              = "CASBackend"
 	TypeCASMapping              = "CASMapping"
 	TypeIntegration             = "Integration"
@@ -782,8 +782,8 @@ func (m *APITokenMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown APIToken edge %s", name)
 }
 
-// BundleMutation represents an operation that mutates the Bundle nodes in the graph.
-type BundleMutation struct {
+// AttestationMutation represents an operation that mutates the Attestation nodes in the graph.
+type AttestationMutation struct {
 	config
 	op                 Op
 	typ                string
@@ -794,21 +794,21 @@ type BundleMutation struct {
 	workflowrun        *uuid.UUID
 	clearedworkflowrun bool
 	done               bool
-	oldValue           func(context.Context) (*Bundle, error)
-	predicates         []predicate.Bundle
+	oldValue           func(context.Context) (*Attestation, error)
+	predicates         []predicate.Attestation
 }
 
-var _ ent.Mutation = (*BundleMutation)(nil)
+var _ ent.Mutation = (*AttestationMutation)(nil)
 
-// bundleOption allows management of the mutation configuration using functional options.
-type bundleOption func(*BundleMutation)
+// attestationOption allows management of the mutation configuration using functional options.
+type attestationOption func(*AttestationMutation)
 
-// newBundleMutation creates new mutation for the Bundle entity.
-func newBundleMutation(c config, op Op, opts ...bundleOption) *BundleMutation {
-	m := &BundleMutation{
+// newAttestationMutation creates new mutation for the Attestation entity.
+func newAttestationMutation(c config, op Op, opts ...attestationOption) *AttestationMutation {
+	m := &AttestationMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeBundle,
+		typ:           TypeAttestation,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -817,20 +817,20 @@ func newBundleMutation(c config, op Op, opts ...bundleOption) *BundleMutation {
 	return m
 }
 
-// withBundleID sets the ID field of the mutation.
-func withBundleID(id uuid.UUID) bundleOption {
-	return func(m *BundleMutation) {
+// withAttestationID sets the ID field of the mutation.
+func withAttestationID(id uuid.UUID) attestationOption {
+	return func(m *AttestationMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *Bundle
+			value *Attestation
 		)
-		m.oldValue = func(ctx context.Context) (*Bundle, error) {
+		m.oldValue = func(ctx context.Context) (*Attestation, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().Bundle.Get(ctx, id)
+					value, err = m.Client().Attestation.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -839,10 +839,10 @@ func withBundleID(id uuid.UUID) bundleOption {
 	}
 }
 
-// withBundle sets the old Bundle of the mutation.
-func withBundle(node *Bundle) bundleOption {
-	return func(m *BundleMutation) {
-		m.oldValue = func(context.Context) (*Bundle, error) {
+// withAttestation sets the old Attestation of the mutation.
+func withAttestation(node *Attestation) attestationOption {
+	return func(m *AttestationMutation) {
+		m.oldValue = func(context.Context) (*Attestation, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -851,7 +851,7 @@ func withBundle(node *Bundle) bundleOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m BundleMutation) Client() *Client {
+func (m AttestationMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -859,7 +859,7 @@ func (m BundleMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m BundleMutation) Tx() (*Tx, error) {
+func (m AttestationMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -869,14 +869,14 @@ func (m BundleMutation) Tx() (*Tx, error) {
 }
 
 // SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of Bundle entities.
-func (m *BundleMutation) SetID(id uuid.UUID) {
+// operation is only accepted on creation of Attestation entities.
+func (m *AttestationMutation) SetID(id uuid.UUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *BundleMutation) ID() (id uuid.UUID, exists bool) {
+func (m *AttestationMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -887,7 +887,7 @@ func (m *BundleMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *BundleMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *AttestationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -896,19 +896,19 @@ func (m *BundleMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().Bundle.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().Attestation.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (m *BundleMutation) SetCreatedAt(t time.Time) {
+func (m *AttestationMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
 }
 
 // CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *BundleMutation) CreatedAt() (r time.Time, exists bool) {
+func (m *AttestationMutation) CreatedAt() (r time.Time, exists bool) {
 	v := m.created_at
 	if v == nil {
 		return
@@ -916,10 +916,10 @@ func (m *BundleMutation) CreatedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldCreatedAt returns the old "created_at" field's value of the Bundle entity.
-// If the Bundle object wasn't provided to the builder, the object is fetched from the database.
+// OldCreatedAt returns the old "created_at" field's value of the Attestation entity.
+// If the Attestation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BundleMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *AttestationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
 	}
@@ -934,17 +934,17 @@ func (m *BundleMutation) OldCreatedAt(ctx context.Context) (v time.Time, err err
 }
 
 // ResetCreatedAt resets all changes to the "created_at" field.
-func (m *BundleMutation) ResetCreatedAt() {
+func (m *AttestationMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
 // SetBundle sets the "bundle" field.
-func (m *BundleMutation) SetBundle(b []byte) {
+func (m *AttestationMutation) SetBundle(b []byte) {
 	m.bundle = &b
 }
 
 // Bundle returns the value of the "bundle" field in the mutation.
-func (m *BundleMutation) Bundle() (r []byte, exists bool) {
+func (m *AttestationMutation) Bundle() (r []byte, exists bool) {
 	v := m.bundle
 	if v == nil {
 		return
@@ -952,10 +952,10 @@ func (m *BundleMutation) Bundle() (r []byte, exists bool) {
 	return *v, true
 }
 
-// OldBundle returns the old "bundle" field's value of the Bundle entity.
-// If the Bundle object wasn't provided to the builder, the object is fetched from the database.
+// OldBundle returns the old "bundle" field's value of the Attestation entity.
+// If the Attestation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BundleMutation) OldBundle(ctx context.Context) (v []byte, err error) {
+func (m *AttestationMutation) OldBundle(ctx context.Context) (v []byte, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldBundle is only allowed on UpdateOne operations")
 	}
@@ -970,17 +970,17 @@ func (m *BundleMutation) OldBundle(ctx context.Context) (v []byte, err error) {
 }
 
 // ResetBundle resets all changes to the "bundle" field.
-func (m *BundleMutation) ResetBundle() {
+func (m *AttestationMutation) ResetBundle() {
 	m.bundle = nil
 }
 
 // SetWorkflowrunID sets the "workflowrun_id" field.
-func (m *BundleMutation) SetWorkflowrunID(u uuid.UUID) {
+func (m *AttestationMutation) SetWorkflowrunID(u uuid.UUID) {
 	m.workflowrun = &u
 }
 
 // WorkflowrunID returns the value of the "workflowrun_id" field in the mutation.
-func (m *BundleMutation) WorkflowrunID() (r uuid.UUID, exists bool) {
+func (m *AttestationMutation) WorkflowrunID() (r uuid.UUID, exists bool) {
 	v := m.workflowrun
 	if v == nil {
 		return
@@ -988,10 +988,10 @@ func (m *BundleMutation) WorkflowrunID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// OldWorkflowrunID returns the old "workflowrun_id" field's value of the Bundle entity.
-// If the Bundle object wasn't provided to the builder, the object is fetched from the database.
+// OldWorkflowrunID returns the old "workflowrun_id" field's value of the Attestation entity.
+// If the Attestation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BundleMutation) OldWorkflowrunID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *AttestationMutation) OldWorkflowrunID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldWorkflowrunID is only allowed on UpdateOne operations")
 	}
@@ -1006,25 +1006,25 @@ func (m *BundleMutation) OldWorkflowrunID(ctx context.Context) (v uuid.UUID, err
 }
 
 // ResetWorkflowrunID resets all changes to the "workflowrun_id" field.
-func (m *BundleMutation) ResetWorkflowrunID() {
+func (m *AttestationMutation) ResetWorkflowrunID() {
 	m.workflowrun = nil
 }
 
 // ClearWorkflowrun clears the "workflowrun" edge to the WorkflowRun entity.
-func (m *BundleMutation) ClearWorkflowrun() {
+func (m *AttestationMutation) ClearWorkflowrun() {
 	m.clearedworkflowrun = true
-	m.clearedFields[bundle.FieldWorkflowrunID] = struct{}{}
+	m.clearedFields[attestation.FieldWorkflowrunID] = struct{}{}
 }
 
 // WorkflowrunCleared reports if the "workflowrun" edge to the WorkflowRun entity was cleared.
-func (m *BundleMutation) WorkflowrunCleared() bool {
+func (m *AttestationMutation) WorkflowrunCleared() bool {
 	return m.clearedworkflowrun
 }
 
 // WorkflowrunIDs returns the "workflowrun" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // WorkflowrunID instead. It exists only for internal usage by the builders.
-func (m *BundleMutation) WorkflowrunIDs() (ids []uuid.UUID) {
+func (m *AttestationMutation) WorkflowrunIDs() (ids []uuid.UUID) {
 	if id := m.workflowrun; id != nil {
 		ids = append(ids, *id)
 	}
@@ -1032,20 +1032,20 @@ func (m *BundleMutation) WorkflowrunIDs() (ids []uuid.UUID) {
 }
 
 // ResetWorkflowrun resets all changes to the "workflowrun" edge.
-func (m *BundleMutation) ResetWorkflowrun() {
+func (m *AttestationMutation) ResetWorkflowrun() {
 	m.workflowrun = nil
 	m.clearedworkflowrun = false
 }
 
-// Where appends a list predicates to the BundleMutation builder.
-func (m *BundleMutation) Where(ps ...predicate.Bundle) {
+// Where appends a list predicates to the AttestationMutation builder.
+func (m *AttestationMutation) Where(ps ...predicate.Attestation) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the BundleMutation builder. Using this method,
+// WhereP appends storage-level predicates to the AttestationMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *BundleMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.Bundle, len(ps))
+func (m *AttestationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Attestation, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -1053,33 +1053,33 @@ func (m *BundleMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *BundleMutation) Op() Op {
+func (m *AttestationMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *BundleMutation) SetOp(op Op) {
+func (m *AttestationMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (Bundle).
-func (m *BundleMutation) Type() string {
+// Type returns the node type of this mutation (Attestation).
+func (m *AttestationMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *BundleMutation) Fields() []string {
+func (m *AttestationMutation) Fields() []string {
 	fields := make([]string, 0, 3)
 	if m.created_at != nil {
-		fields = append(fields, bundle.FieldCreatedAt)
+		fields = append(fields, attestation.FieldCreatedAt)
 	}
 	if m.bundle != nil {
-		fields = append(fields, bundle.FieldBundle)
+		fields = append(fields, attestation.FieldBundle)
 	}
 	if m.workflowrun != nil {
-		fields = append(fields, bundle.FieldWorkflowrunID)
+		fields = append(fields, attestation.FieldWorkflowrunID)
 	}
 	return fields
 }
@@ -1087,13 +1087,13 @@ func (m *BundleMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *BundleMutation) Field(name string) (ent.Value, bool) {
+func (m *AttestationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case bundle.FieldCreatedAt:
+	case attestation.FieldCreatedAt:
 		return m.CreatedAt()
-	case bundle.FieldBundle:
+	case attestation.FieldBundle:
 		return m.Bundle()
-	case bundle.FieldWorkflowrunID:
+	case attestation.FieldWorkflowrunID:
 		return m.WorkflowrunID()
 	}
 	return nil, false
@@ -1102,38 +1102,38 @@ func (m *BundleMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *BundleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *AttestationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case bundle.FieldCreatedAt:
+	case attestation.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
-	case bundle.FieldBundle:
+	case attestation.FieldBundle:
 		return m.OldBundle(ctx)
-	case bundle.FieldWorkflowrunID:
+	case attestation.FieldWorkflowrunID:
 		return m.OldWorkflowrunID(ctx)
 	}
-	return nil, fmt.Errorf("unknown Bundle field %s", name)
+	return nil, fmt.Errorf("unknown Attestation field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *BundleMutation) SetField(name string, value ent.Value) error {
+func (m *AttestationMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case bundle.FieldCreatedAt:
+	case attestation.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case bundle.FieldBundle:
+	case attestation.FieldBundle:
 		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBundle(v)
 		return nil
-	case bundle.FieldWorkflowrunID:
+	case attestation.FieldWorkflowrunID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -1141,81 +1141,81 @@ func (m *BundleMutation) SetField(name string, value ent.Value) error {
 		m.SetWorkflowrunID(v)
 		return nil
 	}
-	return fmt.Errorf("unknown Bundle field %s", name)
+	return fmt.Errorf("unknown Attestation field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *BundleMutation) AddedFields() []string {
+func (m *AttestationMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *BundleMutation) AddedField(name string) (ent.Value, bool) {
+func (m *AttestationMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *BundleMutation) AddField(name string, value ent.Value) error {
+func (m *AttestationMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown Bundle numeric field %s", name)
+	return fmt.Errorf("unknown Attestation numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *BundleMutation) ClearedFields() []string {
+func (m *AttestationMutation) ClearedFields() []string {
 	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *BundleMutation) FieldCleared(name string) bool {
+func (m *AttestationMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *BundleMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown Bundle nullable field %s", name)
+func (m *AttestationMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Attestation nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *BundleMutation) ResetField(name string) error {
+func (m *AttestationMutation) ResetField(name string) error {
 	switch name {
-	case bundle.FieldCreatedAt:
+	case attestation.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case bundle.FieldBundle:
+	case attestation.FieldBundle:
 		m.ResetBundle()
 		return nil
-	case bundle.FieldWorkflowrunID:
+	case attestation.FieldWorkflowrunID:
 		m.ResetWorkflowrunID()
 		return nil
 	}
-	return fmt.Errorf("unknown Bundle field %s", name)
+	return fmt.Errorf("unknown Attestation field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *BundleMutation) AddedEdges() []string {
+func (m *AttestationMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.workflowrun != nil {
-		edges = append(edges, bundle.EdgeWorkflowrun)
+		edges = append(edges, attestation.EdgeWorkflowrun)
 	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *BundleMutation) AddedIDs(name string) []ent.Value {
+func (m *AttestationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case bundle.EdgeWorkflowrun:
+	case attestation.EdgeWorkflowrun:
 		if id := m.workflowrun; id != nil {
 			return []ent.Value{*id}
 		}
@@ -1224,31 +1224,31 @@ func (m *BundleMutation) AddedIDs(name string) []ent.Value {
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *BundleMutation) RemovedEdges() []string {
+func (m *AttestationMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *BundleMutation) RemovedIDs(name string) []ent.Value {
+func (m *AttestationMutation) RemovedIDs(name string) []ent.Value {
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *BundleMutation) ClearedEdges() []string {
+func (m *AttestationMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.clearedworkflowrun {
-		edges = append(edges, bundle.EdgeWorkflowrun)
+		edges = append(edges, attestation.EdgeWorkflowrun)
 	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *BundleMutation) EdgeCleared(name string) bool {
+func (m *AttestationMutation) EdgeCleared(name string) bool {
 	switch name {
-	case bundle.EdgeWorkflowrun:
+	case attestation.EdgeWorkflowrun:
 		return m.clearedworkflowrun
 	}
 	return false
@@ -1256,24 +1256,24 @@ func (m *BundleMutation) EdgeCleared(name string) bool {
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *BundleMutation) ClearEdge(name string) error {
+func (m *AttestationMutation) ClearEdge(name string) error {
 	switch name {
-	case bundle.EdgeWorkflowrun:
+	case attestation.EdgeWorkflowrun:
 		m.ClearWorkflowrun()
 		return nil
 	}
-	return fmt.Errorf("unknown Bundle unique edge %s", name)
+	return fmt.Errorf("unknown Attestation unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *BundleMutation) ResetEdge(name string) error {
+func (m *AttestationMutation) ResetEdge(name string) error {
 	switch name {
-	case bundle.EdgeWorkflowrun:
+	case attestation.EdgeWorkflowrun:
 		m.ResetWorkflowrun()
 		return nil
 	}
-	return fmt.Errorf("unknown Bundle edge %s", name)
+	return fmt.Errorf("unknown Attestation edge %s", name)
 }
 
 // CASBackendMutation represents an operation that mutates the CASBackend nodes in the graph.
@@ -13679,8 +13679,8 @@ type WorkflowRunMutation struct {
 	clearedcas_backends         bool
 	version                     *uuid.UUID
 	clearedversion              bool
-	bundle                      *uuid.UUID
-	clearedbundle               bool
+	attestation_bundle          *uuid.UUID
+	clearedattestation_bundle   bool
 	done                        bool
 	oldValue                    func(context.Context) (*WorkflowRun, error)
 	predicates                  []predicate.WorkflowRun
@@ -14536,43 +14536,43 @@ func (m *WorkflowRunMutation) ResetVersion() {
 	m.clearedversion = false
 }
 
-// SetBundleID sets the "bundle" edge to the Bundle entity by id.
-func (m *WorkflowRunMutation) SetBundleID(id uuid.UUID) {
-	m.bundle = &id
+// SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by id.
+func (m *WorkflowRunMutation) SetAttestationBundleID(id uuid.UUID) {
+	m.attestation_bundle = &id
 }
 
-// ClearBundle clears the "bundle" edge to the Bundle entity.
-func (m *WorkflowRunMutation) ClearBundle() {
-	m.clearedbundle = true
+// ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
+func (m *WorkflowRunMutation) ClearAttestationBundle() {
+	m.clearedattestation_bundle = true
 }
 
-// BundleCleared reports if the "bundle" edge to the Bundle entity was cleared.
-func (m *WorkflowRunMutation) BundleCleared() bool {
-	return m.clearedbundle
+// AttestationBundleCleared reports if the "attestation_bundle" edge to the Attestation entity was cleared.
+func (m *WorkflowRunMutation) AttestationBundleCleared() bool {
+	return m.clearedattestation_bundle
 }
 
-// BundleID returns the "bundle" edge ID in the mutation.
-func (m *WorkflowRunMutation) BundleID() (id uuid.UUID, exists bool) {
-	if m.bundle != nil {
-		return *m.bundle, true
+// AttestationBundleID returns the "attestation_bundle" edge ID in the mutation.
+func (m *WorkflowRunMutation) AttestationBundleID() (id uuid.UUID, exists bool) {
+	if m.attestation_bundle != nil {
+		return *m.attestation_bundle, true
 	}
 	return
 }
 
-// BundleIDs returns the "bundle" edge IDs in the mutation.
+// AttestationBundleIDs returns the "attestation_bundle" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// BundleID instead. It exists only for internal usage by the builders.
-func (m *WorkflowRunMutation) BundleIDs() (ids []uuid.UUID) {
-	if id := m.bundle; id != nil {
+// AttestationBundleID instead. It exists only for internal usage by the builders.
+func (m *WorkflowRunMutation) AttestationBundleIDs() (ids []uuid.UUID) {
+	if id := m.attestation_bundle; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetBundle resets all changes to the "bundle" edge.
-func (m *WorkflowRunMutation) ResetBundle() {
-	m.bundle = nil
-	m.clearedbundle = false
+// ResetAttestationBundle resets all changes to the "attestation_bundle" edge.
+func (m *WorkflowRunMutation) ResetAttestationBundle() {
+	m.attestation_bundle = nil
+	m.clearedattestation_bundle = false
 }
 
 // Where appends a list predicates to the WorkflowRunMutation builder.
@@ -14997,8 +14997,8 @@ func (m *WorkflowRunMutation) AddedEdges() []string {
 	if m.version != nil {
 		edges = append(edges, workflowrun.EdgeVersion)
 	}
-	if m.bundle != nil {
-		edges = append(edges, workflowrun.EdgeBundle)
+	if m.attestation_bundle != nil {
+		edges = append(edges, workflowrun.EdgeAttestationBundle)
 	}
 	return edges
 }
@@ -15025,8 +15025,8 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 		if id := m.version; id != nil {
 			return []ent.Value{*id}
 		}
-	case workflowrun.EdgeBundle:
-		if id := m.bundle; id != nil {
+	case workflowrun.EdgeAttestationBundle:
+		if id := m.attestation_bundle; id != nil {
 			return []ent.Value{*id}
 		}
 	}
@@ -15071,8 +15071,8 @@ func (m *WorkflowRunMutation) ClearedEdges() []string {
 	if m.clearedversion {
 		edges = append(edges, workflowrun.EdgeVersion)
 	}
-	if m.clearedbundle {
-		edges = append(edges, workflowrun.EdgeBundle)
+	if m.clearedattestation_bundle {
+		edges = append(edges, workflowrun.EdgeAttestationBundle)
 	}
 	return edges
 }
@@ -15089,8 +15089,8 @@ func (m *WorkflowRunMutation) EdgeCleared(name string) bool {
 		return m.clearedcas_backends
 	case workflowrun.EdgeVersion:
 		return m.clearedversion
-	case workflowrun.EdgeBundle:
-		return m.clearedbundle
+	case workflowrun.EdgeAttestationBundle:
+		return m.clearedattestation_bundle
 	}
 	return false
 }
@@ -15108,8 +15108,8 @@ func (m *WorkflowRunMutation) ClearEdge(name string) error {
 	case workflowrun.EdgeVersion:
 		m.ClearVersion()
 		return nil
-	case workflowrun.EdgeBundle:
-		m.ClearBundle()
+	case workflowrun.EdgeAttestationBundle:
+		m.ClearAttestationBundle()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun unique edge %s", name)
@@ -15131,8 +15131,8 @@ func (m *WorkflowRunMutation) ResetEdge(name string) error {
 	case workflowrun.EdgeVersion:
 		m.ResetVersion()
 		return nil
-	case workflowrun.EdgeBundle:
-		m.ResetBundle()
+	case workflowrun.EdgeAttestationBundle:
+		m.ResetAttestationBundle()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun edge %s", name)
