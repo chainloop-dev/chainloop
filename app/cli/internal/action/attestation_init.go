@@ -251,6 +251,10 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachme
 		if err != nil {
 			return nil, err
 		}
+		// skip if interpolated material name is still empty
+		if csm.GetName() == "" {
+			continue
+		}
 
 		// check if material already exists in the contract and skip it in that case
 		ignore := false
