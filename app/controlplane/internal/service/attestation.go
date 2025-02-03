@@ -202,11 +202,13 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 			return nil, handleUseCaseErr(err, s.log)
 		}
 		envelope = *envelopeFromBundle(&bundle)
-	} else {
+	} else if req.GetAttestation() != nil {
 		// trying with envelope instead
 		if err := json.Unmarshal(req.GetAttestation(), &envelope); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
+	} else {
+		return nil, errors.BadRequest("attestation", "DSSE envelope or attestation bundle is required")
 	}
 
 	digest, err := s.storeAttestation(ctx, &envelope, &bundle, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
