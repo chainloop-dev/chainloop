@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -215,7 +215,7 @@ func (s *testSuite) SetupTest() {
 }
 
 func (s *testSuite) TearDownTest() {
-	assert.NoError(s.T(), s.vault.instance.Terminate(context.Background()))
+	testcontainers.CleanupContainer(s.T(), s.vault.instance, testcontainers.StopTimeout(time.Minute))
 }
 
 // Run the tests
