@@ -233,7 +233,7 @@ func NewPolicyProviderConfig(in *conf.Bootstrap) []*policies.NewRegistryConfig {
 }
 
 func (db *TestDatabase) Close(t *testing.T) {
-	require.NoError(t, db.instance.Terminate(context.Background(), testcontainers.StopTimeout(time.Minute)))
+	testcontainers.CleanupContainer(t, db.instance, testcontainers.StopTimeout(time.Minute))
 }
 
 // We use an env variable because testing flags will require us to add them to each testing package
