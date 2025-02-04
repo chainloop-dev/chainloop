@@ -17,6 +17,7 @@ package attestation
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -54,4 +55,19 @@ func JSONBundleWithDigest(bundle *protobundle.Bundle) ([]byte, cr_v1.Hash, error
 	}
 
 	return jsonContent, h, nil
+}
+
+// DSSEEnvelopeFromBundle Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
+func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
+	sigstoreEnvelope := bundle.GetDsseEnvelope()
+	return &dsse.Envelope{
+		PayloadType: sigstoreEnvelope.PayloadType,
+		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
+		Signatures: []dsse.Signature{
+			{
+				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
+				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
+			},
+		},
+	}
 }

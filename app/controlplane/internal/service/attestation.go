@@ -17,7 +17,6 @@ package service
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -30,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
@@ -202,7 +202,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		if err := protojson.Unmarshal(req.GetBundle(), &bundle); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-		envelope = *envelopeFromBundle(&bundle)
+		envelope = *attestation.DSSEEnvelopeFromBundle(&bundle)
 	} else if req.GetAttestation() != nil {
 		// trying with envelope instead
 		if err := json.Unmarshal(req.GetAttestation(), &envelope); err != nil {
@@ -220,21 +220,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	return &cpAPI.AttestationServiceStoreResponse{
 		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
 	}, nil
-}
-
-// Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
-func envelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
-	sigstoreEnvelope := bundle.GetDsseEnvelope()
-	return &dsse.Envelope{
-		PayloadType: sigstoreEnvelope.PayloadType,
-		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
-		Signatures: []dsse.Signature{
-			{
-				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
-				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
-			},
-		},
-	}
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
@@ -268,11 +253,17 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 				func() error {
 					// reset context
 					ctx := context.Background()
-					digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend, workflowRunID)
+					var digest string
+					var err error
+					if bundle.GetDsseEnvelope() != nil {
+						digest, err = s.attestationUseCase.UploadBundleToCAS(ctx, bundle, casBackend, workflowRunID)
+					} else {
+						digest, err = s.attestationUseCase.UploadEnvelopeToCAS(ctx, envelope, casBackend, workflowRunID)
+					}
 					if err != nil {
 						return err
 					}
-					s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest.String(), "runID", workflowRunID)
+					s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest, "runID", workflowRunID)
 					return nil
 				}, b)
 

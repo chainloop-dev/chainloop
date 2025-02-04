@@ -165,7 +165,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), validEnvelope, bundle)
 		assert.NoError(err)
-		wantDigest := "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a"
+		wantDigest := "sha256:be7c8d12134b2e0c011d5165de15d791436cb9a87bb100b80e5fa8729c9f54f7"
 		assert.Equal(wantDigest, d)
 		exists, err := s.Data.DB.Attestation.Query().Where(attestation2.WorkflowrunID(run.ID)).Exist(ctx)
 		assert.NoError(err)

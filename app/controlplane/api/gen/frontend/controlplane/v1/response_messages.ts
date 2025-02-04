@@ -270,7 +270,10 @@ export interface ProjectVersion {
 export interface AttestationItem {
   /** encoded DSEE envelope */
   envelope: Uint8Array;
-  /** sha256sum of the envelope in json format, used as a key in the CAS backend */
+  /**
+   * sha256sum of the bundle containing the envelope, or the envelope in old attestations
+   * used as a key in the CAS backend
+   */
   digestInCasBackend: string;
   /** denormalized envelope/statement content */
   envVars: AttestationItem_EnvVariable[];

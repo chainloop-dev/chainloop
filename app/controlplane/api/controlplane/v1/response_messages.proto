@@ -88,7 +88,8 @@ enum RunStatus {
 message AttestationItem {
   // encoded DSEE envelope
   bytes envelope = 3;
-  // sha256sum of the envelope in json format, used as a key in the CAS backend
+  // sha256sum of the bundle containing the envelope, or the envelope in old attestations
+  // used as a key in the CAS backend
   string digest_in_cas_backend = 7;
 
   // denormalized envelope/statement content

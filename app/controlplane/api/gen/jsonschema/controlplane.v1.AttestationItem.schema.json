@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(digestInCasBackend)$": {
-      "description": "sha256sum of the envelope in json format, used as a key in the CAS backend",
+      "description": "sha256sum of the bundle containing the envelope, or the envelope in old attestations\n used as a key in the CAS backend",
       "type": "string"
     },
     "^(envVars)$": {
@@ -38,7 +38,7 @@
       "type": "object"
     },
     "digest_in_cas_backend": {
-      "description": "sha256sum of the envelope in json format, used as a key in the CAS backend",
+      "description": "sha256sum of the bundle containing the envelope, or the envelope in old attestations\n used as a key in the CAS backend",
       "type": "string"
     },
     "env_vars": {

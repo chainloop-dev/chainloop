@@ -807,7 +807,8 @@ type AttestationItem struct {
 
 	// encoded DSEE envelope
 	Envelope []byte `protobuf:"bytes,3,opt,name=envelope,proto3" json:"envelope,omitempty"`
-	// sha256sum of the envelope in json format, used as a key in the CAS backend
+	// sha256sum of the bundle containing the envelope, or the envelope in old attestations
+	// used as a key in the CAS backend
 	DigestInCasBackend string `protobuf:"bytes,7,opt,name=digest_in_cas_backend,json=digestInCasBackend,proto3" json:"digest_in_cas_backend,omitempty"`
 	// denormalized envelope/statement content
 	EnvVars                []*AttestationItem_EnvVariable          `protobuf:"bytes,4,rep,name=env_vars,json=envVars,proto3" json:"env_vars,omitempty"`
