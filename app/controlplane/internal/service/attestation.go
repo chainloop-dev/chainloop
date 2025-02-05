@@ -217,30 +217,6 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
 	}
 
-	// Try unmarshalling a bundle first, falling back to plain dsse envelopes
-	//bundle := &protobundle.Bundle{}
-	// nolint: gocritic
-	//if req.GetBundle() != nil {
-	//	rawContent = req.GetBundle()
-	//	if err := protojson.Unmarshal(req.GetBundle(), bundle); err != nil {
-	//		return nil, handleUseCaseErr(err, s.log)
-	//	}
-	//	envelope = *attestation.DSSEEnvelopeFromBundle(bundle)
-	//} else if req.GetAttestation() != nil {
-	//	rawContent = req.GetAttestation()
-	//	// trying with envelope instead
-	//	if err := json.Unmarshal(req.GetAttestation(), &envelope); err != nil {
-	//		return nil, handleUseCaseErr(err, s.log)
-	//	}
-	//	// create a bundle without verification material to have it stored already
-	//	var err error
-	//	bundle, err = attestation.BundleFromDSSEEnvelope(&envelope)
-	//	if err != nil {
-	//		return nil, handleUseCaseErr(err, s.log)
-	//	}
-	//} else {
-	//}
-
 	digest, err := s.storeAttestation(ctx, req.GetAttestation(), req.GetBundle(), robotAccount, wRun.CASBackends[0], wRun, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
