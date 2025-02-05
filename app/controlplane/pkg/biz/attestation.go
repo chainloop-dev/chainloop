@@ -63,7 +63,7 @@ func (uc *AttestationUseCase) UploadBundleToCAS(ctx context.Context, bundle *pro
 		return "", fmt.Errorf("marshaling the bundle: %w", err)
 	}
 
-	if err = uc.doUploadToCAS(ctx, fmt.Sprintf("attestation-bundle-%s.json", workflowRunID), jsonContent, backend, h.String()); err != nil {
+	if err = uc.doUploadToCAS(ctx, fmt.Sprintf("attestation-%s.json", workflowRunID), jsonContent, backend, h.String()); err != nil {
 		return "", fmt.Errorf("uploading to CAS: %w", err)
 	}
 

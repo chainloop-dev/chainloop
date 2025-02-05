@@ -255,7 +255,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 					ctx := context.Background()
 					var digest string
 					var err error
-					if bundle.GetDsseEnvelope() != nil {
+					if bundle != nil && bundle.GetDsseEnvelope() != nil {
 						digest, err = s.attestationUseCase.UploadBundleToCAS(ctx, bundle, casBackend, workflowRunID)
 					} else {
 						digest, err = s.attestationUseCase.UploadEnvelopeToCAS(ctx, envelope, casBackend, workflowRunID)
