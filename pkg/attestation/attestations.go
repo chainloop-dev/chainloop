@@ -24,6 +24,7 @@ import (
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -70,4 +71,26 @@ func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 			},
 		},
 	}
+}
+
+func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
+	// DSSE Envelope is already base64 encoded, we need to decode to prevent it from being encoded twice
+	payload, err := base64.StdEncoding.DecodeString(dsseEnvelope.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("decoding: %w", err)
+	}
+	return &protobundle.Bundle{
+		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
+		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
+			Payload:     payload,
+			PayloadType: dsseEnvelope.PayloadType,
+			Signatures: []*sigstoredsse.Signature{
+				{
+					Sig:   []byte(dsseEnvelope.Signatures[0].Sig),
+					Keyid: dsseEnvelope.Signatures[0].KeyID,
+				},
+			},
+		}},
+		VerificationMaterial: &protobundle.VerificationMaterial{},
+	}, nil
 }

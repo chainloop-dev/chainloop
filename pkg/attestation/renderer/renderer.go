@@ -18,7 +18,6 @@ package renderer
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -27,6 +26,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -36,7 +36,6 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	v12 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
-	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -134,7 +133,7 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 	}
 
 	// Create sigstore bundle for the contents of this attestation
-	bundle, err := ab.envelopeToBundle(dsseEnvelope)
+	bundle, err := ab.envelopeToBundle(&dsseEnvelope)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading bundle: %w", err)
 	}
@@ -154,25 +153,10 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 	return &dsseEnvelope, bundle, nil
 }
 
-func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*protobundle.Bundle, error) {
-	// DSSE Envelope is already base64 encoded, we need to decode to prevent it from being encoded twice
-	payload, err := base64.StdEncoding.DecodeString(dsseEnvelope.Payload)
+func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
+	bundle, err := attestation.BundleFromDSSEEnvelope(dsseEnvelope)
 	if err != nil {
-		return nil, fmt.Errorf("decoding: %w", err)
-	}
-	bundle := &protobundle.Bundle{
-		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
-		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
-			Payload:     payload,
-			PayloadType: dsseEnvelope.PayloadType,
-			Signatures: []*sigstoredsse.Signature{
-				{
-					Sig:   []byte(dsseEnvelope.Signatures[0].Sig),
-					Keyid: dsseEnvelope.Signatures[0].KeyID,
-				},
-			},
-		}},
-		VerificationMaterial: &protobundle.VerificationMaterial{},
+		return nil, err
 	}
 
 	// extract verification materials

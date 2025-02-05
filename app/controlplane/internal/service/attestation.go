@@ -196,23 +196,29 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// Try unmarshalling a bundle first, falling back to plain dsse envelopes
-	var bundle protobundle.Bundle
+	bundle := &protobundle.Bundle{}
 	// nolint: gocritic
 	if req.GetBundle() != nil {
-		if err := protojson.Unmarshal(req.GetBundle(), &bundle); err != nil {
+		if err := protojson.Unmarshal(req.GetBundle(), bundle); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-		envelope = *attestation.DSSEEnvelopeFromBundle(&bundle)
+		envelope = *attestation.DSSEEnvelopeFromBundle(bundle)
 	} else if req.GetAttestation() != nil {
 		// trying with envelope instead
 		if err := json.Unmarshal(req.GetAttestation(), &envelope); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		// create a bundle without verification material to have it stored already
+		var err error
+		bundle, err = attestation.BundleFromDSSEEnvelope(&envelope)
+		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	} else {
 		return nil, errors.BadRequest("attestation", "DSSE envelope or attestation bundle is required")
 	}
 
-	digest, err := s.storeAttestation(ctx, &envelope, &bundle, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
+	digest, err := s.storeAttestation(ctx, &envelope, bundle, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
