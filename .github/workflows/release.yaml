@@ -106,9 +106,13 @@ jobs:
           for entry in $images; do
             # exclude latest tag
             if [[ $entry != *latest ]]; then
+              # Extract only the image name and the architecture on the tag
+              repo="${entry%:*}"                    # Remove tag
+              repo="${repo##*/}"                    # Extract last segment after the last '/'
+              material_name="${repo}-${entry##*-}"  # Construct final name
               syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
-              chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-              chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name $material_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name sbom-$material_name --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
             fi
           done
 
