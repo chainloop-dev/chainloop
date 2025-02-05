@@ -55,8 +55,6 @@ type WorkflowRun struct {
 
 type Attestation struct {
 	Envelope *dsse.Envelope
-	// Bundle digest, or envelope digest for old attestations
-	Digest string
 }
 
 type WorkflowRunWithContract struct {
@@ -414,7 +412,7 @@ func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgI
 
 func (uc *WorkflowRunUseCase) addAttestationFromBundle(ctx context.Context, wfRun *WorkflowRun) error {
 	// missing workflow run or attestation already there, do nothing
-	if wfRun == nil || wfRun.Attestation != nil || wfRun.State != string(WorkflowRunSuccess) {
+	if wfRun == nil || wfRun.State != string(WorkflowRunSuccess) || wfRun.Attestation != nil {
 		return nil
 	}
 
@@ -429,8 +427,6 @@ func (uc *WorkflowRunUseCase) addAttestationFromBundle(ctx context.Context, wfRu
 	wfRun.Bundle = &bundle
 	wfRun.Attestation = &Attestation{
 		Envelope: attestation.DSSEEnvelopeFromBundle(&bundle),
-		// the bundle digest
-		Digest: wfRun.Digest,
 	}
 	return nil
 }

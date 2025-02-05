@@ -144,7 +144,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.BadRequest("invalid", "id or digest required")
 	}
 
-	attestation, err := bizAttestationToPb(run.Attestation)
+	attestation, err := bizAttestationToPb(run.Attestation, run.Digest)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

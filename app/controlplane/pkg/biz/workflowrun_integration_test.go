@@ -152,7 +152,8 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope, Digest: wantDigest})
+		assert.Equal(wantDigest, r.Digest)
+		assert.Equal(r.Attestation, &biz.Attestation{Envelope: validEnvelope})
 	})
 
 	bundle := testBundle(s.T(), "testdata/attestations/bundle.json")
@@ -267,7 +268,7 @@ func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
 				assert.True(tc.errTypeChecker(err))
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.digest, run.Attestation.Digest)
+				assert.Equal(tc.digest, run.Digest)
 			}
 		})
 	}

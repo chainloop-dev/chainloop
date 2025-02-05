@@ -336,7 +336,6 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 	if wr.Attestation != nil {
 		r.Attestation = &biz.Attestation{
 			Envelope: wr.Attestation,
-			Digest:   wr.AttestationDigest,
 		}
 	}
 

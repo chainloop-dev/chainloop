@@ -449,7 +449,7 @@ func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.Atte
 	}}, nil
 }
 
-func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
+func bizAttestationToPb(att *biz.Attestation, digest string) (*cpAPI.AttestationItem, error) {
 	if att == nil || att.Envelope == nil {
 		return nil, nil
 	}
@@ -474,7 +474,7 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	return &cpAPI.AttestationItem{
 		Envelope:           encodedAttestation,
 		EnvVars:            extractEnvVariables(predicate.GetEnvVars()),
-		DigestInCasBackend: att.Digest,
+		DigestInCasBackend: digest,
 		Materials:          materials,
 		Annotations:        predicate.GetAnnotations(),
 		PolicyEvaluations:  extractPolicyEvaluations(predicate.GetPolicyEvaluations()),
