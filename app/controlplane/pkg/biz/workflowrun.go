@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -258,16 +259,21 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope *dsse.Envelope, bundle *protobundle.Bundle) (string, error) {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, digest string, envelope []byte, bundle []byte) error {
 	runID, err := uuid.Parse(id)
 	if err != nil {
-		return "", NewErrInvalidUUID(err)
+		return NewErrInvalidUUID(err)
+	}
+
+	var env dsse.Envelope
+	if err := json.Unmarshal(envelope, &env); err != nil {
+		return fmt.Errorf("envelope unmarshaling failed: %v", err)
 	}
 
 	// extract statement to run some validations in the content
-	predicate, err := chainloop.ExtractPredicate(envelope)
+	predicate, err := chainloop.ExtractPredicate(&env)
 	if err != nil {
-		return "", fmt.Errorf("extracting predicate: %w", err)
+		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
 	// Run some validations on the predicate
@@ -277,42 +283,26 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		if m.Type == schemaapi.CraftingSchema_Material_ATTESTATION.String() {
 			run, err := uc.wfRunRepo.FindByAttestationDigest(ctx, m.Hash.String())
 			if err != nil {
-				return "", fmt.Errorf("finding attestation: %w", err)
+				return fmt.Errorf("finding attestation: %w", err)
 			} else if run == nil {
-				return "", NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
+				return NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
 			}
 		}
 	}
 
-	// Calculate the digest
-	var digest v1.Hash
-
-	// envelope digest
-	_, digest, err = attestation.JSONEnvelopeWithDigest(envelope)
-	if err != nil {
-		return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
-	}
-
 	// Save bundle if provided, as it might come as an empty struct
-	if bundle != nil && bundle.GetDsseEnvelope() != nil {
-		var bundleBytes []byte
-		// calculate digest from bundle instead
-		bundleBytes, digest, err = attestation.JSONBundleWithDigest(bundle)
-		if err != nil {
-			return "", NewErrValidation(fmt.Errorf("marshaling the envelope: %w", err))
-		}
-
+	if bundle != nil {
 		// Save bundle
-		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundleBytes); err != nil {
-			return "", fmt.Errorf("saving bundle: %w", err)
+		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundle); err != nil {
+			return fmt.Errorf("saving bundle: %w", err)
 		}
 	}
 
-	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, envelope, digest.String()); err != nil {
-		return "", fmt.Errorf("saving attestation: %w", err)
+	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, &env, digest); err != nil {
+		return fmt.Errorf("saving attestation: %w", err)
 	}
 
-	return digest.String(), nil
+	return nil
 }
 
 type RunListFilters struct {

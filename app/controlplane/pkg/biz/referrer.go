@@ -24,7 +24,6 @@ import (
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -123,7 +122,7 @@ func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
-func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, workflowID string) error {
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, digest string, workflowID string) error {
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -136,7 +135,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 		return NewErrNotFound("workflow")
 	}
 
-	referrers, err := extractReferrers(att, s.repo)
+	referrers, err := extractReferrers(att, digest, s.repo)
 	if err != nil {
 		return fmt.Errorf("extracting referrers: %w", err)
 	}
@@ -251,16 +250,11 @@ func (r *Referrer) MapID() string {
 // 3 - and the subjects (some of them)
 // 4 - creating link between the attestation and the materials/subjects as needed
 // see tests for examples
-func extractReferrers(att *dsse.Envelope, repo ReferrerRepo) ([]*Referrer, error) {
-	_, h, err := attestation.JSONEnvelopeWithDigest(att)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling attestation: %w", err)
-	}
-
+func extractReferrers(att *dsse.Envelope, digest string, repo ReferrerRepo) ([]*Referrer, error) {
 	referrersMap := make(map[string]*Referrer)
 	// 1 - Attestation referrer
 	// Add the attestation itself as a referrer to the map without references yet
-	attestationHash := h.String()
+	attestationHash := digest
 	attestationReferrer := &Referrer{
 		Digest:       attestationHash,
 		Kind:         referrerAttestationType,
