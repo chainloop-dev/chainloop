@@ -1,94 +1,183 @@
-name: Release
+name: Build, Package and Release
 
 on:
-  workflow_call:
-    inputs:
-      tag:
-        type: string
-        required: true
-    secrets:
-      chainloop_token:
-        required: true
-      cosign_key:
-        required: true
-      cosign_pass:
-        required: true
+  push:
+    tags:
+      - "v*.*.*"
 
-permissions: {}
+# https://github.com/ossf/scorecard/blob/7ed886f1bd917d19cb9d6ce6c10e80e81fa31c39/docs/checks.md#token-permissions
+permissions:
+  contents: read
 
 jobs:
-  # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
-  # it will create one with an empty contract ready for operators to be filled. Otherwise, if found, it will just
-  # be ignored and the process will continue. For this to work it's using a pre-created API Token
-  release:
-    name: Record release from GitHub
+  test:
+    uses: chainloop-dev/chainloop/.github/workflows/test.yml@main
+
+  init_attestation:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: write
-    env:
-      CHAINLOOP_TOKEN: ${{ secrets.chainloop_token }}
-      CHAINLOOP_WORKFLOW_NAME: chainloop-vault-release
-      CHAINLOOP_PROJECT: chainloop
-      GH_TOKEN: ${{ github.token }}
+    needs: test
+    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+
+      - name: Initialize Attestation
+        id: init_attestation
+        run: |
+          attestation_id=$(chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME} --release --remote-state -o json | jq -r .attestationID)
+          echo "attestation_id=$attestation_id" >> $GITHUB_OUTPUT
+        env:
+          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+          CHAINLOOP_WORKFLOW_NAME: "release"
+          CHAINLOOP_PROJECT_NAME: "chainloop"
+
+  release:
+    name: Release CLI and control-plane/artifact-cas container images
+    needs: init_attestation
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
+    permissions:
+      contents: write # required for goreleaser to upload the release assets
+      packages: write # to push container images
+      pull-requests: write
+    env:
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+      ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
+    outputs:
+      attestation_hash: ${{ steps.attest_goreleaser.outputs.attestation_hash }}
+
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@ef6a6b364bbad08abd36a5f8af60b595d12702f8 # main
+        with:
+          cosign-release: "v2.2.3"
 
       - name: Install Chainloop
         run: |
-          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/install.sh | bash -s
+          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
 
-      - name: Initialize Attestation
-        run: |
-          tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag"
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Attest all assets
+      - name: Docker login to Github Packages
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.23.5"
+
+      # install qemu binaries for multiarch builds (needed by goreleaser/buildx)
+      - name: Setup qemu
+        id: qemu
+        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
+
+      - name: Install Syft
         run: |
-          tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
-          gh release download $tag -D /tmp/github-release
-          for entry in $(ls /tmp/github-release); do
-            # If the name is cas.cyclonedx.json, controlplane.cyclonedx.json or cli.cyclonedx.json, we need to add the attestation with the correct name
-            if [[ $entry =~ ^(cas|controlplane|cli)\.cyclonedx\.json$ ]]; then
-              name=$(echo -n "${entry%.json}" | sed 's/\./-/g')
-              chainloop attestation add --value "/tmp/github-release/$entry" --name "$name"
-              continue
+          # Install Syft
+          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O - | sh -s -- -b /usr/local/bin
+
+      - name: Run GoReleaser
+        id: release
+        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # v3.2.0
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_ENDPOINT: ${{ secrets.POSTHOG_ENDPOINT }}
+
+      - name: Attest GoReleaser outputs
+        id: attest_goreleaser
+        run: |
+          # goreleaser output resides in dist/artifacts.json
+          # Attest all built containers and manifests
+          images=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Docker Image" or .type=="Docker Manifest") | .path')
+          for entry in $images; do
+            # exclude latest tag
+            if [[ $entry != *latest ]]; then
+              syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
+              chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
             fi
-            chainloop attestation add --value "/tmp/github-release/$entry"
           done
 
-          # Include source code
-          version=$(echo -n $tag | sed 's/v//g')
-          gh release download $tag -A tar.gz -D /tmp
-          chainloop attestation add --value "/tmp/chainloop-$version.tar.gz"
+      - name: Bump Chart and Dagger Version
+        run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
+      - name: Bump Project Version
+        run: .github/workflows/utils/bump-project-version.sh
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        with:
+          commit-message: Bump Chart and Dagger Version ${{ github.ref_name }}
+          signoff: true
+          base: main
+          title: Bump Helm Chart and Dagger Version => ${{ github.ref_name }}
+          body: |
+            A new Chainloop release is available! Bumping Helm Chart reference and Dagger version to ${{ github.ref_name }}
+          labels: |
+            automated
+            helm
+
+  finish_attestation:
+    name: Finish Attestation
+    runs-on: ubuntu-latest
+    needs:
+      - init_attestation
+      - release
+    env:
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+    outputs:
+      attestation_hash: ${{ steps.attestation_push.attestation_sha }}
+    steps:
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
 
       - name: Finish and Record Attestation
-        id: attestation-push
+        id: attestation_push
         if: ${{ success() }}
         run: |
           chainloop attestation status --full
-          attestation_sha=$(chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY -o json | jq -r '.digest')
+          chainloop attestation push --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
+          attestation_sha=$(chainloop attestation push --attestation-id ${{ needs.init_attestation.outputs.attestation_id }} -o json | jq -r '.digest')
           # check that the command succeeded
           [ -n "${attestation_sha}" ] || exit 1
           echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.cosign_pass }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.cosign_key }}
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
         run: |
-          chainloop attestation reset
+          chainloop attestation reset --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
 
       - name: Mark attestation as cancelled
         if: ${{ cancelled() }}
         run: |
-          chainloop attestation reset --trigger cancellation
+          chainloop attestation reset --trigger cancellation --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
 
+  modify_release_notes:
+    if: ${{ success() }}
+    needs: finish_attestation
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    steps:
       - name: Add attestation link to release notes
         if: ${{ success() }}
         run: |
-          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
+          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ needs.finish_attestation.outputs.attestation_hash }})"
           current_notes=$(gh release view ${{inputs.tag}} --json body -q '.body')
 
           if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
