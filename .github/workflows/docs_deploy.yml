@@ -17,7 +17,7 @@ jobs:
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
-      workflow_name: "chainloop-docs-release"
+      workflow_name: "docs-release"
       project_name: "chainloop"
 
   deploy_docs:
@@ -86,4 +86,4 @@ jobs:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
       attestation_name: "docs"
-      workflow_name: "chainloop-docs-release"
+      workflow_name: "docs-release"

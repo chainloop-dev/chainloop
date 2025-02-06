@@ -1,4 +1,4 @@
-# Contract for the chainloop-vault-build-and-package workflow
+# Contract for the build-and-package workflow
 schemaVersion: v1
 policies:
   attestation:
