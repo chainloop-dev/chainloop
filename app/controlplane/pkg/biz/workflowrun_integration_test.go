@@ -16,6 +16,7 @@
 package biz_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
+	v2 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	v1 "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
@@ -131,6 +133,8 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	ctx := context.Background()
 
 	validEnvelope, envelopeBytes := testEnvelope(s.T(), "testdata/attestations/full.json")
+	h, _, err := v2.SHA256(bytes.NewReader(envelopeBytes))
+	require.NoError(s.T(), err)
 
 	s.T().Run("non existing workflowRun", func(t *testing.T) {
 		_, err := s.WorkflowRun.SaveAttestation(ctx, uuid.NewString(), envelopeBytes, nil)
@@ -146,7 +150,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), envelopeBytes, nil)
 		assert.NoError(err)
-		wantDigest := "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a"
+		wantDigest := h.String()
 		assert.Equal(wantDigest, d)
 
 		// Retrieve attestation ref from storage and compare
@@ -157,6 +161,8 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	})
 
 	_, bundleBytes := testBundle(s.T(), "testdata/attestations/bundle.json")
+	bundleHash, _, err := v2.SHA256(bytes.NewReader(bundleBytes))
+	require.NoError(s.T(), err)
 
 	s.T().Run("saves the bundle", func(_ *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
@@ -166,7 +172,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), envelopeBytes, bundleBytes)
 		assert.NoError(err)
-		wantDigest := "sha256:be7c8d12134b2e0c011d5165de15d791436cb9a87bb100b80e5fa8729c9f54f7"
+		wantDigest := bundleHash.String()
 		assert.Equal(wantDigest, d)
 		exists, err := s.Data.DB.Attestation.Query().Where(attestation2.WorkflowrunID(run.ID)).Exist(ctx)
 		assert.NoError(err)

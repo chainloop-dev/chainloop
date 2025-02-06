@@ -36,7 +36,7 @@ type ResourceInfo struct {
 
 type Uploader interface {
 	UploadFile(ctx context.Context, filepath string) (*UpDownStatus, error)
-	Upload(ctx context.Context, r io.Reader, digest, fileName string) (*UpDownStatus, error)
+	Upload(ctx context.Context, r io.Reader, filename, digest string) (*UpDownStatus, error)
 	// Whether the CAS is ready to accept uploads
 	IsReady(ctx context.Context) (bool, error)
 }

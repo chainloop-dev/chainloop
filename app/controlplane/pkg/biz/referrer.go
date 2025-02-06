@@ -71,8 +71,8 @@ type ReferrerRepo interface {
 	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
 	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
 	// OrgIDs represent an allowList of organizations where the referrers should be looked for
-	GetFromRoot(ctx context.Context, digest string, orgIDS []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
-	// Check if a given referrer by digest exist.
+	GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
+	// Exist Checks if a given referrer by digest exist.
 	// The query can be scoped further down if needed by providing the kind or visibility status
 	Exist(ctx context.Context, digest string, filters ...GetFromRootFilter) (bool, error)
 }
