@@ -270,6 +270,8 @@ export interface ProjectVersion {
 export interface AttestationItem {
   /** encoded DSEE envelope */
   envelope: Uint8Array;
+  /** Attestation bundle */
+  bundle: Uint8Array;
   /**
    * sha256sum of the bundle containing the envelope, or the envelope in old attestations
    * used as a key in the CAS backend
@@ -1158,6 +1160,7 @@ export const ProjectVersion = {
 function createBaseAttestationItem(): AttestationItem {
   return {
     envelope: new Uint8Array(0),
+    bundle: new Uint8Array(0),
     digestInCasBackend: "",
     envVars: [],
     materials: [],
@@ -1171,6 +1174,9 @@ export const AttestationItem = {
   encode(message: AttestationItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.envelope.length !== 0) {
       writer.uint32(26).bytes(message.envelope);
+    }
+    if (message.bundle.length !== 0) {
+      writer.uint32(82).bytes(message.bundle);
     }
     if (message.digestInCasBackend !== "") {
       writer.uint32(58).string(message.digestInCasBackend);
@@ -1206,6 +1212,13 @@ export const AttestationItem = {
           }
 
           message.envelope = reader.bytes();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.bundle = reader.bytes();
           continue;
         case 7:
           if (tag !== 58) {
@@ -1267,6 +1280,7 @@ export const AttestationItem = {
   fromJSON(object: any): AttestationItem {
     return {
       envelope: isSet(object.envelope) ? bytesFromBase64(object.envelope) : new Uint8Array(0),
+      bundle: isSet(object.bundle) ? bytesFromBase64(object.bundle) : new Uint8Array(0),
       digestInCasBackend: isSet(object.digestInCasBackend) ? String(object.digestInCasBackend) : "",
       envVars: Array.isArray(object?.envVars)
         ? object.envVars.map((e: any) => AttestationItem_EnvVariable.fromJSON(e))
@@ -1296,6 +1310,8 @@ export const AttestationItem = {
     const obj: any = {};
     message.envelope !== undefined &&
       (obj.envelope = base64FromBytes(message.envelope !== undefined ? message.envelope : new Uint8Array(0)));
+    message.bundle !== undefined &&
+      (obj.bundle = base64FromBytes(message.bundle !== undefined ? message.bundle : new Uint8Array(0)));
     message.digestInCasBackend !== undefined && (obj.digestInCasBackend = message.digestInCasBackend);
     if (message.envVars) {
       obj.envVars = message.envVars.map((e) => e ? AttestationItem_EnvVariable.toJSON(e) : undefined);
@@ -1332,6 +1348,7 @@ export const AttestationItem = {
   fromPartial<I extends Exact<DeepPartial<AttestationItem>, I>>(object: I): AttestationItem {
     const message = createBaseAttestationItem();
     message.envelope = object.envelope ?? new Uint8Array(0);
+    message.bundle = object.bundle ?? new Uint8Array(0);
     message.digestInCasBackend = object.digestInCasBackend ?? "";
     message.envVars = object.envVars?.map((e) => AttestationItem_EnvVariable.fromPartial(e)) || [];
     message.materials = object.materials?.map((e) => AttestationItem_Material.fromPartial(e)) || [];

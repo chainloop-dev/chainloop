@@ -37,6 +37,11 @@
       },
       "type": "object"
     },
+    "bundle": {
+      "description": "Attestation bundle",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "digest_in_cas_backend": {
       "description": "sha256sum of the bundle containing the envelope, or the envelope in old attestations\n used as a key in the CAS backend",
       "type": "string"

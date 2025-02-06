@@ -465,6 +465,7 @@ func bizAttestationToPb(att *biz.Attestation, digest string) (*cpAPI.Attestation
 			Blocked:       policyEvaluationStatus.Blocked,
 			HasViolations: policyEvaluationStatus.HasViolations,
 		},
+		Bundle: att.Bundle,
 	}, nil
 }
 
