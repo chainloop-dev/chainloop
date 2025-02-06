@@ -195,7 +195,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	_, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -211,7 +211,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
 	}
 
-	digest, err := s.storeAttestation(ctx, req.GetAttestation(), req.GetBundle(), robotAccount, wRun.CASBackends[0], wRun, req.MarkVersionAsReleased)
+	digest, err := s.storeAttestation(ctx, req.GetAttestation(), req.GetBundle(), robotAccount, wf, wRun, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -222,8 +222,9 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, casBackend *biz.CASBackend, wfRun *biz.WorkflowRun, markAsReleased *bool) (string, error) {
+func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (string, error) {
 	workflowRunID := wfRun.ID.String()
+	casBackend := wfRun.CASBackends[0]
 
 	// extract structured envelope for integrations
 	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
@@ -267,7 +268,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 	}
 
 	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, digest, workflowRunID); err != nil {
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, digest, wf.ID.String()); err != nil {
 		return "", handleUseCaseErr(err, s.log)
 	}
 
