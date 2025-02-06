@@ -150,14 +150,13 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), envelopeBytes, nil)
 		assert.NoError(err)
-		wantDigest := h.String()
-		assert.Equal(wantDigest, d)
+		assert.Equal(h, *d)
 
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(wantDigest, r.Attestation.Digest)
-		assert.Equal(&biz.Attestation{Envelope: validEnvelope, Digest: wantDigest}, r.Attestation)
+		assert.Equal(h, r.Attestation.Digest)
+		assert.Equal(&biz.Attestation{Envelope: validEnvelope, Digest: h.String()}, r.Attestation)
 	})
 
 	_, bundleBytes := testBundle(s.T(), "testdata/attestations/bundle.json")
