@@ -43,21 +43,6 @@ func JSONEnvelopeWithDigest(envelope *dsse.Envelope) ([]byte, cr_v1.Hash, error)
 	return jsonContent, h, nil
 }
 
-// JSONBundleWithDigest returns the JSON content of the sigstore bundle and its digest.
-func JSONBundleWithDigest(bundle *protobundle.Bundle) ([]byte, cr_v1.Hash, error) {
-	jsonContent, err := protojson.Marshal(bundle)
-	if err != nil {
-		return nil, cr_v1.Hash{}, fmt.Errorf("marshaling the envelope: %w", err)
-	}
-
-	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonContent))
-	if err != nil {
-		return nil, cr_v1.Hash{}, fmt.Errorf("calculating the digest: %w", err)
-	}
-
-	return jsonContent, h, nil
-}
-
 // DSSEEnvelopeFromBundle Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
 func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 	sigstoreEnvelope := bundle.GetDsseEnvelope()
