@@ -415,7 +415,7 @@ func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgI
 
 func (uc *WorkflowRunUseCase) addAttestationFromBundle(ctx context.Context, wfRun *WorkflowRun) error {
 	// missing workflow run or attestation already there, do nothing
-	if wfRun == nil || wfRun.State != string(WorkflowRunSuccess) || wfRun.Attestation != nil {
+	if wfRun == nil || wfRun.State != string(WorkflowRunSuccess) {
 		return nil
 	}
 
