@@ -155,7 +155,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		// Retrieve attestation ref from storage and compare
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
-		assert.Equal(h, r.Attestation.Digest)
+		assert.Equal(h.String(), r.Attestation.Digest)
 		assert.Equal(&biz.Attestation{Envelope: validEnvelope, Digest: h.String()}, r.Attestation)
 	})
 
@@ -171,8 +171,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 
 		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), envelopeBytes, bundleBytes)
 		assert.NoError(err)
-		wantDigest := bundleHash.String()
-		assert.Equal(wantDigest, d)
+		assert.Equal(bundleHash, *d)
 		exists, err := s.Data.DB.Attestation.Query().Where(attestation2.WorkflowrunID(run.ID)).Exist(ctx)
 		assert.NoError(err)
 		assert.True(exists)
