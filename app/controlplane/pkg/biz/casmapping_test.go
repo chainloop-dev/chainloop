@@ -157,7 +157,7 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			h, _, err := v1.SHA256(bytes.NewReader(attJSON))
 			require.NoError(s.T(), err)
 
-			got, err := s.useCase.LookupDigestsInAttestation(envelope, h.String())
+			got, err := s.useCase.LookupDigestsInAttestation(envelope, h)
 			if tc.wantErr {
 				s.Error(err)
 			} else {

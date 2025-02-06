@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -122,7 +123,7 @@ func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
 
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
-func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, digest string, workflowID string) error {
+func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, digest cr_v1.Hash, workflowID string) error {
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -250,11 +251,11 @@ func (r *Referrer) MapID() string {
 // 3 - and the subjects (some of them)
 // 4 - creating link between the attestation and the materials/subjects as needed
 // see tests for examples
-func extractReferrers(att *dsse.Envelope, digest string, repo ReferrerRepo) ([]*Referrer, error) {
+func extractReferrers(att *dsse.Envelope, digest cr_v1.Hash, repo ReferrerRepo) ([]*Referrer, error) {
 	referrersMap := make(map[string]*Referrer)
 	// 1 - Attestation referrer
 	// Add the attestation itself as a referrer to the map without references yet
-	attestationHash := digest
+	attestationHash := digest.String()
 	attestationReferrer := &Referrer{
 		Digest:       attestationHash,
 		Kind:         referrerAttestationType,

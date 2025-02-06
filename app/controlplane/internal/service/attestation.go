@@ -33,6 +33,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 type AttestationService struct {
@@ -217,25 +218,25 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	return &cpAPI.AttestationServiceStoreResponse{
-		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
+		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest.String()},
 	}, nil
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (string, error) {
+func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
 	workflowRunID := wfRun.ID.String()
 	casBackend := wfRun.CASBackends[0]
 
 	// extract structured envelope for integrations
 	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
 	if err != nil {
-		return "", handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Store the attestation
 	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope, bundle)
 	if err != nil {
-		return "", handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// If we have an external CAS backend, we will push there the attestation
@@ -253,7 +254,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 					// reset context
 					ctx := context.Background()
 					var err error
-					if err = s.attestationUseCase.UploadAttestationToCAS(ctx, rawContent, casBackend, workflowRunID, digest); err != nil {
+					if err = s.attestationUseCase.UploadAttestationToCAS(ctx, rawContent, casBackend, workflowRunID, *digest); err != nil {
 						return err
 					}
 
@@ -268,21 +269,21 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 	}
 
 	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, digest, wf.ID.String()); err != nil {
-		return "", handleUseCaseErr(err, s.log)
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, *digest, wf.ID.String()); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if !casBackend.Inline {
 		// Store the mappings in the DB
-		references, err := s.casMappingUseCase.LookupDigestsInAttestation(dsseEnv, digest)
+		references, err := s.casMappingUseCase.LookupDigestsInAttestation(dsseEnv, *digest)
 		if err != nil {
-			return "", handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		for _, ref := range references {
 			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", workflowRunID, "casBackend", casBackend.ID.String())
 			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), workflowRunID); err != nil {
-				return "", handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(err, s.log)
 			}
 		}
 	}
@@ -305,12 +306,12 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 	if markAsReleased != nil && *markAsReleased {
 		// Update the project version to mark it as a release
 		if _, err := s.projectVersionUseCase.UpdateReleaseStatus(ctx, wfRun.ProjectVersion.ID.String(), true); err != nil {
-			return "", handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
 
 	if err := s.wrUseCase.MarkAsFinished(ctx, workflowRunID, biz.WorkflowRunSuccess, ""); err != nil {
-		return "", handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Record the attestation in the prometheus registry

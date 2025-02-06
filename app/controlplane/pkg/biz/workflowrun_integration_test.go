@@ -436,9 +436,9 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 		})
 	assert.NoError(err)
 	_, envBytes := testEnvelope(t, "testdata/attestations/full.json")
-	s.digestAtt1, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), envBytes, nil)
-
+	d, err := suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), envBytes, nil)
 	assert.NoError(err)
+	s.digestAtt1 = d.String()
 
 	s.runOrg2, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
@@ -447,8 +447,9 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 		})
 	assert.NoError(err)
 	_, envBytes = testEnvelope(t, "testdata/attestations/empty.json")
-	s.digestAttOrg2, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), envBytes, nil)
+	d, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), envBytes, nil)
 	assert.NoError(err)
+	s.digestAttOrg2 = d.String()
 
 	s.runOrg2Public, err = suite.WorkflowRun.Create(ctx,
 		&biz.WorkflowRunCreateOpts{
@@ -457,8 +458,9 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 		})
 	assert.NoError(err)
 	_, envBytes = testEnvelope(t, "testdata/attestations/with-string.json")
-	s.digestAttPublic, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), envBytes, nil)
+	d, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), envBytes, nil)
 	assert.NoError(err)
+	s.digestAttPublic = d.String()
 
 	s.version1, err = suite.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg2.ProjectID.String(), version1)
 	require.NoError(t, err)

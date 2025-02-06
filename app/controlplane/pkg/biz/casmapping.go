@@ -198,7 +198,7 @@ type CASMappingLookupRef struct {
 
 // LookupDigestsInAttestation returns a list of references to the materials that have been uploaded to CAS
 // as well as the attestation digest itself
-func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope, digest string) ([]*CASMappingLookupRef, error) {
+func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope, digest cr_v1.Hash) ([]*CASMappingLookupRef, error) {
 	// Extract the materials that have been uploaded too
 	predicate, err := chainloop.ExtractPredicate(att)
 	if err != nil {
@@ -208,7 +208,7 @@ func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope, dige
 	references := []*CASMappingLookupRef{
 		{
 			Name:   "attestation",
-			Digest: digest,
+			Digest: digest.String(),
 		},
 	}
 
