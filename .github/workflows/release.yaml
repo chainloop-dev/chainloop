@@ -97,7 +97,7 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_ENDPOINT: ${{ secrets.POSTHOG_ENDPOINT }}
 
-      - name: Attest GoReleaser outputs
+      - name: Generate SBOMs, upload to release and attest
         id: attest_goreleaser
         run: |
           # goreleaser output resides in dist/artifacts.json
@@ -110,9 +110,12 @@ jobs:
               repo="${entry%:*}"                    # Remove tag
               repo="${repo##*/}"                    # Extract last segment after the last '/'
               material_name="${repo}-${entry##*-}"  # Construct final name
-              syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
+              syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
               chainloop attestation add --name $material_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-              chainloop attestation add --name sbom-$material_name --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name sbom-$material_name --value /tmp/sbom-$material_name.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+          
+              # Upload the SBOM to the release
+              gh release upload ${{ github.ref }} /tmp/sbom-$material_name.cyclonedx.json --clobber
             fi
           done
 
