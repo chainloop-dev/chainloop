@@ -97,8 +97,10 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_ENDPOINT: ${{ secrets.POSTHOG_ENDPOINT }}
 
-      - name: Attest GoReleaser outputs
+      - name: Generate SBOMs, upload to release and attest
         id: attest_goreleaser
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
@@ -110,9 +112,12 @@ jobs:
               repo="${entry%:*}"                    # Remove tag
               repo="${repo##*/}"                    # Extract last segment after the last '/'
               material_name="${repo}-${entry##*-}"  # Construct final name
-              syft -o cyclonedx-json=/tmp/sbom.cyclonedx.json $entry
+              syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
               chainloop attestation add --name $material_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-              chainloop attestation add --name sbom-$material_name --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name sbom-$material_name --value /tmp/sbom-$material_name.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
+          
+              # Upload the SBOM to the release
+              gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
             fi
           done
 
@@ -182,7 +187,7 @@ jobs:
         if: ${{ success() }}
         run: |
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ needs.finish_attestation.outputs.attestation_hash }})"
-          current_notes=$(gh release view ${{inputs.tag}} --json body -q '.body')
+          current_notes=$(gh release view ${{github.ref_name}} --json body -q '.body')
 
           if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
             # Replace the existing Chainloop Attestation section with the new URL
@@ -193,4 +198,4 @@ jobs:
           fi
 
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit ${{inputs.tag}} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+          gh release edit ${{github.ref_name}} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
