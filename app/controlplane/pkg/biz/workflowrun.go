@@ -274,13 +274,13 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	// Todo: this should be calculated in the use case
 	h, _, err := v1.SHA256(bytes.NewReader(rawContent))
 	if err != nil {
-		return "", fmt.Errorf("failed to calculate SHA256 of attestation: %v", err)
+		return "", fmt.Errorf("failed to calculate SHA256 of attestation: %w", err)
 	}
 	digest := h.String()
 
 	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
 	if err != nil {
-		return "", fmt.Errorf("extracting DSSE envelope: %v", err)
+		return "", fmt.Errorf("extracting DSSE envelope: %w", err)
 	}
 
 	// extract statement to run some validations in the content
