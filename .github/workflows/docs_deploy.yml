@@ -17,7 +17,7 @@ jobs:
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
-      workflow_name: "chainloop-docs-release"
+      workflow_name: "docs-release"
       project_name: "chainloop"
 
   deploy_docs:
@@ -66,13 +66,6 @@ jobs:
           config: docs/.syft.yaml
           output-file: docs/reports/sbom.cyclonedx.json
 
-      - uses: anchore/sbom-action@a5afbb185c4d9799c758f05e496032af75ae9128
-        with:
-          path: .
-          format: spdx-json
-          upload-artifact: false
-          output-file: docs/reports/sbom.spdx.json
-
       # Upload artifacts so they are shared with the chainloop job
       - uses: actions/upload-artifact@ef09cdac3e2d3e60d8ccadda691f4f1cec5035cb
         with:
@@ -93,4 +86,4 @@ jobs:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
       attestation_name: "docs"
-      workflow_name: "chainloop-docs-release"
+      workflow_name: "docs-release"

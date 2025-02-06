@@ -1,4 +1,4 @@
-# Contract for chainloop-vault-scorecards workflow
+# Contract for scorecards workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION

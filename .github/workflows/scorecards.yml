@@ -24,7 +24,7 @@ jobs:
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
-      workflow_name: "chainloop-vault-scorecards"
+      workflow_name: "scorecards"
       project_name: "chainloop"
 
   analysis:
@@ -92,4 +92,4 @@ jobs:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
     with:
       attestation_name: "scorecards"
-      workflow_name: "chainloop-vault-scorecards"
+      workflow_name: "scorecards"

@@ -1,4 +1,4 @@
-# contract used in chainloop-vault-release workflow
+# contract used in release workflow
 schemaVersion: v1
 policies:
   attestation:
