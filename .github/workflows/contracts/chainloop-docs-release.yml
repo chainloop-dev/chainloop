@@ -1,4 +1,4 @@
-# Contract used in chainloop-docs-release workflow
+# Contract used in docs-release workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION

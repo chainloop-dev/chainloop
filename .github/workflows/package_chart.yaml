@@ -20,7 +20,7 @@ jobs:
     uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@64839eb68c20fefda46929c6c6e893cdf0537619
     with:
       project: "chainloop"
-      workflow_name: "chainloop-vault-helm-package"
+      workflow_name: "helm-package"
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
 

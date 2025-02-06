@@ -1,4 +1,4 @@
-# Contract for chainloop-vault-codeql workflow
+# Contract for codeql workflow
 schemaVersion: v1
 runner:
   type: GITHUB_ACTION
