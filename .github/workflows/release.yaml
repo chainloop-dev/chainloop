@@ -99,6 +99,8 @@ jobs:
 
       - name: Generate SBOMs, upload to release and attest
         id: attest_goreleaser
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
