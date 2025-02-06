@@ -16,7 +16,6 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -33,12 +32,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	errors "github.com/go-kratos/kratos/v2/errors"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 type AttestationService struct {
@@ -229,20 +223,19 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
 func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, casBackend *biz.CASBackend, wfRun *biz.WorkflowRun, markAsReleased *bool) (string, error) {
-	rawContent := bundle
-	if rawContent == nil {
-		rawContent = envelope
-	}
-
-	// calculate the content digest
-	// Todo: this should be calculated in the use case
-	h, _, err := v1.SHA256(bytes.NewReader(rawContent))
-	if err != nil {
-		return "", err
-	}
-	digest := h.String()
-
 	workflowRunID := wfRun.ID.String()
+
+	// extract structured envelope for integrations
+	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
+	if err != nil {
+		return "", handleUseCaseErr(err, s.log)
+	}
+
+	// Store the attestation
+	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope, bundle)
+	if err != nil {
+		return "", handleUseCaseErr(err, s.log)
+	}
 
 	// If we have an external CAS backend, we will push there the attestation
 	if !casBackend.Inline {
@@ -251,6 +244,11 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 			b.MaxElapsedTime = 1 * time.Minute
 			err := backoff.Retry(
 				func() error {
+					rawContent := bundle
+					if rawContent == nil {
+						rawContent = envelope
+					}
+
 					// reset context
 					ctx := context.Background()
 					var err error
@@ -268,33 +266,14 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 		}()
 	}
 
-	// Store the attestation including the digest in the CAS backend (if exists)
-	if err = s.wrUseCase.SaveAttestation(ctx, workflowRunID, digest, envelope, bundle); err != nil {
-		return "", handleUseCaseErr(err, s.log)
-	}
-
-	// extract structured envelope for integrations
-	var dsseEnv dsse.Envelope
-	if bundle != nil {
-		var attBundle protobundle.Bundle
-		if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
-			return "", handleUseCaseErr(err, s.log)
-		}
-		dsseEnv = *attestation.DSSEEnvelopeFromBundle(&attBundle)
-	} else {
-		if err := json.Unmarshal(envelope, &dsseEnv); err != nil {
-			return "", handleUseCaseErr(err, s.log)
-		}
-	}
-
 	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, &dsseEnv, digest, workflowRunID); err != nil {
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, digest, workflowRunID); err != nil {
 		return "", handleUseCaseErr(err, s.log)
 	}
 
 	if !casBackend.Inline {
 		// Store the mappings in the DB
-		references, err := s.casMappingUseCase.LookupDigestsInAttestation(&dsseEnv, digest)
+		references, err := s.casMappingUseCase.LookupDigestsInAttestation(dsseEnv, digest)
 		if err != nil {
 			return "", handleUseCaseErr(err, s.log)
 		}
@@ -312,7 +291,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
-			Envelope: &dsseEnv, OrgID: robotAccount.OrgID, WorkflowID: workflowRunID,
+			Envelope: dsseEnv, OrgID: robotAccount.OrgID, WorkflowID: workflowRunID,
 			DownloadBackendType: string(casBackend.Provider),
 			DownloadSecretName:  secretName,
 			WorkflowRunID:       workflowRunID,

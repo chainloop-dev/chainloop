@@ -152,7 +152,7 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			var envelope *dsse.Envelope
 			require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-			got, err := s.useCase.LookupDigestsInAttestation(envelope)
+			got, err := s.useCase.LookupDigestsInAttestation(envelope, "")
 			if tc.wantErr {
 				s.Error(err)
 			} else {

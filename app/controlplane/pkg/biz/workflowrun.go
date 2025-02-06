@@ -16,8 +16,8 @@
 package biz
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -259,21 +259,34 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, digest string, envelope []byte, bundle []byte) error {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope, bundle []byte) (string, error) {
 	runID, err := uuid.Parse(id)
 	if err != nil {
-		return NewErrInvalidUUID(err)
+		return "", NewErrInvalidUUID(err)
 	}
 
-	var env dsse.Envelope
-	if err := json.Unmarshal(envelope, &env); err != nil {
-		return fmt.Errorf("envelope unmarshaling failed: %v", err)
+	rawContent := bundle
+	if rawContent == nil {
+		rawContent = envelope
+	}
+
+	// calculate the content digest
+	// Todo: this should be calculated in the use case
+	h, _, err := v1.SHA256(bytes.NewReader(rawContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to calculate SHA256 of attestation: %v", err)
+	}
+	digest := h.String()
+
+	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
+	if err != nil {
+		return "", fmt.Errorf("extracting DSSE envelope: %v", err)
 	}
 
 	// extract statement to run some validations in the content
-	predicate, err := chainloop.ExtractPredicate(&env)
+	predicate, err := chainloop.ExtractPredicate(dsseEnv)
 	if err != nil {
-		return fmt.Errorf("extracting predicate: %w", err)
+		return "", fmt.Errorf("extracting predicate: %w", err)
 	}
 
 	// Run some validations on the predicate
@@ -283,9 +296,9 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, di
 		if m.Type == schemaapi.CraftingSchema_Material_ATTESTATION.String() {
 			run, err := uc.wfRunRepo.FindByAttestationDigest(ctx, m.Hash.String())
 			if err != nil {
-				return fmt.Errorf("finding attestation: %w", err)
+				return "", fmt.Errorf("finding attestation: %w", err)
 			} else if run == nil {
-				return NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
+				return "", NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
 			}
 		}
 	}
@@ -294,15 +307,15 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, di
 	if bundle != nil {
 		// Save bundle
 		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundle); err != nil {
-			return fmt.Errorf("saving bundle: %w", err)
+			return "", fmt.Errorf("saving bundle: %w", err)
 		}
 	}
 
-	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, &env, digest); err != nil {
-		return fmt.Errorf("saving attestation: %w", err)
+	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, dsseEnv, digest); err != nil {
+		return "", fmt.Errorf("saving attestation: %w", err)
 	}
 
-	return nil
+	return digest, nil
 }
 
 type RunListFilters struct {
