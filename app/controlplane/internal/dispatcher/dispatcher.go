@@ -124,7 +124,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 			FinishedAt:        *wfRun.FinishedAt,
 			RunnerType:        wfRun.RunnerType,
 			RunURL:            wfRun.RunURL,
-			AttestationDigest: wfRun.Digest,
+			AttestationDigest: wfRun.Attestation.Digest,
 		},
 	}
 

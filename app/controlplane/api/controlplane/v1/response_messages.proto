@@ -87,7 +87,7 @@ enum RunStatus {
 
 message AttestationItem {
   // encoded DSEE envelope
-  bytes envelope = 3;
+  bytes envelope = 3 [deprecated=true];
   // Attestation bundle
   bytes bundle = 10;
   // sha256sum of the bundle containing the envelope, or the envelope in old attestations

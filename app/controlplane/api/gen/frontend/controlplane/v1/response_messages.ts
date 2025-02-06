@@ -268,7 +268,11 @@ export interface ProjectVersion {
 }
 
 export interface AttestationItem {
-  /** encoded DSEE envelope */
+  /**
+   * encoded DSEE envelope
+   *
+   * @deprecated
+   */
   envelope: Uint8Array;
   /** Attestation bundle */
   bundle: Uint8Array;

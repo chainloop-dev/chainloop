@@ -44,7 +44,6 @@ type WorkflowRun struct {
 	RunURL, RunnerType    string
 	ContractVersionID     uuid.UUID
 	Attestation           *Attestation
-	Digest                string
 	CASBackends           []*CASBackend
 	// The revision of the contract that was used
 	ContractRevisionUsed int
@@ -56,6 +55,7 @@ type WorkflowRun struct {
 type Attestation struct {
 	Envelope *dsse.Envelope
 	Bundle   []byte
+	Digest   string
 }
 
 type WorkflowRunWithContract struct {
@@ -422,15 +422,17 @@ func (uc *WorkflowRunUseCase) addAttestationFromBundle(ctx context.Context, wfRu
 	var bundle protobundle.Bundle
 	bundleBytes, err := uc.wfRunRepo.GetBundle(ctx, wfRun.ID)
 	if err != nil {
-		return err
+		if IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("retrieving bundle from repo: %w", err)
 	}
 	if err = protojson.Unmarshal(bundleBytes, &bundle); err != nil {
-		return err
+		return fmt.Errorf("unmarshalling bundle: %w", err)
 	}
-	wfRun.Attestation = &Attestation{
-		Envelope: attestation.DSSEEnvelopeFromBundle(&bundle),
-		Bundle:   bundleBytes,
-	}
+	wfRun.Attestation.Envelope = attestation.DSSEEnvelopeFromBundle(&bundle)
+	wfRun.Attestation.Bundle = bundleBytes
+
 	return nil
 }
 
