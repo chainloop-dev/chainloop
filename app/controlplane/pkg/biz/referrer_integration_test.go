@@ -16,6 +16,7 @@
 package biz_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -27,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/mock"
@@ -40,9 +42,10 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	require.NoError(s.T(), err)
 	var envelope *dsse.Envelope
 	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
-
+	h, _, err := v1.SHA256(bytes.NewReader(attJSON))
+	require.NoError(s.T(), err)
 	wantReferrerAtt := &biz.Referrer{
-		Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+		Digest:       h.String(),
 		Kind:         "ATTESTATION",
 		Downloadable: true,
 	}
@@ -55,7 +58,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	})
 
 	s.Run("storing it associated with a private workflow keeps it private and not in the index", func() {
-		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, "", s.workflow1.ID.String())
+		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, wantReferrerAtt.Digest, s.workflow1.ID.String())
 		require.NoError(s.T(), err)
 		ref, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -70,7 +73,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 		_, err := s.Workflow.Update(ctx, s.org2.ID, s.workflow2.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
 		require.NoError(t, err)
 
-		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, "", s.workflow2.ID.String())
+		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, wantReferrerAtt.Digest, s.workflow2.ID.String())
 		require.NoError(s.T(), err)
 		// It's marked as public in the internal index
 		ref, err := s.sharedEnabledUC.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
@@ -143,8 +146,10 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 }
 
 func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
-	envelope, _ := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	envelope, attJSON := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
 	ctx := context.Background()
+	h, _, err := v1.SHA256(bytes.NewReader(attJSON))
+	require.NoError(s.T(), err)
 
 	s.T().Run("and works with concurrency of the same thing", func(_ *testing.T) {
 		var wg sync.WaitGroup
@@ -152,15 +157,15 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow1.ID.String())
+				err := s.Referrer.ExtractAndPersist(ctx, envelope, h.String(), s.workflow1.ID.String())
 				s.NoError(err)
-				err = s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow2.ID.String())
+				err = s.Referrer.ExtractAndPersist(ctx, envelope, h.String(), s.workflow2.ID.String())
 				s.NoError(err)
 			}()
 		}
 		wg.Wait()
 
-		got, err := s.Referrer.GetFromRootUser(ctx, "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7", "", s.user.ID)
+		got, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID)
 		s.NoError(err)
 		s.Len(got.WorkflowIDs, 2)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
@@ -169,10 +174,12 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
 
 func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	// Load attestation
-	envelope, _ := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	h, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
 
 	wantReferrerAtt := &biz.Referrer{
-		Digest:       "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+		Digest:       h.String(),
 		Kind:         "ATTESTATION",
 		Downloadable: true,
 	}
@@ -226,7 +233,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("and it's idempotent", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow1.ID.String())
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, wantReferrerAtt.Digest, s.workflow1.ID.String())
 		s.NoError(err)
 		ref, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -279,7 +286,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("but another workflow can be attached", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow2.ID.String())
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, wantReferrerAtt.Digest, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -288,7 +295,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Contains(got.OrgIDs, s.org2UUID)
 
 		// and it's idempotent (no new orgs added)
-		err = s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow2.ID.String())
+		err = s.Referrer.ExtractAndPersist(ctx, envelope, wantReferrerAtt.Digest, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err = s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
 		s.NoError(err)
@@ -298,7 +305,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow2.ID.String())
+		err := s.Referrer.ExtractAndPersist(ctx, envelope, wantReferrerAtt.Digest, s.workflow2.ID.String())
 		s.NoError(err)
 		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user2.ID)
 		s.NoError(err)
@@ -342,10 +349,12 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("it should fail on retrieval if we have stored two referrers with same digest (for two different types)", func(t *testing.T) {
-		envelope, _ := testEnvelope(s.T(), "testdata/attestations/same-digest-than-git-subject.json")
+		envelope, attJSON := testEnvelope(s.T(), "testdata/attestations/same-digest-than-git-subject.json")
+		h, _, err := v1.SHA256(bytes.NewReader(attJSON))
+		require.NoError(s.T(), err)
 
 		// storing will not fail since it's the a different artifact type
-		err := s.Referrer.ExtractAndPersist(ctx, envelope, "", s.workflow1.ID.String())
+		err = s.Referrer.ExtractAndPersist(ctx, envelope, h.String(), s.workflow1.ID.String())
 		s.NoError(err)
 
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
@@ -376,9 +385,9 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// it should be referenced by two attestations since it's subject of both
 		require.Len(t, got.References, 2)
 		s.Equal("ATTESTATION", got.References[0].Kind)
-		s.Equal("sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7", got.References[0].Digest)
+		s.Equal("sha256:2e9bf8e13acd112eff355787b2b72eb8af4ee51fc22c7e65611939f2225e1dc5", got.References[0].Digest)
 		s.Equal("ATTESTATION", got.References[1].Kind)
-		s.Equal("sha256:c90ccaab0b2cfda9980836aef407f62d747680ea9793ddc6ad2e2d7ab615933d", got.References[1].Digest)
+		s.Equal("sha256:5f4d1baadaf3e439f769f11c7ba0c5f77dad27d00689144d1311b48e65818bbd", got.References[1].Digest)
 	})
 
 	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {
