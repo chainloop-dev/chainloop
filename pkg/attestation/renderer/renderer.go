@@ -183,12 +183,13 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 		if len(chain) == 0 {
 			return nil, errors.New("certificate chain is empty")
 		}
+
 		// Store generated cert, ignoring the chain
 		block, _ := pem.Decode([]byte(chain[0]))
-
 		if block == nil {
 			return nil, fmt.Errorf("failed to decode PEM block")
 		}
+		
 		cert := &v12.X509Certificate{RawBytes: block.Bytes}
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_Certificate{
 			Certificate: cert,
