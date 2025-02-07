@@ -118,17 +118,14 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 			Team:    wf.Team,
 		},
 		WorkflowRun: &sdk.ChainloopMetadataWorkflowRun{
-			ID:         opts.WorkflowRunID,
-			State:      wfRun.State,
-			StartedAt:  *wfRun.CreatedAt,
-			FinishedAt: *wfRun.FinishedAt,
-			RunnerType: wfRun.RunnerType,
-			RunURL:     wfRun.RunURL,
+			ID:                opts.WorkflowRunID,
+			State:             wfRun.State,
+			StartedAt:         *wfRun.CreatedAt,
+			FinishedAt:        *wfRun.FinishedAt,
+			RunnerType:        wfRun.RunnerType,
+			RunURL:            wfRun.RunURL,
+			AttestationDigest: wfRun.Attestation.Digest,
 		},
-	}
-
-	if wfRun.Attestation != nil {
-		workflowMetadata.WorkflowRun.AttestationDigest = wfRun.Attestation.Digest
 	}
 
 	// Dispatch the integrations

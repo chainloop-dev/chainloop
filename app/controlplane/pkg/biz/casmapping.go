@@ -16,9 +16,7 @@
 package biz
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -198,31 +196,19 @@ type CASMappingLookupRef struct {
 	Name, Digest string
 }
 
-// LookupCASItemsInAttestation returns a list of references to the materials that have been uploaded to CAS
+// LookupDigestsInAttestation returns a list of references to the materials that have been uploaded to CAS
 // as well as the attestation digest itself
-func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope) ([]*CASMappingLookupRef, error) {
-	// Calculate the attestation hash
-	jsonAtt, err := json.Marshal(att)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling attestation: %w", err)
-	}
-
+func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope, digest cr_v1.Hash) ([]*CASMappingLookupRef, error) {
 	// Extract the materials that have been uploaded too
 	predicate, err := chainloop.ExtractPredicate(att)
 	if err != nil {
 		return nil, fmt.Errorf("extracting predicate: %w", err)
 	}
 
-	// Calculate the attestation hash
-	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonAtt))
-	if err != nil {
-		return nil, fmt.Errorf("calculating attestation hash: %w", err)
-	}
-
 	references := []*CASMappingLookupRef{
 		{
 			Name:   "attestation",
-			Digest: h.String(),
+			Digest: digest.String(),
 		},
 	}
 

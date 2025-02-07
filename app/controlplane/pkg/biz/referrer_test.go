@@ -16,11 +16,13 @@
 package biz
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,17 +82,17 @@ func (s *referrerTestSuite) TestInitialization() {
 
 func (s *referrerTestSuite) TestExtractReferrers() {
 	var fullAttReferrer = &Referrer{
-		Digest: "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
+		Digest: "sha256:63f811807585a7359882fc4e28bc8e08555d9743aa07a2965217b30ef2ba14a5",
 		Kind:   "ATTESTATION",
 	}
 
 	var withDuplicatedRefferer = &Referrer{
-		Digest: "sha256:47e94045e8ffb5ea9a4939a03a21c5ad26f4ea7d463ac6ec46dac15349f45b3f",
+		Digest: "sha256:decfbb49b42593ffc8be415cf9eef5532355d78bd6fcfe57b8e7750b2579b91b",
 		Kind:   "ATTESTATION",
 	}
 
 	var withGitSubject = &Referrer{
-		Digest: "sha256:de36d470d792499b1489fc0e6623300fc8822b8f0d2981bb5ec563f8dde723c7",
+		Digest: "sha256:2e9bf8e13acd112eff355787b2b72eb8af4ee51fc22c7e65611939f2225e1dc5",
 		Kind:   "ATTESTATION",
 	}
 
@@ -153,7 +155,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			inputPath: "testdata/attestations/with-string.json",
 			want: []*Referrer{
 				{
-					Digest:       "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+					Digest:       "sha256:9f270dcb263c228c55351d513ae367c611bdf8d3a3a066861b88e25722519e7b",
 					Kind:         "ATTESTATION",
 					Downloadable: true,
 					References: []*Referrer{
@@ -183,7 +185,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 					Kind:   "GIT_HEAD_COMMIT",
 					References: []*Referrer{
 						{
-							Digest: "sha256:507dddb505ceb53fb32cde31f9935c9a3ebc7b7d82f36101de638b1ab9367344",
+							Digest: "sha256:9f270dcb263c228c55351d513ae367c611bdf8d3a3a066861b88e25722519e7b",
 							Kind:   "ATTESTATION",
 						},
 					},
@@ -348,10 +350,12 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 			// Load attestation
 			attJSON, err := os.ReadFile(tc.inputPath)
 			require.NoError(s.T(), err)
+			h, _, err := v1.SHA256(bytes.NewReader(attJSON))
+			require.NoError(s.T(), err)
 			var envelope *dsse.Envelope
 			require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-			got, err := extractReferrers(envelope, nil)
+			got, err := extractReferrers(envelope, h, nil)
 			if tc.expectErr {
 				s.Error(err)
 				return

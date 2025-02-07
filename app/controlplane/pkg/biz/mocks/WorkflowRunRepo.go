@@ -161,6 +161,36 @@ func (_m *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, I
 	return r0, r1
 }
 
+// GetBundle provides a mock function with given fields: ctx, wrID
+func (_m *WorkflowRunRepo) GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error) {
+	ret := _m.Called(ctx, wrID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetBundle")
+	}
+
+	var r0 []byte
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]byte, error)); ok {
+		return rf(ctx, wrID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []byte); ok {
+		r0 = rf(ctx, wrID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, wrID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: ctx, orgID, f, p
 func (_m *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, f *biz.RunListFilters, p *pagination.CursorOptions) ([]*biz.WorkflowRun, string, error) {
 	ret := _m.Called(ctx, orgID, f, p)

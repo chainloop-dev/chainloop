@@ -21,11 +21,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
-	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 type AttestationUseCase struct {
@@ -44,16 +42,10 @@ func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseC
 	}
 }
 
-func (uc *AttestationUseCase) UploadToCAS(ctx context.Context, envelope *dsse.Envelope, backend *CASBackend, workflowRunID string) (*cr_v1.Hash, error) {
-	filename := fmt.Sprintf("attestation-%s.json", workflowRunID)
-	jsonContent, h, err := attestation.JSONEnvelopeWithDigest(envelope)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling the envelope: %w", err)
+func (uc *AttestationUseCase) UploadAttestationToCAS(ctx context.Context, content []byte, backend *CASBackend, workflowRunID string, digest v1.Hash) error {
+	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(content), fmt.Sprintf("attestation-%s.json", workflowRunID), digest.String()); err != nil {
+		return err
 	}
 
-	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(jsonContent), filename, h.String()); err != nil {
-		return nil, fmt.Errorf("uploading to CAS: %w", err)
-	}
-
-	return &h, nil
+	return nil
 }

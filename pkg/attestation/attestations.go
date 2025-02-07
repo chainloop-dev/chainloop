@@ -17,12 +17,14 @@ package attestation
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -41,17 +43,55 @@ func JSONEnvelopeWithDigest(envelope *dsse.Envelope) ([]byte, cr_v1.Hash, error)
 	return jsonContent, h, nil
 }
 
-// JSONBundleWithDigest returns the JSON content of the sigstore bundle and its digest.
-func JSONBundleWithDigest(bundle *protobundle.Bundle) ([]byte, cr_v1.Hash, error) {
-	jsonContent, err := protojson.Marshal(bundle)
-	if err != nil {
-		return nil, cr_v1.Hash{}, fmt.Errorf("marshaling the envelope: %w", err)
+// DSSEEnvelopeFromBundle Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
+func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
+	sigstoreEnvelope := bundle.GetDsseEnvelope()
+	return &dsse.Envelope{
+		PayloadType: sigstoreEnvelope.PayloadType,
+		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
+		Signatures: []dsse.Signature{
+			{
+				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
+				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
+			},
+		},
 	}
+}
 
-	h, _, err := cr_v1.SHA256(bytes.NewBuffer(jsonContent))
+func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
+	// DSSE Envelope is already base64 encoded, we need to decode to prevent it from being encoded twice
+	payload, err := base64.StdEncoding.DecodeString(dsseEnvelope.Payload)
 	if err != nil {
-		return nil, cr_v1.Hash{}, fmt.Errorf("calculating the digest: %w", err)
+		return nil, fmt.Errorf("decoding: %w", err)
 	}
+	return &protobundle.Bundle{
+		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
+		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
+			Payload:     payload,
+			PayloadType: dsseEnvelope.PayloadType,
+			Signatures: []*sigstoredsse.Signature{
+				{
+					Sig:   []byte(dsseEnvelope.Signatures[0].Sig),
+					Keyid: dsseEnvelope.Signatures[0].KeyID,
+				},
+			},
+		}},
+		VerificationMaterial: &protobundle.VerificationMaterial{},
+	}, nil
+}
 
-	return jsonContent, h, nil
+func DSSEEnvelopeFromRaw(bundle, envelope []byte) (*dsse.Envelope, error) {
+	var dsseEnv dsse.Envelope
+	if bundle != nil {
+		var attBundle protobundle.Bundle
+		if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
+			return nil, fmt.Errorf("unmarshalling bundle: %w", err)
+		}
+		dsseEnv = *DSSEEnvelopeFromBundle(&attBundle)
+	} else {
+		if err := json.Unmarshal(envelope, &dsseEnv); err != nil {
+			return nil, fmt.Errorf("unmarshalling envelope: %w", err)
+		}
+	}
+	return &dsseEnv, nil
 }

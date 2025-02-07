@@ -17,7 +17,6 @@ package service
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -30,13 +29,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
-	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	errors "github.com/go-kratos/kratos/v2/errors"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 type AttestationService struct {
@@ -189,75 +186,58 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
-	var envelope dsse.Envelope
 	robotAccount := usercontext.CurrentRobotAccount(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	// Try unmarshalling a bundle first, falling back to plain dsse envelopes
-	var bundle protobundle.Bundle
-	// nolint: gocritic
-	if req.GetBundle() != nil {
-		if err := protojson.Unmarshal(req.GetBundle(), &bundle); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-		envelope = *envelopeFromBundle(&bundle)
-	} else if req.GetAttestation() != nil {
-		// trying with envelope instead
-		if err := json.Unmarshal(req.GetAttestation(), &envelope); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-	} else {
-		return nil, errors.BadRequest("attestation", "DSSE envelope or attestation bundle is required")
+	if req.GetAttestation() == nil && req.GetBundle() == nil {
+		return nil, errors.BadRequest("input required", "DSSE envelope or attestation bundle is required")
 	}
 
-	digest, err := s.storeAttestation(ctx, &envelope, &bundle, robotAccount, req.WorkflowRunId, req.MarkVersionAsReleased)
+	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if wRun == nil {
+		return nil, errors.NotFound("not found", "workflow run not found")
+	}
+
+	if len(wRun.CASBackends) == 0 {
+		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
+	}
+
+	digest, err := s.storeAttestation(ctx, req.GetAttestation(), req.GetBundle(), robotAccount, wf, wRun, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &cpAPI.AttestationServiceStoreResponse{
-		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest},
+		Result: &cpAPI.AttestationServiceStoreResponse_Result{Digest: digest.String()},
 	}, nil
 }
 
-// Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
-func envelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
-	sigstoreEnvelope := bundle.GetDsseEnvelope()
-	return &dsse.Envelope{
-		PayloadType: sigstoreEnvelope.PayloadType,
-		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
-		Signatures: []dsse.Signature{
-			{
-				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
-				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
-			},
-		},
-	}
-}
-
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dsse.Envelope, bundle *protobundle.Bundle, robotAccount *usercontext.RobotAccount, workflowRunID string, markAsReleased *bool) (string, error) {
-	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", workflowRunID)
+func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
+	workflowRunID := wfRun.ID.String()
+	casBackend := wfRun.CASBackends[0]
+
+	// extract structured envelope for integrations
+	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
 	if err != nil {
-		return "", handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, workflowRunID)
+	// Store the attestation
+	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope, bundle)
 	if err != nil {
-		return "", handleUseCaseErr(err, s.log)
-	} else if wRun == nil {
-		return "", errors.NotFound("not found", "workflow run not found")
+		return nil, handleUseCaseErr(err, s.log)
 	}
-
-	if len(wRun.CASBackends) == 0 {
-		return "", errors.NotFound("not found", "workflow run has no CAS backend")
-	}
-
-	// We currently only support one backend per workflowRun
-	casBackend := wRun.CASBackends[0]
 
 	// If we have an external CAS backend, we will push there the attestation
 	if !casBackend.Inline {
@@ -266,13 +246,19 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 			b.MaxElapsedTime = 1 * time.Minute
 			err := backoff.Retry(
 				func() error {
+					rawContent := bundle
+					if rawContent == nil {
+						rawContent = envelope
+					}
+
 					// reset context
 					ctx := context.Background()
-					digest, err := s.attestationUseCase.UploadToCAS(ctx, envelope, casBackend, workflowRunID)
-					if err != nil {
+					var err error
+					if err = s.attestationUseCase.UploadAttestationToCAS(ctx, rawContent, casBackend, workflowRunID, *digest); err != nil {
 						return err
 					}
-					s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest.String(), "runID", workflowRunID)
+
+					s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest, "runID", workflowRunID)
 					return nil
 				}, b)
 
@@ -282,28 +268,22 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 		}()
 	}
 
-	// Store the attestation including the digest in the CAS backend (if exists)
-	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope, bundle)
-	if err != nil {
-		return "", handleUseCaseErr(err, s.log)
-	}
-
 	// Store the exploded attestation referrer information in the DB
-	if err := s.referrerUseCase.ExtractAndPersist(ctx, envelope, wf.ID.String()); err != nil {
-		return "", handleUseCaseErr(err, s.log)
+	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, *digest, wf.ID.String()); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if !casBackend.Inline {
 		// Store the mappings in the DB
-		references, err := s.casMappingUseCase.LookupDigestsInAttestation(envelope)
+		references, err := s.casMappingUseCase.LookupDigestsInAttestation(dsseEnv, *digest)
 		if err != nil {
-			return "", handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		for _, ref := range references {
 			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", workflowRunID, "casBackend", casBackend.ID.String())
 			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), workflowRunID); err != nil {
-				return "", handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(err, s.log)
 			}
 		}
 	}
@@ -313,7 +293,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
-			Envelope: envelope, OrgID: robotAccount.OrgID, WorkflowID: wf.ID.String(),
+			Envelope: dsseEnv, OrgID: robotAccount.OrgID, WorkflowID: workflowRunID,
 			DownloadBackendType: string(casBackend.Provider),
 			DownloadSecretName:  secretName,
 			WorkflowRunID:       workflowRunID,
@@ -325,17 +305,17 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope *dss
 	// promote release if the workflowRun is successful
 	if markAsReleased != nil && *markAsReleased {
 		// Update the project version to mark it as a release
-		if _, err := s.projectVersionUseCase.UpdateReleaseStatus(ctx, wRun.ProjectVersion.ID.String(), true); err != nil {
-			return "", handleUseCaseErr(err, s.log)
+		if _, err := s.projectVersionUseCase.UpdateReleaseStatus(ctx, wfRun.ProjectVersion.ID.String(), true); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
 
 	if err := s.wrUseCase.MarkAsFinished(ctx, workflowRunID, biz.WorkflowRunSuccess, ""); err != nil {
-		return "", handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Record the attestation in the prometheus registry
-	_ = s.prometheusUseCase.ObserveAttestationIfNeeded(ctx, wRun, biz.WorkflowRunSuccess)
+	_ = s.prometheusUseCase.ObserveAttestationIfNeeded(ctx, wfRun, biz.WorkflowRunSuccess)
 
 	return digest, nil
 }
@@ -487,6 +467,7 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 			Blocked:       policyEvaluationStatus.Blocked,
 			HasViolations: policyEvaluationStatus.HasViolations,
 		},
+		Bundle: att.Bundle,
 	}, nil
 }
 

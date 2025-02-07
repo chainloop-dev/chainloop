@@ -16,6 +16,7 @@
 package biz_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	repoM "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/mock"
@@ -116,7 +118,7 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			want: []*biz.CASMappingLookupRef{
 				{
 					Name:   "attestation",
-					Digest: "sha256:1a077137aef7ca208b80c339769d0d7eecacc2850368e56e834cda1750ce413a",
+					Digest: "sha256:63f811807585a7359882fc4e28bc8e08555d9743aa07a2965217b30ef2ba14a5",
 				},
 				{
 					Name:   "skynet-sbom",
@@ -134,7 +136,7 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			want: []*biz.CASMappingLookupRef{
 				{
 					Name:   "attestation",
-					Digest: "sha256:1ad00b787214a1d09080a469390b15cdc3a751b89488da3776f432b4bbaa77d6",
+					Digest: "sha256:b447f27683a88b55d529744d56c83c42fbe7d05692efaa6e5eddfadec392f812",
 				},
 			},
 		},
@@ -152,7 +154,10 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 			var envelope *dsse.Envelope
 			require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
 
-			got, err := s.useCase.LookupDigestsInAttestation(envelope)
+			h, _, err := v1.SHA256(bytes.NewReader(attJSON))
+			require.NoError(s.T(), err)
+
+			got, err := s.useCase.LookupDigestsInAttestation(envelope, h)
 			if tc.wantErr {
 				s.Error(err)
 			} else {
