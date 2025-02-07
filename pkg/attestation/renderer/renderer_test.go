@@ -123,7 +123,7 @@ func (s *rendererSuite) TestEnvelopeToBundle() {
 		s.Nil(bundle.GetVerificationMaterial().GetContent())
 	})
 
-	s.Run("from keyless signer, it adds intermediate certificates, but not the root CA", func() {
+	s.Run("from keyless signer, it doesn't add intermediate certificates nor root CA", func() {
 		envelope, err := testEnvelope("chainloop/testdata/valid.envelope.v2.json")
 		s.Require().NoError(err)
 
@@ -145,12 +145,12 @@ func (s *rendererSuite) TestEnvelopeToBundle() {
 		s.Equal("application/vnd.in-toto+json", bundle.GetDsseEnvelope().GetPayloadType())
 
 		// only 1 cert is added
-		s.Equal(1, len(bundle.GetVerificationMaterial().GetX509CertificateChain().GetCertificates()))
+		s.NotNil(bundle.GetVerificationMaterial().GetCertificate())
 
 		// and it's the leaf certificate
 		s.Equal(cert, string(pem.EncodeToMemory(&pem.Block{
 			Type:  "CERTIFICATE",
-			Bytes: bundle.GetVerificationMaterial().GetX509CertificateChain().GetCertificates()[0].RawBytes}),
+			Bytes: bundle.GetVerificationMaterial().GetCertificate().RawBytes}),
 		))
 	})
 }

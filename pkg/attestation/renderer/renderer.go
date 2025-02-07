@@ -164,19 +164,19 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope) (*p
 	//       public keys.
 	if v, ok := ab.signer.(*chainloopsigner.Signer); ok {
 		chain := v.Chain
-		certs := make([]*v12.X509Certificate, 0)
-		// Store cert chain except root certificate, as it's required to be provided separately
-		for _, c := range chain[0 : len(chain)-1] {
-			block, _ := pem.Decode([]byte(c))
-			if block == nil {
-				return nil, fmt.Errorf("failed to decode PEM block")
-			}
-			certs = append(certs, &v12.X509Certificate{RawBytes: block.Bytes})
+		if len(chain) == 0 {
+			return nil, errors.New("certificate chain is empty")
 		}
-		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_X509CertificateChain{
-			X509CertificateChain: &v12.X509CertificateChain{
-				Certificates: certs,
-			},
+
+		// Store generated cert, ignoring the chain
+		block, _ := pem.Decode([]byte(chain[0]))
+		if block == nil {
+			return nil, fmt.Errorf("failed to decode PEM block")
+		}
+
+		cert := &v12.X509Certificate{RawBytes: block.Bytes}
+		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_Certificate{
+			Certificate: cert,
 		}
 	}
 
