@@ -45,6 +45,7 @@ jobs:
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       attestation_hash: ${{ steps.attest_goreleaser.outputs.attestation_hash }}
 
@@ -99,8 +100,6 @@ jobs:
 
       - name: Generate SBOMs, upload to release and attest
         id: attest_goreleaser
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
