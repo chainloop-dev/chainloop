@@ -189,7 +189,7 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope dsse.Envelope) (*pr
 		if block == nil {
 			return nil, fmt.Errorf("failed to decode PEM block")
 		}
-		
+
 		cert := &v12.X509Certificate{RawBytes: block.Bytes}
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_Certificate{
 			Certificate: cert,
