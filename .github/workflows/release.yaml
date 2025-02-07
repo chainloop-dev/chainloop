@@ -114,7 +114,7 @@ jobs:
               repo="${repo##*/}"                    # Extract last segment after the last '/'
               material_name="${repo}-${entry##*-}"  # Construct final name
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
-              chainloop attestation add --name $material_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name $material_name --value $entry --attestation-id ${{ env.ATTESTATION_ID }}
               chainloop attestation add --name sbom-$material_name --value /tmp/sbom-$material_name.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
           
               # Upload the SBOM to the release
