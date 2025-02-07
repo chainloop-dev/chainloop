@@ -138,7 +138,7 @@ controlplane:
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/control-plane
-    tag: "v0.159.0"
+    tag: "v0.160.0"
 
 
   ## @param controlplane.containerPorts.http controlplane HTTP container port
@@ -204,7 +204,7 @@ controlplane:
     image:
       registry: ghcr.io
       repository: chainloop-dev/chainloop/control-plane-migrations
-      tag: "v0.159.0"
+      tag: "v0.160.0"
     # Run the migration job forcing SSL, required in AWS RDS for PostgreSQL 15
     ssl: false
 
@@ -939,7 +939,7 @@ cas:
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/artifact-cas
-    tag: "v0.159.0"
+    tag: "v0.160.0"
 
   ## @param cas.containerPorts.http controlplane HTTP container port
   ## @param cas.containerPorts.grpc controlplane gRPC container port

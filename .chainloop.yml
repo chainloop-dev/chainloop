@@ -1,5 +1,5 @@
 # This can indicate the next version and by default it will be marked as pre-release
-projectVersion: v0.160.0
+projectVersion: v0.161.0
 
 # Experimental feature used by Chainloop labs shared workflow https://github.com/chainloop-dev/labs
 # It maps the material names with location in disk so they get automatically attested
