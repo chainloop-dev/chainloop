@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.ref_type == 'tag' # Guard to make sure we are releasing once
+    outputs:
+      attestation_id: ${{ steps.init_attestation.outputs.attestation_id }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Install Chainloop
