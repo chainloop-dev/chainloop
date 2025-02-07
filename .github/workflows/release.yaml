@@ -114,7 +114,7 @@ jobs:
               chainloop attestation add --value /tmp/sbom.cyclonedx.json --attestation-id ${{ env.ATTESTATION_ID }}
           
               # Upload the SBOM to the release
-              gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
+              # gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
             fi
           done
 
