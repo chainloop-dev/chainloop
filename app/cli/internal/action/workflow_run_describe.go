@@ -24,10 +24,13 @@ import (
 	"sort"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	sigs "github.com/sigstore/cosign/v2/pkg/signature"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	bundle2 "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
 
@@ -167,6 +170,12 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		return nil, err
 	}
 
+	if attestation.Bundle != nil {
+		if err := verifyBundle(ctx, attestation.Bundle); err != nil {
+			return nil, err
+		}
+	}
+
 	if opts.Verify {
 		if err := verifyEnvelope(ctx, envelope, opts); err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("verifying the envelope")
@@ -290,6 +299,43 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	}
 
 	return m
+}
+
+func verifyBundle(ctx context.Context, bundleBytes []byte) error {
+	chain, err := loadCertificates("devel/devkeys/ca.pub")
+	if err != nil {
+		return err
+	}
+	var bundle bundle2.Bundle
+	bundle.Bundle = new(protobundle.Bundle)
+	// unmarshal and validate
+	if err := bundle.UnmarshalJSON(bundleBytes); err != nil {
+		return err
+	}
+	pb := bundle.Bundle
+	if pb.GetVerificationMaterial() == nil || pb.GetVerificationMaterial().GetCertificate() == nil {
+		// nothing to verify
+		return nil
+	}
+
+	rawCert := pb.GetVerificationMaterial().GetCertificate().GetRawBytes()
+	signingCert, err := x509.ParseCertificate(rawCert)
+	if err != nil {
+		return err
+	}
+
+	verifier, err := cosign.ValidateAndUnpackCertWithChain(signingCert, chain, &cosign.CheckOpts{IgnoreSCT: true})
+	if err != nil {
+		return fmt.Errorf("validating the certificate: %w", err)
+	}
+
+	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
+	if err != nil {
+		return fmt.Errorf("creating DSSE verifier: %w", err)
+	}
+
+	_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(pb))
+	return err
 }
 
 func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDescribeOpts) error {
