@@ -155,7 +155,6 @@ jobs:
         id: attestation_push
         if: ${{ success() }}
         run: |
-          chainloop attestation status --full
           chainloop attestation push --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
           attestation_sha=$(chainloop attestation push --attestation-id ${{ needs.init_attestation.outputs.attestation_id }} -o json | jq -r '.digest')
           # check that the command succeeded
