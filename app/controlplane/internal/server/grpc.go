@@ -254,7 +254,7 @@ func allowListEnabled() selector.MatchFunc {
 }
 
 func requireRobotAccountMatcher() selector.MatchFunc {
-	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/.*"
+	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/GenerateSigningCert"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(requireMatcher)
 		return r.MatchString(operation)

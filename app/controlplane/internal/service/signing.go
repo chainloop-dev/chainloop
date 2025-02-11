@@ -55,11 +55,6 @@ func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.Genera
 }
 
 func (s *SigningService) GetTrustedRoot(ctx context.Context, _ *v1.GetTrustedRootRequest) (*v1.GetTrustedRootResponse, error) {
-	ra := usercontext.CurrentRobotAccount(ctx)
-	if ra == nil {
-		return nil, errors.Unauthorized("missing org", "authentication data is required")
-	}
-
 	tr, err := s.signing.GetTrustedRoot(ctx)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

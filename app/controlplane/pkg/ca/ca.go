@@ -31,6 +31,7 @@ import (
 type CertificateAuthority interface {
 	// CreateCertificateFromCSR accepts a Certificate Request and generates a certificate signed by a signing authority
 	CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*ca.CodeSigningCertificate, error)
+	// GetRootChain returns the root certificate chain
 	GetRootChain(ctx context.Context) ([]*x509.Certificate, error)
 }
 
@@ -65,6 +66,10 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 		if authority != nil {
 			authorities = append(authorities, authority)
 			if configCA.Issuer {
+				if issuerCA != nil {
+					// already one set, fail
+					return nil, fmt.Errorf("only one issuer CA can be configured")
+				}
 				issuerCA = authority
 			}
 		}
@@ -73,6 +78,11 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 	// If there are more than 1 authority, the `issuer` property must be set
 	if len(authorities) > 1 && issuerCA == nil {
 		return nil, fmt.Errorf("at least one issuer CA needs to be configured")
+	}
+
+	// use as signer if only one is available
+	if len(authorities) == 1 {
+		issuerCA = authorities[0]
 	}
 
 	return &CertificateAuthorities{
@@ -88,11 +98,6 @@ func (c *CertificateAuthorities) GetAuthorities() []CertificateAuthority {
 func (c *CertificateAuthorities) GetSignerCA() (CertificateAuthority, error) {
 	if c.SignerCA != nil {
 		return c.SignerCA, nil
-	}
-
-	// use as signer if only one is available
-	if len(c.CAs) == 1 {
-		return c.CAs[0], nil
 	}
 
 	return nil, fmt.Errorf("no signer CA found")

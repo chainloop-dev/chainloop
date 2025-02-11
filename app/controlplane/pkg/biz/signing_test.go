@@ -115,7 +115,7 @@ func (s *signingUseCaseTestSuite) SetupTest() {
 
 	ca, err := NewTestCA()
 	s.Require().NoError(err)
-	s.uc = &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}}}
+	s.uc = &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}, SignerCA: ca}}
 }
 
 func createCSR() ([]byte, error) {
