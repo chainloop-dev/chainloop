@@ -31,6 +31,7 @@ import (
 type CertificateAuthority interface {
 	// CreateCertificateFromCSR accepts a Certificate Request and generates a certificate signed by a signing authority
 	CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*ca.CodeSigningCertificate, error)
+	// GetRootChain returns the root certificate chain
 	GetRootChain(ctx context.Context) ([]*x509.Certificate, error)
 }
 
@@ -75,6 +76,11 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 		return nil, fmt.Errorf("at least one issuer CA needs to be configured")
 	}
 
+	// use as signer if only one is available
+	if len(authorities) == 1 {
+		issuerCA = authorities[0]
+	}
+
 	return &CertificateAuthorities{
 		CAs:      authorities, // it might be empty
 		SignerCA: issuerCA,
@@ -88,11 +94,6 @@ func (c *CertificateAuthorities) GetAuthorities() []CertificateAuthority {
 func (c *CertificateAuthorities) GetSignerCA() (CertificateAuthority, error) {
 	if c.SignerCA != nil {
 		return c.SignerCA, nil
-	}
-
-	// use as signer if only one is available
-	if len(c.CAs) == 1 {
-		return c.CAs[0], nil
 	}
 
 	return nil, fmt.Errorf("no signer CA found")
