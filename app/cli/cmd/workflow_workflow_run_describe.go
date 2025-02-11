@@ -30,7 +30,9 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/muesli/reflow/wrap"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const formatStatement = "statement"
@@ -291,7 +293,16 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 	case formatStatement:
 		return encodeJSON(run.Attestation.Statement())
 	case formatAttestation:
-		return encodeJSON(run.Attestation.Envelope)
+		if run.Attestation.Bundle != nil {
+			var bundle protobundle.Bundle
+			err = protojson.Unmarshal(run.Attestation.Bundle, &bundle)
+			if err != nil {
+				return fmt.Errorf("unmarshaling attestation: %w", err)
+			}
+			return encodeProtoJSON(&bundle)
+		} else {
+			return encodeJSON(run.Attestation.Envelope)
+		}
 	case formatPayloadPAE:
 		return encodePAE(run, writer)
 	default:
