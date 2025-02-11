@@ -20,7 +20,6 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	fulciofileca "github.com/sigstore/fulcio/pkg/ca/fileca"
 	"github.com/sigstore/fulcio/pkg/identity"
@@ -29,8 +28,6 @@ import (
 type FileCA struct {
 	ca fulcioca.CertificateAuthority
 }
-
-var _ ca.CertificateAuthority = (*FileCA)(nil)
 
 func New(certPath, keyPath, keyPass string, watch bool) (*FileCA, error) {
 	wrappedCa, err := fulciofileca.NewFileCA(certPath, keyPath, keyPass, watch)

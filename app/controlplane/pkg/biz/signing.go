@@ -29,16 +29,16 @@ import (
 )
 
 type SigningUseCase struct {
-	CA ca.CertificateAuthority
+	CAs *ca.CertificateAuthorities
 }
 
-func NewChainloopSigningUseCase(ca ca.CertificateAuthority) *SigningUseCase {
-	return &SigningUseCase{CA: ca}
+func NewChainloopSigningUseCase(cas *ca.CertificateAuthorities) *SigningUseCase {
+	return &SigningUseCase{CAs: cas}
 }
 
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
 func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
-	if s.CA == nil {
+	if s.CAs == nil {
 		return nil, NewErrNotImplemented("CA not initialized")
 	}
 
@@ -66,8 +66,8 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	}
 
 	// Create certificate from CA provider (no Signed Certificate Timestamps for now)
-
-	csc, err := s.CA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID), csr)
+	issuerCA := s.CAs.GetSignerCA()
+	csc, err := issuerCA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID), csr)
 	if err != nil {
 		return nil, fmt.Errorf("creating certificate: %w", err)
 	}

@@ -28,7 +28,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/identity"
 )
@@ -50,8 +49,6 @@ type EJBCA struct {
 	endEntityProfileName   string
 	caName                 string
 }
-
-var _ ca.CertificateAuthority = (*EJBCA)(nil)
 
 func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) (*EJBCA, error) {
 	if serverURL == "" || keyPath == "" || certPath == "" || certProfileName == "" || endEntityProfileName == "" || caName == "" {

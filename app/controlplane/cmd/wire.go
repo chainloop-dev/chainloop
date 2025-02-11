@@ -21,6 +21,8 @@
 package main
 
 import (
+	"fmt"
+
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -38,7 +40,7 @@ import (
 	"github.com/google/wire"
 )
 
-func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins, ca.CertificateAuthority) (*app, func(), error) {
+func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins) (*app, func(), error) {
 	panic(
 		wire.Build(
 			wire.Bind(new(credentials.Reader), new(credentials.ReaderWriter)),
@@ -50,7 +52,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
-			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer"),
+			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "CertificateAuthorities"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
 			authz.NewDatabaseEnforcer,
@@ -62,6 +64,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			newCASServerOptions,
+			newSigningCAs,
 		),
 	)
 }
@@ -95,4 +98,17 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	return &biz.CASServerDefaultOpts{
 		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
 	}
+}
+
+func newSigningCAs(cas []*conf.CA, logger log.Logger) (*ca.CertificateAuthorities, error) {
+	authorities, err := ca.NewCertificateAuthoritiesFromConfig(cas, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CA authorities: %w", err)
+	}
+	// No CA configured, keyless will be deactivated.
+	if len(authorities.GetAuthorities()) == 0 {
+		_ = logger.Log(log.LevelInfo, "msg", "Keyless Signing NOT configured")
+		return nil, nil
+	}
+	return authorities, nil
 }
