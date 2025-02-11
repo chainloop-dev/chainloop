@@ -31,11 +31,12 @@ import (
 type CertificateAuthority interface {
 	// CreateCertificateFromCSR accepts a Certificate Request and generates a certificate signed by a signing authority
 	CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*ca.CodeSigningCertificate, error)
+	GetRootChain(ctx context.Context) ([]*x509.Certificate, error)
 }
 
 type CertificateAuthorities struct {
-	cas      []CertificateAuthority
-	signerCA CertificateAuthority
+	CAs      []CertificateAuthority
+	SignerCA CertificateAuthority
 }
 
 func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger) (*CertificateAuthorities, error) {
@@ -59,7 +60,7 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 			authority, err = ejbca.New(ejbcaCa.GetServerUrl(), ejbcaCa.GetKeyPath(), ejbcaCa.GetCertPath(), ejbcaCa.GetRootCaPath(), ejbcaCa.GetCertificateProfileName(), ejbcaCa.GetEndEntityProfileName(), ejbcaCa.GetCertificateAuthorityName())
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to create file CA: %v", err)
+			return nil, fmt.Errorf("failed to create file CA: %w", err)
 		}
 		if authority != nil {
 			authorities = append(authorities, authority)
@@ -69,20 +70,24 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 		}
 	}
 
-	if len(authorities) > 0 && issuerCA == nil {
-		return nil, fmt.Errorf("at least one issuer CA has to be configured")
-	}
-
 	return &CertificateAuthorities{
-		cas:      authorities, // it might be empty
-		signerCA: issuerCA,
+		CAs:      authorities, // it might be empty
+		SignerCA: issuerCA,
 	}, nil
 }
 
-func (cas *CertificateAuthorities) GetAuthorities() []CertificateAuthority {
-	return cas.cas
+func (c *CertificateAuthorities) GetAuthorities() []CertificateAuthority {
+	return c.CAs
 }
 
-func (cas *CertificateAuthorities) GetSignerCA() CertificateAuthority {
-	return cas.signerCA
+func (c *CertificateAuthorities) GetSignerCA() (CertificateAuthority, error) {
+	if c.SignerCA != nil {
+		return c.SignerCA, nil
+	}
+
+	if len(c.CAs) > 0 {
+		return c.CAs[0], nil
+	}
+
+	return nil, fmt.Errorf("no signer CA found")
 }

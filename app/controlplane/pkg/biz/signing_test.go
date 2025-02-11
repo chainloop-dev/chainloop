@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	ca2 "github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
 	"github.com/sigstore/fulcio/pkg/identity"
@@ -46,6 +47,14 @@ type TestCA struct {
 
 func (e TestCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
 	return e.ca.CreateCertificate(ctx, principal, csr.PublicKey)
+}
+
+func (e TestCA) GetRootChain(ctx context.Context) ([]*x509.Certificate, error) {
+	tb, err := e.ca.TrustBundle(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return tb[0], nil
 }
 
 func NewTestCA() (*TestCA, error) {
@@ -77,6 +86,24 @@ func (s *signingUseCaseTestSuite) TestSigningUseCase_CreateSigningCert() {
 	})
 }
 
+func (s *signingUseCaseTestSuite) TestSigningUseCase_GetRootChain() {
+	s.Run("gets the chain", func() {
+		r, err := s.uc.GetTrustedRoot(context.TODO())
+		s.NoError(err)
+		s.Len(r.Keys, 1)
+	})
+
+	s.Run("it's a valid certificate", func() {
+		r, err := s.uc.GetTrustedRoot(context.TODO())
+		s.NoError(err)
+		for k, v := range r.Keys {
+			s.NotEmpty(k)
+			s.Len(v, 1)
+			s.Contains(v[0], "-----BEGIN CERTIFICATE-----")
+		}
+	})
+}
+
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(signingUseCaseTestSuite))
 }
@@ -88,7 +115,7 @@ func (s *signingUseCaseTestSuite) SetupTest() {
 
 	ca, err := NewTestCA()
 	s.Require().NoError(err)
-	s.uc = &biz.SigningUseCase{CA: ca}
+	s.uc = &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}}}
 }
 
 func createCSR() ([]byte, error) {
