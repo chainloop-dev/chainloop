@@ -1,0 +1,19 @@
+{
+  "$id": "controlplane.v1.GetTrustedRootResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "keys": {
+      "additionalProperties": {
+        "$ref": "controlplane.v1.CertificateChain.schema.json"
+      },
+      "description": "map keyID (cert SubjectKeyIdentifier) to PEM encoded chains",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "title": "Get Trusted Root Response",
+  "type": "object"
+}

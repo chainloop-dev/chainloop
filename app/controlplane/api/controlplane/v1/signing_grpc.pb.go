@@ -35,6 +35,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	SigningService_GenerateSigningCert_FullMethodName = "/controlplane.v1.SigningService/GenerateSigningCert"
+	SigningService_GetTrustedRoot_FullMethodName      = "/controlplane.v1.SigningService/GetTrustedRoot"
 )
 
 // SigningServiceClient is the client API for SigningService service.
@@ -43,6 +44,7 @@ const (
 type SigningServiceClient interface {
 	// GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
 	GenerateSigningCert(ctx context.Context, in *GenerateSigningCertRequest, opts ...grpc.CallOption) (*GenerateSigningCertResponse, error)
+	GetTrustedRoot(ctx context.Context, in *GetTrustedRootRequest, opts ...grpc.CallOption) (*GetTrustedRootResponse, error)
 }
 
 type signingServiceClient struct {
@@ -62,12 +64,22 @@ func (c *signingServiceClient) GenerateSigningCert(ctx context.Context, in *Gene
 	return out, nil
 }
 
+func (c *signingServiceClient) GetTrustedRoot(ctx context.Context, in *GetTrustedRootRequest, opts ...grpc.CallOption) (*GetTrustedRootResponse, error) {
+	out := new(GetTrustedRootResponse)
+	err := c.cc.Invoke(ctx, SigningService_GetTrustedRoot_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SigningServiceServer is the server API for SigningService service.
 // All implementations must embed UnimplementedSigningServiceServer
 // for forward compatibility
 type SigningServiceServer interface {
 	// GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
 	GenerateSigningCert(context.Context, *GenerateSigningCertRequest) (*GenerateSigningCertResponse, error)
+	GetTrustedRoot(context.Context, *GetTrustedRootRequest) (*GetTrustedRootResponse, error)
 	mustEmbedUnimplementedSigningServiceServer()
 }
 
@@ -77,6 +89,9 @@ type UnimplementedSigningServiceServer struct {
 
 func (UnimplementedSigningServiceServer) GenerateSigningCert(context.Context, *GenerateSigningCertRequest) (*GenerateSigningCertResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateSigningCert not implemented")
+}
+func (UnimplementedSigningServiceServer) GetTrustedRoot(context.Context, *GetTrustedRootRequest) (*GetTrustedRootResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTrustedRoot not implemented")
 }
 func (UnimplementedSigningServiceServer) mustEmbedUnimplementedSigningServiceServer() {}
 
@@ -109,6 +124,24 @@ func _SigningService_GenerateSigningCert_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SigningService_GetTrustedRoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTrustedRootRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SigningServiceServer).GetTrustedRoot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SigningService_GetTrustedRoot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SigningServiceServer).GetTrustedRoot(ctx, req.(*GetTrustedRootRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SigningService_ServiceDesc is the grpc.ServiceDesc for SigningService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -119,6 +152,10 @@ var SigningService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateSigningCert",
 			Handler:    _SigningService_GenerateSigningCert_Handler,
+		},
+		{
+			MethodName: "GetTrustedRoot",
+			Handler:    _SigningService_GetTrustedRoot_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
