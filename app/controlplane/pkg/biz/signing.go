@@ -98,7 +98,7 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 		if err != nil {
 			return nil, fmt.Errorf("getting root chain: %w", err)
 		}
-		if chain == nil || len(chain) == 0 {
+		if len(chain) == 0 {
 			continue
 		}
 		keyID := fmt.Sprintf("%x", sha256.Sum256(chain[0].SubjectKeyId))

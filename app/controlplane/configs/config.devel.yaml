@@ -26,15 +26,15 @@ certificate_authorities:
       key_path: ${FILE_CA_KEY_PATH:../../devel/devkeys/ca.pem}
       key_pass: chainloop
 
-#  - ejbca_ca:
-#      server_url: "https://localhost/ejbca"
-#      key_path: "../../devel/devkeys/superadmin.key"
-#      cert_path: "../../devel/devkeys/superadmin.pem"
-#      root_ca_path: "../../devel/devkeys/ManagementCA.pem"
-#
-#      certificate_profile_name: "PlainSigner"
-#      end_entity_profile_name: "PlainSigner"
-#      certificate_authority_name: "ManagementCA"
+  - ejbca_ca:
+      server_url: "https://localhost/ejbca"
+      key_path: "../../devel/devkeys/superadmin.key"
+      cert_path: "../../devel/devkeys/superadmin.pem"
+      root_ca_path: "../../../keyfactor/ManagementCA.pem"
+
+      certificate_profile_name: "PlainSigner"
+      end_entity_profile_name: "PlainSigner"
+      certificate_authority_name: "ManagementCA"
 
 # Directory where the plugins are located
 # NOTE: plugins have the form of chainloop-plugin-<name>
