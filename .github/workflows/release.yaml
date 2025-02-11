@@ -182,6 +182,8 @@ jobs:
     steps:
       - name: Add attestation link to release notes
         if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ needs.finish_attestation.outputs.attestation_hash }})"
           current_notes=$(gh release view ${{github.ref_name}} --json body -q '.body')
