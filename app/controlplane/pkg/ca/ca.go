@@ -70,6 +70,11 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 		}
 	}
 
+	// If there are more than 1 authority, the `issuer` property must be set
+	if len(authorities) > 1 && issuerCA == nil {
+		return nil, fmt.Errorf("at least one issuer CA needs to be configured")
+	}
+
 	return &CertificateAuthorities{
 		CAs:      authorities, // it might be empty
 		SignerCA: issuerCA,
@@ -85,7 +90,8 @@ func (c *CertificateAuthorities) GetSignerCA() (CertificateAuthority, error) {
 		return c.SignerCA, nil
 	}
 
-	if len(c.CAs) > 0 {
+	// use as signer if only one is available
+	if len(c.CAs) == 1 {
 		return c.CAs[0], nil
 	}
 

@@ -20,8 +20,7 @@ server:
 #   uri: nats://0.0.0.0:4222
 
 certificate_authorities:
-  - issuer: true
-    file_ca:
+  - file_ca:
       cert_path: ${FILE_CA_CERT_PATH:../../devel/devkeys/ca.pub}
       key_path: ${FILE_CA_KEY_PATH:../../devel/devkeys/ca.pem}
       key_pass: chainloop
