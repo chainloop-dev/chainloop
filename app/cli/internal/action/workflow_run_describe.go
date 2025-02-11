@@ -49,6 +49,7 @@ type WorkflowRunItemFull struct {
 
 type WorkflowRunAttestationItem struct {
 	Envelope    *dsse.Envelope `json:"envelope"`
+	Bundle      []byte         `json:"bundle"`
 	statement   *intoto.Statement
 	Materials   []*Material   `json:"materials,omitempty"`
 	EnvVars     []*EnvVar     `json:"envvars,omitempty"`
@@ -217,6 +218,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
+		Bundle:            attestation.GetBundle(),
 		statement:         statement,
 		EnvVars:           envVars,
 		Materials:         materials,
