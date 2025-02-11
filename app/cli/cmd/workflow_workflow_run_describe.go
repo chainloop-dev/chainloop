@@ -293,12 +293,16 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 	case formatStatement:
 		return encodeJSON(run.Attestation.Statement())
 	case formatAttestation:
-		var bundle protobundle.Bundle
-		err = protojson.Unmarshal(run.Attestation.Bundle, &bundle)
-		if err != nil {
-			return fmt.Errorf("unmarshaling attestation: %w", err)
+		if run.Attestation.Bundle != nil {
+			var bundle protobundle.Bundle
+			err = protojson.Unmarshal(run.Attestation.Bundle, &bundle)
+			if err != nil {
+				return fmt.Errorf("unmarshaling attestation: %w", err)
+			}
+			return encodeProtoJSON(&bundle)
+		} else {
+			return encodeJSON(run.Attestation.Envelope)
 		}
-		return encodeProtoJSON(&bundle)
 	case formatPayloadPAE:
 		return encodePAE(run, writer)
 	default:
