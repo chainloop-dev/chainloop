@@ -66,6 +66,10 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 		if authority != nil {
 			authorities = append(authorities, authority)
 			if configCA.Issuer {
+				if issuerCA != nil {
+					// already one set, fail
+					return nil, fmt.Errorf("only one issuer CA can be configured")
+				}
 				issuerCA = authority
 			}
 		}
