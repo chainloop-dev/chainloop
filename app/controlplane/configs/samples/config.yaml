@@ -73,22 +73,23 @@ onboarding:
   - name: "read-write-demo"
     role: MEMBERSHIP_ROLE_ORG_OWNER
 
-# Certificate authority configuration for key-less scenarios
-#certificate_authority:
-#  file_ca:
-#    cert_path: "../../devel/devkeys/ca.pub"
-#    key_path: "../../devel/devkeys/ca.pem"
-#    key_pass: chainloop
+# Certificate authorities configuration for key-less scenarios
+#certificate_authorities:
+#  - file_ca:
+#      cert_path: "../../devel/devkeys/ca.pub"
+#      key_path: "../../devel/devkeys/ca.pem"
+#      key_pass: chainloop
+#    issuer: true
 #
-#  ejbca_ca:
-#    server_url: "https://localhost/ejbca"
-#    key_path: "../../devel/devkeys/superadmin.key"
-#    cert_path: "../../devel/devkeys/superadmin.pem"
-#    root_ca_path: "../../devel/devkeys/ManagementCA.pem"
+#  - ejbca_ca:
+#      server_url: "https://localhost/ejbca"
+#      key_path: "../../devel/devkeys/superadmin.key"
+#      cert_path: "../../devel/devkeys/superadmin.pem"
+#      root_ca_path: "../../devel/devkeys/ManagementCA.pem"
 #
-#    certificate_profile_name: "PlainSigner"
-#    end_entity_profile_name: "PlainSigner"
-#    certificate_authority_name: "ManagementCA"
+#      certificate_profile_name: "PlainSigner"
+#      end_entity_profile_name: "PlainSigner"
+#      certificate_authority_name: "ManagementCA"
 
 # Organizations with Prometheus integration enabled
 prometheus_integration:

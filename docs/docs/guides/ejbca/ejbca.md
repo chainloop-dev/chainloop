@@ -20,22 +20,22 @@ Requirements:
 ### Configure Chainloop to use EJBCA as CA
 Check `ejbca_cA` section in Chainloop configuration options. In particular, set these values in your [config.yaml](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/configs/config.devel.yaml) (these values are also mapped to the [chart values.yaml](https://github.com/chainloop-dev/chainloop/blob/main/deployment/chainloop/values.yaml#L668) file):
 ```yaml
-certificate_authority:
-  ejbca_ca:
-    # Where EJBCA service is located
-    server_url: "https://localhost/ejbca"
+certificate_authorities:
+  - ejbca_ca:
+      # Where EJBCA service is located
+      server_url: "https://localhost/ejbca"
+      
+      # Cert and private key for Client cert authentication against EJBCA
+      key_path: "../../devel/devkeys/superadmin.key"
+      cert_path: "../../devel/devkeys/superadmin.pem"
+      
+      # Certificate chain
+      root_ca_path: "../../devel/devkeys/ManagementCA.pem"
     
-    # Cert and private key for Client cert authentication against EJBCA
-    key_path: "../../devel/devkeys/superadmin.key"
-    cert_path: "../../devel/devkeys/superadmin.pem"
-    
-    # Certificate chain
-    root_ca_path: "../../devel/devkeys/ManagementCA.pem"
-
-    # EJBCA profile, end entity and CA names
-    certificate_profile_name: "PlainSigner"
-    end_entity_profile_name: "PlainSigner"
-    certificate_authority_name: "ManagementCA"
+      # EJBCA profile, end entity and CA names
+      certificate_profile_name: "PlainSigner"
+      end_entity_profile_name: "PlainSigner"
+      certificate_authority_name: "ManagementCA"
 ```
 
 ### Signing Chainloop attestations with EJBCA issued certificates
