@@ -18,6 +18,19 @@ export interface CertificateChain {
   certificates: string[];
 }
 
+export interface GetTrustedRootRequest {
+}
+
+export interface GetTrustedRootResponse {
+  /** map keyID (cert SubjectKeyIdentifier) to PEM encoded chains */
+  keys: { [key: string]: CertificateChain };
+}
+
+export interface GetTrustedRootResponse_KeysEntry {
+  key: string;
+  value?: CertificateChain;
+}
+
 function createBaseGenerateSigningCertRequest(): GenerateSigningCertRequest {
   return { certificateSigningRequest: new Uint8Array(0) };
 }
@@ -199,12 +212,216 @@ export const CertificateChain = {
   },
 };
 
+function createBaseGetTrustedRootRequest(): GetTrustedRootRequest {
+  return {};
+}
+
+export const GetTrustedRootRequest = {
+  encode(_: GetTrustedRootRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTrustedRootRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTrustedRootRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetTrustedRootRequest {
+    return {};
+  },
+
+  toJSON(_: GetTrustedRootRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetTrustedRootRequest>, I>>(base?: I): GetTrustedRootRequest {
+    return GetTrustedRootRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetTrustedRootRequest>, I>>(_: I): GetTrustedRootRequest {
+    const message = createBaseGetTrustedRootRequest();
+    return message;
+  },
+};
+
+function createBaseGetTrustedRootResponse(): GetTrustedRootResponse {
+  return { keys: {} };
+}
+
+export const GetTrustedRootResponse = {
+  encode(message: GetTrustedRootResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    Object.entries(message.keys).forEach(([key, value]) => {
+      GetTrustedRootResponse_KeysEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTrustedRootResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTrustedRootResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          const entry1 = GetTrustedRootResponse_KeysEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.keys[entry1.key] = entry1.value;
+          }
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTrustedRootResponse {
+    return {
+      keys: isObject(object.keys)
+        ? Object.entries(object.keys).reduce<{ [key: string]: CertificateChain }>((acc, [key, value]) => {
+          acc[key] = CertificateChain.fromJSON(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: GetTrustedRootResponse): unknown {
+    const obj: any = {};
+    obj.keys = {};
+    if (message.keys) {
+      Object.entries(message.keys).forEach(([k, v]) => {
+        obj.keys[k] = CertificateChain.toJSON(v);
+      });
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetTrustedRootResponse>, I>>(base?: I): GetTrustedRootResponse {
+    return GetTrustedRootResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetTrustedRootResponse>, I>>(object: I): GetTrustedRootResponse {
+    const message = createBaseGetTrustedRootResponse();
+    message.keys = Object.entries(object.keys ?? {}).reduce<{ [key: string]: CertificateChain }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = CertificateChain.fromPartial(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseGetTrustedRootResponse_KeysEntry(): GetTrustedRootResponse_KeysEntry {
+  return { key: "", value: undefined };
+}
+
+export const GetTrustedRootResponse_KeysEntry = {
+  encode(message: GetTrustedRootResponse_KeysEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== undefined) {
+      CertificateChain.encode(message.value, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTrustedRootResponse_KeysEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTrustedRootResponse_KeysEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = CertificateChain.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTrustedRootResponse_KeysEntry {
+    return {
+      key: isSet(object.key) ? String(object.key) : "",
+      value: isSet(object.value) ? CertificateChain.fromJSON(object.value) : undefined,
+    };
+  },
+
+  toJSON(message: GetTrustedRootResponse_KeysEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value ? CertificateChain.toJSON(message.value) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetTrustedRootResponse_KeysEntry>, I>>(
+    base?: I,
+  ): GetTrustedRootResponse_KeysEntry {
+    return GetTrustedRootResponse_KeysEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetTrustedRootResponse_KeysEntry>, I>>(
+    object: I,
+  ): GetTrustedRootResponse_KeysEntry {
+    const message = createBaseGetTrustedRootResponse_KeysEntry();
+    message.key = object.key ?? "";
+    message.value = (object.value !== undefined && object.value !== null)
+      ? CertificateChain.fromPartial(object.value)
+      : undefined;
+    return message;
+  },
+};
+
 export interface SigningService {
   /** GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing */
   GenerateSigningCert(
     request: DeepPartial<GenerateSigningCertRequest>,
     metadata?: grpc.Metadata,
   ): Promise<GenerateSigningCertResponse>;
+  GetTrustedRoot(
+    request: DeepPartial<GetTrustedRootRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GetTrustedRootResponse>;
 }
 
 export class SigningServiceClientImpl implements SigningService {
@@ -213,6 +430,7 @@ export class SigningServiceClientImpl implements SigningService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.GenerateSigningCert = this.GenerateSigningCert.bind(this);
+    this.GetTrustedRoot = this.GetTrustedRoot.bind(this);
   }
 
   GenerateSigningCert(
@@ -224,6 +442,13 @@ export class SigningServiceClientImpl implements SigningService {
       GenerateSigningCertRequest.fromPartial(request),
       metadata,
     );
+  }
+
+  GetTrustedRoot(
+    request: DeepPartial<GetTrustedRootRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GetTrustedRootResponse> {
+    return this.rpc.unary(SigningServiceGetTrustedRootDesc, GetTrustedRootRequest.fromPartial(request), metadata);
   }
 }
 
@@ -242,6 +467,29 @@ export const SigningServiceGenerateSigningCertDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = GenerateSigningCertResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const SigningServiceGetTrustedRootDesc: UnaryMethodDefinitionish = {
+  methodName: "GetTrustedRoot",
+  service: SigningServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GetTrustedRootRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GetTrustedRootResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -374,6 +622,10 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

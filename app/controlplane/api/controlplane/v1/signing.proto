@@ -25,6 +25,7 @@ import "buf/validate/validate.proto";
 service SigningService {
   // GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
   rpc GenerateSigningCert (GenerateSigningCertRequest) returns (GenerateSigningCertResponse);
+  rpc GetTrustedRoot (GetTrustedRootRequest) returns (GetTrustedRootResponse);
 }
 
 message GenerateSigningCertRequest {
@@ -40,4 +41,10 @@ message CertificateChain {
    * The PEM-encoded certificate chain, ordered from leaf to intermediate to root as applicable.
    */
   repeated string certificates = 1;
+}
+
+message GetTrustedRootRequest {}
+message GetTrustedRootResponse {
+  // map keyID (cert SubjectKeyIdentifier) to PEM encoded chains
+  map<string, CertificateChain> keys = 1;
 }

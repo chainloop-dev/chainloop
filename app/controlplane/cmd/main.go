@@ -18,13 +18,11 @@ package main
 import (
 	"context"
 	"fmt"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
 	"github.com/bufbuild/protovalidate-go"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca/ejbca"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca/fileca"
 	"github.com/getsentry/sentry-go"
 	"github.com/nats-io/nats.go"
 	flag "github.com/spf13/pflag"
@@ -37,8 +35,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
-
-	_ "net/http/pprof"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -143,12 +139,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ca, err := newSigningCA(ctx, bc.GetCertificateAuthority(), logger)
-	if err != nil {
-		panic(err)
-	}
-
-	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins, ca)
+	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins)
 	if err != nil {
 		panic(err)
 	}
@@ -250,23 +241,4 @@ func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err e
 
 func newProtoValidator() (*protovalidate.Validator, error) {
 	return protovalidate.New()
-}
-
-func newSigningCA(_ context.Context, ca *conf.CA, logger log.Logger) (ca.CertificateAuthority, error) {
-	// File
-	if ca.GetFileCa() != nil {
-		fileCa := ca.GetFileCa()
-		_ = logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
-		return fileca.New(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
-	}
-
-	if ca.GetEjbcaCa() != nil {
-		ejbcaCa := ca.GetEjbcaCa()
-		_ = logger.Log(log.LevelInfo, "msg", "Keyless: EJBCA CA configured")
-		return ejbca.New(ejbcaCa.GetServerUrl(), ejbcaCa.GetKeyPath(), ejbcaCa.GetCertPath(), ejbcaCa.GetRootCaPath(), ejbcaCa.GetCertificateProfileName(), ejbcaCa.GetEndEntityProfileName(), ejbcaCa.GetCertificateAuthorityName())
-	}
-
-	// No CA configured, keyless will be deactivated.
-	_ = logger.Log(log.LevelInfo, "msg", "Keyless Signing NOT configured")
-	return nil, nil
 }
