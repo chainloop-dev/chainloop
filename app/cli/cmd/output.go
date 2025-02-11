@@ -24,6 +24,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 const formatJSON = "json"
@@ -70,6 +72,22 @@ func encodeOutput[messageType tabulatedData, f func(messageType) error](v messag
 
 func encodeJSON(v interface{}) error {
 	return encodeJSONToWriter(v, os.Stdout)
+}
+
+func encodeProtoJSON(v proto.Message) error {
+	options := protojson.MarshalOptions{
+		Multiline: true,
+		Indent:    "   ",
+	}
+	output, err := options.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("failed to encode output: %w", err)
+	}
+	_, err = fmt.Fprint(os.Stdout, string(output))
+	if err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
+	return nil
 }
 
 func encodeJSONToWriter(v interface{}, w io.Writer) error {
