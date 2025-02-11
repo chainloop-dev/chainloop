@@ -22,15 +22,14 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	sigs "github.com/sigstore/cosign/v2/pkg/signature"
-	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
-	bundle2 "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
 
@@ -159,21 +158,32 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		item.WorkflowRun.FinishedAt = toTimePtr(wr.FinishedAt.AsTime())
 	}
 
-	attestation := resp.GetResult().GetAttestation()
+	att := resp.GetResult().GetAttestation()
 	// The item does not have associated attestation
-	if attestation == nil {
+	if att == nil {
 		return item, nil
 	}
 
-	envelope, err := decodeEnvelope(attestation.Envelope)
+	envelope, err := decodeEnvelope(att.Envelope)
 	if err != nil {
 		return nil, err
 	}
 
-	if attestation.Bundle != nil {
-		if err := verifyBundle(ctx, attestation.Bundle); err != nil {
-			return nil, err
+	if att.Bundle != nil {
+		sc := pb.NewSigningServiceClient(action.cfg.CPConnection)
+		trResp, err := sc.GetTrustedRoot(ctx, &pb.GetTrustedRootRequest{})
+		if err != nil {
+			return nil, fmt.Errorf("failed getting trusted root: %w", err)
 		}
+
+		tr, err := trustedRootPbToVerifier(trResp)
+		if err != nil {
+			return nil, fmt.Errorf("getting roots: %w", err)
+		}
+		if err := verifier.VerifyBundle(ctx, att.Bundle, tr); err != nil {
+			return nil, fmt.Errorf("bundle verification failed: %w", err)
+		}
+		item.Verified = true
 	}
 
 	if opts.Verify {
@@ -190,31 +200,31 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		return nil, fmt.Errorf("extracting statement: %w", err)
 	}
 
-	envVars := make([]*EnvVar, 0, len(attestation.GetEnvVars()))
-	for _, v := range attestation.GetEnvVars() {
+	envVars := make([]*EnvVar, 0, len(att.GetEnvVars()))
+	for _, v := range att.GetEnvVars() {
 		envVars = append(envVars, &EnvVar{Name: v.Name, Value: v.Value})
 	}
 
-	materials := make([]*Material, 0, len(attestation.GetMaterials()))
-	for _, v := range attestation.GetMaterials() {
+	materials := make([]*Material, 0, len(att.GetMaterials()))
+	for _, v := range att.GetMaterials() {
 		materials = append(materials, materialPBToAction(v))
 	}
 
-	keys := make([]string, 0, len(attestation.GetAnnotations()))
-	for k := range attestation.GetAnnotations() {
+	keys := make([]string, 0, len(att.GetAnnotations()))
+	for k := range att.GetAnnotations() {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	annotations := make([]*Annotation, 0, len(attestation.GetAnnotations()))
+	annotations := make([]*Annotation, 0, len(att.GetAnnotations()))
 	for _, k := range keys {
 		annotations = append(annotations, &Annotation{
-			Name: k, Value: attestation.GetAnnotations()[k],
+			Name: k, Value: att.GetAnnotations()[k],
 		})
 	}
 
 	evaluations := make(map[string][]*PolicyEvaluation)
-	for k, v := range attestation.GetPolicyEvaluations() {
+	for k, v := range att.GetPolicyEvaluations() {
 		evs := make([]*PolicyEvaluation, 0)
 		for _, ev := range v.Evaluations {
 			evs = append(evs, policyEvaluationPBToAction(ev))
@@ -222,7 +232,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		evaluations[k] = evs
 	}
 
-	policyEvaluationStatus := attestation.GetPolicyEvaluationStatus()
+	policyEvaluationStatus := att.GetPolicyEvaluationStatus()
 
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
@@ -230,7 +240,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		EnvVars:           envVars,
 		Materials:         materials,
 		Annotations:       annotations,
-		Digest:            attestation.DigestInCasBackend,
+		Digest:            att.DigestInCasBackend,
 		PolicyEvaluations: evaluations,
 		PolicyEvaluationStatus: &PolicyEvaluationStatus{
 			Strategy:      policyEvaluationStatus.Strategy,
@@ -241,6 +251,20 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 	}
 
 	return item, nil
+}
+
+func trustedRootPbToVerifier(resp *pb.GetTrustedRootResponse) (*verifier.TrustedRoot, error) {
+	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate)}
+	for k, v := range resp.GetKeys() {
+		for _, c := range v.Certificates {
+			cert, err := cryptoutils.LoadCertificatesFromPEM(strings.NewReader(c))
+			if err != nil {
+				return nil, fmt.Errorf("loading certificate from PEM: %w", err)
+			}
+			tr.Keys[k] = append(tr.Keys[k], cert[0])
+		}
+	}
+	return tr, nil
 }
 
 func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
@@ -299,43 +323,6 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	}
 
 	return m
-}
-
-func verifyBundle(ctx context.Context, bundleBytes []byte) error {
-	chain, err := loadCertificates("devel/devkeys/ca.pub")
-	if err != nil {
-		return err
-	}
-	var bundle bundle2.Bundle
-	bundle.Bundle = new(protobundle.Bundle)
-	// unmarshal and validate
-	if err := bundle.UnmarshalJSON(bundleBytes); err != nil {
-		return err
-	}
-	pb := bundle.Bundle
-	if pb.GetVerificationMaterial() == nil || pb.GetVerificationMaterial().GetCertificate() == nil {
-		// nothing to verify
-		return nil
-	}
-
-	rawCert := pb.GetVerificationMaterial().GetCertificate().GetRawBytes()
-	signingCert, err := x509.ParseCertificate(rawCert)
-	if err != nil {
-		return err
-	}
-
-	verifier, err := cosign.ValidateAndUnpackCertWithChain(signingCert, chain, &cosign.CheckOpts{IgnoreSCT: true})
-	if err != nil {
-		return fmt.Errorf("validating the certificate: %w", err)
-	}
-
-	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
-	if err != nil {
-		return fmt.Errorf("creating DSSE verifier: %w", err)
-	}
-
-	_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(pb))
-	return err
 }
 
 func verifyEnvelope(ctx context.Context, e *dsse.Envelope, opts *WorkflowRunDescribeOpts) error {
