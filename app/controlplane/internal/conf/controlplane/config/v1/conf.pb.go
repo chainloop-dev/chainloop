@@ -551,8 +551,11 @@ type CA struct {
 	//
 	//	*CA_FileCa
 	//	*CA_EjbcaCa
-	Ca     isCA_Ca `protobuf_oneof:"ca"`
-	Issuer bool    `protobuf:"varint,3,opt,name=issuer,proto3" json:"issuer,omitempty"` // one and only one at a time when used in certificate_authorities field
+	Ca isCA_Ca `protobuf_oneof:"ca"`
+	// Marks this CA as the certificate issuer. If set to false, it will be used just for verification,
+	// and considered obsolete (after a certificate rotation, for example).
+	// Only one CA should have it set to `true` at a time.
+	Issuer bool `protobuf:"varint,3,opt,name=issuer,proto3" json:"issuer,omitempty"`
 }
 
 func (x *CA) Reset() {
