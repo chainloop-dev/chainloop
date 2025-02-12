@@ -20,7 +20,6 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	fulciofileca "github.com/sigstore/fulcio/pkg/ca/fileca"
 	"github.com/sigstore/fulcio/pkg/identity"
@@ -29,8 +28,6 @@ import (
 type FileCA struct {
 	ca fulcioca.CertificateAuthority
 }
-
-var _ ca.CertificateAuthority = (*FileCA)(nil)
 
 func New(certPath, keyPath, keyPass string, watch bool) (*FileCA, error) {
 	wrappedCa, err := fulciofileca.NewFileCA(certPath, keyPath, keyPass, watch)
@@ -44,4 +41,12 @@ func New(certPath, keyPath, keyPass string, watch bool) (*FileCA, error) {
 
 func (f FileCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
 	return f.ca.CreateCertificate(ctx, principal, csr.PublicKey)
+}
+
+func (f FileCA) GetRootChain(ctx context.Context) ([]*x509.Certificate, error) {
+	tb, err := f.ca.TrustBundle(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load trust bundle: %w", err)
+	}
+	return tb[0], nil
 }

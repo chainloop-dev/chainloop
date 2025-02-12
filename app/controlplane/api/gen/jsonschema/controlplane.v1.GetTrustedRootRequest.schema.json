@@ -1,0 +1,8 @@
+{
+  "$id": "controlplane.v1.GetTrustedRootRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "title": "Get Trusted Root Request",
+  "type": "object"
+}

@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"crypto"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
@@ -29,17 +30,17 @@ import (
 )
 
 type SigningUseCase struct {
-	CA ca.CertificateAuthority
+	CAs *ca.CertificateAuthorities
 }
 
-func NewChainloopSigningUseCase(ca ca.CertificateAuthority) *SigningUseCase {
-	return &SigningUseCase{CA: ca}
+func NewChainloopSigningUseCase(cas *ca.CertificateAuthorities) *SigningUseCase {
+	return &SigningUseCase{CAs: cas}
 }
 
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
 func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
-	if s.CA == nil {
-		return nil, NewErrNotImplemented("CA not initialized")
+	if s.CAs == nil {
+		return nil, NewErrNotImplemented("CAs not initialized")
 	}
 
 	var publicKey crypto.PublicKey
@@ -66,8 +67,11 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	}
 
 	// Create certificate from CA provider (no Signed Certificate Timestamps for now)
-
-	csc, err := s.CA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID), csr)
+	issuerCA, err := s.CAs.GetSignerCA()
+	if err != nil {
+		return nil, fmt.Errorf("getting signer CA: %w", err)
+	}
+	csc, err := issuerCA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID), csr)
 	if err != nil {
 		return nil, fmt.Errorf("creating certificate: %w", err)
 	}
@@ -85,6 +89,37 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	}
 
 	return append([]string{finalPEM}, finalChainPEM...), nil
+}
+
+func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, error) {
+	if s.CAs == nil {
+		return nil, NewErrNotImplemented("CAs not initialized")
+	}
+	trustedRoot := &TrustedRoot{Keys: make(map[string][]string)}
+	for _, auth := range s.CAs.GetAuthorities() {
+		chain, err := auth.GetRootChain(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting root chain: %w", err)
+		}
+		if len(chain) == 0 {
+			continue
+		}
+		keyID := fmt.Sprintf("%x", sha256.Sum256(chain[0].SubjectKeyId))
+		for _, cert := range chain {
+			pemCert, err := cryptoutils.MarshalCertificateToPEM(cert)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling certificate to PEM: %w", err)
+			}
+			trustedRoot.Keys[keyID] = append(trustedRoot.Keys[keyID], string(pemCert))
+		}
+	}
+
+	return trustedRoot, nil
+}
+
+type TrustedRoot struct {
+	// map of keyID and PEM encoded certificates
+	Keys map[string][]string
 }
 
 type chainloopPrincipal struct {

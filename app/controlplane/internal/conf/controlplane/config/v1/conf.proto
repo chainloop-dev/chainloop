@@ -38,8 +38,11 @@ message Bootstrap {
   // Configuration about the shared referrer index
   ReferrerSharedIndex referrer_shared_index = 8;
 
-  // The certificate authority used for keyless signing
-  CA certificate_authority = 9;
+  // The certificate authority used for keyless signing (deprecated, use certificate_authorities instead)
+  CA certificate_authority = 9 [deprecated=true];
+
+  // Multiple certificate authorities, used for CA rotation
+  repeated CA certificate_authorities = 15;
 
   message Observability {
     Sentry sentry = 1;
@@ -191,6 +194,11 @@ message CA {
     FileCA file_ca = 1;
     EJBCA ejbca_ca = 2;
   }
+
+  // Marks this CA as the certificate issuer. If set to false, it will be used just for verification,
+  // and considered obsolete (after a certificate rotation, for example).
+  // Only one CA should have it set to `true` at a time.
+  bool issuer = 3;
 
   message FileCA {
     string cert_path = 1;

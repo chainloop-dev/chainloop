@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -29,7 +30,7 @@ import (
 
 // Injectors from wire.go:
 
-func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins, certificateAuthority ca.CertificateAuthority) (*app, func(), error) {
+func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
 	confData := bootstrap.Data
 	data_Database := confData.Database
 	newConfig := newDataConf(data_Database)
@@ -214,7 +215,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	attestationStateService := service.NewAttestationStateService(newAttestationStateServiceOpt)
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
-	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthority)
+	v7 := bootstrap.CertificateAuthorities
+	certificateAuthorities, err := newSigningCAs(v7, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthorities)
 	signingService := service.NewSigningService(signingUseCase, v5...)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
 	validator, err := newProtoValidator()
@@ -320,4 +327,17 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	return &biz.CASServerDefaultOpts{
 		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
 	}
+}
+
+func newSigningCAs(cas []*conf.CA, logger log.Logger) (*ca.CertificateAuthorities, error) {
+	authorities, err := ca.NewCertificateAuthoritiesFromConfig(cas, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CA authorities: %w", err)
+	}
+
+	if len(authorities.GetAuthorities()) == 0 {
+		_ = logger.Log(log.LevelInfo, "msg", "Keyless Signing NOT configured")
+		return nil, nil
+	}
+	return authorities, nil
 }

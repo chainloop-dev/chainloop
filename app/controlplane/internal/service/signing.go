@@ -53,3 +53,15 @@ func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.Genera
 
 	return &v1.GenerateSigningCertResponse{Chain: &v1.CertificateChain{Certificates: certs}}, nil
 }
+
+func (s *SigningService) GetTrustedRoot(ctx context.Context, _ *v1.GetTrustedRootRequest) (*v1.GetTrustedRootResponse, error) {
+	tr, err := s.signing.GetTrustedRoot(ctx)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+	resp := &v1.GetTrustedRootResponse{Keys: make(map[string]*v1.CertificateChain)}
+	for k, v := range tr.Keys {
+		resp.Keys[k] = &v1.CertificateChain{Certificates: v}
+	}
+	return resp, nil
+}

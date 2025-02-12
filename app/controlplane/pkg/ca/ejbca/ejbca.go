@@ -28,9 +28,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
 type EJBCA struct {
@@ -50,8 +50,6 @@ type EJBCA struct {
 	endEntityProfileName   string
 	caName                 string
 }
-
-var _ ca.CertificateAuthority = (*EJBCA)(nil)
 
 func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) (*EJBCA, error) {
 	if serverURL == "" || keyPath == "" || certPath == "" || certProfileName == "" || endEntityProfileName == "" || caName == "" {
@@ -146,24 +144,24 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 		return nil, fmt.Errorf("wrong status creating certificate: %v", resp.Status)
 	}
 
-	var response response
+	var rsp response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
-	if err := json.Unmarshal(body, &response); err != nil {
+	if err := json.Unmarshal(body, &rsp); err != nil {
 		return nil, fmt.Errorf("unable to parse response body: %w", err)
 	}
 
 	// Decode certificate
-	derCert, err := base64.StdEncoding.DecodeString(response.Certificate)
+	derCert, err := base64.StdEncoding.DecodeString(rsp.Certificate)
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode response body: %w", err)
 	}
 
 	// Decode chain
 	chain := make([]*x509.Certificate, 0)
-	for _, c := range response.CertificateChain {
+	for _, c := range rsp.CertificateChain {
 		decodedCert, err := base64.StdEncoding.DecodeString(c)
 		if err != nil {
 			return nil, fmt.Errorf("unable to decode response body: %w", err)
@@ -176,4 +174,17 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 	}
 
 	return fulcioca.CreateCSCFromDER(derCert, chain)
+}
+
+func (e EJBCA) GetRootChain(_ context.Context) ([]*x509.Certificate, error) {
+	// current implementation relies on the rootCAPath from the config. Future implementation should use
+	//  /v1/ca and /v1/ca/{subject_dn}/certificate/download APIs instead
+	if e.rootCAPath != "" {
+		caCert, err := os.ReadFile(e.rootCAPath)
+		if err != nil {
+			return nil, fmt.Errorf("error reading root CA: %w", err)
+		}
+		return cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(caCert))
+	}
+	return nil, nil
 }
