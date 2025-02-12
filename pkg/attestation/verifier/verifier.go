@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
+	"errors"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
@@ -34,6 +35,8 @@ type TrustedRoot struct {
 	Keys map[string][]*x509.Certificate
 }
 
+var MissingVerificationMaterialErr = errors.New("missing material")
+
 func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) error {
 	var bundle bundle2.Bundle
 	bundle.Bundle = new(protobundle.Bundle)
@@ -44,13 +47,13 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	pb := bundle.Bundle
 	if pb.GetVerificationMaterial() == nil || pb.GetVerificationMaterial().GetCertificate() == nil {
 		// nothing to verify
-		return nil
+		return MissingVerificationMaterialErr
 	}
 
 	rawCert := pb.GetVerificationMaterial().GetCertificate().GetRawBytes()
 	signingCert, err := x509.ParseCertificate(rawCert)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not parse certificate from bundle: %w", err)
 	}
 
 	aki := fmt.Sprintf("%x", sha256.Sum256(signingCert.AuthorityKeyId))
