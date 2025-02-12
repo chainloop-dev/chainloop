@@ -195,7 +195,10 @@ message CA {
     EJBCA ejbca_ca = 2;
   }
 
-  bool issuer = 3; // one and only one at a time when used in certificate_authorities field
+  // Marks this CA as the certificate issuer. If set to false, it will be used just for verification,
+  // and considered obsolete (after a certificate rotation, for example).
+  // Only one CA should have it set to `true` at a time.
+  bool issuer = 3;
 
   message FileCA {
     string cert_path = 1;
