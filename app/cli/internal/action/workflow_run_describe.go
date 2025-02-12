@@ -237,7 +237,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
-		Bundle:            attestation.GetBundle(),
+		Bundle:            att.GetBundle(),
 		statement:         statement,
 		EnvVars:           envVars,
 		Materials:         materials,
