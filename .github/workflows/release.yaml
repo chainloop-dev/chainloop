@@ -180,6 +180,8 @@ jobs:
       packages: write
       contents: write
     steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
       - name: Add attestation link to release notes
         if: ${{ success() }}
         env:
