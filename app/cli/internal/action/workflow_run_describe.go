@@ -27,15 +27,16 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
+	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	sigs "github.com/sigstore/cosign/v2/pkg/signature"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
-
-	intoto "github.com/in-toto/attestation/go/v1"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type WorkflowRunDescribe struct {
@@ -174,20 +175,25 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		sc := pb.NewSigningServiceClient(action.cfg.CPConnection)
 		trResp, err := sc.GetTrustedRoot(ctx, &pb.GetTrustedRootRequest{})
 		if err != nil {
-			return nil, fmt.Errorf("failed getting trusted root: %w", err)
+			// if trusted root is not implemented, skip verification
+			if status.Code(err) != codes.Unimplemented {
+				return nil, fmt.Errorf("failed getting trusted root: %w", err)
+			}
 		}
 
-		tr, err := trustedRootPbToVerifier(trResp)
-		if err != nil {
-			return nil, fmt.Errorf("getting roots: %w", err)
-		}
-		if err = verifier.VerifyBundle(ctx, att.Bundle, tr); err != nil {
-			if !errors.Is(err, verifier.ErrMissingVerificationMaterial) {
-				action.cfg.Logger.Debug().Err(err).Msg("bundle verification failed")
-				return nil, errors.New("bundle verification failed")
+		if trResp != nil {
+			tr, err := trustedRootPbToVerifier(trResp)
+			if err != nil {
+				return nil, fmt.Errorf("getting roots: %w", err)
 			}
-		} else {
-			item.Verified = true
+			if err = verifier.VerifyBundle(ctx, att.Bundle, tr); err != nil {
+				if !errors.Is(err, verifier.ErrMissingVerificationMaterial) {
+					action.cfg.Logger.Debug().Err(err).Msg("bundle verification failed")
+					return nil, errors.New("bundle verification failed")
+				}
+			} else {
+				item.Verified = true
+			}
 		}
 	}
 
