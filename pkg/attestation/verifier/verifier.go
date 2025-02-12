@@ -26,8 +26,9 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
-	bundle2 "github.com/sigstore/sigstore-go/pkg/bundle"
+	sigstorebundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type TrustedRoot struct {
@@ -35,26 +36,31 @@ type TrustedRoot struct {
 	Keys map[string][]*x509.Certificate
 }
 
-var MissingVerificationMaterialErr = errors.New("missing material")
+var ErrMissingVerificationMaterial = errors.New("missing material")
 
 func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) error {
-	var bundle bundle2.Bundle
-	bundle.Bundle = new(protobundle.Bundle)
+	bundle := new(protobundle.Bundle)
 	// unmarshal and validate
-	if err := bundle.UnmarshalJSON(bundleBytes); err != nil {
+	if err := protojson.Unmarshal(bundleBytes, bundle); err != nil {
 		return fmt.Errorf("invalid bundle: %w", err)
 	}
-	pb := bundle.Bundle
-	if pb.GetVerificationMaterial() == nil || pb.GetVerificationMaterial().GetCertificate() == nil {
+
+	if bundle.GetVerificationMaterial() == nil || bundle.GetVerificationMaterial().GetCertificate() == nil {
 		// nothing to verify
-		return MissingVerificationMaterialErr
+		return ErrMissingVerificationMaterial
 	}
 
-	rawCert := pb.GetVerificationMaterial().GetCertificate().GetRawBytes()
-	signingCert, err := x509.ParseCertificate(rawCert)
-	if err != nil {
-		return fmt.Errorf("could not parse certificate from bundle: %w", err)
+	// Use sigstore helpers
+	var sb sigstorebundle.Bundle
+	if err := sb.UnmarshalJSON(bundleBytes); err != nil {
+		return fmt.Errorf("invalid bundle: %w", err)
 	}
+
+	vc, err := sb.VerificationContent()
+	if err != nil {
+		return fmt.Errorf("could not get verification material: %w", err)
+	}
+	signingCert := vc.GetCertificate()
 
 	aki := fmt.Sprintf("%x", sha256.Sum256(signingCert.AuthorityKeyId))
 	chain, ok := tr.Keys[aki]
@@ -72,6 +78,6 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		return fmt.Errorf("creating DSSE verifier: %w", err)
 	}
 
-	_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(pb))
+	_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(bundle))
 	return err
 }

@@ -182,7 +182,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 			return nil, fmt.Errorf("getting roots: %w", err)
 		}
 		if err = verifier.VerifyBundle(ctx, att.Bundle, tr); err != nil {
-			if !errors.Is(err, verifier.MissingVerificationMaterialErr) {
+			if !errors.Is(err, verifier.ErrMissingVerificationMaterial) {
 				action.cfg.Logger.Debug().Err(err).Msg("bundle verification failed")
 				return nil, errors.New("bundle verification failed")
 			}
