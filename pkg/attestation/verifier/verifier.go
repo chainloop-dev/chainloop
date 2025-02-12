@@ -42,7 +42,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	bundle.Bundle = new(protobundle.Bundle)
 	// unmarshal and validate
 	if err := bundle.UnmarshalJSON(bundleBytes); err != nil {
-		return err
+		return fmt.Errorf("invalid bundle: %w", err)
 	}
 	pb := bundle.Bundle
 	if pb.GetVerificationMaterial() == nil || pb.GetVerificationMaterial().GetCertificate() == nil {
