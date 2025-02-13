@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(failureReason)$": {
+      "description": "why it couldn't be verified, or the failure reason",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "failure_reason": {
+      "description": "why it couldn't be verified, or the failure reason",
+      "type": "string"
+    },
+    "verified": {
+      "description": "if it can be verified this will hold the result of the verification",
+      "type": "boolean"
+    }
+  },
+  "title": "Verification Result",
+  "type": "object"
+}

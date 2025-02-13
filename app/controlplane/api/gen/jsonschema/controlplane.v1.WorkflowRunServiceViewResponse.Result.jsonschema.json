@@ -11,6 +11,10 @@
     "attestation": {
       "$ref": "controlplane.v1.AttestationItem.jsonschema.json"
     },
+    "verification": {
+      "$ref": "controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult.jsonschema.json",
+      "description": "It will be nil if the verification is not possible (old or non-keyless attestations)"
+    },
     "workflowRun": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
     }

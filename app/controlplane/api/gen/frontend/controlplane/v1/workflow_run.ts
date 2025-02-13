@@ -207,7 +207,11 @@ export interface WorkflowRunServiceListResponse {
 
 export interface WorkflowRunServiceViewRequest {
   id?: string | undefined;
-  digest?: string | undefined;
+  digest?:
+    | string
+    | undefined;
+  /** run verification */
+  verify: boolean;
 }
 
 export interface WorkflowRunServiceViewResponse {
@@ -217,6 +221,15 @@ export interface WorkflowRunServiceViewResponse {
 export interface WorkflowRunServiceViewResponse_Result {
   workflowRun?: WorkflowRunItem;
   attestation?: AttestationItem;
+  /** It will be nil if the verification is not possible (old or non-keyless attestations) */
+  verification?: WorkflowRunServiceViewResponse_VerificationResult;
+}
+
+export interface WorkflowRunServiceViewResponse_VerificationResult {
+  /** if it can be verified this will hold the result of the verification */
+  verified: boolean;
+  /** why it couldn't be verified, or the failure reason */
+  failureReason: string;
 }
 
 export interface AttestationServiceGetUploadCredsRequest {
@@ -1851,7 +1864,7 @@ export const WorkflowRunServiceListResponse = {
 };
 
 function createBaseWorkflowRunServiceViewRequest(): WorkflowRunServiceViewRequest {
-  return { id: undefined, digest: undefined };
+  return { id: undefined, digest: undefined, verify: false };
 }
 
 export const WorkflowRunServiceViewRequest = {
@@ -1861,6 +1874,9 @@ export const WorkflowRunServiceViewRequest = {
     }
     if (message.digest !== undefined) {
       writer.uint32(18).string(message.digest);
+    }
+    if (message.verify === true) {
+      writer.uint32(24).bool(message.verify);
     }
     return writer;
   },
@@ -1886,6 +1902,13 @@ export const WorkflowRunServiceViewRequest = {
 
           message.digest = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.verify = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1899,6 +1922,7 @@ export const WorkflowRunServiceViewRequest = {
     return {
       id: isSet(object.id) ? String(object.id) : undefined,
       digest: isSet(object.digest) ? String(object.digest) : undefined,
+      verify: isSet(object.verify) ? Boolean(object.verify) : false,
     };
   },
 
@@ -1906,6 +1930,7 @@ export const WorkflowRunServiceViewRequest = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.digest !== undefined && (obj.digest = message.digest);
+    message.verify !== undefined && (obj.verify = message.verify);
     return obj;
   },
 
@@ -1919,6 +1944,7 @@ export const WorkflowRunServiceViewRequest = {
     const message = createBaseWorkflowRunServiceViewRequest();
     message.id = object.id ?? undefined;
     message.digest = object.digest ?? undefined;
+    message.verify = object.verify ?? false;
     return message;
   },
 };
@@ -1985,7 +2011,7 @@ export const WorkflowRunServiceViewResponse = {
 };
 
 function createBaseWorkflowRunServiceViewResponse_Result(): WorkflowRunServiceViewResponse_Result {
-  return { workflowRun: undefined, attestation: undefined };
+  return { workflowRun: undefined, attestation: undefined, verification: undefined };
 }
 
 export const WorkflowRunServiceViewResponse_Result = {
@@ -1995,6 +2021,9 @@ export const WorkflowRunServiceViewResponse_Result = {
     }
     if (message.attestation !== undefined) {
       AttestationItem.encode(message.attestation, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.verification !== undefined) {
+      WorkflowRunServiceViewResponse_VerificationResult.encode(message.verification, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -2020,6 +2049,13 @@ export const WorkflowRunServiceViewResponse_Result = {
 
           message.attestation = AttestationItem.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.verification = WorkflowRunServiceViewResponse_VerificationResult.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2033,6 +2069,9 @@ export const WorkflowRunServiceViewResponse_Result = {
     return {
       workflowRun: isSet(object.workflowRun) ? WorkflowRunItem.fromJSON(object.workflowRun) : undefined,
       attestation: isSet(object.attestation) ? AttestationItem.fromJSON(object.attestation) : undefined,
+      verification: isSet(object.verification)
+        ? WorkflowRunServiceViewResponse_VerificationResult.fromJSON(object.verification)
+        : undefined,
     };
   },
 
@@ -2042,6 +2081,9 @@ export const WorkflowRunServiceViewResponse_Result = {
       (obj.workflowRun = message.workflowRun ? WorkflowRunItem.toJSON(message.workflowRun) : undefined);
     message.attestation !== undefined &&
       (obj.attestation = message.attestation ? AttestationItem.toJSON(message.attestation) : undefined);
+    message.verification !== undefined && (obj.verification = message.verification
+      ? WorkflowRunServiceViewResponse_VerificationResult.toJSON(message.verification)
+      : undefined);
     return obj;
   },
 
@@ -2061,6 +2103,87 @@ export const WorkflowRunServiceViewResponse_Result = {
     message.attestation = (object.attestation !== undefined && object.attestation !== null)
       ? AttestationItem.fromPartial(object.attestation)
       : undefined;
+    message.verification = (object.verification !== undefined && object.verification !== null)
+      ? WorkflowRunServiceViewResponse_VerificationResult.fromPartial(object.verification)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseWorkflowRunServiceViewResponse_VerificationResult(): WorkflowRunServiceViewResponse_VerificationResult {
+  return { verified: false, failureReason: "" };
+}
+
+export const WorkflowRunServiceViewResponse_VerificationResult = {
+  encode(
+    message: WorkflowRunServiceViewResponse_VerificationResult,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.verified === true) {
+      writer.uint32(8).bool(message.verified);
+    }
+    if (message.failureReason !== "") {
+      writer.uint32(18).string(message.failureReason);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowRunServiceViewResponse_VerificationResult {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowRunServiceViewResponse_VerificationResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.verified = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.failureReason = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowRunServiceViewResponse_VerificationResult {
+    return {
+      verified: isSet(object.verified) ? Boolean(object.verified) : false,
+      failureReason: isSet(object.failureReason) ? String(object.failureReason) : "",
+    };
+  },
+
+  toJSON(message: WorkflowRunServiceViewResponse_VerificationResult): unknown {
+    const obj: any = {};
+    message.verified !== undefined && (obj.verified = message.verified);
+    message.failureReason !== undefined && (obj.failureReason = message.failureReason);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowRunServiceViewResponse_VerificationResult>, I>>(
+    base?: I,
+  ): WorkflowRunServiceViewResponse_VerificationResult {
+    return WorkflowRunServiceViewResponse_VerificationResult.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowRunServiceViewResponse_VerificationResult>, I>>(
+    object: I,
+  ): WorkflowRunServiceViewResponse_VerificationResult {
+    const message = createBaseWorkflowRunServiceViewResponse_VerificationResult();
+    message.verified = object.verified ?? false;
+    message.failureReason = object.failureReason ?? "";
     return message;
   },
 };

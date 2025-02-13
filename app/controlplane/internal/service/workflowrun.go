@@ -144,6 +144,16 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.BadRequest("invalid", "id or digest required")
 	}
 
+	var verificationResult *pb.WorkflowRunServiceViewResponse_VerificationResult
+	if req.Verify {
+		// it might be nil if it doesn't apply
+		vr, err := s.wrUseCase.Verify(ctx, run)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		verificationResult = bizVerificationToPb(vr)
+	}
+
 	attestation, err := bizAttestationToPb(run.Attestation)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -159,11 +169,22 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractAndVersion.Version)
 	wr.ContractVersion.ContractName = contractAndVersion.Contract.Name
 	res := &pb.WorkflowRunServiceViewResponse_Result{
-		WorkflowRun: wr,
-		Attestation: attestation,
+		WorkflowRun:  wr,
+		Attestation:  attestation,
+		Verification: verificationResult,
 	}
 
 	return &pb.WorkflowRunServiceViewResponse{Result: res}, nil
+}
+
+func bizVerificationToPb(vr *biz.VerificationResult) *pb.WorkflowRunServiceViewResponse_VerificationResult {
+	if vr == nil {
+		return nil
+	}
+	return &pb.WorkflowRunServiceViewResponse_VerificationResult{
+		Verified:      vr.Result,
+		FailureReason: vr.FailureReason,
+	}
 }
 
 func bizRunnerToPb(runner string) craftingpb.CraftingSchema_Runner_RunnerType {

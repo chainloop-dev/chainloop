@@ -215,6 +215,8 @@ message WorkflowRunServiceViewRequest {
     string id = 1 [(buf.validate.field).string.uuid = true];
     string digest = 2 [(buf.validate.field).string = {min_len: 1}];
   }
+  // run verification
+  bool verify = 3;
 }
 
 message WorkflowRunServiceViewResponse {
@@ -223,6 +225,15 @@ message WorkflowRunServiceViewResponse {
   message Result {
     WorkflowRunItem workflow_run = 1;
     AttestationItem attestation = 2;
+    // It will be nil if the verification is not possible (old or non-keyless attestations)
+    VerificationResult verification = 3;
+  }
+
+  message VerificationResult {
+    // if it can be verified this will hold the result of the verification
+    bool verified = 1;
+    // why it couldn't be verified, or the failure reason
+    string failure_reason = 2;
   }
 }
 

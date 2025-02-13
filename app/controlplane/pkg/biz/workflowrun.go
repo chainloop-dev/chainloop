@@ -18,16 +18,20 @@ package biz
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -93,16 +97,19 @@ type WorkflowRunUseCase struct {
 	wfRunRepo WorkflowRunRepo
 	wfRepo    WorkflowRepo
 	logger    *log.Helper
+
+	signingUseCase *SigningUseCase
 }
 
-func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, logger log.Logger) (*WorkflowRunUseCase, error) {
+func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, suc *SigningUseCase, logger log.Logger) (*WorkflowRunUseCase, error) {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	return &WorkflowRunUseCase{
 		wfRunRepo: wfrRepo, wfRepo: wfRepo,
-		logger: log.NewHelper(logger),
+		signingUseCase: suc,
+		logger:         log.NewHelper(logger),
 	}, nil
 }
 
@@ -386,6 +393,50 @@ func (uc *WorkflowRunUseCase) GetByIDInOrg(ctx context.Context, orgID, runID str
 	}
 
 	return wfRun, nil
+}
+
+type VerificationResult struct {
+	Result        bool
+	FailureReason string
+}
+
+func (uc *WorkflowRunUseCase) Verify(ctx context.Context, run *WorkflowRun) (*VerificationResult, error) {
+	tr, err := uc.signingUseCase.GetTrustedRoot(ctx)
+	if err != nil {
+		if IsErrNotImplemented(err) {
+			// Verification cannot be done, skipping
+			return nil, nil
+		}
+		return nil, fmt.Errorf("getting trusted root: %w", err)
+	}
+	verifierRoots, err := trustedRootBizToVerifier(tr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing roots: %w", err)
+	}
+	err = verifier.VerifyBundle(ctx, run.Attestation.Bundle, verifierRoots)
+	if err != nil {
+		// if no verification material found, it's not verifiable
+		if errors.Is(err, verifier.ErrMissingVerificationMaterial) {
+			return nil, nil
+		}
+
+		return &VerificationResult{Result: false, FailureReason: err.Error()}, nil
+	}
+	return &VerificationResult{Result: true}, nil
+}
+
+func trustedRootBizToVerifier(biztr *TrustedRoot) (*verifier.TrustedRoot, error) {
+	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate)}
+	for k, v := range biztr.Keys {
+		for _, c := range v {
+			cert, err := cryptoutils.LoadCertificatesFromPEM(strings.NewReader(c))
+			if err != nil {
+				return nil, fmt.Errorf("loading certificate from PEM: %w", err)
+			}
+			tr.Keys[k] = append(tr.Keys[k], cert[0])
+		}
+	}
+	return tr, nil
 }
 
 func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
