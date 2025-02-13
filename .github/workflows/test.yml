@@ -42,7 +42,7 @@ jobs:
       - name: Generate migrations
         if: ${{ matrix.app == 'controlplane' }}
         env:
-          ATLAS_VERSION: v0.30.0
+          ATLAS_VERSION: v0.31.1-647df7a-canary
         run: |
           wget -q https://release.ariga.io/atlas/atlas-linux-amd64-$ATLAS_VERSION -O /tmp/atlas
           sudo install /tmp/atlas /usr/local/bin/atlas
