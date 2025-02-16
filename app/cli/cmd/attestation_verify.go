@@ -30,10 +30,10 @@ func newAttestationVerifyCmd() *cobra.Command {
 		Long:                  "Verify an attestation by validating its validation material against the configured trusted root",
 		DisableFlagsInUseLine: true,
 		Example: `  # verify local attestation
-  chainloop attestation verify attestation.json
+  chainloop attestation verify --bundle attestation.json
 
   # verify an attestation stored in an https endpoint
-  chainloop attestation verify https://myrepository/attestation.json`,
+  chainloop attestation verify -b https://myrepository/attestation.json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			res, err := action.NewAttestationVerifyAction(actionOpts).Run(cmd.Context(), fileOrURL)
 			if err != nil {
