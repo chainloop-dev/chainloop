@@ -1,5 +1,5 @@
 //
-// Copyright 22025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 )
 
 func newAttestationVerifyCmd() *cobra.Command {
+	var fileOrURL string
 	cmd := &cobra.Command{
 		Use:                   "verify file-or-url",
 		Short:                 "verify an attestation",
@@ -33,8 +34,8 @@ func newAttestationVerifyCmd() *cobra.Command {
 
   # verify an attestation stored in an https endpoint
   chainloop attestation verify https://myrepository/attestation.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAttestationVerifyAction(actionOpts).Run(cmd.Context(), args[0])
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := action.NewAttestationVerifyAction(actionOpts).Run(cmd.Context(), fileOrURL)
 			if err != nil {
 				return fmt.Errorf("verifying attestation: %w", err)
 			}
@@ -46,8 +47,10 @@ func newAttestationVerifyCmd() *cobra.Command {
 
 			return nil
 		},
-		Args: cobra.ExactArgs(1),
 	}
+
+	cmd.Flags().StringVarP(&fileOrURL, "bundle", "b", "", "bundle path or URL")
+	cobra.CheckErr(cmd.MarkFlagRequired("bundle"))
 
 	return cmd
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ func NewAttestationVerifyAction(cfg *ActionsOpts) *AttestationVerifyAction {
 	return &AttestationVerifyAction{cfg}
 }
 
-func (action *AttestationVerifyAction) Run(ctx context.Context, fileOrUrl string) (bool, error) {
-	content, err := blob.LoadFileOrURL(fileOrUrl)
+func (action *AttestationVerifyAction) Run(ctx context.Context, fileOrURL string) (bool, error) {
+	content, err := blob.LoadFileOrURL(fileOrURL)
 	if err != nil {
 		return false, fmt.Errorf("loading attestation: %w", err)
 	}
