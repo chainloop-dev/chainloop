@@ -658,8 +658,9 @@ controlplane:
 
   ## Configuration for keyless signing using one of the supported providers
   ## @param controlplane.keylessSigning.enabled Activates or deactivates the feature
-  ## @param controlplane.keylessSigning.backends The collection of backends to use. Only "fileCA" and "ejbcaCA" are supported
+  ## @param controlplane.keylessSigning.backends The collection of backends to use.
   ## @param controlplane.keylessSigning.backends[].issuer Whether this backend should be used to issue new certificates. Only one can be set at a time.
+  ## @param controlplane.keylessSigning.backends[].type backend type. Only "fileCA" and "ejbcaCA" are supported
   ## @param controlplane.keylessSigning.backends[].fileCA.cert The PEM-encoded certificate of the file based CA
   ##       -----BEGIN CERTIFICATE-----
   ##       ...
