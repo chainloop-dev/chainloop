@@ -683,17 +683,23 @@ controlplane:
         fileCA:
           cert: ""
           key: ""
-          keyPass: ""
+          keyPass: "foo"
         issuer: true
-      - type: ejbcaCA
-        ejbcaCA:
-          serverURL: ""
-          clientKey: ""
-          clientCert: ""
-          caCert: ""
-          certProfileName: ""
-          endEntityProfileName: ""
-          caName: ""
+      - type: fileCA
+        fileCA:
+          cert: ""
+          key: ""
+          keyPass: "bar"
+
+#      - type: ejbcaCA
+#        ejbcaCA:
+#          serverURL: ""
+#          clientKey: ""
+#          clientCert: ""
+#          caCert: ""
+#          certProfileName: ""
+#          endEntityProfileName: ""
+#          caName: ""
 
   ## Inject custom CA certificates to the controlplane container
   ## @param controlplane.customCAs List of custom CA certificates content
