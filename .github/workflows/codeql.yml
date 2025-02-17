@@ -73,10 +73,7 @@ jobs:
         if: ${{ success() && github.event_name != 'pull_request' }}
         run: |
           chainloop attestation status --full
-          chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.COSIGN_KEY }}
+          chainloop attestation push
 
       - name: Mark attestation as failed
         if: ${{ failure() && github.event_name != 'pull_request' }}
