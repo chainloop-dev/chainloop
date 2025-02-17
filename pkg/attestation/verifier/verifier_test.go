@@ -72,5 +72,4 @@ func TestVerifyBundle(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-
 }
