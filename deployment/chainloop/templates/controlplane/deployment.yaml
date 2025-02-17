@@ -148,6 +148,16 @@ spec:
               mountPath: /tmp
             - name: jwt-cas-private-key
               mountPath: /secrets
+            {{- if and .Values.controlplane.keylessSigning.enabled (eq "fileCA" .Values.controlplane.keylessSigning.backend) }}
+            # deprecated
+            - name: file-ca-cert
+              mountPath: /ca_secrets
+            {{- end }}
+            {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
+            # deprecated
+            - name: ejbca-ca-client
+              mountPath: /ca_secrets
+            {{- end }}
             {{- if .Values.controlplane.keylessSigning.enabled }}
             {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
             - name: sign-backend-{{$backend.type}}-{{$index}}
@@ -196,6 +206,18 @@ spec:
         - name: jwt-cas-private-key
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-jwt-cas
+        {{- if and .Values.controlplane.keylessSigning.enabled (eq "fileCA" .Values.controlplane.keylessSigning.backend) }}
+        # deprecated
+        - name: file-ca-cert
+          secret:
+            secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-file-ca
+        {{- end }}
+        {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
+        # deprecated
+        - name: ejbca-ca-client
+          secret:
+            secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-ejbca-ca
+        {{- end }}
         {{- if include "controlplane.tls-secret-name" . }}
         - name: server-certs
           secret:
