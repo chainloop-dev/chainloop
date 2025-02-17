@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
@@ -59,11 +60,16 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
 			NewCASServerOptions,
+			newSigningCAs,
 		),
 	)
 }
 
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {
+	return nil, nil
+}
+
+func newSigningCAs() (*ca.CertificateAuthorities, error) {
 	return nil, nil
 }

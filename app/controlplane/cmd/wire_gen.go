@@ -141,7 +141,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v5...)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
-	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, logger)
+	v6 := bootstrap.CertificateAuthorities
+	certificateAuthorities, err := newSigningCAs(v6, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthorities)
+	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -158,14 +165,14 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
-	v6 := bootstrap.PrometheusIntegration
+	v7 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	prometheusUseCase := biz.NewPrometheusUseCase(v6, organizationUseCase, orgMetricsUseCase, logger)
+	prometheusUseCase := biz.NewPrometheusUseCase(v7, organizationUseCase, orgMetricsUseCase, logger)
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
@@ -215,13 +222,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	attestationStateService := service.NewAttestationStateService(newAttestationStateServiceOpt)
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
-	v7 := bootstrap.CertificateAuthorities
-	certificateAuthorities, err := newSigningCAs(v7, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthorities)
 	signingService := service.NewSigningService(signingUseCase, v5...)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
 	validator, err := newProtoValidator()

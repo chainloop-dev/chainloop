@@ -39,6 +39,10 @@ type TrustedRoot struct {
 var ErrMissingVerificationMaterial = errors.New("missing material")
 
 func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) error {
+	if bundleBytes == nil {
+		return ErrMissingVerificationMaterial
+	}
+
 	bundle := new(protobundle.Bundle)
 	// unmarshal and validate
 	if err := protojson.Unmarshal(bundleBytes, bundle); err != nil {
