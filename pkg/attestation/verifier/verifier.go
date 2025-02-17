@@ -52,6 +52,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	var signingCert *x509.Certificate
 	if bundle.GetVerificationMaterial() == nil || bundle.GetVerificationMaterial().GetCertificate() == nil {
 		// it's a malformed bundle (according to specs) but still verifiable
+		// TODO: get rid of this compatibility logic in a future release
 		if bundle.GetVerificationMaterial().GetX509CertificateChain() != nil {
 			certs := bundle.GetVerificationMaterial().GetX509CertificateChain().GetCertificates()
 			if len(certs) == 0 {
