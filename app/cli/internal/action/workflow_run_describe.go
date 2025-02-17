@@ -35,8 +35,6 @@ import (
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type WorkflowRunDescribe struct {
@@ -172,32 +170,14 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 	}
 
 	if att.Bundle != nil {
-		sc := pb.NewSigningServiceClient(action.cfg.CPConnection)
-		trResp, err := sc.GetTrustedRoot(ctx, &pb.GetTrustedRootRequest{})
+		res, err := verifyBundle(ctx, att.Bundle, action.cfg)
 		if err != nil {
-			// if trusted root is not implemented, skip verification
-			if status.Code(err) != codes.Unimplemented {
-				return nil, fmt.Errorf("failed getting trusted root: %w", err)
-			}
+			return nil, fmt.Errorf("bundle verification failed: %w", err)
 		}
-
-		if trResp != nil {
-			tr, err := trustedRootPbToVerifier(trResp)
-			if err != nil {
-				return nil, fmt.Errorf("getting roots: %w", err)
-			}
-			if err = verifier.VerifyBundle(ctx, att.Bundle, tr); err != nil {
-				if !errors.Is(err, verifier.ErrMissingVerificationMaterial) {
-					action.cfg.Logger.Debug().Err(err).Msg("bundle verification failed")
-					return nil, errors.New("bundle verification failed")
-				}
-			} else {
-				item.Verified = true
-			}
-		}
+		item.Verified = res
 	}
 
-	if opts.Verify {
+	if opts.Verify && !item.Verified {
 		if err := verifyEnvelope(ctx, envelope, opts); err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("verifying the envelope")
 			return nil, errors.New("invalid signature, did you provide the right key?")

@@ -72,7 +72,8 @@ func newAttestationCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&GracefulExit, "graceful-exit", false, "exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0")
 	cmd.PersistentFlags().StringVar(&attestationLocalStatePath, "local-state-path", "", "path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json")
 
-	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(), newAttestationResetCmd())
+	cmd.AddCommand(newAttestationInitCmd(), newAttestationAddCmd(), newAttestationStatusCmd(), newAttestationPushCmd(),
+		newAttestationResetCmd(), newAttestationVerifyCmd())
 
 	return cmd
 }
