@@ -148,13 +148,11 @@ spec:
               mountPath: /tmp
             - name: jwt-cas-private-key
               mountPath: /secrets
-            {{- if and .Values.controlplane.keylessSigning.enabled (eq "fileCA" .Values.controlplane.keylessSigning.backend) }}
-            - name: file-ca-cert
-              mountPath: /ca_secrets
+            {{- if .Values.controlplane.keylessSigning.enabled }}
+            {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
+            - name: sign-backend-{{$backend.type}}-{{$index}}
+              mountPath: /sign_secrets_{{$backend.type}}_{{$index}}
             {{- end }}
-            {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
-            - name: ejbca-ca-client
-              mountPath: /ca_secrets
             {{- end }}
             {{- if include "controlplane.tls-secret-name" . }}
             - name: server-certs
@@ -208,15 +206,12 @@ spec:
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-gcp-secretmanager-serviceaccountkey
         {{- end }}
-        {{- if and .Values.controlplane.keylessSigning.enabled (eq "fileCA" .Values.controlplane.keylessSigning.backend) }}
-        - name: file-ca-cert
-          secret:
-            secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-file-ca
+        {{- if and .Values.controlplane.keylessSigning.enabled }}
+        {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
+        - name: sign-backend-{{$backend.type}}-{{$index}}
+          secrets:
+            secretName: {{ include "chainloop.controlplane.fullname" $ }}-keyless-{{$backend.type}}-{{$index}}
         {{- end }}
-        {{- if and .Values.controlplane.keylessSigning.enabled (eq "ejbcaCA" .Values.controlplane.keylessSigning.backend) }}
-        - name: ejbca-ca-client
-          secret:
-            secretName: {{ include "chainloop.controlplane.fullname" . }}-keyless-ejbca-ca
         {{- end }}
         {{- if .Values.controlplane.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumes "context" $) | nindent 8 }}
