@@ -125,10 +125,10 @@ func TestAttestationAPITokenProvider(t *testing.T) {
 		},
 	}
 
+	logger := log.NewStdLogger(io.Discard)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := transport.NewServerContext(context.Background(), &mockTransport{reqHeader: tc.tokenHeader})
-			logger := log.NewStdLogger(io.Discard)
 
 			m := attjwtmiddleware.WithJWTMulti(logger, tc.tokenProviders...)
 			_, err := m(emptyHandler)(ctx, nil)

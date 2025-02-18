@@ -157,8 +157,8 @@ func WithVerifyAudienceFunc(f VerifyAudienceFunc) TokenProviderOption {
 }
 
 type options struct {
-	tokenProviders           []providerOption
-	federatedVerificationURL string
+	tokenProviders   []providerOption
+	federatedAuthURL string
 }
 
 func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOption {
@@ -182,10 +182,17 @@ func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOptio
 //	}
 //
 // and returns a json with the following structure:
-func WithFederatedProvider(conf *conf.FederatedVerification) JWTOption {
+//
+//	{
+//		"issuerUrl": "<issuer url>",
+//		"repository": "<repository>",
+//		"orgId": "<organization id>",
+//		"orgName": "<organization name>",
+//	}
+func WithFederatedProvider(conf *conf.FederatedAuthentication) JWTOption {
 	return func(o *options) {
 		if conf != nil && conf.GetEnabled() && conf.GetUrl() != "" {
-			o.federatedVerificationURL = conf.GetUrl()
+			o.federatedAuthURL = conf.GetUrl()
 		}
 	}
 }
@@ -200,8 +207,8 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 	}
 
 	logger := log.NewHelper(log.With(l, "component", "jwtMiddleware"))
-	if o.federatedVerificationURL != "" {
-		logger.Infof("federated verification enabled, using URL: %s", o.federatedVerificationURL)
+	if o.federatedAuthURL != "" {
+		logger.Infof("federated authentication enabled, using URL: %s", o.federatedAuthURL)
 	}
 
 	// claims cache with 10s TTL and unlimited keys
@@ -231,7 +238,7 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 						}
 
 						// If federated verification is enabled, we try to get the information remotely
-						if o.federatedVerificationURL != "" {
+						if o.federatedAuthURL != "" {
 							// The org name might come from the header, it's optional and used to explicitly authenticate against it
 							orgName, err := entities.GetOrganizationNameFromHeader(ctx)
 							if err != nil {
@@ -239,7 +246,7 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 							}
 
 							logger.Infof("calling federated provider, orgName: %s", orgName)
-							claims, err := callFederatedProvider(o.federatedVerificationURL, jwtToken, orgName, claimsCache)
+							claims, err := callFederatedProvider(o.federatedAuthURL, jwtToken, orgName, claimsCache)
 							if err != nil {
 								logger.Errorw("msg", "error calling federated provider", "error", err)
 								return nil, fmt.Errorf("couldn't authorize using the provided token")

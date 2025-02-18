@@ -170,10 +170,10 @@ controlplane:
     enabled: false
     allowedOrgs: []
 
-  ## @extra controlplane.federatedVerification Enable federated verification during attestation process
-  ## @param controlplane.federatedVerification.enabled Enable federated verification
-  ## @param controlplane.federatedVerification.url URL of the federated verification endpoint
-  federatedVerification:
+  ## @extra controlplane.federatedAuthentication Enable federated authentication during attestation process
+  ## @param controlplane.federatedAuthentication.enabled Enable federated authentication
+  ## @param controlplane.federatedAuthentication.url URL of the federated authentication endpoint
+  federatedAuthentication:
     enabled: false
     url: ""
   

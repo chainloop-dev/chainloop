@@ -85,7 +85,7 @@ type Opts struct {
 	Logger          log.Logger
 	ServerConfig    *conf.Server
 	AuthConfig      *conf.Auth
-	FederatedConfig *conf.FederatedVerification
+	FederatedConfig *conf.FederatedAuthentication
 	Credentials     credentials.ReaderWriter
 	Enforcer        *authz.Enforcer
 	Validator       *protovalidate.Validator

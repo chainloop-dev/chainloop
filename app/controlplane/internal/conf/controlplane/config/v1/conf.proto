@@ -86,7 +86,7 @@ message Bootstrap {
   // Federated verification allows to delegate the API tokens received during the attestation
   // to a third party service for verification
   // For example, we can forward Gitlab or Github API tokens
-  FederatedVerification federated_verification = 16;
+  FederatedAuthentication federated_authentication = 16;
 
   message NatsServer {
     // Connection URI
@@ -95,9 +95,9 @@ message Bootstrap {
   }
 }
 
-message FederatedVerification {
+message FederatedAuthentication {
   // URL of the federated verification endpoint
-  string url = 1 [(buf.validate.field).string.min_len = 1];
+  string url = 1 [(buf.validate.field).string.uri = true];
   // Whether to enable the federated verification
   bool enabled = 2;
 }
