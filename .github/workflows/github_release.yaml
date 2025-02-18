@@ -9,10 +9,6 @@ on:
     secrets:
       chainloop_token:
         required: true
-      cosign_key:
-        required: true
-      cosign_pass:
-        required: true
 
 permissions: {}
 
@@ -67,13 +63,10 @@ jobs:
         if: ${{ success() }}
         run: |
           chainloop attestation status --full
-          attestation_sha=$(chainloop attestation push --key env://CHAINLOOP_SIGNING_KEY -o json | jq -r '.digest')
+          attestation_sha=$(chainloop attestation push -o json | jq -r '.digest')
           # check that the command succeeded
           [ -n "${attestation_sha}" ] || exit 1
           echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
-        env:
-          CHAINLOOP_SIGNING_PASSWORD: ${{ secrets.cosign_pass }}
-          CHAINLOOP_SIGNING_KEY: ${{ secrets.cosign_key }}
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
