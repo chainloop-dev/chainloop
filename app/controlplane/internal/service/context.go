@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -74,7 +73,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		// For regular users, we need to load the membership manually
 		// NOTE that we are not using the middleware here because we want to handle the case
 		// when there is no organization or membership gracefully
-		orgName, err := usercontext.GetOrganizationNameFromHeader(ctx)
+		orgName, err := entities.GetOrganizationNameFromHeader(ctx)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}

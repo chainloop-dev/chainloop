@@ -94,3 +94,7 @@ policy_providers:
     url: http://localhost:8002/v1
 
 enable_profiler: true
+
+# federated_verification:
+#   enabled: true
+#   url: http://localhost:8002/machine-identity/verify-token

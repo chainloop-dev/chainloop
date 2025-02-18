@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,17 +16,27 @@
 package attjwtmiddleware
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
+	"time"
 
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/hashicorp/golang-lru/v2/expirable"
+
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -41,6 +51,8 @@ const (
 	RobotAccountProviderKey = "robotAccountProvider"
 	// APITokenProviderKey is the key for api token provider
 	APITokenProviderKey = "apiTokenProvider"
+	// FederatedProviderKey is the key for federated token provider
+	FederatedProviderKey = "federatedProvider"
 )
 
 var (
@@ -145,7 +157,8 @@ func WithVerifyAudienceFunc(f VerifyAudienceFunc) TokenProviderOption {
 }
 
 type options struct {
-	tokenProviders []providerOption
+	tokenProviders           []providerOption
+	federatedVerificationURL string
 }
 
 func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOption {
@@ -160,14 +173,40 @@ func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOptio
 	}
 }
 
+// WithFederatedProvider adds support to ask a third party service to verify the token
+// verify URL must be an API that receives a json encoded body with the following structure:
+//
+//	{
+//		"token": "<jwt token>",
+//		"org_name": "<organization name>"
+//	}
+//
+// and returns a json with the following structure:
+func WithFederatedProvider(conf *conf.FederatedVerification) JWTOption {
+	return func(o *options) {
+		if conf != nil && conf.GetEnabled() && conf.GetUrl() != "" {
+			o.federatedVerificationURL = conf.GetUrl()
+		}
+	}
+}
+
 // WithJWTMulti creates a custom JWT middleware that configured with different token providers
 // tries to run all validations from an incoming token. If one of the providers matches the expected audience
 // it gets parsed and sent down to the next middleware. If none matches an error is returned
-func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
+func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 	o := &options{}
 	for _, opt := range opts {
 		opt(o)
 	}
+
+	logger := log.NewHelper(log.With(l, "component", "jwtMiddleware"))
+	if o.federatedVerificationURL != "" {
+		logger.Infof("federated verification enabled, using URL: %s", o.federatedVerificationURL)
+	}
+
+	// claims cache with 10s TTL and unlimited keys
+	claimsCache := expirable.NewLRU[string, *jwt.MapClaims](0, nil, time.Second*10)
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			if header, ok := transport.FromServerContext(ctx); ok {
@@ -191,6 +230,29 @@ func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 							continue
 						}
 
+						// If federated verification is enabled, we try to get the information remotely
+						if o.federatedVerificationURL != "" {
+							// The org name might come from the header, it's optional and used to explicitly authenticate against it
+							orgName, err := entities.GetOrganizationNameFromHeader(ctx)
+							if err != nil {
+								return nil, fmt.Errorf("error getting organization name: %w", err)
+							}
+
+							logger.Infof("calling federated provider, orgName: %s", orgName)
+							claims, err := callFederatedProvider(o.federatedVerificationURL, jwtToken, orgName, claimsCache)
+							if err != nil {
+								logger.Errorw("msg", "error calling federated provider", "error", err)
+								return nil, fmt.Errorf("couldn't authorize using the provided token")
+							}
+
+							ctx = newJWTAuthContext(ctx, JWTAuthContext{
+								Claims:      claims,
+								ProviderKey: FederatedProviderKey,
+							})
+
+							return handler(ctx, req)
+						}
+
 						return nil, fmt.Errorf("couldn't match JWT provider: %w", err)
 					}
 
@@ -210,6 +272,71 @@ func WithJWTMulti(opts ...JWTOption) middleware.Middleware {
 			return nil, ErrWrongContext
 		}
 	}
+}
+
+// callFederatedProvider calls the federated provider to verify the token
+// it returns the claims of the token if the token is valid and verified
+func callFederatedProvider(verifyURL string, jwtToken, orgName string, cache *expirable.LRU[string, *jwt.MapClaims]) (*jwt.MapClaims, error) {
+	cacheKey := fmt.Sprintf("%s:%s", jwtToken, orgName)
+	if claims, ok := cache.Get(cacheKey); ok {
+		return claims, nil
+	}
+
+	client := &http.Client{}
+	reqBody := &bytes.Buffer{}
+	err := json.NewEncoder(reqBody).Encode(map[string]string{
+		"token":    jwtToken,
+		"org_name": orgName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode request body: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, verifyURL, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var response struct {
+		IssuerURL  string `json:"issuerUrl"`
+		Repository string `json:"repository"`
+		OrgID      string `json:"orgId"`
+		OrgName    string `json:"orgName"`
+		// error message
+		Message   string `json:"message"`
+		ErrorCode int    `json:"code"`
+	}
+
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d, errorCode: %d, error: %s", resp.StatusCode, response.ErrorCode, response.Message)
+	}
+
+	claims := &jwt.MapClaims{
+		"iss":        response.IssuerURL,
+		"repository": response.Repository,
+		"orgId":      response.OrgID,
+		"orgName":    response.OrgName,
+	}
+
+	cache.Add(cacheKey, claims)
+
+	return claims, nil
 }
 
 // runProviderValidator runs the token parser for the given provider. Main logic of the code is taken from:

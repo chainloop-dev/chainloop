@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@ package attjwtmiddleware_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
 )
@@ -126,8 +128,9 @@ func TestAttestationAPITokenProvider(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := transport.NewServerContext(context.Background(), &mockTransport{reqHeader: tc.tokenHeader})
+			logger := log.NewStdLogger(io.Discard)
 
-			m := attjwtmiddleware.WithJWTMulti(tc.tokenProviders...)
+			m := attjwtmiddleware.WithJWTMulti(logger, tc.tokenProviders...)
 			_, err := m(emptyHandler)(ctx, nil)
 
 			if tc.wantErr {

@@ -59,3 +59,7 @@ data:
     policy_providers:
       {{- toYaml .Values.controlplane.policy_providers | nindent 6 }}
     {{- end }}
+    {{ if .Values.controlplane.federatedVerification.enabled }}
+    federated_verification:
+      {{- toYaml .Values.controlplane.federatedVerification | nindent 6 }}
+    {{- end }}

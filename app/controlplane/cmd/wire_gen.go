@@ -224,6 +224,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
 	signingService := service.NewSigningService(signingUseCase, v5...)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
+	federatedVerification := bootstrap.FederatedVerification
 	validator, err := newProtoValidator()
 	if err != nil {
 		cleanup()
@@ -262,6 +263,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
+		FederatedConfig:     federatedVerification,
 		Credentials:         readerWriter,
 		Enforcer:            enforcer,
 		Validator:           validator,
