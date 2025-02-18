@@ -255,6 +255,7 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 							ctx = newJWTAuthContext(ctx, JWTAuthContext{
 								Claims:      claims,
 								ProviderKey: FederatedProviderKey,
+								Token:       jwtToken,
 							})
 
 							return handler(ctx, req)
