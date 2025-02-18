@@ -96,3 +96,9 @@ prometheus_integration:
   - org_name: "my-org"
 
 enable_profiler: true
+
+# Enable federated authentication during attestation process
+# This means that the controlplane will send the JWT token to a remote endpoint to verify it
+# federated_authentication:
+#   enabled: true
+#   url: http://localhost:8002/machine-identity/verify-token

@@ -169,6 +169,13 @@ controlplane:
   referrerSharedIndex:
     enabled: false
     allowedOrgs: []
+
+  ## @extra controlplane.federatedAuthentication Enable federated authentication during attestation process
+  ## @param controlplane.federatedAuthentication.enabled Enable federated authentication
+  ## @param controlplane.federatedAuthentication.url URL of the federated authentication endpoint
+  federatedAuthentication:
+    enabled: false
+    url: ""
   
   ## @extra controlplane.nats optional NATS configuration for events publishing.
   ## @param controlplane.nats.enabled Enable events publishing through a Nats stream

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,12 +82,13 @@ type Opts struct {
 	SigningSvc          *service.SigningService
 	PrometheusSvc       *service.PrometheusService
 	// Utils
-	Logger       log.Logger
-	ServerConfig *conf.Server
-	AuthConfig   *conf.Auth
-	Credentials  credentials.ReaderWriter
-	Enforcer     *authz.Enforcer
-	Validator    *protovalidate.Validator
+	Logger          log.Logger
+	ServerConfig    *conf.Server
+	AuthConfig      *conf.Auth
+	FederatedConfig *conf.FederatedAuthentication
+	Credentials     credentials.ReaderWriter
+	Enforcer        *authz.Enforcer
+	Validator       *protovalidate.Validator
 }
 
 // NewGRPCServer new a gRPC server.
@@ -207,15 +208,20 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 		selector.Server(
 			// 1 - Extract information from the JWT by using the claims
 			attjwtmiddleware.WithJWTMulti(
+				opts.Logger,
 				// Robot account provider
 				attjwtmiddleware.NewRobotAccountProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 				// API Token provider
 				attjwtmiddleware.NewAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
+				// Delegated Federated provider
+				attjwtmiddleware.WithFederatedProvider(opts.FederatedConfig),
 			),
 			// 2.a - Set its workflow and organization in the context
 			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.b - Set its API token and Robot Account as alternative to the user
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
+			// 2.c - Set its robot account from federated delegation
+			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
 

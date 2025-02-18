@@ -59,3 +59,7 @@ data:
     policy_providers:
       {{- toYaml .Values.controlplane.policy_providers | nindent 6 }}
     {{- end }}
+    {{ if .Values.controlplane.federatedAuthentication.enabled }}
+    federated_authentication:
+      {{- toYaml .Values.controlplane.federatedAuthentication | nindent 6 }}
+    {{- end }}

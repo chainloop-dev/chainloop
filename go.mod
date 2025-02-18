@@ -74,6 +74,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/in-toto/attestation v1.1.0
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgx/v5 v5.7.1

@@ -36,7 +36,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				return handler(ctx, req)
 			}
 
-			orgName, err := GetOrganizationNameFromHeader(ctx)
+			orgName, err := entities.GetOrganizationNameFromHeader(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("error getting organization name: %w", err)
 			}

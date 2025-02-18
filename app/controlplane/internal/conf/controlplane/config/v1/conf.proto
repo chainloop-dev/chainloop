@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ message Bootstrap {
   ReferrerSharedIndex referrer_shared_index = 8;
 
   // The certificate authority used for keyless signing (deprecated, use certificate_authorities instead)
-  CA certificate_authority = 9 [deprecated=true];
+  CA certificate_authority = 9 [deprecated = true];
 
   // Multiple certificate authorities, used for CA rotation
   repeated CA certificate_authorities = 15;
@@ -83,11 +83,23 @@ message Bootstrap {
   // nats server configuration for sending events
   NatsServer nats_server = 14;
 
+  // Federated verification allows to delegate the API tokens received during the attestation
+  // to a third party service for verification
+  // For example, we can forward Gitlab or Github API tokens
+  FederatedAuthentication federated_authentication = 16;
+
   message NatsServer {
     // Connection URI
     string uri = 1 [(buf.validate.field).string.min_len = 1];
     // TODO: add authentication options
   }
+}
+
+message FederatedAuthentication {
+  // URL of the federated verification endpoint
+  string url = 1 [(buf.validate.field).string.uri = true];
+  // Whether to enable the federated verification
+  bool enabled = 2;
 }
 
 message PolicyProvider {

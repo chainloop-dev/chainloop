@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
-			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "CertificateAuthorities"),
+			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "CertificateAuthorities", "FederatedAuthentication"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
 			authz.NewDatabaseEnforcer,
