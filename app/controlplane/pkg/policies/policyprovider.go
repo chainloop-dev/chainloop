@@ -35,8 +35,9 @@ const (
 	validateAction   = "validate"
 	groupsEndpoint   = "groups"
 
-	digestParam  = "digest"
-	orgNameParam = "organization_name"
+	digestParam        = "digest"
+	orgNameParam       = "organization_name"
+	organizationHeader = "Chainloop-Organization"
 )
 
 // PolicyProvider represents an external policy provider
@@ -72,12 +73,17 @@ type PolicyReference struct {
 	Digest string
 }
 
+type ProviderAuthOpts struct {
+	Token   string
+	OrgName string
+}
+
 var ErrNotFound = fmt.Errorf("policy not found")
 
 // Resolve calls the remote provider for retrieving a policy
-func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.Policy, *PolicyReference, error) {
-	if policyName == "" || token == "" {
-		return nil, nil, fmt.Errorf("both policyname and token are mandatory")
+func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts ProviderAuthOpts) (*schemaapi.Policy, *PolicyReference, error) {
+	if policyName == "" || authOpts.Token == "" {
+		return nil, nil, fmt.Errorf("both policyname and auth opts are mandatory")
 	}
 
 	// the policy name might include a digest in the form of <name>@sha256:<digest>
@@ -94,7 +100,7 @@ func (p *PolicyProvider) Resolve(policyName, orgName, token string) (*schemaapi.
 	}
 	// we want to override the orgName with the one in the response
 	// since we might have resolved it implicitly
-	providerDigest, orgName, err := p.queryProvider(url, digest, orgName, token, &policy)
+	providerDigest, orgName, err := p.queryProvider(url, digest, policyOrgName, authOpts, &policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
@@ -170,8 +176,8 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, tok
 }
 
 // ResolveGroup calls remote provider for retrieving a policy group definition
-func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schemaapi.PolicyGroup, *PolicyReference, error) {
-	if groupName == "" || token == "" {
+func (p *PolicyProvider) ResolveGroup(groupName, groupOrgName string, authOpts ProviderAuthOpts) (*schemaapi.PolicyGroup, *PolicyReference, error) {
+	if groupName == "" || authOpts.Token == "" {
 		return nil, nil, fmt.Errorf("both policyname and token are mandatory")
 	}
 
@@ -189,7 +195,7 @@ func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schema
 	}
 	// we want to override the orgName with the one in the response
 	// since we might have resolved it implicitly
-	providerDigest, orgName, err := p.queryProvider(url, digest, orgName, token, &group)
+	providerDigest, orgName, err := p.queryProvider(url, digest, groupOrgName, authOpts, &group)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
@@ -198,7 +204,7 @@ func (p *PolicyProvider) ResolveGroup(groupName, orgName, token string) (*schema
 }
 
 // returns digest, orgname, error
-func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token string, out proto.Message) (string, string, error) {
+func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, authOpts ProviderAuthOpts, out proto.Message) (string, string, error) {
 	query := url.Query()
 	if digest != "" {
 		query.Set(digestParam, digest)
@@ -215,7 +221,10 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName, token stri
 		return "", "", fmt.Errorf("error creating policy request: %w", err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authOpts.Token))
+	if authOpts.OrgName != "" {
+		req.Header.Set(organizationHeader, authOpts.OrgName)
+	}
 
 	// make the request
 	resp, err := http.DefaultClient.Do(req)

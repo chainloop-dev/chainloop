@@ -388,7 +388,7 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAtt
 			return nil, err
 		}
 
-		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, pr.OrgName, token)
+		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, pr.OrgName, "", token)
 		if err != nil {
 			return nil, err
 		}
@@ -415,7 +415,7 @@ func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAtta
 	// [chainloop://][provider/]name
 	if loader.IsProviderScheme(att.GetRef()) {
 		pr := loader.ProviderParts(att.GetRef())
-		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, token)
+		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, "", token)
 		if err != nil {
 			return nil, NewErrValidation(fmt.Errorf("failed to get policy group: %w", err))
 		}
@@ -492,13 +492,16 @@ type RemotePolicyGroup struct {
 }
 
 // GetPolicy retrieves a policy from a policy provider
-func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, orgName, token string) (*RemotePolicy, error) {
+func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, policyOrgName, currentOrgName, token string) (*RemotePolicy, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	policy, ref, err := provider.Resolve(policyName, orgName, token)
+	policy, ref, err := provider.Resolve(policyName, policyOrgName, policies.ProviderAuthOpts{
+		Token:   token,
+		OrgName: currentOrgName,
+	})
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
@@ -510,13 +513,16 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, orgName, 
 	return &RemotePolicy{Policy: policy, ProviderRef: ref}, nil
 }
 
-func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, orgName, token string) (*RemotePolicyGroup, error) {
+func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, groupOrgName, currentOrgName, token string) (*RemotePolicyGroup, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	group, ref, err := provider.ResolveGroup(groupName, orgName, token)
+	group, ref, err := provider.ResolveGroup(groupName, groupOrgName, policies.ProviderAuthOpts{
+		Token:   token,
+		OrgName: currentOrgName,
+	})
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))
