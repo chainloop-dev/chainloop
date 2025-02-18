@@ -404,7 +404,12 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.Forbidden("forbidden", "token not found")
 	}
 
-	remotePolicy, err := s.workflowContractUseCase.GetPolicy(req.GetProvider(), req.GetPolicyName(), req.GetOrgName(), token.Token)
+	org, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, errors.Forbidden("forbidden", "organization not found")
+	}
+
+	remotePolicy, err := s.workflowContractUseCase.GetPolicy(req.GetProvider(), req.GetPolicyName(), req.GetOrgName(), org.Name, token.Token)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -421,7 +426,12 @@ func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.Atte
 		return nil, errors.Forbidden("forbidden", "token not found")
 	}
 
-	remoteGroup, err := s.workflowContractUseCase.GetPolicyGroup(req.GetProvider(), req.GetGroupName(), req.GetOrgName(), token.Token)
+	org, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, errors.Forbidden("forbidden", "organization not found")
+	}
+
+	remoteGroup, err := s.workflowContractUseCase.GetPolicyGroup(req.GetProvider(), req.GetGroupName(), req.GetOrgName(), org.Name, token.Token)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
