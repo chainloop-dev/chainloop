@@ -36,6 +36,7 @@ certificate_authorities:
       certificate_profile_name: "PlainSigner"
       end_entity_profile_name: "PlainSigner"
       certificate_authority_name: "ManagementCA"
+    issuer: true
 ```
 
 ### Signing Chainloop attestations with EJBCA issued certificates
@@ -98,7 +99,7 @@ Attestation Digest: sha256:bafaffc629d5ffe4c3b6519b740459db6883a55c6092c438426de
 
 #### Storing and inspecting the generated certificate:
 ```shell
-> cat bundle-with-ejbca.json | jq -r ".verificationMaterial.x509CertificateChain.certificates.[].rawBytes" | base64 --decode | openssl x509 -inform DER -outform PEM > signingcert.pem
+> cat bundle-with-ejbca.json | jq -r ".verificationMaterial.certificate.rawBytes" | base64 --decode | openssl x509 -inform DER -outform PEM > signingcert.pem
 
 > cat signingcert.pem | openssl x509 -text
 Certificate:

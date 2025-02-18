@@ -29,21 +29,25 @@ These methods require setting up a key and/or KMS authentication in the local en
 ### Keyless signing
 These methods don't require any special setup in the client. For the verification command, you must make sure you get the CA certificate chain out-of-band, as it will be required to validate the ephemeral signing certificate.
 
-| Method                                                     | Signing (`chainloop att push`)                                                                                                                                                                                                                     | Verifying (`chainloop wf run describe --verify true`) |
-|------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| Ephemeral (file based CA)                                  | Configure your CA in [your deployment](https://github.com/chainloop-dev/chainloop/blob/main/deployment/chainloop/templates/controlplane/file_ca.secret.yaml) and omit the `--key` when pushing your attestation.                                   | See [bundles](#bundles)                               |
-| Ephemeral ([EJBCA](https://github.com/Keyfactor/ejbca-ce)) | Connect your EJBCA instance to your Chainloop deployment using [these settings](https://github.com/chainloop-dev/chainloop/blob/main/deployment/chainloop/templates/controlplane/ejbca_ca.secret.yaml). Omit `--key` when pushing the attestation. | See [bundles](#bundles)                               |
-| [SignServer](https://www.signserver.org/)                  | You can sign with your instance of SignServer with `--key signserver://host/worker`. See [SignServer](../guides/signserver)                                                                                                                        | See [bundles](#bundles)                               |
+| Method                                                     | Signing (`chainloop att push`)                                                                                                                                                                                                                     | Verifying (`chainloop wf run describe`) |
+|------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| Ephemeral (file based CA)                                  | Configure your CA in [your deployment](https://github.com/chainloop-dev/chainloop/blob/main/deployment/chainloop/templates/controlplane/secrets-signer-ca.yaml) and omit the `--key` when pushing your attestation.                                   | See [bundles](#bundles)                 |
+| Ephemeral ([EJBCA](https://github.com/Keyfactor/ejbca-ce)) | Connect your EJBCA instance to your Chainloop deployment using [these settings](https://github.com/chainloop-dev/chainloop/blob/main/deployment/chainloop/templates/controlplane/secret-ejbca-ca.yaml). Omit `--key` when pushing the attestation. | See [bundles](#bundles)                 |
+| [SignServer](https://www.signserver.org/)                  | You can sign with your instance of SignServer with `--key signserver://host/worker`. See [SignServer](../guides/signserver)                                                                                                                        | See [bundles](#bundles)                 |
 
 
 ### Bundles 
 When signing with a verification method that supports it (like keyless with ephemeral certificates), you can download the verification material used for signing, to be used later during the verification process.
 
-Just add `--bundle my-bundle.json` to the `push` command. Then, you can use the material to verify the attestation:
+Get the bundle from the attestation:
+```shell
+> chainloop wf run describe --id ... -o attestation > my-bundle.json
 ```
-> cat my-bundle.json | jq -r ".verificationMaterial.x509CertificateChain.certificates.[].rawBytes" | base64 --decode | openssl x509 -inform DER -outform PEM -out cert.pem
-> chainloop wf run describe --digest ... --verify true --cert cert.pem --cert-chain my-root.pem
+And verify it:
+```shell
+> chainloop attestation verify -b my-bundle.json
 ```
+Also note that `chainloop wf run describe` already detects a verifiable attestation and tries to perform the verification automatically. In these cases, you'll see "Verified: true" in the command output.
 
 ### Not yet supported
 
@@ -51,5 +55,4 @@ The following methods are work in progress and **not yet supported**.
 
 | Method                                                                         | Signing                                                   | Verifying                                                                               |
 |--------------------------------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| Ephemeral (file based CA) with verification bundle stored in the control plane | No key needed                                             | No verification material needed (will be automatically downloaded from Chainloop Evidence Store) | 
 | x509 certificate                                                               | `--key privatekey --cert cert.pem --cert-chain chain.pem` | `--cert cert.pem --cert-chain chain.pem`                                                | 
