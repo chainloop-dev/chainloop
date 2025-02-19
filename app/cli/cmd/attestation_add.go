@@ -59,13 +59,6 @@ func newAttestationAddCmd() *cobra.Command {
 
   # Add a material to the attestation without specifying neither kind nor name enables automatic detection
   chainloop attestation add --value <material-value>`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if name != "" && kind != "" {
-				return fmt.Errorf("both --name and --kind cannot be set at the same time")
-			}
-
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
