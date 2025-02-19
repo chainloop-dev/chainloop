@@ -13,7 +13,7 @@ policies:
       requirements:
         - chainloop-best-practices/container-signed
 policyGroups:
-  - ref: read-only-demo/sbom-quality
+  - ref: sbom-quality
     with:
       bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
       bannedComponents: log4j@2.14.1
