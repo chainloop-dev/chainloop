@@ -24,9 +24,16 @@ export interface GetTrustedRootRequest {
 export interface GetTrustedRootResponse {
   /** map keyID (cert SubjectKeyIdentifier) to PEM encoded chains */
   keys: { [key: string]: CertificateChain };
+  /** timestamp authorities */
+  timestampAuthorities: { [key: string]: CertificateChain };
 }
 
 export interface GetTrustedRootResponse_KeysEntry {
+  key: string;
+  value?: CertificateChain;
+}
+
+export interface GetTrustedRootResponse_TimestampAuthoritiesEntry {
   key: string;
   value?: CertificateChain;
 }
@@ -257,13 +264,17 @@ export const GetTrustedRootRequest = {
 };
 
 function createBaseGetTrustedRootResponse(): GetTrustedRootResponse {
-  return { keys: {} };
+  return { keys: {}, timestampAuthorities: {} };
 }
 
 export const GetTrustedRootResponse = {
   encode(message: GetTrustedRootResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     Object.entries(message.keys).forEach(([key, value]) => {
       GetTrustedRootResponse_KeysEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
+    });
+    Object.entries(message.timestampAuthorities).forEach(([key, value]) => {
+      GetTrustedRootResponse_TimestampAuthoritiesEntry.encode({ key: key as any, value }, writer.uint32(18).fork())
+        .ldelim();
     });
     return writer;
   },
@@ -285,6 +296,16 @@ export const GetTrustedRootResponse = {
             message.keys[entry1.key] = entry1.value;
           }
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = GetTrustedRootResponse_TimestampAuthoritiesEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.timestampAuthorities[entry2.key] = entry2.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -302,6 +323,15 @@ export const GetTrustedRootResponse = {
           return acc;
         }, {})
         : {},
+      timestampAuthorities: isObject(object.timestampAuthorities)
+        ? Object.entries(object.timestampAuthorities).reduce<{ [key: string]: CertificateChain }>(
+          (acc, [key, value]) => {
+            acc[key] = CertificateChain.fromJSON(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
     };
   },
 
@@ -311,6 +341,12 @@ export const GetTrustedRootResponse = {
     if (message.keys) {
       Object.entries(message.keys).forEach(([k, v]) => {
         obj.keys[k] = CertificateChain.toJSON(v);
+      });
+    }
+    obj.timestampAuthorities = {};
+    if (message.timestampAuthorities) {
+      Object.entries(message.timestampAuthorities).forEach(([k, v]) => {
+        obj.timestampAuthorities[k] = CertificateChain.toJSON(v);
       });
     }
     return obj;
@@ -331,6 +367,14 @@ export const GetTrustedRootResponse = {
       },
       {},
     );
+    message.timestampAuthorities = Object.entries(object.timestampAuthorities ?? {}).reduce<
+      { [key: string]: CertificateChain }
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = CertificateChain.fromPartial(value);
+      }
+      return acc;
+    }, {});
     return message;
   },
 };
@@ -404,6 +448,86 @@ export const GetTrustedRootResponse_KeysEntry = {
     object: I,
   ): GetTrustedRootResponse_KeysEntry {
     const message = createBaseGetTrustedRootResponse_KeysEntry();
+    message.key = object.key ?? "";
+    message.value = (object.value !== undefined && object.value !== null)
+      ? CertificateChain.fromPartial(object.value)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetTrustedRootResponse_TimestampAuthoritiesEntry(): GetTrustedRootResponse_TimestampAuthoritiesEntry {
+  return { key: "", value: undefined };
+}
+
+export const GetTrustedRootResponse_TimestampAuthoritiesEntry = {
+  encode(
+    message: GetTrustedRootResponse_TimestampAuthoritiesEntry,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== undefined) {
+      CertificateChain.encode(message.value, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTrustedRootResponse_TimestampAuthoritiesEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTrustedRootResponse_TimestampAuthoritiesEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = CertificateChain.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTrustedRootResponse_TimestampAuthoritiesEntry {
+    return {
+      key: isSet(object.key) ? String(object.key) : "",
+      value: isSet(object.value) ? CertificateChain.fromJSON(object.value) : undefined,
+    };
+  },
+
+  toJSON(message: GetTrustedRootResponse_TimestampAuthoritiesEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value ? CertificateChain.toJSON(message.value) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetTrustedRootResponse_TimestampAuthoritiesEntry>, I>>(
+    base?: I,
+  ): GetTrustedRootResponse_TimestampAuthoritiesEntry {
+    return GetTrustedRootResponse_TimestampAuthoritiesEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetTrustedRootResponse_TimestampAuthoritiesEntry>, I>>(
+    object: I,
+  ): GetTrustedRootResponse_TimestampAuthoritiesEntry {
+    const message = createBaseGetTrustedRootResponse_TimestampAuthoritiesEntry();
     message.key = object.key ?? "";
     message.value = (object.value !== undefined && object.value !== null)
       ? CertificateChain.fromPartial(object.value)
