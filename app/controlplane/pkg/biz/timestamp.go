@@ -23,6 +23,8 @@ import (
 	"os"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
@@ -34,9 +36,10 @@ type TimestampAuthority struct {
 
 type TimestampAuthorityUseCase struct {
 	authorities []*TimestampAuthority
+	logger      *log.Helper
 }
 
-func NewTimestampAuthorityUseCase(config *conf.Bootstrap) (*TimestampAuthorityUseCase, error) {
+func NewTimestampAuthorityUseCase(config *conf.Bootstrap, l log.Logger) (*TimestampAuthorityUseCase, error) {
 	var issuerFound bool
 	auths := make([]*TimestampAuthority, 0)
 	for _, tsaConf := range config.GetTimestampAuthorities() {
@@ -53,7 +56,11 @@ func NewTimestampAuthorityUseCase(config *conf.Bootstrap) (*TimestampAuthorityUs
 	if len(auths) > 0 && !issuerFound {
 		return nil, fmt.Errorf("timestamp issuer not found in tsa config")
 	}
-	return &TimestampAuthorityUseCase{authorities: auths}, nil
+
+	logger := servicelogger.ScopedHelper(l, "biz/timestamp")
+	logger.Info(fmt.Sprintf("Timestamp authority configured with %d TSA servers", len(auths)))
+
+	return &TimestampAuthorityUseCase{authorities: auths, logger: logger}, nil
 }
 
 func parseTSA(tsaConf *conf.TSA) (*TimestampAuthority, error) {

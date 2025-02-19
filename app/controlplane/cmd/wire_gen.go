@@ -175,7 +175,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	prometheusUseCase := biz.NewPrometheusUseCase(v7, organizationUseCase, orgMetricsUseCase, logger)
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
-	timestampAuthorityUseCase, err := biz.NewTimestampAuthorityUseCase(bootstrap)
+	timestampAuthorityUseCase, err := biz.NewTimestampAuthorityUseCase(bootstrap, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
