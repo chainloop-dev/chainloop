@@ -43,9 +43,14 @@ func TestVerifyBundle(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name:   "invalid bundle, but still verifiable",
+			name:   "invalid bundle according to spec, but still verifiable",
 			roots:  roots,
 			bundle: "testdata/bundle_wrongversion.json",
+		},
+		{
+			name:   "valid bundle, but sig encoded twice",
+			roots:  roots,
+			bundle: "testdata/bundle_valid_pre1832.json",
 		},
 		{
 			name:   "valid bundle",
