@@ -19,7 +19,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -50,9 +49,6 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		return fmt.Errorf("invalid bundle: %w", err)
 	}
 
-	// fix for old attestations
-	fixSignatureInBundle(bundle)
-
 	var signingCert *x509.Certificate
 	if bundle.GetVerificationMaterial() == nil || bundle.GetVerificationMaterial().GetCertificate() == nil {
 		// it's a malformed bundle (according to specs) but still verifiable
@@ -80,7 +76,10 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 
 	// Use sigstore helpers to validate and extract materials
 	if signingCert == nil {
-		sb := &sigstorebundle.Bundle{Bundle: bundle}
+		var sb sigstorebundle.Bundle
+		if err := sb.UnmarshalJSON(bundleBytes); err != nil {
+			return fmt.Errorf("invalid bundle: %w", err)
+		}
 
 		vc, err := sb.VerificationContent()
 		if err != nil {
@@ -110,16 +109,4 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 
 	_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(bundle))
 	return err
-}
-
-// old attestations have signatures base64 encoded twice, see https://github.com/chainloop-dev/chainloop/issues/1832
-func fixSignatureInBundle(bundle *protobundle.Bundle) {
-	sig := bundle.GetDsseEnvelope().GetSignatures()[0].GetSig()
-	dst := make([]byte, base64.StdEncoding.EncodedLen(len(sig)))
-	i, err := base64.StdEncoding.Decode(dst, sig)
-	if err == nil {
-		// it was encoded twice. Use it
-		sig = dst[:i]
-	}
-	bundle.GetDsseEnvelope().GetSignatures()[0].Sig = sig
 }
