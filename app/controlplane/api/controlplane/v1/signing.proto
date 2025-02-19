@@ -47,4 +47,6 @@ message GetTrustedRootRequest {}
 message GetTrustedRootResponse {
   // map keyID (cert SubjectKeyIdentifier) to PEM encoded chains
   map<string, CertificateChain> keys = 1;
+  // timestamp authorities
+  map<string, CertificateChain> timestamp_authorities = 2;
 }
