@@ -34,6 +34,8 @@ export interface Attestation {
   blockOnPolicyViolation: boolean;
   /** bypass policy check */
   bypassPolicyCheck: boolean;
+  /** TSA URL */
+  timestampAuthorityUrl: string;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -318,6 +320,7 @@ function createBaseAttestation(): Attestation {
     policyEvaluations: [],
     blockOnPolicyViolation: false,
     bypassPolicyCheck: false,
+    timestampAuthorityUrl: "",
   };
 }
 
@@ -358,6 +361,9 @@ export const Attestation = {
     }
     if (message.bypassPolicyCheck === true) {
       writer.uint32(112).bool(message.bypassPolicyCheck);
+    }
+    if (message.timestampAuthorityUrl !== "") {
+      writer.uint32(122).string(message.timestampAuthorityUrl);
     }
     return writer;
   },
@@ -462,6 +468,13 @@ export const Attestation = {
 
           message.bypassPolicyCheck = reader.bool();
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.timestampAuthorityUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -502,6 +515,7 @@ export const Attestation = {
         : [],
       blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
       bypassPolicyCheck: isSet(object.bypassPolicyCheck) ? Boolean(object.bypassPolicyCheck) : false,
+      timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "",
     };
   },
 
@@ -539,6 +553,7 @@ export const Attestation = {
     }
     message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
     message.bypassPolicyCheck !== undefined && (obj.bypassPolicyCheck = message.bypassPolicyCheck);
+    message.timestampAuthorityUrl !== undefined && (obj.timestampAuthorityUrl = message.timestampAuthorityUrl);
     return obj;
   },
 
@@ -583,6 +598,7 @@ export const Attestation = {
     message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
     message.bypassPolicyCheck = object.bypassPolicyCheck ?? false;
+    message.timestampAuthorityUrl = object.timestampAuthorityUrl ?? "";
     return message;
   },
 };

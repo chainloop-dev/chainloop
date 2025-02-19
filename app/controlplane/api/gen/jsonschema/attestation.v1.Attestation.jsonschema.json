@@ -58,6 +58,10 @@
     },
     "^(runner_url)$": {
       "type": "string"
+    },
+    "^(timestamp_authority_url)$": {
+      "description": "TSA URL",
+      "type": "string"
     }
   },
   "properties": {
@@ -139,6 +143,10 @@
       ]
     },
     "runnerUrl": {
+      "type": "string"
+    },
+    "timestampAuthorityUrl": {
+      "description": "TSA URL",
       "type": "string"
     },
     "workflow": {
