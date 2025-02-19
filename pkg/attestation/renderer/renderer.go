@@ -129,6 +129,7 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 		return nil, nil, fmt.Errorf("signing message: %w", err)
 	}
 
+	ab.logger.Debug().Msg("signing the statement")
 	var dsseEnvelope dsse.Envelope
 	if err := json.Unmarshal(signedAtt, &dsseEnvelope); err != nil {
 		return nil, nil, err
@@ -138,9 +139,11 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 		return nil, nil, fmt.Errorf("decoding signature: %w", err)
 	}
 
+	ab.logger.Debug().Msg("adding a timestamp")
 	// TSA signature
 	tsa := sign.NewTimestampAuthority(&sign.TimestampAuthorityOptions{
-		URL: "https://freetsa.org/tsr",
+		URL: "https://rfc3161.ai.moda",
+		//URL: "https://freetsa.org/tsr",
 	})
 
 	tsaSig, err := tsa.GetTimestamp(ctx, decodedSig)
