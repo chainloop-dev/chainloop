@@ -37,7 +37,8 @@ import (
 
 type TrustedRoot struct {
 	// map key identifiers to a chain of certificates
-	Keys map[string][]*x509.Certificate
+	Keys                 map[string][]*x509.Certificate
+	TimestampAuthorities map[string][]*x509.Certificate
 }
 
 var ErrMissingVerificationMaterial = errors.New("missing material")

@@ -7,7 +7,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -15,7 +14,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -141,13 +139,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v5...)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
-	v6 := bootstrap.CertificateAuthorities
-	certificateAuthorities, err := newSigningCAs(v6, logger)
+	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthorities)
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, logger)
 	if err != nil {
 		cleanup()
@@ -165,38 +161,33 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
-	v7 := bootstrap.PrometheusIntegration
+	v6 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	prometheusUseCase := biz.NewPrometheusUseCase(v7, organizationUseCase, orgMetricsUseCase, logger)
+	prometheusUseCase := biz.NewPrometheusUseCase(v6, organizationUseCase, orgMetricsUseCase, logger)
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
-	timestampAuthorityUseCase, err := biz.NewTimestampAuthorityUseCase(bootstrap, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
-		WorkflowRunUC:             workflowRunUseCase,
-		WorkflowUC:                workflowUseCase,
-		WorkflowContractUC:        workflowContractUseCase,
-		OCIUC:                     casBackendUseCase,
-		CredsReader:               readerWriter,
-		IntegrationUseCase:        integrationUseCase,
-		CasCredsUseCase:           casCredentialsUseCase,
-		AttestationUC:             attestationUseCase,
-		FanoutDispatcher:          fanOutDispatcher,
-		CASMappingUseCase:         casMappingUseCase,
-		ReferrerUC:                referrerUseCase,
-		OrgUC:                     organizationUseCase,
-		PromUC:                    prometheusUseCase,
-		ProjectVersionUC:          projectVersionUseCase,
-		TimestampAuthorityUseCase: timestampAuthorityUseCase,
-		Opts:                      v5,
+		WorkflowRunUC:      workflowRunUseCase,
+		WorkflowUC:         workflowUseCase,
+		WorkflowContractUC: workflowContractUseCase,
+		OCIUC:              casBackendUseCase,
+		CredsReader:        readerWriter,
+		IntegrationUseCase: integrationUseCase,
+		CasCredsUseCase:    casCredentialsUseCase,
+		AttestationUC:      attestationUseCase,
+		FanoutDispatcher:   fanOutDispatcher,
+		CASMappingUseCase:  casMappingUseCase,
+		ReferrerUC:         referrerUseCase,
+		OrgUC:              organizationUseCase,
+		PromUC:             prometheusUseCase,
+		ProjectVersionUC:   projectVersionUseCase,
+		SigningUseCase:     signingUseCase,
+		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v5...)
@@ -335,17 +326,4 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	return &biz.CASServerDefaultOpts{
 		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
 	}
-}
-
-func newSigningCAs(cas []*conf.CA, logger log.Logger) (*ca.CertificateAuthorities, error) {
-	authorities, err := ca.NewCertificateAuthoritiesFromConfig(cas, logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CA authorities: %w", err)
-	}
-
-	if len(authorities.GetAuthorities()) == 0 {
-		_ = logger.Log(log.LevelInfo, "msg", "Keyless Signing NOT configured")
-		return nil, nil
-	}
-	return authorities, nil
 }

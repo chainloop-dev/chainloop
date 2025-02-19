@@ -16,6 +16,7 @@
 package biz
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/sha256"
@@ -23,18 +24,122 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
 
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
 type SigningUseCase struct {
-	CAs *ca.CertificateAuthorities
+	logger               *log.Helper
+	CAs                  *ca.CertificateAuthorities
+	TimestampAuthorities []*TimestampAuthority
 }
 
-func NewChainloopSigningUseCase(cas *ca.CertificateAuthorities) *SigningUseCase {
-	return &SigningUseCase{CAs: cas}
+type TimestampAuthority struct {
+	Issuer    bool
+	URL       *url.URL
+	CertChain []*x509.Certificate
+}
+
+func NewChainloopSigningUseCase(config *conf.Bootstrap, l log.Logger) (*SigningUseCase, error) {
+	logger := servicelogger.ScopedHelper(l, "biz/signing")
+
+	tsas, err := parseTimestamps(config, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse timestamps authorities: %w", err)
+	}
+
+	cas, err := parseCAs(config, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CA authorities: %w", err)
+	}
+
+	return &SigningUseCase{CAs: cas, TimestampAuthorities: tsas, logger: logger}, nil
+}
+
+func parseTimestamps(config *conf.Bootstrap, logger *log.Helper) ([]*TimestampAuthority, error) {
+	var issuerFound bool
+	auths := make([]*TimestampAuthority, 0)
+	for _, tsaConf := range config.GetTimestampAuthorities() {
+		tsa, err := parseTSA(tsaConf)
+		if err != nil {
+			return nil, err
+		}
+		if issuerFound && tsa.Issuer {
+			return nil, fmt.Errorf("duplicate timestamp issuer in tsa config")
+		}
+		issuerFound = tsa.Issuer
+		auths = append(auths, tsa)
+	}
+	// set default if there's only one
+	if len(auths) == 1 && auths[0].URL != nil {
+		auths[0].Issuer = true
+		issuerFound = true
+	}
+	// error if no issuer found
+	if len(auths) > 0 && !issuerFound {
+		return nil, fmt.Errorf("timestamp issuer not found in tsa config")
+	}
+	logger.Infof("timestamp authority configured with %d TSA servers", len(auths))
+	return auths, nil
+}
+
+func parseCAs(config *conf.Bootstrap, logger *log.Helper) (*ca.CertificateAuthorities, error) {
+	authorities, err := ca.NewCertificateAuthoritiesFromConfig(config.GetCertificateAuthorities(), logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CA authorities: %w", err)
+	}
+	// No CA configured, keyless will be deactivated.
+	if len(authorities.GetAuthorities()) == 0 {
+		logger.Info("Keyless Signing NOT configured")
+		return nil, nil
+	}
+	return authorities, nil
+}
+
+func parseTSA(tsaConf *conf.TSA) (*TimestampAuthority, error) {
+	tsa := &TimestampAuthority{}
+	var err error
+
+	// we'll only require URL if it's the main one, as others will be used for verification only
+	if tsaConf.Url != "" {
+		tsa.URL, err = url.Parse(tsaConf.Url)
+		if err != nil && tsaConf.Issuer {
+			return nil, fmt.Errorf("failed to parse TSA URL: %w", err)
+		}
+	}
+
+	tsa.Issuer = tsaConf.Issuer
+	if tsaConf.GetCertChainPath() == "" {
+		return nil, fmt.Errorf("missing certificate path for TSA")
+	}
+	pemBytes, err := os.ReadFile(tsaConf.GetCertChainPath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to read certificate chain: %w", err)
+	}
+	certs, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(pemBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load certificates: %w", err)
+	}
+	tsa.CertChain = certs
+
+	return tsa, nil
+}
+
+func (s *SigningUseCase) GetCurrentTSA() *TimestampAuthority {
+	for _, tsa := range s.TimestampAuthorities {
+		if tsa.Issuer {
+			return tsa
+		}
+	}
+	// Nil means not configured and needs to be handled correctly
+	return nil
 }
 
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
