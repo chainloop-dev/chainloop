@@ -135,7 +135,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 					Roots:          caCerts,
 				})
 			if err != nil {
-				return fmt.Errorf("could not verify signature: %w", err)
+				return fmt.Errorf("could not verify timestamp: %w", err)
 			}
 		}
 	}
@@ -166,7 +166,7 @@ func fixSignatureInBundle(bundle *protobundle.Bundle) {
 	dst := make([]byte, base64.StdEncoding.EncodedLen(len(sig)))
 	i, err := base64.StdEncoding.Decode(dst, sig)
 	if err == nil {
-		// it was endoded twice. Use it
+		// it was encoded twice.
 		sig = dst[:i]
 	}
 	bundle.GetDsseEnvelope().GetSignatures()[0].Sig = sig
