@@ -52,7 +52,7 @@ func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 		Signatures: []dsse.Signature{
 			{
 				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
-				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
+				Sig:   base64.StdEncoding.EncodeToString(sigstoreEnvelope.GetSignatures()[0].GetSig()),
 			},
 		},
 	}
