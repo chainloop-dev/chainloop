@@ -426,7 +426,7 @@ func (uc *WorkflowRunUseCase) Verify(ctx context.Context, run *WorkflowRun) (*Ve
 }
 
 func trustedRootBizToVerifier(biztr *TrustedRoot) (*verifier.TrustedRoot, error) {
-	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate)}
+	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate), TimestampAuthorities: make(map[string][]*x509.Certificate)}
 	for k, v := range biztr.Keys {
 		for _, c := range v {
 			cert, err := cryptoutils.LoadCertificatesFromPEM(strings.NewReader(c))
