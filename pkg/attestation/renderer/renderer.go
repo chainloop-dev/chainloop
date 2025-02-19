@@ -31,13 +31,13 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
 	chainloopsigner "github.com/chainloop-dev/chainloop/pkg/attestation/signer/chainloop"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	v12 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
-	"github.com/sigstore/sigstore-go/pkg/sign"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -139,16 +139,15 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 		return nil, nil, fmt.Errorf("decoding signature: %w", err)
 	}
 
-	ab.logger.Debug().Msg("adding a timestamp")
-	// TSA signature
-	tsa := sign.NewTimestampAuthority(&sign.TimestampAuthorityOptions{
-		URL: "https://rfc3161.ai.moda",
-		//URL: "https://freetsa.org/tsr",
-	})
-
-	tsaSig, err := tsa.GetTimestamp(ctx, decodedSig)
-	if err != nil {
-		return nil, nil, err
+	// If timestamp service is configured, let's sign with it
+	var tsaSig []byte
+	if ab.att.TimestampAuthorityUrl != "" {
+		ab.logger.Debug().Msg("adding a timestamp")
+		tsa := signer.NewTimestampSigner(ab.att.TimestampAuthorityUrl)
+		tsaSig, err = tsa.SignMessage(ctx, decodedSig)
+		if err != nil {
+			return nil, nil, fmt.Errorf("adding timestamp: %w", err)
+		}
 	}
 
 	// Create sigstore bundle for the contents of this attestation
@@ -197,9 +196,12 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope, tsa
 		}
 	}
 
-	st := &v12.RFC3161SignedTimestamp{SignedTimestamp: tsaSig}
-	bundle.VerificationMaterial.TimestampVerificationData = &protobundle.TimestampVerificationData{
-		Rfc3161Timestamps: []*v12.RFC3161SignedTimestamp{st},
+	// Add timestamp signature if provided
+	if tsaSig != nil {
+		st := &v12.RFC3161SignedTimestamp{SignedTimestamp: tsaSig}
+		bundle.VerificationMaterial.TimestampVerificationData = &protobundle.TimestampVerificationData{
+			Rfc3161Timestamps: []*v12.RFC3161SignedTimestamp{st},
+		}
 	}
 
 	return bundle, nil

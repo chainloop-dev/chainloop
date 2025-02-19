@@ -115,7 +115,7 @@ func (s *rendererSuite) TestEnvelopeToBundle() {
 		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", signer)
 		s.Require().NoError(err)
 
-		bundle, err := renderer.envelopeToBundle(envelope)
+		bundle, err := renderer.envelopeToBundle(envelope, nil)
 		s.Require().NoError(err)
 
 		s.Equal("application/vnd.dev.sigstore.bundle+json;version=0.3", bundle.MediaType)
@@ -138,7 +138,7 @@ func (s *rendererSuite) TestEnvelopeToBundle() {
 		renderer, err := NewAttestationRenderer(s.cs, nil, "", "", signer)
 		s.Require().NoError(err)
 
-		bundle, err := renderer.envelopeToBundle(envelope)
+		bundle, err := renderer.envelopeToBundle(envelope, nil)
 		s.Require().NoError(err)
 
 		s.Equal("application/vnd.dev.sigstore.bundle+json;version=0.3", bundle.MediaType)
