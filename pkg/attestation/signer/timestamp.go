@@ -37,8 +37,9 @@ func (ts *TimestampSigner) SignMessage(ctx context.Context, payload []byte) ([]b
 		URL: ts.tsaURL,
 	})
 
-	// https://github.com/chainloop-dev/chainloop/issues/1832
+	// See bug: https://github.com/chainloop-dev/chainloop/issues/1832
 	// signature might be encoded twice. Let's try to fix it first.
+	// TODO: remove this once the bug is fixed
 	toSign := payload
 	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(payload)))
 	i, err := base64.StdEncoding.Decode(dst, payload)
