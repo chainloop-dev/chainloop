@@ -218,6 +218,22 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 			trustedRoot.Keys[keyID] = append(trustedRoot.Keys[keyID], string(pemCert))
 		}
 	}
+	if len(s.TimestampAuthorities) > 0 {
+		trustedRoot.TimestampAuthorities = make(map[string][]string)
+		for _, authority := range s.TimestampAuthorities {
+			if len(authority.CertChain) == 0 {
+				continue
+			}
+			authorityKeyID := fmt.Sprintf("%x", sha256.Sum256(authority.CertChain[0].SubjectKeyId))
+			for _, cert := range authority.CertChain {
+				pemCert, err := cryptoutils.MarshalCertificateToPEM(cert)
+				if err != nil {
+					return nil, fmt.Errorf("marshaling certificate to PEM: %w", err)
+				}
+				trustedRoot.TimestampAuthorities[authorityKeyID] = append(trustedRoot.TimestampAuthorities[authorityKeyID], string(pemCert))
+			}
+		}
+	}
 
 	return trustedRoot, nil
 }
@@ -225,6 +241,8 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 type TrustedRoot struct {
 	// map of keyID and PEM encoded certificates
 	Keys map[string][]string
+	// Timestamp Authorities
+	TimestampAuthorities map[string][]string
 }
 
 type chainloopPrincipal struct {
