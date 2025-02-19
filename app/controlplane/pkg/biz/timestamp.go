@@ -53,6 +53,12 @@ func NewTimestampAuthorityUseCase(config *conf.Bootstrap, l log.Logger) (*Timest
 		issuerFound = tsa.Issuer
 		auths = append(auths, tsa)
 	}
+	// set default if there's only one
+	if len(auths) == 1 && auths[0].URL != nil {
+		auths[0].Issuer = true
+		issuerFound = true
+	}
+	// error if no issuer found
 	if len(auths) > 0 && !issuerFound {
 		return nil, fmt.Errorf("timestamp issuer not found in tsa config")
 	}
@@ -65,14 +71,16 @@ func NewTimestampAuthorityUseCase(config *conf.Bootstrap, l log.Logger) (*Timest
 
 func parseTSA(tsaConf *conf.TSA) (*TimestampAuthority, error) {
 	tsa := &TimestampAuthority{}
-	if tsaConf.Issuer {
-		// only require URL if it's the main one, as others will be used for verification only
-		tsaUrl, err := url.Parse(tsaConf.Url)
-		if err != nil {
+	var err error
+
+	// we'll only require URL if it's the main one, as others will be used for verification only
+	if tsaConf.Url != "" {
+		tsa.URL, err = url.Parse(tsaConf.Url)
+		if err != nil && tsaConf.Issuer {
 			return nil, fmt.Errorf("failed to parse TSA URL: %w", err)
 		}
-		tsa.URL = tsaUrl
 	}
+
 	tsa.Issuer = tsaConf.Issuer
 	if tsaConf.GetCertChainPath() == "" {
 		return nil, fmt.Errorf("missing certificate path for TSA")
