@@ -64,6 +64,10 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 	if err != nil {
 		return nil, fmt.Errorf("decoding: %w", err)
 	}
+	sig, err := base64.StdEncoding.DecodeString(dsseEnvelope.Signatures[0].Sig)
+	if err != nil {
+		return nil, fmt.Errorf("decoding: %w", err)
+	}
 	return &protobundle.Bundle{
 		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
 		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
@@ -71,7 +75,7 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 			PayloadType: dsseEnvelope.PayloadType,
 			Signatures: []*sigstoredsse.Signature{
 				{
-					Sig:   []byte(dsseEnvelope.Signatures[0].Sig),
+					Sig:   sig,
 					Keyid: dsseEnvelope.Signatures[0].KeyID,
 				},
 			},
