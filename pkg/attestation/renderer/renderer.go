@@ -18,6 +18,7 @@ package renderer
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -36,6 +37,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	v12 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
+	"github.com/sigstore/sigstore-go/pkg/sign"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -131,9 +133,23 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 	if err := json.Unmarshal(signedAtt, &dsseEnvelope); err != nil {
 		return nil, nil, err
 	}
+	decodedSig, err := base64.StdEncoding.DecodeString(dsseEnvelope.Signatures[0].Sig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("decoding signature: %w", err)
+	}
+
+	// TSA signature
+	tsa := sign.NewTimestampAuthority(&sign.TimestampAuthorityOptions{
+		URL: "https://freetsa.org/tsr",
+	})
+
+	tsaSig, err := tsa.GetTimestamp(ctx, decodedSig)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Create sigstore bundle for the contents of this attestation
-	bundle, err := ab.envelopeToBundle(&dsseEnvelope)
+	bundle, err := ab.envelopeToBundle(&dsseEnvelope, tsaSig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading bundle: %w", err)
 	}
@@ -153,15 +169,13 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 	return &dsseEnvelope, bundle, nil
 }
 
-func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
+func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope, tsaSig []byte) (*protobundle.Bundle, error) {
 	bundle, err := attestation.BundleFromDSSEEnvelope(dsseEnvelope)
 	if err != nil {
 		return nil, err
 	}
 
 	// extract verification materials
-	// Note: we don't support PublicKey materials (from cosign.key and KMS signers), since Chainloop doesn't (yet) store
-	//       public keys.
 	if v, ok := ab.signer.(*chainloopsigner.Signer); ok {
 		chain := v.Chain
 		if len(chain) == 0 {
@@ -178,6 +192,11 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope) (*p
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_Certificate{
 			Certificate: cert,
 		}
+	}
+
+	st := &v12.RFC3161SignedTimestamp{SignedTimestamp: tsaSig}
+	bundle.VerificationMaterial.TimestampVerificationData = &protobundle.TimestampVerificationData{
+		Rfc3161Timestamps: []*v12.RFC3161SignedTimestamp{st},
 	}
 
 	return bundle, nil

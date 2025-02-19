@@ -16,18 +16,22 @@
 package verifier
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	sigstorebundle "github.com/sigstore/sigstore-go/pkg/bundle"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
+	"github.com/sigstore/timestamp-authority/pkg/verification"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -89,6 +93,51 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		if signingCert == nil {
 			return ErrMissingVerificationMaterial
 		}
+
+		sc, err := sb.SignatureContent()
+		if err != nil {
+			return fmt.Errorf("could not get signature material: %w", err)
+		}
+
+		signedTimestamps, err := sb.Timestamps()
+		if err != nil {
+			return fmt.Errorf("could not get timestamps from bundle: %w", err)
+		}
+
+		// verify tsa signature
+		tsaBytes, err := os.ReadFile("./devel/devkeys/tsa.crt")
+		if err != nil {
+			return fmt.Errorf("could not read devel/devkeys/tsa.crt: %w", err)
+		}
+		tsacerts, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(tsaBytes))
+		if err != nil {
+			return fmt.Errorf("could not load devel/devkeys/tsa.crt: %w", err)
+		}
+		tsacert := tsacerts[0]
+
+		caBytes, err := os.ReadFile("./devel/devkeys/cacert.pem")
+		if err != nil {
+			return fmt.Errorf("could not read devel/devkeys/cacert.pem: %w", err)
+		}
+		caCerts, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(caBytes))
+		if err != nil {
+			return fmt.Errorf("could not load devel/devkeys/cacert.pem: %w", err)
+		}
+
+		for _, st := range signedTimestamps {
+			//sig, err := base64.StdEncoding.DecodeString(string(sc.Signature()))
+			//if err != nil {
+			//	return fmt.Errorf("could not decode signature: %w", err)
+			//}
+			_, err = verification.VerifyTimestampResponse(st, bytes.NewReader(sc.Signature()),
+				verification.VerifyOpts{
+					TSACertificate: tsacert,
+					Roots:          caCerts,
+				})
+			if err != nil {
+				return fmt.Errorf("could not verify signature: %w", err)
+			}
+		}
 	}
 
 	aki := fmt.Sprintf("%x", sha256.Sum256(signingCert.AuthorityKeyId))
@@ -110,3 +159,10 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(bundle))
 	return err
 }
+
+//
+//func verifyTimestamp(b *sigstorebundle.Bundle) {
+//	// TSA Verif
+//
+//	s, err := verify.VerifyTimestampAuthorityWithThreshold(b, nil, 0)
+//}
