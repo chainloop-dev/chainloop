@@ -38,6 +38,7 @@ certificate_authorities:
 
 #timestamp_authorities:
 #  - url: https://freetsa.org/tsr # FreeTSA
+#    # taken from https://freetsa.org
 #    cert_chain_path: ../../devel/devkeys/freetsa.pem
 #    issuer: true
 
