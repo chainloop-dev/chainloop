@@ -231,7 +231,7 @@ spec:
         {{- if and .Values.controlplane.keylessSigning.enabled }}
         {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
         - name: sign-backend-{{$backend.type | lower}}-{{$index}}
-          secrets:
+          secret:
             secretName: {{ include "chainloop.controlplane.fullname" $ }}-keyless-{{$backend.type | lower}}-{{$index}}
         {{- end }}
         {{- end }}
