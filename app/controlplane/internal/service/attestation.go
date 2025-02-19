@@ -72,7 +72,7 @@ type NewAttestationServiceOpts struct {
 	OrgUC                     *biz.OrganizationUseCase
 	PromUC                    *biz.PrometheusUseCase
 	ProjectVersionUC          *biz.ProjectVersionUseCase
-	timestampAuthorityUseCase *biz.TimestampAuthorityUseCase
+	TimestampAuthorityUseCase *biz.TimestampAuthorityUseCase
 	Opts                      []NewOpt
 }
 
@@ -93,7 +93,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		orgUseCase:                opts.OrgUC,
 		prometheusUseCase:         opts.PromUC,
 		projectVersionUseCase:     opts.ProjectVersionUC,
-		timestampAuthorityUseCase: opts.timestampAuthorityUseCase,
+		timestampAuthorityUseCase: opts.TimestampAuthorityUseCase,
 	}
 }
 

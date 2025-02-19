@@ -195,7 +195,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OrgUC:                     organizationUseCase,
 		PromUC:                    prometheusUseCase,
 		ProjectVersionUC:          projectVersionUseCase,
-		timestampAuthorityUseCase: timestampAuthorityUseCase,
+		TimestampAuthorityUseCase: timestampAuthorityUseCase,
 		Opts:                      v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
