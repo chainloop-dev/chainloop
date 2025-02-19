@@ -17,6 +17,7 @@ package signer
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/sigstore/sigstore-go/pkg/sign"
@@ -36,7 +37,17 @@ func (ts *TimestampSigner) SignMessage(ctx context.Context, payload []byte) ([]b
 		URL: ts.tsaURL,
 	})
 
-	tsaSig, err := tsa.GetTimestamp(ctx, payload)
+	// https://github.com/chainloop-dev/chainloop/issues/1832
+	// signature might be encoded twice. Let's try to fix it first.
+	toSign := payload
+	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(payload)))
+	i, err := base64.StdEncoding.Decode(dst, payload)
+	if err == nil {
+		// get the decoded
+		toSign = dst[:i]
+	}
+
+	tsaSig, err := tsa.GetTimestamp(ctx, toSign)
 	if err != nil {
 		return nil, fmt.Errorf("getting timestamp signature: %w", err)
 	}
