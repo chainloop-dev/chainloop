@@ -160,8 +160,8 @@ spec:
             {{- end }}
             {{- if .Values.controlplane.keylessSigning.enabled }}
             {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
-            - name: sign-backend-{{$backend.type}}-{{$index}}
-              mountPath: /sign_secrets_{{$backend.type}}_{{$index}}
+            - name: sign-backend-{{$backend.type | lower}}-{{$index}}
+              mountPath: /sign_secrets_{{$backend.type | lower}}_{{$index}}
             {{- end }}
             {{- end }}
             {{- if include "controlplane.tls-secret-name" . }}
@@ -230,9 +230,9 @@ spec:
         {{- end }}
         {{- if and .Values.controlplane.keylessSigning.enabled }}
         {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
-        - name: sign-backend-{{$backend.type}}-{{$index}}
-          secrets:
-            secretName: {{ include "chainloop.controlplane.fullname" $ }}-keyless-{{$backend.type}}-{{$index}}
+        - name: sign-backend-{{$backend.type | lower}}-{{$index}}
+          secret:
+            secretName: {{ include "chainloop.controlplane.fullname" $ }}-keyless-{{$backend.type | lower}}-{{$index}}
         {{- end }}
         {{- end }}
         {{- if .Values.controlplane.extraVolumes }}
