@@ -112,7 +112,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	return err
 }
 
-// old attestations have signatures base64 encoded twice
+// old attestations have signatures base64 encoded twice, see https://github.com/chainloop-dev/chainloop/issues/1832
 func fixSignatureInBundle(bundle *protobundle.Bundle) {
 	sig := bundle.GetDsseEnvelope().GetSignatures()[0].GetSig()
 	dst := make([]byte, base64.StdEncoding.EncodedLen(len(sig)))
