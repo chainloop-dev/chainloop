@@ -40,57 +40,60 @@ type AttestationService struct {
 	cpAPI.UnimplementedAttestationServiceServer
 	*service
 
-	wrUseCase               *biz.WorkflowRunUseCase
-	workflowUseCase         *biz.WorkflowUseCase
-	workflowContractUseCase *biz.WorkflowContractUseCase
-	casUC                   *biz.CASBackendUseCase
-	credsReader             credentials.Reader
-	integrationUseCase      *biz.IntegrationUseCase
-	integrationDispatcher   *dispatcher.FanOutDispatcher
-	casCredsUseCase         *biz.CASCredentialsUseCase
-	attestationUseCase      *biz.AttestationUseCase
-	casMappingUseCase       *biz.CASMappingUseCase
-	referrerUseCase         *biz.ReferrerUseCase
-	orgUseCase              *biz.OrganizationUseCase
-	prometheusUseCase       *biz.PrometheusUseCase
-	projectVersionUseCase   *biz.ProjectVersionUseCase
+	wrUseCase                 *biz.WorkflowRunUseCase
+	workflowUseCase           *biz.WorkflowUseCase
+	workflowContractUseCase   *biz.WorkflowContractUseCase
+	casUC                     *biz.CASBackendUseCase
+	credsReader               credentials.Reader
+	integrationUseCase        *biz.IntegrationUseCase
+	integrationDispatcher     *dispatcher.FanOutDispatcher
+	casCredsUseCase           *biz.CASCredentialsUseCase
+	attestationUseCase        *biz.AttestationUseCase
+	casMappingUseCase         *biz.CASMappingUseCase
+	referrerUseCase           *biz.ReferrerUseCase
+	orgUseCase                *biz.OrganizationUseCase
+	prometheusUseCase         *biz.PrometheusUseCase
+	projectVersionUseCase     *biz.ProjectVersionUseCase
+	timestampAuthorityUseCase *biz.TimestampAuthorityUseCase
 }
 
 type NewAttestationServiceOpts struct {
-	WorkflowRunUC      *biz.WorkflowRunUseCase
-	WorkflowUC         *biz.WorkflowUseCase
-	WorkflowContractUC *biz.WorkflowContractUseCase
-	OCIUC              *biz.CASBackendUseCase
-	CredsReader        credentials.Reader
-	IntegrationUseCase *biz.IntegrationUseCase
-	CasCredsUseCase    *biz.CASCredentialsUseCase
-	AttestationUC      *biz.AttestationUseCase
-	FanoutDispatcher   *dispatcher.FanOutDispatcher
-	CASMappingUseCase  *biz.CASMappingUseCase
-	ReferrerUC         *biz.ReferrerUseCase
-	OrgUC              *biz.OrganizationUseCase
-	PromUC             *biz.PrometheusUseCase
-	ProjectVersionUC   *biz.ProjectVersionUseCase
-	Opts               []NewOpt
+	WorkflowRunUC             *biz.WorkflowRunUseCase
+	WorkflowUC                *biz.WorkflowUseCase
+	WorkflowContractUC        *biz.WorkflowContractUseCase
+	OCIUC                     *biz.CASBackendUseCase
+	CredsReader               credentials.Reader
+	IntegrationUseCase        *biz.IntegrationUseCase
+	CasCredsUseCase           *biz.CASCredentialsUseCase
+	AttestationUC             *biz.AttestationUseCase
+	FanoutDispatcher          *dispatcher.FanOutDispatcher
+	CASMappingUseCase         *biz.CASMappingUseCase
+	ReferrerUC                *biz.ReferrerUseCase
+	OrgUC                     *biz.OrganizationUseCase
+	PromUC                    *biz.PrometheusUseCase
+	ProjectVersionUC          *biz.ProjectVersionUseCase
+	timestampAuthorityUseCase *biz.TimestampAuthorityUseCase
+	Opts                      []NewOpt
 }
 
 func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService {
 	return &AttestationService{
-		service:                 newService(opts.Opts...),
-		wrUseCase:               opts.WorkflowRunUC,
-		workflowUseCase:         opts.WorkflowUC,
-		workflowContractUseCase: opts.WorkflowContractUC,
-		casUC:                   opts.OCIUC,
-		credsReader:             opts.CredsReader,
-		integrationUseCase:      opts.IntegrationUseCase,
-		casCredsUseCase:         opts.CasCredsUseCase,
-		integrationDispatcher:   opts.FanoutDispatcher,
-		attestationUseCase:      opts.AttestationUC,
-		casMappingUseCase:       opts.CASMappingUseCase,
-		referrerUseCase:         opts.ReferrerUC,
-		orgUseCase:              opts.OrgUC,
-		prometheusUseCase:       opts.PromUC,
-		projectVersionUseCase:   opts.ProjectVersionUC,
+		service:                   newService(opts.Opts...),
+		wrUseCase:                 opts.WorkflowRunUC,
+		workflowUseCase:           opts.WorkflowUC,
+		workflowContractUseCase:   opts.WorkflowContractUC,
+		casUC:                     opts.OCIUC,
+		credsReader:               opts.CredsReader,
+		integrationUseCase:        opts.IntegrationUseCase,
+		casCredsUseCase:           opts.CasCredsUseCase,
+		integrationDispatcher:     opts.FanoutDispatcher,
+		attestationUseCase:        opts.AttestationUC,
+		casMappingUseCase:         opts.CASMappingUseCase,
+		referrerUseCase:           opts.ReferrerUC,
+		orgUseCase:                opts.OrgUC,
+		prometheusUseCase:         opts.PromUC,
+		projectVersionUseCase:     opts.ProjectVersionUC,
+		timestampAuthorityUseCase: opts.timestampAuthorityUseCase,
 	}
 }
 
@@ -180,6 +183,10 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		WorkflowRun:            wRun,
 		Organization:           org.Name,
 		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
+	}
+	tsa := s.timestampAuthorityUseCase.GetCurrentTSA()
+	if tsa != nil {
+		resp.TimestampAuthorityUrl = tsa.URL.String()
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil

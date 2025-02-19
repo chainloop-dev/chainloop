@@ -104,6 +104,8 @@ export interface AttestationServiceInitResponse_Result {
   organization: string;
   /** fail the attestation if there is a violation in any policy */
   blockOnPolicyViolation: boolean;
+  /** TSA service to be used for signing */
+  timestampAuthorityUrl: string;
 }
 
 export interface AttestationServiceStoreRequest {
@@ -1215,7 +1217,7 @@ export const AttestationServiceInitResponse = {
 };
 
 function createBaseAttestationServiceInitResponse_Result(): AttestationServiceInitResponse_Result {
-  return { workflowRun: undefined, organization: "", blockOnPolicyViolation: false };
+  return { workflowRun: undefined, organization: "", blockOnPolicyViolation: false, timestampAuthorityUrl: "" };
 }
 
 export const AttestationServiceInitResponse_Result = {
@@ -1228,6 +1230,9 @@ export const AttestationServiceInitResponse_Result = {
     }
     if (message.blockOnPolicyViolation === true) {
       writer.uint32(32).bool(message.blockOnPolicyViolation);
+    }
+    if (message.timestampAuthorityUrl !== "") {
+      writer.uint32(42).string(message.timestampAuthorityUrl);
     }
     return writer;
   },
@@ -1260,6 +1265,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.blockOnPolicyViolation = reader.bool();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timestampAuthorityUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1274,6 +1286,7 @@ export const AttestationServiceInitResponse_Result = {
       workflowRun: isSet(object.workflowRun) ? WorkflowRunItem.fromJSON(object.workflowRun) : undefined,
       organization: isSet(object.organization) ? String(object.organization) : "",
       blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
+      timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "",
     };
   },
 
@@ -1283,6 +1296,7 @@ export const AttestationServiceInitResponse_Result = {
       (obj.workflowRun = message.workflowRun ? WorkflowRunItem.toJSON(message.workflowRun) : undefined);
     message.organization !== undefined && (obj.organization = message.organization);
     message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
+    message.timestampAuthorityUrl !== undefined && (obj.timestampAuthorityUrl = message.timestampAuthorityUrl);
     return obj;
   },
 
@@ -1301,6 +1315,7 @@ export const AttestationServiceInitResponse_Result = {
       : undefined;
     message.organization = object.organization ?? "";
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
+    message.timestampAuthorityUrl = object.timestampAuthorityUrl ?? "";
     return message;
   },
 };

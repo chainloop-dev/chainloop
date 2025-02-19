@@ -175,22 +175,28 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	prometheusUseCase := biz.NewPrometheusUseCase(v7, organizationUseCase, orgMetricsUseCase, logger)
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
+	timestampAuthorityUseCase, err := biz.NewTimestampAuthorityUseCase(bootstrap)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
-		WorkflowRunUC:      workflowRunUseCase,
-		WorkflowUC:         workflowUseCase,
-		WorkflowContractUC: workflowContractUseCase,
-		OCIUC:              casBackendUseCase,
-		CredsReader:        readerWriter,
-		IntegrationUseCase: integrationUseCase,
-		CasCredsUseCase:    casCredentialsUseCase,
-		AttestationUC:      attestationUseCase,
-		FanoutDispatcher:   fanOutDispatcher,
-		CASMappingUseCase:  casMappingUseCase,
-		ReferrerUC:         referrerUseCase,
-		OrgUC:              organizationUseCase,
-		PromUC:             prometheusUseCase,
-		ProjectVersionUC:   projectVersionUseCase,
-		Opts:               v5,
+		WorkflowRunUC:             workflowRunUseCase,
+		WorkflowUC:                workflowUseCase,
+		WorkflowContractUC:        workflowContractUseCase,
+		OCIUC:                     casBackendUseCase,
+		CredsReader:               readerWriter,
+		IntegrationUseCase:        integrationUseCase,
+		CasCredsUseCase:           casCredentialsUseCase,
+		AttestationUC:             attestationUseCase,
+		FanoutDispatcher:          fanOutDispatcher,
+		CASMappingUseCase:         casMappingUseCase,
+		ReferrerUC:                referrerUseCase,
+		OrgUC:                     organizationUseCase,
+		PromUC:                    prometheusUseCase,
+		ProjectVersionUC:          projectVersionUseCase,
+		timestampAuthorityUseCase: timestampAuthorityUseCase,
+		Opts:                      v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v5...)
