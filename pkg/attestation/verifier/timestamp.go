@@ -19,21 +19,26 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
 	"fmt"
 
+	"github.com/digitorus/timestamp"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/timestamp-authority/pkg/verification"
 )
 
 func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
-	sc, err := sb.SignatureContent()
-	if err != nil {
-		return fmt.Errorf("could not get signature material: %w", err)
-	}
-
 	signedTimestamps, err := sb.Timestamps()
 	if err != nil {
 		return fmt.Errorf("could not get timestamps from bundle: %w", err)
+	}
+	if len(signedTimestamps) == 0 {
+		// nothing to do
+		return nil
+	}
+	sc, err := sb.SignatureContent()
+	if err != nil {
+		return fmt.Errorf("could not get signature material: %w", err)
 	}
 
 	signature := sc.Signature()
@@ -48,30 +53,44 @@ func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 		sigBytes = dst[:i]
 	}
 
-	var verifiedTimestamps int
+	var verifiedTimestamps []*timestamp.Timestamp
 	for _, st := range signedTimestamps {
 		// let's try with all TSAs
 		for _, tsa := range tr.TimestampAuthorities {
+			tsaCert := tsa[0]
 			var roots []*x509.Certificate
 			var intermediates []*x509.Certificate
 			if len(tsa) > 1 {
 				roots = tsa[len(tsa)-1:]
 				intermediates = tsa[1 : len(tsa)-1]
 			}
-			_, err = verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
+			ts, err := verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
 				verification.VerifyOpts{
-					TSACertificate: tsa[0],
+					TSACertificate: tsaCert,
 					Intermediates:  intermediates,
 					Roots:          roots,
 				})
 			if err != nil {
 				continue
 			}
-			verifiedTimestamps++
+			// verify timestamp time
+			if ts.Time.After(tsaCert.NotAfter) || ts.Time.Before(tsaCert.NotBefore) {
+				continue
+			}
+
+			vc, err := sb.VerificationContent()
+			if err != nil && !errors.Is(err, bundle.ErrMissingVerificationMaterial) {
+				return fmt.Errorf("could not get verification material: %w", err)
+			}
+			// verify signing certificate issuing time
+			if vc != nil && vc.GetCertificate() != nil && !vc.ValidAtTime(ts.Time, nil) {
+				continue
+			}
+			verifiedTimestamps = append(verifiedTimestamps, ts)
 		}
 	}
-	if verifiedTimestamps < len(signedTimestamps) {
-		return fmt.Errorf("timestamps verification failed")
+	if len(verifiedTimestamps) < len(signedTimestamps) {
+		return fmt.Errorf("some timestamps verification failed")
 	}
 	return nil
 }
