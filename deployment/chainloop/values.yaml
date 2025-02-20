@@ -703,6 +703,31 @@ controlplane:
   #       endEntityProfileName: ""
   #       caName: ""
 
+  ## @section Timestamp authorities
+
+  ## Configuration for RFC3161 timestamp authorities used for signing
+  ## @extra controlplane.timestampAuthorities[0].issuer whether this TSA should be used for signing (only one at a time)
+  ## @extra controlplane.timestampAuthorities[0].url the TSA service URL
+  ## @extra controlplane.timestampAuthorities[0].certChain PEM encoded certificate chain (from leaf to root) for verification
+  ##       -----BEGIN CERTIFICATE-----
+  ##       ...
+  ##       -----END CERTIFICATE-----
+  ##       -----BEGIN CERTIFICATE-----
+  ##       ...
+  ##       -----END CERTIFICATE-----
+  #  timestampAuthorities:
+  #    - issuer: true
+  #      url: https://freetsa.org/tsr
+  #      certChain: |
+  #        -----BEGIN CERTIFICATE-----
+  #        -----END CERTIFICATE-----
+  #
+  #        -----BEGIN CERTIFICATE-----
+  #        -----END CERTIFICATE-----
+
+
+## @section Other settings
+
   ## Inject custom CA certificates to the controlplane container
   ## @param controlplane.customCAs List of custom CA certificates content
   customCAs: []

@@ -63,3 +63,12 @@ data:
     federated_authentication:
       {{- toYaml .Values.controlplane.federatedAuthentication | nindent 6 }}
     {{- end }}
+  {{- if .Values.controlplane.timestampAuthorities }}
+  tsa.yaml: |
+    timestampAuthorities:
+    {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
+      - issuer: {{$tsa.issuer}}
+        url: {{$tsa.url}}
+        cert_chain_path: /tsa_roots/chain-{{$index}}.pem
+    {{- end }}
+  {{- end }}

@@ -179,6 +179,12 @@ spec:
               mountPath: /etc/pki/tls/certs
               readOnly: true
             {{- end }}
+            {{- if .Values.controlplane.timestampAuthorities }}
+            {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
+            - name: tsa-root-{{$index}}
+              mountPath: /tsa_roots/
+            {{- end }}
+            {{- end }}
             {{- if .Values.controlplane.extraVolumeMounts }}
             {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumeMounts "context" $) | nindent 12 }}
             {{- end }}
@@ -237,4 +243,14 @@ spec:
         {{- end }}
         {{- if .Values.controlplane.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.controlplane.timestampAuthorities }}
+        {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
+        - name: tsa-root-{{$index}}
+          configMap:
+            name: {{ include "chainloop.controlplane.fullname" $ }}-tsa
+            items:
+              - key: chain-{{$index}}.pem
+                path: chain-{{$index}}.pem
+        {{- end }}
         {{- end }}
