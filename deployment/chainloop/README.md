@@ -390,8 +390,6 @@ secretsBackend:
 
 ### Deploy in keyless mode with file-based CA
 
-*This feature is experimental, as it doesn't yet support verification.*
-
 You can enable keyless signing mode by providing a custom Certificate Authority.
 For example, these commands generate a self-signed certificate with an RSA private key of length 4096 and AES256 encryption with a validity of 365 days:
 
@@ -408,18 +406,35 @@ Then you can configure your deployment values with:
 controlplane:
   keylessSigning:
     enabled: true
-    backend: fileCA
-    fileCA:
-      cert: |
-        -----BEGIN CERTIFICATE-----
-        ...
-        -----END CERTIFICATE-----
-      key: |
-        -----BEGIN ENCRYPTED PRIVATE KEY-----    
-        ...
-        -----END ENCRYPTED PRIVATE KEY-----
-      keyPass: "REDACTED"  
+    backends: 
+      - fileCA:
+          cert: |
+            -----BEGIN CERTIFICATE-----
+            ...
+            -----END CERTIFICATE-----
+          key: |
+            -----BEGIN ENCRYPTED PRIVATE KEY-----    
+            ...
+            -----END ENCRYPTED PRIVATE KEY-----
+          keyPass: "REDACTED"  
 ```
+
+### Configure a Timestamp Authority for attestation timestamping
+
+If configured, the TSA will be used in all attestations to generate a timestamped signature.
+```yaml
+controlplane:
+    timestampAuthorities:
+      - issuer: true
+        url: https://freetsa.org/tsr
+        certChain: |
+          -----BEGIN CERTIFICATE-----
+          -----END CERTIFICATE-----
+
+          -----BEGIN CERTIFICATE-----
+          -----END CERTIFICATE-----
+```
+Timestamped attestations will be verified against the root material of the TSA, ensuring that any attempt to tamper with it will be detected.
 
 ### Insert custom Certificate Authorities (CAs)
 
