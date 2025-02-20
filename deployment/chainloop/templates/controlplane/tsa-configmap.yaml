@@ -16,6 +16,6 @@ metadata:
 data:
   {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
   chain-{{$index}}.pem: |
-    {{ $.Files.Get $tsa.certChainFile | nindent 4 }}
+    {{$tsa.certChain | nindent 4 }}
   {{- end }}
 {{- end }}
