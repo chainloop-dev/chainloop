@@ -7,6 +7,10 @@
       "description": "fail the attestation if there is a violation in any policy",
       "type": "boolean"
     },
+    "^(signingOptions)$": {
+      "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
+      "description": "Signing options"
+    },
     "^(workflowRun)$": {
       "$ref": "controlplane.v1.WorkflowRunItem.schema.json"
     }
@@ -19,6 +23,10 @@
     "organization": {
       "description": "organization name",
       "type": "string"
+    },
+    "signing_options": {
+      "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
+      "description": "Signing options"
     },
     "workflow_run": {
       "$ref": "controlplane.v1.WorkflowRunItem.schema.json"

@@ -59,9 +59,12 @@ func (s *SigningService) GetTrustedRoot(ctx context.Context, _ *v1.GetTrustedRoo
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
-	resp := &v1.GetTrustedRootResponse{Keys: make(map[string]*v1.CertificateChain)}
+	resp := &v1.GetTrustedRootResponse{Keys: make(map[string]*v1.CertificateChain), TimestampAuthorities: make(map[string]*v1.CertificateChain)}
 	for k, v := range tr.Keys {
 		resp.Keys[k] = &v1.CertificateChain{Certificates: v}
+	}
+	for k, v := range tr.TimestampAuthorities {
+		resp.TimestampAuthorities[k] = &v1.CertificateChain{Certificates: v}
 	}
 	return resp, nil
 }

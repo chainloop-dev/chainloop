@@ -426,7 +426,7 @@ func (uc *WorkflowRunUseCase) Verify(ctx context.Context, run *WorkflowRun) (*Ve
 }
 
 func trustedRootBizToVerifier(biztr *TrustedRoot) (*verifier.TrustedRoot, error) {
-	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate)}
+	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate), TimestampAuthorities: make(map[string][]*x509.Certificate)}
 	for k, v := range biztr.Keys {
 		for _, c := range v {
 			cert, err := cryptoutils.LoadCertificatesFromPEM(strings.NewReader(c))
@@ -434,6 +434,15 @@ func trustedRootBizToVerifier(biztr *TrustedRoot) (*verifier.TrustedRoot, error)
 				return nil, fmt.Errorf("loading certificate from PEM: %w", err)
 			}
 			tr.Keys[k] = append(tr.Keys[k], cert[0])
+		}
+	}
+	for k, v := range biztr.TimestampAuthorities {
+		for _, c := range v {
+			cert, err := cryptoutils.LoadCertificatesFromPEM(strings.NewReader(c))
+			if err != nil {
+				return nil, fmt.Errorf("loading certificate from PEM: %w", err)
+			}
+			tr.TimestampAuthorities[k] = append(tr.TimestampAuthorities[k], cert[0])
 		}
 	}
 	return tr, nil

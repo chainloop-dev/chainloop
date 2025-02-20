@@ -44,6 +44,9 @@ message Bootstrap {
   // Multiple certificate authorities, used for CA rotation
   repeated CA certificate_authorities = 15;
 
+  // Multiple timestamp authorities
+  repeated TSA timestamp_authorities = 17;
+
   message Observability {
     Sentry sentry = 1;
     message Sentry {
@@ -199,6 +202,15 @@ message Auth {
     // The list of routes that will be affected by this middleware, by default all of them
     repeated string selected_routes = 3;
   }
+}
+
+message TSA {
+  // TSA service URL for generating timestamps
+  string url = 1;
+  // PEM encoded certificate chain (in leaf to root order)
+  string cert_chain_path = 2;
+  // Marks this TSA as the main timestamp issuer. Only one can be enabled at at ime.
+  bool issuer = 3;
 }
 
 message CA {

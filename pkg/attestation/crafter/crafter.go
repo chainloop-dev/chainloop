@@ -148,6 +148,13 @@ type InitOpts struct {
 	Runner        SupportedRunner
 	// fail the attestation if policy evaluation fails
 	BlockOnPolicyViolation bool
+	// Signing options
+	SigningOptions *SigningOpts
+}
+
+type SigningOpts struct {
+	// Timestamp Authority to use
+	TimestampAuthorityURL string
 }
 
 // Initialize the crafter with a remote or local schema
@@ -158,7 +165,7 @@ func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
 		return errors.New("workflow metadata is nil")
 	}
 
-	return c.initCraftingStateFile(ctx, opts.AttestationID, opts.SchemaV1, opts.WfInfo, opts.DryRun, opts.Runner.ID(), opts.Runner.RunURI(), opts.BlockOnPolicyViolation)
+	return c.initCraftingStateFile(ctx, opts)
 }
 
 func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool, error) {
@@ -166,31 +173,22 @@ func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool,
 }
 
 // Initialize the temporary file with the content of the schema
-func (c *Crafter) initCraftingStateFile(
-	ctx context.Context,
-	attestationID string,
-	schema *schemaapi.CraftingSchema,
-	wf *api.WorkflowMetadata,
-	dryRun bool,
-	runnerType schemaapi.CraftingSchema_Runner_RunnerType,
-	jobURL string,
-	blockOnPolicyViolation bool,
-) error {
+func (c *Crafter) initCraftingStateFile(ctx context.Context, opts *InitOpts) error {
 	// Generate Crafting state
-	state, err := initialCraftingState(c.workingDir, schema, wf, dryRun, runnerType, jobURL, blockOnPolicyViolation)
+	state, err := initialCraftingState(c.workingDir, opts)
 	if err != nil {
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
 
 	// newState doesn't have a digest to check against
 	newState := &VersionedCraftingState{CraftingState: state}
-	if err := c.stateManager.Write(ctx, attestationID, newState); err != nil {
+	if err := c.stateManager.Write(ctx, opts.AttestationID, newState); err != nil {
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("created state file")
+	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, opts.AttestationID)).Msg("created state file")
 
-	return c.LoadCraftingState(ctx, attestationID)
+	return c.LoadCraftingState(ctx, opts.AttestationID)
 }
 
 // Reset removes the current crafting state
@@ -327,7 +325,10 @@ func sanitizeRemoteURL(remoteURL string) (string, error) {
 	return uri.String(), nil
 }
 
-func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.WorkflowMetadata, dryRun bool, runnerType schemaapi.CraftingSchema_Runner_RunnerType, jobURL string, blockOnPolicyViolation bool) (*api.CraftingState, error) {
+func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error) {
+	if opts.WfInfo == nil || opts.Runner == nil || opts.SchemaV1 == nil {
+		return nil, errors.New("required init options not provided")
+	}
 	// Get git commit hash
 	headCommit, err := gracefulGitRepoHead(cwd)
 	if err != nil {
@@ -353,18 +354,24 @@ func initialCraftingState(cwd string, schema *schemaapi.CraftingSchema, wf *api.
 		}
 	}
 
+	var tsURL string
+	if opts.SigningOptions != nil {
+		tsURL = opts.SigningOptions.TimestampAuthorityURL
+	}
+
 	// Generate Crafting state
 	return &api.CraftingState{
-		InputSchema: schema,
+		InputSchema: opts.SchemaV1,
 		Attestation: &api.Attestation{
 			InitializedAt:          timestamppb.New(time.Now()),
-			Workflow:               wf,
-			RunnerType:             runnerType,
-			RunnerUrl:              jobURL,
+			Workflow:               opts.WfInfo,
+			RunnerType:             opts.Runner.ID(),
+			RunnerUrl:              opts.Runner.RunURI(),
 			Head:                   headCommitP,
-			BlockOnPolicyViolation: blockOnPolicyViolation,
+			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
+			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
 		},
-		DryRun: dryRun,
+		DryRun: opts.DryRun,
 	}, nil
 }
 

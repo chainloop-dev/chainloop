@@ -40,7 +40,7 @@ type CertificateAuthorities struct {
 	SignerCA CertificateAuthority
 }
 
-func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger) (*CertificateAuthorities, error) {
+func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger *log.Helper) (*CertificateAuthorities, error) {
 	var (
 		err         error
 		authorities []CertificateAuthority
@@ -51,13 +51,13 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger log.Logger
 		var authority CertificateAuthority
 		if configCA.GetFileCa() != nil {
 			fileCa := configCA.GetFileCa()
-			_ = logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
+			logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
 			authority, err = fileca.New(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
 		}
 
 		if configCA.GetEjbcaCa() != nil {
 			ejbcaCa := configCA.GetEjbcaCa()
-			_ = logger.Log(log.LevelInfo, "msg", "Keyless: EJBCA CA configured")
+			logger.Log(log.LevelInfo, "msg", "Keyless: EJBCA CA configured")
 			authority, err = ejbca.New(ejbcaCa.GetServerUrl(), ejbcaCa.GetKeyPath(), ejbcaCa.GetCertPath(), ejbcaCa.GetRootCaPath(), ejbcaCa.GetCertificateProfileName(), ejbcaCa.GetEndEntityProfileName(), ejbcaCa.GetCertificateAuthorityName())
 		}
 		if err != nil {

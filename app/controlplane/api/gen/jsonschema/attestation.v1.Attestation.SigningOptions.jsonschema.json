@@ -1,0 +1,19 @@
+{
+  "$id": "attestation.v1.Attestation.SigningOptions.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(timestamp_authority_url)$": {
+      "description": "TSA URL",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "timestampAuthorityUrl": {
+      "description": "TSA URL",
+      "type": "string"
+    }
+  },
+  "title": "Signing Options",
+  "type": "object"
+}

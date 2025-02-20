@@ -58,6 +58,10 @@
     },
     "^(runnerUrl)$": {
       "type": "string"
+    },
+    "^(signingOptions)$": {
+      "$ref": "attestation.v1.Attestation.SigningOptions.schema.json",
+      "description": "Signing options"
     }
   },
   "properties": {
@@ -140,6 +144,10 @@
     },
     "runner_url": {
       "type": "string"
+    },
+    "signing_options": {
+      "$ref": "attestation.v1.Attestation.SigningOptions.schema.json",
+      "description": "Signing options"
     },
     "workflow": {
       "$ref": "attestation.v1.WorkflowMetadata.schema.json"

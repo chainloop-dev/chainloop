@@ -46,13 +46,24 @@ func JSONEnvelopeWithDigest(envelope *dsse.Envelope) ([]byte, cr_v1.Hash, error)
 // DSSEEnvelopeFromBundle Extracts a DSSE envelope from a Sigstore bundle (Sigstore bundles have their own protobuf implementation for DSSE)
 func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 	sigstoreEnvelope := bundle.GetDsseEnvelope()
+	sig := sigstoreEnvelope.GetSignatures()[0].GetSig()
+	// See bug: https://github.com/chainloop-dev/chainloop/issues/1832
+	// signature might be encoded twice. Let's try to fix it first.
+	// TODO: remove this once the bug is fixed
+	sigBytes := sig
+	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(sig)))
+	i, err := base64.StdEncoding.Decode(dst, sig)
+	if err == nil {
+		// it was already encoded, let's use the decoded one
+		sigBytes = dst[:i]
+	}
 	return &dsse.Envelope{
 		PayloadType: sigstoreEnvelope.PayloadType,
 		Payload:     base64.StdEncoding.EncodeToString(sigstoreEnvelope.Payload),
 		Signatures: []dsse.Signature{
 			{
 				KeyID: sigstoreEnvelope.GetSignatures()[0].GetKeyid(),
-				Sig:   string(sigstoreEnvelope.GetSignatures()[0].GetSig()),
+				Sig:   base64.StdEncoding.EncodeToString(sigBytes),
 			},
 		},
 	}

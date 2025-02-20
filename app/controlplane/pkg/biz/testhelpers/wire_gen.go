@@ -11,7 +11,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
@@ -83,12 +82,11 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
-	certificateAuthorities, err := newSigningCAs()
+	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	signingUseCase := biz.NewChainloopSigningUseCase(certificateAuthorities)
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, logger)
 	if err != nil {
 		cleanup()
@@ -197,9 +195,5 @@ var (
 
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {
-	return nil, nil
-}
-
-func newSigningCAs() (*ca.CertificateAuthorities, error) {
 	return nil, nil
 }

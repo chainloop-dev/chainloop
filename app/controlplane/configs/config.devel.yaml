@@ -36,6 +36,12 @@ certificate_authorities:
 #      end_entity_profile_name: "PlainSigner"
 #      certificate_authority_name: "ManagementCA"
 
+#timestamp_authorities:
+#  - url: https://freetsa.org/tsr # FreeTSA
+#    # taken from https://freetsa.org
+#    cert_chain_path: ../../devel/devkeys/freetsa.pem
+#    issuer: true
+
 # Directory where the plugins are located
 # NOTE: plugins have the form of chainloop-plugin-<name>
 plugins_dir: "./plugins/bin"

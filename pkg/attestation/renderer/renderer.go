@@ -18,6 +18,7 @@ package renderer
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -30,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
 	chainloopsigner "github.com/chainloop-dev/chainloop/pkg/attestation/signer/chainloop"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -127,13 +129,29 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 		return nil, nil, fmt.Errorf("signing message: %w", err)
 	}
 
+	ab.logger.Debug().Msg("signing the statement")
 	var dsseEnvelope dsse.Envelope
 	if err := json.Unmarshal(signedAtt, &dsseEnvelope); err != nil {
 		return nil, nil, err
 	}
+	decodedSig, err := base64.StdEncoding.DecodeString(dsseEnvelope.Signatures[0].Sig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("decoding signature: %w", err)
+	}
+
+	// If timestamp service is configured, let's sign with it
+	var tsaSig []byte
+	if ab.att.GetSigningOptions().GetTimestampAuthorityUrl() != "" {
+		ab.logger.Debug().Msg("adding a timestamp")
+		tsa := signer.NewTimestampSigner(ab.att.GetSigningOptions().GetTimestampAuthorityUrl())
+		tsaSig, err = tsa.SignMessage(ctx, decodedSig)
+		if err != nil {
+			return nil, nil, fmt.Errorf("adding timestamp: %w", err)
+		}
+	}
 
 	// Create sigstore bundle for the contents of this attestation
-	bundle, err := ab.envelopeToBundle(&dsseEnvelope)
+	bundle, err := ab.envelopeToBundle(&dsseEnvelope, tsaSig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading bundle: %w", err)
 	}
@@ -153,15 +171,13 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 	return &dsseEnvelope, bundle, nil
 }
 
-func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
+func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope, tsaSig []byte) (*protobundle.Bundle, error) {
 	bundle, err := attestation.BundleFromDSSEEnvelope(dsseEnvelope)
 	if err != nil {
 		return nil, err
 	}
 
 	// extract verification materials
-	// Note: we don't support PublicKey materials (from cosign.key and KMS signers), since Chainloop doesn't (yet) store
-	//       public keys.
 	if v, ok := ab.signer.(*chainloopsigner.Signer); ok {
 		chain := v.Chain
 		if len(chain) == 0 {
@@ -177,6 +193,14 @@ func (ab *AttestationRenderer) envelopeToBundle(dsseEnvelope *dsse.Envelope) (*p
 		cert := &v12.X509Certificate{RawBytes: block.Bytes}
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_Certificate{
 			Certificate: cert,
+		}
+	}
+
+	// Add timestamp signature if provided
+	if tsaSig != nil {
+		st := &v12.RFC3161SignedTimestamp{SignedTimestamp: tsaSig}
+		bundle.VerificationMaterial.TimestampVerificationData = &protobundle.TimestampVerificationData{
+			Rfc3161Timestamps: []*v12.RFC3161SignedTimestamp{st},
 		}
 	}
 

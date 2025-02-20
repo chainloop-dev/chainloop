@@ -54,6 +54,7 @@ type AttestationService struct {
 	orgUseCase              *biz.OrganizationUseCase
 	prometheusUseCase       *biz.PrometheusUseCase
 	projectVersionUseCase   *biz.ProjectVersionUseCase
+	signingUseCase          *biz.SigningUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -71,6 +72,7 @@ type NewAttestationServiceOpts struct {
 	OrgUC              *biz.OrganizationUseCase
 	PromUC             *biz.PrometheusUseCase
 	ProjectVersionUC   *biz.ProjectVersionUseCase
+	SigningUseCase     *biz.SigningUseCase
 	Opts               []NewOpt
 }
 
@@ -91,6 +93,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		orgUseCase:              opts.OrgUC,
 		prometheusUseCase:       opts.PromUC,
 		projectVersionUseCase:   opts.ProjectVersionUC,
+		signingUseCase:          opts.SigningUseCase,
 	}
 }
 
@@ -180,6 +183,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		WorkflowRun:            wRun,
 		Organization:           org.Name,
 		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
+	}
+
+	tsa := s.signingUseCase.GetCurrentTSA()
+	if tsa != nil {
+		resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{TimestampAuthorityUrl: tsa.URL.String()}
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil

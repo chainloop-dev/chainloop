@@ -34,6 +34,8 @@ export interface Attestation {
   blockOnPolicyViolation: boolean;
   /** bypass policy check */
   bypassPolicyCheck: boolean;
+  /** Signing options */
+  signingOptions?: Attestation_SigningOptions;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -154,6 +156,11 @@ export interface Attestation_Material_SBOMArtifact_MainComponent {
 export interface Attestation_EnvVarsEntry {
   key: string;
   value: string;
+}
+
+export interface Attestation_SigningOptions {
+  /** TSA URL */
+  timestampAuthorityUrl: string;
 }
 
 /** A policy executed against an attestation or material */
@@ -318,6 +325,7 @@ function createBaseAttestation(): Attestation {
     policyEvaluations: [],
     blockOnPolicyViolation: false,
     bypassPolicyCheck: false,
+    signingOptions: undefined,
   };
 }
 
@@ -358,6 +366,9 @@ export const Attestation = {
     }
     if (message.bypassPolicyCheck === true) {
       writer.uint32(112).bool(message.bypassPolicyCheck);
+    }
+    if (message.signingOptions !== undefined) {
+      Attestation_SigningOptions.encode(message.signingOptions, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -462,6 +473,13 @@ export const Attestation = {
 
           message.bypassPolicyCheck = reader.bool();
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.signingOptions = Attestation_SigningOptions.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -502,6 +520,9 @@ export const Attestation = {
         : [],
       blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
       bypassPolicyCheck: isSet(object.bypassPolicyCheck) ? Boolean(object.bypassPolicyCheck) : false,
+      signingOptions: isSet(object.signingOptions)
+        ? Attestation_SigningOptions.fromJSON(object.signingOptions)
+        : undefined,
     };
   },
 
@@ -539,6 +560,9 @@ export const Attestation = {
     }
     message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
     message.bypassPolicyCheck !== undefined && (obj.bypassPolicyCheck = message.bypassPolicyCheck);
+    message.signingOptions !== undefined && (obj.signingOptions = message.signingOptions
+      ? Attestation_SigningOptions.toJSON(message.signingOptions)
+      : undefined);
     return obj;
   },
 
@@ -583,6 +607,9 @@ export const Attestation = {
     message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
     message.bypassPolicyCheck = object.bypassPolicyCheck ?? false;
+    message.signingOptions = (object.signingOptions !== undefined && object.signingOptions !== null)
+      ? Attestation_SigningOptions.fromPartial(object.signingOptions)
+      : undefined;
     return message;
   },
 };
@@ -1666,6 +1693,62 @@ export const Attestation_EnvVarsEntry = {
     const message = createBaseAttestation_EnvVarsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestation_SigningOptions(): Attestation_SigningOptions {
+  return { timestampAuthorityUrl: "" };
+}
+
+export const Attestation_SigningOptions = {
+  encode(message: Attestation_SigningOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.timestampAuthorityUrl !== "") {
+      writer.uint32(10).string(message.timestampAuthorityUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Attestation_SigningOptions {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestation_SigningOptions();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.timestampAuthorityUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Attestation_SigningOptions {
+    return { timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "" };
+  },
+
+  toJSON(message: Attestation_SigningOptions): unknown {
+    const obj: any = {};
+    message.timestampAuthorityUrl !== undefined && (obj.timestampAuthorityUrl = message.timestampAuthorityUrl);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Attestation_SigningOptions>, I>>(base?: I): Attestation_SigningOptions {
+    return Attestation_SigningOptions.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Attestation_SigningOptions>, I>>(object: I): Attestation_SigningOptions {
+    const message = createBaseAttestation_SigningOptions();
+    message.timestampAuthorityUrl = object.timestampAuthorityUrl ?? "";
     return message;
   },
 };

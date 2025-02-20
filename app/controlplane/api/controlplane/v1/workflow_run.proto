@@ -131,6 +131,13 @@ message AttestationServiceInitResponse {
     string organization = 3;
     // fail the attestation if there is a violation in any policy
     bool block_on_policy_violation = 4;
+    // Signing options
+    SigningOptions signing_options = 5;
+  }
+
+  message SigningOptions {
+    // TSA service to be used for signing
+    string timestamp_authority_url = 1;
   }
 }
 
