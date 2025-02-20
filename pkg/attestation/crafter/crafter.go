@@ -351,6 +351,11 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		}
 	}
 
+	var tsURL string
+	if opts.SigningOptions != nil {
+		tsURL = opts.SigningOptions.TimestampAuthorityURL
+	}
+
 	// Generate Crafting state
 	return &api.CraftingState{
 		InputSchema: opts.SchemaV1,
@@ -361,7 +366,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			RunnerUrl:              opts.Runner.RunURI(),
 			Head:                   headCommitP,
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
-			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: opts.SigningOptions.TimestampAuthorityURL},
+			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
 		},
 		DryRun: opts.DryRun,
 	}, nil
