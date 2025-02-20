@@ -53,12 +53,15 @@ func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 		// let's try with all TSAs
 		for _, tsa := range tr.TimestampAuthorities {
 			var roots []*x509.Certificate
+			var intermediates []*x509.Certificate
 			if len(tsa) > 1 {
-				roots = tsa[1:]
+				roots = tsa[len(tsa)-1:]
+				intermediates = tsa[1 : len(tsa)-1]
 			}
 			_, err = verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
 				verification.VerifyOpts{
 					TSACertificate: tsa[0],
+					Intermediates:  intermediates,
 					Roots:          roots,
 				})
 			if err != nil {
