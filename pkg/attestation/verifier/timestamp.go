@@ -15,8 +15,60 @@
 
 package verifier
 
-import "github.com/sigstore/sigstore-go/pkg/bundle"
+import (
+	"bytes"
+	"crypto/x509"
+	"encoding/base64"
+	"fmt"
 
-func VerifyTimestamps(bundle bundle.Bundle, tr *TrustedRoot) {
+	"github.com/sigstore/sigstore-go/pkg/bundle"
+	"github.com/sigstore/timestamp-authority/pkg/verification"
+)
 
+func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
+	sc, err := sb.SignatureContent()
+	if err != nil {
+		return fmt.Errorf("could not get signature material: %w", err)
+	}
+
+	signedTimestamps, err := sb.Timestamps()
+	if err != nil {
+		return fmt.Errorf("could not get timestamps from bundle: %w", err)
+	}
+
+	signature := sc.Signature()
+	// See bug: https://github.com/chainloop-dev/chainloop/issues/1832
+	// signature might be encoded twice. Let's try to fix it first.
+	// TODO: remove this once the bug is fixed
+	sigBytes := signature
+	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(signature)))
+	i, err := base64.StdEncoding.Decode(dst, signature)
+	if err == nil {
+		// get the decoded one
+		sigBytes = dst[:i]
+	}
+
+	var verifiedTimestamps int
+	for _, st := range signedTimestamps {
+		// let's try with all TSAs
+		for _, tsa := range tr.TimestampAuthorities {
+			var roots []*x509.Certificate
+			if len(tsa) > 1 {
+				roots = tsa[1:]
+			}
+			_, err = verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
+				verification.VerifyOpts{
+					TSACertificate: tsa[0],
+					Roots:          roots,
+				})
+			if err != nil {
+				continue
+			}
+			verifiedTimestamps++
+		}
+	}
+	if verifiedTimestamps < len(signedTimestamps) {
+		return fmt.Errorf("timestamps verification failed")
+	}
+	return nil
 }
