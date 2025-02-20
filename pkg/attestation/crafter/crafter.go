@@ -326,6 +326,9 @@ func sanitizeRemoteURL(remoteURL string) (string, error) {
 }
 
 func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error) {
+	if opts.WfInfo == nil || opts.Runner == nil || opts.SchemaV1 == nil {
+		return nil, errors.New("required init options not provided")
+	}
 	// Get git commit hash
 	headCommit, err := gracefulGitRepoHead(cwd)
 	if err != nil {
