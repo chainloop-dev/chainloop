@@ -184,6 +184,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		Organization:           org.Name,
 		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
 	}
+	
 	tsa := s.signingUseCase.GetCurrentTSA()
 	if tsa != nil {
 		resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{TimestampAuthorityUrl: tsa.URL.String()}

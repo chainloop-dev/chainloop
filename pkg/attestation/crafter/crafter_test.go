@@ -117,8 +117,9 @@ func (s *crafterSuite) TestInit() {
 			want := &v1.CraftingState{
 				InputSchema: contract,
 				Attestation: &v1.Attestation{
-					Workflow:   tc.workflowMetadata,
-					RunnerType: contract.GetRunner().GetType(),
+					Workflow:       tc.workflowMetadata,
+					RunnerType:     contract.GetRunner().GetType(),
+					SigningOptions: &v1.Attestation_SigningOptions{},
 				},
 				DryRun: tc.dryRun,
 			}
