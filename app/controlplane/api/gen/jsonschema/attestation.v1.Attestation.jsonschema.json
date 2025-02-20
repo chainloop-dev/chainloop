@@ -59,9 +59,9 @@
     "^(runner_url)$": {
       "type": "string"
     },
-    "^(timestamp_authority_url)$": {
-      "description": "TSA URL",
-      "type": "string"
+    "^(signing_options)$": {
+      "$ref": "attestation.v1.Attestation.SigningOptions.jsonschema.json",
+      "description": "Signing options"
     }
   },
   "properties": {
@@ -145,9 +145,9 @@
     "runnerUrl": {
       "type": "string"
     },
-    "timestampAuthorityUrl": {
-      "description": "TSA URL",
-      "type": "string"
+    "signingOptions": {
+      "$ref": "attestation.v1.Attestation.SigningOptions.jsonschema.json",
+      "description": "Signing options"
     },
     "workflow": {
       "$ref": "attestation.v1.WorkflowMetadata.jsonschema.json"

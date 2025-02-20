@@ -7,9 +7,9 @@
       "description": "fail the attestation if there is a violation in any policy",
       "type": "boolean"
     },
-    "^(timestamp_authority_url)$": {
-      "description": "TSA service to be used for signing",
-      "type": "string"
+    "^(signing_options)$": {
+      "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.jsonschema.json",
+      "description": "Signing options"
     },
     "^(workflow_run)$": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
@@ -24,9 +24,9 @@
       "description": "organization name",
       "type": "string"
     },
-    "timestampAuthorityUrl": {
-      "description": "TSA service to be used for signing",
-      "type": "string"
+    "signingOptions": {
+      "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.jsonschema.json",
+      "description": "Signing options"
     },
     "workflowRun": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"

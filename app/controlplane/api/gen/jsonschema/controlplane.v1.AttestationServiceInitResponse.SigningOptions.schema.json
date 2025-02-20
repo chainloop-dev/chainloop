@@ -1,0 +1,19 @@
+{
+  "$id": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(timestampAuthorityUrl)$": {
+      "description": "TSA service to be used for signing",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "timestamp_authority_url": {
+      "description": "TSA service to be used for signing",
+      "type": "string"
+    }
+  },
+  "title": "Signing Options",
+  "type": "object"
+}

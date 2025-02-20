@@ -148,6 +148,11 @@ type InitOpts struct {
 	Runner        SupportedRunner
 	// fail the attestation if policy evaluation fails
 	BlockOnPolicyViolation bool
+	// Signing options
+	SigningOptions *SigningOpts
+}
+
+type SigningOpts struct {
 	// Timestamp Authority to use
 	TimestampAuthorityURL string
 }
@@ -356,7 +361,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			RunnerUrl:              opts.Runner.RunURI(),
 			Head:                   headCommitP,
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
-			TimestampAuthorityUrl:  opts.TimestampAuthorityURL,
+			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: opts.SigningOptions.TimestampAuthorityURL},
 		},
 		DryRun: opts.DryRun,
 	}, nil

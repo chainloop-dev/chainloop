@@ -141,9 +141,9 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 
 	// If timestamp service is configured, let's sign with it
 	var tsaSig []byte
-	if ab.att.TimestampAuthorityUrl != "" {
+	if ab.att.GetSigningOptions().GetTimestampAuthorityUrl() != "" {
 		ab.logger.Debug().Msg("adding a timestamp")
-		tsa := signer.NewTimestampSigner(ab.att.TimestampAuthorityUrl)
+		tsa := signer.NewTimestampSigner(ab.att.GetSigningOptions().GetTimestampAuthorityUrl())
 		tsaSig, err = tsa.SignMessage(ctx, decodedSig)
 		if err != nil {
 			return nil, nil, fmt.Errorf("adding timestamp: %w", err)

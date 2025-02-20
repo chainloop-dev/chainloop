@@ -146,8 +146,14 @@ message Attestation {
   bool block_on_policy_violation = 13;
   // bypass policy check
   bool bypass_policy_check = 14;
-  // TSA URL
-  string timestamp_authority_url = 15;
+
+  // Signing options
+  SigningOptions signing_options = 15;
+
+  message SigningOptions {
+    // TSA URL
+    string timestamp_authority_url = 1;
+  }
 }
 
 // A policy executed against an attestation or material

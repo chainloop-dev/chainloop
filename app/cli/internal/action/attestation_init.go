@@ -180,7 +180,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		workflowMeta.Organization = runResp.GetResult().GetOrganization()
 		blockOnPolicyViolation = runResp.GetResult().GetBlockOnPolicyViolation()
-		timestampAuthorityURL = runResp.GetResult().GetTimestampAuthorityUrl()
+		timestampAuthorityURL = runResp.GetResult().GetSigningOptions().GetTimestampAuthorityUrl()
 		if v := workflowMeta.Version; v != nil {
 			workflowMeta.Version.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
 		}
@@ -199,7 +199,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		AttestationID:          attestationID,
 		Runner:                 discoveredRunner,
 		BlockOnPolicyViolation: blockOnPolicyViolation,
-		TimestampAuthorityURL:  timestampAuthorityURL,
+		SigningOptions:         &crafter.SigningOpts{TimestampAuthorityURL: timestampAuthorityURL},
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {
