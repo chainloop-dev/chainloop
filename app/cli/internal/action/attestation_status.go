@@ -56,6 +56,7 @@ type AttestationStatusResult struct {
 	PolicyEvaluations           map[string][]*PolicyEvaluation  `json:"policy_evaluations,omitempty"`
 	HasPolicyViolations         bool                            `json:"has_policy_violations"`
 	MustBlockOnPolicyViolations bool                            `json:"must_block_on_policy_violations"`
+	TimestampAuthority          string                          `json:"timestamp_authority"`
 	// This might only be set if the attestation is pushed
 	Digest string `json:"digest"`
 }
@@ -133,6 +134,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		Annotations:                 pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
 		IsPushed:                    action.isPushed,
 		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
+		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 
 	if !action.skipPolicyEvaluation {
