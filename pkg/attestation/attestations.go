@@ -91,18 +91,17 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 	}, nil
 }
 
-func DSSEEnvelopeFromRaw(bundle, envelope []byte) (*dsse.Envelope, error) {
+func DSSEEnvelopeFromRaw(bundle []byte) (*dsse.Envelope, error) {
 	var dsseEnv dsse.Envelope
-	if bundle != nil {
-		var attBundle protobundle.Bundle
-		if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
-			return nil, fmt.Errorf("unmarshalling bundle: %w", err)
-		}
-		dsseEnv = *DSSEEnvelopeFromBundle(&attBundle)
-	} else {
-		if err := json.Unmarshal(envelope, &dsseEnv); err != nil {
-			return nil, fmt.Errorf("unmarshalling envelope: %w", err)
-		}
+	if bundle == nil {
+		return nil, fmt.Errorf("empty bundle")
 	}
+
+	var attBundle protobundle.Bundle
+	if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
+		return nil, fmt.Errorf("unmarshalling bundle: %w", err)
+	}
+	dsseEnv = *DSSEEnvelopeFromBundle(&attBundle)
+
 	return &dsseEnv, nil
 }
