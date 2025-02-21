@@ -65,10 +65,10 @@ data:
     {{- end }}
   {{- if .Values.controlplane.timestampAuthorities }}
   tsa.yaml: |
-    timestampAuthorities:
+    timestamp_authorities:
     {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
-      - issuer: {{$tsa.issuer}}
-        url: {{$tsa.url}}
-        cert_chain_path: /tsa_roots/chain-{{$index}}.pem
+      - issuer: {{ $tsa.issuer | default false }}
+        url: {{ $tsa.url }}
+        cert_chain_path: /tsa_roots/chain-{{ $index }}.pem
     {{- end }}
   {{- end }}
