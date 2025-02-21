@@ -180,10 +180,8 @@ spec:
               readOnly: true
             {{- end }}
             {{- if .Values.controlplane.timestampAuthorities }}
-            {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
-            - name: tsa-root-{{$index}}
+            - name: tsa-roots
               mountPath: /tsa_roots/
-            {{- end }}
             {{- end }}
             {{- if .Values.controlplane.extraVolumeMounts }}
             {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumeMounts "context" $) | nindent 12 }}
@@ -245,12 +243,7 @@ spec:
         {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
         {{- if .Values.controlplane.timestampAuthorities }}
-        {{- range $index, $tsa := .Values.controlplane.timestampAuthorities }}
-        - name: tsa-root-{{$index}}
+        - name: tsa-roots
           configMap:
             name: {{ include "chainloop.controlplane.fullname" $ }}-tsa
-            items:
-              - key: chain-{{$index}}.pem
-                path: chain-{{$index}}.pem
-        {{- end }}
         {{- end }}
