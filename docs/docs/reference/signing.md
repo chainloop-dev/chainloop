@@ -49,6 +49,9 @@ And verify it:
 ```
 Also note that `chainloop wf run describe` already detects a verifiable attestation and tries to perform the verification automatically. In these cases, you'll see "Verified: true" in the command output.
 
+### Timestamp service
+Chainloop can be configured to send the attestation signature to a timestamp service (TSA) and include the result as part of the attestation bundle. If available, the TSA signature will be used during the verification process.
+
 ### Not yet supported
 
 The following methods are work in progress and **not yet supported**.
