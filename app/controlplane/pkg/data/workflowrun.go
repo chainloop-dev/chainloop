@@ -32,7 +32,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 type WorkflowRunRepo struct {
@@ -179,10 +178,9 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	return entWrToBizWr(ctx, run)
 }
 
-// Save the attestation for a workflow run in the database
-func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope, digest string) error {
+// SaveAttestation saves the attestation for a workflow run in the database
+func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, digest string) error {
 	run, err := r.data.DB.WorkflowRun.UpdateOneID(id).
-		SetAttestation(att).
 		SetAttestationDigest(digest).
 		Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {

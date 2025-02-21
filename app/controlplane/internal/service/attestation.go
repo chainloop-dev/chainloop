@@ -199,8 +199,8 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	if req.GetAttestation() == nil && req.GetBundle() == nil {
-		return nil, errors.BadRequest("input required", "DSSE envelope or attestation bundle is required")
+	if req.GetBundle() == nil {
+		return nil, errors.BadRequest("input required", "attestation bundle is required")
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
@@ -220,7 +220,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
 	}
 
-	digest, err := s.storeAttestation(ctx, req.GetAttestation(), req.GetBundle(), robotAccount, wf, wRun, req.MarkVersionAsReleased)
+	digest, err := s.storeAttestation(ctx, req.GetBundle(), robotAccount, wf, wRun, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -231,18 +231,18 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
+func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
 	workflowRunID := wfRun.ID.String()
 	casBackend := wfRun.CASBackends[0]
 
 	// extract structured envelope for integrations
-	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
+	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Store the attestation
-	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, envelope, bundle)
+	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, bundle)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -254,15 +254,10 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 			b.MaxElapsedTime = 1 * time.Minute
 			err := backoff.Retry(
 				func() error {
-					rawContent := bundle
-					if rawContent == nil {
-						rawContent = envelope
-					}
-
 					// reset context
 					ctx := context.Background()
 					var err error
-					if err = s.attestationUseCase.UploadAttestationToCAS(ctx, rawContent, casBackend, workflowRunID, *digest); err != nil {
+					if err = s.attestationUseCase.UploadAttestationToCAS(ctx, bundle, casBackend, workflowRunID, *digest); err != nil {
 						return err
 					}
 
