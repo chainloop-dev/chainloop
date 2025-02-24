@@ -301,7 +301,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 	// Run integrations dispatcher
 	go func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
-			Envelope: dsseEnv, OrgID: robotAccount.OrgID, WorkflowID: workflowRunID,
+			Envelope: dsseEnv, OrgID: robotAccount.OrgID, WorkflowID: wf.ID.String(),
 			DownloadBackendType: string(casBackend.Provider),
 			DownloadSecretName:  secretName,
 			WorkflowRunID:       workflowRunID,
