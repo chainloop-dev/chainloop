@@ -303,6 +303,14 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		}
 	}
 
+	wr, err := uc.wfRunRepo.FindByID(ctx, runID)
+	if err != nil {
+		return nil, fmt.Errorf("finding workflow run: %w", err)
+	}
+	if wr == nil {
+		return nil, NewErrNotFound(id)
+	}
+
 	// Save bundle if provided, as it might come as an empty struct
 	if bundle != nil {
 		// Save bundle

@@ -7,8 +7,6 @@ import (
 
 	biz "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
-	dsse "github.com/secure-systems-lab/go-securesystemslib/dsse"
-
 	mock "github.com/stretchr/testify/mock"
 
 	pagination "github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -276,17 +274,17 @@ func (_m *WorkflowRunRepo) MarkAsFinished(ctx context.Context, ID uuid.UUID, sta
 	return r0
 }
 
-// SaveAttestation provides a mock function with given fields: ctx, ID, att, digest
-func (_m *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error {
-	ret := _m.Called(ctx, ID, att, digest)
+// SaveAttestation provides a mock function with given fields: ctx, ID, digest
+func (_m *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, digest string) error {
+	ret := _m.Called(ctx, ID, digest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveAttestation")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *dsse.Envelope, string) error); ok {
-		r0 = rf(ctx, ID, att, digest)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = rf(ctx, ID, digest)
 	} else {
 		r0 = ret.Error(0)
 	}
