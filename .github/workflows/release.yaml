@@ -186,8 +186,9 @@ jobs:
         if: ${{ success() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ATTESTATION_SHA: ${{ needs.finish_attestation.outputs.attestation_hash }}
         run: |
-          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ needs.finish_attestation.outputs.attestation_hash }})"
+          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ env.ATTESTATION_SHA }})"
           current_notes=$(gh release view ${{github.ref_name}} --json body -q '.body')
 
           if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
