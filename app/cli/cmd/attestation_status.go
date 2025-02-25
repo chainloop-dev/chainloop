@@ -115,6 +115,10 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 		}
 	}
 
+	if status.TimestampAuthority != "" {
+		gt.AppendRow(table.Row{"Timestamp Authority", status.TimestampAuthority})
+	}
+
 	var blockingColor text.Color
 	var blockingText = action.PolicyViolationBlockingStrategyAdvisory
 	if status.MustBlockOnPolicyViolations {
