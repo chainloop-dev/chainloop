@@ -36,8 +36,16 @@ type AttestationPushOpts struct {
 	*ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
-	SignServerCAPath string
-	LocalStatePath   string
+	LocalStatePath string
+	SignServerOpts *SignServerOpts
+}
+
+// SignServerOpts holds SignServer integration options
+type SignServerOpts struct {
+	// CA certificate for TLS connection
+	CAPath string
+	// (optional) Client cert for mutual TLS authentication
+	AuthClientCertPath string
 }
 
 type AttestationResult struct {
@@ -49,22 +57,22 @@ type AttestationResult struct {
 type AttestationPush struct {
 	*ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
-	signServerCAPath                           string
 	localStatePath                             string
+	signServerOpts                             *SignServerOpts
 	*newCrafterOpts
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger)}
 	return &AttestationPush{
-		ActionsOpts:      cfg.ActionsOpts,
-		keyPath:          cfg.KeyPath,
-		cliVersion:       cfg.CLIVersion,
-		cliDigest:        cfg.CLIDigest,
-		bundlePath:       cfg.BundlePath,
-		signServerCAPath: cfg.SignServerCAPath,
-		localStatePath:   cfg.LocalStatePath,
-		newCrafterOpts:   &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
+		ActionsOpts:    cfg.ActionsOpts,
+		keyPath:        cfg.KeyPath,
+		cliVersion:     cfg.CLIVersion,
+		cliDigest:      cfg.CLIDigest,
+		bundlePath:     cfg.BundlePath,
+		signServerOpts: cfg.SignServerOpts,
+		localStatePath: cfg.LocalStatePath,
+		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 	}, nil
 }
 
@@ -148,10 +156,14 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	crafter.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 	crafter.CraftingState.Attestation.BypassPolicyCheck = bypassPolicyCheck
 
-	sig, err := signer.GetSigner(action.keyPath, action.Logger, &signer.Opts{
-		SignServerCAPath: action.signServerCAPath,
-		Vaultclient:      pb.NewSigningServiceClient(action.CPConnection),
-	})
+	signerOpts := &signer.Opts{Vaultclient: pb.NewSigningServiceClient(action.CPConnection)}
+	if action.signServerOpts != nil {
+		signerOpts.SignServerOpts = &signer.SignServerOpts{
+			CAPath:             action.signServerOpts.CAPath,
+			AuthClientCertPath: action.signServerOpts.AuthClientCertPath,
+		}
+	}
+	sig, err := signer.GetSigner(action.keyPath, action.Logger, signerOpts)
 	if err != nil {
 		return nil, fmt.Errorf("creating signer: %w", err)
 	}

@@ -77,6 +77,12 @@ INF push completed
 Attestation Digest: sha256:8b247c21e201e1bd1367add9ee8bfd12c5a0866add39225fda6240c0ef10a64e%
 ```
 
+### Using a TLS Client certificate for authentication
+If your SignServer signer worker has been configured for client certificate authentication, you can add the flag `--signserver-client-cert` to the `push` command:
+```shell
+➜ chainloop att push --key signserver://localhost:8443/PlainSigner --signserver-ca-path ../keyfactor/localhost-chain.pem --signserver-client-cert ../keyfactor/client.pem
+```
+
 ### Verifying the attestation
 
 Verifying the attestation requires the signing cert and root CA (both provided by your organization out-of-band):

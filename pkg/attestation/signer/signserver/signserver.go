@@ -37,17 +37,35 @@ const ReferenceScheme = "signserver"
 
 // Signer implements a signer for SignServer
 type Signer struct {
-	host, worker, caPath string
+	host, worker, caPath, clientCertPath string
+}
+
+type SignerOpt func(*Signer)
+
+func WithCAPath(caPath string) SignerOpt {
+	return func(s *Signer) {
+		s.caPath = caPath
+	}
+}
+
+func WithClientCertPath(clientCertPath string) SignerOpt {
+	return func(s *Signer) {
+		s.clientCertPath = clientCertPath
+	}
 }
 
 var _ sigstoresigner.Signer = (*Signer)(nil)
 
-func NewSigner(host, worker, caPath string) *Signer {
-	return &Signer{
+func NewSigner(host, worker string, opts ...SignerOpt) *Signer {
+	s := &Signer{
 		host:   host,
 		worker: worker,
-		caPath: caPath,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
 }
 
 func (s Signer) PublicKey(_ ...sigstoresigner.PublicKeyOption) (crypto.PublicKey, error) {
@@ -92,6 +110,7 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 	client := &http.Client{}
 
 	var caPool *x509.CertPool
+	var tlsConfig *tls.Config
 	if s.caPath != "" {
 		caPool = x509.NewCertPool()
 		caContents, err := os.ReadFile(s.caPath)
@@ -99,8 +118,22 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 			return nil, fmt.Errorf("failed to read ca cert: %w", err)
 		}
 		caPool.AppendCertsFromPEM(caContents)
-		client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{RootCAs: caPool, MinVersion: tls.VersionTLS12}}
+		tlsConfig = &tls.Config{RootCAs: caPool, MinVersion: tls.VersionTLS12}
+	}
+
+	if s.clientCertPath != "" {
+		cert, err := tls.LoadX509KeyPair(s.clientCertPath, s.clientCertPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load client cert and key: %w", err)
+		}
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	if tlsConfig != nil {
+		client.Transport = &http.Transport{TLSClientConfig: tlsConfig}
 	}
 
 	res, err := client.Do(req)

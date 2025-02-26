@@ -28,11 +28,12 @@ import (
 
 func newAttestationPushCmd() *cobra.Command {
 	var (
-		pkPath, bundle                         string
-		annotationsFlag                        []string
-		signServerCAPath                       string
-		signServerAuthUser, signServerAuthPass string
-		bypassPolicyCheck                      bool
+		pkPath, bundle   string
+		annotationsFlag  []string
+		signServerCAPath string
+		// Client certificate for SignServer auth
+		signServerAuthCertPath string
+		bypassPolicyCheck      bool
 	)
 
 	cmd := &cobra.Command{
@@ -66,7 +67,11 @@ func newAttestationPushCmd() *cobra.Command {
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
 				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle,
 				CLIVersion: info.Version, CLIDigest: info.Digest,
-				SignServerCAPath: signServerCAPath, LocalStatePath: attestationLocalStatePath,
+				LocalStatePath: attestationLocalStatePath,
+				SignServerOpts: &action.SignServerOpts{
+					CAPath:             signServerCAPath,
+					AuthClientCertPath: signServerAuthCertPath,
+				},
 			})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)
@@ -124,9 +129,8 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd.Flags().StringVar(&bundle, "bundle", "", "output a Sigstore bundle to the provided path  ")
 	flagAttestationID(cmd)
 
-	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer communications")
-	cmd.Flags().StringVar(&signServerAuthUser, "signserver-auth-user", "", "")
-	cmd.Flags().StringVar(&signServerAuthPass, "signserver-auth-pass", "", "")
+	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer TLS connection")
+	cmd.Flags().StringVar(&signServerAuthCertPath, "signserver-client-cert", "", "path to client certificate in PEM format for authenticated SignServer TLS connection")
 	cmd.Flags().BoolVar(&bypassPolicyCheck, exceptionFlagName, false, "do not fail this command on policy violations enforcement")
 
 	return cmd

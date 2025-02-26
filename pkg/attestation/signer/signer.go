@@ -28,8 +28,15 @@ import (
 )
 
 type Opts struct {
-	SignServerCAPath string
-	Vaultclient      pb.SigningServiceClient
+	SignServerOpts *SignServerOpts
+	Vaultclient    pb.SigningServiceClient
+}
+
+type SignServerOpts struct {
+	// CA certificate for TLS connection
+	CAPath string
+	// (optional) Client cert for mutual TLS authentication
+	AuthClientCertPath string
 }
 
 // GetSigner creates a new Signer based on input parameters
@@ -37,11 +44,17 @@ func GetSigner(keyPath string, logger zerolog.Logger, opts *Opts) (sigstoresigne
 	var signer sigstoresigner.Signer
 	if keyPath != "" {
 		if strings.HasPrefix(keyPath, signserver.ReferenceScheme) {
+			if opts.SignServerOpts == nil {
+				// initialize empty opts (no custom CA, no client cert, no passphrase)
+				opts.SignServerOpts = &SignServerOpts{}
+			}
 			host, worker, err := signserver.ParseKeyReference(keyPath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse key: %w", err)
 			}
-			signer = signserver.NewSigner(host, worker, opts.SignServerCAPath)
+			signer = signserver.NewSigner(host, worker,
+				signserver.WithCAPath(opts.SignServerOpts.CAPath),
+				signserver.WithClientCertPath(opts.SignServerOpts.AuthClientCertPath))
 		} else {
 			signer = cosign.NewSigner(keyPath, logger)
 		}
