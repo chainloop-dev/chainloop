@@ -127,7 +127,7 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 			return nil, fmt.Errorf("failed to load client cert and key: %w", err)
 		}
 		if tlsConfig == nil {
-			tlsConfig = &tls.Config{}
+			tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
