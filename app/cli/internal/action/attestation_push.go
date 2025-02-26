@@ -45,7 +45,7 @@ type SignServerOpts struct {
 	// CA certificate for TLS connection
 	CAPath string
 	// (optional) Client cert for mutual TLS authentication
-	AuthClientCert string
+	AuthClientCertPath string
 }
 
 type AttestationResult struct {
@@ -159,8 +159,8 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	signerOpts := &signer.Opts{Vaultclient: pb.NewSigningServiceClient(action.CPConnection)}
 	if action.signServerOpts != nil {
 		signerOpts.SignServerOpts = &signer.SignServerOpts{
-			CAPath:         action.signServerOpts.CAPath,
-			AuthClientCert: action.signServerOpts.AuthClientCert,
+			CAPath:             action.signServerOpts.CAPath,
+			AuthClientCertPath: action.signServerOpts.AuthClientCertPath,
 		}
 	}
 	sig, err := signer.GetSigner(action.keyPath, action.Logger, signerOpts)
