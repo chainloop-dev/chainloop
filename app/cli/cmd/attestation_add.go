@@ -94,11 +94,7 @@ func newAttestationAddCmd() *cobra.Command {
 					// Try to load the value from a file or URL
 					// If the value is a URL, it will be downloaded and stored in a temporary file
 					// otherwise, it will be used as is
-					var (
-						rawValuePath string
-						err          error
-					)
-					rawValuePath, err = getPathForResource(value)
+					rawValuePath, err := getPathForResource(value)
 					if err != nil {
 						// If the error is an unrecognized scheme error, it means the path is not a URL
 						// and we should take the value as is
