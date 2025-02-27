@@ -94,9 +94,20 @@ func newAttestationAddCmd() *cobra.Command {
 					// Try to load the value from a file or URL
 					// If the value is a URL, it will be downloaded and stored in a temporary file
 					// otherwise, it will be used as is
-					rawValuePath, err := loadFileOrURL(value)
+					var (
+						rawValuePath string
+						err          error
+					)
+					rawValuePath, err = getPathForResource(value)
 					if err != nil {
-						return fmt.Errorf("loading resource: %w", err)
+						// If the error is an unrecognized scheme error, it means the path is not a URL
+						// and we should take the value as is
+						var uerr *unrecognizedSchemeError
+						if errors.As(err, &uerr) {
+							rawValuePath = value
+						} else {
+							return fmt.Errorf("loading resource: %w", err)
+						}
 					}
 					// TODO: take the material output and show render it
 					resp, err := a.Run(cmd.Context(), attestationID, name, rawValuePath, kind, annotations)
@@ -215,24 +226,18 @@ func (e *unrecognizedSchemeError) Error() string {
 	return fmt.Sprintf("loading URL: unrecognized scheme: %s", e.Scheme)
 }
 
-// loadFileOrURL tries to load a file or URL from the given path.
+// getPathForResource tries to load a file or URL from the given path.
 // If the path starts with "http://" or "https://", it will try to load the file from the URL and save it
 // in a temporary file. It will return the path to the temporary file.
 // If the path is an actual file path, it will return the filepath
-func loadFileOrURL(resourcePath string) (string, error) {
+func getPathForResource(resourcePath string) (string, error) {
 	if _, err := os.Stat(resourcePath); err == nil {
 		return resourcePath, nil
 	}
 
 	// Try to load the resource from a URL
-	raw, err := loadResource(resourcePath)
+	raw, err := loadResourceFromURLOrEnv(resourcePath)
 	if err != nil {
-		// If the error is an unrecognized scheme error, it means the path is not a URL
-		// and we should return the path as is
-		var uerr *unrecognizedSchemeError
-		if errors.As(err, &uerr) {
-			return resourcePath, nil
-		}
 		return "", fmt.Errorf("loading resource: %w", err)
 	}
 
@@ -240,7 +245,7 @@ func loadFileOrURL(resourcePath string) (string, error) {
 	return createTempFile(resourcePath, raw)
 }
 
-func loadResource(resourcePath string) ([]byte, error) {
+func loadResourceFromURLOrEnv(resourcePath string) ([]byte, error) {
 	parts := strings.SplitAfterN(resourcePath, "://", 2)
 	// If the path does not contain a scheme, it is considered a file path
 	if len(parts) != 2 {
