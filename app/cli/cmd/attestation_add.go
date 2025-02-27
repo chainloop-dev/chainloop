@@ -16,8 +16,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/muesli/reflow/wrap"
@@ -86,8 +91,15 @@ func newAttestationAddCmd() *cobra.Command {
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
 				func() error {
+					// Try to load the value from a file or URL
+					// If the value is a URL, it will be downloaded and stored in a temporary file
+					// otherwise, it will be used as is
+					rawValuePath, err := loadFileOrURL(value)
+					if err != nil {
+						return fmt.Errorf("loading resource: %w", err)
+					}
 					// TODO: take the material output and show render it
-					resp, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
+					resp, err := a.Run(cmd.Context(), attestationID, name, rawValuePath, kind, annotations)
 					if err != nil {
 						return err
 					}
@@ -191,4 +203,102 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 	mt.Style().Options.SeparateRows = true
 	mt.Render()
 	return nil
+}
+
+// unrecognizedSchemeError is an error type for when a URL scheme is not recognized out of
+// the supported ones.
+type unrecognizedSchemeError struct {
+	Scheme string
+}
+
+func (e *unrecognizedSchemeError) Error() string {
+	return fmt.Sprintf("loading URL: unrecognized scheme: %s", e.Scheme)
+}
+
+// loadFileOrURL tries to load a file or URL from the given path.
+// If the path starts with "http://" or "https://", it will try to load the file from the URL and save it
+// in a temporary file. It will return the path to the temporary file.
+// If the path is an actual file path, it will return the filepath
+func loadFileOrURL(resourcePath string) (string, error) {
+	if _, err := os.Stat(resourcePath); err == nil {
+		return resourcePath, nil
+	}
+
+	// Try to load the resource from a URL
+	raw, err := loadResource(resourcePath)
+	if err != nil {
+		// If the error is an unrecognized scheme error, it means the path is not a URL
+		// and we should return the path as is
+		var uerr *unrecognizedSchemeError
+		if errors.As(err, &uerr) {
+			return resourcePath, nil
+		}
+		return "", fmt.Errorf("loading resource: %w", err)
+	}
+
+	// If the resource is loaded from a URL, save it in a temporary file
+	return createTempFile(resourcePath, raw)
+}
+
+func loadResource(resourcePath string) ([]byte, error) {
+	parts := strings.SplitAfterN(resourcePath, "://", 2)
+	// If the path does not contain a scheme, it is considered a file path
+	if len(parts) != 2 {
+		return nil, &unrecognizedSchemeError{Scheme: parts[0]}
+	}
+
+	switch parts[0] {
+	case "http://", "https://":
+		return loadFromURL(resourcePath)
+	case "env://":
+		return loadFromEnv(parts[1])
+	default:
+		return nil, &unrecognizedSchemeError{Scheme: parts[0]}
+	}
+}
+
+// loadFromURL loads the content of a URL and returns it as a byte slice.
+func loadFromURL(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("requesting URL: %w", err)
+	}
+	defer resp.Body.Close()
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("loading URL response: %w", err)
+	}
+	return raw, nil
+}
+
+// loadFromEnv loads the content of an environment variable and returns it as a byte slice.
+func loadFromEnv(envVar string) ([]byte, error) {
+	value, found := os.LookupEnv(envVar)
+	if !found {
+		return nil, fmt.Errorf("loading URL: env var $%s not found", envVar)
+	}
+	return []byte(value), nil
+}
+
+// createTempFile creates a temporary file with the given filename and writes the given data to it.
+func createTempFile(filename string, rawData []byte) (string, error) {
+	// Create a temporary directory with a random name to avoid collisions
+	tempDir, err := os.MkdirTemp("", "chainloop-inflight-dir-*")
+	if err != nil {
+		return "", fmt.Errorf("creating temporary directory: %w", err)
+	}
+
+	// Create a temporary file with the same name as the original file
+	tempFile, err := os.Create(filepath.Join(tempDir, filepath.Base(filename)))
+	if err != nil {
+		return "", fmt.Errorf("creating temporary file: %w", err)
+	}
+
+	// Write the data to the temporary file
+	if _, err := tempFile.Write(rawData); err != nil {
+		return "", fmt.Errorf("writing to temporary file: %w", err)
+	}
+
+	return tempFile.Name(), nil
 }
