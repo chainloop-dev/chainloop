@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -223,6 +225,33 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	return attestationResult, nil
 }
 
+func fixBundle(bundle *protobundle.Bundle) *protobundle.Bundle {
+	env := bundle.GetDsseEnvelope()
+	srcSig := env.GetSignatures()[0].GetSig()
+	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(srcSig)))
+	_, err := base64.StdEncoding.Decode(dst, srcSig)
+	if err != nil {
+		// already decoded
+		dst = srcSig
+	}
+	res := &protobundle.Bundle{
+		MediaType: bundle.MediaType,
+		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
+			Payload:     env.GetPayload(),
+			PayloadType: env.GetPayloadType(),
+			Signatures: []*sigstoredsse.Signature{
+				{
+					Sig:   dst,
+					Keyid: env.GetSignatures()[0].GetKeyid(),
+				},
+			},
+		}},
+		VerificationMaterial: bundle.VerificationMaterial,
+	}
+
+	return res
+}
+
 func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
 	encodedBundle, err := encodeBundle(bundle)
 	if err != nil {
@@ -237,10 +266,18 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
+	// bundle with DSSE envelope fixed. See https://github.com/chainloop-dev/chainloop/issues/1832
+	fixedBundle := fixBundle(bundle)
+	encodedFixedBundle, err := encodeBundle(fixedBundle)
+	if err != nil {
+		return "", fmt.Errorf("encoding attestation: %w", err)
+	}
+
 	// Store bundle next versions will perform this in a single call)
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 		Attestation:           encodedAttestation,
 		Bundle:                encodedBundle,
+		AttestationBundle:     encodedFixedBundle,
 		WorkflowRunId:         workflowRunID,
 		MarkVersionAsReleased: &markVersionAsReleased,
 	})

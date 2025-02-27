@@ -121,10 +121,13 @@ export interface AttestationServiceStoreRequest {
    */
   attestation: Uint8Array;
   /**
-   * encoded Sigstore attestation bundle
-   * TODO. Add min_len constraint
+   * deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832
+   *
+   * @deprecated
    */
   bundle: Uint8Array;
+  /** encoded Sigstore attestation bundle */
+  attestationBundle: Uint8Array;
   workflowRunId: string;
   /** mark the associated version as released */
   markVersionAsReleased?: boolean | undefined;
@@ -1395,6 +1398,7 @@ function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequ
   return {
     attestation: new Uint8Array(0),
     bundle: new Uint8Array(0),
+    attestationBundle: new Uint8Array(0),
     workflowRunId: "",
     markVersionAsReleased: undefined,
   };
@@ -1407,6 +1411,9 @@ export const AttestationServiceStoreRequest = {
     }
     if (message.bundle.length !== 0) {
       writer.uint32(34).bytes(message.bundle);
+    }
+    if (message.attestationBundle.length !== 0) {
+      writer.uint32(42).bytes(message.attestationBundle);
     }
     if (message.workflowRunId !== "") {
       writer.uint32(18).string(message.workflowRunId);
@@ -1438,6 +1445,13 @@ export const AttestationServiceStoreRequest = {
 
           message.bundle = reader.bytes();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.attestationBundle = reader.bytes();
+          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1465,6 +1479,9 @@ export const AttestationServiceStoreRequest = {
     return {
       attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
       bundle: isSet(object.bundle) ? bytesFromBase64(object.bundle) : new Uint8Array(0),
+      attestationBundle: isSet(object.attestationBundle)
+        ? bytesFromBase64(object.attestationBundle)
+        : new Uint8Array(0),
       workflowRunId: isSet(object.workflowRunId) ? String(object.workflowRunId) : "",
       markVersionAsReleased: isSet(object.markVersionAsReleased) ? Boolean(object.markVersionAsReleased) : undefined,
     };
@@ -1476,6 +1493,10 @@ export const AttestationServiceStoreRequest = {
       (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
     message.bundle !== undefined &&
       (obj.bundle = base64FromBytes(message.bundle !== undefined ? message.bundle : new Uint8Array(0)));
+    message.attestationBundle !== undefined &&
+      (obj.attestationBundle = base64FromBytes(
+        message.attestationBundle !== undefined ? message.attestationBundle : new Uint8Array(0),
+      ));
     message.workflowRunId !== undefined && (obj.workflowRunId = message.workflowRunId);
     message.markVersionAsReleased !== undefined && (obj.markVersionAsReleased = message.markVersionAsReleased);
     return obj;
@@ -1491,6 +1512,7 @@ export const AttestationServiceStoreRequest = {
     const message = createBaseAttestationServiceStoreRequest();
     message.attestation = object.attestation ?? new Uint8Array(0);
     message.bundle = object.bundle ?? new Uint8Array(0);
+    message.attestationBundle = object.attestationBundle ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
     message.markVersionAsReleased = object.markVersionAsReleased ?? undefined;
     return message;

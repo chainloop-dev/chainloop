@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -49,6 +50,9 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	if err := protojson.Unmarshal(bundleBytes, bundle); err != nil {
 		return fmt.Errorf("invalid bundle: %w", err)
 	}
+
+	// fix for old attestations
+	fixSignatureInBundle(bundle)
 
 	sb := &sigstorebundle.Bundle{Bundle: bundle}
 	vc, err := sb.VerificationContent()
@@ -89,4 +93,16 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	}
 
 	return nil
+}
+
+// old attestations have signatures base64 encoded twice, see https://github.com/chainloop-dev/chainloop/issues/1832
+func fixSignatureInBundle(bundle *protobundle.Bundle) {
+	sig := bundle.GetDsseEnvelope().GetSignatures()[0].GetSig()
+	dst := make([]byte, base64.StdEncoding.EncodedLen(len(sig)))
+	i, err := base64.StdEncoding.Decode(dst, sig)
+	if err == nil {
+		// it was encoded twice. Use it
+		sig = dst[:i]
+	}
+	bundle.GetDsseEnvelope().GetSignatures()[0].Sig = sig
 }

@@ -3,6 +3,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(attestation_bundle)$": {
+      "description": "encoded Sigstore attestation bundle",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "^(mark_version_as_released)$": {
       "description": "mark the associated version as released",
       "type": "boolean"
@@ -18,8 +23,13 @@
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     },
+    "attestationBundle": {
+      "description": "encoded Sigstore attestation bundle",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "bundle": {
-      "description": "encoded Sigstore attestation bundle\n TODO. Add min_len constraint",
+      "description": "deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     },

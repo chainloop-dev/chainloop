@@ -199,7 +199,12 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
 
-	if req.GetAttestation() == nil && req.GetBundle() == nil {
+	bundle := req.GetAttestationBundle()
+	if bundle == nil {
+		bundle = req.GetBundle()
+	}
+
+	if req.GetAttestation() == nil && bundle == nil {
 		return nil, errors.BadRequest("input required", "DSSE envelope or attestation bundle is required")
 	}
 
@@ -220,7 +225,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
 	}
 
-	digest, err := s.storeAttestation(ctx, req.GetAttestation(), req.GetBundle(), robotAccount, wf, wRun, req.MarkVersionAsReleased)
+	digest, err := s.storeAttestation(ctx, req.GetAttestation(), bundle, robotAccount, wf, wRun, req.MarkVersionAsReleased)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
