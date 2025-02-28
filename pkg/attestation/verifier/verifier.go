@@ -87,7 +87,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 
 	// Even with no cert (using a local key), we can still validate the timestamp
 	if err = VerifyTimestamps(sb, tr); err != nil {
-		if !errors.Is(err, sigstorebundle.ErrMissingVerificationMaterial) {
+		if !errors.Is(err, ErrMissingVerificationMaterial) {
 			return fmt.Errorf("could not verify timestamps: %w", err)
 		}
 	} else {
@@ -97,6 +97,6 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	if !hasVerificationMaterial {
 		return ErrMissingVerificationMaterial
 	}
-	
+
 	return nil
 }
