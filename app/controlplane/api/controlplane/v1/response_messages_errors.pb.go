@@ -35,6 +35,30 @@ func ErrorAllowListErrorNotInList(format string, args ...interface{}) *errors.Er
 	return errors.New(403, AllowListError_ALLOW_LIST_ERROR_NOT_IN_LIST.String(), fmt.Sprintf(format, args...))
 }
 
+func IsFederatedAuthErrorUnspecified(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == FederatedAuthError_FEDERATED_AUTH_ERROR_UNSPECIFIED.String() && e.Code == 500
+}
+
+func ErrorFederatedAuthErrorUnspecified(format string, args ...interface{}) *errors.Error {
+	return errors.New(500, FederatedAuthError_FEDERATED_AUTH_ERROR_UNSPECIFIED.String(), fmt.Sprintf(format, args...))
+}
+
+func IsFederatedAuthErrorUnauthorized(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == FederatedAuthError_FEDERATED_AUTH_ERROR_UNAUTHORIZED.String() && e.Code == 403
+}
+
+func ErrorFederatedAuthErrorUnauthorized(format string, args ...interface{}) *errors.Error {
+	return errors.New(403, FederatedAuthError_FEDERATED_AUTH_ERROR_UNAUTHORIZED.String(), fmt.Sprintf(format, args...))
+}
+
 func IsUserWithNoMembershipErrorUnspecified(err error) bool {
 	if err == nil {
 		return false

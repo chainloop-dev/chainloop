@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
@@ -272,7 +273,7 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 								var federatedErr *FederatedAuthError
 								if errors.As(err, &federatedErr) {
 									// extract the underlying error message
-									return nil, errors.New(federatedErr.Message)
+									return nil, v1.ErrorFederatedAuthErrorUnauthorized("%s", federatedErr.Message)
 								}
 
 								// log the error and return a generic error message by default
