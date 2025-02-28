@@ -60,7 +60,10 @@ func newAttestationAddCmd() *cobra.Command {
   chainloop attestation add --kind <material-kind> --value <material-value>
 
   # Add a material to the attestation without specifying neither kind nor name enables automatic detection
-  chainloop attestation add --value <material-value>`,
+  chainloop attestation add --value <material-value>
+
+  # Add a material by also providing a URL pointing to the material. It will be downloaded to a temporary folder first
+  chainloop attestation add --value https://example.com/sbom.json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
