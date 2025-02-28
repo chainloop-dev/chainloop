@@ -40,7 +40,7 @@ func TestVerifyBundle(t *testing.T) {
 		name      string
 		roots     *TrustedRoot
 		bundle    string
-		expectErr bool
+		expectErr string
 	}{
 		{
 			name:   "invalid bundle, but still verifiable",
@@ -53,10 +53,16 @@ func TestVerifyBundle(t *testing.T) {
 			bundle: "testdata/bundle_valid.json",
 		},
 		{
+			name:      "valid bundle without verification material",
+			roots:     roots,
+			bundle:    "testdata/bundle_valid_nomaterial.json",
+			expectErr: "missing material",
+		},
+		{
 			name:      "corrupted bundle",
 			roots:     roots,
 			bundle:    "testdata/bundle_invalid.json",
-			expectErr: true,
+			expectErr: "validating the DSSE envelope",
 		},
 	}
 
@@ -65,8 +71,9 @@ func TestVerifyBundle(t *testing.T) {
 			bundleBytes, err := os.ReadFile(tc.bundle)
 			require.NoError(t, err)
 			err = VerifyBundle(context.TODO(), bundleBytes, tc.roots)
-			if tc.expectErr {
+			if tc.expectErr != "" {
 				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectErr)
 				return
 			}
 			assert.NoError(t, err)
