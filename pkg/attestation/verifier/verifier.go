@@ -50,6 +50,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		return fmt.Errorf("invalid bundle: %w", err)
 	}
 
+	hasVerificationMaterial := false
 	sb := &sigstorebundle.Bundle{Bundle: bundle}
 	vc, err := sb.VerificationContent()
 	if err != nil {
@@ -59,6 +60,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	}
 
 	if vc != nil && vc.GetCertificate() != nil {
+		hasVerificationMaterial = true
 		signingCert := vc.GetCertificate()
 
 		aki := fmt.Sprintf("%x", sha256.Sum256(signingCert.AuthorityKeyId))
@@ -85,7 +87,15 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 
 	// Even with no cert (using a local key), we can still validate the timestamp
 	if err = VerifyTimestamps(sb, tr); err != nil {
-		return fmt.Errorf("could not verify timestamps: %w", err)
+		if !errors.Is(err, ErrMissingVerificationMaterial) {
+			return fmt.Errorf("could not verify timestamps: %w", err)
+		}
+	} else {
+		hasVerificationMaterial = true
+	}
+
+	if !hasVerificationMaterial {
+		return ErrMissingVerificationMaterial
 	}
 
 	return nil

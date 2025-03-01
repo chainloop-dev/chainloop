@@ -30,11 +30,15 @@ import (
 func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 	signedTimestamps, err := sb.Timestamps()
 	if err != nil {
-		return fmt.Errorf("could not get timestamps from bundle: %w", err)
+		if errors.Is(err, bundle.ErrMissingVerificationMaterial) {
+			// translate error
+			return ErrMissingVerificationMaterial
+		}
+		return fmt.Errorf("could not get timestamps: %w", err)
 	}
 	if len(signedTimestamps) == 0 {
 		// nothing to do
-		return nil
+		return ErrMissingVerificationMaterial
 	}
 	sc, err := sb.SignatureContent()
 	if err != nil {
