@@ -73,12 +73,18 @@ func loadResourceFromURLOrEnv(resourcePath string) ([]byte, error) {
 // loadFromURL loads the content of a URL and returns it as a byte slice.
 func loadFromURL(url string) ([]byte, error) {
 	// As cosign does: https://github.com/sigstore/cosign/blob/beb9cf21bc6741bc6e6b9736bdf57abfb91599c0/pkg/blob/load.go#L47
+	// By default it will attempt a maximum 10 redirects
 	// #nosec G107
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("requesting URL: %w", err)
 	}
 	defer resp.Body.Close()
+
+	// Check if the response is OK
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("loading URL: %s", resp.Status)
+	}
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
