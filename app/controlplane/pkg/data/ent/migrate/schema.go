@@ -442,6 +442,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "public", Type: field.TypeBool, Default: false},
 		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "project_id", Type: field.TypeUUID},
 		{Name: "workflow_contract", Type: field.TypeUUID},
@@ -455,25 +456,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflows_organizations_workflows",
-				Columns:    []*schema.Column{WorkflowsColumns[10]},
+				Columns:    []*schema.Column{WorkflowsColumns[11]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflows_projects_workflows",
-				Columns:    []*schema.Column{WorkflowsColumns[11]},
+				Columns:    []*schema.Column{WorkflowsColumns[12]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflows_workflow_contracts_contract",
-				Columns:    []*schema.Column{WorkflowsColumns[12]},
+				Columns:    []*schema.Column{WorkflowsColumns[13]},
 				RefColumns: []*schema.Column{WorkflowContractsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflows_workflow_runs_latest_workflow_run",
-				Columns:    []*schema.Column{WorkflowsColumns[13]},
+				Columns:    []*schema.Column{WorkflowsColumns[14]},
 				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -482,7 +483,7 @@ var (
 			{
 				Name:    "workflow_name_organization_id_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[10], WorkflowsColumns[11]},
+				Columns: []*schema.Column{WorkflowsColumns[1], WorkflowsColumns[11], WorkflowsColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -490,7 +491,7 @@ var (
 			{
 				Name:    "workflow_organization_id_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowsColumns[10], WorkflowsColumns[0]},
+				Columns: []*schema.Column{WorkflowsColumns[11], WorkflowsColumns[0]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -498,7 +499,7 @@ var (
 			{
 				Name:    "workflow_organization_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowsColumns[10]},
+				Columns: []*schema.Column{WorkflowsColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
@@ -506,7 +507,7 @@ var (
 			{
 				Name:    "workflow_workflow_contract",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowsColumns[12]},
+				Columns: []*schema.Column{WorkflowsColumns[13]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

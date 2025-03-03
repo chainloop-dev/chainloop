@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -46,6 +47,8 @@ type Workflow struct {
 	LatestRun *uuid.UUID `json:"latest_run,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowQuery when eager-loading is set.
 	Edges             WorkflowEdges `json:"edges"`
@@ -163,6 +166,8 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflow.FieldLatestRun:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case workflow.FieldMetadata:
+			values[i] = new([]byte)
 		case workflow.FieldPublic:
 			values[i] = new(sql.NullBool)
 		case workflow.FieldRunsCount:
@@ -268,6 +273,14 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
 				w.Description = value.String
+			}
+		case workflow.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &w.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
 			}
 		case workflow.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -389,6 +402,9 @@ func (w *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(w.Description)
+	builder.WriteString(", ")
+	builder.WriteString("metadata=")
+	builder.WriteString(fmt.Sprintf("%v", w.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

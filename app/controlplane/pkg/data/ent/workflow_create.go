@@ -175,6 +175,12 @@ func (wc *WorkflowCreate) SetNillableDescription(s *string) *WorkflowCreate {
 	return wc
 }
 
+// SetMetadata sets the "metadata" field.
+func (wc *WorkflowCreate) SetMetadata(m map[string]interface{}) *WorkflowCreate {
+	wc.mutation.SetMetadata(m)
+	return wc
+}
+
 // SetID sets the "id" field.
 func (wc *WorkflowCreate) SetID(u uuid.UUID) *WorkflowCreate {
 	wc.mutation.SetID(u)
@@ -449,6 +455,10 @@ func (wc *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 	if value, ok := wc.mutation.Description(); ok {
 		_spec.SetField(workflow.FieldDescription, field.TypeString, value)
 		_node.Description = value
+	}
+	if value, ok := wc.mutation.Metadata(); ok {
+		_spec.SetField(workflow.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
 	}
 	if nodes := wc.mutation.RobotaccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -790,6 +800,24 @@ func (u *WorkflowUpsert) ClearDescription() *WorkflowUpsert {
 	return u
 }
 
+// SetMetadata sets the "metadata" field.
+func (u *WorkflowUpsert) SetMetadata(v map[string]interface{}) *WorkflowUpsert {
+	u.Set(workflow.FieldMetadata, v)
+	return u
+}
+
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *WorkflowUpsert) UpdateMetadata() *WorkflowUpsert {
+	u.SetExcluded(workflow.FieldMetadata)
+	return u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (u *WorkflowUpsert) ClearMetadata() *WorkflowUpsert {
+	u.SetNull(workflow.FieldMetadata)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1023,6 +1051,27 @@ func (u *WorkflowUpsertOne) UpdateDescription() *WorkflowUpsertOne {
 func (u *WorkflowUpsertOne) ClearDescription() *WorkflowUpsertOne {
 	return u.Update(func(s *WorkflowUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetMetadata sets the "metadata" field.
+func (u *WorkflowUpsertOne) SetMetadata(v map[string]interface{}) *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetMetadata(v)
+	})
+}
+
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *WorkflowUpsertOne) UpdateMetadata() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateMetadata()
+	})
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (u *WorkflowUpsertOne) ClearMetadata() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearMetadata()
 	})
 }
 
@@ -1426,6 +1475,27 @@ func (u *WorkflowUpsertBulk) UpdateDescription() *WorkflowUpsertBulk {
 func (u *WorkflowUpsertBulk) ClearDescription() *WorkflowUpsertBulk {
 	return u.Update(func(s *WorkflowUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetMetadata sets the "metadata" field.
+func (u *WorkflowUpsertBulk) SetMetadata(v map[string]interface{}) *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetMetadata(v)
+	})
+}
+
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *WorkflowUpsertBulk) UpdateMetadata() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateMetadata()
+	})
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (u *WorkflowUpsertBulk) ClearMetadata() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearMetadata()
 	})
 }
 
