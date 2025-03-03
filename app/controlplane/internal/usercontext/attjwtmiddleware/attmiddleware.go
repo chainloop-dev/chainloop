@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
@@ -54,6 +55,25 @@ const (
 	// FederatedProviderKey is the key for federated token provider
 	FederatedProviderKey = "federatedProvider"
 )
+
+// FederatedAuthError represents an error from the federated authentication provider
+type FederatedAuthError struct {
+	StatusCode int
+	ErrorCode  int
+	Message    string
+}
+
+func (e *FederatedAuthError) Error() string {
+	return fmt.Sprintf("federated auth error: status=%d, code=%d, message=%s", e.StatusCode, e.ErrorCode, e.Message)
+}
+
+func newFederatedAuthError(statusCode, errorCode int, message string) error {
+	return &FederatedAuthError{
+		StatusCode: statusCode,
+		ErrorCode:  errorCode,
+		Message:    message,
+	}
+}
 
 var (
 	ErrMissingJwtToken           = errorsAPI.Unauthorized(reason, "JWT token is missing")
@@ -248,8 +268,17 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 							logger.Infof("calling federated provider, orgName: %s", orgName)
 							claims, err := callFederatedProvider(o.federatedAuthURL, jwtToken, orgName, claimsCache)
 							if err != nil {
+								// if we receive an error from upstream we want to expose it to the user, for example if the federated provider
+								// is saying that the token is invalid
+								var federatedErr *FederatedAuthError
+								if errors.As(err, &federatedErr) {
+									// extract the underlying error message
+									return nil, v1.ErrorFederatedAuthErrorUnauthorized("%s", federatedErr.Message)
+								}
+
+								// log the error and return a generic error message by default
 								logger.Errorw("msg", "error calling federated provider", "error", err)
-								return nil, fmt.Errorf("couldn't authorize using the provided token")
+								return nil, errors.New("couldn't authorize using the provided token")
 							}
 
 							ctx = newJWTAuthContext(ctx, JWTAuthContext{
@@ -332,7 +361,7 @@ func callFederatedProvider(verifyURL string, jwtToken, orgName string, cache *ex
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d, errorCode: %d, error: %s", resp.StatusCode, response.ErrorCode, response.Message)
+		return nil, newFederatedAuthError(resp.StatusCode, response.ErrorCode, response.Message)
 	}
 
 	claims := &jwt.MapClaims{
