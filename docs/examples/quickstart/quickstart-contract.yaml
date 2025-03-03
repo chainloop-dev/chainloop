@@ -1,0 +1,29 @@
+# This is an example contract that expects all containers to have a valid SBOM
+# and all artifacts to be signed. It also checks that the vulnerabilities
+# reports do not contain any vulnerabilities with severity higher than MEDIUM
+schemaVersion: v1
+materials:
+  - name: container
+    type: CONTAINER_IMAGE
+  - name: sbom
+    type: SBOM_CYCLONEDX_JSON
+    optional: true
+  - name: vulnerabilities-report
+    type: SARIF
+    optional: true
+policies:
+  attestation:
+    # Container with sbom checks that all containers added to the attestation
+    # have a valid SBOM also present in the attestation
+    - ref: containers-with-sbom
+  materials:
+    # Artifact signed checks that all artifacts such as Container Images and Charts are signed
+    - ref: artifact-signed
+    # Vulnerabilities checks the vulnerabilities reports if present in the attestation
+    # does not contain any vulnerabilities with severity higher than the specified
+    - ref: vulnerabilities
+      with:
+        severity: "MEDIUM"
+policyGroups:
+  # This policy group applies a number of SBOM-related policies
+  - ref: sbom-quality
