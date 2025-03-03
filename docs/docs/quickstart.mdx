@@ -98,7 +98,10 @@ This quickstart will guide you through the process of installing the Chainloop C
     chainloop att add --name container --value ghcr.io/chainloop-dev/chainloop/control-plane:latest
     ```
 
-    We just attested the latest version of the control-plane image as an example, remember that you can provide any material you want to attest by pointing to a local filepath or URL too, like for example
+    We just attested the latest version of the control-plane image as an example, remember that you can provide any material you want to attest by pointing to a local filepath or URL too, like for example:
+    :::info
+    Please note the SBOM referenced below is a reduced version of the real one for the sake of simplicity and demo purposes.
+    :::
 
     ```bash
     chainloop att add --name sbom --value https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/quickstart/sbom.json
