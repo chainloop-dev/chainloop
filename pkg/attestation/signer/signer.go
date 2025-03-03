@@ -35,8 +35,8 @@ type Opts struct {
 type SignServerOpts struct {
 	// CA certificate for TLS connection
 	CAPath string
-	// (optional) Client cert for mutual TLS authentication
-	AuthClientCertPath string
+	// (optional) Client cert and passphrase for mutual TLS authentication
+	AuthClientCertPath, AuthClientCertPass string
 }
 
 // GetSigner creates a new Signer based on input parameters
@@ -54,7 +54,8 @@ func GetSigner(keyPath string, logger zerolog.Logger, opts *Opts) (sigstoresigne
 			}
 			signer = signserver.NewSigner(host, worker,
 				signserver.WithCAPath(opts.SignServerOpts.CAPath),
-				signserver.WithClientCertPath(opts.SignServerOpts.AuthClientCertPath))
+				signserver.WithClientCertPath(opts.SignServerOpts.AuthClientCertPath),
+				signserver.WithClientCertPass(opts.SignServerOpts.AuthClientCertPass))
 		} else {
 			signer = cosign.NewSigner(keyPath, logger)
 		}

@@ -31,8 +31,9 @@ func newAttestationPushCmd() *cobra.Command {
 		pkPath, bundle   string
 		annotationsFlag  []string
 		signServerCAPath string
-		// Client certificate for SignServer auth
+		// Client certificate and passphrase for SignServer auth
 		signServerAuthCertPath string
+		signServerAuthCertPass string
 		bypassPolicyCheck      bool
 	)
 
@@ -71,6 +72,7 @@ func newAttestationPushCmd() *cobra.Command {
 				SignServerOpts: &action.SignServerOpts{
 					CAPath:             signServerCAPath,
 					AuthClientCertPath: signServerAuthCertPath,
+					AuthClientCertPass: signServerAuthCertPass,
 				},
 			})
 			if err != nil {
@@ -131,6 +133,7 @@ func newAttestationPushCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&signServerCAPath, "signserver-ca-path", "", "custom CA to be used for SignServer TLS connection")
 	cmd.Flags().StringVar(&signServerAuthCertPath, "signserver-client-cert", "", "path to client certificate in PEM format for authenticated SignServer TLS connection")
+	cmd.Flags().StringVar(&signServerAuthCertPass, "signserver-client-pass", "", "certificate passphrase for authenticated SignServer TLS connection")
 	cmd.Flags().BoolVar(&bypassPolicyCheck, exceptionFlagName, false, "do not fail this command on policy violations enforcement")
 
 	return cmd
