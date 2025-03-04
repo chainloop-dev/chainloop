@@ -276,8 +276,8 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	ctx := context.Background()
 	// if OIDC provider returns an error, redirect to the login page to and show it to the user
 	if desc := r.URL.Query().Get(oidcErrorParam); desc != "" {
-		redirectUrl := fmt.Sprintf("%s?%s=%s", svc.AuthURLs.Login, oidcErrorParam, desc)
-		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true, redirectUrl}
+		redirectURL := fmt.Sprintf("%s?%s=%s", svc.AuthURLs.Login, oidcErrorParam, desc)
+		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true, redirectURL}
 	}
 
 	// Get information from google OIDC token
