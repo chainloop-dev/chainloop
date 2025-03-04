@@ -51,6 +51,8 @@ const (
 	AuthLoginPath    = "/auth/login"
 	AuthCallbackPath = "/auth/callback"
 
+	oidcErrorParam = "error_description"
+
 	// default
 	shortLivedDuration = 10 * time.Second
 	// opt-in
@@ -272,9 +274,9 @@ func (c *upstreamOIDCclaims) preferredEmail() string {
 
 func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oauthResp {
 	ctx := context.Background()
-	// if OIDC provider returns an error, return it to and show it to the user
-	if desc := r.URL.Query().Get("error_description"); desc != "" {
-		redirectUrl := fmt.Sprintf("%s?error_description=%s", svc.AuthURLs.Login, desc)
+	// if OIDC provider returns an error, redirect to the login page to and show it to the user
+	if desc := r.URL.Query().Get(oidcErrorParam); desc != "" {
+		redirectUrl := fmt.Sprintf("%s?%s=%s", svc.AuthURLs.Login, oidcErrorParam, desc)
 		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true, redirectUrl}
 	}
 
