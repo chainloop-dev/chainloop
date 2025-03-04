@@ -23,7 +23,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"os"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -154,18 +153,6 @@ func (ab *AttestationRenderer) Render(ctx context.Context) (*dsse.Envelope, *pro
 	bundle, err := ab.envelopeToBundle(&dsseEnvelope, tsaSig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading bundle: %w", err)
-	}
-	json, err := protojson.Marshal(bundle)
-	if err != nil {
-		return nil, nil, fmt.Errorf("marshalling bundle: %w", err)
-	}
-
-	if ab.bundlePath != "" {
-		ab.logger.Info().Msg(fmt.Sprintf("Storing Sigstore bundle %s", ab.bundlePath))
-		err = os.WriteFile(ab.bundlePath, json, 0600)
-		if err != nil {
-			return nil, nil, fmt.Errorf("writing bundle: %w", err)
-		}
 	}
 
 	return &dsseEnvelope, bundle, nil
