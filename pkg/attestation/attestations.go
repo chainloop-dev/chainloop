@@ -91,32 +91,6 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 	}, nil
 }
 
-func BundleFromDSSEEnvelopeFixed(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
-	// DSSE Envelope is already base64 encoded, we need to decode to prevent it from being encoded twice
-	payload, err := base64.StdEncoding.DecodeString(dsseEnvelope.Payload)
-	if err != nil {
-		return nil, fmt.Errorf("decoding: %w", err)
-	}
-	sig, err := base64.StdEncoding.DecodeString(dsseEnvelope.Signatures[0].Sig)
-	if err != nil {
-		return nil, fmt.Errorf("decoding: %w", err)
-	}
-	return &protobundle.Bundle{
-		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
-		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
-			Payload:     payload,
-			PayloadType: dsseEnvelope.PayloadType,
-			Signatures: []*sigstoredsse.Signature{
-				{
-					Sig:   sig,
-					Keyid: dsseEnvelope.Signatures[0].KeyID,
-				},
-			},
-		}},
-		VerificationMaterial: &protobundle.VerificationMaterial{},
-	}, nil
-}
-
 func DSSEEnvelopeFromRaw(bundle, envelope []byte) (*dsse.Envelope, error) {
 	var dsseEnv dsse.Envelope
 	if bundle != nil {
