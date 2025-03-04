@@ -155,7 +155,8 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 }
 
 type AuthURLs struct {
-	Login, callback string
+	Login, callback   string
+	loginIsOverridden bool
 }
 
 // urlScheme is deprecated, now it will be inferred from the serverConfig externalURL
@@ -179,6 +180,8 @@ func getAuthURLs(serverConfig *conf.Server_HTTP, loginURLOverride string) (*Auth
 	// Override the login URL if needed
 	if loginURLOverride != "" {
 		urls.Login = loginURLOverride
+		// denote it's been overridden
+		urls.loginIsOverridden = true
 	}
 
 	return urls, nil
@@ -274,8 +277,14 @@ func (c *upstreamOIDCclaims) preferredEmail() string {
 
 func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oauthResp {
 	ctx := context.Background()
-	// if OIDC provider returns an error, redirect to the login page to and show it to the user
+	// if OIDC provider returns an error, show the error to the user
 	if desc := r.URL.Query().Get(oidcErrorParam); desc != "" {
+		// Do not redirect if there is no dedicated login page
+		if !svc.AuthURLs.loginIsOverridden {
+			return newOauthResp(http.StatusUnauthorized, errors.New(desc), true)
+		}
+
+		// redirect to the login page to and show it to the user
 		redirectURL, err := url.Parse(svc.AuthURLs.Login)
 		if err != nil {
 			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to redirect to login: %w", err), false)
