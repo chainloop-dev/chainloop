@@ -235,12 +235,12 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 func (action *AttestationPush) saveBundle(bundle *protobundle.Bundle) error {
 	// Save bundle to disk if requested
 	if action.bundlePath != "" {
-		bundleJson, err := fixBundle(bundle)
+		bundleJSON, err := fixBundle(bundle)
 		if err != nil {
 			return fmt.Errorf("encoding bundle: %w", err)
 		}
 		action.Logger.Info().Msg(fmt.Sprintf("Storing Sigstore bundle %s", action.bundlePath))
-		err = os.WriteFile(action.bundlePath, bundleJson, 0600)
+		err = os.WriteFile(action.bundlePath, bundleJSON, 0600)
 		if err != nil {
 			return fmt.Errorf("writing bundle: %w", err)
 		}
