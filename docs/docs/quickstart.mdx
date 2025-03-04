@@ -50,33 +50,76 @@ This quickstart will guide you through the process of installing the Chainloop C
     Chainloop workflows represent any CI or process you might want to attest. Check [this doc](/getting-started/workflow-definition) for a complete explanation of Workflows and Contracts.
     You might also want to check our [contract reference](/reference/operator/contract).
 
-    ```bash
-    chainloop att init --workflow mywf --project myproject
-    ```
+    We can check what kind materials the contract expects by checking the output of `attestation init` command:
 
-    Once attestation is initiated, we can start [adding materials](/getting-started/attestation-crafting#adding-materials) to it. 
-    In this case we are adding an OCI container image.
+    ```bash
+    chainloop att init --workflow mywf --project myproject --contract https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/quickstart/quickstart-contract.yaml
+    INF Attestation initialized! now you can check its status or add materials to it
+    ┌───────────────────────────┬──────────────────────────────────────────────────────────────────────────────────┐
+    │ Initialized At            │ 27 Feb 25 13:26 UTC                                                              │
+    ├───────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+    │ Attestation ID            │ 64ae145e-5424-4f67-8dee-ae42dccfb6e4                                             │
+    │ Organization              │ quickstart-10122                                                                 │
+    │ Name                      │ mywf                                                                             │
+    │ Project                   │ myproject                                                                        │
+    │ Version                   │ v0.175.0 (prerelease)                                                            │
+    │ Contract                  │ quickstart-contract (revision 1)                                                 │
+    │ Policy violation strategy │ ADVISORY                                                                         │
+    │ Policies                  │ ------                                                                           │
+    │                           │ containers-with-sbom: skipped - there are no container images in the attestation │
+    │                           │ sbom-present: missing SBOM material                                              │
+    └───────────────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
+    ┌───────────────────────────────────┐
+    │ Materials                         │
+    ├──────────┬────────────────────────┤
+    │ Name     │ container              │
+    │ Type     │ CONTAINER_IMAGE        │
+    │ Set      │ No                     │
+    │ Required │ Yes                    │
+    ├──────────┼────────────────────────┤
+    │ Name     │ sbom                   │
+    │ Type     │ SBOM_CYCLONEDX_JSON    │
+    │ Set      │ No                     │
+    │ Required │ No                     │
+    ├──────────┼────────────────────────┤
+    │ Name     │ vulnerabilities-report │
+    │ Type     │ SARIF                  │
+    │ Set      │ No                     │
+    │ Required │ No                     │
+    └──────────┴────────────────────────┘
+    ```
+    We can see how the contract expects a container image, an SBOM, and a vulnerability report. We can also see that the SBOM is not required and neither the vulnerability report, but the container image is.
+
+    Once attestation is initiated, we can start [adding materials](/getting-started/attestation-crafting#adding-materials) to it.
+    In this case we are adding an OCI container image, SBOM, and a vulnerability report.
     Many other material types are supported, check the [updated the list](/reference/operator/contract#material-schema)
 
     ```bash
-    chainloop att add --value ghcr.io/chainloop-dev/chainloop/control-plane:latest
+    chainloop att add --name container --value ghcr.io/chainloop-dev/chainloop/control-plane:latest
     ```
 
-    We just attested the latest version of the control-plane image as an example, remember that you can provide any material you want to attest by pointing to a local filepath too, like for example
+    We just attested the latest version of the control-plane image as an example, remember that you can provide any material you want to attest by pointing to a local filepath or URL too, like for example:
+    :::info
+    Please note the SBOM referenced below is a reduced version of the real one for the sake of simplicity and demo purposes.
+    :::
 
     ```bash
-    chainloop att add --value my-sbom.json
+    chainloop att add --name sbom --value https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/quickstart/sbom.json
     ```
 
-   :::info
-   The piece of evidence kind were automatically detected, learn more about auto-discover [here](reference/attestations.md).
-   :::
+    And finally, we can add a vulnerability report:
 
-    And finally [we sign and push the attestation](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop for permanent preservation.
+    ```bash
+    chainloop att add --name vulnerabilities-report --value https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/quickstart/vulnerability-report.json
+    ```
+
+    Once all the materials are pushed we can finally [sign and push the attestation](/getting-started/attestation-crafting#encode-sign-and-push-attestation) to Chainloop for permanent preservation.
 
     ```bash
     chainloop att push
     ```
+
+    Transparently, Chainloop has signed the attestation and pushed it to the Chainloop Control Plane. You can learn more about the different [signing and verification methods](/reference/signing) in the Chainloop documentation.
 
 6. Operate on your data:
 

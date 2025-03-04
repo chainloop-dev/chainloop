@@ -10611,6 +10611,7 @@ type WorkflowMutation struct {
 	deleted_at                     *time.Time
 	public                         *bool
 	description                    *string
+	metadata                       *map[string]interface{}
 	clearedFields                  map[string]struct{}
 	robotaccounts                  map[uuid.UUID]struct{}
 	removedrobotaccounts           map[uuid.UUID]struct{}
@@ -11258,6 +11259,55 @@ func (m *WorkflowMutation) ResetDescription() {
 	delete(m.clearedFields, workflow.FieldDescription)
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *WorkflowMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *WorkflowMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *WorkflowMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[workflow.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *WorkflowMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[workflow.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *WorkflowMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, workflow.FieldMetadata)
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by ids.
 func (m *WorkflowMutation) AddRobotaccountIDs(ids ...uuid.UUID) {
 	if m.robotaccounts == nil {
@@ -11641,7 +11691,7 @@ func (m *WorkflowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
 	}
@@ -11678,6 +11728,9 @@ func (m *WorkflowMutation) Fields() []string {
 	if m.description != nil {
 		fields = append(fields, workflow.FieldDescription)
 	}
+	if m.metadata != nil {
+		fields = append(fields, workflow.FieldMetadata)
+	}
 	return fields
 }
 
@@ -11710,6 +11763,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.LatestRun()
 	case workflow.FieldDescription:
 		return m.Description()
+	case workflow.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -11743,6 +11798,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldLatestRun(ctx)
 	case workflow.FieldDescription:
 		return m.OldDescription(ctx)
+	case workflow.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown Workflow field %s", name)
 }
@@ -11836,6 +11893,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
+	case workflow.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)
 }
@@ -11896,6 +11960,9 @@ func (m *WorkflowMutation) ClearedFields() []string {
 	if m.FieldCleared(workflow.FieldDescription) {
 		fields = append(fields, workflow.FieldDescription)
 	}
+	if m.FieldCleared(workflow.FieldMetadata) {
+		fields = append(fields, workflow.FieldMetadata)
+	}
 	return fields
 }
 
@@ -11924,6 +11991,9 @@ func (m *WorkflowMutation) ClearField(name string) error {
 		return nil
 	case workflow.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case workflow.FieldMetadata:
+		m.ClearMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow nullable field %s", name)
@@ -11968,6 +12038,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 		return nil
 	case workflow.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case workflow.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)

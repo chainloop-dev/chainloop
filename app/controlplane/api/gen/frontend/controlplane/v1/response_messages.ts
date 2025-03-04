@@ -146,6 +146,39 @@ export function allowListErrorToJSON(object: AllowListError): string {
   }
 }
 
+export enum FederatedAuthError {
+  FEDERATED_AUTH_ERROR_UNSPECIFIED = 0,
+  FEDERATED_AUTH_ERROR_UNAUTHORIZED = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function federatedAuthErrorFromJSON(object: any): FederatedAuthError {
+  switch (object) {
+    case 0:
+    case "FEDERATED_AUTH_ERROR_UNSPECIFIED":
+      return FederatedAuthError.FEDERATED_AUTH_ERROR_UNSPECIFIED;
+    case 1:
+    case "FEDERATED_AUTH_ERROR_UNAUTHORIZED":
+      return FederatedAuthError.FEDERATED_AUTH_ERROR_UNAUTHORIZED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return FederatedAuthError.UNRECOGNIZED;
+  }
+}
+
+export function federatedAuthErrorToJSON(object: FederatedAuthError): string {
+  switch (object) {
+    case FederatedAuthError.FEDERATED_AUTH_ERROR_UNSPECIFIED:
+      return "FEDERATED_AUTH_ERROR_UNSPECIFIED";
+    case FederatedAuthError.FEDERATED_AUTH_ERROR_UNAUTHORIZED:
+      return "FEDERATED_AUTH_ERROR_UNAUTHORIZED";
+    case FederatedAuthError.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum UserWithNoMembershipError {
   USER_WITH_NO_MEMBERSHIP_ERROR_UNSPECIFIED = 0,
   USER_WITH_NO_MEMBERSHIP_ERROR_NOT_IN_ORG = 1,

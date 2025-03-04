@@ -87,7 +87,7 @@ enum RunStatus {
 
 message AttestationItem {
   // encoded DSEE envelope
-  bytes envelope = 3 [deprecated=true];
+  bytes envelope = 3 [deprecated = true];
   // Attestation bundle
   bytes bundle = 10;
   // sha256sum of the bundle containing the envelope, or the envelope in old attestations
@@ -287,6 +287,12 @@ enum AllowListError {
   option (errors.default_code) = 500;
   ALLOW_LIST_ERROR_UNSPECIFIED = 0;
   ALLOW_LIST_ERROR_NOT_IN_LIST = 1 [(errors.code) = 403];
+}
+
+enum FederatedAuthError {
+  option (errors.default_code) = 500;
+  FEDERATED_AUTH_ERROR_UNSPECIFIED = 0;
+  FEDERATED_AUTH_ERROR_UNAUTHORIZED = 1 [(errors.code) = 403];
 }
 
 enum UserWithNoMembershipError {

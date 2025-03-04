@@ -39,6 +39,8 @@ const (
 	FieldLatestRun = "latest_run"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// EdgeRobotaccounts holds the string denoting the robotaccounts edge name in mutations.
 	EdgeRobotaccounts = "robotaccounts"
 	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
@@ -128,6 +130,7 @@ var Columns = []string{
 	FieldProjectID,
 	FieldLatestRun,
 	FieldDescription,
+	FieldMetadata,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflows"

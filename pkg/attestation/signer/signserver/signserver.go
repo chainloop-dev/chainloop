@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -30,6 +31,7 @@ import (
 	"strings"
 
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
+	"github.com/youmark/pkcs8"
 )
 
 // ReferenceScheme is the scheme to be used when using signserver keys. Ex: signserver://host/worker
@@ -37,7 +39,7 @@ const ReferenceScheme = "signserver"
 
 // Signer implements a signer for SignServer
 type Signer struct {
-	host, worker, caPath, clientCertPath string
+	host, worker, caPath, clientCertPath, clientCertPass string
 }
 
 type SignerOpt func(*Signer)
@@ -51,6 +53,11 @@ func WithCAPath(caPath string) SignerOpt {
 func WithClientCertPath(clientCertPath string) SignerOpt {
 	return func(s *Signer) {
 		s.clientCertPath = clientCertPath
+	}
+}
+func WithClientCertPass(clientCertPass string) SignerOpt {
+	return func(s *Signer) {
+		s.clientCertPass = clientCertPass
 	}
 }
 
@@ -122,10 +129,30 @@ func (s Signer) SignMessage(message io.Reader, _ ...sigstoresigner.SignOption) (
 	}
 
 	if s.clientCertPath != "" {
-		cert, err := tls.LoadX509KeyPair(s.clientCertPath, s.clientCertPath)
+		var cert tls.Certificate
+		pemBytes, err := os.ReadFile(s.clientCertPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load client cert and key: %w", err)
+			return nil, fmt.Errorf("failed to read client cert file: %w", err)
 		}
+		if s.clientCertPass != "" {
+			cert, err = certFromPem(pemBytes)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read client cert file: %w", err)
+			}
+			// decrypt the private key
+			key, err := privateKeyFromPem(pemBytes, s.clientCertPass)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load private key: %w", err)
+			}
+			cert.PrivateKey = key
+		} else {
+			// Try with unencrypted PEM
+			cert, err = tls.LoadX509KeyPair(s.clientCertPath, s.clientCertPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load client cert and key: %w", err)
+			}
+		}
+
 		if tlsConfig == nil {
 			tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		}
@@ -164,4 +191,51 @@ func ParseKeyReference(keyPath string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid key path: %s", keyPath)
 	}
 	return parts[0], parts[1], nil
+}
+
+func certFromPem(pemBytes []byte) (tls.Certificate, error) {
+	var cert tls.Certificate
+	for {
+		var certDERBlock *pem.Block
+		certDERBlock, pemBytes = pem.Decode(pemBytes)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		}
+	}
+	return cert, nil
+}
+
+func privateKeyFromPem(pemBytes []byte, password string) (any, error) {
+	var keyDERBlock *pem.Block
+	for {
+		keyDERBlock, pemBytes = pem.Decode(pemBytes)
+		if keyDERBlock == nil {
+			return nil, errors.New("failed to find any PEM data in key input")
+		}
+
+		if keyDERBlock.Type == "PRIVATE KEY" || strings.HasSuffix(keyDERBlock.Type, " PRIVATE KEY") {
+			break
+		}
+	}
+
+	// Try with RFC1423
+	var key any
+	derBytes, err := x509.DecryptPEMBlock(keyDERBlock, []byte(password))
+	if err != nil {
+		// try with PKCS#8 encryption (not supported by stdlib)
+		key, err = pkcs8.ParsePKCS8PrivateKey(keyDERBlock.Bytes, []byte(password))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt private key: %w", err)
+		}
+	} else {
+		key, err = x509.ParsePKCS8PrivateKey(derBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse private key: %w", err)
+		}
+	}
+
+	return key, nil
 }

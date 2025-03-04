@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -27,6 +28,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
 )
 
 const NotSet = "[NOT SET]"
@@ -58,7 +60,10 @@ func newAttestationAddCmd() *cobra.Command {
   chainloop attestation add --kind <material-kind> --value <material-value>
 
   # Add a material to the attestation without specifying neither kind nor name enables automatic detection
-  chainloop attestation add --value <material-value>`,
+  chainloop attestation add --value <material-value>
+
+  # Add a material by also providing a URL pointing to the material. It will be downloaded to a temporary folder first
+  chainloop attestation add --value https://example.com/sbom.json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
@@ -86,8 +91,22 @@ func newAttestationAddCmd() *cobra.Command {
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
 				func() error {
+					// Try to load the value from a file or URL
+					// If the value is a URL, it will be downloaded and stored in a temporary file
+					// otherwise, it will be used as is
+					rawValuePath, err := resourceloader.GetPathForResource(value)
+					if err != nil {
+						// If the error is an unrecognized scheme error, it means the path is not a URL
+						// and we should take the value as is
+						var uerr *resourceloader.UnrecognizedSchemeError
+						if errors.As(err, &uerr) {
+							rawValuePath = value
+						} else {
+							return fmt.Errorf("loading resource: %w", err)
+						}
+					}
 					// TODO: take the material output and show render it
-					resp, err := a.Run(cmd.Context(), attestationID, name, value, kind, annotations)
+					resp, err := a.Run(cmd.Context(), attestationID, name, rawValuePath, kind, annotations)
 					if err != nil {
 						return err
 					}

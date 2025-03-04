@@ -1,0 +1,3665 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:59f36d41-e78a-49d4-b6d3-1869883979be",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2025-03-03T08:48:12+01:00",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "anchore",
+          "name": "syft",
+          "version": "1.19.0"
+        }
+      ]
+    },
+    "component": {
+      "bom-ref": "c22b026ded6e5daa",
+      "type": "container",
+      "name": "ghcr.io/chainloop-dev/chainloop/control-plane",
+      "version": "sha256:2f3aa4b75170de4cc422db27394d2d7e502819a32ff21a33c37fbb47dd1aa65e"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:golang/ariga.io/atlas@v0.28.1?package-id=3e7b8d55f7f2e52c",
+      "type": "library",
+      "name": "ariga.io/atlas",
+      "version": "v0.28.1",
+      "purl": "pkg:golang/ariga.io/atlas@v0.28.1",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:cNE0FYmoYs1u4KF+FGnp2on1srhM6FDpjaCgL7Rd8/c="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=9a22724a7fa6a090#bufbuild/protovalidate/protocolbuffers/go",
+      "type": "library",
+      "name": "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go",
+      "version": "v1.33.0-20240401165935-b983156c5e99.1",
+      "cpe": "cpe:2.3:a:gen:go\\/bufbuild\\/protovalidate\\/protocolbuffers\\/go:v1.33.0-20240401165935-b983156c5e99.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1#bufbuild/protovalidate/protocolbuffers/go",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:2IGhRovxlsOIQgx2ekZWo4wTPAYpck41+18ICxs37is="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=b43cbb2ee75d0bc8#bufbuild/protovalidate/protocolbuffers/go",
+      "type": "library",
+      "name": "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go",
+      "version": "v1.33.0-20240401165935-b983156c5e99.1",
+      "cpe": "cpe:2.3:a:gen:go\\/bufbuild\\/protovalidate\\/protocolbuffers\\/go:v1.33.0-20240401165935-b983156c5e99.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1#bufbuild/protovalidate/protocolbuffers/go",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:2IGhRovxlsOIQgx2ekZWo4wTPAYpck41+18ICxs37is="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=f56cb1eaee6bd01a#bufbuild/protovalidate/protocolbuffers/go",
+      "type": "library",
+      "name": "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go",
+      "version": "v1.33.0-20240401165935-b983156c5e99.1",
+      "cpe": "cpe:2.3:a:gen:go\\/bufbuild\\/protovalidate\\/protocolbuffers\\/go:v1.33.0-20240401165935-b983156c5e99.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1#bufbuild/protovalidate/protocolbuffers/go",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:2IGhRovxlsOIQgx2ekZWo4wTPAYpck41+18ICxs37is="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=aaecc631e768cdd5#bufbuild/protovalidate/protocolbuffers/go",
+      "type": "library",
+      "name": "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go",
+      "version": "v1.33.0-20240401165935-b983156c5e99.1",
+      "cpe": "cpe:2.3:a:gen:go\\/bufbuild\\/protovalidate\\/protocolbuffers\\/go:v1.33.0-20240401165935-b983156c5e99.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1#bufbuild/protovalidate/protocolbuffers/go",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:2IGhRovxlsOIQgx2ekZWo4wTPAYpck41+18ICxs37is="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/cloud.google.com/go@v0.115.1?package-id=87beaeee2da6ff72",
+      "type": "library",
+      "name": "cloud.google.com/go",
+      "version": "v0.115.1",
+      "purl": "pkg:golang/cloud.google.com/go@v0.115.1",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Jo0SM9cQnSkYfp44+v+NQXHpcHqlnRJk2qxh6yvxxxQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/docker/cli@v27.1.1%2Bincompatible?package-id=646be27eccab48f7",
+      "type": "library",
+      "name": "github.com/docker/cli",
+      "version": "v27.1.1+incompatible",
+      "cpe": "cpe:2.3:a:docker:cli:v27.1.1\\+incompatible:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/docker/cli@v27.1.1%2Bincompatible",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:goaZxOqs4QKxznZjjBWKONQci/MywhtRv2oNn0GkeZE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/docker/distribution@v2.8.3%2Bincompatible?package-id=90f1fd458dd6e164",
+      "type": "library",
+      "name": "github.com/docker/distribution",
+      "version": "v2.8.3+incompatible",
+      "cpe": "cpe:2.3:a:docker:distribution:v2.8.3\\+incompatible:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/docker/distribution@v2.8.3%2Bincompatible",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:AtKxIZ36LoNK51+Z6RpzLpddBirtxJnzDrHLEKxTAYk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/docker/docker-credential-helpers@v0.8.0?package-id=5b0bb8a06197b1fd",
+      "type": "library",
+      "name": "github.com/docker/docker-credential-helpers",
+      "version": "v0.8.0",
+      "cpe": "cpe:2.3:a:docker:docker-credential-helpers:v0.8.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/docker/docker-credential-helpers@v0.8.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:docker:docker_credential_helpers:v0.8.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:YQFtbBQb4VrpoPxhFuzEBPQ9E16qz5SpHLS+uswaCp8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/dustin/go-humanize@v1.0.1?package-id=84e0d2606ade506a",
+      "type": "library",
+      "name": "github.com/dustin/go-humanize",
+      "version": "v1.0.1",
+      "cpe": "cpe:2.3:a:dustin:go-humanize:v1.0.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/dustin/go-humanize@v1.0.1",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:dustin:go_humanize:v1.0.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fatih/color@v1.16.0?package-id=69b2a96956e72e66",
+      "type": "library",
+      "name": "github.com/fatih/color",
+      "version": "v1.16.0",
+      "cpe": "cpe:2.3:a:fatih:color:v1.16.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/fatih/color@v1.16.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fatih/color@v1.16.0?package-id=a6a5e0dffe45c961",
+      "type": "library",
+      "name": "github.com/fatih/color",
+      "version": "v1.16.0",
+      "cpe": "cpe:2.3:a:fatih:color:v1.16.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/fatih/color@v1.16.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fatih/color@v1.16.0?package-id=ac68c9c534453174",
+      "type": "library",
+      "name": "github.com/fatih/color",
+      "version": "v1.16.0",
+      "cpe": "cpe:2.3:a:fatih:color:v1.16.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/fatih/color@v1.16.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fatih/color@v1.16.0?package-id=2cdc639cca15e357",
+      "type": "library",
+      "name": "github.com/fatih/color",
+      "version": "v1.16.0",
+      "cpe": "cpe:2.3:a:fatih:color:v1.16.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/fatih/color@v1.16.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/felixge/httpsnoop@v1.0.4?package-id=72804ed3e0eeb636",
+      "type": "library",
+      "name": "github.com/felixge/httpsnoop",
+      "version": "v1.0.4",
+      "cpe": "cpe:2.3:a:felixge:httpsnoop:v1.0.4:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/felixge/httpsnoop@v1.0.4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fsnotify/fsnotify@v1.7.0?package-id=68ae1ef5b4de1341",
+      "type": "library",
+      "name": "github.com/fsnotify/fsnotify",
+      "version": "v1.7.0",
+      "cpe": "cpe:2.3:a:fsnotify:fsnotify:v1.7.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/fsnotify/fsnotify@v1.7.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=3814da9c22deab91",
+      "type": "library",
+      "name": "github.com/getsentry/sentry-go",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:getsentry:sentry-go:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:getsentry:sentry_go:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dn+QRCeJv4pPt9OjVXiMcGIBIefaTJPw/h0bZWO05nE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=49b33260ff6fe00a",
+      "type": "library",
+      "name": "github.com/getsentry/sentry-go",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:getsentry:sentry-go:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:getsentry:sentry_go:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dn+QRCeJv4pPt9OjVXiMcGIBIefaTJPw/h0bZWO05nE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=bc908a9031dfc391",
+      "type": "library",
+      "name": "github.com/getsentry/sentry-go",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:getsentry:sentry-go:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:getsentry:sentry_go:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dn+QRCeJv4pPt9OjVXiMcGIBIefaTJPw/h0bZWO05nE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=1d60b9844589638c",
+      "type": "library",
+      "name": "github.com/getsentry/sentry-go",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:getsentry:sentry-go:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/getsentry/sentry-go@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:getsentry:sentry_go:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dn+QRCeJv4pPt9OjVXiMcGIBIefaTJPw/h0bZWO05nE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-chi/chi@v4.1.2%2Bincompatible?package-id=4bfc17c57cdc5c32",
+      "type": "library",
+      "name": "github.com/go-chi/chi",
+      "version": "v4.1.2+incompatible",
+      "cpe": "cpe:2.3:a:go-chi:chi:v4.1.2\\+incompatible:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-chi/chi@v4.1.2%2Bincompatible",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_chi:chi:v4.1.2\\+incompatible:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:chi:v4.1.2\\+incompatible:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:fGFk2Gmi/YKXk0OmGfBh0WgmN3XB8lVnEyNz34tQRec="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-ini/ini@v1.67.0?package-id=83c557216c5a98c0",
+      "type": "library",
+      "name": "github.com/go-ini/ini",
+      "version": "v1.67.0",
+      "cpe": "cpe:2.3:a:go-ini:ini:v1.67.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-ini/ini@v1.67.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_ini:ini:v1.67.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:ini:v1.67.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:z6ZrTEZqSWOTyH2FlglNbNgARyHG8oLW9gMELqKr06A="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-jose/go-jose@v4.0.5?package-id=bd66253556f1fcee#v4",
+      "type": "library",
+      "name": "github.com/go-jose/go-jose/v4",
+      "version": "v4.0.5",
+      "cpe": "cpe:2.3:a:go-jose:go-jose\\/v4:v4.0.5:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-jose/go-jose@v4.0.5#v4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go-jose:go_jose\\/v4:v4.0.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_jose:go-jose\\/v4:v4.0.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_jose:go_jose\\/v4:v4.0.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:go-jose\\/v4:v4.0.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:go_jose\\/v4:v4.0.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:M6T8+mKZl/+fNNuFHvGIzDz7BTLQPIounk/b9dw3AaE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=3e6d54a97cb209aa",
+      "type": "library",
+      "name": "github.com/go-kratos/aegis",
+      "version": "v0.2.0",
+      "cpe": "cpe:2.3:a:go-kratos:aegis:v0.2.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/aegis@v0.2.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dObzCDWn3XVjUkgxyBp6ZeWtx/do0DPZ7LY3yNSJLUQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=0476293a44f8aee4",
+      "type": "library",
+      "name": "github.com/go-kratos/aegis",
+      "version": "v0.2.0",
+      "cpe": "cpe:2.3:a:go-kratos:aegis:v0.2.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/aegis@v0.2.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dObzCDWn3XVjUkgxyBp6ZeWtx/do0DPZ7LY3yNSJLUQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=6bad94344007c4b1",
+      "type": "library",
+      "name": "github.com/go-kratos/aegis",
+      "version": "v0.2.0",
+      "cpe": "cpe:2.3:a:go-kratos:aegis:v0.2.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/aegis@v0.2.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dObzCDWn3XVjUkgxyBp6ZeWtx/do0DPZ7LY3yNSJLUQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=72dd923abb78d680",
+      "type": "library",
+      "name": "github.com/go-kratos/aegis",
+      "version": "v0.2.0",
+      "cpe": "cpe:2.3:a:go-kratos:aegis:v0.2.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/aegis@v0.2.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:aegis:v0.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dObzCDWn3XVjUkgxyBp6ZeWtx/do0DPZ7LY3yNSJLUQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=81343ca4b23ceac0#contrib/log/zap/v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/contrib/log/zap/v2",
+      "version": "v2.0.0-20230823024326-a09f4d8ebba9",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9#contrib/log/zap/v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:j7EHWoqShY20lGhhC1j6v6QkftAqLCBUCHGwDkHL8pU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=6f123aa6699c854d#contrib/log/zap/v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/contrib/log/zap/v2",
+      "version": "v2.0.0-20230823024326-a09f4d8ebba9",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9#contrib/log/zap/v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:j7EHWoqShY20lGhhC1j6v6QkftAqLCBUCHGwDkHL8pU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=1a576744f2da8eaf#contrib/log/zap/v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/contrib/log/zap/v2",
+      "version": "v2.0.0-20230823024326-a09f4d8ebba9",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9#contrib/log/zap/v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:j7EHWoqShY20lGhhC1j6v6QkftAqLCBUCHGwDkHL8pU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=d7e3314682278e4f#contrib/log/zap/v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/contrib/log/zap/v2",
+      "version": "v2.0.0-20230823024326-a09f4d8ebba9",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9#contrib/log/zap/v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/contrib\\/log\\/zap\\/v2:v2.0.0-20230823024326-a09f4d8ebba9:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:j7EHWoqShY20lGhhC1j6v6QkftAqLCBUCHGwDkHL8pU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=50f7cf115c3b2165#v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/v2",
+      "version": "v2.7.0",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.7.0#v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:9DaVgU9YoHPb/BxDVqeVlVCMduRhiSewG3xE+e9ZAZ8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=c94bab1ca55048e5#v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/v2",
+      "version": "v2.7.0",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.7.0#v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:9DaVgU9YoHPb/BxDVqeVlVCMduRhiSewG3xE+e9ZAZ8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=b08e4dfdedc2833f#v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/v2",
+      "version": "v2.7.0",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.7.0#v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:9DaVgU9YoHPb/BxDVqeVlVCMduRhiSewG3xE+e9ZAZ8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=430d0c1e1e34b944#v2",
+      "type": "library",
+      "name": "github.com/go-kratos/kratos/v2",
+      "version": "v2.7.0",
+      "cpe": "cpe:2.3:a:go-kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-kratos/kratos@v2.7.0#v2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_kratos:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:kratos\\/v2:v2.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:9DaVgU9YoHPb/BxDVqeVlVCMduRhiSewG3xE+e9ZAZ8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-logr/logr@v1.4.2?package-id=c169d9ae0e2aaeef",
+      "type": "library",
+      "name": "github.com/go-logr/logr",
+      "version": "v1.4.2",
+      "cpe": "cpe:2.3:a:go-logr:logr:v1.4.2:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-logr/logr@v1.4.2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_logr:logr:v1.4.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:logr:v1.4.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-logr/stdr@v1.2.2?package-id=5e20b04bdf18d862",
+      "type": "library",
+      "name": "github.com/go-logr/stdr",
+      "version": "v1.2.2",
+      "cpe": "cpe:2.3:a:go-logr:stdr:v1.2.2:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-logr/stdr@v1.2.2",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_logr:stdr:v1.2.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:stdr:v1.2.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/analysis@v0.23.0?package-id=75192594f5a12ee1",
+      "type": "library",
+      "name": "github.com/go-openapi/analysis",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:go-openapi:analysis:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/analysis@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:analysis:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:analysis:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:aGday7OWupfMs+LbmLZG4k0MYXIANxcuBTYUC03zFCU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/errors@v0.22.0?package-id=b0288c853e03c6ad",
+      "type": "library",
+      "name": "github.com/go-openapi/errors",
+      "version": "v0.22.0",
+      "cpe": "cpe:2.3:a:go-openapi:errors:v0.22.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/errors@v0.22.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:errors:v0.22.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:errors:v0.22.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:c4xY/OLxUBSTiepAg3j/MHuAv5mJhnf53LLMWFB+u/w="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/inflect@v0.21.0?package-id=4fc70a7b57eb9594",
+      "type": "library",
+      "name": "github.com/go-openapi/inflect",
+      "version": "v0.21.0",
+      "cpe": "cpe:2.3:a:go-openapi:inflect:v0.21.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/inflect@v0.21.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:inflect:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:inflect:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:FoBjBTQEcbg2cJUWX6uwL9OyIW8eqc9k4KhN4lfbeYk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=1799c1a832c96d10",
+      "type": "library",
+      "name": "github.com/go-openapi/jsonpointer",
+      "version": "v0.21.0",
+      "cpe": "cpe:2.3:a:go-openapi:jsonpointer:v0.21.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:jsonpointer:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:jsonpointer:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:YgdVicSA9vH5RiHs9TZW5oyafXZFc6+2Vc1rr/O9oNQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/jsonreference@v0.21.0?package-id=b5e493f9b12d2dfb",
+      "type": "library",
+      "name": "github.com/go-openapi/jsonreference",
+      "version": "v0.21.0",
+      "cpe": "cpe:2.3:a:go-openapi:jsonreference:v0.21.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/jsonreference@v0.21.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:jsonreference:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:jsonreference:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Rs+Y7hSXT83Jacb7kFyjn4ijOuVGSvOdF2+tg1TRrwQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/loads@v0.22.0?package-id=10998bb216ccd36d",
+      "type": "library",
+      "name": "github.com/go-openapi/loads",
+      "version": "v0.22.0",
+      "cpe": "cpe:2.3:a:go-openapi:loads:v0.22.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/loads@v0.22.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:loads:v0.22.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:loads:v0.22.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:ECPGd4jX1U6NApCGG1We+uEozOAvXvJSF4nnwHZ8Aco="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/runtime@v0.28.0?package-id=6eb5f4e11ca004d9",
+      "type": "library",
+      "name": "github.com/go-openapi/runtime",
+      "version": "v0.28.0",
+      "cpe": "cpe:2.3:a:go-openapi:runtime:v0.28.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/runtime@v0.28.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:runtime:v0.28.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:runtime:v0.28.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:gpPPmWSNGo214l6n8hzdXYhPuJcGtziTOgUpvsFWGIQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/spec@v0.21.0?package-id=f5c7dd5325d2b503",
+      "type": "library",
+      "name": "github.com/go-openapi/spec",
+      "version": "v0.21.0",
+      "cpe": "cpe:2.3:a:go-openapi:spec:v0.21.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/spec@v0.21.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:spec:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:spec:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:LTVzPc3p/RzRnkQqLRndbAzjY0d0BCL72A6j3CdL9ZY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/strfmt@v0.23.0?package-id=ddca941a4a0a0855",
+      "type": "library",
+      "name": "github.com/go-openapi/strfmt",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:go-openapi:strfmt:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/strfmt@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:strfmt:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:strfmt:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:nlUS6BCqcnAk0pyhi9Y+kdDVZdZMHfEKQiS4HaMgO/c="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=cb619c30f996e596",
+      "type": "library",
+      "name": "github.com/go-openapi/swag",
+      "version": "v0.23.0",
+      "cpe": "cpe:2.3:a:go-openapi:swag:v0.23.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/swag@v0.23.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:swag:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:swag:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:vsEVJDUo2hPJ2tu0/Xc+4noaxyEffXNIs3cOULZ+GrE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/validate@v0.24.0?package-id=08758e5f4c316c74",
+      "type": "library",
+      "name": "github.com/go-openapi/validate",
+      "version": "v0.24.0",
+      "cpe": "cpe:2.3:a:go-openapi:validate:v0.24.0:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-openapi/validate@v0.24.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:validate:v0.24.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:validate:v0.24.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:LdfDKwNbpB6Vn40xhTdNZAnfLECL81w+VX3BumrGD58="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=07bb45044611f8c8#v4",
+      "type": "library",
+      "name": "github.com/go-playground/form/v4",
+      "version": "v4.2.1",
+      "cpe": "cpe:2.3:a:go-playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-playground/form@v4.2.1#v4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:HjdRDKO0fftVMU5epjPW2SOREcZ6/wLUzEobqUGJuPw="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=6c9c1444c05891c4#v4",
+      "type": "library",
+      "name": "github.com/go-playground/form/v4",
+      "version": "v4.2.1",
+      "cpe": "cpe:2.3:a:go-playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-playground/form@v4.2.1#v4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:974b154993df36ebc5b2b8712b4e63b1747f3e164be84a8d99483c54c28ad9d8"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-dependency-track"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:HjdRDKO0fftVMU5epjPW2SOREcZ6/wLUzEobqUGJuPw="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=b285224e345098b3#v4",
+      "type": "library",
+      "name": "github.com/go-playground/form/v4",
+      "version": "v4.2.1",
+      "cpe": "cpe:2.3:a:go-playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-playground/form@v4.2.1#v4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:df50efef9be29773ccfab6fbc803bd09705ce5371a35079d799d4e8d5169f248"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-discord-webhook"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:HjdRDKO0fftVMU5epjPW2SOREcZ6/wLUzEobqUGJuPw="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=fc5309a660ebcc73#v4",
+      "type": "library",
+      "name": "github.com/go-playground/form/v4",
+      "version": "v4.2.1",
+      "cpe": "cpe:2.3:a:go-playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-playground/form@v4.2.1#v4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_playground:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:form\\/v4:v4.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:07e3aa53288c9d8e947c2719946b8a53f4b1473b7b64609f47c0835d15d8fd3e"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/plugins/chainloop-plugin-smtp"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:HjdRDKO0fftVMU5epjPW2SOREcZ6/wLUzEobqUGJuPw="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-sql-driver/mysql@v1.8.1?package-id=bd51056a1bcd30bf",
+      "type": "library",
+      "name": "github.com/go-sql-driver/mysql",
+      "version": "v1.8.1",
+      "cpe": "cpe:2.3:a:go-sql-driver:mysql:v1.8.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/go-sql-driver/mysql@v1.8.1",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_sql_driver:mysql:v1.8.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go-sql:mysql:v1.8.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_sql:mysql:v1.8.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:mysql:v1.8.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/goadesign/goa@v2.2.5%2Bincompatible?package-id=9db7c386a71ff848",
+      "type": "library",
+      "name": "github.com/goadesign/goa",
+      "version": "v2.2.5+incompatible",
+      "cpe": "cpe:2.3:a:goadesign:goa:v2.2.5\\+incompatible:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/goadesign/goa@v2.2.5%2Bincompatible",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:SLgzk0V+QfFs7MVz9sbDHelbTDI9B/d4W7Hl5udTynY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gobwas/glob@v0.2.3?package-id=cfd4baa4b414e569",
+      "type": "library",
+      "name": "github.com/gobwas/glob",
+      "version": "v0.2.3",
+      "cpe": "cpe:2.3:a:gobwas:glob:v0.2.3:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/gobwas/glob@v0.2.3",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/golang-jwt/jwt@v4.5.1?package-id=3c664cb6a82faddc#v4",
+      "type": "library",
+      "name": "github.com/golang-jwt/jwt/v4",
+      "version": "v4.5.1",
+      "cpe": "cpe:2.3:a:golang-jwt:jwt\\/v4:v4.5.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/golang-jwt/jwt@v4.5.1#v4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang_jwt:jwt\\/v4:v4.5.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:jwt\\/v4:v4.5.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:JdqV9zKUdtaa9gdPlywC3aeoEsR681PlKC+4F5gQgeo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/golang-jwt/jwt@v5.2.1?package-id=495c6032df9974d3#v5",
+      "type": "library",
+      "name": "github.com/golang-jwt/jwt/v5",
+      "version": "v5.2.1",
+      "cpe": "cpe:2.3:a:golang-jwt:jwt\\/v5:v5.2.1:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/golang-jwt/jwt@v5.2.1#v5",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang_jwt:jwt\\/v5:v5.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:jwt\\/v5:v5.2.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/golang/groupcache@v0.0.0-20210331224755-41bb18bfe9da?package-id=13f9145fe42b4a92",
+      "type": "library",
+      "name": "github.com/golang/groupcache",
+      "version": "v0.0.0-20210331224755-41bb18bfe9da",
+      "cpe": "cpe:2.3:a:golang:groupcache:v0.0.0-20210331224755-41bb18bfe9da:*:*:*:*:*:*:*",
+      "purl": "pkg:golang/github.com/golang/groupcache@v0.0.0-20210331224755-41bb18bfe9da",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:46a02b6c25180c8e4639c161700be049bf0562ca186eeb3b9e2f76f746838762"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/control-plane"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.23.6"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:oI5xCqsCo564l8iNU+DwB5epxmsaqB+rhGL0m5jtYqE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/chainloop-dev/chainloop"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:golang/github.com/chainloop-dev/chainloop@v0.0.0-20250225095403-01097c857cc0?package-id=2690ebff1ba07c65",
+      "dependsOn": [
+        "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=f56cb1eaee6bd01a#bufbuild/protovalidate/protocolbuffers/go",
+        "pkg:golang/github.com/antlr4-go/antlr@v4.13.0?package-id=ed9070fe99e53c7e#v4",
+        "pkg:golang/github.com/bufbuild/protovalidate-go@v0.6.1?package-id=6dfb4baf22378e2a",
+        "pkg:golang/github.com/fatih/color@v1.16.0?package-id=ac68c9c534453174",
+        "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=bc908a9031dfc391",
+        "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=6bad94344007c4b1",
+        "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=1a576744f2da8eaf#contrib/log/zap/v2",
+        "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=b08e4dfdedc2833f#v2",
+        "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=b285224e345098b3#v4",
+        "pkg:golang/github.com/golang/protobuf@v1.5.4?package-id=13a3eef9bb75c1a7",
+        "pkg:golang/github.com/google/cel-go@v0.20.1?package-id=aecc1edc2c71fbfc",
+        "pkg:golang/github.com/google/go-containerregistry@v0.20.2?package-id=658efb52be4f5bdb",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=5f08abf2421e16bd",
+        "pkg:golang/github.com/gorilla/mux@v1.8.1?package-id=5090d653dbe1c765",
+        "pkg:golang/github.com/hashicorp/go-hclog@v1.6.3?package-id=ff21c4362a4cdbe0",
+        "pkg:golang/github.com/hashicorp/go-plugin@v1.6.3?package-id=9a9e11de5ded1fc6",
+        "pkg:golang/github.com/hashicorp/yamux@v0.1.2?package-id=5adaeb9db9d34f5f",
+        "pkg:golang/github.com/iancoleman/orderedmap@v0.3.0?package-id=3581a74b1acd740e",
+        "pkg:golang/github.com/in-toto/attestation@v1.1.0?package-id=7a8b133af7082c40",
+        "pkg:golang/github.com/invopop/jsonschema@v0.7.0?package-id=1ea5d2af1c2fff5a",
+        "pkg:golang/github.com/jedib0t/go-pretty@v6.4.7?package-id=76ddd3ec6e3dda7e#v6",
+        "pkg:golang/github.com/joshdk/go-junit@v1.0.0?package-id=bbfd2f22c2915a54",
+        "pkg:golang/github.com/mattn/go-colorable@v0.1.13?package-id=2e7c11a3fb10c2c7",
+        "pkg:golang/github.com/mattn/go-isatty@v0.0.20?package-id=bff12c92e199eca1",
+        "pkg:golang/github.com/mattn/go-runewidth@v0.0.15?package-id=d6d484340670b17b",
+        "pkg:golang/github.com/muesli/reflow@v0.3.0?package-id=e10e501695c11735",
+        "pkg:golang/github.com/oklog/run@v1.1.0?package-id=c8b65f7d3eb45180",
+        "pkg:golang/github.com/rivo/uniseg@v0.4.4?package-id=de7be8adf6d1ae6d",
+        "pkg:golang/github.com/rs/zerolog@v1.32.0?package-id=7b2352377dab9b15",
+        "pkg:golang/github.com/santhosh-tekuri/jsonschema@v5.3.1?package-id=a6930716a9df0eac#v5",
+        "pkg:golang/github.com/secure-systems-lab/go-securesystemslib@v0.8.0?package-id=a4eefe38ada5138b",
+        "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=0b5c4fedc67632a1",
+        "pkg:golang/go.uber.org/multierr@v1.11.0?package-id=08b238c74b72046e",
+        "pkg:golang/go.uber.org/zap@v1.27.0?package-id=9942521419035b2c",
+        "pkg:golang/golang.org/x/crypto@v0.32.0?package-id=93d62fc6ce19d613",
+        "pkg:golang/golang.org/x/exp@v0.0.0-20240719175910-8a7402abbf56?package-id=11046d7354c5dc5d",
+        "pkg:golang/golang.org/x/net@v0.34.0?package-id=e4808614db1ce2fd",
+        "pkg:golang/golang.org/x/sys@v0.29.0?package-id=104730828b51e654",
+        "pkg:golang/golang.org/x/text@v0.21.0?package-id=e84b721543efb016",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240827150818-7e3bb234dfed?package-id=8a21ba156ca0682f#api",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240903143218-8af14fe29dc1?package-id=c76bcf129defac82#rpc",
+        "pkg:golang/google.golang.org/grpc@v1.66.0?package-id=cb55555a8ea44e1c",
+        "pkg:golang/google.golang.org/protobuf@v1.36.1?package-id=7f2eb51c5bb611f0",
+        "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=33a17a4b5797ce9a",
+        "pkg:golang/k8s.io/apimachinery@v0.28.6?package-id=92d50fb684bd9c2e",
+        "pkg:golang/k8s.io/utils@v0.0.0-20240502163921-fe8a2dddb1d0?package-id=3276e64273a1f31b",
+        "pkg:golang/stdlib@1.23.6?package-id=53194a797db11a2f"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/chainloop-dev/chainloop@v0.0.0-20250225095403-01097c857cc0?package-id=d9b398f32c8eba71",
+      "dependsOn": [
+        "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=aaecc631e768cdd5#bufbuild/protovalidate/protocolbuffers/go",
+        "pkg:golang/github.com/antlr4-go/antlr@v4.13.0?package-id=ae3b22f6088b9890#v4",
+        "pkg:golang/github.com/bufbuild/protovalidate-go@v0.6.1?package-id=7a483fafae89dfc6",
+        "pkg:golang/github.com/fatih/color@v1.16.0?package-id=2cdc639cca15e357",
+        "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=1d60b9844589638c",
+        "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=72dd923abb78d680",
+        "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=d7e3314682278e4f#contrib/log/zap/v2",
+        "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=430d0c1e1e34b944#v2",
+        "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=fc5309a660ebcc73#v4",
+        "pkg:golang/github.com/golang/protobuf@v1.5.4?package-id=c28129d64e66bdaf",
+        "pkg:golang/github.com/google/cel-go@v0.20.1?package-id=ca4ddacc00561af7",
+        "pkg:golang/github.com/google/go-containerregistry@v0.20.2?package-id=214946a070e44434",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=ad34c7e2e8bedf5a",
+        "pkg:golang/github.com/gorilla/mux@v1.8.1?package-id=168d5794dfe537d2",
+        "pkg:golang/github.com/hashicorp/go-hclog@v1.6.3?package-id=8c39118bf6d03826",
+        "pkg:golang/github.com/hashicorp/go-plugin@v1.6.3?package-id=822c54eadf9805c1",
+        "pkg:golang/github.com/hashicorp/yamux@v0.1.2?package-id=16516624249803ff",
+        "pkg:golang/github.com/iancoleman/orderedmap@v0.3.0?package-id=069da5bd1ad44a38",
+        "pkg:golang/github.com/in-toto/attestation@v1.1.0?package-id=5bf54b8914ff52a6",
+        "pkg:golang/github.com/invopop/jsonschema@v0.7.0?package-id=6c39101efbba4475",
+        "pkg:golang/github.com/jedib0t/go-pretty@v6.4.7?package-id=d799a63c265f49b0#v6",
+        "pkg:golang/github.com/joshdk/go-junit@v1.0.0?package-id=c7bf155188e1c106",
+        "pkg:golang/github.com/mattn/go-colorable@v0.1.13?package-id=2a16ab1c48693163",
+        "pkg:golang/github.com/mattn/go-isatty@v0.0.20?package-id=12614bcb13fd3767",
+        "pkg:golang/github.com/mattn/go-runewidth@v0.0.15?package-id=b84c75dbed7b12de",
+        "pkg:golang/github.com/muesli/reflow@v0.3.0?package-id=57cdeb26bcc6a29f",
+        "pkg:golang/github.com/oklog/run@v1.1.0?package-id=a49403eb33db9601",
+        "pkg:golang/github.com/rivo/uniseg@v0.4.4?package-id=da1732782665c010",
+        "pkg:golang/github.com/rs/zerolog@v1.32.0?package-id=e1571da4bb8f12a4",
+        "pkg:golang/github.com/santhosh-tekuri/jsonschema@v5.3.1?package-id=a7ff14634aee708a#v5",
+        "pkg:golang/github.com/secure-systems-lab/go-securesystemslib@v0.8.0?package-id=8ef50d5265d256d8",
+        "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=3698e047ac9853e5",
+        "pkg:golang/go.uber.org/multierr@v1.11.0?package-id=e39c836ccdc5d063",
+        "pkg:golang/go.uber.org/zap@v1.27.0?package-id=b5c1022bc7fdf90f",
+        "pkg:golang/golang.org/x/crypto@v0.32.0?package-id=c6852f43f4121d9d",
+        "pkg:golang/golang.org/x/exp@v0.0.0-20240719175910-8a7402abbf56?package-id=e991398e65d98501",
+        "pkg:golang/golang.org/x/net@v0.34.0?package-id=d58bcc22f763c907",
+        "pkg:golang/golang.org/x/sys@v0.29.0?package-id=915c40acb1aadd6d",
+        "pkg:golang/golang.org/x/text@v0.21.0?package-id=95ccdbe2fc17a8f3",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240827150818-7e3bb234dfed?package-id=f52bbfcca3232583#api",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240903143218-8af14fe29dc1?package-id=d609a18873ab9ba4#rpc",
+        "pkg:golang/google.golang.org/grpc@v1.66.0?package-id=d6eaa0c64f8df548",
+        "pkg:golang/google.golang.org/protobuf@v1.36.1?package-id=9770225c9e95c4a4",
+        "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=3b4d01acfc9de452",
+        "pkg:golang/k8s.io/apimachinery@v0.28.6?package-id=67f1298e664bf315",
+        "pkg:golang/k8s.io/utils@v0.0.0-20240502163921-fe8a2dddb1d0?package-id=a23f5a12fda4e0c2",
+        "pkg:golang/stdlib@1.23.6?package-id=3fd4d255438205a6"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/chainloop-dev/chainloop@v0.173.0?package-id=4c24279197a129ad",
+      "dependsOn": [
+        "pkg:golang/ariga.io/atlas@v0.28.1?package-id=3e7b8d55f7f2e52c",
+        "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=9a22724a7fa6a090#bufbuild/protovalidate/protocolbuffers/go",
+        "pkg:golang/cloud.google.com/go/auth@v0.2.4?package-id=475dcf6f75b65d8e#oauth2adapt",
+        "pkg:golang/cloud.google.com/go/auth@v0.9.3?package-id=726851db36ecdcde",
+        "pkg:golang/cloud.google.com/go/compute@v0.5.0?package-id=9875098e72924d82#metadata",
+        "pkg:golang/cloud.google.com/go/iam@v1.2.0?package-id=0e62cc51f5b9c817",
+        "pkg:golang/cloud.google.com/go/secretmanager@v1.14.0?package-id=4d7ae3ca340feb8f",
+        "pkg:golang/cloud.google.com/go/storage@v1.43.0?package-id=9fe9de4380572384",
+        "pkg:golang/cloud.google.com/go@v0.115.1?package-id=87beaeee2da6ff72",
+        "pkg:golang/code.cloudfoundry.org/bytefmt@v0.0.0-20230612151507-41ef4d1f67a4?package-id=2090cc3a10ed78fb",
+        "pkg:golang/cuelang.org/go@v0.9.2?package-id=4491d35c0e95bd50",
+        "pkg:golang/entgo.io/ent@v0.14.1?package-id=8b821b900307f5e4",
+        "pkg:golang/filippo.io/edwards25519@v1.1.0?package-id=024628788edc8c13",
+        "pkg:golang/github.com/agext/levenshtein@v1.2.3?package-id=8ce7895faeedf6b5",
+        "pkg:golang/github.com/agnivade/levenshtein@v1.1.1?package-id=b8ea671d38220f8f",
+        "pkg:golang/github.com/antlr4-go/antlr@v4.13.0?package-id=625b4036860abbf4#v4",
+        "pkg:golang/github.com/apparentlymart/go-textseg@v15.0.0?package-id=027c91de087cb54e#v15",
+        "pkg:golang/github.com/asaskevich/govalidator@v0.0.0-20230301143203-a9d515a09cc2?package-id=ec61e89627d00ffc",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.11.19?package-id=a55e3d043c2d2adb#service/internal/presigned-url",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.11.4?package-id=b36314806c05cfb0#service/internal/accept-encoding",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.16.13?package-id=c366144eb4852d47#feature/ec2/imds",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.17.32?package-id=cf8b978bb7e2c04e#credentials",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.22.7?package-id=4652ba0180ff05f9#service/sso",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.26.7?package-id=f637c62d238adc49#service/ssooidc",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.27.33?package-id=29c96e09daf83f42#config",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.28.6?package-id=ba4b072f74084a5a#service/secretsmanager",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.3.17?package-id=b7da986ac1cf9239#internal/configsources",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.30.5?package-id=2e41e5e9727cd354",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.30.7?package-id=d097d0b22925efb8#service/sts",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.8.1?package-id=f6adf3ac326c5504#internal/ini",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v2.6.17?package-id=8b61b11233195720#internal/endpoints/v2",
+        "pkg:golang/github.com/aws/aws-sdk-go@v1.55.5?package-id=db601fdf2715d0c4",
+        "pkg:golang/github.com/aws/smithy-go@v1.20.4?package-id=72afa0f2d86f29dc",
+        "pkg:golang/github.com/azure/azure-sdk-for-go@v0.12.0?package-id=e969fce8674da1d3#sdk/keyvault/azsecrets",
+        "pkg:golang/github.com/azure/azure-sdk-for-go@v0.7.1?package-id=d276fee7c5676025#sdk/keyvault/internal",
+        "pkg:golang/github.com/azure/azure-sdk-for-go@v1.10.0?package-id=8bd8b653774bc845#sdk/internal",
+        "pkg:golang/github.com/azure/azure-sdk-for-go@v1.14.0?package-id=b3230d1204060b3e#sdk/azcore",
+        "pkg:golang/github.com/azure/azure-sdk-for-go@v1.3.1?package-id=f6a2c4a09704f539#sdk/storage/azblob",
+        "pkg:golang/github.com/azure/azure-sdk-for-go@v1.7.0?package-id=934c1d20f21f9c08#sdk/azidentity",
+        "pkg:golang/github.com/azuread/microsoft-authentication-library-for-go@v1.2.2?package-id=386b3420019e9a00",
+        "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=251766817224640c",
+        "pkg:golang/github.com/blang/semver@v3.5.1%2Bincompatible?package-id=77213f0e55a3f555",
+        "pkg:golang/github.com/bmatcuk/doublestar@v1.3.4?package-id=1133cec046c4d048",
+        "pkg:golang/github.com/bmatcuk/doublestar@v4.7.1?package-id=1b10d523d92f1960#v4",
+        "pkg:golang/github.com/bufbuild/protovalidate-go@v0.6.1?package-id=57008f426280b61d",
+        "pkg:golang/github.com/bufbuild/protoyaml-go@v0.1.11?package-id=6eded203a778454f",
+        "pkg:golang/github.com/casbin/casbin@v2.101.0?package-id=6063d8ddbf756633#v2",
+        "pkg:golang/github.com/casbin/ent-adapter@v0.4.0?package-id=d9b80f7b7de1cbfb",
+        "pkg:golang/github.com/casbin/govaluate@v1.2.0?package-id=fa03e2ad9eb82b5e",
+        "pkg:golang/github.com/cenkalti/backoff@v3.2.2?package-id=473f6dec269349e0#v3",
+        "pkg:golang/github.com/cenkalti/backoff@v4.3.0?package-id=39690822ed732168#v4",
+        "pkg:golang/github.com/cespare/xxhash@v2.3.0?package-id=03b2734f3042c27b#v2",
+        "pkg:golang/github.com/cockroachdb/apd@v3.2.1?package-id=afcbc072679d0950#v3",
+        "pkg:golang/github.com/containerd/stargz-snapshotter@v0.14.3?package-id=c33ff76a6c11bf19#estargz",
+        "pkg:golang/github.com/coreos/go-oidc@v3.11.0?package-id=43be874698d4f067#v3",
+        "pkg:golang/github.com/cyberphone/json-canonicalization@v0.0.0-20231011164504-785e29786b46?package-id=52685d2a837ce953",
+        "pkg:golang/github.com/desertbit/timer@v0.0.0-20180107155436-c41aec40b27f?package-id=3a15244ef90b8132",
+        "pkg:golang/github.com/digitorus/pkcs7@v0.0.0-20230818184609-3a137a874352?package-id=bdd9939c641102f0",
+        "pkg:golang/github.com/digitorus/timestamp@v0.0.0-20231217203849-220c5c2851b7?package-id=45af6f42213abb6c",
+        "pkg:golang/github.com/docker/cli@v27.1.1%2Bincompatible?package-id=646be27eccab48f7",
+        "pkg:golang/github.com/docker/distribution@v2.8.3%2Bincompatible?package-id=90f1fd458dd6e164",
+        "pkg:golang/github.com/docker/docker-credential-helpers@v0.8.0?package-id=5b0bb8a06197b1fd",
+        "pkg:golang/github.com/dustin/go-humanize@v1.0.1?package-id=84e0d2606ade506a",
+        "pkg:golang/github.com/fatih/color@v1.16.0?package-id=69b2a96956e72e66",
+        "pkg:golang/github.com/felixge/httpsnoop@v1.0.4?package-id=72804ed3e0eeb636",
+        "pkg:golang/github.com/fsnotify/fsnotify@v1.7.0?package-id=68ae1ef5b4de1341",
+        "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=3814da9c22deab91",
+        "pkg:golang/github.com/go-chi/chi@v4.1.2%2Bincompatible?package-id=4bfc17c57cdc5c32",
+        "pkg:golang/github.com/go-ini/ini@v1.67.0?package-id=83c557216c5a98c0",
+        "pkg:golang/github.com/go-jose/go-jose@v4.0.5?package-id=bd66253556f1fcee#v4",
+        "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=3e6d54a97cb209aa",
+        "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=81343ca4b23ceac0#contrib/log/zap/v2",
+        "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=50f7cf115c3b2165#v2",
+        "pkg:golang/github.com/go-logr/logr@v1.4.2?package-id=c169d9ae0e2aaeef",
+        "pkg:golang/github.com/go-logr/stdr@v1.2.2?package-id=5e20b04bdf18d862",
+        "pkg:golang/github.com/go-openapi/analysis@v0.23.0?package-id=75192594f5a12ee1",
+        "pkg:golang/github.com/go-openapi/errors@v0.22.0?package-id=b0288c853e03c6ad",
+        "pkg:golang/github.com/go-openapi/inflect@v0.21.0?package-id=4fc70a7b57eb9594",
+        "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=1799c1a832c96d10",
+        "pkg:golang/github.com/go-openapi/jsonreference@v0.21.0?package-id=b5e493f9b12d2dfb",
+        "pkg:golang/github.com/go-openapi/loads@v0.22.0?package-id=10998bb216ccd36d",
+        "pkg:golang/github.com/go-openapi/runtime@v0.28.0?package-id=6eb5f4e11ca004d9",
+        "pkg:golang/github.com/go-openapi/spec@v0.21.0?package-id=f5c7dd5325d2b503",
+        "pkg:golang/github.com/go-openapi/strfmt@v0.23.0?package-id=ddca941a4a0a0855",
+        "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=cb619c30f996e596",
+        "pkg:golang/github.com/go-openapi/validate@v0.24.0?package-id=08758e5f4c316c74",
+        "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=07bb45044611f8c8#v4",
+        "pkg:golang/github.com/go-sql-driver/mysql@v1.8.1?package-id=bd51056a1bcd30bf",
+        "pkg:golang/github.com/goadesign/goa@v2.2.5%2Bincompatible?package-id=9db7c386a71ff848",
+        "pkg:golang/github.com/gobwas/glob@v0.2.3?package-id=cfd4baa4b414e569",
+        "pkg:golang/github.com/golang-jwt/jwt@v4.5.1?package-id=3c664cb6a82faddc#v4",
+        "pkg:golang/github.com/golang-jwt/jwt@v5.2.1?package-id=495c6032df9974d3#v5",
+        "pkg:golang/github.com/golang/groupcache@v0.0.0-20210331224755-41bb18bfe9da?package-id=13f9145fe42b4a92",
+        "pkg:golang/github.com/golang/protobuf@v1.5.4?package-id=faf1a5ca789fe8d7",
+        "pkg:golang/github.com/golang/snappy@v0.0.4?package-id=fdd20c4ad690e009",
+        "pkg:golang/github.com/google/cel-go@v0.20.1?package-id=535302b9a711c005",
+        "pkg:golang/github.com/google/certificate-transparency-go@v1.2.1?package-id=ef284e66b2445adf",
+        "pkg:golang/github.com/google/go-cmp@v0.6.0?package-id=abd3fbed817dc6f3",
+        "pkg:golang/github.com/google/go-containerregistry@v0.20.2?package-id=3a593092176a2076",
+        "pkg:golang/github.com/google/s2a-go@v0.1.8?package-id=b58bc9e10c753b34",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=92ea0cc639320697",
+        "pkg:golang/github.com/google/wire@v0.6.0?package-id=5107cd8c293bd42d",
+        "pkg:golang/github.com/googleapis/enterprise-certificate-proxy@v0.3.3?package-id=767016072de97ebd",
+        "pkg:golang/github.com/googleapis/gax-go@v2.13.0?package-id=116a600a81233f0c#v2",
+        "pkg:golang/github.com/gorilla/mux@v1.8.1?package-id=16b13680c1b425c4",
+        "pkg:golang/github.com/grpc-ecosystem/go-grpc-middleware@v1.4.0?package-id=38ac947f936a3b3e",
+        "pkg:golang/github.com/grpc-ecosystem/go-grpc-middleware@v2.1.0?package-id=cce13fbcda61fb0f#v2",
+        "pkg:golang/github.com/grpc-ecosystem/go-grpc-prometheus@v1.2.1-0.20210315223345-82c243799c99?package-id=90444aa31b456324",
+        "pkg:golang/github.com/grpc-ecosystem/grpc-gateway@v2.22.0?package-id=5a2baf47c6f7c8e3#v2",
+        "pkg:golang/github.com/hashicorp/errwrap@v1.1.0?package-id=297494f279eadbdb",
+        "pkg:golang/github.com/hashicorp/go-cleanhttp@v0.5.2?package-id=a2a47eb49c08dae5",
+        "pkg:golang/github.com/hashicorp/go-hclog@v1.6.3?package-id=a6f49bfe81ac9754",
+        "pkg:golang/github.com/hashicorp/go-multierror@v1.1.1?package-id=f5c3d85f07abbd3e",
+        "pkg:golang/github.com/hashicorp/go-plugin@v1.6.3?package-id=6b4ca7cafed80805",
+        "pkg:golang/github.com/hashicorp/go-retryablehttp@v0.7.7?package-id=24bb7ebffc3fe2a4",
+        "pkg:golang/github.com/hashicorp/go-rootcerts@v1.0.2?package-id=cf5bd0ed0c52fd2a",
+        "pkg:golang/github.com/hashicorp/go-secure-stdlib@v0.1.2?package-id=9e8ccc4232394334#strutil",
+        "pkg:golang/github.com/hashicorp/go-secure-stdlib@v0.1.7?package-id=cdf271cf3881227c#parseutil",
+        "pkg:golang/github.com/hashicorp/go-sockaddr@v1.0.5?package-id=8eeedb5dc7fb6f8d",
+        "pkg:golang/github.com/hashicorp/golang-lru@v1.0.2?package-id=eef611e91b452921",
+        "pkg:golang/github.com/hashicorp/golang-lru@v2.0.7?package-id=b0ccc1a01b2eb4b7#v2",
+        "pkg:golang/github.com/hashicorp/hcl@v1.0.1-vault-5?package-id=f0ced6fd882058da",
+        "pkg:golang/github.com/hashicorp/hcl@v2.23.0?package-id=17f05ca89cb2db7a#v2",
+        "pkg:golang/github.com/hashicorp/vault@v1.14.0?package-id=23b260d71c8f42e3#api",
+        "pkg:golang/github.com/hashicorp/yamux@v0.1.2?package-id=b982b8a77e46d2ec",
+        "pkg:golang/github.com/hedwigz/entviz@v0.0.0-20221011080911-9d47f6f1d818?package-id=eba5c40e889d0195",
+        "pkg:golang/github.com/iancoleman/orderedmap@v0.3.0?package-id=17283ca1d7ce9d2c",
+        "pkg:golang/github.com/igutechung/casbin-psql-watcher@v1.0.0?package-id=ae8387142ca285e6",
+        "pkg:golang/github.com/imdario/mergo@v0.3.16?package-id=4572d0df48642463",
+        "pkg:golang/github.com/improbable-eng/grpc-web@v0.15.0?package-id=a09d404a37a6b786",
+        "pkg:golang/github.com/in-toto/attestation@v1.1.0?package-id=aaf53e7e0704bbcc",
+        "pkg:golang/github.com/in-toto/in-toto-golang@v0.9.0?package-id=ea72f8ffda76195a",
+        "pkg:golang/github.com/invopop/jsonschema@v0.7.0?package-id=22a61b04bac3d34d",
+        "pkg:golang/github.com/jackc/pgpassfile@v1.0.0?package-id=f49c3b1b443afe80",
+        "pkg:golang/github.com/jackc/pgservicefile@v0.0.0-20240606120523-5a60cdf6a761?package-id=feb75df6454c6a80",
+        "pkg:golang/github.com/jackc/pgx@v5.7.1?package-id=6574dfea7e7dd55b#v5",
+        "pkg:golang/github.com/jackc/puddle@v2.2.2?package-id=2ad536e2bfebccc1#v2",
+        "pkg:golang/github.com/jedib0t/go-pretty@v6.4.7?package-id=2426060e5d94291d#v6",
+        "pkg:golang/github.com/jedisct1/go-minisign@v0.0.0-20230811132847-661be99b8267?package-id=467bd2c77880827d",
+        "pkg:golang/github.com/jmespath/go-jmespath@v0.4.0?package-id=25a58e9c6485d1e5",
+        "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=3b6fd6600df08d90",
+        "pkg:golang/github.com/joshdk/go-junit@v1.0.0?package-id=2e99881db022447b",
+        "pkg:golang/github.com/klauspost/compress@v1.17.11?package-id=3be04d23dd17a5e1",
+        "pkg:golang/github.com/kylelemons/godebug@v1.1.0?package-id=76285e8a76a99236",
+        "pkg:golang/github.com/letsencrypt/boulder@v0.0.0-20240620165639-de9c06129bec?package-id=74469cc805d7ef83",
+        "pkg:golang/github.com/lib/pq@v1.10.9?package-id=0966de4bbdc9abd7",
+        "pkg:golang/github.com/magiconair/properties@v1.8.9?package-id=3548ed8594e7d263",
+        "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=ee85f45ead786707",
+        "pkg:golang/github.com/mattn/go-colorable@v0.1.13?package-id=bc8ebdaa4a028a8e",
+        "pkg:golang/github.com/mattn/go-isatty@v0.0.20?package-id=30a45b33755a1fb4",
+        "pkg:golang/github.com/mattn/go-runewidth@v0.0.15?package-id=3102b6c7926fe05f",
+        "pkg:golang/github.com/mitchellh/go-homedir@v1.1.0?package-id=93da6205b2d8e347",
+        "pkg:golang/github.com/mitchellh/go-wordwrap@v1.0.1?package-id=1b20a049d3053544",
+        "pkg:golang/github.com/mitchellh/mapstructure@v1.5.0?package-id=7dbf5189a38f7286",
+        "pkg:golang/github.com/moby/moby@v26.1.0%2Bincompatible?package-id=2db6ea03d5697762",
+        "pkg:golang/github.com/muesli/reflow@v0.3.0?package-id=d4abbf74149ef80d",
+        "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=e5e824d3dc43cf46",
+        "pkg:golang/github.com/nats-io/nats.go@v1.34.0?package-id=73c1edf10da4e21d",
+        "pkg:golang/github.com/nats-io/nkeys@v0.4.7?package-id=36056b63ed81fd7c",
+        "pkg:golang/github.com/nats-io/nuid@v1.0.1?package-id=30b63f5cb6d70b87",
+        "pkg:golang/github.com/nozzle/throttler@v0.0.0-20180817012639-2ea982251481?package-id=ac5424bef5a4681f",
+        "pkg:golang/github.com/oklog/run@v1.1.0?package-id=02a513f21afc9fa1",
+        "pkg:golang/github.com/oklog/ulid@v1.3.1?package-id=c968a9a3351a7a11",
+        "pkg:golang/github.com/oneofone/xxhash@v1.2.8?package-id=ae7d54c203ca9973",
+        "pkg:golang/github.com/open-policy-agent/opa@v0.68.0?package-id=42cdc34ca95a7e2d",
+        "pkg:golang/github.com/opencontainers/go-digest@v1.0.0?package-id=0b136edad5b5ec21",
+        "pkg:golang/github.com/opencontainers/image-spec@v1.1.0?package-id=0e23abb04786163b",
+        "pkg:golang/github.com/opentracing/opentracing-go@v1.2.0?package-id=cfe827104b867502",
+        "pkg:golang/github.com/pelletier/go-toml@v2.2.2?package-id=02557f422653e6d2#v2",
+        "pkg:golang/github.com/pkg/browser@v0.0.0-20240102092130-5ac0b6a4141c?package-id=4a25aa36150f6041",
+        "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=d2747fd925ef480a",
+        "pkg:golang/github.com/prometheus/client_golang@v1.20.2?package-id=395365de83005612",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.1?package-id=7a77db04056a16e8",
+        "pkg:golang/github.com/prometheus/common@v0.55.0?package-id=0ac9bb284f9a71e4",
+        "pkg:golang/github.com/prometheus/procfs@v0.15.1?package-id=fd8133995514f22b",
+        "pkg:golang/github.com/rcrowley/go-metrics@v0.0.0-20201227073835-cf1acfcdf475?package-id=24dee4a6037ab0d0",
+        "pkg:golang/github.com/rivo/uniseg@v0.4.4?package-id=c8c9fbe99a349a68",
+        "pkg:golang/github.com/rs/cors@v1.11.0?package-id=ad846a2a91832a48",
+        "pkg:golang/github.com/rs/zerolog@v1.32.0?package-id=69bfb2d5ddedbdf9",
+        "pkg:golang/github.com/ryanuber/go-glob@v1.0.0?package-id=217d4f5c764e7cd5",
+        "pkg:golang/github.com/sagikazarmark/slog-shim@v0.1.0?package-id=4367faa7c2d2f97f",
+        "pkg:golang/github.com/santhosh-tekuri/jsonschema@v5.3.1?package-id=2cad8d39db69495c#v5",
+        "pkg:golang/github.com/sassoftware/relic@v7.2.1%2Bincompatible?package-id=a9415632cb085d90",
+        "pkg:golang/github.com/secure-systems-lab/go-securesystemslib@v0.8.0?package-id=1b1e43e2a7199793",
+        "pkg:golang/github.com/shibumi/go-pathspec@v1.3.0?package-id=74005b282c6bdd70",
+        "pkg:golang/github.com/sigstore/cosign@v2.4.1?package-id=1c4c64a46ff36a0a#v2",
+        "pkg:golang/github.com/sigstore/fulcio@v1.6.3?package-id=635e575225551872",
+        "pkg:golang/github.com/sigstore/protobuf-specs@v0.3.2?package-id=95ee7dd2743960c6",
+        "pkg:golang/github.com/sigstore/rekor@v1.3.6?package-id=8a9693560079ad5f",
+        "pkg:golang/github.com/sigstore/sigstore-go@v0.6.1?package-id=28811a4e64ffb26c",
+        "pkg:golang/github.com/sigstore/sigstore@v1.8.9?package-id=d9273a79a1ab4a47",
+        "pkg:golang/github.com/sigstore/timestamp-authority@v1.2.2?package-id=d860a3b18d75fb04",
+        "pkg:golang/github.com/sirupsen/logrus@v1.9.3?package-id=3f6852ba9790b24f",
+        "pkg:golang/github.com/spf13/afero@v1.11.0?package-id=dcccb759d12899ff",
+        "pkg:golang/github.com/spf13/cast@v1.6.0?package-id=ef338eb4370931ff",
+        "pkg:golang/github.com/spf13/cobra@v1.8.1?package-id=a977f8eb68334fb4",
+        "pkg:golang/github.com/spf13/pflag@v1.0.5?package-id=7a56c390fda296fd",
+        "pkg:golang/github.com/spf13/viper@v1.19.0?package-id=d0006a4ee3fc30c7",
+        "pkg:golang/github.com/spiffe/go-spiffe@v2.3.0?package-id=a2395aabdd4eb78c#v2",
+        "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=5af10aaff3318524",
+        "pkg:golang/github.com/subosito/gotenv@v1.6.0?package-id=07c9a261d9adbf02",
+        "pkg:golang/github.com/syndtr/goleveldb@v1.0.1-0.20220721030215-126854af5e6d?package-id=0c759f07ed1094f3",
+        "pkg:golang/github.com/tchap/go-patricia@v2.3.1?package-id=4e2e81a31bc15c84#v2",
+        "pkg:golang/github.com/theupdateframework/go-tuf@v0.7.0?package-id=72ad5d71386aba22",
+        "pkg:golang/github.com/theupdateframework/go-tuf@v2.0.1?package-id=b2c38752ffa30168#v2",
+        "pkg:golang/github.com/titanous/rocacheck@v0.0.0-20171023193734-afe73141d399?package-id=fd39126640c90e33",
+        "pkg:golang/github.com/transparency-dev/merkle@v0.0.2?package-id=eae0ed07d7afe493",
+        "pkg:golang/github.com/vbatts/tar-split@v0.11.5?package-id=427fffe7fc44c94c",
+        "pkg:golang/github.com/xeipuuv/gojsonpointer@v0.0.0-20190905194746-02993c407bfb?package-id=c6041e94a7a3187e",
+        "pkg:golang/github.com/xeipuuv/gojsonreference@v0.0.0-20180127040603-bd5ef7bd5415?package-id=65c0dfcb3863dbce",
+        "pkg:golang/github.com/yashtewari/glob-intersection@v0.2.0?package-id=820fe5fd603f8149",
+        "pkg:golang/github.com/zclconf/go-cty@v1.15.0?package-id=f15283aa6d74af01",
+        "pkg:golang/go.mongodb.org/mongo-driver@v1.14.0?package-id=6174118d564cff1f",
+        "pkg:golang/go.opencensus.io@v0.24.0?package-id=4155206f62ef9486",
+        "pkg:golang/go.opentelemetry.io/auto/sdk@v1.1.0?package-id=80b43b987e3ecd20",
+        "pkg:golang/go.opentelemetry.io/contrib/instrumentation@v0.54.0?package-id=4307aef49b870c25#google.golang.org/grpc/otelgrpc",
+        "pkg:golang/go.opentelemetry.io/contrib/instrumentation@v0.59.0?package-id=19782a2d03e0aa89#net/http/otelhttp",
+        "pkg:golang/go.opentelemetry.io/otel/metric@v1.34.0?package-id=d978f493d8df5cf2",
+        "pkg:golang/go.opentelemetry.io/otel/sdk@v1.29.0?package-id=11ff4e81237eaafd",
+        "pkg:golang/go.opentelemetry.io/otel/trace@v1.34.0?package-id=186351c4062dcf6c",
+        "pkg:golang/go.opentelemetry.io/otel@v1.34.0?package-id=8440ebced89a983c",
+        "pkg:golang/go.step.sm/crypto@v0.51.2?package-id=16fd6d4cf65cb2b1",
+        "pkg:golang/go.uber.org/multierr@v1.11.0?package-id=ad70222c2058f04b",
+        "pkg:golang/go.uber.org/zap@v1.27.0?package-id=bb58690b6960e4eb",
+        "pkg:golang/goa.design/goa@v2.2.5%2Bincompatible?package-id=5127e52c4beb95f2",
+        "pkg:golang/golang.org/x/crypto@v0.32.0?package-id=a4c19375a92f31d6",
+        "pkg:golang/golang.org/x/exp@v0.0.0-20240719175910-8a7402abbf56?package-id=b49e2a0bcea7f3d2",
+        "pkg:golang/golang.org/x/mod@v0.22.0?package-id=c51cb727d55a4b82",
+        "pkg:golang/golang.org/x/net@v0.34.0?package-id=a4116d9570c85817",
+        "pkg:golang/golang.org/x/oauth2@v0.23.0?package-id=8469461999fb0d35",
+        "pkg:golang/golang.org/x/sync@v0.10.0?package-id=c31701e0a3ce57ef",
+        "pkg:golang/golang.org/x/sys@v0.29.0?package-id=1bd96ce1a3ecab16",
+        "pkg:golang/golang.org/x/term@v0.28.0?package-id=9bd2177a42214de0",
+        "pkg:golang/golang.org/x/text@v0.21.0?package-id=86de14b9626ea506",
+        "pkg:golang/golang.org/x/time@v0.6.0?package-id=00ec411788e5e341",
+        "pkg:golang/golang.org/x/tools@v0.27.0?package-id=b8441a7cf95f850c",
+        "pkg:golang/google.golang.org/api@v0.196.0?package-id=64a89fcb6294a01b",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240827150818-7e3bb234dfed?package-id=82370ebcc902b928#api",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240903143218-8af14fe29dc1?package-id=23960f52d4c631f4#rpc",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240903143218-8af14fe29dc1?package-id=fd135ba7e36d950e#bytestream",
+        "pkg:golang/google.golang.org/genproto@v0.0.0-20240903143218-8af14fe29dc1?package-id=4a3e38975ad93ab4",
+        "pkg:golang/google.golang.org/grpc@v1.66.0?package-id=c0712738e1eaed16",
+        "pkg:golang/google.golang.org/protobuf@v1.36.1?package-id=03c0b997d36d650f",
+        "pkg:golang/gopkg.in/ini.v1@v1.67.0?package-id=72443941b2cf5dd6",
+        "pkg:golang/gopkg.in/yaml.v2@v2.4.0?package-id=97f9144018110acb",
+        "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=8d86904797ef780a",
+        "pkg:golang/k8s.io/apimachinery@v0.28.6?package-id=7d9fe75aeec7bc72",
+        "pkg:golang/k8s.io/klog/v2@v2.120.1?package-id=aad873d1c58bf0ca",
+        "pkg:golang/k8s.io/utils@v0.0.0-20240502163921-fe8a2dddb1d0?package-id=c4307af2e0700b08",
+        "pkg:golang/nhooyr.io/websocket@v1.8.10?package-id=0ad2393fea8374d6",
+        "pkg:golang/sigs.k8s.io/yaml@v1.4.0?package-id=17ee11262decfca3",
+        "pkg:golang/stdlib@1.23.6?package-id=942f6d3196808fd4"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/chainloop-dev/chainloop@v0.173.0?package-id=755ebef7d8179bd2",
+      "dependsOn": [
+        "pkg:golang/buf.build/gen/go@v1.33.0-20240401165935-b983156c5e99.1?package-id=b43cbb2ee75d0bc8#bufbuild/protovalidate/protocolbuffers/go",
+        "pkg:golang/github.com/antlr4-go/antlr@v4.13.0?package-id=77771452caf73063#v4",
+        "pkg:golang/github.com/bufbuild/protovalidate-go@v0.6.1?package-id=381a1c316d24756e",
+        "pkg:golang/github.com/fatih/color@v1.16.0?package-id=a6a5e0dffe45c961",
+        "pkg:golang/github.com/getsentry/sentry-go@v0.23.0?package-id=49b33260ff6fe00a",
+        "pkg:golang/github.com/go-kratos/aegis@v0.2.0?package-id=0476293a44f8aee4",
+        "pkg:golang/github.com/go-kratos/kratos@v2.0.0-20230823024326-a09f4d8ebba9?package-id=6f123aa6699c854d#contrib/log/zap/v2",
+        "pkg:golang/github.com/go-kratos/kratos@v2.7.0?package-id=c94bab1ca55048e5#v2",
+        "pkg:golang/github.com/go-playground/form@v4.2.1?package-id=6c9c1444c05891c4#v4",
+        "pkg:golang/github.com/golang/protobuf@v1.5.4?package-id=3d789dc87de672a2",
+        "pkg:golang/github.com/google/cel-go@v0.20.1?package-id=1273e9b2238349e5",
+        "pkg:golang/github.com/google/go-containerregistry@v0.20.2?package-id=bddd22ef1f99e344",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=637cfafc38d767f3",
+        "pkg:golang/github.com/gorilla/mux@v1.8.1?package-id=3f078683de6896bc",
+        "pkg:golang/github.com/hashicorp/go-hclog@v1.6.3?package-id=89a50390c42fb20b",
+        "pkg:golang/github.com/hashicorp/go-plugin@v1.6.3?package-id=f49a4f6ed35ae802",
+        "pkg:golang/github.com/hashicorp/yamux@v0.1.2?package-id=f62e78e104645d0b",
+        "pkg:golang/github.com/iancoleman/orderedmap@v0.3.0?package-id=2dc86ec46d946bef",
+        "pkg:golang/github.com/in-toto/attestation@v1.1.0?package-id=fcd686106803a8fc",
+        "pkg:golang/github.com/invopop/jsonschema@v0.7.0?package-id=ffdb9ea8aa7f22b6",
+        "pkg:golang/github.com/jedib0t/go-pretty@v6.4.7?package-id=1503c88982b08541#v6",
+        "pkg:golang/github.com/joshdk/go-junit@v1.0.0?package-id=5cb30ee659505f5e",
+        "pkg:golang/github.com/mattn/go-colorable@v0.1.13?package-id=75ba697019b8ce32",
+        "pkg:golang/github.com/mattn/go-isatty@v0.0.20?package-id=c6010ecbfbceb6db",
+        "pkg:golang/github.com/mattn/go-runewidth@v0.0.15?package-id=3285e8bc9da1ddf2",
+        "pkg:golang/github.com/muesli/reflow@v0.3.0?package-id=bcafa745dbdae750",
+        "pkg:golang/github.com/oklog/run@v1.1.0?package-id=fd0fc031161bc464",
+        "pkg:golang/github.com/rivo/uniseg@v0.4.4?package-id=9cab24a377ced7c4",
+        "pkg:golang/github.com/rs/zerolog@v1.32.0?package-id=27ccf555f364b014",
+        "pkg:golang/github.com/santhosh-tekuri/jsonschema@v5.3.1?package-id=8a44842a3d2d6c1f#v5",
+        "pkg:golang/github.com/secure-systems-lab/go-securesystemslib@v0.8.0?package-id=9f95eb1f6367d680",
+        "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=c32cf771e4b38ddc",
+        "pkg:golang/go.uber.org/multierr@v1.11.0?package-id=daa4cbe37a794b9e",
+        "pkg:golang/go.uber.org/zap@v1.27.0?package-id=0e84a1028654405b",
+        "pkg:golang/golang.org/x/crypto@v0.32.0?package-id=6635663f082d48a9",
+        "pkg:golang/golang.org/x/exp@v0.0.0-20240719175910-8a7402abbf56?package-id=1aabfea1c038af4c",
+        "pkg:golang/golang.org/x/net@v0.34.0?package-id=ad75e22606cfb911",
+        "pkg:golang/golang.org/x/sys@v0.29.0?package-id=5a936d2bb12fdb4b",
+        "pkg:golang/golang.org/x/text@v0.21.0?package-id=d76da9f363e8ac63",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240827150818-7e3bb234dfed?package-id=e3e969f2d53bceab#api",
+        "pkg:golang/google.golang.org/genproto/googleapis@v0.0.0-20240903143218-8af14fe29dc1?package-id=1065c55fe3848677#rpc",
+        "pkg:golang/google.golang.org/grpc@v1.66.0?package-id=10c49576449c0f28",
+        "pkg:golang/google.golang.org/protobuf@v1.36.1?package-id=a7b2233ebcc9fcde",
+        "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=b206d5ffa910fc96",
+        "pkg:golang/k8s.io/apimachinery@v0.28.6?package-id=1102f3e024323bab",
+        "pkg:golang/k8s.io/utils@v0.0.0-20240502163921-fe8a2dddb1d0?package-id=a82ac7540eb05855",
+        "pkg:golang/stdlib@1.23.6?package-id=e6dd73c7cc8f3182"
+      ]
+    }
+  ]
+}

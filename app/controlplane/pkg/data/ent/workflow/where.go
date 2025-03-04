@@ -656,6 +656,16 @@ func DescriptionContainsFold(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldIsNull(FieldMetadata))
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotNull(FieldMetadata))
+}
+
 // HasRobotaccounts applies the HasEdge predicate on the "robotaccounts" edge.
 func HasRobotaccounts() predicate.Workflow {
 	return predicate.Workflow(func(s *sql.Selector) {
