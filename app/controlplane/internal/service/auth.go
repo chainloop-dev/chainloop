@@ -51,6 +51,8 @@ const (
 	AuthLoginPath    = "/auth/login"
 	AuthCallbackPath = "/auth/callback"
 
+	oidcErrorParam = "error_description"
+
 	// default
 	shortLivedDuration = 10 * time.Second
 	// opt-in
@@ -63,9 +65,19 @@ type oauthResp struct {
 	code          int
 	err           error
 	showErrToUser bool
+	redirectURL   *url.URL
 }
 
-// This is used to provide by default a generic error message to the user
+// NewOauthResp builds an oauthResp object without redirection
+func newOauthResp(code int, err error, showErrToUser bool) *oauthResp {
+	return &oauthResp{
+		code:          code,
+		err:           err,
+		showErrToUser: showErrToUser,
+	}
+}
+
+// ErrorMessage is used to provide by default a generic error message to the user
 // unless showErrToUser is true
 func (e *oauthResp) ErrorMessage(l *log.Helper) string {
 	if e.err != nil {
@@ -190,8 +202,12 @@ func (svc *AuthService) RegisterLoginHandler() http.Handler {
 
 // Implement http.Handler interface
 func (h oauthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := h.H(h.svc, w, r); err != nil {
-		http.Error(w, err.ErrorMessage(h.svc.log), err.code)
+	if resp := h.H(h.svc, w, r); resp != nil {
+		if resp.redirectURL != nil {
+			http.Redirect(w, r, resp.redirectURL.String(), http.StatusTemporaryRedirect)
+			return
+		}
+		http.Error(w, resp.ErrorMessage(h.svc.log), resp.code)
 	}
 }
 
@@ -199,7 +215,7 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to generate random string: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate random string: %w", err), false)
 	}
 
 	// Store a random string to check it in the oauth callback
@@ -221,7 +237,7 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 	if connectionStr != "" {
 		uri, err := url.Parse(authorizationURI)
 		if err != nil {
-			return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to parse authorization URI: %w", err), false}
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to parse authorization URI: %w", err), false)
 		}
 		q := uri.Query()
 		q.Set("connection", connectionStr)
@@ -230,7 +246,7 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 	}
 
 	http.Redirect(w, r, authorizationURI, http.StatusFound)
-	return &oauthResp{http.StatusTemporaryRedirect, nil, false}
+	return newOauthResp(http.StatusTemporaryRedirect, nil, false)
 }
 
 // Extract custom claims
@@ -258,33 +274,42 @@ func (c *upstreamOIDCclaims) preferredEmail() string {
 
 func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oauthResp {
 	ctx := context.Background()
-	// if OIDC provider returns an error, return it to and show it to the user
-	if desc := r.URL.Query().Get("error_description"); desc != "" {
-		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true}
+	// if OIDC provider returns an error, redirect to the login page to and show it to the user
+	if desc := r.URL.Query().Get(oidcErrorParam); desc != "" {
+		redirectURL, err := url.Parse(svc.AuthURLs.Login)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to redirect to login: %w", err), false)
+		}
+
+		q := redirectURL.Query()
+		q.Set(oidcErrorParam, desc)
+		redirectURL.RawQuery = q.Encode()
+
+		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true, redirectURL}
 	}
 
 	// Get information from google OIDC token
 	claims, errWithCode := extractUserInfoFromToken(ctx, svc, r)
 	if errWithCode != nil {
-		return &oauthResp{errWithCode.code, errWithCode.err, errWithCode.showErrToUser}
+		return newOauthResp(errWithCode.code, errWithCode.err, errWithCode.showErrToUser)
 	}
 
 	// Create user if needed
 	u, err := svc.userUseCase.FindOrCreateByEmail(ctx, claims.preferredEmail())
 	if err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to find or create user: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to find or create user: %w", err), false)
 	}
 
 	// Accept any pending invites
 	if err := svc.orgInvitesUseCase.AcceptPendingInvitations(ctx, u.Email); err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to accept pending invitations: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to accept pending invitations: %w", err), false)
 	}
 
 	// Set the expiration
 	expiration := shortLivedDuration
 	longLived, err := r.Cookie(cookieLongLived)
 	if err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to get long lived cookie: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to get long lived cookie: %w", err), false)
 	}
 
 	if longLived.Value == "true" {
@@ -294,14 +319,14 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	// Generate user token
 	userToken, err := generateUserJWT(u.ID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
 	if err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false)
 	}
 
 	// Either redirect or render the token if fallback is specified
 	// Callback URL from the cookie
 	callbackURLFromCookie, err := r.Cookie(cookieCallback)
 	if err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to get callback URL from cookie: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to get callback URL from cookie: %w", err), false)
 	}
 
 	callbackValue := callbackURLFromCookie.Value
@@ -309,17 +334,17 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	// There is no callback, just render the token
 	if callbackValue == "" {
 		fmt.Fprintf(w, "copy this token and paste it in your terminal window\n\n%s", userToken)
-		return &oauthResp{http.StatusOK, nil, false}
+		return newOauthResp(http.StatusOK, nil, false)
 	}
 
 	// Redirect to the callback URL
 	callbackURL, err := crafCallbackURL(callbackValue, userToken)
 	if err != nil {
-		return &oauthResp{http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false}
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
 	}
 
 	http.Redirect(w, r, callbackURL, http.StatusFound)
-	return &oauthResp{http.StatusTemporaryRedirect, nil, false}
+	return newOauthResp(http.StatusTemporaryRedirect, nil, false)
 }
 
 func crafCallbackURL(callback, userToken string) (string, error) {
@@ -340,11 +365,11 @@ func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Req
 	cookieState, err := r.Cookie(cookieOauthStateName)
 	// if the cookie is not found, it likely means the authentication process has expired
 	if err != nil {
-		return nil, &oauthResp{http.StatusUnauthorized, errors.New("the authentication process has expired, please try again"), true}
+		return nil, newOauthResp(http.StatusUnauthorized, errors.New("the authentication process has expired, please try again"), true)
 	}
 
 	if r.URL.Query().Get("state") != cookieState.Value {
-		return nil, &oauthResp{http.StatusUnauthorized, errors.New("the authentication was invalid, please try again"), true}
+		return nil, newOauthResp(http.StatusUnauthorized, errors.New("the authentication was invalid, please try again"), true)
 	}
 
 	code := r.URL.Query().Get("code")
@@ -355,23 +380,23 @@ func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Req
 	// Exchange the code for a token
 	oauth2Token, err := svc.authenticator.Exchange(ctx, code)
 	if err != nil {
-		return nil, &oauthResp{http.StatusUnauthorized, err, false}
+		return nil, newOauthResp(http.StatusUnauthorized, err, false)
 	}
 
 	// It's a valid Oauth2 token
 	if !oauth2Token.Valid() {
-		return nil, &oauthResp{http.StatusUnauthorized, errors.New("retrieved invalid Token"), false}
+		return nil, newOauthResp(http.StatusUnauthorized, errors.New("retrieved invalid Token"), false)
 	}
 
 	// Parse and verify ID token content and signature
 	idToken, err := svc.authenticator.VerifyIDToken(ctx, oauth2Token)
 	if err != nil {
-		return nil, &oauthResp{http.StatusInternalServerError, err, false}
+		return nil, newOauthResp(http.StatusInternalServerError, err, false)
 	}
 
 	var claims *upstreamOIDCclaims
 	if err := idToken.Claims(&claims); err != nil {
-		return nil, &oauthResp{http.StatusInternalServerError, err, false}
+		return nil, newOauthResp(http.StatusInternalServerError, err, false)
 	}
 
 	return claims, nil
