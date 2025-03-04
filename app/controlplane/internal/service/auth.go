@@ -294,7 +294,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 		q.Set(oidcErrorParam, desc)
 		redirectURL.RawQuery = q.Encode()
 
-		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true, redirectURL}
+		return &oauthResp{http.StatusUnauthorized, nil, true, redirectURL}
 	}
 
 	// Get information from google OIDC token
