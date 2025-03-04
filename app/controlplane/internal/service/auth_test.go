@@ -65,13 +65,13 @@ func TestGetAuthURLs(t *testing.T) {
 			name:             "external with override",
 			config:           &conf.Server_HTTP{Addr: "1.2.3.4", ExternalUrl: "https://foo.com"},
 			loginURLOverride: "https://foo.override.com/auth/login",
-			want:             &AuthURLs{callback: "https://foo.com/auth/callback", Login: "https://foo.override.com/auth/login"},
+			want:             &AuthURLs{callback: "https://foo.com/auth/callback", Login: "https://foo.override.com/auth/login", loginIsOverridden: true},
 		},
 		{
 			name:             "internal with override",
 			config:           internalServer,
 			loginURLOverride: "https://foo.override.com/auth/login",
-			want:             &AuthURLs{callback: "http://1.2.3.4/auth/callback", Login: "https://foo.override.com/auth/login"},
+			want:             &AuthURLs{callback: "http://1.2.3.4/auth/callback", Login: "https://foo.override.com/auth/login", loginIsOverridden: true},
 		},
 	}
 
