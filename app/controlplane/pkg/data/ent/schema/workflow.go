@@ -58,6 +58,7 @@ func (Workflow) Fields() []ent.Field {
 		field.UUID("project_id", uuid.UUID{}),
 		field.UUID("latest_run", uuid.UUID{}).Optional().Nillable(),
 		field.String("description").Optional(),
+		field.JSON("metadata", map[string]interface{}{}).Optional(),
 	}
 }
 

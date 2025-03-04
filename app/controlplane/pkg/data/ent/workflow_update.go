@@ -214,6 +214,18 @@ func (wu *WorkflowUpdate) ClearDescription() *WorkflowUpdate {
 	return wu
 }
 
+// SetMetadata sets the "metadata" field.
+func (wu *WorkflowUpdate) SetMetadata(m map[string]interface{}) *WorkflowUpdate {
+	wu.mutation.SetMetadata(m)
+	return wu
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (wu *WorkflowUpdate) ClearMetadata() *WorkflowUpdate {
+	wu.mutation.ClearMetadata()
+	return wu
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wu *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
 	wu.mutation.AddRobotaccountIDs(ids...)
@@ -521,6 +533,12 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if wu.mutation.DescriptionCleared() {
 		_spec.ClearField(workflow.FieldDescription, field.TypeString)
+	}
+	if value, ok := wu.mutation.Metadata(); ok {
+		_spec.SetField(workflow.FieldMetadata, field.TypeJSON, value)
+	}
+	if wu.mutation.MetadataCleared() {
+		_spec.ClearField(workflow.FieldMetadata, field.TypeJSON)
 	}
 	if wu.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1017,6 +1035,18 @@ func (wuo *WorkflowUpdateOne) ClearDescription() *WorkflowUpdateOne {
 	return wuo
 }
 
+// SetMetadata sets the "metadata" field.
+func (wuo *WorkflowUpdateOne) SetMetadata(m map[string]interface{}) *WorkflowUpdateOne {
+	wuo.mutation.SetMetadata(m)
+	return wuo
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (wuo *WorkflowUpdateOne) ClearMetadata() *WorkflowUpdateOne {
+	wuo.mutation.ClearMetadata()
+	return wuo
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (wuo *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
 	wuo.mutation.AddRobotaccountIDs(ids...)
@@ -1354,6 +1384,12 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 	}
 	if wuo.mutation.DescriptionCleared() {
 		_spec.ClearField(workflow.FieldDescription, field.TypeString)
+	}
+	if value, ok := wuo.mutation.Metadata(); ok {
+		_spec.SetField(workflow.FieldMetadata, field.TypeJSON, value)
+	}
+	if wuo.mutation.MetadataCleared() {
+		_spec.ClearField(workflow.FieldMetadata, field.TypeJSON)
 	}
 	if wuo.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
