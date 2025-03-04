@@ -65,7 +65,7 @@ type oauthResp struct {
 	code          int
 	err           error
 	showErrToUser bool
-	redirectURL   string
+	redirectURL   *url.URL
 }
 
 // NewOauthResp builds an oauthResp object without redirection
@@ -203,8 +203,8 @@ func (svc *AuthService) RegisterLoginHandler() http.Handler {
 // Implement http.Handler interface
 func (h oauthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if resp := h.H(h.svc, w, r); resp != nil {
-		if resp.redirectURL != "" {
-			http.Redirect(w, r, resp.redirectURL, http.StatusTemporaryRedirect)
+		if resp.redirectURL != nil {
+			http.Redirect(w, r, resp.redirectURL.String(), http.StatusTemporaryRedirect)
 			return
 		}
 		http.Error(w, resp.ErrorMessage(h.svc.log), resp.code)
@@ -276,7 +276,15 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	ctx := context.Background()
 	// if OIDC provider returns an error, redirect to the login page to and show it to the user
 	if desc := r.URL.Query().Get(oidcErrorParam); desc != "" {
-		redirectURL := fmt.Sprintf("%s?%s=%s", svc.AuthURLs.Login, oidcErrorParam, desc)
+		redirectURL, err := url.Parse(svc.AuthURLs.Login)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to redirect to login: %w", err), false)
+		}
+
+		q := redirectURL.Query()
+		q.Set(oidcErrorParam, desc)
+		redirectURL.RawQuery = q.Encode()
+
 		return &oauthResp{http.StatusUnauthorized, errors.New(desc), true, redirectURL}
 	}
 
