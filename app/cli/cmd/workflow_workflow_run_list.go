@@ -105,7 +105,7 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 
 	for _, p := range runs {
 		wf := p.Workflow
-		r := table.Row{p.ID, wf.NamespacedName(), versionString(p.ProjectVersion), p.State, p.CreatedAt.Format(time.RFC822), p.RunnerType}
+		r := table.Row{p.ID, wf.NamespacedName(), versionString(p.ProjectVersion), p.ProjectVersion.Prerelease, p.State, p.CreatedAt.Format(time.RFC822), p.RunnerType}
 
 		if full {
 			var finishedAt string
