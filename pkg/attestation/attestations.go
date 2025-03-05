@@ -106,3 +106,19 @@ func DSSEEnvelopeFromRaw(bundle, envelope []byte) (*dsse.Envelope, error) {
 	}
 	return &dsseEnv, nil
 }
+
+// TODO: remove this fix once `AttestationServiceStoreRequest.Bundle` is fully removed,
+//	     and move the logic to BundleFromDSSEEnvelope method instead (where the bug is originated)
+
+// FixSignatureInBundle removes any additional base64 encoding from the signature in the bundle.
+// Old attestations have signatures base64 encoded twice, see https://github.com/chainloop-dev/chainloop/issues/1832
+func FixSignatureInBundle(bundle *protobundle.Bundle) {
+	sig := bundle.GetDsseEnvelope().GetSignatures()[0].GetSig()
+	dst := make([]byte, base64.StdEncoding.EncodedLen(len(sig)))
+	i, err := base64.StdEncoding.Decode(dst, sig)
+	if err == nil {
+		// it was encoded twice. Use it
+		sig = dst[:i]
+	}
+	bundle.GetDsseEnvelope().GetSignatures()[0].Sig = sig
+}

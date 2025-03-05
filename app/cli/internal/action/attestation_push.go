@@ -17,19 +17,18 @@ package action
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
-	sigstoredsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -235,7 +234,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 func (action *AttestationPush) saveBundle(bundle *protobundle.Bundle) error {
 	// Save bundle to disk if requested
 	if action.bundlePath != "" {
-		bundleJSON, err := fixBundle(bundle)
+		bundleJSON, err := encodeBundle(bundle)
 		if err != nil {
 			return fmt.Errorf("encoding bundle: %w", err)
 		}
@@ -247,33 +246,6 @@ func (action *AttestationPush) saveBundle(bundle *protobundle.Bundle) error {
 	}
 
 	return nil
-}
-
-func fixBundle(bundle *protobundle.Bundle) ([]byte, error) {
-	env := bundle.GetDsseEnvelope()
-	sig := env.GetSignatures()[0].GetSig()
-	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(sig)))
-	i, err := base64.StdEncoding.Decode(dst, sig)
-	if err == nil {
-		// already decoded
-		sig = dst[:i]
-	}
-	res := &protobundle.Bundle{
-		MediaType: bundle.MediaType,
-		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &sigstoredsse.Envelope{
-			Payload:     env.GetPayload(),
-			PayloadType: env.GetPayloadType(),
-			Signatures: []*sigstoredsse.Signature{
-				{
-					Sig:   sig,
-					Keyid: env.GetSignatures()[0].GetKeyid(),
-				},
-			},
-		}},
-		VerificationMaterial: bundle.VerificationMaterial,
-	}
-
-	return encodeBundle(res)
 }
 
 func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
@@ -290,8 +262,9 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
-	// bundle with DSSE envelope fixed. See https://github.com/chainloop-dev/chainloop/issues/1832
-	encodedFixedBundle, err := fixBundle(bundle)
+	// remove additional base64 encoding in signature. See https://github.com/chainloop-dev/chainloop/issues/1832
+	attestation.FixSignatureInBundle(bundle)
+	encodedFixedBundle, err := encodeBundle(bundle)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
