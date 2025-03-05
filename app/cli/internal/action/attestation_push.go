@@ -19,9 +19,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
@@ -216,12 +218,34 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	action.Logger.Info().Msg("push completed")
 
+	// Save bundle to disk
+	if err = action.saveBundle(bundle); err != nil {
+		return nil, fmt.Errorf("saving bundle: %w", err)
+	}
+
 	// We are done, remove the existing att state
 	if err := crafter.Reset(ctx, attestationID); err != nil {
 		return nil, err
 	}
 
 	return attestationResult, nil
+}
+
+func (action *AttestationPush) saveBundle(bundle *protobundle.Bundle) error {
+	// Save bundle to disk if requested
+	if action.bundlePath != "" {
+		bundleJSON, err := encodeBundle(bundle)
+		if err != nil {
+			return fmt.Errorf("encoding bundle: %w", err)
+		}
+		action.Logger.Info().Msg(fmt.Sprintf("Storing Sigstore bundle %s", action.bundlePath))
+		err = os.WriteFile(action.bundlePath, bundleJSON, 0600)
+		if err != nil {
+			return fmt.Errorf("writing bundle: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
@@ -238,10 +262,18 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
+	// remove additional base64 encoding in signature. See https://github.com/chainloop-dev/chainloop/issues/1832
+	attestation.FixSignatureInBundle(bundle)
+	encodedFixedBundle, err := encodeBundle(bundle)
+	if err != nil {
+		return "", fmt.Errorf("encoding attestation: %w", err)
+	}
+
 	// Store bundle next versions will perform this in a single call)
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
 		Attestation:           encodedAttestation,
 		Bundle:                encodedBundle,
+		AttestationBundle:     encodedFixedBundle,
 		WorkflowRunId:         workflowRunID,
 		MarkVersionAsReleased: &markVersionAsReleased,
 	})

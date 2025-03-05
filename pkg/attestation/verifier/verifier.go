@@ -50,6 +50,9 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		return fmt.Errorf("invalid bundle: %w", err)
 	}
 
+	// fix for old attestations
+	attestation.FixSignatureInBundle(bundle)
+
 	hasVerificationMaterial := false
 	sb := &sigstorebundle.Bundle{Bundle: bundle}
 	vc, err := sb.VerificationContent()

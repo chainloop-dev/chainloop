@@ -144,9 +144,11 @@ message AttestationServiceInitResponse {
 message AttestationServiceStoreRequest {
   // encoded DSEE envelope
   bytes attestation = 1 [deprecated=true];
+  // deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832
+  bytes bundle = 4 [deprecated=true];
   // encoded Sigstore attestation bundle
-  // TODO. Add min_len constraint
-  bytes bundle = 4;
+  bytes attestation_bundle = 5;
+
   string workflow_run_id = 2 [(buf.validate.field).string = {min_len: 1}];
   // mark the associated version as released
   optional bool mark_version_as_released = 3;
