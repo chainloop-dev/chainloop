@@ -52,6 +52,8 @@ const (
 	RobotAccountProviderKey = "robotAccountProvider"
 	// APITokenProviderKey is the key for api token provider
 	APITokenProviderKey = "apiTokenProvider"
+	// UserTokenProviderKey is the key for user token provider
+	UserTokenProviderKey = "userTokenProvider"
 	// FederatedProviderKey is the key for federated token provider
 	FederatedProviderKey = "federatedProvider"
 )
@@ -123,6 +125,24 @@ func NewAPITokenProvider(signingSecret string) JWTOption {
 			}
 
 			return claims.VerifyAudience(apitoken.Audience, true)
+		}),
+		WithSigningMethod(user.SigningMethod),
+		WithKeyFunc(func(_ *jwt.Token) (interface{}, error) {
+			return []byte(signingSecret), nil
+		}),
+	)
+}
+
+func NewUserTokenProvider(signingSecret string) JWTOption {
+	return withTokenProvider(
+		UserTokenProviderKey,
+		WithVerifyAudienceFunc(func(token *jwt.Token) bool {
+			genericClaims, ok := token.Claims.(jwt.MapClaims)
+			if !ok {
+				return false
+			}
+
+			return genericClaims.VerifyAudience(user.Audience, true)
 		}),
 		WithSigningMethod(user.SigningMethod),
 		WithKeyFunc(func(_ *jwt.Token) (interface{}, error) {
