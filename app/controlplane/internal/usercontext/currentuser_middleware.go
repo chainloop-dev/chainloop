@@ -25,6 +25,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -108,7 +109,8 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 			// We received a user token during the attestation process
 			// 1 - Set the current user from the user token
 			// 2 - Set the current organization for the user token from the DB, header or default
-			// 3 - Set the robot account
+			// 3 - Check if the user has permissions to perform attestations in the organization
+			// 4 - Set the robot account
 			// NOTE: we reuse the existing middlewares to set the current user and organization by wrapping the call
 			// Now we can load the organization using the other middleware we have set
 			return WithCurrentUserMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
@@ -121,6 +123,18 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 					org := entities.CurrentOrg(ctx)
 					if org == nil {
 						return nil, errors.New("organization not found")
+					}
+
+					// Load the authorization subject from the context which might be related to a currentUser or an APItoken
+					subject := CurrentAuthzSubject(ctx)
+					if subject == "" {
+						return nil, errors.New("missing authorization subject")
+					}
+
+					// TODO: move to authz middleware once we add support for all the tokens
+					// for now in that middleware we are not mapping admins nor owners to a specific role
+					if subject != string(authz.RoleAdmin) && subject != string(authz.RoleOwner) {
+						return nil, fmt.Errorf("your user doesn't have permissions to perform attestations in this organization, role=%s, orgID=%s", subject, org.ID)
 					}
 
 					ctx = withRobotAccount(ctx, &RobotAccount{OrgID: org.ID, ProviderKey: attjwtmiddleware.UserTokenProviderKey})
