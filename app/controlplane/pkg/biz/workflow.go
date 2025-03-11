@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
@@ -95,6 +97,8 @@ type WorkflowListOpts struct {
 	WorkflowActiveWindow *TimeWindow
 	// WorkflowRunStatus is the status of the workflow runs to return
 	WorkflowRunLastStatus WorkflowRunStatus
+	// JSONFilters is the filters to apply to the JSON fields
+	JSONFilters []*jsonfilter.JSONFilter
 }
 
 type WorkflowUseCase struct {

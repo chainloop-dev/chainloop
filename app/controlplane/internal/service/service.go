@@ -19,6 +19,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -144,7 +146,7 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 	case errors.Is(err, context.Canceled):
 		return errors.ClientClosed("client closed", err.Error())
 	case biz.IsErrValidation(err) || biz.IsErrInvalidUUID(err) || biz.IsErrInvalidTimeWindow(err) ||
-		pagination.IsOffsetPaginationError(err) || pagination.IsCursorPaginationError(err):
+		pagination.IsOffsetPaginationError(err) || pagination.IsCursorPaginationError(err) || jsonfilter.IsColumnNotFoundError(err):
 		return errors.BadRequest("invalid", err.Error())
 	case biz.IsNotFound(err):
 		return errors.NotFound("not found", err.Error())

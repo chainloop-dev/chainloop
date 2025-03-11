@@ -30,7 +30,7 @@ export enum Edition {
   EDITION_2024 = 1001,
   /**
    * EDITION_1_TEST_ONLY - Placeholder editions for testing feature resolution.  These should not be
-   * used or relyed on outside of tests.
+   * used or relied on outside of tests.
    */
   EDITION_1_TEST_ONLY = 1,
   EDITION_2_TEST_ONLY = 2,
@@ -875,12 +875,13 @@ export interface MessageOptions {
 
 export interface FieldOptions {
   /**
+   * NOTE: ctype is deprecated. Use `features.(pb.cpp).string_type` instead.
    * The ctype option instructs the C++ code generator to use a different
    * representation of the field than it normally would.  See the specific
    * options below.  This option is only implemented to support use of
    * [ctype=CORD] and [ctype=STRING] (the default) on non-repeated fields of
-   * type "bytes" in the open source release -- sorry, we'll try to include
-   * other types in a future version!
+   * type "bytes" in the open source release.
+   * TODO: make ctype actually deprecated.
    */
   ctype: FieldOptions_CType;
   /**
@@ -1052,11 +1053,7 @@ export function fieldOptions_JSTypeToJSON(object: FieldOptions_JSType): string {
   }
 }
 
-/**
- * If set to RETENTION_SOURCE, the option will be omitted from the binary.
- * Note: as of January 2023, support for this is in progress and does not yet
- * have an effect (b/264593489).
- */
+/** If set to RETENTION_SOURCE, the option will be omitted from the binary. */
 export enum FieldOptions_OptionRetention {
   RETENTION_UNKNOWN = 0,
   RETENTION_RUNTIME = 1,
@@ -1099,8 +1096,7 @@ export function fieldOptions_OptionRetentionToJSON(object: FieldOptions_OptionRe
 /**
  * This indicates the types of entities that the field may apply to when used
  * as an option. If it is unset, then the field may be freely used as an
- * option on any kind of entity. Note: as of January 2023, support for this is
- * in progress and does not yet have an effect (b/264593489).
+ * option on any kind of entity.
  */
 export enum FieldOptions_OptionTargetType {
   TARGET_TYPE_UNKNOWN = 0,
