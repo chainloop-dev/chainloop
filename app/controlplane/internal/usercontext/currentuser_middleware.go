@@ -114,23 +114,18 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 			// NOTE: we reuse the existing middlewares to set the current user and organization by wrapping the call
 			// Now we can load the organization using the other middleware we have set
 			return WithCurrentUserMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
-				user := entities.CurrentUser(ctx)
-				if user == nil {
-					return nil, errors.New("user not found")
-				}
-
 				return WithCurrentOrganizationMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
 					org := entities.CurrentOrg(ctx)
 					if org == nil {
 						return nil, errors.New("organization not found")
 					}
 
-					// Load the authorization subject from the context which might be related to a currentUser or an APItoken
 					subject := CurrentAuthzSubject(ctx)
 					if subject == "" {
 						return nil, errors.New("missing authorization subject")
 					}
 
+					// Load the authorization subject from the context which might be related to a currentUser or an APItoken
 					// TODO: move to authz middleware once we add support for all the tokens
 					// for now in that middleware we are not mapping admins nor owners to a specific role
 					if subject != string(authz.RoleAdmin) && subject != string(authz.RoleOwner) {
