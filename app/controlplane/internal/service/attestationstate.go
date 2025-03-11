@@ -24,6 +24,7 @@ import (
 
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -158,6 +159,15 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 // NOTE: Using the robot-account as JWT is not ideal but it's a start
 // TODO: look into using some identifier from the actual client like machine-uuid
 func encryptionPassphrase(ctx context.Context) (string, error) {
+	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	if robotAccount == nil {
+		return "", errors.NotFound("not found", "robot account not found")
+		// If we are using a federated provider, we'll use the provider key as the passphrase since we can not guarantee the stability of the token
+		// In practice this means disabling the state encryption at rest but this state in practice is a subset of the resulting attestation that we end up storing
+	} else if robotAccount.ProviderKey == attjwtmiddleware.FederatedProviderKey {
+		return robotAccount.ProviderKey, nil
+	}
+
 	header, ok := transport.FromServerContext(ctx)
 	if !ok {
 		return "", errors.NotFound("not found", "transport not found")
