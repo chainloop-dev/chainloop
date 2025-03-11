@@ -95,6 +95,7 @@ type WorkflowListOpts struct {
 	WorkflowActiveWindow *TimeWindow
 	// WorkflowRunStatus is the status of the workflow runs to return
 	WorkflowRunLastStatus WorkflowRunStatus
+	NeedsAttention        *bool
 }
 
 type WorkflowUseCase struct {

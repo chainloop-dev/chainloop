@@ -175,6 +175,9 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		filters.WorkflowRunLastStatus = status
 	}
 
+	// Apply the needs attention filter
+	filters.NeedsAttention = req.NeedsAttention
+
 	// Workflow Last Activity Window
 	if req.GetWorkflowLastActivityWindow() != pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED {
 		timeWindow, err := workflowsActivityTimeWindowPbToTimeWindow(req.GetWorkflowLastActivityWindow())

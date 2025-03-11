@@ -118,6 +118,8 @@ export interface WorkflowServiceListRequest {
   workflowLastActivityWindow: WorkflowActivityWindow;
   /** Pagination options */
   pagination?: OffsetPaginationRequest;
+  /** Needs Attention filter for workflows which their overall compliance is not met */
+  needsAttention?: boolean | undefined;
 }
 
 export interface WorkflowServiceListResponse {
@@ -633,6 +635,7 @@ function createBaseWorkflowServiceListRequest(): WorkflowServiceListRequest {
     workflowRunLastStatus: 0,
     workflowLastActivityWindow: 0,
     pagination: undefined,
+    needsAttention: undefined,
   };
 }
 
@@ -664,6 +667,9 @@ export const WorkflowServiceListRequest = {
     }
     if (message.pagination !== undefined) {
       OffsetPaginationRequest.encode(message.pagination, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.needsAttention !== undefined) {
+      writer.uint32(80).bool(message.needsAttention);
     }
     return writer;
   },
@@ -738,6 +744,13 @@ export const WorkflowServiceListRequest = {
 
           message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.needsAttention = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -762,6 +775,7 @@ export const WorkflowServiceListRequest = {
         ? workflowActivityWindowFromJSON(object.workflowLastActivityWindow)
         : 0,
       pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+      needsAttention: isSet(object.needsAttention) ? Boolean(object.needsAttention) : undefined,
     };
   },
 
@@ -784,6 +798,7 @@ export const WorkflowServiceListRequest = {
       (obj.workflowLastActivityWindow = workflowActivityWindowToJSON(message.workflowLastActivityWindow));
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    message.needsAttention !== undefined && (obj.needsAttention = message.needsAttention);
     return obj;
   },
 
@@ -804,6 +819,7 @@ export const WorkflowServiceListRequest = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? OffsetPaginationRequest.fromPartial(object.pagination)
       : undefined;
+    message.needsAttention = object.needsAttention ?? undefined;
     return message;
   },
 };

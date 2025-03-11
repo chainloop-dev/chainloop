@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(needs_attention)$": {
+      "description": "Needs Attention filter for workflows which their overall compliance is not met",
+      "type": "boolean"
+    },
     "^(project_names)$": {
       "description": "The project the workflow belongs to",
       "items": {
@@ -93,6 +97,10 @@
     }
   },
   "properties": {
+    "needsAttention": {
+      "description": "Needs Attention filter for workflows which their overall compliance is not met",
+      "type": "boolean"
+    },
     "pagination": {
       "$ref": "controlplane.v1.OffsetPaginationRequest.jsonschema.json",
       "description": "Pagination options"

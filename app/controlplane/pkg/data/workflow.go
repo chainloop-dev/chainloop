@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
@@ -221,6 +222,22 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 
 		if len(opts.WorkflowProjectNames) != 0 {
 			wfQuery = wfQuery.Where(workflow.HasProjectWith(project.NameIn(opts.WorkflowProjectNames...)))
+		}
+
+		// Append the needs attention filter to the query
+		if opts.NeedsAttention != nil {
+			wfQuery = wfQuery.Where(func(selector *sql.Selector) {
+				compliancePath := sqljson.Path("overall_compliance")
+				if *opts.NeedsAttention {
+					selector.
+						Where(sqljson.HasKey(workflow.FieldMetadata, compliancePath)).
+						Where(sqljson.ValueEQ(workflow.FieldMetadata, "NON_COMPLIANT", compliancePath))
+				} else {
+					selector.
+						Where(sqljson.HasKey(workflow.FieldMetadata, compliancePath)).
+						Where(sqljson.ValueEQ(workflow.FieldMetadata, "COMPLIANT", compliancePath))
+				}
+			})
 		}
 
 		// Combine WorkflowTeam and WorkflowName filters using OR logic
