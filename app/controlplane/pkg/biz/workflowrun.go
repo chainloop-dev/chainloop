@@ -83,7 +83,7 @@ type WorkflowRunRepo interface {
 	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
-	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
+	SaveAttestation(ctx context.Context, ID uuid.UUID, digest string) error
 	SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
@@ -317,7 +317,7 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		}
 	}
 
-	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, dsseEnv, digest.String()); err != nil {
+	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, digest.String()); err != nil {
 		return nil, fmt.Errorf("saving attestation: %w", err)
 	}
 

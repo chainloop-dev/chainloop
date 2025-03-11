@@ -48,7 +48,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.Text("reason").Optional(),
 		field.String("run_url").Optional(),
 		field.String("runner_type").Optional(),
-		field.JSON("attestation", &dsse.Envelope{}).Optional(),
+		field.JSON("attestation", &dsse.Envelope{}).Optional().Deprecated("use attestations table instead"),
 		field.String("attestation_digest").Optional(),
 		field.Bytes("attestation_state").Optional(),
 		// The version of the contract that was used

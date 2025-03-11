@@ -38,6 +38,8 @@ type WorkflowRun struct {
 	// RunnerType holds the value of the "runner_type" field.
 	RunnerType string `json:"runner_type,omitempty"`
 	// Attestation holds the value of the "attestation" field.
+	//
+	// Deprecated: Field "attestation" was marked as deprecated in the schema.
 	Attestation *dsse.Envelope `json:"attestation,omitempty"`
 	// AttestationDigest holds the value of the "attestation_digest" field.
 	AttestationDigest string `json:"attestation_digest,omitempty"`
