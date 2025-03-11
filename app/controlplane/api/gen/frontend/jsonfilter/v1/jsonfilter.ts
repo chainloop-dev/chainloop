@@ -8,13 +8,6 @@ export enum JSONOperator {
   JSON_OPERATOR_UNSPECIFIED = 0,
   JSON_OPERATOR_EQ = 1,
   JSON_OPERATOR_NEQ = 2,
-  JSON_OPERATOR_GT = 3,
-  JSON_OPERATOR_GTE = 4,
-  JSON_OPERATOR_LT = 5,
-  JSON_OPERATOR_LTE = 6,
-  JSON_OPERATOR_HASKEY = 7,
-  JSON_OPERATOR_ISNULL = 8,
-  JSON_OPERATOR_ISNOTNULL = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -29,27 +22,6 @@ export function jSONOperatorFromJSON(object: any): JSONOperator {
     case 2:
     case "JSON_OPERATOR_NEQ":
       return JSONOperator.JSON_OPERATOR_NEQ;
-    case 3:
-    case "JSON_OPERATOR_GT":
-      return JSONOperator.JSON_OPERATOR_GT;
-    case 4:
-    case "JSON_OPERATOR_GTE":
-      return JSONOperator.JSON_OPERATOR_GTE;
-    case 5:
-    case "JSON_OPERATOR_LT":
-      return JSONOperator.JSON_OPERATOR_LT;
-    case 6:
-    case "JSON_OPERATOR_LTE":
-      return JSONOperator.JSON_OPERATOR_LTE;
-    case 7:
-    case "JSON_OPERATOR_HASKEY":
-      return JSONOperator.JSON_OPERATOR_HASKEY;
-    case 8:
-    case "JSON_OPERATOR_ISNULL":
-      return JSONOperator.JSON_OPERATOR_ISNULL;
-    case 9:
-    case "JSON_OPERATOR_ISNOTNULL":
-      return JSONOperator.JSON_OPERATOR_ISNOTNULL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -65,20 +37,6 @@ export function jSONOperatorToJSON(object: JSONOperator): string {
       return "JSON_OPERATOR_EQ";
     case JSONOperator.JSON_OPERATOR_NEQ:
       return "JSON_OPERATOR_NEQ";
-    case JSONOperator.JSON_OPERATOR_GT:
-      return "JSON_OPERATOR_GT";
-    case JSONOperator.JSON_OPERATOR_GTE:
-      return "JSON_OPERATOR_GTE";
-    case JSONOperator.JSON_OPERATOR_LT:
-      return "JSON_OPERATOR_LT";
-    case JSONOperator.JSON_OPERATOR_LTE:
-      return "JSON_OPERATOR_LTE";
-    case JSONOperator.JSON_OPERATOR_HASKEY:
-      return "JSON_OPERATOR_HASKEY";
-    case JSONOperator.JSON_OPERATOR_ISNULL:
-      return "JSON_OPERATOR_ISNULL";
-    case JSONOperator.JSON_OPERATOR_ISNOTNULL:
-      return "JSON_OPERATOR_ISNOTNULL";
     case JSONOperator.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -87,29 +45,25 @@ export function jSONOperatorToJSON(object: JSONOperator): string {
 
 /** JSONFilter represents a filter for JSON fields. */
 export interface JSONFilter {
-  column: string;
   fieldPath: string;
   operator: JSONOperator;
   value?: string | undefined;
 }
 
 function createBaseJSONFilter(): JSONFilter {
-  return { column: "", fieldPath: "", operator: 0, value: undefined };
+  return { fieldPath: "", operator: 0, value: undefined };
 }
 
 export const JSONFilter = {
   encode(message: JSONFilter, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.column !== "") {
-      writer.uint32(10).string(message.column);
-    }
     if (message.fieldPath !== "") {
-      writer.uint32(18).string(message.fieldPath);
+      writer.uint32(10).string(message.fieldPath);
     }
     if (message.operator !== 0) {
-      writer.uint32(24).int32(message.operator);
+      writer.uint32(16).int32(message.operator);
     }
     if (message.value !== undefined) {
-      writer.uint32(34).string(message.value);
+      writer.uint32(346).string(message.value);
     }
     return writer;
   },
@@ -126,24 +80,17 @@ export const JSONFilter = {
             break;
           }
 
-          message.column = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
           message.fieldPath = reader.string();
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 2:
+          if (tag !== 16) {
             break;
           }
 
           message.operator = reader.int32() as any;
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 43:
+          if (tag !== 346) {
             break;
           }
 
@@ -160,7 +107,6 @@ export const JSONFilter = {
 
   fromJSON(object: any): JSONFilter {
     return {
-      column: isSet(object.column) ? String(object.column) : "",
       fieldPath: isSet(object.fieldPath) ? String(object.fieldPath) : "",
       operator: isSet(object.operator) ? jSONOperatorFromJSON(object.operator) : 0,
       value: isSet(object.value) ? String(object.value) : undefined,
@@ -169,7 +115,6 @@ export const JSONFilter = {
 
   toJSON(message: JSONFilter): unknown {
     const obj: any = {};
-    message.column !== undefined && (obj.column = message.column);
     message.fieldPath !== undefined && (obj.fieldPath = message.fieldPath);
     message.operator !== undefined && (obj.operator = jSONOperatorToJSON(message.operator));
     message.value !== undefined && (obj.value = message.value);
@@ -182,7 +127,6 @@ export const JSONFilter = {
 
   fromPartial<I extends Exact<DeepPartial<JSONFilter>, I>>(object: I): JSONFilter {
     const message = createBaseJSONFilter();
-    message.column = object.column ?? "";
     message.fieldPath = object.fieldPath ?? "";
     message.operator = object.operator ?? 0;
     message.value = object.value ?? undefined;
