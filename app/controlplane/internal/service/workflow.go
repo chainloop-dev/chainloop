@@ -301,7 +301,6 @@ func paginationToPb(count, offset, limit int) *pb.OffsetPaginationResponse {
 // pbJSONFilterToPkg converts a v1.JSONFilter to a jsonfilter.JSONFilter.
 func pbJSONFilterToPkg(filter *v1.JSONFilter) *jsonfilter.JSONFilter {
 	return &jsonfilter.JSONFilter{
-		Column:    filter.GetColumn(),
 		FieldPath: filter.GetFieldPath(),
 		Value:     filter.GetValue(),
 		Operator:  pbJSONFilterOperatorToPkg(filter.GetOperator()),
@@ -315,20 +314,6 @@ func pbJSONFilterOperatorToPkg(operator v1.JSONOperator) jsonfilter.JSONOperator
 		return jsonfilter.OpEQ
 	case v1.JSONOperator_JSON_OPERATOR_NEQ:
 		return jsonfilter.OpNEQ
-	case v1.JSONOperator_JSON_OPERATOR_GT:
-		return jsonfilter.OpGT
-	case v1.JSONOperator_JSON_OPERATOR_GTE:
-		return jsonfilter.OpGTE
-	case v1.JSONOperator_JSON_OPERATOR_LT:
-		return jsonfilter.OpLT
-	case v1.JSONOperator_JSON_OPERATOR_LTE:
-		return jsonfilter.OpLTE
-	case v1.JSONOperator_JSON_OPERATOR_HASKEY:
-		return jsonfilter.OpHasKey
-	case v1.JSONOperator_JSON_OPERATOR_ISNULL:
-		return jsonfilter.OpIsNull
-	case v1.JSONOperator_JSON_OPERATOR_ISNOTNULL:
-		return jsonfilter.OpIsNotNull
 	default:
 		return ""
 	}

@@ -30,6 +30,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// workflowMetadatColumn is the column name for the metadata field in the database
+const workflowMetadatColumn = "metadata"
+
 type Workflow struct {
 	Name, Description, Team, Project string
 	CreatedAt                        *time.Time
@@ -274,6 +277,13 @@ func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, filterOpts *W
 	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
 	if paginationOpts != nil {
 		pgOpts = paginationOpts
+	}
+
+	// Add the column to the JSON filters where they need to be applied
+	if filterOpts != nil && filterOpts.JSONFilters != nil {
+		for _, jf := range filterOpts.JSONFilters {
+			jf.Column = workflowMetadatColumn
+		}
 	}
 
 	return uc.wfRepo.List(ctx, orgUUID, filterOpts, pgOpts)

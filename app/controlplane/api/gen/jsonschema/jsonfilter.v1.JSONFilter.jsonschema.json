@@ -10,10 +10,6 @@
     }
   },
   "properties": {
-    "column": {
-      "minLength": 1,
-      "type": "string"
-    },
     "fieldPath": {
       "minLength": 1,
       "type": "string"
@@ -24,14 +20,7 @@
           "enum": [
             "JSON_OPERATOR_UNSPECIFIED",
             "JSON_OPERATOR_EQ",
-            "JSON_OPERATOR_NEQ",
-            "JSON_OPERATOR_GT",
-            "JSON_OPERATOR_GTE",
-            "JSON_OPERATOR_LT",
-            "JSON_OPERATOR_LTE",
-            "JSON_OPERATOR_HASKEY",
-            "JSON_OPERATOR_ISNULL",
-            "JSON_OPERATOR_ISNOTNULL"
+            "JSON_OPERATOR_NEQ"
           ],
           "title": "JSON Operator",
           "type": "string"
