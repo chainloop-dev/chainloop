@@ -21,6 +21,7 @@ import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
 import "controlplane/v1/pagination.proto";
 import "workflowcontract/v1/crafting_schema.proto";
+import "jsonfilter/v1/jsonfilter.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -128,6 +129,8 @@ message WorkflowServiceListRequest {
   }, (buf.validate.field).ignore_empty = true];
   // Pagination options
   OffsetPaginationRequest pagination = 9;
+  // JSON filters to apply to the workflow
+  repeated jsonfilter.v1.JSONFilter json_filters = 10;
 }
 message WorkflowServiceListResponse {
   repeated WorkflowItem result = 1;

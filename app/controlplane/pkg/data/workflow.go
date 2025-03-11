@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -137,7 +139,7 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.Wo
 	}
 
 	// Initialize the base query for WorkflowRun
-	baseQuery := orgScopedQuery(r.data.DB, orgID).QueryWorkflows()
+	baseQuery := orgScopedQuery(r.data.DB.Debug(), orgID).QueryWorkflows()
 
 	// Apply filters to the WorkflowRun query based on the provided options
 	baseQuery = applyWorkflowRunFilters(baseQuery, filter)
@@ -151,6 +153,10 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.Wo
 	// Get the count of all filtered rows without the limit and offset
 	count, err := wfQuery.Count(ctx)
 	if err != nil {
+		// Check if the error is due to a column not being found in the JSON filter
+		if jsonfilter.IsJSONFilterError(err, filter.JSONFilters) {
+			return nil, 0, jsonfilter.NewColumnNotFoundError(err)
+		}
 		return nil, 0, err
 	}
 
@@ -164,6 +170,10 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.Wo
 		Offset(pagination.Offset()).
 		All(ctx)
 	if err != nil {
+		// Check if the error is due to a column not being found in the JSON filter
+		if jsonfilter.IsJSONFilterError(err, filter.JSONFilters) {
+			return nil, 0, jsonfilter.NewColumnNotFoundError(err)
+		}
 		return nil, 0, err
 	}
 
@@ -221,6 +231,16 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 
 		if len(opts.WorkflowProjectNames) != 0 {
 			wfQuery = wfQuery.Where(workflow.HasProjectWith(project.NameIn(opts.WorkflowProjectNames...)))
+		}
+
+		// Append the JSON Filters to the query
+		if len(opts.JSONFilters) != 0 {
+			wfQuery = wfQuery.Where(func(selector *sql.Selector) {
+				for _, filter := range opts.JSONFilters {
+					jsonPredicate, _ := jsonfilter.BuildEntSelectorFromJSONFilter(filter)
+					selector.Where(jsonPredicate)
+				}
+			})
 		}
 
 		// Combine WorkflowTeam and WorkflowName filters using OR logic

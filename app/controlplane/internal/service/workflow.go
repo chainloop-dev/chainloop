@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"time"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/jsonfilter/v1"
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schema "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -175,6 +178,14 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		filters.WorkflowRunLastStatus = status
 	}
 
+	// Apply the needs attention filter
+	if len(req.GetJsonFilters()) > 0 {
+		filters.JSONFilters = make([]*jsonfilter.JSONFilter, 0, len(req.GetJsonFilters()))
+		for _, f := range req.GetJsonFilters() {
+			filters.JSONFilters = append(filters.JSONFilters, pbJsonFilterToPkg(f))
+		}
+	}
+
 	// Workflow Last Activity Window
 	if req.GetWorkflowLastActivityWindow() != pb.WorkflowActivityWindow_WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED {
 		timeWindow, err := workflowsActivityTimeWindowPbToTimeWindow(req.GetWorkflowLastActivityWindow())
@@ -284,5 +295,41 @@ func paginationToPb(count, offset, limit int) *pb.OffsetPaginationResponse {
 		Page:       int32(offset/limit) + 1,
 		TotalPages: (int32(count) + int32(limit) - 1) / int32(limit),
 		PageSize:   int32(limit),
+	}
+}
+
+// pbJsonFilterToPkg converts a v1.JSONFilter to a jsonfilter.JSONFilter.
+func pbJsonFilterToPkg(filter *v1.JSONFilter) *jsonfilter.JSONFilter {
+	return &jsonfilter.JSONFilter{
+		Column:    filter.GetColumn(),
+		FieldPath: filter.GetFieldPath(),
+		Value:     filter.GetValue(),
+		Operator:  pbJsonFilterOperatorToPkg(filter.GetOperator()),
+	}
+}
+
+// pbJsonFilterOperatorToPkg converts a v1.JSONOperator to a jsonfilter.JSONOperator.
+func pbJsonFilterOperatorToPkg(operator v1.JSONOperator) jsonfilter.JSONOperator {
+	switch operator {
+	case v1.JSONOperator_JSON_OPERATOR_EQ:
+		return jsonfilter.OpEQ
+	case v1.JSONOperator_JSON_OPERATOR_NEQ:
+		return jsonfilter.OpNEQ
+	case v1.JSONOperator_JSON_OPERATOR_GT:
+		return jsonfilter.OpGT
+	case v1.JSONOperator_JSON_OPERATOR_GTE:
+		return jsonfilter.OpGTE
+	case v1.JSONOperator_JSON_OPERATOR_LT:
+		return jsonfilter.OpLT
+	case v1.JSONOperator_JSON_OPERATOR_LTE:
+		return jsonfilter.OpLTE
+	case v1.JSONOperator_JSON_OPERATOR_HASKEY:
+		return jsonfilter.OpHasKey
+	case v1.JSONOperator_JSON_OPERATOR_ISNULL:
+		return jsonfilter.OpIsNull
+	case v1.JSONOperator_JSON_OPERATOR_ISNOTNULL:
+		return jsonfilter.OpIsNotNull
+	default:
+		return ""
 	}
 }

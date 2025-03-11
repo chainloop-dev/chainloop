@@ -1,0 +1,52 @@
+{
+  "$id": "jsonfilter.v1.JSONFilter.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSONFilter represents a filter for JSON fields.",
+  "patternProperties": {
+    "^(field_path)$": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "properties": {
+    "column": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "fieldPath": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "operator": {
+      "anyOf": [
+        {
+          "enum": [
+            "JSON_OPERATOR_UNSPECIFIED",
+            "JSON_OPERATOR_EQ",
+            "JSON_OPERATOR_NEQ",
+            "JSON_OPERATOR_GT",
+            "JSON_OPERATOR_GTE",
+            "JSON_OPERATOR_LT",
+            "JSON_OPERATOR_LTE",
+            "JSON_OPERATOR_HASKEY",
+            "JSON_OPERATOR_ISNULL",
+            "JSON_OPERATOR_ISNOTNULL"
+          ],
+          "title": "JSON Operator",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "title": "JSON Filter",
+  "type": "object"
+}
