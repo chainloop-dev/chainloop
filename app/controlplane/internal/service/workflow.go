@@ -182,7 +182,7 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 	if len(req.GetJsonFilters()) > 0 {
 		filters.JSONFilters = make([]*jsonfilter.JSONFilter, 0, len(req.GetJsonFilters()))
 		for _, f := range req.GetJsonFilters() {
-			filters.JSONFilters = append(filters.JSONFilters, pbJsonFilterToPkg(f))
+			filters.JSONFilters = append(filters.JSONFilters, pbJSONFilterToPkg(f))
 		}
 	}
 
@@ -298,18 +298,18 @@ func paginationToPb(count, offset, limit int) *pb.OffsetPaginationResponse {
 	}
 }
 
-// pbJsonFilterToPkg converts a v1.JSONFilter to a jsonfilter.JSONFilter.
-func pbJsonFilterToPkg(filter *v1.JSONFilter) *jsonfilter.JSONFilter {
+// pbJSONFilterToPkg converts a v1.JSONFilter to a jsonfilter.JSONFilter.
+func pbJSONFilterToPkg(filter *v1.JSONFilter) *jsonfilter.JSONFilter {
 	return &jsonfilter.JSONFilter{
 		Column:    filter.GetColumn(),
 		FieldPath: filter.GetFieldPath(),
 		Value:     filter.GetValue(),
-		Operator:  pbJsonFilterOperatorToPkg(filter.GetOperator()),
+		Operator:  pbJSONFilterOperatorToPkg(filter.GetOperator()),
 	}
 }
 
-// pbJsonFilterOperatorToPkg converts a v1.JSONOperator to a jsonfilter.JSONOperator.
-func pbJsonFilterOperatorToPkg(operator v1.JSONOperator) jsonfilter.JSONOperator {
+// pbJSONFilterOperatorToPkg converts a v1.JSONOperator to a jsonfilter.JSONOperator.
+func pbJSONFilterOperatorToPkg(operator v1.JSONOperator) jsonfilter.JSONOperator {
 	switch operator {
 	case v1.JSONOperator_JSON_OPERATOR_EQ:
 		return jsonfilter.OpEQ
