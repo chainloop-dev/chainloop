@@ -213,6 +213,8 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				attjwtmiddleware.NewRobotAccountProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 				// API Token provider
 				attjwtmiddleware.NewAPITokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
+				// User Token provider
+				attjwtmiddleware.NewUserTokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 				// Delegated Federated provider
 				attjwtmiddleware.WithFederatedProvider(opts.FederatedConfig),
 			),
@@ -220,7 +222,9 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.b - Set its API token and Robot Account as alternative to the user
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
-			// 2.c - Set its robot account from federated delegation
+			// 2.c - Set Attestation context from user token
+			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
+			// 2.d - Set its robot account from federated delegation
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
