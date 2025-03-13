@@ -108,7 +108,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
 
-			apiToken, err := loadControlplaneAuthToken(cmd)
+			token, isUserToken, err := loadControlplaneAuthToken(cmd)
 			if err != nil {
 				return err
 			}
@@ -124,8 +124,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
 
 			// If no organization is set in local configuration, we load it from server and save it
-			if viper.GetString(confOptions.organization.viperKey) == "" {
-				conn, err := grpcconn.New(controlplaneURL, apiToken, opts...)
+			orgName := viper.GetString(confOptions.organization.viperKey)
+			if orgName == "" {
+				conn, err := grpcconn.New(controlplaneURL, token, opts...)
 				if err != nil {
 					return err
 				}
@@ -139,11 +140,19 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			// reload the connection now that we have the org name
-			if orgName := viper.GetString(confOptions.organization.viperKey); orgName != "" {
+			orgName = viper.GetString(confOptions.organization.viperKey)
+			if orgName != "" {
 				opts = append(opts, grpcconn.WithOrgName(orgName))
 			}
 
-			conn, err := grpcconn.New(controlplaneURL, apiToken, opts...)
+			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
+			if v := cmd.Annotations[useAPIToken]; v == "true" && isUserToken {
+				if !confirmationPrompt(fmt.Sprintf("This command is will run against the organization %q", orgName)) {
+					return errors.New("command canceled by user")
+				}
+			}
+
+			conn, err := grpcconn.New(controlplaneURL, token, opts...)
 			if err != nil {
 				return err
 			}
@@ -165,7 +174,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 					go func() {
 						// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
 						// Once we have the token type we can send it to the telemetry service by injecting it on the context
-						token, err := parseToken(apiToken)
+						token, err := parseToken(token)
 						if err != nil {
 							logger.Debug().Err(err).Msg("parsing token for telemetry")
 							return
@@ -334,38 +343,38 @@ func cleanup(conn *grpc.ClientConn) error {
 // 2.2 Load the token from the environment variable and from the auth login config file
 // 2.3 if they both exist, we default to the user token
 // 2.4 otherwise to the one that's set
-func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
+func loadControlplaneAuthToken(cmd *cobra.Command) (string, bool, error) {
 	// Load the APIToken from the env variable
 	apiTokenFromVar := os.Getenv(tokenEnvVarName)
+
+	// Load the user token from the config file
+	userToken := viper.GetString(confOptions.authToken.viperKey)
 
 	apiTokenFromFlagOrVar := apiToken
 	if apiTokenFromFlagOrVar == "" {
 		apiTokenFromFlagOrVar = apiTokenFromVar
 	}
 
-	// Prefer to use the API token if the command can use it and it's provided
+	// Prefer to use the API token if the command can use it, and it's provided (i.e. attestations)
 	if v := cmd.Annotations[useAPIToken]; v == "true" && apiTokenFromFlagOrVar != "" {
-		return apiTokenFromFlagOrVar, nil
+		return apiTokenFromFlagOrVar, false, nil
 	}
 
 	// Now we check explicitly provided API token via the flag
 	if apiToken != "" {
 		logger.Info().Msg("API token provided to the command line")
-		return apiToken, nil
+		return apiToken, false, nil
 	}
-
-	// Load the user token from the config file
-	userToken := viper.GetString(confOptions.authToken.viperKey)
 
 	// If both the user authentication and the API token en var are set, we default to user authentication
 	if userToken != "" && apiTokenFromVar != "" {
 		logger.Warn().Msgf("Both user credentials and $%s set. Ignoring $%s.", tokenEnvVarName, tokenEnvVarName)
-		return userToken, nil
+		return userToken, true, nil
 	} else if apiTokenFromVar != "" {
-		return apiTokenFromVar, nil
+		return apiTokenFromVar, false, nil
 	}
 
-	return userToken, nil
+	return userToken, true, nil
 }
 
 // parseToken the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
