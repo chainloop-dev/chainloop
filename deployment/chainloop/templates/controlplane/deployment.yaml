@@ -30,6 +30,9 @@ spec:
         checksum/secret-config: {{ include (print $.Template.BasePath "/controlplane" "/secret-config.yaml") . | sha256sum }}
         checksum/cas-private-key: {{ include (print $.Template.BasePath "/controlplane" "/secret-jwt-cas-private-key.yaml") . | sha256sum }}
         kubectl.kubernetes.io/default-container: controlplane
+        {{- if .Values.controlplane.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
       labels: {{- include "chainloop.controlplane.labels" . | nindent 8 }}
     spec:
       {{- include "common.images.renderPullSecrets" (dict "images" (list .Values.controlplane.image .Values.controlplane.migration.image) "context" $) | nindent 6 }}

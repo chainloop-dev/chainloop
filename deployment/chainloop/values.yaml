@@ -746,6 +746,11 @@ controlplane:
   ##
   deploymentAnnotations: {}
 
+  ## @param controlplane.podAnnotations Annotations for controlplane pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+
   ## @param controlplane.podLabels Extra labels for controlplane pods
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
   ##
@@ -1422,6 +1427,11 @@ cas:
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
   ##
   deploymentAnnotations: {}
+
+  ## @param cas.podAnnotations Annotations for cas pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
 
   ## @param cas.podLabels Extra labels for cas pods
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
