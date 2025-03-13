@@ -335,9 +335,17 @@ func cleanup(conn *grpc.ClientConn) error {
 // 2.3 if they both exist, we default to the user token
 // 2.4 otherwise to the one that's set
 func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
-	// Use the API token if the command can use it and it's provided
-	if _, ok := cmd.Annotations[useAPIToken]; ok && attAPIToken != "" {
-		return attAPIToken, nil
+	// Load the APIToken from the env variable
+	apiTokenFromVar := os.Getenv(tokenEnvVarName)
+
+	apiTokenFromFlagOrVar := apiToken
+	if apiTokenFromFlagOrVar == "" {
+		apiTokenFromFlagOrVar = apiTokenFromVar
+	}
+
+	// Prefer to use the API token if the command can use it and it's provided
+	if v := cmd.Annotations[useAPIToken]; v == "true" && apiTokenFromFlagOrVar != "" {
+		return apiTokenFromFlagOrVar, nil
 	}
 
 	// Now we check explicitly provided API token via the flag
@@ -348,10 +356,8 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
 
 	// Load the user token from the config file
 	userToken := viper.GetString(confOptions.authToken.viperKey)
-	// Load the APIToken from the env variable
-	// Instead we load the env variable manually
-	apiTokenFromVar := os.Getenv(tokenEnvVarName)
-	// If both the user authentication and the API token are set, we default to user authentication
+
+	// If both the user authentication and the API token en var are set, we default to user authentication
 	if userToken != "" && apiTokenFromVar != "" {
 		logger.Warn().Msgf("Both user credentials and $%s set. Ignoring $%s.", tokenEnvVarName, tokenEnvVarName)
 		return userToken, nil

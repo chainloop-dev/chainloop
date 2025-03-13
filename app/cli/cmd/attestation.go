@@ -17,14 +17,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	attAPIToken               string
 	useAttestationRemoteState bool
 	attestationLocalStatePath string
 	GracefulExit              bool
@@ -55,14 +53,6 @@ func newAttestationCmd() *cobra.Command {
 
 			return nil
 		},
-	}
-
-	cmd.PersistentFlags().StringVarP(&attAPIToken, "token", "t", "", fmt.Sprintf("auth token. NOTE: You can also use the env variable %s", tokenEnvVarName))
-	// We do not use viper in this case because we do not want this token to be saved in the config file
-	// Instead we load the env variable manually
-	if attAPIToken == "" {
-		// Check first the new env variable
-		attAPIToken = os.Getenv(tokenEnvVarName)
 	}
 
 	cmd.PersistentFlags().Bool("remote-state", false, "Store the attestation state remotely (preview feature)")
