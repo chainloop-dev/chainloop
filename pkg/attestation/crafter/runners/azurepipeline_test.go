@@ -79,7 +79,7 @@ func (s *azurePipelineSuite) TestCheckEnv() {
 
 func (s *azurePipelineSuite) TestListEnvVars() {
 	assert.Equal(s.T(), []*EnvVarDefinition{
-		{"BUILD_REQUESTEDFOREMAIL", false},
+		{"BUILD_REQUESTEDFOREMAIL", true},
 		{"BUILD_REQUESTEDFOR", false},
 		{"BUILD_REPOSITORY_URI", false},
 		{"BUILD_REPOSITORY_NAME", false},
@@ -87,8 +87,8 @@ func (s *azurePipelineSuite) TestListEnvVars() {
 		{"BUILD_BUILDNUMBER", false},
 		{"BUILD_BUILDURI", false},
 		{"BUILD_REASON", false},
-		{"AGENT_VERSION", false},
-		{"TF_BUILD", false},
+		{"AGENT_VERSION", true},
+		{"TF_BUILD", true},
 	}, s.runner.ListEnvVars())
 }
 
