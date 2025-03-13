@@ -48,13 +48,12 @@ func (r *AzurePipeline) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
 		{"BUILD_REQUESTEDFOREMAIL", true},
 		{"BUILD_REQUESTEDFOR", false},
-		{"BUILD_REPOSITORY_URI", false},
-		{"BUILD_REPOSITORY_NAME", false},
+		{"BUILD_REPOSITORY_URI", true},
+		{"BUILD_REPOSITORY_NAME", true},
 		{"BUILD_BUILDID", false},
 		{"BUILD_BUILDNUMBER", false},
 		{"BUILD_BUILDURI", false},
-		{"BUILD_REASON", false},
-		{"AGENT_VERSION", true},
+		{"BUILD_REASON", true},
 		{"TF_BUILD", true},
 	}
 }

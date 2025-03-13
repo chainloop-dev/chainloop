@@ -81,13 +81,12 @@ func (s *azurePipelineSuite) TestListEnvVars() {
 	assert.Equal(s.T(), []*EnvVarDefinition{
 		{"BUILD_REQUESTEDFOREMAIL", true},
 		{"BUILD_REQUESTEDFOR", false},
-		{"BUILD_REPOSITORY_URI", false},
-		{"BUILD_REPOSITORY_NAME", false},
+		{"BUILD_REPOSITORY_URI", true},
+		{"BUILD_REPOSITORY_NAME", true},
 		{"BUILD_BUILDID", false},
 		{"BUILD_BUILDNUMBER", false},
 		{"BUILD_BUILDURI", false},
-		{"BUILD_REASON", false},
-		{"AGENT_VERSION", true},
+		{"BUILD_REASON", true},
 		{"TF_BUILD", true},
 	}, s.runner.ListEnvVars())
 }
@@ -97,7 +96,6 @@ func (s *azurePipelineSuite) TestResolveEnvVars() {
 	s.Empty(errors)
 
 	s.Equal(map[string]string{
-		"AGENT_VERSION":           "3.220.5",
 		"BUILD_BUILDID":           "6",
 		"BUILD_BUILDNUMBER":       "20230726.5",
 		"BUILD_BUILDURI":          "vstfs:///Build/Build/6",
