@@ -52,6 +52,7 @@ var (
 )
 
 const (
+	// preference to use an API token if available
 	useAPIToken = "withAPITokenAuth"
 	appName     = "chainloop"
 	//nolint:gosec
@@ -61,6 +62,8 @@ const (
 	apiTokenAudience = "api-token-auth.chainloop"
 	// Follow the convention stated on https://consoledonottrack.com/
 	doNotTrackEnv = "DO_NOT_TRACK"
+
+	trueString = "true"
 )
 
 var telemetryWg sync.WaitGroup
@@ -147,7 +150,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
-			if v := cmd.Annotations[useAPIToken]; v == "true" && isUserToken && !flagYes {
+			if isAPITokenPreferred(cmd) && isUserToken && !flagYes {
 				if !confirmationPrompt(fmt.Sprintf("This command is will run against the organization %q", orgName)) {
 					return errors.New("command canceled by user")
 				}
@@ -274,7 +277,7 @@ func init() {
 
 // isTelemetryDisabled checks if the telemetry is disabled by the user or if we are running a development version
 func isTelemetryDisabled() bool {
-	return os.Getenv(doNotTrackEnv) == "1" || os.Getenv(doNotTrackEnv) == "true" || Version == devVersion
+	return os.Getenv(doNotTrackEnv) == "1" || os.Getenv(doNotTrackEnv) == trueString || Version == devVersion
 }
 
 func initLogger(logger zerolog.Logger) (zerolog.Logger, error) {
@@ -360,7 +363,7 @@ func loadControlplaneAuthToken(cmd *cobra.Command) (string, bool, error) {
 	}
 
 	// Prefer to use the API token if the command can use it, and it's provided (i.e. attestations)
-	if v := cmd.Annotations[useAPIToken]; v == "true" && apiTokenFromFlagOrVar != "" {
+	if isAPITokenPreferred(cmd) && apiTokenFromFlagOrVar != "" {
 		return apiTokenFromFlagOrVar, false, nil
 	}
 
@@ -513,4 +516,8 @@ func apiInsecure() bool {
 func setLocalOrganization(orgName string) error {
 	viper.Set(confOptions.organization.viperKey, orgName)
 	return viper.WriteConfig()
+}
+
+func isAPITokenPreferred(cmd *cobra.Command) bool {
+	return cmd.Annotations[useAPIToken] == trueString
 }
