@@ -48,6 +48,7 @@ var (
 	defaultCPAPI     = "api.cp.chainloop.dev:443"
 	defaultCASAPI    = "api.cas.chainloop.dev:443"
 	apiToken         string
+	flagYes          bool
 )
 
 const (
@@ -146,7 +147,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
-			if v := cmd.Annotations[useAPIToken]; v == "true" && isUserToken {
+			if v := cmd.Annotations[useAPIToken]; v == "true" && isUserToken && !flagYes {
 				if !confirmationPrompt(fmt.Sprintf("This command is will run against the organization %q", orgName)) {
 					return errors.New("command canceled by user")
 				}
@@ -237,6 +238,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	rootCmd.PersistentFlags().StringP(confOptions.organization.flagName, "n", "", "organization name")
 	cobra.CheckErr(viper.BindPFlag(confOptions.organization.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.organization.flagName)))
+
+	// Do not ask for confirmation
+	rootCmd.PersistentFlags().BoolVarP(&flagYes, "yes", "y", false, "Skip confirmation")
 
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
