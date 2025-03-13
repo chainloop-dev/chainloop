@@ -335,12 +335,8 @@ func cleanup(conn *grpc.ClientConn) error {
 // 2.3 if they both exist, we default to the user token
 // 2.4 otherwise to the one that's set
 func loadControlplaneAuthToken(cmd *cobra.Command) (string, error) {
-	// If the CMD uses a robot account instead of the regular auth token we override it
-	if _, ok := cmd.Annotations[useAPIToken]; ok {
-		if attAPIToken == "" {
-			return "", newGracefulError(ErrAttestationTokenRequired)
-		}
-
+	// Use the API token if the command can use it and it's provided
+	if _, ok := cmd.Annotations[useAPIToken]; ok && attAPIToken != "" {
 		return attAPIToken, nil
 	}
 
