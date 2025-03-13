@@ -18,17 +18,28 @@ kind: Policy
 metadata:
   name: trivy-vulnerabilities
 spec:
-  embedded: |
-    package main
-    
-    # Verifies there is a SBOM material, even if not enforced by contract
-    
-    violations[msg] {
-      has_vulnerabilities
-      msg := "CVE report has vulnerabilities with severity MEDIUM or HIGH"
-    }
-    
-    has_vulnerabilities {
-      severities := ["HIGH", "MEDIUM"]
-      input.Results[_].Vulnerabilities[_].Severity == severities[_]
-    }
+  policies:
+    - embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+        
+        # Verifies there is a SBOM material, even if not enforced by contract
+        
+        violations contains msg if {
+          has_vulnerabilities
+          msg := "CVE report has vulnerabilities with severity MEDIUM or HIGH"
+        }
+        
+        has_vulnerabilities {
+          severities := ["HIGH", "MEDIUM"]
+          some result in input.Results
+          some vuln in result.Vulnerabilities
+          vuln.Severity in severities
+        }

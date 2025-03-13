@@ -25,15 +25,21 @@ spec:
     embedded: |
       package main
   
-      import future.keywords.in
+      import rego.v1
       
-      violations[msg] {
+      result := {
+        "skipped": false,
+        "violations": violations,
+        "skip_reason": "",
+      }
+      
+      violations contains msg if {
         not made_with_syft
   
         msg := "Not made with syft"
       }
   
-      made_with_syft {
+      made_with_syft if {
         some creator in input.creationInfo.creators
         contains(creator, "syft")
       }

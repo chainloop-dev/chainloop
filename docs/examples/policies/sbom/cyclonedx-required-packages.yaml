@@ -27,6 +27,12 @@ spec:
         
         import rego.v1
         
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+        
         required_packages := {"glibc", "libcrypto3"}
           
         violations contains msg if {
@@ -37,8 +43,7 @@ spec:
         }
           
         all_matches contains name if {
-          some i
-          comp := input.components[i]
-          comp.name == required_packages[_]
+          some comp in input.components
+          comp.name in required_packages
           name := comp.name
         }
