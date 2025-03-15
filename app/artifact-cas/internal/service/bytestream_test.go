@@ -345,7 +345,7 @@ func (s *bytestreamSuite) SetupTest() {
 	s.downCtx = metadata.NewOutgoingContext(context.Background(), metadata.Pairs("role", "downloader"))
 }
 
-// encodedResource returns a base64-encoded v1.UploadResource which wraps both the digest and fileName
+// encodeResource returns a base64-encoded v1.UploadResource which wraps both the digest and fileName
 func encodeResource(t *testing.T, r *v1.CASResource) string {
 	var encodedResource bytes.Buffer
 	enc := gob.NewEncoder(&encodedResource)
