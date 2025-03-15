@@ -17,18 +17,27 @@ kind: Policy
 metadata:
   name: chainloop-commit
 spec:
-  type: ATTESTATION
-  embedded: |
-    package main
+  policies:
+    - type: ATTESTATION
+      embedded: |
+        package main
+        
+        import rego.v1
+      
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+        
+        violations contains msg if {
+          not has_commit
+          msg := "missing commit in attestation material"
+        }
+        
+        has_commit {
+          some sub in input.subject
+          sub.name == "git.head"
+          sub.digest.sha1
+        }
     
-    violations[msg] {
-      not has_commit
-      msg := "missing commit in attestation material"
-    }
-    
-    has_commit {
-      some i
-      input.subject[i].name == "git.head"
-      input.subject[i].digest.sha1
-    }
-

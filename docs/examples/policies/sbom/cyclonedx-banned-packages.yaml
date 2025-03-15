@@ -27,15 +27,19 @@ spec:
         
         import rego.v1
         
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+        
         # It supports packages with version. When specified, requires it to be semver, and would also fail when version is lower
         banned_packages := ["log4j@2.14.1"]
     
         # all versions
         violations contains ref if {
-          some i
-          comp := input.components[i]
-          some j
-          banned := banned_packages[j]
+          some comp in input.components
+          some banned in banned_packages
           nv := split(banned, "@")
           not nv[1]
           comp.name == nv[0]
@@ -44,10 +48,8 @@ spec:
     
         # specific versions
         violations contains ref if {
-          some i
-          comp := input.components[i]
-          some j
-          banned := banned_packages[j]
+          some comp in input.components
+          some banned banned_packages
           nv := split(banned, "@")
           comp.name == nv[0]
           result := semver.compare(comp.version, nv[1])

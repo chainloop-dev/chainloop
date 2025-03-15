@@ -18,14 +18,25 @@ kind: Policy
 metadata:
   name: sarif-errors
 spec:
-  embedded: |
-    package main
-    
-    violations[msg] {
-      has_errors
-      msg := "There are errors in the SARIF report"
-    }
-    
-    has_errors {
-      input.runs[_].results[_].level == "error"
-    }
+  policies:
+    - embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+        
+        violations contains msg if {
+          has_errors
+          msg := "There are errors in the SARIF report"
+        }
+        
+        has_errors {
+          some run in input.runs
+          some result in run.results
+          result.level == "error"
+        }

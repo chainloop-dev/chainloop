@@ -20,18 +20,28 @@ kind: Policy
 metadata:
   name: sarif-errors
 spec:
-  type: ATTESTATION
-  embedded: |
-    package main
-    
-    violations[msg] {
-      not is_approved
-      
-      msg:= "Container image is not approved"
-    }
-    
-    is_approved {
-      input.predicate.materials[_].annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
-      
-      input.predicate.annotations.approval == "true"
-    }
+  policies:
+    - type: ATTESTATION
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+        
+        violations contains msg if {
+          not is_approved
+          
+          msg:= "Container image is not approved"
+        }
+        
+        is_approved {
+          some material in input.predicate.materials
+          material.annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
+          
+          input.predicate.annotations.approval == "true"
+        }

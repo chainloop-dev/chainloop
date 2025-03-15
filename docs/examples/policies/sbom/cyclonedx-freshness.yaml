@@ -26,6 +26,12 @@ spec:
         package main
         
         import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
       
         limit := 30
         
