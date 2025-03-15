@@ -21,12 +21,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+// workflowMetadatColumn is the column name for the metadata field in the database
+const workflowMetadatColumn = "metadata"
 
 type Workflow struct {
 	Name, Description, Team, Project string
@@ -95,6 +100,8 @@ type WorkflowListOpts struct {
 	WorkflowActiveWindow *TimeWindow
 	// WorkflowRunStatus is the status of the workflow runs to return
 	WorkflowRunLastStatus WorkflowRunStatus
+	// JSONFilters is the filters to apply to the JSON fields
+	JSONFilters []*jsonfilter.JSONFilter
 }
 
 type WorkflowUseCase struct {
@@ -270,6 +277,13 @@ func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, filterOpts *W
 	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
 	if paginationOpts != nil {
 		pgOpts = paginationOpts
+	}
+
+	// Add the column to the JSON filters where they need to be applied
+	if filterOpts != nil && filterOpts.JSONFilters != nil {
+		for _, jf := range filterOpts.JSONFilters {
+			jf.Column = workflowMetadatColumn
+		}
 	}
 
 	return uc.wfRepo.List(ctx, orgUUID, filterOpts, pgOpts)

@@ -2,6 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { JSONFilter } from "../../jsonfilter/v1/jsonfilter";
 import {
   CraftingSchema_Runner_RunnerType,
   craftingSchema_Runner_RunnerTypeFromJSON,
@@ -118,6 +119,8 @@ export interface WorkflowServiceListRequest {
   workflowLastActivityWindow: WorkflowActivityWindow;
   /** Pagination options */
   pagination?: OffsetPaginationRequest;
+  /** JSON filters to apply to the workflow */
+  jsonFilters: JSONFilter[];
 }
 
 export interface WorkflowServiceListResponse {
@@ -633,6 +636,7 @@ function createBaseWorkflowServiceListRequest(): WorkflowServiceListRequest {
     workflowRunLastStatus: 0,
     workflowLastActivityWindow: 0,
     pagination: undefined,
+    jsonFilters: [],
   };
 }
 
@@ -664,6 +668,9 @@ export const WorkflowServiceListRequest = {
     }
     if (message.pagination !== undefined) {
       OffsetPaginationRequest.encode(message.pagination, writer.uint32(74).fork()).ldelim();
+    }
+    for (const v of message.jsonFilters) {
+      JSONFilter.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -738,6 +745,13 @@ export const WorkflowServiceListRequest = {
 
           message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.jsonFilters.push(JSONFilter.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -762,6 +776,7 @@ export const WorkflowServiceListRequest = {
         ? workflowActivityWindowFromJSON(object.workflowLastActivityWindow)
         : 0,
       pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+      jsonFilters: Array.isArray(object?.jsonFilters) ? object.jsonFilters.map((e: any) => JSONFilter.fromJSON(e)) : [],
     };
   },
 
@@ -784,6 +799,11 @@ export const WorkflowServiceListRequest = {
       (obj.workflowLastActivityWindow = workflowActivityWindowToJSON(message.workflowLastActivityWindow));
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    if (message.jsonFilters) {
+      obj.jsonFilters = message.jsonFilters.map((e) => e ? JSONFilter.toJSON(e) : undefined);
+    } else {
+      obj.jsonFilters = [];
+    }
     return obj;
   },
 
@@ -804,6 +824,7 @@ export const WorkflowServiceListRequest = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? OffsetPaginationRequest.fromPartial(object.pagination)
       : undefined;
+    message.jsonFilters = object.jsonFilters?.map((e) => JSONFilter.fromPartial(e)) || [];
     return message;
   },
 };
