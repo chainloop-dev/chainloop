@@ -527,7 +527,7 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 	return nil, fmt.Errorf("failed to auto-discover material kind: %w", err)
 }
 
-// addMaterials adds the incoming material m to the crafting state
+// addMaterial adds the incoming material m to the crafting state
 func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
 	// 3- Craft resulting material
 	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger)

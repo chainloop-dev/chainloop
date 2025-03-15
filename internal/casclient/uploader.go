@@ -155,7 +155,7 @@ doUpload:
 	return latestStatus, nil
 }
 
-// encodedResource returns a base64-encoded v1.UploadResource which wraps both the digest and fileName
+// encodeResource returns a base64-encoded v1.UploadResource which wraps both the digest and fileName
 func encodeResource(fileName, digest string) (string, error) {
 	if fileName == "" {
 		return "", fmt.Errorf("file name is empty")
