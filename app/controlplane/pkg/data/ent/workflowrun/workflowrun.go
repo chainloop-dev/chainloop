@@ -99,7 +99,6 @@ var Columns = []string{
 	FieldReason,
 	FieldRunURL,
 	FieldRunnerType,
-	FieldAttestation,
 	FieldAttestationDigest,
 	FieldAttestationState,
 	FieldContractRevisionUsed,
@@ -129,6 +128,11 @@ func ValidColumn(column string) bool {
 	}
 	for i := range ForeignKeys {
 		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	for _, f := range [...]string{FieldAttestation} {
+		if column == f {
 			return true
 		}
 	}

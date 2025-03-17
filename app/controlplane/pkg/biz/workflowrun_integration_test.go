@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	attestation2 "github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	v2 "github.com/google/go-containerregistry/pkg/v1"
@@ -132,7 +133,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	validEnvelope, envelopeBytes := testEnvelope(s.T(), "testdata/attestations/full.json")
+	_, envelopeBytes := testEnvelope(s.T(), "testdata/attestations/full.json")
 	h, _, err := v2.SHA256(bytes.NewReader(envelopeBytes))
 	require.NoError(s.T(), err)
 
@@ -142,7 +143,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("valid workflowRun", func(_ *testing.T) {
+	s.T().Run("valid workflowRun with envelope", func(_ *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
 		})
@@ -156,12 +157,33 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(h.String(), r.Attestation.Digest)
-		assert.Equal(&biz.Attestation{Envelope: validEnvelope, Digest: h.String()}, r.Attestation)
+		assert.Equal(&biz.Attestation{Envelope: nil, Digest: h.String()}, r.Attestation)
 	})
 
-	_, bundleBytes := testBundle(s.T(), "testdata/attestations/bundle.json")
+	bundle, bundleBytes := testBundle(s.T(), "testdata/attestations/bundle.json")
 	bundleHash, _, err := v2.SHA256(bytes.NewReader(bundleBytes))
 	require.NoError(s.T(), err)
+
+	s.T().Run("succeeded workflowRun with bundle", func(_ *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		})
+		assert.NoError(err)
+
+		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), envelopeBytes, bundleBytes)
+		assert.NoError(err)
+		assert.Equal(bundleHash, *d)
+
+		err = s.WorkflowRun.MarkAsFinished(ctx, run.ID.String(), biz.WorkflowRunSuccess, "")
+		assert.NoError(err)
+
+		// Retrieve attestation ref from storage and compare
+		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
+		assert.NoError(err)
+		assert.Equal(bundleHash.String(), r.Attestation.Digest)
+		env := attestation.DSSEEnvelopeFromBundle(bundle)
+		assert.Equal(&biz.Attestation{Envelope: env, Bundle: bundleBytes, Digest: bundleHash.String()}, r.Attestation)
+	})
 
 	s.T().Run("saves the bundle", func(_ *testing.T) {
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{

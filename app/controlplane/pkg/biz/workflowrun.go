@@ -315,6 +315,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundle); err != nil {
 			return nil, fmt.Errorf("saving bundle: %w", err)
 		}
+		// do not store the envelope if bundle is already stored
+		dsseEnv = nil
 	}
 
 	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, dsseEnv, digest.String()); err != nil {

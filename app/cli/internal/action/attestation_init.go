@@ -27,6 +27,8 @@ import (
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type AttestationInitOpts struct {
@@ -80,7 +82,7 @@ type AttestationInitRunOpts struct {
 	ProjectVersion               string
 	ProjectVersionMarkAsReleased bool
 	WorkflowName                 string
-	NewWorkflowContractName      string
+	NewWorkflowContractRef       string
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -98,11 +100,32 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
+
+	// 0 - find or create the contract if we are creating the workflow (if any)
+	contractRef := opts.NewWorkflowContractRef
+	_, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
+	if err != nil && status.Code(err) == codes.NotFound {
+		// Not found, let's see if we need to create the contract
+		if contractRef != "" {
+			// Try to find it by name
+			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
+			// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
+			// TODO: validate locally before doing the query
+			if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
+				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
+				if err != nil {
+					return "", err
+				}
+				contractRef = createResp.Name
+			}
+		}
+	}
+
 	// 1 - Find or create the workflow
 	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
 		ProjectName:  opts.ProjectName,
 		WorkflowName: opts.WorkflowName,
-		ContractName: opts.NewWorkflowContractName,
+		ContractName: contractRef,
 	})
 	if err != nil {
 		return "", err
