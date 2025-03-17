@@ -52,7 +52,6 @@ spec:
         # TODO: update to validate if the file is expected, i.e checking the tool that generates it
         valid_input := true
         
-
         # Verifies there is a SBOM material, even if not enforced by contract
         
         violations contains msg if {
