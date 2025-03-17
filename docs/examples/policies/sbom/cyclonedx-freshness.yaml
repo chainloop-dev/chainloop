@@ -27,11 +27,33 @@ spec:
         
         import rego.v1
         
+        ################################
+        # Common section do NOT change #
+        ################################
+        
         result := {
-          "skipped": false,
+          "skipped": skipped,
           "violations": violations,
-          "skip_reason": "",
+          "skip_reason": skip_reason,
         }
+        
+        default skip_reason := ""
+        
+        skip_reason := m if {
+          not valid_input
+          m := "the file content is not recognized"
+        }
+        
+        default skipped := true
+        
+        skipped := false if valid_input
+        
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+        
+        # TODO: update to validate if the file is expected, i.e checking the tool that generates it
+        valid_input := true
       
         limit := 30
         

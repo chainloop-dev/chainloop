@@ -26,15 +26,37 @@ spec:
         package main
         
         import rego.v1
-      
-        banned_licenses := ["GPL-2.0", "GPL-3.0"]
-                
+              
+        ################################
+        # Common section do NOT change #
+        ################################
+        
         result := {
-          "skipped": false,
+          "skipped": skipped,
           "violations": violations,
-          "skip_reason": "",
+          "skip_reason": skip_reason,
         }
         
+        default skip_reason := ""
+        
+        skip_reason := m if {
+          not valid_input
+          m := "the file content is not recognized"
+        }
+        
+        default skipped := true
+        
+        skipped := false if valid_input
+        
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+        
+        # TODO: update to validate if the file is expected, i.e checking the tool that generates it
+        valid_input := true
+
+        banned_licenses := ["GPL-2.0", "GPL-3.0"]
+
         violations contains ref if {
           some comp in input.components
           some lic in comp.licenses

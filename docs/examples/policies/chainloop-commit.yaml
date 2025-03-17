@@ -1,4 +1,4 @@
-# Copyright 2024 The Chainloop Authors.
+# Copyright 2024-2025 The Chainloop Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +23,34 @@ spec:
         package main
         
         import rego.v1
-      
+                  
+        ################################
+        # Common section do NOT change #
+        ################################
+        
         result := {
-          "skipped": false,
+          "skipped": skipped,
           "violations": violations,
-          "skip_reason": "",
+          "skip_reason": skip_reason,
         }
+          
+        default skip_reason := ""
+          
+        skip_reason := m if {
+          not valid_input
+          m := "the file content is not recognized"
+        }
+          
+        default skipped := true
+        
+        skipped := false if valid_input
+                  
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+        
+        # TODO: update to validate if the file is expected, i.e checking the tool that generates it
+        valid_input := true
         
         violations contains msg if {
           not has_commit
