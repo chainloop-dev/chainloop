@@ -25,12 +25,12 @@ import (
 
 func newAttestationInitCmd() *cobra.Command {
 	var (
-		force                   bool
-		contractRevision        int
-		attestationDryRun       bool
-		workflowName            string
-		projectName             string
-		projectVersion          string
+		force                 bool
+		contractRevision      int
+		attestationDryRun     bool
+		workflowName          string
+		projectName           string
+		projectVersion        string
 		projectVersionRelease bool
 		newWorkflowcontract   string
 	)
@@ -39,7 +39,8 @@ func newAttestationInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "start attestation crafting process",
 		Annotations: map[string]string{
-			useAPIToken: "true",
+			useAPIToken:          trueString,
+			confirmWhenUserToken: trueString,
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if workflowName == "" {

@@ -54,7 +54,9 @@ var (
 const (
 	// preference to use an API token if available
 	useAPIToken = "withAPITokenAuth"
-	appName     = "chainloop"
+	// Ask for confirmation when user token is used and API token is preferred
+	confirmWhenUserToken = "confirmWhenUserToken"
+	appName              = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	userAudience    = "user-auth.chainloop"
@@ -150,7 +152,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
-			if isAPITokenPreferred(cmd) && isUserToken && !flagYes {
+			if shouldAskForConfirmation(cmd) && isUserToken && !flagYes {
 				if !confirmationPrompt(fmt.Sprintf("This command is will run against the organization %q", orgName)) {
 					return errors.New("command canceled by user")
 				}
@@ -516,6 +518,10 @@ func apiInsecure() bool {
 func setLocalOrganization(orgName string) error {
 	viper.Set(confOptions.organization.viperKey, orgName)
 	return viper.WriteConfig()
+}
+
+func shouldAskForConfirmation(cmd *cobra.Command) bool {
+	return isAPITokenPreferred(cmd) && cmd.Annotations[confirmWhenUserToken] == trueString
 }
 
 func isAPITokenPreferred(cmd *cobra.Command) bool {
