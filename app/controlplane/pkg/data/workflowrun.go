@@ -181,9 +181,17 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 
 // SaveAttestation Saves the attestation for a workflow run in the database
 func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope, digest string) error {
-	run, err := r.data.DB.WorkflowRun.UpdateOneID(id).
-		SetAttestationDigest(digest).
-		Save(ctx)
+	q := r.data.DB.WorkflowRun.UpdateOneID(id).
+		SetAttestationDigest(digest)
+
+	// the envelope will come empty in normal attestations, since bundles are stored separately
+	// But old CLIs might still send the envelope instead of the bundle. In those cases, we store it
+	// as before. But this is a DEPRECATED behaviour that will be removed eventually.
+	if att != nil {
+		// Set attestation when using old CLI versions
+		q.SetAttestation(att)
+	}
+	run, err := q.Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	} else if run == nil {
