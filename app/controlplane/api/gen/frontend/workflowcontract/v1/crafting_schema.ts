@@ -150,6 +150,12 @@ export enum CraftingSchema_Material_MaterialType {
   GHAS_DEPENDENCY_SCAN = 22,
   /** JACOCO_XML - Jacoco coverage reports https://www.jacoco.org/userdoc/importexport.html */
   JACOCO_XML = 23,
+  /**
+   * SLSA_PROVENANCE - SLSA Provenance in the form of Sigstore Bundle
+   * https://slsa.dev/spec/v1.0/provenance
+   * https://docs.sigstore.dev/about/bundle/
+   */
+  SLSA_PROVENANCE = 24,
   UNRECOGNIZED = -1,
 }
 
@@ -227,6 +233,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 23:
     case "JACOCO_XML":
       return CraftingSchema_Material_MaterialType.JACOCO_XML;
+    case 24:
+    case "SLSA_PROVENANCE":
+      return CraftingSchema_Material_MaterialType.SLSA_PROVENANCE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -284,6 +293,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "GHAS_DEPENDENCY_SCAN";
     case CraftingSchema_Material_MaterialType.JACOCO_XML:
       return "JACOCO_XML";
+    case CraftingSchema_Material_MaterialType.SLSA_PROVENANCE:
+      return "SLSA_PROVENANCE";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

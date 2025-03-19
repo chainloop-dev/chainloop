@@ -216,6 +216,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewGHASSecretScanCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_GHAS_DEPENDENCY_SCAN:
 		crafter, err = NewGHASDependencyScanCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_SLSA_PROVENANCE:
+		crafter, err = NewSLSAProvenanceCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
