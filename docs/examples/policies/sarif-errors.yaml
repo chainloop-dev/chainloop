@@ -18,14 +18,48 @@ kind: Policy
 metadata:
   name: sarif-errors
 spec:
-  embedded: |
-    package main
-    
-    violations[msg] {
-      has_errors
-      msg := "There are errors in the SARIF report"
-    }
-    
-    has_errors {
-      input.runs[_].results[_].level == "error"
-    }
+  policies:
+    - type: SARIF
+      embedded: |
+        package main
+        
+        import rego.v1
+          
+        ################################
+        # Common section do NOT change #
+        ################################
+        
+        result := {
+            "skipped": skipped,
+            "violations": violations,
+            "skip_reason": skip_reason,
+        }
+        
+        default skip_reason := ""
+        
+        skip_reason := m if {
+            not valid_input
+            m := "the file content is not recognized"
+        }
+        
+        default skipped := true
+        
+        skipped := false if valid_input
+        
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+        
+        # TODO: update to validate if the file is expected, i.e checking the tool that generates it
+        valid_input := true
+        
+        violations contains msg if {
+          has_errors
+          msg := "There are errors in the SARIF report"
+        }
+        
+        has_errors {
+          some run in input.runs
+          some result in run.results
+          result.level == "error"
+        }
