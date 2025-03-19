@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -221,6 +223,16 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 
 		if len(opts.WorkflowProjectNames) != 0 {
 			wfQuery = wfQuery.Where(workflow.HasProjectWith(project.NameIn(opts.WorkflowProjectNames...)))
+		}
+
+		// Append the JSON Filters to the query
+		if len(opts.JSONFilters) != 0 {
+			wfQuery = wfQuery.Where(func(selector *sql.Selector) {
+				for _, filter := range opts.JSONFilters {
+					jsonPredicate, _ := jsonfilter.BuildEntSelectorFromJSONFilter(filter)
+					selector.Where(jsonPredicate)
+				}
+			})
 		}
 
 		// Combine WorkflowTeam and WorkflowName filters using OR logic
