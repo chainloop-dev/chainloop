@@ -118,5 +118,11 @@
     "name": "GitHub Advanced Security Dependency scans",
     "id": "GHAS_DEPENDENCY_SCAN",
     "link": "https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28"
+  },
+  {
+    "name": "SLSA Provenance",
+    "id": "SLSA_PROVENANCE",
+    "link": "https://slsa.dev/spec/v1.0/provenance",
+    "description": "SLSA Provenance in the form of Sigstore Bundle"
   }
 ]

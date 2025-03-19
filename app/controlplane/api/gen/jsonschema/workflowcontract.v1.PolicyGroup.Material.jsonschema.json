@@ -45,7 +45,8 @@
             "GHAS_CODE_SCAN",
             "GHAS_SECRET_SCAN",
             "GHAS_DEPENDENCY_SCAN",
-            "JACOCO_XML"
+            "JACOCO_XML",
+            "SLSA_PROVENANCE"
           ],
           "title": "Material Type",
           "type": "string"

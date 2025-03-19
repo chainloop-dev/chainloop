@@ -123,6 +123,10 @@ message CraftingSchema {
       GHAS_DEPENDENCY_SCAN = 22;
       // Jacoco coverage reports https://www.jacoco.org/userdoc/importexport.html
       JACOCO_XML = 23;
+      // SLSA Provenance in the form of Sigstore Bundle
+      // https://slsa.dev/spec/v1.0/provenance
+      // https://docs.sigstore.dev/about/bundle/
+      SLSA_PROVENANCE = 24;
     }
   }
 }
@@ -179,7 +183,7 @@ message PolicyAttachment {
       // - "chainloop/owasp/owasp-top-10@2021"
       // - "owasp/owasp-top-10"
       // - "owasp/owasp-top-10@2021"
-      pattern: "^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$",
+      pattern: "^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$"
     }
   }];
 
@@ -312,9 +316,7 @@ message PolicyGroup {
 
   // Policy group materials
   message Material {
-    CraftingSchema.Material.MaterialType type = 1 [
-      (buf.validate.field).enum.defined_only = true
-    ];
+    CraftingSchema.Material.MaterialType type = 1 [(buf.validate.field).enum.defined_only = true];
     // Free form name, as we support placeholders eg `{{ inputs.input_name }}`
     // If no name is provided, material won't be enforced and will apply policies if `type` matches
     string name = 2;
