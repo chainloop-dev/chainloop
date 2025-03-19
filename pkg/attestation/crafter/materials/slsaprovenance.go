@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/casclient"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
+	intotoatt "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 	"github.com/rs/zerolog"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -63,7 +64,7 @@ func (i *SLSAProvenanceCrafter) Craft(ctx context.Context, artifactPath string) 
 		return nil, fmt.Errorf("failed to unmarshal statement: %w", err)
 	}
 
-	if p := statement.PredicateType; p != "https://slsa.dev/provenance/v1" {
+	if p := statement.PredicateType; p != intotoatt.PredicateSLSAProvenance {
 		return nil, fmt.Errorf("the provided predicate is not a valid SLSA Provenance: found=%q", p)
 	}
 
