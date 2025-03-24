@@ -228,10 +228,16 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 		// Append the JSON Filters to the query
 		if len(opts.JSONFilters) != 0 {
 			wfQuery = wfQuery.Where(func(selector *sql.Selector) {
+				// Build the predicates for each JSON filter
+				predicates := make([]*sql.Predicate, 0, len(opts.JSONFilters))
 				for _, filter := range opts.JSONFilters {
+					// Include the column where the filter is applied
+					filter.Column = workflow.FieldMetadata
 					jsonPredicate, _ := jsonfilter.BuildEntSelectorFromJSONFilter(filter)
-					selector.Where(jsonPredicate)
+					predicates = append(predicates, jsonPredicate)
 				}
+				// Combine the predicates using OR logic
+				selector.Where(sql.Or(predicates...))
 			})
 		}
 
