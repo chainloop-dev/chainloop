@@ -21,7 +21,7 @@ require (
 	github.com/getsentry/sentry-go v0.23.0
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230823024326-a09f4d8ebba9
 	github.com/go-kratos/kratos/v2 v2.7.0
-	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-containerregistry v0.20.2
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.6.0
