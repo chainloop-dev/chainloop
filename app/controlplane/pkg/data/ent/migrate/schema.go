@@ -799,7 +799,6 @@ func init() {
 	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[1].RefTable = WorkflowsTable
-	ReferrerWorkflowsTable.Annotation = &entsql.Annotation{}
 	WorkflowRunCasBackendsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	WorkflowRunCasBackendsTable.ForeignKeys[1].RefTable = CasBackendsTable
 }
