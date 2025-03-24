@@ -42,7 +42,7 @@ jobs:
       - name: Generate migrations
         if: ${{ matrix.app == 'controlplane' }}
         env:
-          ATLAS_VERSION: v0.31.1-647df7a-canary
+          ATLAS_VERSION: v0.32.0
         run: |
           wget -q https://release.ariga.io/atlas/atlas-linux-amd64-$ATLAS_VERSION -O /tmp/atlas
           sudo install /tmp/atlas /usr/local/bin/atlas
@@ -56,6 +56,7 @@ jobs:
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
+          tidy: true
 
       # Check that the generated API code is up to date
       # We install the tools and run the protoc generation before checking differences
