@@ -237,7 +237,7 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 					predicates = append(predicates, jsonPredicate)
 				}
 				// Combine the predicates using OR logic
-				selector.Where(sql.Or(predicates...))
+				selector.Where(sql.And(predicates...))
 			})
 		}
 
