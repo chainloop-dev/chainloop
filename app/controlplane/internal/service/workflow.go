@@ -314,6 +314,8 @@ func pbJSONFilterOperatorToPkg(operator v1.JSONOperator) jsonfilter.JSONOperator
 		return jsonfilter.OpEQ
 	case v1.JSONOperator_JSON_OPERATOR_NEQ:
 		return jsonfilter.OpNEQ
+	case v1.JSONOperator_JSON_OPERATOR_IN:
+		return jsonfilter.OpIN
 	default:
 		return ""
 	}

@@ -20,7 +20,8 @@
           "enum": [
             "JSON_OPERATOR_UNSPECIFIED",
             "JSON_OPERATOR_EQ",
-            "JSON_OPERATOR_NEQ"
+            "JSON_OPERATOR_NEQ",
+            "JSON_OPERATOR_IN"
           ],
           "title": "JSON Operator",
           "type": "string"

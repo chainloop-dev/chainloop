@@ -18,6 +18,7 @@ package jsonfilter
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
@@ -29,6 +30,7 @@ type JSONOperator string
 const (
 	OpEQ  JSONOperator = "eq"
 	OpNEQ JSONOperator = "neq"
+	OpIN  JSONOperator = "in"
 )
 
 // JSONFilter represents a filter for JSON fields.
@@ -61,6 +63,24 @@ func BuildEntSelectorFromJSONFilter(jsonFilter *JSONFilter) (*entsql.Predicate, 
 		return sqljson.ValueEQ(jsonFilter.Column, jsonFilter.Value, dotPath), nil
 	case OpNEQ:
 		return sqljson.ValueNEQ(jsonFilter.Column, jsonFilter.Value, dotPath), nil
+	case OpIN:
+		// Parse the jsonFilter.Value into a string
+		castedValue, ok := jsonFilter.Value.(string)
+		if !ok {
+			return nil, errors.New("invalid value for 'in' operator: must be a slice of strings")
+		}
+
+		// Split the string into a slice of strings by comma.
+		values := strings.Split(castedValue, ",")
+
+		// Trim the spaces from each value and transform them into a slice of any needed for the predicate.
+		inputValue := make([]any, 0, len(values))
+		for _, value := range values {
+			inputValue = append(inputValue, strings.TrimSpace(value))
+		}
+
+		// Create the predicate.
+		return sqljson.ValueIn(jsonFilter.Column, inputValue, dotPath), nil
 	default:
 		return nil, fmt.Errorf("unsupported operator: %s", jsonFilter.Operator)
 	}
