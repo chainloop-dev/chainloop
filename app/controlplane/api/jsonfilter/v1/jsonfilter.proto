@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package jsonfilter.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/jsonfilter/v1";
+
+// JSONFilter represents a filter for JSON fields.
+message JSONFilter {
+  string field_path = 1 [(buf.validate.field).string.min_len = 1];
+  JSONOperator operator = 2 [(buf.validate.field).enum = {defined_only: true}];
+  optional string value = 43;
+}
+
+// JSONOperator represents supported JSON filter operators.
+enum JSONOperator {
+  JSON_OPERATOR_UNSPECIFIED = 0;
+  JSON_OPERATOR_EQ = 1;
+  JSON_OPERATOR_NEQ = 2;
+}

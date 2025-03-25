@@ -3,6 +3,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(json_filters)$": {
+      "description": "JSON filters to apply to the workflow",
+      "items": {
+        "$ref": "jsonfilter.v1.JSONFilter.jsonschema.json"
+      },
+      "type": "array"
+    },
     "^(project_names)$": {
       "description": "The project the workflow belongs to",
       "items": {
@@ -93,6 +100,13 @@
     }
   },
   "properties": {
+    "jsonFilters": {
+      "description": "JSON filters to apply to the workflow",
+      "items": {
+        "$ref": "jsonfilter.v1.JSONFilter.jsonschema.json"
+      },
+      "type": "array"
+    },
     "pagination": {
       "$ref": "controlplane.v1.OffsetPaginationRequest.jsonschema.json",
       "description": "Pagination options"
