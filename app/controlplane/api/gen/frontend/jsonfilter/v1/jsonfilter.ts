@@ -8,6 +8,7 @@ export enum JSONOperator {
   JSON_OPERATOR_UNSPECIFIED = 0,
   JSON_OPERATOR_EQ = 1,
   JSON_OPERATOR_NEQ = 2,
+  JSON_OPERATOR_IN = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -22,6 +23,9 @@ export function jSONOperatorFromJSON(object: any): JSONOperator {
     case 2:
     case "JSON_OPERATOR_NEQ":
       return JSONOperator.JSON_OPERATOR_NEQ;
+    case 3:
+    case "JSON_OPERATOR_IN":
+      return JSONOperator.JSON_OPERATOR_IN;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -37,6 +41,8 @@ export function jSONOperatorToJSON(object: JSONOperator): string {
       return "JSON_OPERATOR_EQ";
     case JSONOperator.JSON_OPERATOR_NEQ:
       return "JSON_OPERATOR_NEQ";
+    case JSONOperator.JSON_OPERATOR_IN:
+      return "JSON_OPERATOR_IN";
     case JSONOperator.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
