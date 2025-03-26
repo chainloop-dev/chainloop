@@ -21,8 +21,8 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/casclient"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	intoto "github.com/in-toto/attestation/go/v1"
 	intotoatt "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 	"github.com/rs/zerolog"
