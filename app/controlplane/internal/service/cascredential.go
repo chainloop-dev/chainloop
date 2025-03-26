@@ -103,7 +103,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		}
 
 		// If we can't find a mapping, we'll use the default backend
-		if err != nil && !biz.IsNotFound(err) && !biz.IsErrUnauthorized(err) {
+		if err != nil && !biz.IsNotFound(err) {
 			if biz.IsErrValidation(err) {
 				return nil, errors.BadRequest("invalid", err.Error())
 			}

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package biz
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -39,7 +38,8 @@ type CASMapping struct {
 }
 
 type CASMappingRepo interface {
-	Create(ctx context.Context, digest string, casBackendID, workflowRunID uuid.UUID) (*CASMapping, error)
+	// Create a mapping with an optional workflow run id
+	Create(ctx context.Context, digest string, casBackendID uuid.UUID, workflowRunID *uuid.UUID) (*CASMapping, error)
 	// List all the CAS mappings for the given digest
 	FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error)
 }
@@ -54,15 +54,20 @@ func NewCASMappingUseCase(repo CASMappingRepo, mRepo MembershipRepo, logger log.
 	return &CASMappingUseCase{repo, mRepo, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
 }
 
-func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID, workflowRunID string) (*CASMapping, error) {
+// Create a mapping with an optional workflow run id
+func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID string, workflowRunID string) (*CASMapping, error) {
 	casBackendUUID, err := uuid.Parse(casBackendID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	workflowRunUUID, err := uuid.Parse(workflowRunID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
+	var workflowRunUUID *uuid.UUID
+	if workflowRunID != "" {
+		runUUID, err := uuid.Parse(workflowRunID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		workflowRunUUID = &runUUID
 	}
 
 	// parse the digest to make sure is a valid sha256 sum
@@ -101,13 +106,27 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 		userOrgs = append(userOrgs, m.OrganizationID.String())
 	}
 
-	return uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs)
+	mapping, err := uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find cas mapping for download: %w", err)
+	}
+
+	return mapping, nil
 }
 
-func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []string) (*CASMapping, error) {
+func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []string) (result *CASMapping, err error) {
 	if _, err := cr_v1.NewHash(digest); err != nil {
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}
+
+	// log the result
+	defer func() {
+		if result != nil {
+			uc.logger.Infow("msg", "mapping found!", "digest", digest, "orgs", orgs, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
+		} else if err == nil || IsNotFound(err) {
+			uc.logger.Infow("msg", "no mapping found!", "digest", digest, "orgs", orgs)
+		}
+	}()
 
 	if len(orgs) == 0 {
 		return nil, NewErrValidationStr("no organizations provided")
@@ -129,10 +148,7 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("failed to load mappings associated to an user: %w", err)
 	} else if len(orgMappings) > 0 {
-		result := defaultOrFirst(orgMappings)
-
-		uc.logger.Infow("msg", "mapping found!", "digest", digest, "orgs", orgs, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
-		return result, nil
+		return defaultOrFirst(orgMappings), nil
 	}
 
 	// 3 - mappings that are public
@@ -140,13 +156,11 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 	// The user has not access to neither proprietary nor public mappings
 	if len(publicMappings) == 0 {
 		uc.logger.Warnw("msg", "digest exist but user does not have access to it", "digest", digest, "orgs", orgs)
-		return nil, NewErrUnauthorized(errors.New("unauthorized access to the artifact"))
+		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
 	// Pick the appropriate mapping from multiple ones
-	result := defaultOrFirst(publicMappings)
-	uc.logger.Infow("msg", "mapping found!", "digest", digest, "orgs", orgs, "casBackend", result.CASBackend.ID, "default", result.CASBackend.Default, "public", result.Public)
-	return result, nil
+	return defaultOrFirst(publicMappings), nil
 }
 
 // Extract only the mappings associated with a list of orgs

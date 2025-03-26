@@ -52,6 +52,14 @@ func (cmc *CASMappingCreate) SetWorkflowRunID(u uuid.UUID) *CASMappingCreate {
 	return cmc
 }
 
+// SetNillableWorkflowRunID sets the "workflow_run_id" field if the given value is not nil.
+func (cmc *CASMappingCreate) SetNillableWorkflowRunID(u *uuid.UUID) *CASMappingCreate {
+	if u != nil {
+		cmc.SetWorkflowRunID(*u)
+	}
+	return cmc
+}
+
 // SetOrganizationID sets the "organization_id" field.
 func (cmc *CASMappingCreate) SetOrganizationID(u uuid.UUID) *CASMappingCreate {
 	cmc.mutation.SetOrganizationID(u)
@@ -140,9 +148,6 @@ func (cmc *CASMappingCreate) check() error {
 	}
 	if _, ok := cmc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CASMapping.created_at"`)}
-	}
-	if _, ok := cmc.mutation.WorkflowRunID(); !ok {
-		return &ValidationError{Name: "workflow_run_id", err: errors.New(`ent: missing required field "CASMapping.workflow_run_id"`)}
 	}
 	if _, ok := cmc.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "CASMapping.organization_id"`)}
