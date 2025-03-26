@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,11 +33,12 @@ import (
 
 const (
 	// This is the digest of the empty envelope
-	validDigest       = "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
-	validDigest2      = "sha256:2b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	validDigest3      = "sha256:1b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	validDigestPublic = "sha256:8b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
-	invalidDigest     = "sha256:deadbeef"
+	validDigest           = "sha256:f845058d865c3d4d491c9019f6afe9c543ad2cd11b31620cc512e341fb03d3d8"
+	validDigest2          = "sha256:2b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigest3          = "sha256:1b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigestPublic     = "sha256:8b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
+	validDigestWithoutRun = "sha256:63e8ec8e489d31265fb920241da3300ec36c10865d2e287e055d4e1287ce25e6"
+	invalidDigest         = "sha256:deadbeef"
 )
 
 func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
@@ -121,6 +122,8 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadByOrg() {
 	require.NoError(s.T(), err)
 	_, err = s.CASMapping.Create(ctx, validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
 	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(ctx, validDigestWithoutRun, s.casBackend3.ID.String(), "")
+	require.NoError(s.T(), err)
 
 	// both validDigest and validDigest2 from two different orgs
 	s.Run("validDigest is in org1", func() {
@@ -135,6 +138,17 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadByOrg() {
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("validDigestWithoutRun is available only to org 3", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestWithoutRun, []string{s.casBackend3.OrganizationID.String()})
+		s.NoError(err)
+		s.NotNil(mapping)
+		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
+
+		mapping, err = s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestWithoutRun, []string{s.org1.ID})
+		s.Error(err)
+		s.Nil(mapping)
 	})
 
 	s.Run("can't find an invalid digest", func() {
@@ -234,7 +248,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		name          string
 		digest        string
 		casBackendID  uuid.UUID
-		workflowRunID uuid.UUID
+		workflowRunID *uuid.UUID
 		wantErr       bool
 		wantPublic    bool
 	}{
@@ -242,62 +256,76 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			name:          "valid",
 			digest:        validDigest,
 			casBackendID:  s.casBackend1.ID,
-			workflowRunID: s.workflowRun.ID,
+			workflowRunID: biz.ToPtr(s.workflowRun.ID),
 		},
 		{
 			name:          "created again with same digest",
 			digest:        validDigest,
 			casBackendID:  s.casBackend1.ID,
-			workflowRunID: s.workflowRun.ID,
+			workflowRunID: biz.ToPtr(s.workflowRun.ID),
 		},
 		{
 			name:          "invalid digest format",
 			digest:        invalidDigest,
 			casBackendID:  s.casBackend1.ID,
-			workflowRunID: s.workflowRun.ID,
+			workflowRunID: biz.ToPtr(s.workflowRun.ID),
 			wantErr:       true,
 		},
 		{
 			name:          "invalid digest missing prefix",
 			digest:        "3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d",
 			casBackendID:  s.casBackend1.ID,
-			workflowRunID: s.workflowRun.ID,
+			workflowRunID: biz.ToPtr(s.workflowRun.ID),
 			wantErr:       true,
 		},
 		{
 			name:          "non-existing CASBackend",
 			digest:        validDigest,
 			casBackendID:  uuid.New(),
-			workflowRunID: s.workflowRun.ID,
+			workflowRunID: biz.ToPtr(s.workflowRun.ID),
 			wantErr:       true,
 		},
 		{
 			name:          "non-existing WorkflowRunID",
 			digest:        validDigest,
 			casBackendID:  s.casBackend1.ID,
-			workflowRunID: uuid.New(),
+			workflowRunID: biz.ToPtr(uuid.New()),
 			wantErr:       true,
 		},
 		{
 			name:          "public workflowrun",
 			digest:        validDigest,
 			casBackendID:  s.casBackend1.ID,
-			workflowRunID: s.publicWorkflowRun.ID,
+			workflowRunID: biz.ToPtr(s.publicWorkflowRun.ID),
 			wantPublic:    true,
+		},
+		{
+			name:         "not associated to any workflowrun",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			wantPublic:   false,
 		},
 	}
 
 	for _, tc := range testCases {
 		want := &biz.CASMapping{
-			Digest:        validDigest,
-			CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
-			WorkflowRunID: tc.workflowRunID,
-			OrgID:         s.casBackend1.OrganizationID,
-			Public:        tc.wantPublic,
+			Digest:     validDigest,
+			CASBackend: &biz.CASBackend{ID: s.casBackend1.ID},
+			OrgID:      s.casBackend1.OrganizationID,
+			Public:     tc.wantPublic,
+		}
+
+		if tc.workflowRunID != nil {
+			want.WorkflowRunID = *tc.workflowRunID
 		}
 
 		s.Run(tc.name, func() {
-			got, err := s.CASMapping.Create(context.TODO(), tc.digest, tc.casBackendID.String(), tc.workflowRunID.String())
+			var workflowRunID string
+			if tc.workflowRunID != nil {
+				workflowRunID = tc.workflowRunID.String()
+			}
+
+			got, err := s.CASMapping.Create(context.TODO(), tc.digest, tc.casBackendID.String(), workflowRunID)
 			if tc.wantErr {
 				s.Error(err)
 			} else {
