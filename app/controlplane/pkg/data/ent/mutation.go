@@ -2657,9 +2657,22 @@ func (m *CASMappingMutation) OldWorkflowRunID(ctx context.Context) (v uuid.UUID,
 	return oldValue.WorkflowRunID, nil
 }
 
+// ClearWorkflowRunID clears the value of the "workflow_run_id" field.
+func (m *CASMappingMutation) ClearWorkflowRunID() {
+	m.workflow_run_id = nil
+	m.clearedFields[casmapping.FieldWorkflowRunID] = struct{}{}
+}
+
+// WorkflowRunIDCleared returns if the "workflow_run_id" field was cleared in this mutation.
+func (m *CASMappingMutation) WorkflowRunIDCleared() bool {
+	_, ok := m.clearedFields[casmapping.FieldWorkflowRunID]
+	return ok
+}
+
 // ResetWorkflowRunID resets all changes to the "workflow_run_id" field.
 func (m *CASMappingMutation) ResetWorkflowRunID() {
 	m.workflow_run_id = nil
+	delete(m.clearedFields, casmapping.FieldWorkflowRunID)
 }
 
 // SetOrganizationID sets the "organization_id" field.
@@ -2910,7 +2923,11 @@ func (m *CASMappingMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CASMappingMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(casmapping.FieldWorkflowRunID) {
+		fields = append(fields, casmapping.FieldWorkflowRunID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2923,6 +2940,11 @@ func (m *CASMappingMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CASMappingMutation) ClearField(name string) error {
+	switch name {
+	case casmapping.FieldWorkflowRunID:
+		m.ClearWorkflowRunID()
+		return nil
+	}
 	return fmt.Errorf("unknown CASMapping nullable field %s", name)
 }
 

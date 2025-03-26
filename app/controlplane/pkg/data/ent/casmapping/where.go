@@ -221,6 +221,16 @@ func WorkflowRunIDLTE(v uuid.UUID) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldLTE(FieldWorkflowRunID, v))
 }
 
+// WorkflowRunIDIsNil applies the IsNil predicate on the "workflow_run_id" field.
+func WorkflowRunIDIsNil() predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldIsNull(FieldWorkflowRunID))
+}
+
+// WorkflowRunIDNotNil applies the NotNil predicate on the "workflow_run_id" field.
+func WorkflowRunIDNotNil() predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNotNull(FieldWorkflowRunID))
+}
+
 // OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
 func OrganizationIDEQ(v uuid.UUID) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldEQ(FieldOrganizationID, v))

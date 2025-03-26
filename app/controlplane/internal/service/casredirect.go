@@ -88,7 +88,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	if err != nil {
 		// We don't want to leak the fact that the asset exists but the user does not have permissions
 		// that's why we return a generic 404 in unauthorized scenarios too
-		if biz.IsNotFound(err) || biz.IsErrUnauthorized(err) {
+		if biz.IsNotFound(err) {
 			return nil, kerrors.NotFound("not found", "artifact not found")
 		} else if biz.IsErrValidation(err) {
 			return nil, kerrors.BadRequest("invalid", err.Error())

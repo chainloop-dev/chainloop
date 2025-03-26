@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ func NewCASMappingRepo(data *Data, cbRepo biz.CASBackendRepo, logger log.Logger)
 	}
 }
 
-func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID, workflowRunID uuid.UUID) (*biz.CASMapping, error) {
+func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID uuid.UUID, workflowRunID *uuid.UUID) (*biz.CASMapping, error) {
 	casBackend, err := r.casBackendrepo.FindByID(ctx, casBackendID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas backend: %w", err)
@@ -53,7 +53,7 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 	mapping, err := r.data.DB.CASMapping.Create().
 		SetDigest(digest).
 		SetCasBackendID(casBackendID).
-		SetWorkflowRunID(workflowRunID).
+		SetNillableWorkflowRunID(workflowRunID).
 		SetOrganizationID(casBackend.OrganizationID).
 		Save(ctx)
 	if err != nil {
@@ -119,6 +119,11 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 }
 
 func (r *CASMappingRepo) IsPublic(ctx context.Context, client *ent.Client, runID uuid.UUID) (bool, error) {
+	// If the workflow run id is not set, the mapping is not public
+	if runID == uuid.Nil {
+		return false, nil
+	}
+
 	// Check if the workflow is public
 	wr, err := client.WorkflowRun.Query().Where(workflowrun.ID(runID)).Select(workflowrun.FieldWorkflowID).First(ctx)
 	if err != nil {

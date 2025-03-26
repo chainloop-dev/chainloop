@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ func (CASMapping) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable().
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
-		field.UUID("workflow_run_id", uuid.UUID{}).Immutable(),
+		field.UUID("workflow_run_id", uuid.UUID{}).Immutable().Optional(),
 		field.UUID("organization_id", uuid.UUID{}).Immutable(),
 	}
 }

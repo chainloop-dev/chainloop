@@ -110,7 +110,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "digest", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "workflow_run_id", Type: field.TypeUUID},
+		{Name: "workflow_run_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
 		{Name: "organization_id", Type: field.TypeUUID},
 	}
