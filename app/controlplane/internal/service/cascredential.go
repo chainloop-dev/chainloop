@@ -128,6 +128,6 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	return &pb.CASCredentialsServiceGetResponse{
-		Result: &pb.CASCredentialsServiceGetResponse_Result{Token: t},
+		Result: &pb.CASCredentialsServiceGetResponse_Result{Token: t, Backend: bizCASBackendToPb(backend)},
 	}, nil
 }

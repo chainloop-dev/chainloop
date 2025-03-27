@@ -2,6 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { CASBackendItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -56,6 +57,7 @@ export interface CASCredentialsServiceGetResponse {
 
 export interface CASCredentialsServiceGetResponse_Result {
   token: string;
+  backend?: CASBackendItem;
 }
 
 function createBaseCASCredentialsServiceGetRequest(): CASCredentialsServiceGetRequest {
@@ -197,13 +199,16 @@ export const CASCredentialsServiceGetResponse = {
 };
 
 function createBaseCASCredentialsServiceGetResponse_Result(): CASCredentialsServiceGetResponse_Result {
-  return { token: "" };
+  return { token: "", backend: undefined };
 }
 
 export const CASCredentialsServiceGetResponse_Result = {
   encode(message: CASCredentialsServiceGetResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.token !== "") {
       writer.uint32(18).string(message.token);
+    }
+    if (message.backend !== undefined) {
+      CASBackendItem.encode(message.backend, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -222,6 +227,13 @@ export const CASCredentialsServiceGetResponse_Result = {
 
           message.token = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.backend = CASBackendItem.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -232,12 +244,17 @@ export const CASCredentialsServiceGetResponse_Result = {
   },
 
   fromJSON(object: any): CASCredentialsServiceGetResponse_Result {
-    return { token: isSet(object.token) ? String(object.token) : "" };
+    return {
+      token: isSet(object.token) ? String(object.token) : "",
+      backend: isSet(object.backend) ? CASBackendItem.fromJSON(object.backend) : undefined,
+    };
   },
 
   toJSON(message: CASCredentialsServiceGetResponse_Result): unknown {
     const obj: any = {};
     message.token !== undefined && (obj.token = message.token);
+    message.backend !== undefined &&
+      (obj.backend = message.backend ? CASBackendItem.toJSON(message.backend) : undefined);
     return obj;
   },
 
@@ -252,6 +269,9 @@ export const CASCredentialsServiceGetResponse_Result = {
   ): CASCredentialsServiceGetResponse_Result {
     const message = createBaseCASCredentialsServiceGetResponse_Result();
     message.token = object.token ?? "";
+    message.backend = (object.backend !== undefined && object.backend !== null)
+      ? CASBackendItem.fromPartial(object.backend)
+      : undefined;
     return message;
   },
 };
