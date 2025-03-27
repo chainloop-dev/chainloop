@@ -192,7 +192,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := uc.mutation.HasRestrictedAccess(); ok {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
-		_node.HasRestrictedAccess = value
+		_node.HasRestrictedAccess = &value
 	}
 	if nodes := uc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

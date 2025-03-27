@@ -23,7 +23,7 @@ type User struct {
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// HasRestrictedAccess holds the value of the "has_restricted_access" field.
-	HasRestrictedAccess bool `json:"has_restricted_access,omitempty"`
+	HasRestrictedAccess *bool `json:"has_restricted_access,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -98,7 +98,8 @@ func (u *User) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field has_restricted_access", values[i])
 			} else if value.Valid {
-				u.HasRestrictedAccess = value.Bool
+				u.HasRestrictedAccess = new(bool)
+				*u.HasRestrictedAccess = value.Bool
 			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
@@ -147,8 +148,10 @@ func (u *User) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("has_restricted_access=")
-	builder.WriteString(fmt.Sprintf("%v", u.HasRestrictedAccess))
+	if v := u.HasRestrictedAccess; v != nil {
+		builder.WriteString("has_restricted_access=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
