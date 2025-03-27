@@ -33,9 +33,10 @@ import (
 )
 
 type User struct {
-	ID        string
-	Email     string
-	CreatedAt *time.Time
+	ID                  string
+	Email               string
+	CreatedAt           *time.Time
+	HasRestrictedAccess bool
 }
 
 type UserRepo interface {

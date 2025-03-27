@@ -141,5 +141,10 @@ func (r *userRepo) UpdateAllUsersAccess(ctx context.Context, isAccessRestricted 
 }
 
 func entUserToBizUser(eu *ent.User) *biz.User {
-	return &biz.User{Email: eu.Email, ID: eu.ID.String(), CreatedAt: toTimePtr(eu.CreatedAt)}
+	return &biz.User{
+		Email:               eu.Email,
+		ID:                  eu.ID.String(),
+		CreatedAt:           toTimePtr(eu.CreatedAt),
+		HasRestrictedAccess: eu.HasRestrictedAccess,
+	}
 }
