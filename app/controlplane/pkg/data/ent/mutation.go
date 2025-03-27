@@ -10349,7 +10349,7 @@ func (m *UserMutation) HasRestrictedAccess() (r bool, exists bool) {
 // OldHasRestrictedAccess returns the old "has_restricted_access" field's value of the User entity.
 // If the User object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldHasRestrictedAccess(ctx context.Context) (v bool, err error) {
+func (m *UserMutation) OldHasRestrictedAccess(ctx context.Context) (v *bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldHasRestrictedAccess is only allowed on UpdateOne operations")
 	}

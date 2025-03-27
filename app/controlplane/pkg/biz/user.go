@@ -36,7 +36,7 @@ type User struct {
 	ID                  string
 	Email               string
 	CreatedAt           *time.Time
-	HasRestrictedAccess bool
+	HasRestrictedAccess *bool
 }
 
 type UserRepo interface {

@@ -49,7 +49,7 @@ func (User) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
-		field.Bool("has_restricted_access").Optional(),
+		field.Bool("has_restricted_access").Optional().Nillable(),
 	}
 }
 

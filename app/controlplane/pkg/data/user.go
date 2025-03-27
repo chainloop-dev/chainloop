@@ -133,10 +133,15 @@ func (r *userRepo) CountUsersWithRestrictedOrUnsetAccess(ctx context.Context) (i
 }
 
 func entUserToBizUser(eu *ent.User) *biz.User {
-	return &biz.User{
-		Email:               eu.Email,
-		ID:                  eu.ID.String(),
-		CreatedAt:           toTimePtr(eu.CreatedAt),
-		HasRestrictedAccess: eu.HasRestrictedAccess,
+	base := &biz.User{
+		Email:     eu.Email,
+		ID:        eu.ID.String(),
+		CreatedAt: toTimePtr(eu.CreatedAt),
 	}
+
+	if eu.HasRestrictedAccess != nil {
+		base.HasRestrictedAccess = eu.HasRestrictedAccess
+	}
+
+	return base
 }
