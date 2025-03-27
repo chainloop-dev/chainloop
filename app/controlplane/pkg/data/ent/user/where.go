@@ -186,6 +186,16 @@ func HasRestrictedAccessNEQ(v bool) predicate.User {
 	return predicate.User(sql.FieldNEQ(FieldHasRestrictedAccess, v))
 }
 
+// HasRestrictedAccessIsNil applies the IsNil predicate on the "has_restricted_access" field.
+func HasRestrictedAccessIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldHasRestrictedAccess))
+}
+
+// HasRestrictedAccessNotNil applies the NotNil predicate on the "has_restricted_access" field.
+func HasRestrictedAccessNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldHasRestrictedAccess))
+}
+
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.
 func HasMemberships() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

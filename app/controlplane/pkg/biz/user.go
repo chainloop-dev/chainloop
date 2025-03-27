@@ -47,7 +47,6 @@ type UserRepo interface {
 	FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*User, int, error)
 	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error
 	CountUsersWithRestrictedAccess(ctx context.Context) (int, error)
-	UpdateAllUsersAccess(ctx context.Context, isAccessRestricted bool) error
 }
 
 type UserOrgFinder interface {

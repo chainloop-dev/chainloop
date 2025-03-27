@@ -57,8 +57,6 @@ var (
 	EmailValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// DefaultHasRestrictedAccess holds the default value on creation for the "has_restricted_access" field.
-	DefaultHasRestrictedAccess bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

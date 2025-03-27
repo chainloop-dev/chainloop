@@ -423,7 +423,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "has_restricted_access", Type: field.TypeBool, Default: true},
+		{Name: "has_restricted_access", Type: field.TypeBool, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -435,9 +435,6 @@ var (
 				Name:    "user_has_restricted_access",
 				Unique:  false,
 				Columns: []*schema.Column{UsersColumns[3]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "has_restricted_access IS true",
-				},
 			},
 		},
 	}

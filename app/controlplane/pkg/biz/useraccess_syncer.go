@@ -57,14 +57,8 @@ func (u *UserAccessSyncerUseCase) StartSyncingUserAccess(ctx context.Context) er
 		case <-ticker.C:
 			u.logger.Infow("msg", "Syncing user access")
 
-			// Count the number of users with restricted access
-			usersWithRestrictedAccess, err := u.userRepo.CountUsersWithRestrictedAccess(ctx)
-			if err != nil {
-				return fmt.Errorf("count users with restricted access: %w", err)
-			}
-
 			// Update the access restriction status of all users based on the allowlist
-			if err := u.updateUserAccessBasedOnAllowList(ctx, usersWithRestrictedAccess); err != nil {
+			if err := u.updateUserAccessBasedOnAllowList(ctx); err != nil {
 				return fmt.Errorf("update user access based on allow list: %w", err)
 			}
 
@@ -74,17 +68,23 @@ func (u *UserAccessSyncerUseCase) StartSyncingUserAccess(ctx context.Context) er
 }
 
 // updateUserAccessBasedOnAllowList updates the access restriction status of all users based on the allowlist
-func (u *UserAccessSyncerUseCase) updateUserAccessBasedOnAllowList(ctx context.Context, usersWithRestrictedAccess int) error {
-	// If the allowlist is empty and there are users with restricted access, give access to those users
-	if u.allowList != nil && len(u.allowList.GetRules()) == 0 && usersWithRestrictedAccess > 0 {
-		if err := u.userRepo.UpdateAllUsersAccess(ctx, false); err != nil {
-			return fmt.Errorf("update all users access: %w", err)
+func (u *UserAccessSyncerUseCase) updateUserAccessBasedOnAllowList(ctx context.Context) error {
+	// Count the number of users with restricted access
+	usersWithRestrictedAccess, err := u.userRepo.CountUsersWithRestrictedAccess(ctx)
+	if err != nil {
+		return fmt.Errorf("count users with access: %w", err)
+	}
+
+	// If the allowlist is empty and there are no users with restricted access, we can skip the sync
+	if u.allowList == nil || len(u.allowList.GetRules()) == 0 {
+		if usersWithRestrictedAccess == 0 {
+			return nil
 		}
-	} else {
-		// Sync the access restriction status of all users based on the allowlist
-		if err := u.syncUserAccess(ctx); err != nil {
-			return fmt.Errorf("sync user access: %w", err)
-		}
+	}
+
+	// Sync the access restriction status of all users based on the allowlist
+	if err := u.syncUserAccess(ctx); err != nil {
+		return fmt.Errorf("sync user access: %w", err)
 	}
 
 	return nil
@@ -108,11 +108,8 @@ func (u *UserAccessSyncerUseCase) syncUserAccess(ctx context.Context) error {
 			return fmt.Errorf("failed to list users: %w", err)
 		}
 
-		// If the allowlist is empty, we deactivate the access restriction for all users
-		isAllowListDeactivated := u.allowList == nil || len(u.allowList.GetRules()) == 0
-
 		for _, user := range users {
-			if err := u.updateUserAccessRestriction(ctx, user, isAllowListDeactivated); err != nil {
+			if err := u.updateUserAccessRestriction(ctx, user); err != nil {
 				return fmt.Errorf("failed to update user access: %w", err)
 			}
 		}
@@ -128,15 +125,22 @@ func (u *UserAccessSyncerUseCase) syncUserAccess(ctx context.Context) error {
 }
 
 // updateUserAccessRestriction updates the access restriction status of a user
-func (u *UserAccessSyncerUseCase) updateUserAccessRestriction(ctx context.Context, user *User, isAllowListDeactivated bool) error {
-	allow, err := UserEmailInAllowlist(u.allowList.GetRules(), user.Email)
-	if err != nil {
-		return fmt.Errorf("error checking user in allowList: %w", err)
-	}
+func (u *UserAccessSyncerUseCase) updateUserAccessRestriction(ctx context.Context, user *User) error {
+	isAllowListDeactivated := u.allowList == nil || len(u.allowList.GetRules()) == 0
 
-	isAccessRestricted := !allow
+	var isAccessRestricted bool
+
+	// If the allowlist is empty, we deactivate the access restriction for all users
 	if isAllowListDeactivated {
 		isAccessRestricted = false
+	} else {
+		// Check if the user email is in the allowlist and update the access restriction status accordingly
+		allow, err := UserEmailInAllowlist(u.allowList.GetRules(), user.Email)
+		if err != nil {
+			return fmt.Errorf("error checking user in allowList: %w", err)
+		}
+
+		isAccessRestricted = !allow
 	}
 
 	parsedUserUUID, err := uuid.Parse(user.ID)

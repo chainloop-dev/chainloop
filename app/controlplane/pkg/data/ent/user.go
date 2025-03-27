@@ -22,7 +22,7 @@ type User struct {
 	Email string `json:"email,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// Whether the user is blocked from accessing the system
+	// HasRestrictedAccess holds the value of the "has_restricted_access" field.
 	HasRestrictedAccess bool `json:"has_restricted_access,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.

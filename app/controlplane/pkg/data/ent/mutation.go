@@ -10363,9 +10363,22 @@ func (m *UserMutation) OldHasRestrictedAccess(ctx context.Context) (v bool, err 
 	return oldValue.HasRestrictedAccess, nil
 }
 
+// ClearHasRestrictedAccess clears the value of the "has_restricted_access" field.
+func (m *UserMutation) ClearHasRestrictedAccess() {
+	m.has_restricted_access = nil
+	m.clearedFields[user.FieldHasRestrictedAccess] = struct{}{}
+}
+
+// HasRestrictedAccessCleared returns if the "has_restricted_access" field was cleared in this mutation.
+func (m *UserMutation) HasRestrictedAccessCleared() bool {
+	_, ok := m.clearedFields[user.FieldHasRestrictedAccess]
+	return ok
+}
+
 // ResetHasRestrictedAccess resets all changes to the "has_restricted_access" field.
 func (m *UserMutation) ResetHasRestrictedAccess() {
 	m.has_restricted_access = nil
+	delete(m.clearedFields, user.FieldHasRestrictedAccess)
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -10554,7 +10567,11 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(user.FieldHasRestrictedAccess) {
+		fields = append(fields, user.FieldHasRestrictedAccess)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -10567,6 +10584,11 @@ func (m *UserMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserMutation) ClearField(name string) error {
+	switch name {
+	case user.FieldHasRestrictedAccess:
+		m.ClearHasRestrictedAccess()
+		return nil
+	}
 	return fmt.Errorf("unknown User nullable field %s", name)
 }
 

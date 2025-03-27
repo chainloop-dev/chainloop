@@ -127,19 +127,6 @@ func (r *userRepo) CountUsersWithRestrictedAccess(ctx context.Context) (int, err
 		Count(ctx)
 }
 
-// UpdateAllUsersAccess updates the access restriction for all users
-func (r *userRepo) UpdateAllUsersAccess(ctx context.Context, isAccessRestricted bool) error {
-	_, err := r.data.DB.User.Update().
-		Where(user.HasRestrictedAccess(!isAccessRestricted)).
-		SetHasRestrictedAccess(isAccessRestricted).
-		Save(ctx)
-	if err != nil {
-		return fmt.Errorf("error updating all users access: %w", err)
-	}
-
-	return nil
-}
-
 func entUserToBizUser(eu *ent.User) *biz.User {
 	return &biz.User{
 		Email:               eu.Email,

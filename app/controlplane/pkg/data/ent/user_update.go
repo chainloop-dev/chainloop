@@ -58,6 +58,12 @@ func (uu *UserUpdate) SetNillableHasRestrictedAccess(b *bool) *UserUpdate {
 	return uu
 }
 
+// ClearHasRestrictedAccess clears the value of the "has_restricted_access" field.
+func (uu *UserUpdate) ClearHasRestrictedAccess() *UserUpdate {
+	uu.mutation.ClearHasRestrictedAccess()
+	return uu
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (uu *UserUpdate) AddMembershipIDs(ids ...uuid.UUID) *UserUpdate {
 	uu.mutation.AddMembershipIDs(ids...)
@@ -160,6 +166,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.HasRestrictedAccess(); ok {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
 	}
+	if uu.mutation.HasRestrictedAccessCleared() {
+		_spec.ClearField(user.FieldHasRestrictedAccess, field.TypeBool)
+	}
 	if uu.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -252,6 +261,12 @@ func (uuo *UserUpdateOne) SetNillableHasRestrictedAccess(b *bool) *UserUpdateOne
 	if b != nil {
 		uuo.SetHasRestrictedAccess(*b)
 	}
+	return uuo
+}
+
+// ClearHasRestrictedAccess clears the value of the "has_restricted_access" field.
+func (uuo *UserUpdateOne) ClearHasRestrictedAccess() *UserUpdateOne {
+	uuo.mutation.ClearHasRestrictedAccess()
 	return uuo
 }
 
@@ -386,6 +401,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.HasRestrictedAccess(); ok {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
+	}
+	if uuo.mutation.HasRestrictedAccessCleared() {
+		_spec.ClearField(user.FieldHasRestrictedAccess, field.TypeBool)
 	}
 	if uuo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

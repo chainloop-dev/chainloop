@@ -49,7 +49,7 @@ func (User) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
-		field.Bool("has_restricted_access").Default(true).Comment("Whether the user is blocked from accessing the system"),
+		field.Bool("has_restricted_access").Optional(),
 	}
 }
 
@@ -62,8 +62,6 @@ func (User) Edges() []ent.Edge {
 
 func (User) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("has_restricted_access").Annotations(
-			entsql.IndexWhere("has_restricted_access IS true"),
-		),
+		index.Fields("has_restricted_access"),
 	}
 }

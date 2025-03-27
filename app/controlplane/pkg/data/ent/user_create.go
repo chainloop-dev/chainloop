@@ -127,10 +127,6 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := uc.mutation.HasRestrictedAccess(); !ok {
-		v := user.DefaultHasRestrictedAccess
-		uc.mutation.SetHasRestrictedAccess(v)
-	}
 	if _, ok := uc.mutation.ID(); !ok {
 		v := user.DefaultID()
 		uc.mutation.SetID(v)
@@ -149,9 +145,6 @@ func (uc *UserCreate) check() error {
 	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
-	}
-	if _, ok := uc.mutation.HasRestrictedAccess(); !ok {
-		return &ValidationError{Name: "has_restricted_access", err: errors.New(`ent: missing required field "User.has_restricted_access"`)}
 	}
 	return nil
 }
@@ -293,6 +286,12 @@ func (u *UserUpsert) UpdateHasRestrictedAccess() *UserUpsert {
 	return u
 }
 
+// ClearHasRestrictedAccess clears the value of the "has_restricted_access" field.
+func (u *UserUpsert) ClearHasRestrictedAccess() *UserUpsert {
+	u.SetNull(user.FieldHasRestrictedAccess)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -369,6 +368,13 @@ func (u *UserUpsertOne) SetHasRestrictedAccess(v bool) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateHasRestrictedAccess() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateHasRestrictedAccess()
+	})
+}
+
+// ClearHasRestrictedAccess clears the value of the "has_restricted_access" field.
+func (u *UserUpsertOne) ClearHasRestrictedAccess() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearHasRestrictedAccess()
 	})
 }
 
@@ -615,6 +621,13 @@ func (u *UserUpsertBulk) SetHasRestrictedAccess(v bool) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateHasRestrictedAccess() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateHasRestrictedAccess()
+	})
+}
+
+// ClearHasRestrictedAccess clears the value of the "has_restricted_access" field.
+func (u *UserUpsertBulk) ClearHasRestrictedAccess() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearHasRestrictedAccess()
 	})
 }
 
