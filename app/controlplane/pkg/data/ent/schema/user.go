@@ -19,6 +19,8 @@ import (
 	"net/mail"
 	"time"
 
+	"entgo.io/ent/schema/index"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
@@ -47,6 +49,7 @@ func (User) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
+		field.Bool("has_restricted_access").Optional(),
 	}
 }
 
@@ -54,5 +57,11 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("memberships", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+	}
+}
+
+func (User) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("has_restricted_access"),
 	}
 }

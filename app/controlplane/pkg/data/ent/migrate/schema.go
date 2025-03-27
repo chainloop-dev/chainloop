@@ -423,12 +423,20 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "has_restricted_access", Type: field.TypeBool, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_has_restricted_access",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[3]},
+			},
+		},
 	}
 	// WorkflowsColumns holds the columns for the "workflows" table.
 	WorkflowsColumns = []*schema.Column{

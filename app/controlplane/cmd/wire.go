@@ -61,6 +61,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			newCASServerOptions,
+			newAuthAllowList,
 		),
 	)
 }
@@ -94,4 +95,8 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	return &biz.CASServerDefaultOpts{
 		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
 	}
+}
+
+func newAuthAllowList(conf *conf.Bootstrap) *conf.Auth_AllowList {
+	return conf.Auth.GetAllowList()
 }

@@ -17,10 +17,14 @@ package data
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -76,6 +80,63 @@ func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
 	return r.data.DB.User.DeleteOneID(userID).Exec(ctx)
 }
 
+// UpdateAccess updates the access restriction for a user
+func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error {
+	_, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
+	if err != nil {
+		return fmt.Errorf("error updating user access: %w", err)
+	}
+
+	return nil
+}
+
+// FindAll get all users in the system using pagination
+func (r *userRepo) FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*biz.User, int, error) {
+	if pagination == nil {
+		return nil, 0, fmt.Errorf("pagination options is required")
+	}
+
+	baseQuery := r.data.DB.User.Query()
+
+	count, err := baseQuery.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	users, err := baseQuery.
+		Order(ent.Desc(workflow.FieldCreatedAt)).
+		Limit(pagination.Limit()).
+		Offset(pagination.Offset()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]*biz.User, 0, len(users))
+	for _, u := range users {
+		result = append(result, entUserToBizUser(u))
+	}
+
+	return result, count, nil
+}
+
+// CountUsersWithRestrictedOrUnsetAccess returns the number of users with restricted access or unset access
+func (r *userRepo) CountUsersWithRestrictedOrUnsetAccess(ctx context.Context) (int, error) {
+	return r.data.DB.User.Query().
+		Where(
+			user.Or(
+				user.HasRestrictedAccess(true),
+				user.HasRestrictedAccessIsNil(),
+			),
+		).
+		Count(ctx)
+}
+
 func entUserToBizUser(eu *ent.User) *biz.User {
-	return &biz.User{Email: eu.Email, ID: eu.ID.String(), CreatedAt: toTimePtr(eu.CreatedAt)}
+	return &biz.User{
+		Email:               eu.Email,
+		ID:                  eu.ID.String(),
+		CreatedAt:           toTimePtr(eu.CreatedAt),
+		HasRestrictedAccess: eu.HasRestrictedAccess,
+	}
 }
