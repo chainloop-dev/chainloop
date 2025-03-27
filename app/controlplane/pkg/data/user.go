@@ -17,10 +17,14 @@ package data
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -74,6 +78,66 @@ func (r *userRepo) FindByID(ctx context.Context, userID uuid.UUID) (*biz.User, e
 
 func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
 	return r.data.DB.User.DeleteOneID(userID).Exec(ctx)
+}
+
+// UpdateAccess updates the access restriction for a user
+func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error {
+	_, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
+	if err != nil {
+		return fmt.Errorf("error updating user access: %w", err)
+	}
+
+	return nil
+}
+
+// FindAll get all users in the system using pagination
+func (r *userRepo) FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*biz.User, int, error) {
+	if pagination == nil {
+		return nil, 0, fmt.Errorf("pagination options is required")
+	}
+
+	baseQuery := r.data.DB.User.Query()
+
+	count, err := baseQuery.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	users, err := baseQuery.
+		Order(ent.Desc(workflow.FieldCreatedAt)).
+		Limit(pagination.Limit()).
+		Offset(pagination.Offset()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]*biz.User, 0, len(users))
+	for _, u := range users {
+		result = append(result, entUserToBizUser(u))
+	}
+
+	return result, count, nil
+}
+
+// CountUsersWithRestrictedAccess returns the number of users with restricted access
+func (r *userRepo) CountUsersWithRestrictedAccess(ctx context.Context) (int, error) {
+	return r.data.DB.User.Query().
+		Where(user.HasRestrictedAccess(true)).
+		Count(ctx)
+}
+
+// UpdateAllUsersAccess updates the access restriction for all users
+func (r *userRepo) UpdateAllUsersAccess(ctx context.Context, isAccessRestricted bool) error {
+	_, err := r.data.DB.User.Update().
+		Where(user.HasRestrictedAccess(!isAccessRestricted)).
+		SetHasRestrictedAccess(isAccessRestricted).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("error updating all users access: %w", err)
+	}
+
+	return nil
 }
 
 func entUserToBizUser(eu *ent.User) *biz.User {

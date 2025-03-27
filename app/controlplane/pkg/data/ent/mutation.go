@@ -10141,18 +10141,19 @@ func (m *RobotAccountMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *uuid.UUID
-	email              *string
-	created_at         *time.Time
-	clearedFields      map[string]struct{}
-	memberships        map[uuid.UUID]struct{}
-	removedmemberships map[uuid.UUID]struct{}
-	clearedmemberships bool
-	done               bool
-	oldValue           func(context.Context) (*User, error)
-	predicates         []predicate.User
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	email                 *string
+	created_at            *time.Time
+	has_restricted_access *bool
+	clearedFields         map[string]struct{}
+	memberships           map[uuid.UUID]struct{}
+	removedmemberships    map[uuid.UUID]struct{}
+	clearedmemberships    bool
+	done                  bool
+	oldValue              func(context.Context) (*User, error)
+	predicates            []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -10331,6 +10332,42 @@ func (m *UserMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (m *UserMutation) SetHasRestrictedAccess(b bool) {
+	m.has_restricted_access = &b
+}
+
+// HasRestrictedAccess returns the value of the "has_restricted_access" field in the mutation.
+func (m *UserMutation) HasRestrictedAccess() (r bool, exists bool) {
+	v := m.has_restricted_access
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHasRestrictedAccess returns the old "has_restricted_access" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldHasRestrictedAccess(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHasRestrictedAccess is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHasRestrictedAccess requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHasRestrictedAccess: %w", err)
+	}
+	return oldValue.HasRestrictedAccess, nil
+}
+
+// ResetHasRestrictedAccess resets all changes to the "has_restricted_access" field.
+func (m *UserMutation) ResetHasRestrictedAccess() {
+	m.has_restricted_access = nil
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
 func (m *UserMutation) AddMembershipIDs(ids ...uuid.UUID) {
 	if m.memberships == nil {
@@ -10419,12 +10456,15 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.email != nil {
 		fields = append(fields, user.FieldEmail)
 	}
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
+	}
+	if m.has_restricted_access != nil {
+		fields = append(fields, user.FieldHasRestrictedAccess)
 	}
 	return fields
 }
@@ -10438,6 +10478,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Email()
 	case user.FieldCreatedAt:
 		return m.CreatedAt()
+	case user.FieldHasRestrictedAccess:
+		return m.HasRestrictedAccess()
 	}
 	return nil, false
 }
@@ -10451,6 +10493,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldEmail(ctx)
 	case user.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case user.FieldHasRestrictedAccess:
+		return m.OldHasRestrictedAccess(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -10473,6 +10517,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case user.FieldHasRestrictedAccess:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHasRestrictedAccess(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
@@ -10528,6 +10579,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case user.FieldHasRestrictedAccess:
+		m.ResetHasRestrictedAccess()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

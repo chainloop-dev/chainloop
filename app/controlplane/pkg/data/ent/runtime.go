@@ -217,6 +217,10 @@ func init() {
 	userDescCreatedAt := userFields[2].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
+	// userDescHasRestrictedAccess is the schema descriptor for has_restricted_access field.
+	userDescHasRestrictedAccess := userFields[3].Descriptor()
+	// user.DefaultHasRestrictedAccess holds the default value on creation for the has_restricted_access field.
+	user.DefaultHasRestrictedAccess = userDescHasRestrictedAccess.Default.(bool)
 	// userDescID is the schema descriptor for id field.
 	userDescID := userFields[1].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.

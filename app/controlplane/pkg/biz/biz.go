@@ -53,6 +53,7 @@ var ProviderSet = wire.NewSet(
 	NewProjectVersionUseCase,
 	NewProjectsUseCase,
 	NewAuditorUseCase,
+	NewUserAccessSyncerUseCase,
 	wire.Bind(new(PromObservable), new(*PrometheusUseCase)),
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),

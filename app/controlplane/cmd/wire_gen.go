@@ -287,7 +287,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
 	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, bootstrap)
+	auth_AllowList := newAuthAllowList(bootstrap)
+	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, auth_AllowList)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, userAccessSyncerUseCase, bootstrap)
 	return mainApp, func() {
 		cleanup()
 	}, nil
@@ -326,4 +328,8 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	return &biz.CASServerDefaultOpts{
 		DefaultEntryMaxSize: in.GetDefaultEntryMaxSize(),
 	}
+}
+
+func newAuthAllowList(conf2 *conf.Bootstrap) *conf.Auth_AllowList {
+	return conf2.Auth.GetAllowList()
 }

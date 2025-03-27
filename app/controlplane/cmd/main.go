@@ -62,7 +62,9 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer, expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase, cfg *conf.Bootstrap) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
+	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase,
+	userAccessSyncer *biz.UserAccessSyncerUseCase, cfg *conf.Bootstrap) *app {
 	servers := []transport.Server{gs, hs, ms}
 	if cfg.EnableProfiler {
 		servers = append(servers, profilerSvc)
@@ -76,7 +78,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(servers...),
-		), expirer, plugins, tokenSync}
+		), expirer, plugins, tokenSync, userAccessSyncer}
 }
 
 func main() {
@@ -158,6 +160,13 @@ func main() {
 		}
 	}()
 
+	// Sync user access
+	go func() {
+		if err := app.userAccessSyncer.StartSyncingUserAccess(ctx); err != nil {
+			_ = logger.Log(log.LevelError, "msg", "syncing user access", "error", err)
+		}
+	}()
+
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
 		panic(err)
@@ -170,6 +179,7 @@ type app struct {
 	runsExpirer      *biz.WorkflowRunExpirerUseCase
 	availablePlugins sdk.AvailablePlugins
 	tokenAuthSyncer  *biz.APITokenSyncerUseCase
+	userAccessSyncer *biz.UserAccessSyncerUseCase
 }
 
 // Connection to nats is optional, if not configured, pubsub will be disabled

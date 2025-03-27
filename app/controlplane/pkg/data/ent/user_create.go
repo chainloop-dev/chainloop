@@ -45,6 +45,20 @@ func (uc *UserCreate) SetNillableCreatedAt(t *time.Time) *UserCreate {
 	return uc
 }
 
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (uc *UserCreate) SetHasRestrictedAccess(b bool) *UserCreate {
+	uc.mutation.SetHasRestrictedAccess(b)
+	return uc
+}
+
+// SetNillableHasRestrictedAccess sets the "has_restricted_access" field if the given value is not nil.
+func (uc *UserCreate) SetNillableHasRestrictedAccess(b *bool) *UserCreate {
+	if b != nil {
+		uc.SetHasRestrictedAccess(*b)
+	}
+	return uc
+}
+
 // SetID sets the "id" field.
 func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
 	uc.mutation.SetID(u)
@@ -113,6 +127,10 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := uc.mutation.HasRestrictedAccess(); !ok {
+		v := user.DefaultHasRestrictedAccess
+		uc.mutation.SetHasRestrictedAccess(v)
+	}
 	if _, ok := uc.mutation.ID(); !ok {
 		v := user.DefaultID()
 		uc.mutation.SetID(v)
@@ -131,6 +149,9 @@ func (uc *UserCreate) check() error {
 	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
+	}
+	if _, ok := uc.mutation.HasRestrictedAccess(); !ok {
+		return &ValidationError{Name: "has_restricted_access", err: errors.New(`ent: missing required field "User.has_restricted_access"`)}
 	}
 	return nil
 }
@@ -175,6 +196,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := uc.mutation.HasRestrictedAccess(); ok {
+		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
+		_node.HasRestrictedAccess = value
 	}
 	if nodes := uc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -256,6 +281,18 @@ func (u *UserUpsert) UpdateEmail() *UserUpsert {
 	return u
 }
 
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (u *UserUpsert) SetHasRestrictedAccess(v bool) *UserUpsert {
+	u.Set(user.FieldHasRestrictedAccess, v)
+	return u
+}
+
+// UpdateHasRestrictedAccess sets the "has_restricted_access" field to the value that was provided on create.
+func (u *UserUpsert) UpdateHasRestrictedAccess() *UserUpsert {
+	u.SetExcluded(user.FieldHasRestrictedAccess)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -318,6 +355,20 @@ func (u *UserUpsertOne) SetEmail(v string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateEmail() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateEmail()
+	})
+}
+
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (u *UserUpsertOne) SetHasRestrictedAccess(v bool) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetHasRestrictedAccess(v)
+	})
+}
+
+// UpdateHasRestrictedAccess sets the "has_restricted_access" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateHasRestrictedAccess() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateHasRestrictedAccess()
 	})
 }
 
@@ -550,6 +601,20 @@ func (u *UserUpsertBulk) SetEmail(v string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateEmail() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateEmail()
+	})
+}
+
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (u *UserUpsertBulk) SetHasRestrictedAccess(v bool) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetHasRestrictedAccess(v)
+	})
+}
+
+// UpdateHasRestrictedAccess sets the "has_restricted_access" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateHasRestrictedAccess() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateHasRestrictedAccess()
 	})
 }
 

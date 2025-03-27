@@ -18,11 +18,12 @@ package usercontext
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 )
@@ -53,7 +54,7 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 			}
 
 			// If there are not items in the allowList we allow all users
-			allow, err := inAllowList(allowList.GetRules(), user.Email)
+			allow, err := biz.UserEmailInAllowlist(allowList.GetRules(), user.Email)
 			if err != nil {
 				return nil, v1.ErrorAllowListErrorNotInList("error checking user in allowList: %v", err)
 			}
@@ -82,39 +83,4 @@ func selectedRoute(ctx context.Context, selectedRoutes []string) bool {
 	}
 
 	return false
-}
-
-func inAllowList(allowList []string, email string) (bool, error) {
-	for _, allowListEntry := range allowList {
-		// it's a direct email match
-		if allowListEntry == email {
-			return true, nil
-		}
-
-		// Check if the entry is a domain and the email is part of it
-		// extract the domain from the allowList entry
-		// i.e if the entry is @cyberdyne.io, we get cyberdyne.io
-		domainComponent := strings.Split(allowListEntry, "@")
-		if len(domainComponent) != 2 {
-			return false, fmt.Errorf("invalid domain entry: %q", allowListEntry)
-		}
-
-		// it's not a domain since it contains an username, then continue
-		if domainComponent[0] != "" {
-			continue
-		}
-
-		// Compare the domains
-		emailComponents := strings.Split(email, "@")
-		if len(emailComponents) != 2 {
-			return false, fmt.Errorf("invalid email: %q", email)
-		}
-
-		// check if against a potential domain entry in the allowList
-		if emailComponents[1] == domainComponent[1] {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

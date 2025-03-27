@@ -44,6 +44,20 @@ func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
 	return uu
 }
 
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (uu *UserUpdate) SetHasRestrictedAccess(b bool) *UserUpdate {
+	uu.mutation.SetHasRestrictedAccess(b)
+	return uu
+}
+
+// SetNillableHasRestrictedAccess sets the "has_restricted_access" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableHasRestrictedAccess(b *bool) *UserUpdate {
+	if b != nil {
+		uu.SetHasRestrictedAccess(*b)
+	}
+	return uu
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (uu *UserUpdate) AddMembershipIDs(ids ...uuid.UUID) *UserUpdate {
 	uu.mutation.AddMembershipIDs(ids...)
@@ -143,6 +157,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
+	if value, ok := uu.mutation.HasRestrictedAccess(); ok {
+		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
+	}
 	if uu.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -220,6 +237,20 @@ func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
 func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetEmail(*s)
+	}
+	return uuo
+}
+
+// SetHasRestrictedAccess sets the "has_restricted_access" field.
+func (uuo *UserUpdateOne) SetHasRestrictedAccess(b bool) *UserUpdateOne {
+	uuo.mutation.SetHasRestrictedAccess(b)
+	return uuo
+}
+
+// SetNillableHasRestrictedAccess sets the "has_restricted_access" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableHasRestrictedAccess(b *bool) *UserUpdateOne {
+	if b != nil {
+		uuo.SetHasRestrictedAccess(*b)
 	}
 	return uuo
 }
@@ -352,6 +383,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.HasRestrictedAccess(); ok {
+		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
 	}
 	if uuo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

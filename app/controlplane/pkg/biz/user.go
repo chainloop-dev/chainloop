@@ -26,6 +26,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -41,6 +43,10 @@ type UserRepo interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
 	Delete(ctx context.Context, userID uuid.UUID) error
+	FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*User, int, error)
+	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error
+	CountUsersWithRestrictedAccess(ctx context.Context) (int, error)
+	UpdateAllUsersAccess(ctx context.Context, isAccessRestricted bool) error
 }
 
 type UserOrgFinder interface {

@@ -19,6 +19,8 @@ const (
 	FieldEmail = "email"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldHasRestrictedAccess holds the string denoting the has_restricted_access field in the database.
+	FieldHasRestrictedAccess = "has_restricted_access"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// Table holds the table name of the user in the database.
@@ -37,6 +39,7 @@ var Columns = []string{
 	FieldID,
 	FieldEmail,
 	FieldCreatedAt,
+	FieldHasRestrictedAccess,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -54,6 +57,8 @@ var (
 	EmailValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultHasRestrictedAccess holds the default value on creation for the "has_restricted_access" field.
+	DefaultHasRestrictedAccess bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -74,6 +79,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByHasRestrictedAccess orders the results by the has_restricted_access field.
+func ByHasRestrictedAccess(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHasRestrictedAccess, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

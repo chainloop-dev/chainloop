@@ -66,6 +66,11 @@ func CreatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// HasRestrictedAccess applies equality check predicate on the "has_restricted_access" field. It's identical to HasRestrictedAccessEQ.
+func HasRestrictedAccess(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldHasRestrictedAccess, v))
+}
+
 // EmailEQ applies the EQ predicate on the "email" field.
 func EmailEQ(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldEmail, v))
@@ -169,6 +174,16 @@ func CreatedAtLT(v time.Time) predicate.User {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// HasRestrictedAccessEQ applies the EQ predicate on the "has_restricted_access" field.
+func HasRestrictedAccessEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldHasRestrictedAccess, v))
+}
+
+// HasRestrictedAccessNEQ applies the NEQ predicate on the "has_restricted_access" field.
+func HasRestrictedAccessNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldHasRestrictedAccess, v))
 }
 
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.
