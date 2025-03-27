@@ -69,8 +69,8 @@ func (u *UserAccessSyncerUseCase) StartSyncingUserAccess(ctx context.Context) er
 
 // updateUserAccessBasedOnAllowList updates the access restriction status of all users based on the allowlist
 func (u *UserAccessSyncerUseCase) updateUserAccessBasedOnAllowList(ctx context.Context) error {
-	// Count the number of users with restricted access
-	usersWithRestrictedAccess, err := u.userRepo.CountUsersWithRestrictedAccess(ctx)
+	// Count the number of users with restricted access or brand-new users where its access has not been set yet
+	usersWithRestrictedAccess, err := u.userRepo.CountUsersWithRestrictedOrUnsetAccess(ctx)
 	if err != nil {
 		return fmt.Errorf("count users with access: %w", err)
 	}

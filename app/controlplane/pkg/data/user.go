@@ -120,10 +120,15 @@ func (r *userRepo) FindAll(ctx context.Context, pagination *pagination.OffsetPag
 	return result, count, nil
 }
 
-// CountUsersWithRestrictedAccess returns the number of users with restricted access
-func (r *userRepo) CountUsersWithRestrictedAccess(ctx context.Context) (int, error) {
+// CountUsersWithRestrictedOrUnsetAccess returns the number of users with restricted access or unset access
+func (r *userRepo) CountUsersWithRestrictedOrUnsetAccess(ctx context.Context) (int, error) {
 	return r.data.DB.User.Query().
-		Where(user.HasRestrictedAccess(true)).
+		Where(
+			user.Or(
+				user.HasRestrictedAccess(true),
+				user.HasRestrictedAccessIsNil(),
+			),
+		).
 		Count(ctx)
 }
 
