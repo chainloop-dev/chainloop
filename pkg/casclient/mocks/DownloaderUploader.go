@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	casclient "github.com/chainloop-dev/chainloop/internal/casclient"
+	casclient "github.com/chainloop-dev/chainloop/pkg/casclient"
 
 	io "io"
 
