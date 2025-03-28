@@ -299,13 +299,6 @@ func uploadSBOMRequest(host *url.URL, apiKey string, values map[string]io.Reader
 	return resp, nil
 }
 
-type listProjectsResponseItem struct {
-	ID   string `json:"uuid"`
-	Name string
-}
-
-type listProjectsResponse []listProjectsResponseItem
-
 // We are listing projects instead of accessing a specific one to enable
 // son in the future listing and selection in the UI
 func projectExists(host *url.URL, apiKey string, projectID string) (bool, error) {
