@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -136,20 +136,9 @@ func (d *SBOMUploader) Validate(ctx context.Context) error {
 	}
 
 	// Check if the project or parent project exists
-	var projectFound bool
-	projects, err := listProjects(d.host, d.apiKey)
-	if err != nil {
+	if projectFound, err := projectExists(d.host, d.apiKey, existingProjectID); err != nil {
 		return fmt.Errorf("checking that the project exists: %w", err)
-	}
-
-	for _, p := range projects {
-		if p.ID == existingProjectID {
-			projectFound = true
-			break
-		}
-	}
-
-	if !projectFound {
+	} else if !projectFound {
 		return fmt.Errorf("project with ID %q not found", existingProjectID)
 	}
 
@@ -319,36 +308,26 @@ type listProjectsResponse []listProjectsResponseItem
 
 // We are listing projects instead of accessing a specific one to enable
 // son in the future listing and selection in the UI
-func listProjects(host *url.URL, apiKey string) (listProjectsResponse, error) {
-	apiEndpoint := host.JoinPath("/api/v1/project")
+func projectExists(host *url.URL, apiKey string, projectID string) (bool, error) {
+	apiEndpoint := host.JoinPath(fmt.Sprintf("/api/v1/project/%s", projectID))
 
 	req, err := http.NewRequest(http.MethodGet, apiEndpoint.String(), nil)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	req.Header.Set("X-Api-Key", apiKey)
 	// Submit the request
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	// Check the response
 	if res.StatusCode != http.StatusOK {
 		err = fmt.Errorf("bad status: %s", res.Status)
-		return nil, err
+		return false, err
 	}
 
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := make([]listProjectsResponseItem, 0)
-	if err := json.Unmarshal(resBody, &resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return true, nil
 }
