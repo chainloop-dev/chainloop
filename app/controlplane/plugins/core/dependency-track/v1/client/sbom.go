@@ -317,10 +317,12 @@ func projectExists(host *url.URL, apiKey string, projectID string) (bool, error)
 	}
 
 	// Check the response
-	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("bad status: %s", res.Status)
-		return false, err
+	switch res.StatusCode {
+	case http.StatusOK:
+		return true, nil
+	case http.StatusNotFound:
+		return false, nil
+	default:
+		return false, fmt.Errorf("bad status: %s", res.Status)
 	}
-
-	return true, nil
 }
