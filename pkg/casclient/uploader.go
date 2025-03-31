@@ -103,6 +103,9 @@ doUpload:
 				ResourceName: resource,
 				FinishWrite:  true,
 			}); err != nil {
+				if errors.Is(err, io.EOF) {
+					break doUpload
+				}
 				return nil, fmt.Errorf("sending the finished upload message %w", err)
 			}
 			break
