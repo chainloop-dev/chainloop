@@ -103,6 +103,7 @@ doUpload:
 				ResourceName: resource,
 				FinishWrite:  true,
 			}); err != nil {
+				// EOF might be returned when the CAS backend detects a duplicated upload, skipping it in that case
 				if errors.Is(err, io.EOF) {
 					break doUpload
 				}
