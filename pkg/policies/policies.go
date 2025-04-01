@@ -174,7 +174,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	if !scriptApplicableFound {
-		pv.logger.Debug().Msgf("policy %s explicitily ignored by definition", policy.Metadata.Name)
+		pv.logger.Debug().Msgf("policy %s explicitly ignored by definition", policy.Metadata.Name)
 		return nil, nil
 	}
 
