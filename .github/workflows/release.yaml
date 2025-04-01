@@ -111,7 +111,7 @@ jobs:
             if [[ $entry != *latest ]]; then
               material_name="$(echo $entry | sed 's#.*/##')"
           
-              syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json --select-catalogers -file $entry
+              syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
               chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
               chainloop attestation add --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
           
