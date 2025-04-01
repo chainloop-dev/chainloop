@@ -6,7 +6,6 @@ result := {
 	"skipped": skipped,
 	"violations": violations,
 	"skip_reason": skip_reason,
-	"applicable": applicable,
 }
 
 default skip_reason := ""
@@ -18,13 +17,7 @@ skip_reason := m if {
 
 default skipped := true
 
-default applicable := true
-
 skipped := false if valid_input
-
-applicable := false if {
-    input.specVersion == "1.0"
-}
 
 violations contains msg if {
 	valid_input

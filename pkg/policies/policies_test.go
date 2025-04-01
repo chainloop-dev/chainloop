@@ -950,33 +950,43 @@ func (s *testSuite) TestComputePolicyArguments() {
 
 func (s *testSuite) TestNewResultFormat() {
 	cases := []struct {
-		name             string
-		policy           string
-		material         string
-		expectErr        bool
-		expectViolations int
-		expectSkipped    bool
-		expectReasons    []string
+		name               string
+		policy             string
+		material           string
+		expectErr          bool
+		expectViolations   int
+		expectSkipped      bool
+		expectedApplicable bool
+		expectReasons      []string
 	}{
 		{
-			name:             "result.violations",
-			policy:           "file://testdata/policy_result_format.yaml",
-			material:         "{\"specVersion\": \"1.4\"}",
-			expectViolations: 1,
+			name:               "result.violations",
+			policy:             "file://testdata/policy_result_format.yaml",
+			material:           "{\"specVersion\": \"1.4\"}",
+			expectViolations:   1,
+			expectedApplicable: true,
 		},
 		{
-			name:          "skip",
-			policy:        "file://testdata/policy_result_format.yaml",
-			material:      "{\"invalid\": \"1.4\"}",
-			expectSkipped: true,
-			expectReasons: []string{"invalid input"},
+			name:               "skip",
+			policy:             "file://testdata/policy_result_format.yaml",
+			material:           "{\"invalid\": \"1.4\"}",
+			expectSkipped:      true,
+			expectReasons:      []string{"invalid input"},
+			expectedApplicable: true,
 		},
 		{
-			name:          "skip multiple",
-			policy:        "file://testdata/policy_result_skipped.yaml",
-			material:      "{}",
-			expectSkipped: true,
-			expectReasons: []string{"this one is skipped", "this is also skipped"},
+			name:               "skip multiple",
+			policy:             "file://testdata/policy_result_skipped.yaml",
+			material:           "{}",
+			expectSkipped:      true,
+			expectReasons:      []string{"this one is skipped", "this is also skipped"},
+			expectedApplicable: true,
+		},
+		{
+			name:               "not applicable",
+			policy:             "file://testdata/policy_not_applicable.yaml",
+			material:           "{\"specVersion\": \"1.0\"}",
+			expectedApplicable: false,
 		},
 	}
 
@@ -1011,6 +1021,12 @@ func (s *testSuite) TestNewResultFormat() {
 
 			if tc.expectErr {
 				s.Error(err)
+				return
+			}
+
+			if !tc.expectedApplicable {
+				s.Nil(err)
+				s.Equal([]*v1.PolicyEvaluation{}, res)
 				return
 			}
 
@@ -1084,6 +1100,99 @@ func (s *testSuite) TestContainerMaterial() {
 			s.Equal(tc.expectSkipped, res[0].Skipped)
 			if len(res[0].SkipReasons) > 0 {
 				s.Equal(res[0].SkipReasons, tc.expectReasons)
+			}
+		})
+	}
+}
+
+func (s *testSuite) TestMultiKindApplicable() {
+	cases := []struct {
+		name                  string
+		policy                string
+		material              string
+		expectErr             bool
+		expectedEvaluations   int
+		expectSkipped         bool
+		expectReasons         []string
+		expectedNotApplicable bool
+	}{
+		{
+			name:                "scripts applicable and skipped",
+			policy:              "file://testdata/policy_multi_kind_applicable.yaml",
+			material:            "{\"specVersion\": \"1.4\"}",
+			expectedEvaluations: 1,
+			expectSkipped:       true,
+			expectReasons:       []string{"this on is skipped"},
+		},
+		{
+			name:                  "scripts not applicable",
+			policy:                "file://testdata/policy_multi_kind_applicable.yaml",
+			material:              "{\"specVersion\": \"1.0\"}",
+			expectedEvaluations:   0,
+			expectedNotApplicable: true,
+		},
+		{
+			name:                "all scripts applicable",
+			policy:              "file://testdata/policy_multi_kind_applicable.yaml",
+			material:            "{\"specVersion\": \"1.4\"}",
+			expectedEvaluations: 1,
+			expectSkipped:       false,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{
+				Materials: []*v12.CraftingSchema_Material{
+					{
+						Name: "sbom",
+						Type: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+					},
+				},
+				Policies: &v12.Policies{
+					Materials: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: tc.policy},
+						},
+					},
+				},
+			}
+
+			material := &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+					Content: []byte(tc.material),
+				}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				InlineCas:    true,
+			}
+
+			if tc.expectedNotApplicable {
+				material.MaterialType = v12.CraftingSchema_Material_SARIF
+			}
+
+			if tc.name == "all scripts applicable" {
+				material.MaterialType = v12.CraftingSchema_Material_OPENVEX
+			}
+
+			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			if tc.expectedNotApplicable {
+				s.Nil(err)
+				s.Len(res, tc.expectedEvaluations)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(res, tc.expectedEvaluations)
+			s.Equal(tc.expectSkipped, res[0].Skipped)
+			if len(res[0].SkipReasons) > 0 {
+				s.Equal(tc.expectReasons, res[0].SkipReasons)
 			}
 		})
 	}

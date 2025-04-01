@@ -1,0 +1,16 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: sbom-quality
+  description: This policy group applies a number of SBOM-related policies
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    materials:
+      - type: SBOM_CYCLONEDX_JSON
+        policies:
+          - ref: file://testdata/policy_not_applicable.yaml
+      - type: OPENVEX
+        policies:
+          - ref: file://testdata/policy_openvex_applicable.yaml

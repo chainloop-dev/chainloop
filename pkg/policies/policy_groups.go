@@ -87,6 +87,11 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 				return nil, NewPolicyError(err)
 			}
 
+			if ev == nil {
+				// no evaluation, skip
+				continue
+			}
+
 			// Assign group reference to this evaluation
 			ev.GroupReference = &api.PolicyEvaluation_Reference{
 				Name:    group.GetMetadata().GetName(),
@@ -131,6 +136,11 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			)
 			if err != nil {
 				return nil, NewPolicyError(err)
+			}
+
+			if ev == nil {
+				// no evaluation, skip
+				continue
 			}
 
 			// Assign group reference to this evaluation

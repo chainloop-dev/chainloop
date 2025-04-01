@@ -1,0 +1,47 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: policy-result-format
+  description: Policy with new result format
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": skipped,
+          "violations": violations,
+          "skip_reason": skip_reason,
+          "applicable": applicable,
+        }
+        
+        default skip_reason := ""
+        
+        skip_reason := m if {
+          not valid_input
+          m := "invalid input"
+        }
+        
+        default skipped := true
+        default applicable := true
+        
+        skipped := false if valid_input
+        
+        applicable := false if {
+          input.specVersion == "1.0"
+        }
+        
+        violations contains msg if {
+          valid_input
+          input.specVersion != "1.5"
+          msg := sprintf("wrong CycloneDX version. Expected 1.5, but it was %s", [input.specVersion])
+        }
+        
+        valid_input if {
+          input.specVersion
+        }

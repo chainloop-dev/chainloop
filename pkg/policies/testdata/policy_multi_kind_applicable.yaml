@@ -1,0 +1,69 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: multikindapplicable
+  description: multikind policy
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    - kind: SARIF
+      embedded: |
+        package main
+
+        import rego.v1
+
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": "this one is not applicable",
+          "applicable": false,
+        }
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": "this one is not applicable",
+          "applicable": false,
+        }
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": "this on is skipped",
+          "applicable": true,
+        }
+    - kind: OPENVEX
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": [],
+          "skip_reason": "",
+          "applicable": true,
+        }
+    - kind: OPENVEX
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": [],
+          "skip_reason": "",
+          "applicable": true,
+        }

@@ -270,6 +270,85 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 	}
 }
 
+func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
+	cases := []struct {
+		name                  string
+		policyGroup           string
+		material              string
+		expectErr             bool
+		expectedEvaluations   int
+		expectSkipped         bool
+		expectReasons         []string
+		expectedNotApplicable bool
+	}{
+		{
+			name:                  "not evaluation results, not applicable",
+			policyGroup:           "file://testdata/policy_group_multikind.yaml",
+			material:              "{\"specVersion\": \"1.0\"}",
+			expectedEvaluations:   0,
+			expectedNotApplicable: true,
+		},
+		{
+			name:                  "evaluation results, applicable",
+			policyGroup:           "file://testdata/policy_group_multikind.yaml",
+			material:              "{\"specVersion\": \"1.4\"}",
+			expectedEvaluations:   1,
+			expectedNotApplicable: false,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v1.CraftingSchema{
+				Materials: []*v1.CraftingSchema_Material{
+					{
+						Name: "sbom",
+						Type: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+					},
+				},
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{
+						Ref: tc.policyGroup,
+					},
+				},
+			}
+
+			material := &api.Attestation_Material{
+				M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{
+					Content: []byte(tc.material),
+				}},
+				MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				InlineCas:    true,
+			}
+
+			if !tc.expectedNotApplicable {
+				material.MaterialType = v1.CraftingSchema_Material_OPENVEX
+			}
+
+			verifier := NewPolicyGroupVerifier(schema, nil, &s.logger)
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			if tc.expectedNotApplicable {
+				s.Nil(err)
+				s.Len(res, tc.expectedEvaluations)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(res, tc.expectedEvaluations)
+			s.Equal(tc.expectSkipped, res[0].Skipped)
+			if len(res[0].SkipReasons) > 0 {
+				s.Equal(tc.expectReasons, res[0].SkipReasons)
+			}
+		})
+	}
+}
+
 func (s *groupsTestSuite) TestGroupInputs() {
 	cases := []struct {
 		name         string

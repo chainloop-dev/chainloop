@@ -193,6 +193,7 @@ func TestRego_ResultFormat(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, result.Skipped)
 		assert.Equal(t, "invalid input", result.SkipReason)
+		assert.True(t, result.Applicable)
 	})
 
 	t.Run("valid input, no violations", func(t *testing.T) {
@@ -200,6 +201,7 @@ func TestRego_ResultFormat(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, result.Skipped)
 		assert.Len(t, result.Violations, 0)
+		assert.True(t, result.Applicable)
 	})
 
 	t.Run("valid input, violations", func(t *testing.T) {
@@ -208,6 +210,33 @@ func TestRego_ResultFormat(t *testing.T) {
 		assert.False(t, result.Skipped)
 		assert.Len(t, result.Violations, 1)
 		assert.Equal(t, "wrong CycloneDX version. Expected 1.5, but it was 1.4", result.Violations[0].Violation)
+		assert.True(t, result.Applicable)
+	})
+
+	t.Run("valid input, not applicable", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte("{\"specVersion\": \"1.0\"}"), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Skipped)
+		assert.Len(t, result.Violations, 1)
+		assert.Equal(t, "wrong CycloneDX version. Expected 1.5, but it was 1.0", result.Violations[0].Violation)
+		assert.False(t, result.Applicable)
+	})
+}
+
+func TestRego_ResultFormatWithoutApplicability(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/result_format_without_applicability.rego")
+	require.NoError(t, err)
+
+	r := &Rego{}
+	policy := &engine.Policy{
+		Name:   "result-output",
+		Source: regoContent,
+	}
+
+	t.Run("by default return always applicability to true", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
+		require.NoError(t, err)
+		assert.True(t, result.Applicable)
 	})
 }
 
