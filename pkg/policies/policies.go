@@ -151,8 +151,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 			return nil, NewPolicyError(err)
 		}
 
-		// Skip if the script is telling us to specifically to ignore it, it basically skips adding the script to the
-		// evaluation results
+		// Skip if the script explicitly instructs us to ignore it, effectively preventing it from being added to the evaluation results
 		if r.Ignore {
 			continue
 		}

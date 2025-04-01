@@ -223,7 +223,7 @@ func TestRego_ResultFormat(t *testing.T) {
 	})
 }
 
-func TestRego_ResultFormatWithoutApplicability(t *testing.T) {
+func TestRego_ResultFormatWithoutIgnoreValue(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/result_format_without_ignore.rego")
 	require.NoError(t, err)
 
