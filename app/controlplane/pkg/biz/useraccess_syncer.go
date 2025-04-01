@@ -49,20 +49,18 @@ func (u *UserAccessSyncerUseCase) StartSyncingUserAccess(ctx context.Context) er
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
+	u.logger.Infow("msg", "syncing user access")
+
 	for {
 		select {
 		case <-ctx.Done():
 			u.logger.Infow("msg", "stopping user access sync")
 			return nil
 		case <-ticker.C:
-			u.logger.Infow("msg", "Syncing user access")
-
 			// Update the access restriction status of all users based on the allowlist
 			if err := u.updateUserAccessBasedOnAllowList(ctx); err != nil {
 				return fmt.Errorf("update user access based on allow list: %w", err)
 			}
-
-			u.logger.Infow("msg", "User access synced")
 		}
 	}
 }
