@@ -950,43 +950,43 @@ func (s *testSuite) TestComputePolicyArguments() {
 
 func (s *testSuite) TestNewResultFormat() {
 	cases := []struct {
-		name               string
-		policy             string
-		material           string
-		expectErr          bool
-		expectViolations   int
-		expectSkipped      bool
-		expectedApplicable bool
-		expectReasons      []string
+		name             string
+		policy           string
+		material         string
+		expectErr        bool
+		expectViolations int
+		expectSkipped    bool
+		expectIgnore     bool
+		expectReasons    []string
 	}{
 		{
-			name:               "result.violations",
-			policy:             "file://testdata/policy_result_format.yaml",
-			material:           "{\"specVersion\": \"1.4\"}",
-			expectViolations:   1,
-			expectedApplicable: true,
+			name:             "result.violations",
+			policy:           "file://testdata/policy_result_format.yaml",
+			material:         "{\"specVersion\": \"1.4\"}",
+			expectViolations: 1,
+			expectIgnore:     false,
 		},
 		{
-			name:               "skip",
-			policy:             "file://testdata/policy_result_format.yaml",
-			material:           "{\"invalid\": \"1.4\"}",
-			expectSkipped:      true,
-			expectReasons:      []string{"invalid input"},
-			expectedApplicable: true,
+			name:          "skip",
+			policy:        "file://testdata/policy_result_format.yaml",
+			material:      "{\"invalid\": \"1.4\"}",
+			expectSkipped: true,
+			expectReasons: []string{"invalid input"},
+			expectIgnore:  false,
 		},
 		{
-			name:               "skip multiple",
-			policy:             "file://testdata/policy_result_skipped.yaml",
-			material:           "{}",
-			expectSkipped:      true,
-			expectReasons:      []string{"this one is skipped", "this is also skipped"},
-			expectedApplicable: true,
+			name:          "skip multiple",
+			policy:        "file://testdata/policy_result_skipped.yaml",
+			material:      "{}",
+			expectSkipped: true,
+			expectReasons: []string{"this one is skipped", "this is also skipped"},
+			expectIgnore:  false,
 		},
 		{
-			name:               "not applicable",
-			policy:             "file://testdata/policy_not_applicable.yaml",
-			material:           "{\"specVersion\": \"1.0\"}",
-			expectedApplicable: false,
+			name:         "ignore",
+			policy:       "file://testdata/policy_with_ignore.yaml",
+			material:     "{\"specVersion\": \"1.0\"}",
+			expectIgnore: true,
 		},
 	}
 
@@ -1024,7 +1024,7 @@ func (s *testSuite) TestNewResultFormat() {
 				return
 			}
 
-			if !tc.expectedApplicable {
+			if tc.expectIgnore {
 				s.Nil(err)
 				s.Equal([]*v1.PolicyEvaluation{}, res)
 				return
@@ -1105,35 +1105,35 @@ func (s *testSuite) TestContainerMaterial() {
 	}
 }
 
-func (s *testSuite) TestMultiKindApplicable() {
+func (s *testSuite) TestMultiKindAWithIgnore() {
 	cases := []struct {
-		name                  string
-		policy                string
-		material              string
-		expectErr             bool
-		expectedEvaluations   int
-		expectSkipped         bool
-		expectReasons         []string
-		expectedNotApplicable bool
+		name                string
+		policy              string
+		material            string
+		expectErr           bool
+		expectedEvaluations int
+		expectSkipped       bool
+		expectReasons       []string
+		expecteIgnore       bool
 	}{
 		{
-			name:                "scripts applicable and skipped",
-			policy:              "file://testdata/policy_multi_kind_applicable.yaml",
+			name:                "scripts should not be ignored and skipped",
+			policy:              "file://testdata/policy_multi_kind_with_ignore.yaml",
 			material:            "{\"specVersion\": \"1.4\"}",
 			expectedEvaluations: 1,
 			expectSkipped:       true,
 			expectReasons:       []string{"this on is skipped"},
 		},
 		{
-			name:                  "scripts not applicable",
-			policy:                "file://testdata/policy_multi_kind_applicable.yaml",
-			material:              "{\"specVersion\": \"1.0\"}",
-			expectedEvaluations:   0,
-			expectedNotApplicable: true,
+			name:                "scripts should be ignored",
+			policy:              "file://testdata/policy_multi_kind_with_ignore.yaml",
+			material:            "{\"specVersion\": \"1.0\"}",
+			expectedEvaluations: 0,
+			expecteIgnore:       true,
 		},
 		{
-			name:                "all scripts applicable",
-			policy:              "file://testdata/policy_multi_kind_applicable.yaml",
+			name:                "all scripts should not be ignored",
+			policy:              "file://testdata/policy_multi_kind_with_ignore.yaml",
 			material:            "{\"specVersion\": \"1.4\"}",
 			expectedEvaluations: 1,
 			expectSkipped:       false,
@@ -1166,11 +1166,11 @@ func (s *testSuite) TestMultiKindApplicable() {
 				InlineCas:    true,
 			}
 
-			if tc.expectedNotApplicable {
+			if tc.expecteIgnore {
 				material.MaterialType = v12.CraftingSchema_Material_SARIF
 			}
 
-			if tc.name == "all scripts applicable" {
+			if tc.name == "all scripts should not be ignored" {
 				material.MaterialType = v12.CraftingSchema_Material_OPENVEX
 			}
 
@@ -1182,7 +1182,7 @@ func (s *testSuite) TestMultiKindApplicable() {
 				return
 			}
 
-			if tc.expectedNotApplicable {
+			if tc.expecteIgnore {
 				s.Nil(err)
 				s.Len(res, tc.expectedEvaluations)
 				return

@@ -1,7 +1,7 @@
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-  name: multikindapplicable
+  name: multikindignore
   description: multikind policy
   annotations:
     category: SBOM
@@ -16,8 +16,8 @@ spec:
         result := {
           "skipped": true,
           "violations": [],
-          "skip_reason": "this one is not applicable",
-          "applicable": false,
+          "skip_reason": "this one should be ignored",
+          "ignore": true,
         }
     - kind: SBOM_CYCLONEDX_JSON
       embedded: |
@@ -28,8 +28,8 @@ spec:
         result := {
           "skipped": true,
           "violations": [],
-          "skip_reason": "this one is not applicable",
-          "applicable": false,
+          "skip_reason": "this one should be ignored",
+          "ignore": true,
         }
     - kind: SBOM_CYCLONEDX_JSON
       embedded: |
@@ -41,7 +41,7 @@ spec:
           "skipped": true,
           "violations": [],
           "skip_reason": "this on is skipped",
-          "applicable": true,
+          "ignore": false,
         }
     - kind: OPENVEX
       embedded: |
@@ -53,7 +53,7 @@ spec:
           "skipped": false,
           "violations": [],
           "skip_reason": "",
-          "applicable": true,
+          "ignore": false,
         }
     - kind: OPENVEX
       embedded: |
@@ -65,5 +65,5 @@ spec:
           "skipped": false,
           "violations": [],
           "skip_reason": "",
-          "applicable": true,
+          "ignore": false,
         }

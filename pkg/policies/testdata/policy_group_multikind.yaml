@@ -10,7 +10,7 @@ spec:
     materials:
       - type: SBOM_CYCLONEDX_JSON
         policies:
-          - ref: file://testdata/policy_not_applicable.yaml
+          - ref: file://testdata/policy_with_ignore.yaml
       - type: OPENVEX
         policies:
-          - ref: file://testdata/policy_openvex_applicable.yaml
+          - ref: file://testdata/policy_openvex_no_ignore.yaml

@@ -144,7 +144,6 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
 	skipped := true
-	scriptApplicableFound := false
 	reasons := make([]string, 0)
 	for _, script := range scripts {
 		r, err := pv.executeScript(ctx, policy, script, material, args)
@@ -152,14 +151,11 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 			return nil, NewPolicyError(err)
 		}
 
-		// Skip if the script is not applicable, it basically skips adding the script to the
+		// Skip if the script is telling us to specifically to ignore it, it basically skips adding the script to the
 		// evaluation results
-		if !r.Applicable {
+		if r.Ignore {
 			continue
 		}
-
-		// Mark the script as applicable
-		scriptApplicableFound = true
 
 		// Gather merged results
 		evalResults = append(evalResults, r)
@@ -173,7 +169,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
 	}
 
-	if !scriptApplicableFound {
+	if len(sources) == 0 {
 		pv.logger.Debug().Msgf("policy %s explicitly ignored by definition", policy.Metadata.Name)
 		return nil, nil
 	}

@@ -272,28 +272,28 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 
 func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 	cases := []struct {
-		name                  string
-		policyGroup           string
-		material              string
-		expectErr             bool
-		expectedEvaluations   int
-		expectSkipped         bool
-		expectReasons         []string
-		expectedNotApplicable bool
+		name                string
+		policyGroup         string
+		material            string
+		expectErr           bool
+		expectedEvaluations int
+		expectSkipped       bool
+		expectReasons       []string
+		expectIgnore        bool
 	}{
 		{
-			name:                  "not evaluation results, not applicable",
-			policyGroup:           "file://testdata/policy_group_multikind.yaml",
-			material:              "{\"specVersion\": \"1.0\"}",
-			expectedEvaluations:   0,
-			expectedNotApplicable: true,
+			name:                "not evaluation results, ignore",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			material:            "{\"specVersion\": \"1.0\"}",
+			expectedEvaluations: 0,
+			expectIgnore:        true,
 		},
 		{
-			name:                  "evaluation results, applicable",
-			policyGroup:           "file://testdata/policy_group_multikind.yaml",
-			material:              "{\"specVersion\": \"1.4\"}",
-			expectedEvaluations:   1,
-			expectedNotApplicable: false,
+			name:                "evaluation results, no ignore",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			material:            "{\"specVersion\": \"1.4\"}",
+			expectedEvaluations: 1,
+			expectIgnore:        false,
 		},
 	}
 
@@ -321,7 +321,7 @@ func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 				InlineCas:    true,
 			}
 
-			if !tc.expectedNotApplicable {
+			if !tc.expectIgnore {
 				material.MaterialType = v1.CraftingSchema_Material_OPENVEX
 			}
 
@@ -333,7 +333,7 @@ func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 				return
 			}
 
-			if tc.expectedNotApplicable {
+			if tc.expectIgnore {
 				s.Nil(err)
 				s.Len(res, tc.expectedEvaluations)
 				return

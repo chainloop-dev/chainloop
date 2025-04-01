@@ -29,7 +29,7 @@ type EvaluationResult struct {
 	Violations []*PolicyViolation
 	Skipped    bool
 	SkipReason string
-	Applicable bool
+	Ignore     bool
 }
 
 // PolicyViolation represents a policy failure
