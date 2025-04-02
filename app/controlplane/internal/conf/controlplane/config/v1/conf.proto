@@ -94,7 +94,10 @@ message Bootstrap {
   message NatsServer {
     // Connection URI
     string uri = 1 [(buf.validate.field).string.min_len = 1];
-    // TODO: add authentication options
+    oneof authentication {
+      // Token based authentication
+      string token = 2 [(buf.validate.field).string.min_len = 1];
+    }
   }
 }
 
