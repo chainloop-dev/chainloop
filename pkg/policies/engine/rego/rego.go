@@ -166,6 +166,7 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 		Violations: violations,
 		Skipped:    false, // best effort
 		SkipReason: "",
+		Ignore:     false, // Assume old rules should not be ignored
 	}, nil
 }
 
@@ -189,6 +190,11 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 				reason = val
 			}
 
+			var ignore bool
+			if val, ok := ruleResult["ignore"].(bool); ok {
+				ignore = val
+			}
+
 			violations, ok := ruleResult["violations"].([]any)
 			if !ok {
 				return nil, engine.ResultFormatError{Field: "violations"}
@@ -196,6 +202,7 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 
 			result.Skipped = skipped
 			result.SkipReason = reason
+			result.Ignore = ignore
 
 			for _, violation := range violations {
 				vs, ok := violation.(string)

@@ -956,6 +956,7 @@ func (s *testSuite) TestNewResultFormat() {
 		expectErr        bool
 		expectViolations int
 		expectSkipped    bool
+		expectIgnore     bool
 		expectReasons    []string
 	}{
 		{
@@ -963,6 +964,7 @@ func (s *testSuite) TestNewResultFormat() {
 			policy:           "file://testdata/policy_result_format.yaml",
 			material:         "{\"specVersion\": \"1.4\"}",
 			expectViolations: 1,
+			expectIgnore:     false,
 		},
 		{
 			name:          "skip",
@@ -970,6 +972,7 @@ func (s *testSuite) TestNewResultFormat() {
 			material:      "{\"invalid\": \"1.4\"}",
 			expectSkipped: true,
 			expectReasons: []string{"invalid input"},
+			expectIgnore:  false,
 		},
 		{
 			name:          "skip multiple",
@@ -977,6 +980,13 @@ func (s *testSuite) TestNewResultFormat() {
 			material:      "{}",
 			expectSkipped: true,
 			expectReasons: []string{"this one is skipped", "this is also skipped"},
+			expectIgnore:  false,
+		},
+		{
+			name:         "ignore",
+			policy:       "file://testdata/policy_with_ignore.yaml",
+			material:     "{\"specVersion\": \"1.0\"}",
+			expectIgnore: true,
 		},
 	}
 
@@ -1011,6 +1021,12 @@ func (s *testSuite) TestNewResultFormat() {
 
 			if tc.expectErr {
 				s.Error(err)
+				return
+			}
+
+			if tc.expectIgnore {
+				s.Nil(err)
+				s.Equal([]*v1.PolicyEvaluation{}, res)
 				return
 			}
 
@@ -1084,6 +1100,99 @@ func (s *testSuite) TestContainerMaterial() {
 			s.Equal(tc.expectSkipped, res[0].Skipped)
 			if len(res[0].SkipReasons) > 0 {
 				s.Equal(res[0].SkipReasons, tc.expectReasons)
+			}
+		})
+	}
+}
+
+func (s *testSuite) TestMultiKindAWithIgnore() {
+	cases := []struct {
+		name                string
+		policy              string
+		material            string
+		expectErr           bool
+		expectedEvaluations int
+		expectSkipped       bool
+		expectReasons       []string
+		expecteIgnore       bool
+	}{
+		{
+			name:                "scripts should not be ignored and skipped",
+			policy:              "file://testdata/policy_multi_kind_with_ignore.yaml",
+			material:            "{\"specVersion\": \"1.4\"}",
+			expectedEvaluations: 1,
+			expectSkipped:       true,
+			expectReasons:       []string{"this on is skipped"},
+		},
+		{
+			name:                "scripts should be ignored",
+			policy:              "file://testdata/policy_multi_kind_with_ignore.yaml",
+			material:            "{\"specVersion\": \"1.0\"}",
+			expectedEvaluations: 0,
+			expecteIgnore:       true,
+		},
+		{
+			name:                "all scripts should not be ignored",
+			policy:              "file://testdata/policy_multi_kind_with_ignore.yaml",
+			material:            "{\"specVersion\": \"1.4\"}",
+			expectedEvaluations: 1,
+			expectSkipped:       false,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{
+				Materials: []*v12.CraftingSchema_Material{
+					{
+						Name: "sbom",
+						Type: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+					},
+				},
+				Policies: &v12.Policies{
+					Materials: []*v12.PolicyAttachment{
+						{
+							Policy: &v12.PolicyAttachment_Ref{Ref: tc.policy},
+						},
+					},
+				},
+			}
+
+			material := &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+					Content: []byte(tc.material),
+				}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				InlineCas:    true,
+			}
+
+			if tc.expecteIgnore {
+				material.MaterialType = v12.CraftingSchema_Material_SARIF
+			}
+
+			if tc.name == "all scripts should not be ignored" {
+				material.MaterialType = v12.CraftingSchema_Material_OPENVEX
+			}
+
+			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			if tc.expecteIgnore {
+				s.Nil(err)
+				s.Len(res, tc.expectedEvaluations)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(res, tc.expectedEvaluations)
+			s.Equal(tc.expectSkipped, res[0].Skipped)
+			if len(res[0].SkipReasons) > 0 {
+				s.Equal(tc.expectReasons, res[0].SkipReasons)
 			}
 		})
 	}

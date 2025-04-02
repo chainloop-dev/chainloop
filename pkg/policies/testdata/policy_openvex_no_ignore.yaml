@@ -1,0 +1,33 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: multikindignore
+  description: multikind policy
+  annotations:
+    category: SBOM
+spec:
+  policies:
+    - kind: OPENVEX
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": [],
+          "skip_reason": "",
+          "ignore": false,
+        }
+    - kind: OPENVEX
+      embedded: |
+        package main
+        
+        import rego.v1
+        
+        result := {
+          "skipped": false,
+          "violations": [],
+          "skip_reason": "",
+          "ignore": false,
+        }

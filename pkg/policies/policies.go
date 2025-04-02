@@ -95,7 +95,9 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 			return nil, NewPolicyError(err)
 		}
 
-		result = append(result, ev)
+		if ev != nil {
+			result = append(result, ev)
+		}
 	}
 
 	return result, nil
@@ -149,6 +151,11 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 			return nil, NewPolicyError(err)
 		}
 
+		// Skip if the script explicitly instructs us to ignore it, effectively preventing it from being added to the evaluation results
+		if r.Ignore {
+			continue
+		}
+
 		// Gather merged results
 		evalResults = append(evalResults, r)
 
@@ -159,6 +166,11 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		// Skipped = false if any of the evaluations was not skipped
 		skipped = skipped && r.Skipped
 		sources = append(sources, base64.StdEncoding.EncodeToString(script.Source))
+	}
+
+	if len(sources) == 0 {
+		pv.logger.Debug().Msgf("policy %s explicitly ignored by definition", policy.Metadata.Name)
+		return nil, nil
 	}
 
 	var evaluationSources []string
@@ -263,7 +275,9 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 			return nil, NewPolicyError(err)
 		}
 
-		result = append(result, ev)
+		if ev != nil {
+			result = append(result, ev)
+		}
 	}
 
 	return result, nil
