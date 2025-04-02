@@ -144,7 +144,7 @@ esac
 
 # Check desired version. Default to latest if no desired version was requested
 if [[ $VERSION = "" ]]; then
-   VERSION=$(curl -so- https://github.com/chainloop-dev/chainloop/releases | grep 'href="/chainloop-dev/chainloop/releases/tag/v[0-9]*.[0-9]*.[0-9]*\"' | sed -E 's/.*\/chainloop-dev\/chainloop\/releases\/tag\/(v[0-9\.]+)".*/\1/g' | head -1)
+   VERSION=$(curl -so- https://github.com/chainloop-dev/chainloop/releases | grep -E 'href="/chainloop-dev/chainloop/releases/tag/v[0-9]+\.[0-9]+\.[0-9]+(-rc(\.[0-9]+)+)?"' | sed -E 's/.*\/chainloop-dev\/chainloop\/releases\/tag\/(v[0-9]+\.[0-9]+\.[0-9]+(-rc(\.[0-9]+)+)?)".*/\1/g' | head -1)
    # Remove v prefix
    VERSION="$(echo ${VERSION} | sed -e 's/^v\(.*\)/\1/')"
 fi
