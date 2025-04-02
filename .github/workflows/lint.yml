@@ -31,14 +31,14 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Lint main module
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # 6.5.2
         if: ${{ matrix.app == 'main-module' }}
         with:
           version: v1.60.3
           only-new-issues: 'true'
 
       - name: Lint ${{ matrix.app }}
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # 6.5.2
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
@@ -75,7 +75,7 @@ jobs:
           make -C extras/dagger module-init
 
       - name: Lint
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # 6.5.2
         with:
           working-directory: extras/dagger
           version: v1.60.3
