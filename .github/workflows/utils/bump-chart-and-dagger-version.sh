@@ -45,11 +45,11 @@ fi
 # AppVersion represents the container version
 sed -i "s#^appVersion:.*#appVersion: ${semVer}#g" "${chart_yaml}"
 # We want to also replace the images annotation tags
-sed -i "s/:v[0-9\.]*/:${semVer}/g" "${chart_yaml}"
+sed -i "s/:v.*/:${semVer}/g" "${chart_yaml}"
 
 ## Changes images in Values.yaml
 sed -i "s/tag: .*/tag: \"${semVer}\"/g" "${values_yaml}"
 
 ## Update Dagger version
-sed -i "s/chainloopVersion = \"v[0-9\.]*\"/chainloopVersion = \"${semVer}\"/" "${dagger_main}"
+sed -i "s/chainloopVersion = v.*\"/chainloopVersion = \"${semVer}\"/" "${dagger_main}"
 
