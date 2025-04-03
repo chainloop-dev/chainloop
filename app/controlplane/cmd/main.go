@@ -189,7 +189,17 @@ func newNatsConnection(c *conf.Bootstrap_NatsServer) (*nats.Conn, error) {
 		return nil, nil
 	}
 
-	nc, err := nats.Connect(uri)
+	var opts []nats.Option
+	if c.GetAuthentication() != nil {
+		switch c.GetAuthentication().(type) {
+		case *conf.Bootstrap_NatsServer_Token:
+			opts = append(opts, nats.Token(c.GetToken()))
+		default:
+			return nil, fmt.Errorf("unsupported nats authentication type: %T", c.GetAuthentication())
+		}
+	}
+
+	nc, err := nats.Connect(uri, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to nats: %w", err)
 	}

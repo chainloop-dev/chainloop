@@ -181,10 +181,12 @@ controlplane:
   ## @param controlplane.nats.enabled Enable events publishing through a Nats stream
   ## @param controlplane.nats.host NATS Host
   ## @param controlplane.nats.port NATS Port
+  ## @param controlplane.nats.token NATS Client authentication token
   nats:
     enabled: false
     host: ""
     port: 4222
+    token: ""
 
   ## @extra controlplane.onboarding.name Name of the organization to onboard
   ## @extra controlplane.onboarding.role Role of the organization to onboard
