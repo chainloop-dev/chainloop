@@ -65,7 +65,7 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 					msg = allowList.GetCustomMessage()
 				}
 
-				return nil, v1.ErrorAllowListErrorNotInList(msg)
+				return nil, v1.ErrorAllowListErrorNotInList("%s", msg)
 			}
 
 			return handler(ctx, req)

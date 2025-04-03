@@ -26,23 +26,23 @@ jobs:
     steps:
       - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.23.6"
+          go-version: "1.24.2"
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Lint main module
-        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
+        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
         if: ${{ matrix.app == 'main-module' }}
         with:
-          version: v1.60.3
+          version: v2.0.2
           only-new-issues: 'true'
 
       - name: Lint ${{ matrix.app }}
-        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
+        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
-          version: v1.60.3
+          version: v2.0.2
           only-new-issues: 'true'
 
   lint-protos:
@@ -62,11 +62,11 @@ jobs:
         run: |
           mkdir -p ~/.local/bin
           cd ~/.local
-          curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.15.1  sh
+          curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.18.1  sh
 
       - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.23.6"
+          go-version: "1.24.2"
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -75,8 +75,8 @@ jobs:
           make -C extras/dagger module-init
 
       - name: Lint
-        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
+        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
         with:
           working-directory: extras/dagger
-          version: v1.60.3
+          version: v2.0.2
           only-new-issues: 'true'
