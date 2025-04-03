@@ -97,7 +97,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 	err = s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase, biz.WithAttStateBaseDigest(req.GetBaseDigest()))
 	if err != nil {
 		if biz.IsErrAttestationStateConflict(err) {
-			return nil, cpAPI.ErrorAttestationStateErrorConflict(err.Error())
+			return nil, cpAPI.ErrorAttestationStateErrorConflict("saving attestation: %w", err.Error())
 		}
 
 		return nil, handleUseCaseErr(err, s.log)
