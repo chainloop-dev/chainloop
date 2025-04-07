@@ -62,6 +62,15 @@ archives:
     # Override default to not to include the readme nor license file
     files:
       - none*
+  # Include the plain binaries of the CLI for the release without version
+  - format: binary
+    id: binaries-cli
+    name_template: "{{ .Binary }}-{{ .Os }}-{{ .Arch }}"
+    builds:
+      - cli
+    # Override default to not to include the readme nor license file
+    files:
+      - none*
 
 checksum:
   name_template: "checksums.txt"
