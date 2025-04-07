@@ -15,6 +15,7 @@ PUBLIC_KEY_URL="https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13
 
 # Constants
 GITHUB_BASE_URL="https://github.com/chainloop-dev/chainloop/releases/download"
+GITHUB_LATEST_RELEASE_URL="https://github.com/chainloop-dev/chainloop/releases/latest"
 
 # Print in colors - 0=green, 1=red, 2=neutral
 # e.g. fancy_print 0 "All is great"
@@ -84,13 +85,12 @@ check_if_legacy_installation() {
     CHECKSUM_FILE="$TMP_DIR/${CHECKSUM_FILENAME}"
     curl -fsL "$URL" -o "${CHECKSUM_FILE}" || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
 
-   grep -q "chainloop-cli-${VERSION}-${OS}-${ARC}.tar.gz" "$CHECKSUM_FILE" && echo "true" || echo "false"
+    grep -q "chainloop-cli-${VERSION}-${OS}-${ARC}.tar.gz" "$CHECKSUM_FILE" && echo "true" || echo "false"
 }
 
 # Get the latest version from the GitHub releases page
 get_latest_version() {
-    local latest_url="https://github.com/chainloop-dev/chainloop/releases/latest"
-    curl -sI -o /dev/null -w '%{redirect_url}' "$latest_url" | sed -n 's#.*/tag/\(v.*\)#\1#p'
+    curl -sI -o /dev/null -w '%{redirect_url}' "$GITHUB_LATEST_RELEASE_URL" | sed -n 's#.*/tag/\(v.*\)#\1#p'
 }
 
 # Download the checksum file and verify it
