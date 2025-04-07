@@ -44,6 +44,8 @@ jobs:
       contents: write # required for goreleaser to upload the release assets
       packages: write # to push container images
       pull-requests: write
+      id-token: write # required for SLSA provenance
+      attestations: write # required for SLSA provenance
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
@@ -99,6 +101,11 @@ jobs:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_ENDPOINT: ${{ secrets.POSTHOG_ENDPOINT }}
+
+      - name: Build SLSA Attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/**/*
 
       - name: Generate SBOMs, upload to release and attest
         id: attest_goreleaser
