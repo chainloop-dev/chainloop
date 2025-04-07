@@ -129,7 +129,7 @@ jobs:
             # Format as chainloop-OS-ARCH
             material_name="chainloop-$os_arch"
 
-            chainloop attestation add --name $material_name --value $entry --kind ARTIFACT
+            chainloop attestation add --name $material_name --value $entry --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
           done
 
       - name: Bump Chart and Dagger Version
