@@ -13,6 +13,9 @@ FORCE_VERIFICATION=false
 INSTALL_PATH=/usr/local/bin
 PUBLIC_KEY_URL="https://raw.githubusercontent.com/chainloop-dev/chainloop/01ad13af08950b7bfbc83569bea207aeb4e1a285/docs/static/cosign-releases.pub"
 
+# Constants
+GITHUB_BASE_URL="https://github.com/chainloop-dev/chainloop/releases/download"
+
 # Print in colors - 0=green, 1=red, 2=neutral
 # e.g. fancy_print 0 "All is great"
 fancy_print() {
@@ -66,6 +69,138 @@ validate_checksums_file() {
     return 1
   fi
   fancy_print 2 "Checksum OK\n"
+}
+
+# Check legacy installations downloads and inspects the checksum.txt file
+# New Chainloop releases does not include the .tar.gz files for the CLI anymore
+# and instead provides a single binary file for each OS and architecture that can be downloaded
+# directly.
+check_if_legacy_installation() {
+    local TMP_DIR=$1
+    local CHECKSUM_FILE="${TMP_DIR}/checksums.txt"
+    local URL="${GITHUB_BASE_URL}/v${VERSION}/checksums.txt"
+
+    CHECKSUM_FILENAME=checksums.txt
+    CHECKSUM_FILE="$TMP_DIR/${CHECKSUM_FILENAME}"
+    curl -fsL "$URL" -o "${CHECKSUM_FILE}" || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
+
+   grep -q "chainloop-cli-${VERSION}-${OS}-${ARC}.tar.gz" "$CHECKSUM_FILE" && echo "true" || echo "false"
+}
+
+# Get the latest version from the GitHub releases page
+get_latest_version() {
+    local latest_url="https://github.com/chainloop-dev/chainloop/releases/latest"
+    curl -sI -o /dev/null -w '%{redirect_url}' "$latest_url" | sed -n 's#.*/tag/\(v.*\)#\1#p'
+}
+
+# Download the checksum file and verify it
+download_and_check_checksum() {
+    local TMP_DIR=$1
+    local BASE_URL=$2
+
+    CHECKSUM_FILENAME=checksums.txt
+    CHECKSUM_FILE="$TMP_DIR/${CHECKSUM_FILENAME}"
+    URL="$BASE_URL/${CHECKSUM_FILENAME}"
+    curl -fsL "$URL" -o "${CHECKSUM_FILE}" || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
+    validate_checksums_file "${TMP_DIR}" checksums.txt
+
+    # Verify checksum file signature
+    if hash "cosign" &>/dev/null; then
+        # Constructing download FILE and URL
+        SIGNATURE_FILE="${CHECKSUM_FILENAME}.sig"
+        URL="$BASE_URL/${SIGNATURE_FILE}"
+        # Download file, exit if not found - e.g. version does not exist
+        fancy_print 0 "Step 1.3: Verifying signature"
+        curl -fsOL "$URL" || (fancy_print 1 "The requested file does not exist: ${SIGNATURE_FILE}"; exit 1)
+        cosign verify-blob --key ${PUBLIC_KEY_URL} --signature ${SIGNATURE_FILE} "${CHECKSUM_FILE}"
+
+        rm $SIGNATURE_FILE
+    else
+        fancy_print 2 "\nSignature verification skipped, cosign is not installed\n"
+    fi
+}
+
+cleanup() {
+    local tmp_dir=$1
+    rm -rf "$tmp_dir"
+    fancy_print 0 "Done...\n"
+}
+
+install_binary() {
+    local binary_path=$1
+    install "$binary_path" "${INSTALL_PATH}/" 2>/dev/null || sudo install "$binary_path" "${INSTALL_PATH}/"
+}
+
+post_install_message() {
+    "${INSTALL_PATH}/chainloop" version
+    fancy_print 2 "Check here for the next steps: https://docs.chainloop.dev\n"
+    fancy_print 2 "Run 'chainloop auth login' to get started"
+}
+
+download_and_install_legacy() {
+  local TMP_DIR=$1
+  FILENAME="chainloop-cli-${VERSION}-${OS}-${ARC}.tar.gz"
+  # Constructing download FILE and URL
+  FILE="$TMP_DIR/${FILENAME}"
+
+  BASE_URL="${GITHUB_BASE_URL}/v${VERSION}"
+
+  URL="${BASE_URL}/${FILENAME}"
+  # Download file, exit if not found - e.g. version does not exist
+  fancy_print 0 "Step 1: Downloading: ${FILENAME}"
+  curl -fsL "$URL" -o "$FILE" || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
+  fancy_print 0 "Done...\n"
+
+  # Get checksum file and check it
+  fancy_print 0 "Step 1.2: Verifying checksum"
+  download_and_check_checksum "$TMP_DIR" "$BASE_URL"
+
+  # Decompress the file
+  fancy_print 0 "Step 2: Decompressing: ${FILE}"
+  (cd "${TMP_DIR}" && tar xf "$FILE")
+  fancy_print 0 "Done...\n"
+
+  # Install
+  fancy_print 0 "Step 3: Installing: chainloop in path ${INSTALL_PATH}"
+  install_binary "${TMP_DIR}/chainloop"
+
+  # Remove the compressed file
+  fancy_print 0 "Step 4: Cleanup"
+  cleanup "$TMP_DIR"
+
+  post_install_message
+}
+
+download_and_install() {
+    local TMP_DIR=$1
+    BASE_URL="${GITHUB_BASE_URL}/v${VERSION}"
+
+    FILENAME="chainloop-${OS}-${ARC}"
+    # Constructing download FILE and URL
+    FILE="$TMP_DIR/${FILENAME}"
+
+    URL="${BASE_URL}/${FILENAME}"
+    # Download file, exit if not found - e.g. version does not exist
+    fancy_print 0 "Step 1: Downloading: ${FILENAME}, Version: ${VERSION}"
+    curl -fsL "$URL" -o "$FILE" || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
+    fancy_print 0 "Done...\n"
+
+    # Get checksum file and check it
+    fancy_print 0 "Step 1.2: Verifying checksum"
+    download_and_check_checksum "$TMP_DIR" "$BASE_URL"
+
+    # Modify the name of the binary
+    # From chainloop-OS-ARCH to chainloop
+    cp "${FILE}" "chainloop"
+
+    # Install
+    fancy_print 0 "Step 2: Installing: chainloop to ${INSTALL_PATH}"
+    install_binary "${TMP_DIR}/chainloop"
+
+    fancy_print 0 "Step 3: Cleanup"
+    cleanup "$TMP_DIR"
+
+    post_install_message
 }
 
 # Parse input arguments
@@ -143,69 +278,15 @@ case $OSTYPE in
 esac
 
 # Check desired version. Default to latest if no desired version was requested
-if [[ $VERSION = "" ]]; then
-   VERSION=$(curl -so- https://github.com/chainloop-dev/chainloop/releases | grep -E 'href="/chainloop-dev/chainloop/releases/tag/v[0-9]+\.[0-9]+\.[0-9]+(-rc(\.[0-9]+)+)?"' | sed -E 's/.*\/chainloop-dev\/chainloop\/releases\/tag\/(v[0-9]+\.[0-9]+\.[0-9]+(-rc(\.[0-9]+)+)?)".*/\1/g' | head -1)
-   # Remove v prefix
-   VERSION="$(echo ${VERSION} | sed -e 's/^v\(.*\)/\1/')"
-fi
+# Remove v prefix
+VERSION="${VERSION:-$(get_latest_version | sed 's/^v//')}"
 
 # Temporary directory, works on Linux and macOS
 TMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
-FILENAME="chainloop-cli-${VERSION}-${OS}-${ARC}.tar.gz"
-# Constructing download FILE and URL
-FILE="${TMP_DIR}/${FILENAME}"
 
-BASE_URL="https://github.com/chainloop-dev/chainloop/releases/download/v${VERSION}"
-
-URL="${BASE_URL}/${FILENAME}"
-# Download file, exit if not found - e.g. version does not exist
-fancy_print 0 "Step 1: Downloading: ${FILENAME}"
-curl -fsL $URL -o $FILE || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
-fancy_print 0 "Done...\n"
-
-# Get checksum file and check it
-fancy_print 0 "Step 1.2: Verifying checksum"
-CHECKSUM_FILENAME=checksums.txt
-CHECKSUM_FILE="${TMP_DIR}/${CHECKSUM_FILENAME}"
-URL="${BASE_URL}/${CHECKSUM_FILENAME}"
-curl -fsL $URL -o ${CHECKSUM_FILE} || (fancy_print 1 "The requested file does not exist: ${URL}"; exit 1)
-validate_checksums_file "${TMP_DIR}" checksums.txt
-
-# Verify checksum file signature
-if hash "cosign" &>/dev/null; then
-    # Constructing download FILE and URL
-    SIGNATURE_FILE="${CHECKSUM_FILENAME}.sig"
-    URL="${BASE_URL}/${SIGNATURE_FILE}"
-    # Download file, exit if not found - e.g. version does not exist
-    fancy_print 0 "Step 1.3: Verifying signature"
-    curl -fsOL $URL || (fancy_print 1 "The requested file does not exist: ${SIGNATURE_FILE}"; exit 1)
-    cosign verify-blob \
-        --key ${PUBLIC_KEY_URL} \
-        --signature ${SIGNATURE_FILE} \
-        ${CHECKSUM_FILE}
-
-    rm $SIGNATURE_FILE
+# Decide which method to use to install Chainloop
+if [[ $(check_if_legacy_installation "$TMP_DIR") == "true" ]]; then
+    download_and_install_legacy "$TMP_DIR"
 else
-    fancy_print 2 "\nSignature verification skipped, cosign is not installed\n"
+    download_and_install "$TMP_DIR"
 fi
-
-# Decompress the file
-fancy_print 0 "Step 2: Decompressing: ${FILE}"
-BINARY_NAME="chainloop"
-BINARY="${TMP_DIR}/chainloop"
-(cd ${TMP_DIR} && tar xf $FILE)
-fancy_print 0 "Done...\n"
-
-# Install
-fancy_print 0 "Step 3: Installing: ${BINARY_NAME} in path ${INSTALL_PATH}"
-install "${BINARY}" "${INSTALL_PATH}/" 2> /dev/null || sudo install "${BINARY}" "${INSTALL_PATH}/"
-
-# Remove the compressed file
-fancy_print 0 "Step 4: Cleanup"
-rm -r ${TMP_DIR}
-fancy_print 0 "Done...\n"
-${INSTALL_PATH}/${BINARY_NAME} version
-
-
-fancy_print 2 "Check here for the next steps: https://docs.chainloop.dev\n"
-fancy_print 2 "Run '${BINARY_NAME} auth login' to get started"
