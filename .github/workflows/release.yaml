@@ -120,6 +120,18 @@ jobs:
             fi
           done
 
+          # Attest the cli binaries
+          binaries=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Binary" and .extra.ID!="binaries-cli") | select(.path | startswith("dist/cli"))  | .path')
+          echo "$binaries" | while IFS= read -r entry; do
+            # Extract OS and ARCH
+            os_arch=$(echo "$entry" | sed -E 's|dist/cli_([^_]+)_([^/_]+).*|\1-\2|')
+
+            # Format as chainloop-OS-ARCH
+            material_name="chainloop-$os_arch"
+
+            chainloop attestation add --name $material_name --value $entry --kind ARTIFACT
+          done
+
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
       - name: Bump Project Version
