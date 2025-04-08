@@ -139,6 +139,7 @@ post_install_message() {
 
 download_and_install_legacy() {
   local TMP_DIR=$1
+  local VERSION=$2
   FILENAME="chainloop-cli-${VERSION}-${OS}-${ARC}.tar.gz"
   # Constructing download FILE and URL
   FILE="$TMP_DIR/${FILENAME}"
@@ -173,6 +174,7 @@ download_and_install_legacy() {
 
 download_and_install() {
     local TMP_DIR=$1
+    local VERSION=$2
     BASE_URL="${GITHUB_BASE_URL}/v${VERSION}"
 
     FILENAME="chainloop-${OS}-${ARC}"
@@ -286,7 +288,7 @@ TMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
 
 # Decide which method to use to install Chainloop
 if [[ $(check_if_legacy_installation "$TMP_DIR") == "true" ]]; then
-    download_and_install_legacy "$TMP_DIR"
+    download_and_install_legacy "$TMP_DIR" "$VERSION"
 else
-    download_and_install "$TMP_DIR"
+    download_and_install "$TMP_DIR" "$VERSION"
 fi
