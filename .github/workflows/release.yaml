@@ -136,6 +136,11 @@ jobs:
 
       - name: Calculate checksum for SLSA attestation
         run: |
+          # We're generating a checksum file for the SLSA attestation as a workaround for the current limitations of the SLSA attestation action.
+          # Until it's possible to include multiple container images and binaries in a single attestation, this approach serves as a temporary solution.
+          # An open issue suggests that if pushing the attestation to an OCI registry isn't required, using a checksum file is a valid alternative.
+          # Link: https://github.com/actions/attest-build-provenance/issues/454
+
           # Create an empty checksum file
           checksum_file="subjects-checksum.txt"
           touch "$checksum_file"
