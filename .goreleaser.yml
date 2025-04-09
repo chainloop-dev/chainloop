@@ -56,13 +56,6 @@ builds:
     targets:
       - linux_amd64
 archives:
-  - builds:
-      - cli
-    name_template: "chainloop-cli-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
-    # Override default to not to include the readme nor license file
-    files:
-      - none*
-  # Include the plain binaries of the CLI for the release without version
   - format: binary
     id: binaries-cli
     name_template: "{{ .Binary }}-{{ .Os }}-{{ .Arch }}"
