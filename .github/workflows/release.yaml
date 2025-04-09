@@ -167,7 +167,7 @@ jobs:
             echo "$digest  $name" >> $checksum_file
           done
 
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         id: slsa-attest
         with:
           subject-checksums: subjects-checksum.txt
