@@ -44,6 +44,8 @@ jobs:
       contents: write # required for goreleaser to upload the release assets
       packages: write # to push container images
       pull-requests: write
+      id-token: write # required for SLSA provenance
+      attestations: write # required for SLSA provenance
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
@@ -131,6 +133,43 @@ jobs:
 
             chainloop attestation add --name $material_name --value $entry --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
           done
+
+      - name: Calculate checksum for SLSA attestation
+        run: |
+          # Create an empty checksum file
+          checksum_file="subjects-checksum.txt"
+          touch "$checksum_file"
+
+          # First the binaries
+          binaries=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Binary") | select(.name=="chainloop"| not) | "\(.path) \(.name)"')
+          echo "$binaries" | while IFS= read -r entry; do
+            # Extract the path and name from the entry
+            path=$(echo "$entry" | awk '{print $1}')
+            # Calculate the checksum of the file
+            checksum=$(sha256sum "$path" | awk '{print $1}')
+            # Get the name from the entry
+            name=$(echo "$entry" | awk '{print $2}')
+            # Add it to the checksum file
+            echo "$checksum  *$name" >> $checksum_file
+          done
+
+          # Then the docker images
+          images=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Docker Manifest") | select(.name | endswith(":latest") | not) | "\(.extra.Digest | split("sha256:")[1]) \(.name)"')
+          echo "$images" | while IFS= read -r entry; do
+            # Extract the digest and name from the entry
+            name=$(echo "$entry" | awk '{print $2}')
+            digest=$(echo "$entry" | awk '{print $1}')
+            echo "$digest  $name" >> $checksum_file
+          done
+
+      - uses: actions/attest-build-provenance@v2
+        id: slsa-attest
+        with:
+          subject-checksums: subjects-checksum.txt
+
+      - name: Attest SLSA attestation
+        run: |
+          chainloop attestation --name slsa-attestation add --value ${{ steps.slsa-attest.outputs.bundle-path }} --kind SLSA_PROVENANCE --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
