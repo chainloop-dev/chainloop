@@ -176,6 +176,13 @@ jobs:
         run: |
           chainloop attestation --name slsa-attestation add --value ${{ steps.slsa-attest.outputs.bundle-path }} --kind SLSA_PROVENANCE --attestation-id ${{ env.ATTESTATION_ID }}
 
+      - name: Include source code on attestation
+        run: |
+            # This needs to run AFTER goreleaser to make sure the source code is available
+
+            gh release download ${{ github.ref_name }} -A tar.gz -O source-code.tar.gz
+            chainloop attestation add --name source-code --value source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
+
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
       - name: Bump Project Version
