@@ -216,8 +216,11 @@ jobs:
           chainloop attestation push --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
           attestation_sha=$(chainloop wf run describe --id ${{ needs.init_attestation.outputs.attestation_id }} -o json | jq -r '.attestation.digest')
           # check that the command succeeded
-          [ -n "$attestation_sha" ] || exit 1
-          echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
+          if [ -n "$attestation_sha" ]; then
+            echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
