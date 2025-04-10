@@ -32,7 +32,7 @@ jobs:
 
       - name: Install Chainloop
         run: |
-          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/f7696675cb9b4a4ad1133ec5755225a287f00c0a/docs/static/install.sh | bash -s
+          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/8a12fce328929abf012c96a07bddfeaf94c74ed4/docs/static/install.sh | bash -s
 
       - name: Initialize Attestation
         run: |
