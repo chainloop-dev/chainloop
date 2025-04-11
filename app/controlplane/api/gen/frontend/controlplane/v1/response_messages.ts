@@ -408,6 +408,7 @@ export interface PolicyReference {
   name: string;
   digest: { [key: string]: string };
   organization: string;
+  uri: string;
 }
 
 export interface PolicyReference_DigestEntry {
@@ -2581,7 +2582,7 @@ export const PolicyViolation = {
 };
 
 function createBasePolicyReference(): PolicyReference {
-  return { name: "", digest: {}, organization: "" };
+  return { name: "", digest: {}, organization: "", uri: "" };
 }
 
 export const PolicyReference = {
@@ -2594,6 +2595,9 @@ export const PolicyReference = {
     });
     if (message.organization !== "") {
       writer.uint32(26).string(message.organization);
+    }
+    if (message.uri !== "") {
+      writer.uint32(34).string(message.uri);
     }
     return writer;
   },
@@ -2629,6 +2633,13 @@ export const PolicyReference = {
 
           message.organization = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.uri = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2648,6 +2659,7 @@ export const PolicyReference = {
         }, {})
         : {},
       organization: isSet(object.organization) ? String(object.organization) : "",
+      uri: isSet(object.uri) ? String(object.uri) : "",
     };
   },
 
@@ -2661,6 +2673,7 @@ export const PolicyReference = {
       });
     }
     message.organization !== undefined && (obj.organization = message.organization);
+    message.uri !== undefined && (obj.uri = message.uri);
     return obj;
   },
 
@@ -2678,6 +2691,7 @@ export const PolicyReference = {
       return acc;
     }, {});
     message.organization = object.organization ?? "";
+    message.uri = object.uri ?? "";
     return message;
   },
 };
