@@ -1,4 +1,4 @@
-# Contract for the build-and-package workflow
+# Contract for the release workflow
 schemaVersion: v1
 policies:
   attestation:
