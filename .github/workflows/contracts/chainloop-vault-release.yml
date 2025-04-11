@@ -4,7 +4,7 @@ materials:
   - name: slsa-attestation
     type: SLSA_PROVENANCE
     annotations:
-      - name: githubattestation
+      - name: github_attestation
 policies:
   attestation:
     - ref: source-commit
