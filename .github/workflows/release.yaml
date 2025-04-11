@@ -174,7 +174,7 @@ jobs:
 
       - name: Attest SLSA attestation
         run: |
-          chainloop attestation --name slsa-attestation add --value ${{ steps.slsa-attest.outputs.bundle-path }} --kind SLSA_PROVENANCE --attestation-id ${{ env.ATTESTATION_ID }}
+          chainloop attestation --name slsa-attestation add --value ${{ steps.slsa-attest.outputs.bundle-path }} --annotation github_attestation="${{ steps.slsa-attest.outputs.attestation-url }}" --kind SLSA_PROVENANCE --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Include source code on attestation
         run: |
