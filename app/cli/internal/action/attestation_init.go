@@ -109,19 +109,22 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
 		// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
 		if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
+			var wfContractItem *WorkflowContractItem
 			// the contract might be a file. look for the default name
 			contractWithRevision, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), 0)
 			if err != nil && status.Code(err) == codes.NotFound {
 				// Not found, let's create it
-				_, err := NewWorkflowContractCreate(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), nil, contractRef)
+				wfContractItem, err = NewWorkflowContractCreate(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), nil, contractRef)
 				if err != nil {
 					return "", err
 				}
 			} else if err != nil {
 				return "", err
+			} else {
+				wfContractItem = contractWithRevision.Contract
 			}
 			// it exists, let's update it (chainloop will validate that there is an actual change in the contract file)
-			updateResp, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(contractWithRevision.Contract.Name, &contractWithRevision.Contract.Description, contractRef)
+			updateResp, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(wfContractItem.Name, &wfContractItem.Description, contractRef)
 			if err != nil {
 				return "", err
 			}
