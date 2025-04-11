@@ -112,17 +112,19 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			var wfContractItem *WorkflowContractItem
 			// the contract might be a file. look for the default name
 			contractWithRevision, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), 0)
-			if err != nil && status.Code(err) == codes.NotFound {
+			switch {
+			case err != nil && status.Code(err) == codes.NotFound:
 				// Not found, let's create it
 				wfContractItem, err = NewWorkflowContractCreate(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), nil, contractRef)
 				if err != nil {
 					return "", err
 				}
-			} else if err != nil {
+			case err != nil:
 				return "", err
-			} else {
+			default:
 				wfContractItem = contractWithRevision.Contract
 			}
+
 			// it exists, let's update it (chainloop will validate that there is an actual change in the contract file)
 			updateResp, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(wfContractItem.Name, &wfContractItem.Description, contractRef)
 			if err != nil {
