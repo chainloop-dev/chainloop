@@ -116,6 +116,20 @@ func (pvc *ProjectVersionCreate) SetNillableReleasedAt(t *time.Time) *ProjectVer
 	return pvc
 }
 
+// SetLatest sets the "latest" field.
+func (pvc *ProjectVersionCreate) SetLatest(b bool) *ProjectVersionCreate {
+	pvc.mutation.SetLatest(b)
+	return pvc
+}
+
+// SetNillableLatest sets the "latest" field if the given value is not nil.
+func (pvc *ProjectVersionCreate) SetNillableLatest(b *bool) *ProjectVersionCreate {
+	if b != nil {
+		pvc.SetLatest(*b)
+	}
+	return pvc
+}
+
 // SetID sets the "id" field.
 func (pvc *ProjectVersionCreate) SetID(u uuid.UUID) *ProjectVersionCreate {
 	pvc.mutation.SetID(u)
@@ -201,6 +215,10 @@ func (pvc *ProjectVersionCreate) defaults() {
 		v := projectversion.DefaultWorkflowRunCount
 		pvc.mutation.SetWorkflowRunCount(v)
 	}
+	if _, ok := pvc.mutation.Latest(); !ok {
+		v := projectversion.DefaultLatest
+		pvc.mutation.SetLatest(v)
+	}
 	if _, ok := pvc.mutation.ID(); !ok {
 		v := projectversion.DefaultID()
 		pvc.mutation.SetID(v)
@@ -228,6 +246,9 @@ func (pvc *ProjectVersionCreate) check() error {
 	}
 	if _, ok := pvc.mutation.WorkflowRunCount(); !ok {
 		return &ValidationError{Name: "workflow_run_count", err: errors.New(`ent: missing required field "ProjectVersion.workflow_run_count"`)}
+	}
+	if _, ok := pvc.mutation.Latest(); !ok {
+		return &ValidationError{Name: "latest", err: errors.New(`ent: missing required field "ProjectVersion.latest"`)}
 	}
 	if len(pvc.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectVersion.project"`)}
@@ -291,6 +312,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 	if value, ok := pvc.mutation.ReleasedAt(); ok {
 		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
 		_node.ReleasedAt = value
+	}
+	if value, ok := pvc.mutation.Latest(); ok {
+		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
+		_node.Latest = value
 	}
 	if nodes := pvc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -455,6 +480,18 @@ func (u *ProjectVersionUpsert) ClearReleasedAt() *ProjectVersionUpsert {
 	return u
 }
 
+// SetLatest sets the "latest" field.
+func (u *ProjectVersionUpsert) SetLatest(v bool) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldLatest, v)
+	return u
+}
+
+// UpdateLatest sets the "latest" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdateLatest() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldLatest)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -597,6 +634,20 @@ func (u *ProjectVersionUpsertOne) UpdateReleasedAt() *ProjectVersionUpsertOne {
 func (u *ProjectVersionUpsertOne) ClearReleasedAt() *ProjectVersionUpsertOne {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.ClearReleasedAt()
+	})
+}
+
+// SetLatest sets the "latest" field.
+func (u *ProjectVersionUpsertOne) SetLatest(v bool) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetLatest(v)
+	})
+}
+
+// UpdateLatest sets the "latest" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdateLatest() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateLatest()
 	})
 }
 
@@ -909,6 +960,20 @@ func (u *ProjectVersionUpsertBulk) UpdateReleasedAt() *ProjectVersionUpsertBulk 
 func (u *ProjectVersionUpsertBulk) ClearReleasedAt() *ProjectVersionUpsertBulk {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.ClearReleasedAt()
+	})
+}
+
+// SetLatest sets the "latest" field.
+func (u *ProjectVersionUpsertBulk) SetLatest(v bool) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetLatest(v)
+	})
+}
+
+// UpdateLatest sets the "latest" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdateLatest() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateLatest()
 	})
 }
 

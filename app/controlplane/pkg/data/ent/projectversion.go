@@ -33,6 +33,8 @@ type ProjectVersion struct {
 	WorkflowRunCount int `json:"workflow_run_count,omitempty"`
 	// ReleasedAt holds the value of the "released_at" field.
 	ReleasedAt time.Time `json:"released_at,omitempty"`
+	// Whether this is the latest version of the project
+	Latest bool `json:"latest,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectVersionQuery when eager-loading is set.
 	Edges        ProjectVersionEdges `json:"edges"`
@@ -75,7 +77,7 @@ func (*ProjectVersion) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case projectversion.FieldPrerelease:
+		case projectversion.FieldPrerelease, projectversion.FieldLatest:
 			values[i] = new(sql.NullBool)
 		case projectversion.FieldWorkflowRunCount:
 			values[i] = new(sql.NullInt64)
@@ -148,6 +150,12 @@ func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pv.ReleasedAt = value.Time
 			}
+		case projectversion.FieldLatest:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field latest", values[i])
+			} else if value.Valid {
+				pv.Latest = value.Bool
+			}
 		default:
 			pv.selectValues.Set(columns[i], values[i])
 		}
@@ -214,6 +222,9 @@ func (pv *ProjectVersion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("released_at=")
 	builder.WriteString(pv.ReleasedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("latest=")
+	builder.WriteString(fmt.Sprintf("%v", pv.Latest))
 	builder.WriteByte(')')
 	return builder.String()
 }

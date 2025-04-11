@@ -78,16 +78,35 @@ func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *
 }
 
 func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, version string, prerelease bool) (*biz.ProjectVersion, error) {
-	pv, err := r.data.DB.ProjectVersion.Create().
-		SetProjectID(projectID).
-		SetVersion(version).
-		SetPrerelease(prerelease).
-		Save(ctx)
-	if err != nil {
+	var res *ent.ProjectVersion
+	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		var err error
+		res, err = createProjectVersionWithTx(ctx, tx, projectID, version, prerelease)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
-	return entProjectVersionToBiz(pv), nil
+	return entProjectVersionToBiz(res), nil
+}
+
+func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string, prerelease bool) (*ent.ProjectVersion, error) {
+	// Update all existing versions of this project to not be the latest
+	if err := tx.ProjectVersion.Update().
+		Where(
+			projectversion.ProjectID(projectID),
+			projectversion.DeletedAtIsNil(),
+			projectversion.Latest(true),
+		).SetLatest(false).Exec(ctx); err != nil {
+		return nil, err
+	}
+
+	return tx.ProjectVersion.Create().
+		SetProjectID(projectID).
+		SetVersion(version).
+		SetPrerelease(prerelease).
+		SetLatest(true).
+		Save(ctx)
 }
 
 func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {

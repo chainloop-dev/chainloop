@@ -65,18 +65,10 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	// Create version and workflow in a transaction
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		if version == nil {
-			// Find or create version.
-			versionID, err := tx.ProjectVersion.Create().SetVersion(opts.ProjectVersion).SetProjectID(wf.ProjectID).
-				OnConflict(
-					sql.ConflictColumns(projectversion.FieldVersion, projectversion.FieldProjectID),
-					// Since we are using a partial index, we need to explicitly craft the upsert query
-					sql.ConflictWhere(sql.IsNull(projectversion.FieldDeletedAt)),
-				).Ignore().ID(ctx)
+			version, err = createProjectVersionWithTx(ctx, tx, wf.ProjectID, opts.ProjectVersion, true)
 			if err != nil {
 				return fmt.Errorf("creating version: %w", err)
 			}
-
-			version = &ent.ProjectVersion{ID: versionID, Version: opts.ProjectVersion, ProjectID: wf.ProjectID, Prerelease: true}
 		}
 
 		// Create workflow run

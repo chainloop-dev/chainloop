@@ -7848,6 +7848,7 @@ type ProjectVersionMutation struct {
 	workflow_run_count    *int
 	addworkflow_run_count *int
 	released_at           *time.Time
+	latest                *bool
 	clearedFields         map[string]struct{}
 	project               *uuid.UUID
 	clearedproject        bool
@@ -8261,6 +8262,42 @@ func (m *ProjectVersionMutation) ResetReleasedAt() {
 	delete(m.clearedFields, projectversion.FieldReleasedAt)
 }
 
+// SetLatest sets the "latest" field.
+func (m *ProjectVersionMutation) SetLatest(b bool) {
+	m.latest = &b
+}
+
+// Latest returns the value of the "latest" field in the mutation.
+func (m *ProjectVersionMutation) Latest() (r bool, exists bool) {
+	v := m.latest
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatest returns the old "latest" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldLatest(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatest is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatest requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatest: %w", err)
+	}
+	return oldValue.Latest, nil
+}
+
+// ResetLatest resets all changes to the "latest" field.
+func (m *ProjectVersionMutation) ResetLatest() {
+	m.latest = nil
+}
+
 // ClearProject clears the "project" edge to the Project entity.
 func (m *ProjectVersionMutation) ClearProject() {
 	m.clearedproject = true
@@ -8376,7 +8413,7 @@ func (m *ProjectVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectVersionMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.version != nil {
 		fields = append(fields, projectversion.FieldVersion)
 	}
@@ -8397,6 +8434,9 @@ func (m *ProjectVersionMutation) Fields() []string {
 	}
 	if m.released_at != nil {
 		fields = append(fields, projectversion.FieldReleasedAt)
+	}
+	if m.latest != nil {
+		fields = append(fields, projectversion.FieldLatest)
 	}
 	return fields
 }
@@ -8420,6 +8460,8 @@ func (m *ProjectVersionMutation) Field(name string) (ent.Value, bool) {
 		return m.WorkflowRunCount()
 	case projectversion.FieldReleasedAt:
 		return m.ReleasedAt()
+	case projectversion.FieldLatest:
+		return m.Latest()
 	}
 	return nil, false
 }
@@ -8443,6 +8485,8 @@ func (m *ProjectVersionMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldWorkflowRunCount(ctx)
 	case projectversion.FieldReleasedAt:
 		return m.OldReleasedAt(ctx)
+	case projectversion.FieldLatest:
+		return m.OldLatest(ctx)
 	}
 	return nil, fmt.Errorf("unknown ProjectVersion field %s", name)
 }
@@ -8500,6 +8544,13 @@ func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReleasedAt(v)
+		return nil
+	case projectversion.FieldLatest:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatest(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)
@@ -8600,6 +8651,9 @@ func (m *ProjectVersionMutation) ResetField(name string) error {
 		return nil
 	case projectversion.FieldReleasedAt:
 		m.ResetReleasedAt()
+		return nil
+	case projectversion.FieldLatest:
+		m.ResetLatest()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectVersion field %s", name)

@@ -29,6 +29,8 @@ const (
 	FieldWorkflowRunCount = "workflow_run_count"
 	// FieldReleasedAt holds the string denoting the released_at field in the database.
 	FieldReleasedAt = "released_at"
+	// FieldLatest holds the string denoting the latest field in the database.
+	FieldLatest = "latest"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
 	// EdgeRuns holds the string denoting the runs edge name in mutations.
@@ -61,6 +63,7 @@ var Columns = []string{
 	FieldPrerelease,
 	FieldWorkflowRunCount,
 	FieldReleasedAt,
+	FieldLatest,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -84,6 +87,8 @@ var (
 	DefaultPrerelease bool
 	// DefaultWorkflowRunCount holds the default value on creation for the "workflow_run_count" field.
 	DefaultWorkflowRunCount int
+	// DefaultLatest holds the default value on creation for the "latest" field.
+	DefaultLatest bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -129,6 +134,11 @@ func ByWorkflowRunCount(opts ...sql.OrderTermOption) OrderOption {
 // ByReleasedAt orders the results by the released_at field.
 func ByReleasedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReleasedAt, opts...).ToFunc()
+}
+
+// ByLatest orders the results by the latest field.
+func ByLatest(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLatest, opts...).ToFunc()
 }
 
 // ByProjectField orders the results by project field.
