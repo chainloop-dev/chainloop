@@ -81,7 +81,7 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 	var res *ent.ProjectVersion
 	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		var err error
-		res, err = createProjectWithTx(ctx, tx, projectID, version, prerelease)
+		res, err = createProjectVersionWithTx(ctx, tx, projectID, version, prerelease)
 		return err
 	}); err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 	return entProjectVersionToBiz(res), nil
 }
 
-func createProjectWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string, prerelease bool) (*ent.ProjectVersion, error) {
+func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string, prerelease bool) (*ent.ProjectVersion, error) {
 	// Update all existing versions of this project to not be the latest
 	if err := tx.ProjectVersion.Update().
 		Where(
