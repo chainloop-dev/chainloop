@@ -147,7 +147,7 @@ func newAttestationInitCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
 	cobra.CheckErr(cmd.MarkFlagRequired("project"))
-	cmd.Flags().StringVar(&newWorkflowcontract, "contract", "", "name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)")
+	cmd.Flags().StringVar(&newWorkflowcontract, "contract", "", "name of an existing contract or the path/URL to a contract file to be used in the attestation. It will update any existing contract for the workflow")
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
