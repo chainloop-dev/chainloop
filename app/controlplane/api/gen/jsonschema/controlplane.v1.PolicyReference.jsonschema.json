@@ -17,6 +17,9 @@
     },
     "organization": {
       "type": "string"
+    },
+    "uri": {
+      "type": "string"
     }
   },
   "title": "Policy Reference",
