@@ -142,7 +142,7 @@ jobs:
           # Link: https://github.com/actions/attest-build-provenance/issues/454
 
           # Create an empty checksum file
-          checksum_file="subjects-checksum.txt"
+          checksum_file="/tmp/subjects-checksum.txt"
           touch "$checksum_file"
 
           # First the binaries
@@ -170,7 +170,7 @@ jobs:
       - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         id: slsa-attest
         with:
-          subject-checksums: subjects-checksum.txt
+          subject-checksums: /tmp/subjects-checksum.txt
 
       - name: Attest SLSA attestation
         run: |
@@ -180,8 +180,8 @@ jobs:
         run: |
             # This needs to run AFTER goreleaser to make sure the source code is available
 
-            gh release download ${{ github.ref_name }} -A tar.gz -O source-code.tar.gz
-            chainloop attestation add --name source-code --value source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
+            gh release download ${{ github.ref_name }} -A tar.gz -O /tmp/source-code.tar.gz
+            chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
