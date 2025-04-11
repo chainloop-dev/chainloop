@@ -103,21 +103,32 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	// 0 - find or create the contract if we are creating the workflow (if any)
 	contractRef := opts.NewWorkflowContractRef
-	_, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
-	if err != nil && status.Code(err) == codes.NotFound {
-		// Not found, let's see if we need to create the contract
-		if contractRef != "" {
-			// Try to find it by name
-			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
-			// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
-			// TODO: validate locally before doing the query
-			if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
-				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
+	// Not found, let's see if we need to create the contract
+	if contractRef != "" {
+		// Try to find it by name
+		_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
+		// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
+		if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
+			// the contract might be a file. look for the default name
+			contractWithRevision, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), 0)
+			if err != nil && status.Code(err) == codes.NotFound {
+				// Not found, let's create it
+				_, err := NewWorkflowContractCreate(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), nil, contractRef)
 				if err != nil {
 					return "", err
 				}
-				contractRef = createResp.Name
+			} else if err != nil {
+				return "", err
 			}
+			// it exists, let's update it (chainloop will validate that there is an actual change in the contract file)
+			updateResp, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(contractWithRevision.Contract.Name, &contractWithRevision.Contract.Description, contractRef)
+			if err != nil {
+				return "", err
+			}
+
+			contractRef = updateResp.Contract.Name
+		} else if err != nil {
+			return "", err
 		}
 	}
 
@@ -240,6 +251,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	return attestationID, nil
+}
+
+func defaultContractName(project, workflow string) string {
+	return fmt.Sprintf("%s-%s", project, workflow)
 }
 
 func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, client pb.AttestationServiceClient, logger *zerolog.Logger) error {
