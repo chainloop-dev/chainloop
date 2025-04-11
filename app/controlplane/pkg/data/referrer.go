@@ -58,13 +58,13 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 
 	for _, ref := range referrers {
 		// Check if it exists already, if not create it
-		storedID := r.data.DB.Referrer.Create().
+		storedID, err := r.data.DB.Referrer.Create().
 			SetDigest(ref.Digest).SetKind(ref.Kind).SetDownloadable(ref.Downloadable).
 			SetMetadata(ref.Metadata).SetAnnotations(ref.Annotations).
 			AddWorkflowIDs(workflowID).
 			OnConflictColumns(
 				referrer.FieldDigest, referrer.FieldKind,
-			).UpdateNewValues().IDX(ctx)
+			).UpdateNewValues().ID(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create referrer: %w", err)
 		}

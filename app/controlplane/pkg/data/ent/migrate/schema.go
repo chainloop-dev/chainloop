@@ -347,6 +347,7 @@ var (
 		{Name: "prerelease", Type: field.TypeBool, Default: true},
 		{Name: "workflow_run_count", Type: field.TypeInt, Default: 0},
 		{Name: "released_at", Type: field.TypeTime, Nullable: true},
+		{Name: "latest", Type: field.TypeBool, Default: false},
 		{Name: "project_id", Type: field.TypeUUID},
 	}
 	// ProjectVersionsTable holds the schema information for the "project_versions" table.
@@ -357,7 +358,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_versions_projects_versions",
-				Columns:    []*schema.Column{ProjectVersionsColumns[7]},
+				Columns:    []*schema.Column{ProjectVersionsColumns[8]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -366,7 +367,7 @@ var (
 			{
 				Name:    "projectversion_version_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectVersionsColumns[1], ProjectVersionsColumns[7]},
+				Columns: []*schema.Column{ProjectVersionsColumns[1], ProjectVersionsColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},
