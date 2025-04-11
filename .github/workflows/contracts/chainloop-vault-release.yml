@@ -1,5 +1,10 @@
 # Contract for the release workflow
 schemaVersion: v1
+materials:
+  - name: slsa-attestation
+    type: SLSA_PROVENANCE
+    annotations:
+      - name: githubattestation
 policies:
   attestation:
     - ref: source-commit
