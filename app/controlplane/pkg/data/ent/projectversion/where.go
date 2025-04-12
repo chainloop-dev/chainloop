@@ -91,6 +91,11 @@ func ReleasedAt(v time.Time) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldReleasedAt, v))
 }
 
+// Latest applies equality check predicate on the "latest" field. It's identical to LatestEQ.
+func Latest(v bool) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldLatest, v))
+}
+
 // VersionEQ applies the EQ predicate on the "version" field.
 func VersionEQ(v string) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldVersion, v))
@@ -364,6 +369,16 @@ func ReleasedAtIsNil() predicate.ProjectVersion {
 // ReleasedAtNotNil applies the NotNil predicate on the "released_at" field.
 func ReleasedAtNotNil() predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldNotNull(FieldReleasedAt))
+}
+
+// LatestEQ applies the EQ predicate on the "latest" field.
+func LatestEQ(v bool) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldLatest, v))
+}
+
+// LatestNEQ applies the NEQ predicate on the "latest" field.
+func LatestNEQ(v bool) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNEQ(FieldLatest, v))
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

@@ -121,6 +121,20 @@ func (pvu *ProjectVersionUpdate) ClearReleasedAt() *ProjectVersionUpdate {
 	return pvu
 }
 
+// SetLatest sets the "latest" field.
+func (pvu *ProjectVersionUpdate) SetLatest(b bool) *ProjectVersionUpdate {
+	pvu.mutation.SetLatest(b)
+	return pvu
+}
+
+// SetNillableLatest sets the "latest" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillableLatest(b *bool) *ProjectVersionUpdate {
+	if b != nil {
+		pvu.SetLatest(*b)
+	}
+	return pvu
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pvu *ProjectVersionUpdate) SetProject(p *Project) *ProjectVersionUpdate {
 	return pvu.SetProjectID(p.ID)
@@ -246,6 +260,9 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if pvu.mutation.ReleasedAtCleared() {
 		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
+	}
+	if value, ok := pvu.mutation.Latest(); ok {
+		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
 	}
 	if pvu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -432,6 +449,20 @@ func (pvuo *ProjectVersionUpdateOne) ClearReleasedAt() *ProjectVersionUpdateOne 
 	return pvuo
 }
 
+// SetLatest sets the "latest" field.
+func (pvuo *ProjectVersionUpdateOne) SetLatest(b bool) *ProjectVersionUpdateOne {
+	pvuo.mutation.SetLatest(b)
+	return pvuo
+}
+
+// SetNillableLatest sets the "latest" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillableLatest(b *bool) *ProjectVersionUpdateOne {
+	if b != nil {
+		pvuo.SetLatest(*b)
+	}
+	return pvuo
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pvuo *ProjectVersionUpdateOne) SetProject(p *Project) *ProjectVersionUpdateOne {
 	return pvuo.SetProjectID(p.ID)
@@ -587,6 +618,9 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 	}
 	if pvuo.mutation.ReleasedAtCleared() {
 		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
+	}
+	if value, ok := pvuo.mutation.Latest(); ok {
+		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
 	}
 	if pvuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

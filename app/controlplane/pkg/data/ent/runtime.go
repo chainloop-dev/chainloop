@@ -183,6 +183,10 @@ func init() {
 	projectversionDescWorkflowRunCount := projectversionFields[6].Descriptor()
 	// projectversion.DefaultWorkflowRunCount holds the default value on creation for the workflow_run_count field.
 	projectversion.DefaultWorkflowRunCount = projectversionDescWorkflowRunCount.Default.(int)
+	// projectversionDescLatest is the schema descriptor for latest field.
+	projectversionDescLatest := projectversionFields[8].Descriptor()
+	// projectversion.DefaultLatest holds the default value on creation for the latest field.
+	projectversion.DefaultLatest = projectversionDescLatest.Default.(bool)
 	// projectversionDescID is the schema descriptor for id field.
 	projectversionDescID := projectversionFields[0].Descriptor()
 	// projectversion.DefaultID holds the default value on creation for the id field.
