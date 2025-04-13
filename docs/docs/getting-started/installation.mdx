@@ -24,26 +24,26 @@ To **install the latest version** for macOS, Linux or Windows (using [WSL](https
   <TabItem value="script" label="Installation Script" default>
 
 ```bash
-curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 ```
 
 you can retrieve a specific version with
 
 ```bash
 # You can find all the available versions at https://github.com/chainloop-dev/chainloop/releases
-curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version vx.x.x
+curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --version vx.x.x
 ```
 
 and customize the install path (default to /usr/local/bin)
 
 ```bash
-curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --path /my-path
+curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --path /my-path
 ```
 
 if [`cosign`](https://docs.sigstore.dev/cosign) is present in your system, in addition to the checksum check, a signature verification will be performed. This behavior can be enforced via the `--force-verification` flag.
 
 ```bash
-curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --force-verification
+curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --force-verification
 ```
 
 </TabItem>
