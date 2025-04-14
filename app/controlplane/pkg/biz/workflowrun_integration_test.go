@@ -133,7 +133,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	_, envelopeBytes := testEnvelope(s.T(), "testdata/attestations/full.json")
+	validEnvelope, envelopeBytes := testEnvelope(s.T(), "testdata/attestations/full.json")
 	h, _, err := v2.SHA256(bytes.NewReader(envelopeBytes))
 	require.NoError(s.T(), err)
 
@@ -157,7 +157,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(h.String(), r.Attestation.Digest)
-		assert.Equal(&biz.Attestation{Envelope: nil, Digest: h.String()}, r.Attestation)
+		assert.Equal(&biz.Attestation{Envelope: validEnvelope, Digest: h.String()}, r.Attestation)
 	})
 
 	bundle, bundleBytes := testBundle(s.T(), "testdata/attestations/bundle.json")
