@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Install Chainloop
         run: |
-          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 
       - name: Initialize Attestation
         id: init_attestation
@@ -61,7 +61,7 @@ jobs:
 
       - name: Install Chainloop
         run: |
-          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -112,11 +112,11 @@ jobs:
             # exclude latest tag
             if [[ $entry != *latest ]]; then
               material_name="$(echo $entry | sed 's#.*/##')"
-          
+
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
               chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
               chainloop attestation add --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
-          
+
               # Upload the SBOM to the release
               gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
             fi
@@ -178,10 +178,10 @@ jobs:
 
       - name: Include source code on attestation
         run: |
-            # This needs to run AFTER goreleaser to make sure the source code is available
+          # This needs to run AFTER goreleaser to make sure the source code is available
 
-            gh release download ${{ github.ref_name }} -A tar.gz -O /tmp/source-code.tar.gz
-            chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
+          gh release download ${{ github.ref_name }} -A tar.gz -O /tmp/source-code.tar.gz
+          chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
@@ -214,7 +214,7 @@ jobs:
     steps:
       - name: Install Chainloop
         run: |
-          curl -sfL https://docs.chainloop.dev/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 
       - name: Finish and Record Attestation
         id: attestation_push

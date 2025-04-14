@@ -278,7 +278,7 @@ jobs:
       # highlight-start
       - name: Install Chainloop
         run: |
-          curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --version v${{ env.CHAINLOOP_VERSION }}
       # highlight-end
       - name: Checkout
         uses: actions/checkout@v4
