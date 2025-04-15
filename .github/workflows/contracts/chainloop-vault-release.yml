@@ -26,6 +26,6 @@ policyGroups:
     with:
       provenance_material_name: slsa-attestation
       runner: GITHUB_ACTION
-      federated_identity: "true"
+      issuer: "sigstore.dev"
 runner:
   type: GITHUB_ACTION
