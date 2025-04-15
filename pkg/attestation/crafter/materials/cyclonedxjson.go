@@ -31,8 +31,12 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// containerComponentKind is the kind of the main component when it's a container
-const containerComponentKind = "container"
+const (
+	// containerComponentKind is the kind of the main component when it's a container
+	containerComponentKind = "container"
+	// aquaTrivyRepoDigestPropertyKey is the key used by Aqua Trivy to store the repo digest
+	aquaTrivyRepoDigestPropertyKey = "aquasecurity:trivy:RepoDigest"
+)
 
 type CyclonedxJSONCrafter struct {
 	backend *casclient.CASBackend
@@ -105,9 +109,13 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	type mainComponentStruct struct {
 		Metadata struct {
 			Component struct {
-				Name    string `json:"name"`
-				Type    string `json:"type"`
-				Version string `json:"version"`
+				Name       string `json:"name"`
+				Type       string `json:"type"`
+				Version    string `json:"version"`
+				Properties []struct {
+					Name  string `json:"name"`
+					Value string `json:"value"`
+				} `json:"properties"`
 			} `json:"component"`
 		} `json:"metadata"`
 	}
@@ -119,6 +127,19 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	}
 
 	component := mainComponent.Metadata.Component
+
+	// If the version is empty, try to extract it from the properties
+	if component.Version == "" {
+		for _, prop := range component.Properties {
+			if prop.Name == aquaTrivyRepoDigestPropertyKey {
+				if parts := strings.Split(prop.Value, "sha256:"); len(parts) > 1 {
+					component.Version = fmt.Sprintf("sha256:%s", parts[1])
+					break
+				}
+			}
+		}
+	}
+
 	if component.Type != containerComponentKind {
 		return &SBOMMainComponentInfo{
 			name:    component.Name,
