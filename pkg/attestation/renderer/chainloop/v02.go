@@ -395,7 +395,9 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 
 // Translate a ResourceDescriptor to a NormalizedMaterial
 func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial, error) {
-	m := &NormalizedMaterial{}
+	m := &NormalizedMaterial{
+		ReferencedSourceComponent: &ReferencedSourceComponent{},
+	}
 
 	// Set custom annotations
 	m.Annotations = make(map[string]string)
@@ -469,6 +471,19 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	// Extract the container image tag if it's set in the annotations
 	if v, ok := mAnnotationsMap[v1.AnnotationContainerTag]; ok && v.GetStringValue() != "" {
 		m.Tag = v.GetStringValue()
+	}
+
+	// Extract the referenced source component
+	if v, ok := mAnnotationsMap[v1.AnnotationsSBOMMainComponentName]; ok && v.GetStringValue() != "" {
+		m.ReferencedSourceComponent.Name = v.GetStringValue()
+	}
+
+	if v, ok := mAnnotationsMap[v1.AnnotationsSBOMMainComponentVersion]; ok && v.GetStringValue() != "" {
+		m.ReferencedSourceComponent.Version = v.GetStringValue()
+	}
+
+	if v, ok := mAnnotationsMap[v1.AnnotationsSBOMMainComponentType]; ok && v.GetStringValue() != "" {
+		m.ReferencedSourceComponent.Type = v.GetStringValue()
 	}
 
 	// In the case of an artifact type or derivative the filename is set and the inline content if any
