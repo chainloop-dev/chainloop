@@ -75,6 +75,23 @@ type NormalizedMaterial struct {
 	EmbeddedInline bool
 	// Custom annotations
 	Annotations map[string]string
+	// Referenced source component, for SBOMs, SARIF files, etc
+	ReferencedSourceComponent *ReferencedSourceComponent
+}
+
+// Some materials such as SBOMs might have been generated from a source component
+// For example, you might have generated an SBOM for a container image and this is the ifnormation
+// name": "ghcr.io/chainloop-dev/chainloop/cli",
+// type": "container",
+// version": "sha256:bbfd27fcdb15c8082951dc59be2310a2a2e6b95e11002f8411e5918887faa607",
+type ReferencedSourceComponent struct {
+	// i.e container, file
+	Type string `json:"type"`
+	// i.e ghcr.io/chainloop-dev/chainloop/cli
+	Name string `json:"name"`
+	// i.e sha256:bbfd27fcdb15c8082951dc59be2310a2a2e6b95e11002f8411e5918887faa607
+	// or a tag i.e v0.1.0
+	Version string `json:"version"`
 }
 
 type ProvenancePredicateCommon struct {
