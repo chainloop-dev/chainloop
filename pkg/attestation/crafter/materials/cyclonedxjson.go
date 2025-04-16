@@ -31,12 +31,31 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// containerComponentKind is the kind of the main component when it's a container
-const containerComponentKind = "container"
+const (
+	// containerComponentKind is the kind of the main component when it's a container
+	containerComponentKind = "container"
+	// aquaTrivyRepoDigestPropertyKey is the key used by Aqua Trivy to store the repo digest
+	aquaTrivyRepoDigestPropertyKey = "aquasecurity:trivy:RepoDigest"
+)
 
 type CyclonedxJSONCrafter struct {
 	backend *casclient.CASBackend
 	*crafterCommon
+}
+
+// mainComponentStruct internal struct to unmarshall the incoming CycloneDX JSON
+type mainComponentStruct struct {
+	Metadata struct {
+		Component struct {
+			Name       string `json:"name"`
+			Type       string `json:"type"`
+			Version    string `json:"version"`
+			Properties []struct {
+				Name  string `json:"name"`
+				Value string `json:"value"`
+			} `json:"properties"`
+		} `json:"component"`
+	} `json:"metadata"`
 }
 
 func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CyclonedxJSONCrafter, error) {
@@ -101,17 +120,6 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 
 // extractMainComponent inspects the SBOM and extracts the main component if any and available
 func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainComponentInfo, error) {
-	// Define the structure of the main component in the SBOM locally to perform an unmarshal
-	type mainComponentStruct struct {
-		Metadata struct {
-			Component struct {
-				Name    string `json:"name"`
-				Type    string `json:"type"`
-				Version string `json:"version"`
-			} `json:"component"`
-		} `json:"metadata"`
-	}
-
 	var mainComponent mainComponentStruct
 	err := json.Unmarshal(rawFile, &mainComponent)
 	if err != nil {
@@ -119,6 +127,19 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	}
 
 	component := mainComponent.Metadata.Component
+
+	// If the version is empty, try to extract it from the properties
+	if component.Version == "" {
+		for _, prop := range component.Properties {
+			if prop.Name == aquaTrivyRepoDigestPropertyKey {
+				if parts := strings.Split(prop.Value, "sha256:"); len(parts) == 2 {
+					component.Version = fmt.Sprintf("sha256:%s", parts[1])
+					break
+				}
+			}
+		}
+	}
+
 	if component.Type != containerComponentKind {
 		return &SBOMMainComponentInfo{
 			name:    component.Name,
@@ -129,13 +150,13 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 
 	// Standardize the name to have the full repository name including the registry and
 	// sanitize the name to remove the possible tag from the repository name
-	stdName, err := remotename.NewRepository(strings.Split(component.Name, ":")[0])
+	ref, err := remotename.ParseReference(component.Name)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't parse OCI image repository name: %w", err)
 	}
 
 	return &SBOMMainComponentInfo{
-		name:    stdName.String(),
+		name:    ref.Context().String(),
 		kind:    component.Type,
 		version: component.Version,
 	}, nil
