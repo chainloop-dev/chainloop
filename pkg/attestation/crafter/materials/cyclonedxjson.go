@@ -156,7 +156,7 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	}
 
 	return &SBOMMainComponentInfo{
-		name:    ref.Context().RepositoryStr(),
+		name:    ref.Context().String(),
 		kind:    component.Type,
 		version: component.Version,
 	}, nil
