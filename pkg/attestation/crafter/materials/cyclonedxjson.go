@@ -132,7 +132,7 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	if component.Version == "" {
 		for _, prop := range component.Properties {
 			if prop.Name == aquaTrivyRepoDigestPropertyKey {
-				if parts := strings.Split(prop.Value, "sha256:"); len(parts) > 1 {
+				if parts := strings.Split(prop.Value, "sha256:"); len(parts) == 2 {
 					component.Version = fmt.Sprintf("sha256:%s", parts[1])
 					break
 				}
