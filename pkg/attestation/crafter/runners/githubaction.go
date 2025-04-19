@@ -29,7 +29,7 @@ type GitHubAction struct {
 }
 
 func NewGithubAction() *GitHubAction {
-	client, err := oidc.NewOIDCGitHubClient(context.Background(), nil)
+	client, err := oidc.NewOIDCGitHubClient(context.Background())
 	if err != nil {
 		client = oidc.NewNoOPClient()
 	}
