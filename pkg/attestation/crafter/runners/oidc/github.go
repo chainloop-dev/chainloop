@@ -47,7 +47,7 @@ type GitHubOIDCClient struct {
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
-func NewOIDCGitHubClient(ctx context.Context) (OIDCClient, error) {
+func NewOIDCGitHubClient(_ context.Context) (OIDCClient, error) {
 	var c GitHubOIDCClient
 
 	// Get the request URL and token from env vars

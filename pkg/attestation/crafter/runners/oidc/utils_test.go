@@ -17,6 +17,8 @@ package oidc
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_compareStringSlice(t *testing.T) {
@@ -89,9 +91,8 @@ func Test_compareStringSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := compareStringSlice(tt.s1, tt.s2); got != tt.want {
-				t.Errorf("compareStringSlice() = %v, want %v", got, tt.want)
-			}
+			got := compareStringSlice(tt.s1, tt.s2)
+			assert.Equal(t, tt.want, got, "compareStringSlice() returned unexpected result")
 		})
 	}
 }
