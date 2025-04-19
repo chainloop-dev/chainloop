@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -62,4 +63,12 @@ func (r *CircleCIBuild) RunURI() string {
 
 func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *CircleCIBuild) WorkflowFile(ctx context.Context) string {
+	return ""
+}
+
+func (r *CircleCIBuild) IsHosted(ctx context.Context) bool {
+	return false
 }

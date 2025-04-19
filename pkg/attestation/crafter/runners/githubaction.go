@@ -16,16 +16,27 @@
 package runners
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 )
 
-type GitHubAction struct{}
+type GitHubAction struct {
+	oidcClient oidc.OIDCClient
+}
 
 func NewGithubAction() *GitHubAction {
-	return &GitHubAction{}
+	client, err := oidc.NewOIDCGitHubClient(context.Background(), nil)
+	if err != nil {
+		client = oidc.NewNoOPClient()
+	}
+
+	return &GitHubAction{
+		oidcClient: client,
+	}
 }
 
 func (r *GitHubAction) ID() schemaapi.CraftingSchema_Runner_RunnerType {
@@ -67,4 +78,20 @@ func (r *GitHubAction) RunURI() (url string) {
 
 func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *GitHubAction) WorkflowFile(ctx context.Context) string {
+	token, err := r.oidcClient.Token(ctx)
+	if err != nil {
+		return ""
+	}
+	return token.JobWorkflowRef
+}
+
+func (r *GitHubAction) IsHosted(ctx context.Context) bool {
+	token, err := r.oidcClient.Token(ctx)
+	if err != nil {
+		return false
+	}
+	return token.RunnerEnvironment == "github-hosted"
 }

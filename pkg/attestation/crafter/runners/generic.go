@@ -15,7 +15,11 @@
 
 package runners
 
-import schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+import (
+	"context"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+)
 
 type Generic struct{}
 
@@ -43,4 +47,12 @@ func (r *Generic) RunURI() string {
 
 func (r *Generic) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *Generic) WorkflowFile(ctx context.Context) string {
+	return ""
+}
+
+func (r *Generic) IsHosted(ctx context.Context) bool {
+	return false
 }

@@ -16,6 +16,7 @@
 package crafter
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -41,6 +42,12 @@ type SupportedRunner interface {
 
 	// ID returns the runner type
 	ID() schemaapi.CraftingSchema_Runner_RunnerType
+
+	// WorkflowFile returns the workflow file associated with this runner
+	WorkflowFile(ctx context.Context) string
+
+	// IsHosted returns whether the runner is hosted or not
+	IsHosted(ctx context.Context) bool
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner

@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -55,4 +56,12 @@ func (r *DaggerPipeline) RunURI() string {
 
 func (r *DaggerPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *DaggerPipeline) WorkflowFile(ctx context.Context) string {
+	return ""
+}
+
+func (r *DaggerPipeline) IsHosted(ctx context.Context) bool {
+	return false
 }

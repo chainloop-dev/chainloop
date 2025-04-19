@@ -427,6 +427,13 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	return nil
 }
 
+func (c *Crafter) ResolveHostedRunnerContext(ctx context.Context) {
+	c.Logger.Debug().Bool("isHosted", c.Runner.IsHosted(ctx)).Msg("is runner hosted")
+	c.CraftingState.CraftingState.InputSchema.IsHostedRunner = c.Runner.IsHosted(ctx)
+	c.Logger.Debug().Str("workflowFile", c.Runner.WorkflowFile(ctx)).Msg("resolved workflow file")
+	c.CraftingState.CraftingState.InputSchema.WorkflowFile = c.Runner.WorkflowFile(ctx)
+}
+
 // AddMaterialContractFree adds a material to the crafting state without checking the contract schema.
 // This is useful for adding materials that are not defined in the schema.
 // The name of the material is automatically calculated to conform the API contract if not provided.

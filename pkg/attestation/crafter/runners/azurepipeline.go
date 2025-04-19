@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	neturl "net/url"
 	"os"
 	"path"
@@ -82,4 +83,12 @@ func (r *AzurePipeline) RunURI() (url string) {
 
 func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *AzurePipeline) WorkflowFile(ctx context.Context) string {
+	return ""
+}
+
+func (r *AzurePipeline) IsHosted(ctx context.Context) bool {
+	return false
 }

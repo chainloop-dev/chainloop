@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -62,4 +63,12 @@ func (r *GitlabPipeline) RunURI() (url string) {
 
 func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *GitlabPipeline) WorkflowFile(ctx context.Context) string {
+	return ""
+}
+
+func (r *GitlabPipeline) IsHosted(ctx context.Context) bool {
+	return false
 }
