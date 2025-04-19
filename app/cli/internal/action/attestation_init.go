@@ -229,6 +229,9 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		return "", err
 	}
 
+	// Resolve the hosted context information
+	action.c.ResolveHostedRunnerContext(ctx)
+
 	// Load the env variables both the system populated and the user predefined ones
 	if err := action.c.ResolveEnvVars(ctx, attestationID); err != nil {
 		if action.dryRun {

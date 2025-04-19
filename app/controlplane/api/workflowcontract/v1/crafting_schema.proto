@@ -40,6 +40,11 @@ message CraftingSchema {
   // Policy groups to apply to this schema
   repeated PolicyGroupAttachment policy_groups = 7;
 
+  // Optional path to the workflow file content
+  string workflow_file = 8;
+  // Whether the runner is hosted or not
+  bool is_hosted_runner = 9;
+
   message Runner {
     RunnerType type = 1 [
       (buf.validate.field).enum = {
