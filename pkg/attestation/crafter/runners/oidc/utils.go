@@ -68,7 +68,7 @@ type Client interface {
 // NoOPClient is a empty implementation of Client that returns an empty token.
 type NoOPClient struct{}
 
-func (r *NoOPClient) Token(ctx context.Context) (*Token, error) {
+func (r *NoOPClient) Token(_ context.Context) (*Token, error) {
 	return &Token{
 		Expiry:            time.Now(),
 		RunnerEnvironment: "",
