@@ -35,34 +35,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const expectedGitHubIssuer = "https://token.actions.githubusercontent.com"
+const (
+	tokenRequestEndpoint  = "/token-request"
+	oidcDiscoveryEndpoint = "/.well-known/openid-configuration"
+	jwksEndpoint          = "/jwks"
+
+	expectedGitHubIssuer = "https://token.actions.githubusercontent.com"
+	testBearerTokenValue = "test-bearer-token"
+	testKeyID            = "test-key-id"
+)
 
 func TestGitHubOIDCClient_Token(t *testing.T) {
 	mockServer, privKey, serverURL := setupOIDCMocks(t)
+	tokenRequestURL := fmt.Sprintf("%s%s", serverURL, tokenRequestEndpoint)
 
-	tokenRequestURL := fmt.Sprintf("%s/token-request", serverURL)
-	testBearerToken := "test-bearer-token"
+	claims := createStandardClaims()
+	signedToken, err := createSignedToken(claims, privKey)
+	require.NoError(t, err, "Failed to create signed token")
 
-	claims := jwt.MapClaims{
-		"iss":        expectedGitHubIssuer,
-		"sub":        "repo:octo-org/octo-repo:ref:refs/heads/main",
-		"aud":        "test-audience",
-		"exp":        time.Now().Add(time.Hour).Unix(),
-		"nbf":        time.Now().Add(-time.Minute).Unix(),
-		"iat":        time.Now().Unix(),
-		"jti":        "test-jti",
-		"ref":        "refs/heads/main",
-		"repository": "octo-org/octo-repo",
-		"run_id":     "1234567890",
-		"sha":        "test-sha",
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = "test-key-id"
-	signedToken, err := token.SignedString(privKey)
-	require.NoError(t, err, "failed to sign token")
-
-	baseHandler := defaultMockHandler(t, signedToken, testBearerToken, privKey)
+	baseHandler := defaultMockHandler(t, signedToken, testBearerTokenValue, privKey)
 	mockServer.Config.Handler = baseHandler
 
 	tests := []struct {
@@ -77,9 +68,12 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 		{
 			name: "Non-200 response",
 			mockHandler: func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path == "/token-request" {
+				if r.URL.Path == tokenRequestEndpoint {
 					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte("Internal Server Error"))
+					_, err := w.Write([]byte("Internal Server Error"))
+					if err != nil {
+						t.Errorf("Failed to write response: %v", err)
+					}
 				} else {
 					setupOIDCMocksHandler(w, r, privKey)
 				}
@@ -90,9 +84,12 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 		{
 			name: "Payload decoding error",
 			mockHandler: func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path == "/token-request" {
+				if r.URL.Path == tokenRequestEndpoint {
 					w.Header().Set("Content-Type", "application/json")
-					w.Write([]byte(`{"value": "not-a-token", "invalid-json`))
+					_, err := w.Write([]byte(`{"value": "not-a-token", "invalid-json`))
+					if err != nil {
+						t.Errorf("Failed to write response: %v", err)
+					}
 				} else {
 					setupOIDCMocksHandler(w, r, privKey)
 				}
@@ -103,7 +100,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 		{
 			name: "Token verification error - bad signature",
 			mockHandler: func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path == "/token-request" {
+				if r.URL.Path == tokenRequestEndpoint {
 					wrongPrivKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 					wrongToken := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 					wrongToken.Header["kid"] = "test-key-id"
@@ -111,7 +108,10 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 
 					resp := map[string]string{"value": wrongSignedToken}
 					w.Header().Set("Content-Type", "application/json")
-					json.NewEncoder(w).Encode(resp)
+					err := json.NewEncoder(w).Encode(resp)
+					if err != nil {
+						t.Errorf("Failed to encode response: %v", err)
+					}
 				} else {
 					setupOIDCMocksHandler(w, r, privKey)
 				}
@@ -130,7 +130,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 				t.Setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", originalToken)
 			})
 			t.Setenv("ACTIONS_ID_TOKEN_REQUEST_URL", tokenRequestURL)
-			t.Setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", testBearerToken)
+			t.Setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", testBearerTokenValue)
 
 			if tt.setupEnv != nil {
 				tt.setupEnv(t)
@@ -160,11 +160,11 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 				assert.Nil(t, actualToken)
 			} else {
 				if err != nil {
-					t.Errorf("Expected success but got error: %v", err)
+					assert.NoError(t, err, "Expected success but got error")
 					return
 				}
 				if actualToken == nil {
-					t.Error("Token is nil but no error was returned")
+					assert.NotNil(t, actualToken, "Token is nil but no error was returned")
 					return
 				}
 				assert.Equal(t, tt.expectToken.Issuer, actualToken.Issuer)
@@ -178,77 +178,34 @@ func setupOIDCMocks(t *testing.T) (*httptest.Server, *rsa.PrivateKey, string) {
 	r := require.New(t)
 
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	r.NoError(err, "failed to generate RSA key pair")
+	r.NoError(err, "Failed to generate RSA key pair")
 
-	eBytes := big.NewInt(int64(privKey.PublicKey.E)).Bytes()
-	if len(eBytes) < 3 {
-		padded := make([]byte, 3)
-		copy(padded[3-len(eBytes):], eBytes)
-		eBytes = padded
-	}
-	jwk := map[string]string{
-		"kty": "RSA",
-		"kid": "test-key-id",
-		"e":   base64.RawURLEncoding.EncodeToString(eBytes),
-		"n":   base64.RawURLEncoding.EncodeToString(privKey.PublicKey.N.Bytes()),
-	}
-	jwks := map[string][]map[string]string{"keys": {jwk}}
-	jwksJSON, err := json.Marshal(jwks)
-	r.NoError(err, "failed to marshal JWKS")
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		setupOIDCMocksHandler(w, r, privKey)
+	})
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/.well-known/openid-configuration":
-			discovery := map[string]string{
-				"issuer":                                expectedGitHubIssuer, // Use the expected issuer
-				"jwks_uri":                              fmt.Sprintf("http://%s/jwks", r.Host),
-				"response_types_supported":              "id_token",
-				"subject_types_supported":               "public",
-				"id_token_signing_alg_values_supported": "RS256",
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(discovery)
-		case "/jwks":
-			t.Logf("[setupOIDCMocks] Serving JWKS: %s", string(jwksJSON))
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(jwksJSON)
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-
+	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
 	return server, privKey, server.URL
 }
 
-func defaultMockHandler(t *testing.T, signedToken, bearerToken string, privKey *rsa.PrivateKey) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/token-request":
-			assert.Equal(t, "bearer "+bearerToken, r.Header.Get("Authorization"))
-			resp := map[string]string{"value": signedToken}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
-		default:
-			setupOIDCMocksHandler(w, r, privKey)
-		}
-	}
-}
-
 func setupOIDCMocksHandler(w http.ResponseWriter, r *http.Request, privKey *rsa.PrivateKey) {
 	switch r.URL.Path {
-	case "/.well-known/openid-configuration":
+	case oidcDiscoveryEndpoint:
 		discovery := map[string]string{
 			"issuer":                                expectedGitHubIssuer,
-			"jwks_uri":                              fmt.Sprintf("http://%s/jwks", r.Host),
+			"jwks_uri":                              fmt.Sprintf("http://%s%s", r.Host, jwksEndpoint),
 			"response_types_supported":              "id_token",
 			"subject_types_supported":               "public",
 			"id_token_signing_alg_values_supported": "RS256",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(discovery)
-	case "/jwks":
+		if err := json.NewEncoder(w).Encode(discovery); err != nil {
+			http.Error(w, "Failed to encode discovery document", http.StatusInternalServerError)
+			return
+		}
+	case jwksEndpoint:
 		eBytes := big.NewInt(int64(privKey.PublicKey.E)).Bytes()
 		if len(eBytes) < 3 {
 			padded := make([]byte, 3)
@@ -257,15 +214,61 @@ func setupOIDCMocksHandler(w http.ResponseWriter, r *http.Request, privKey *rsa.
 		}
 		jwk := map[string]string{
 			"kty": "RSA",
-			"kid": "test-key-id",
+			"kid": testKeyID,
 			"e":   base64.RawURLEncoding.EncodeToString(eBytes),
 			"n":   base64.RawURLEncoding.EncodeToString(privKey.PublicKey.N.Bytes()),
 		}
 		jwks := map[string][]map[string]string{"keys": {jwk}}
-		jwksJSON, _ := json.Marshal(jwks)
+		jwksJSON, err := json.Marshal(jwks)
+		if err != nil {
+			http.Error(w, "Failed to marshal JWKS", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jwksJSON)
+		if _, err := w.Write(jwksJSON); err != nil {
+			return
+		}
 	default:
 		http.NotFound(w, r)
+	}
+}
+
+func createStandardClaims() jwt.MapClaims {
+	return jwt.MapClaims{
+		"iss":        expectedGitHubIssuer,
+		"sub":        "repo:octo-org/octo-repo:ref:refs/heads/main",
+		"aud":        "test-audience",
+		"exp":        time.Now().Add(time.Hour).Unix(),
+		"nbf":        time.Now().Add(-time.Minute).Unix(),
+		"iat":        time.Now().Unix(),
+		"jti":        "test-jti",
+		"ref":        "refs/heads/main",
+		"repository": "octo-org/octo-repo",
+		"run_id":     "1234567890",
+		"sha":        "test-sha",
+	}
+}
+
+func createSignedToken(claims jwt.MapClaims, privKey *rsa.PrivateKey) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = "test-key-id"
+	return token.SignedString(privKey)
+}
+
+func defaultMockHandler(t *testing.T, signedToken, bearerToken string, privKey *rsa.PrivateKey) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case tokenRequestEndpoint:
+			assert.Equal(t, "bearer "+bearerToken, r.Header.Get("Authorization"))
+
+			resp := map[string]string{"value": signedToken}
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+				return
+			}
+		default:
+			setupOIDCMocksHandler(w, r, privKey)
+		}
 	}
 }
