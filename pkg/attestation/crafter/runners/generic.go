@@ -49,10 +49,10 @@ func (r *Generic) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *Generic) WorkflowFile(ctx context.Context) string {
+func (r *Generic) WorkflowFile(_ context.Context) string {
 	return ""
 }
 
-func (r *Generic) IsHosted(ctx context.Context) bool {
+func (r *Generic) IsHosted(_ context.Context) bool {
 	return false
 }

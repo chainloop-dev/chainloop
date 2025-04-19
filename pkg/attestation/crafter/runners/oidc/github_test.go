@@ -70,10 +70,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			mockHandler: func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == tokenRequestEndpoint {
 					w.WriteHeader(http.StatusInternalServerError)
-					_, err := w.Write([]byte("Internal Server Error"))
-					if err != nil {
-						t.Errorf("Failed to write response: %v", err)
-					}
+					_, _ = w.Write([]byte("Internal Server Error"))
 				} else {
 					setupOIDCMocksHandler(w, r, privKey)
 				}
@@ -86,10 +83,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			mockHandler: func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == tokenRequestEndpoint {
 					w.Header().Set("Content-Type", "application/json")
-					_, err := w.Write([]byte(`{"value": "not-a-token", "invalid-json`))
-					if err != nil {
-						t.Errorf("Failed to write response: %v", err)
-					}
+					_, _ = w.Write([]byte(`{"value": "not-a-token", "invalid-json`))
 				} else {
 					setupOIDCMocksHandler(w, r, privKey)
 				}
@@ -108,10 +102,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 
 					resp := map[string]string{"value": wrongSignedToken}
 					w.Header().Set("Content-Type", "application/json")
-					err := json.NewEncoder(w).Encode(resp)
-					if err != nil {
-						t.Errorf("Failed to encode response: %v", err)
-					}
+					_ = json.NewEncoder(w).Encode(resp)
 				} else {
 					setupOIDCMocksHandler(w, r, privKey)
 				}
@@ -142,7 +133,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			t.Cleanup(func() { mockServer.Config.Handler = baseHandler })
 
 			ctx := oidc.ClientContext(context.Background(), mockServer.Client())
-			client, err := NewOIDCGitHubClient(ctx, &privKey.PublicKey)
+			client, err := NewOIDCGitHubClient(ctx)
 			require.NoError(t, err)
 
 			var actualToken *OIDCToken
@@ -206,7 +197,8 @@ func setupOIDCMocksHandler(w http.ResponseWriter, r *http.Request, privKey *rsa.
 			return
 		}
 	case jwksEndpoint:
-		eBytes := big.NewInt(int64(privKey.PublicKey.E)).Bytes()
+		pubKey := &privKey.PublicKey
+		eBytes := big.NewInt(int64(pubKey.E)).Bytes()
 		if len(eBytes) < 3 {
 			padded := make([]byte, 3)
 			copy(padded[3-len(eBytes):], eBytes)
@@ -216,7 +208,7 @@ func setupOIDCMocksHandler(w http.ResponseWriter, r *http.Request, privKey *rsa.
 			"kty": "RSA",
 			"kid": testKeyID,
 			"e":   base64.RawURLEncoding.EncodeToString(eBytes),
-			"n":   base64.RawURLEncoding.EncodeToString(privKey.PublicKey.N.Bytes()),
+			"n":   base64.RawURLEncoding.EncodeToString(pubKey.N.Bytes()),
 		}
 		jwks := map[string][]map[string]string{"keys": {jwk}}
 		jwksJSON, err := json.Marshal(jwks)
@@ -251,7 +243,7 @@ func createStandardClaims() jwt.MapClaims {
 
 func createSignedToken(claims jwt.MapClaims, privKey *rsa.PrivateKey) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = "test-key-id"
+	token.Header["kid"] = testKeyID
 	return token.SignedString(privKey)
 }
 

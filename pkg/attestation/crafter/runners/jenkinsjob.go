@@ -72,10 +72,10 @@ func (r *JenkinsJob) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *JenkinsJob) WorkflowFile(ctx context.Context) string {
+func (r *JenkinsJob) WorkflowFile(_ context.Context) string {
 	return ""
 }
 
-func (r *JenkinsJob) IsHosted(ctx context.Context) bool {
+func (r *JenkinsJob) IsHosted(_ context.Context) bool {
 	return false
 }

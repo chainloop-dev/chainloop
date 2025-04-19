@@ -58,10 +58,10 @@ func (r *DaggerPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *DaggerPipeline) WorkflowFile(ctx context.Context) string {
+func (r *DaggerPipeline) WorkflowFile(_ context.Context) string {
 	return ""
 }
 
-func (r *DaggerPipeline) IsHosted(ctx context.Context) bool {
+func (r *DaggerPipeline) IsHosted(_ context.Context) bool {
 	return false
 }

@@ -85,10 +85,10 @@ func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *AzurePipeline) WorkflowFile(ctx context.Context) string {
+func (r *AzurePipeline) WorkflowFile(_ context.Context) string {
 	return ""
 }
 
-func (r *AzurePipeline) IsHosted(ctx context.Context) bool {
+func (r *AzurePipeline) IsHosted(_ context.Context) bool {
 	return false
 }

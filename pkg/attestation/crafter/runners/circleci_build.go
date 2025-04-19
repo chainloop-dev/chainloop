@@ -65,10 +65,10 @@ func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *CircleCIBuild) WorkflowFile(ctx context.Context) string {
+func (r *CircleCIBuild) WorkflowFile(_ context.Context) string {
 	return ""
 }
 
-func (r *CircleCIBuild) IsHosted(ctx context.Context) bool {
+func (r *CircleCIBuild) IsHosted(_ context.Context) bool {
 	return false
 }

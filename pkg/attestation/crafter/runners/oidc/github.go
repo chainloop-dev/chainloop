@@ -25,14 +25,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
 	"bytes"
-	"crypto/rsa"
 	"io"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 var defaultActionsProviderURL = "https://token.actions.githubusercontent.com"
@@ -44,18 +41,21 @@ const (
 )
 
 type GitHubOIDCClient struct {
-	requestURL    *url.URL
-	verifierFunc  func(context.Context) (*oidc.IDTokenVerifier, error)
-	bearerToken   string
-	testPublicKey *rsa.PublicKey // Added for testing fallback
+	requestURL   *url.URL
+	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
+	bearerToken  string
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
-func NewOIDCGitHubClient(ctx context.Context, testPubKey *rsa.PublicKey) (OIDCClient, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+func NewOIDCGitHubClient(ctx context.Context) (OIDCClient, error) {
+	var c GitHubOIDCClient
+
+	// Get the request URL and token from env vars
 	requestURL := os.Getenv(requestURLEnvKey)
+	if requestURL == "" {
+		return nil, fmt.Errorf("url: %s environment variable not set; does your workflow have `id-token: write` scope?", requestURLEnvKey)
+	}
+
 	parsedURL, err := url.ParseRequestURI(requestURL)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -65,10 +65,9 @@ func NewOIDCGitHubClient(ctx context.Context, testPubKey *rsa.PublicKey) (OIDCCl
 		)
 	}
 
-	c := GitHubOIDCClient{
-		requestURL:    parsedURL,
-		bearerToken:   os.Getenv(requestTokenEnvKey),
-		testPublicKey: testPubKey,
+	c = GitHubOIDCClient{
+		requestURL:  parsedURL,
+		bearerToken: os.Getenv(requestTokenEnvKey),
 	}
 	c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
 		provider, err := oidc.NewProvider(ctx, defaultActionsProviderURL)
@@ -166,28 +165,6 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 	}
 
 	idToken, err := verifier.Verify(ctx, rawIDToken)
-
-	// --- Test Fallback Logic ---
-	if err != nil && c.testPublicKey != nil && strings.Contains(err.Error(), "failed to verify signature") {
-		// Attempt manual verification with the provided test public key
-		keyFunc := func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return c.testPublicKey, nil
-		}
-
-		parsedToken, parseErr := jwt.Parse(rawIDToken, keyFunc)
-
-		if parseErr == nil && parsedToken != nil && parsedToken.Valid {
-			// Manual verification succeeded. Return nil, nil to signal success to the test.
-			// NOTE: This bypasses returning the actual *oidc.IDToken object.
-			return nil, nil
-		}
-		// If manual verification also failed or conditions not met, retain the original error
-	}
-	// --- End Test Fallback Logic ---
-
 	if err != nil {
 		return nil, fmt.Errorf("verify: could not verify token: %w", err)
 	}

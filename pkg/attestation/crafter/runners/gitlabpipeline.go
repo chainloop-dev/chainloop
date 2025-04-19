@@ -65,10 +65,10 @@ func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *GitlabPipeline) WorkflowFile(ctx context.Context) string {
+func (r *GitlabPipeline) WorkflowFile(_ context.Context) string {
 	return ""
 }
 
-func (r *GitlabPipeline) IsHosted(ctx context.Context) bool {
+func (r *GitlabPipeline) IsHosted(_ context.Context) bool {
 	return false
 }
