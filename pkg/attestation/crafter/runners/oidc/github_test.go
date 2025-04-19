@@ -59,7 +59,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 	tests := []struct {
 		name              string
 		mockHandler       http.HandlerFunc
-		expectToken       *OIDCToken
+		expectToken       *Token
 		expectErr         bool
 		expectErrContains string
 		setupEnv          func(t *testing.T)
@@ -136,7 +136,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			client, err := NewOIDCGitHubClient(ctx)
 			require.NoError(t, err)
 
-			var actualToken *OIDCToken
+			var actualToken *Token
 			func() {
 				defer func() {
 					if r := recover(); r != nil {

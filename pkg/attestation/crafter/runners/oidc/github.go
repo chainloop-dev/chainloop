@@ -47,7 +47,7 @@ type GitHubOIDCClient struct {
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
-func NewOIDCGitHubClient(_ context.Context) (OIDCClient, error) {
+func NewOIDCGitHubClient(_ context.Context) (Client, error) {
 	var c GitHubOIDCClient
 
 	// Get the request URL and token from env vars
@@ -82,7 +82,7 @@ func NewOIDCGitHubClient(_ context.Context) (OIDCClient, error) {
 }
 
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
-func (c *GitHubOIDCClient) Token(ctx context.Context) (*OIDCToken, error) {
+func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
 	tokenBytes, err := c.requestToken(ctx, defaultAudience)
 	if err != nil {
 		return nil, err
@@ -177,8 +177,8 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 	return idToken, nil
 }
 
-func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*OIDCToken, error) {
-	var t OIDCToken
+func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
+	var t Token
 	t.Issuer = token.Issuer
 	t.Audience = token.Audience
 	t.Expiry = token.Expiry
@@ -190,7 +190,7 @@ func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*OIDCToken, error) 
 	return &t, nil
 }
 
-func (c *GitHubOIDCClient) verifyClaims(token *OIDCToken) error {
+func (c *GitHubOIDCClient) verifyClaims(token *Token) error {
 	if token.JobWorkflowRef == "" {
 		return fmt.Errorf("%w: job workflow ref is empty", errClaims)
 	}

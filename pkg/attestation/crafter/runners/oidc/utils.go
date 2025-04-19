@@ -22,8 +22,8 @@ import (
 	"time"
 )
 
-// OIDCToken represents the contents of a GitHub OIDC JWT token.
-type OIDCToken struct {
+// Token represents the contents of a GitHub OIDC JWT token.
+type Token struct {
 	// Expiry is the expiration date of the token.
 	Expiry time.Time
 
@@ -60,16 +60,16 @@ var (
 	errVerify = errors.New("verify")
 )
 
-// OIDCClient is the interface for an OIDC client.
-type OIDCClient interface {
-	Token(ctx context.Context) (*OIDCToken, error)
+// Client is the interface for an OIDC client.
+type Client interface {
+	Token(ctx context.Context) (*Token, error)
 }
 
-// NoOPClient is a empty implementation of OIDCClient that returns an empty token.
+// NoOPClient is a empty implementation of Client that returns an empty token.
 type NoOPClient struct{}
 
-func (r *NoOPClient) Token(ctx context.Context) (*OIDCToken, error) {
-	return &OIDCToken{
+func (r *NoOPClient) Token(ctx context.Context) (*Token, error) {
+	return &Token{
 		Expiry:            time.Now(),
 		RunnerEnvironment: "",
 		Issuer:            "",
@@ -77,7 +77,7 @@ func (r *NoOPClient) Token(ctx context.Context) (*OIDCToken, error) {
 	}, nil
 }
 
-func NewNoOPClient() OIDCClient {
+func NewNoOPClient() Client {
 	return &NoOPClient{}
 }
 

@@ -25,7 +25,7 @@ import (
 )
 
 type GitHubAction struct {
-	oidcClient oidc.OIDCClient
+	oidcClient oidc.Client
 }
 
 func NewGithubAction() *GitHubAction {
