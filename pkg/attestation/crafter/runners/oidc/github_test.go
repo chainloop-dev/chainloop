@@ -229,7 +229,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 					return
 				}
 				// Verify token fields
-				assert.Equal(t, tt.expectToken.IDToken.Issuer, actualToken.IDToken.Issuer)
+				assert.Equal(t, tt.expectToken.Issuer, actualToken.Issuer)
 				assert.Equal(t, tt.expectToken.JobWorkflowRef, actualToken.JobWorkflowRef)
 				assert.Equal(t, tt.expectToken.RunnerEnvironment, actualToken.RunnerEnvironment)
 				assert.Equal(t, tt.expectToken.RawToken, actualToken.RawToken)
