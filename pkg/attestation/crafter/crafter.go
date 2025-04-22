@@ -370,6 +370,10 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			Head:                   headCommitP,
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
 			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
+			WorkflowFilePath:       opts.Runner.WorkflowFilePath(context.Background()),
+			RunnerEnvironment:      opts.Runner.RunnerEnvironment(context.Background()),
+			IsHostedRunner:         opts.Runner.IsHosted(context.Background()),
+			IsAuthenticatedRunner:  opts.Runner.IsAuthenticated(context.Background()),
 		},
 		DryRun: opts.DryRun,
 	}, nil

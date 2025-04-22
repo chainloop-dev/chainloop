@@ -42,6 +42,9 @@
       },
       "type": "array"
     },
+    "^(runnerEnvironment)$": {
+      "type": "string"
+    },
     "^(runnerType)$": {
       "anyOf": [
         {
@@ -139,6 +142,9 @@
         "$ref": "attestation.v1.PolicyEvaluation.schema.json"
       },
       "type": "array"
+    },
+    "runner_environment": {
+      "type": "string"
     },
     "runner_type": {
       "anyOf": [

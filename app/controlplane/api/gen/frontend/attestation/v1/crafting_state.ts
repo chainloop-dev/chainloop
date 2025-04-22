@@ -38,6 +38,7 @@ export interface Attestation {
   signingOptions?: Attestation_SigningOptions;
   /** Workflow file path that was used during build */
   workflowFilePath: string;
+  runnerEnvironment: string;
   /** Whether the runner is hosted */
   isHostedRunner: boolean;
   /** Whether the runner is authenticated, i.e. via the OIDC token */
@@ -333,6 +334,7 @@ function createBaseAttestation(): Attestation {
     bypassPolicyCheck: false,
     signingOptions: undefined,
     workflowFilePath: "",
+    runnerEnvironment: "",
     isHostedRunner: false,
     isAuthenticatedRunner: false,
   };
@@ -382,11 +384,14 @@ export const Attestation = {
     if (message.workflowFilePath !== "") {
       writer.uint32(130).string(message.workflowFilePath);
     }
+    if (message.runnerEnvironment !== "") {
+      writer.uint32(138).string(message.runnerEnvironment);
+    }
     if (message.isHostedRunner === true) {
-      writer.uint32(136).bool(message.isHostedRunner);
+      writer.uint32(144).bool(message.isHostedRunner);
     }
     if (message.isAuthenticatedRunner === true) {
-      writer.uint32(144).bool(message.isAuthenticatedRunner);
+      writer.uint32(152).bool(message.isAuthenticatedRunner);
     }
     return writer;
   },
@@ -506,14 +511,21 @@ export const Attestation = {
           message.workflowFilePath = reader.string();
           continue;
         case 17:
-          if (tag !== 136) {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.runnerEnvironment = reader.string();
+          continue;
+        case 18:
+          if (tag !== 144) {
             break;
           }
 
           message.isHostedRunner = reader.bool();
           continue;
-        case 18:
-          if (tag !== 144) {
+        case 19:
+          if (tag !== 152) {
             break;
           }
 
@@ -563,6 +575,7 @@ export const Attestation = {
         ? Attestation_SigningOptions.fromJSON(object.signingOptions)
         : undefined,
       workflowFilePath: isSet(object.workflowFilePath) ? String(object.workflowFilePath) : "",
+      runnerEnvironment: isSet(object.runnerEnvironment) ? String(object.runnerEnvironment) : "",
       isHostedRunner: isSet(object.isHostedRunner) ? Boolean(object.isHostedRunner) : false,
       isAuthenticatedRunner: isSet(object.isAuthenticatedRunner) ? Boolean(object.isAuthenticatedRunner) : false,
     };
@@ -606,6 +619,7 @@ export const Attestation = {
       ? Attestation_SigningOptions.toJSON(message.signingOptions)
       : undefined);
     message.workflowFilePath !== undefined && (obj.workflowFilePath = message.workflowFilePath);
+    message.runnerEnvironment !== undefined && (obj.runnerEnvironment = message.runnerEnvironment);
     message.isHostedRunner !== undefined && (obj.isHostedRunner = message.isHostedRunner);
     message.isAuthenticatedRunner !== undefined && (obj.isAuthenticatedRunner = message.isAuthenticatedRunner);
     return obj;
@@ -656,6 +670,7 @@ export const Attestation = {
       ? Attestation_SigningOptions.fromPartial(object.signingOptions)
       : undefined;
     message.workflowFilePath = object.workflowFilePath ?? "";
+    message.runnerEnvironment = object.runnerEnvironment ?? "";
     message.isHostedRunner = object.isHostedRunner ?? false;
     message.isAuthenticatedRunner = object.isAuthenticatedRunner ?? false;
     return message;

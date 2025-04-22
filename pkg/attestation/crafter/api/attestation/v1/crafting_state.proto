@@ -153,11 +153,13 @@ message Attestation {
   // Workflow file path that was used during build 
   string workflow_file_path = 16;
 
+  string runner_environment = 17;
+
   // Whether the runner is hosted
-  bool is_hosted_runner = 17;
+  bool is_hosted_runner = 18;
 
   // Whether the runner is authenticated, i.e. via the OIDC token
-  bool is_authenticated_runner = 18;
+  bool is_authenticated_runner = 19;
 
   message SigningOptions {
     // TSA URL
