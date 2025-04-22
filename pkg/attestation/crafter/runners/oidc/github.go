@@ -26,7 +26,6 @@ import (
 	"net/url"
 	"os"
 	"slices"
-	"time"
 
 	"bytes"
 	"io"
@@ -52,11 +51,7 @@ type GitHubOIDCClient struct {
 
 // Token represents the contents of a GitHub OIDC JWT token.
 type GitHubToken struct {
-	// Expiry is the expiration date of the token.
-	Expiry time.Time
-
-	// Issuer is the token issuer.
-	Issuer string
+	oidc.IDToken
 
 	// JobWorkflowRef is a reference to the current job workflow.
 	JobWorkflowRef string `json:"job_workflow_ref"`
@@ -66,9 +61,6 @@ type GitHubToken struct {
 
 	// RawToken is the unparsed oidc token.
 	RawToken string
-
-	// Audience is the audience for which the token was granted.
-	Audience []string
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.

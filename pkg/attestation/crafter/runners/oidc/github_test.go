@@ -75,10 +75,14 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 
 	// Create a successful token for comparison
 	expectedToken := &GitHubToken{
-		Issuer:            expectedIssuer,
+		IDToken: coreoidc.IDToken{
+			Issuer:   expectedIssuer,
+			Audience: testAudience,
+			Expiry:   time.Now().Add(time.Hour),
+			IssuedAt: time.Now(),
+		},
 		JobWorkflowRef:    "repo:octo-org/octo-repo:ref:refs/heads/main",
 		RunnerEnvironment: "github-hosted",
-		Audience:          testAudience,
 		RawToken:          signedToken,
 	}
 
@@ -225,7 +229,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 					return
 				}
 				// Verify token fields
-				assert.Equal(t, tt.expectToken.Issuer, actualToken.Issuer)
+				assert.Equal(t, tt.expectToken.IDToken.Issuer, actualToken.IDToken.Issuer)
 				assert.Equal(t, tt.expectToken.JobWorkflowRef, actualToken.JobWorkflowRef)
 				assert.Equal(t, tt.expectToken.RunnerEnvironment, actualToken.RunnerEnvironment)
 				assert.Equal(t, tt.expectToken.RawToken, actualToken.RawToken)
