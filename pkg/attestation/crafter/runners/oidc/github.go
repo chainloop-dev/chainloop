@@ -95,6 +95,27 @@ func NewOIDCGitHubClient() (Client, error) {
 	return &c, nil
 }
 
+func (c *GitHubOIDCClient) WorkflowFilePath(ctx context.Context) string {
+	token, err := c.Token(ctx)
+	if err != nil {
+		return ""
+	}
+
+	return token.JobWorkflowRef
+}
+
+func (c *GitHubOIDCClient) IsHosted(_ context.Context) bool {
+	return true
+}
+
+func (c *GitHubOIDCClient) RunnerEnvironment(ctx context.Context) string {
+	token, err := c.Token(ctx)
+	if err != nil {
+		return ""
+	}
+	return token.RunnerEnvironment
+}
+
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
 func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
 	if c.token != nil {
@@ -139,7 +160,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
 
 // WithAudience sets the OIDC token audience for the client.
 // If audience is nil or empty, defaultAudience will be used in token requests.
-func (c *GitHubOIDCClient) WithAudience(audience []string) *GitHubOIDCClient {
+func (c *GitHubOIDCClient) WithAudience(audience []string) Client {
 	if len(audience) > 0 {
 		c.audience = audience
 	}

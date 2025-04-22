@@ -150,6 +150,15 @@ message Attestation {
   // Signing options
   SigningOptions signing_options = 15;
 
+  // Workflow file path that was used during build 
+  string workflow_file_path = 16;
+
+  // Whether the runner is hosted
+  bool is_hosted_runner = 17;
+
+  // Whether the runner is authenticated, i.e. via the OIDC token
+  bool is_authenticated_runner = 18;
+
   message SigningOptions {
     // TSA URL
     string timestamp_authority_url = 1;

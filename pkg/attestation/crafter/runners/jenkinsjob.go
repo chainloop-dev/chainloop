@@ -77,5 +77,13 @@ func (r *JenkinsJob) WorkflowFilePath(_ context.Context) string {
 }
 
 func (r *JenkinsJob) IsHosted(_ context.Context) bool {
+	return true
+}
+
+func (r *JenkinsJob) IsAuthenticated(_ context.Context) bool {
 	return false
+}
+
+func (r *JenkinsJob) RunnerEnvironment(_ context.Context) string {
+	return ""
 }

@@ -70,5 +70,13 @@ func (r *CircleCIBuild) WorkflowFilePath(_ context.Context) string {
 }
 
 func (r *CircleCIBuild) IsHosted(_ context.Context) bool {
+	return true
+}
+
+func (r *CircleCIBuild) IsAuthenticated(_ context.Context) bool {
 	return false
+}
+
+func (r *CircleCIBuild) RunnerEnvironment(_ context.Context) string {
+	return ""
 }

@@ -83,18 +83,18 @@ func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
+func (r *GitHubAction) RunnerEnvironment(ctx context.Context) string {
+	return r.oidcClient.RunnerEnvironment(ctx)
+}
+
 func (r *GitHubAction) WorkflowFilePath(ctx context.Context) string {
-	token, err := r.oidcClient.Token(ctx)
-	if err != nil {
-		return ""
-	}
-	return token.JobWorkflowRef
+	return r.oidcClient.WorkflowFilePath(ctx)
 }
 
 func (r *GitHubAction) IsHosted(ctx context.Context) bool {
-	token, err := r.oidcClient.Token(ctx)
-	if err != nil {
-		return false
-	}
-	return token.RunnerEnvironment == "github-hosted"
+	return r.oidcClient.IsHosted(ctx)
+}
+
+func (r *GitHubAction) IsAuthenticated(_ context.Context) bool {
+	return r.oidcClient != nil
 }

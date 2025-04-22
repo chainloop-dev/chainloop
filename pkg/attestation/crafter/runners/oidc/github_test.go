@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	coreoidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,21 +40,47 @@ const (
 	oidcDiscoveryEndpoint = "/.well-known/openid-configuration"
 	jwksEndpoint          = "/jwks"
 
-	expectedGitHubIssuer = "https://token.actions.githubusercontent.com"
 	testBearerTokenValue = "test-bearer-token"
 	testKeyID            = "test-key-id"
 )
 
 func TestGitHubOIDCClient_Token(t *testing.T) {
+	// Override the verifier function for testing
+	originalDefaultActionsProviderURL := defaultActionsProviderURL
+	originalDefaultAudience := defaultAudience
+	t.Cleanup(func() {
+		defaultActionsProviderURL = originalDefaultActionsProviderURL
+		defaultAudience = originalDefaultAudience
+	})
+
 	mockServer, privKey, serverURL := setupOIDCMocks(t)
 	tokenRequestURL := fmt.Sprintf("%s%s", serverURL, tokenRequestEndpoint)
+	// Set the default provider URL to our mock server
+	defaultActionsProviderURL = serverURL
 
-	claims := createStandardClaims()
+	// Set the test audience
+	testAudience := []string{"test-audience"}
+	// Override the default audience for testing
+	defaultAudience = testAudience
+
+	// Set the expected issuer to our mock server URL
+	expectedIssuer := serverURL
+
+	claims := createStandardClaims(expectedIssuer, testAudience)
 	signedToken, err := createSignedToken(claims, privKey)
 	require.NoError(t, err, "Failed to create signed token")
 
 	baseHandler := defaultMockHandler(t, signedToken, testBearerTokenValue, privKey)
 	mockServer.Config.Handler = baseHandler
+
+	// Create a successful token for comparison
+	expectedToken := &Token{
+		Issuer:            expectedIssuer,
+		JobWorkflowRef:    "repo:octo-org/octo-repo:ref:refs/heads/main",
+		RunnerEnvironment: "github-hosted",
+		Audience:          testAudience,
+		RawToken:          signedToken,
+	}
 
 	tests := []struct {
 		name              string
@@ -64,6 +91,12 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 		setupEnv          func(t *testing.T)
 		clientAudience    []string
 	}{
+		{
+			name:        "Success",
+			mockHandler: baseHandler,
+			expectToken: expectedToken,
+			expectErr:   false,
+		},
 		{
 			name: "Non-200 response",
 			mockHandler: func(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +167,32 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			client, err := NewOIDCGitHubClient()
 			require.NoError(t, err)
 
+			// For non-error cases, we need to mock the verification function
+			if !tt.expectErr {
+				// Override the verifier function for the client
+				githubClient, ok := client.(*GitHubOIDCClient)
+				if ok {
+					// Create a custom verifier that always succeeds for our test token
+					githubClient.verifierFunc = func(ctx context.Context) (*coreoidc.IDTokenVerifier, error) {
+						provider, err := coreoidc.NewProvider(ctx, serverURL)
+						if err != nil {
+							return nil, err
+						}
+						return provider.Verifier(&coreoidc.Config{
+							SkipClientIDCheck: true,
+							SkipExpiryCheck:   true,
+							SkipIssuerCheck:   true,
+						}), nil
+					}
+				}
+			}
+
+			// Test additional methods of the client interface
+			workflowPath := client.WorkflowFilePath(context.Background())
+			runnerEnv := client.RunnerEnvironment(context.Background())
+			isHosted := client.IsHosted(context.Background())
+
+			// Get the token for testing
 			var actualToken *Token
 			func() {
 				defer func() {
@@ -141,12 +200,21 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 						err = fmt.Errorf("panic occurred: %v", r)
 					}
 				}()
-				actualToken, err = client.Token(context.Background())
+				// Use type assertion to access the token method which is not part of the interface
+				githubClient, ok := client.(*GitHubOIDCClient)
+				if ok {
+					actualToken, err = githubClient.Token(context.Background())
+				} else {
+					err = fmt.Errorf("client is not a GitHubOIDCClient")
+				}
 			}()
 
 			if tt.expectErr {
 				assert.Error(t, err)
 				assert.Nil(t, actualToken)
+				// If we expect an error, we should also expect these methods to return empty values
+				assert.Empty(t, workflowPath)
+				assert.Empty(t, runnerEnv)
 			} else {
 				if err != nil {
 					assert.NoError(t, err, "Expected success but got error")
@@ -156,8 +224,20 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 					assert.NotNil(t, actualToken, "Token is nil but no error was returned")
 					return
 				}
+				// Verify token fields
 				assert.Equal(t, tt.expectToken.Issuer, actualToken.Issuer)
 				assert.Equal(t, tt.expectToken.JobWorkflowRef, actualToken.JobWorkflowRef)
+				assert.Equal(t, tt.expectToken.RunnerEnvironment, actualToken.RunnerEnvironment)
+				assert.Equal(t, tt.expectToken.RawToken, actualToken.RawToken)
+
+				// Verify client interface methods
+				assert.Equal(t, tt.expectToken.JobWorkflowRef, workflowPath)
+				assert.Equal(t, tt.expectToken.RunnerEnvironment, runnerEnv)
+				assert.True(t, isHosted)
+
+				// Test WithAudience method
+				newClient := client.WithAudience([]string{"new-audience"})
+				assert.NotNil(t, newClient)
 			}
 		})
 	}
@@ -180,14 +260,17 @@ func setupOIDCMocks(t *testing.T) (*httptest.Server, *rsa.PrivateKey, string) {
 }
 
 func setupOIDCMocksHandler(w http.ResponseWriter, r *http.Request, privKey *rsa.PrivateKey) {
+	// Get the host from the request to construct the issuer URL
+	hostURL := fmt.Sprintf("http://%s", r.Host)
+
 	switch r.URL.Path {
 	case oidcDiscoveryEndpoint:
-		discovery := map[string]string{
-			"issuer":                                expectedGitHubIssuer,
-			"jwks_uri":                              fmt.Sprintf("http://%s%s", r.Host, jwksEndpoint),
-			"response_types_supported":              "id_token",
-			"subject_types_supported":               "public",
-			"id_token_signing_alg_values_supported": "RS256",
+		discovery := map[string]interface{}{
+			"issuer":                                hostURL,
+			"jwks_uri":                              fmt.Sprintf("%s%s", hostURL, jwksEndpoint),
+			"response_types_supported":              []string{"id_token"},
+			"subject_types_supported":               []string{"public"},
+			"id_token_signing_alg_values_supported": []string{"RS256"},
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(discovery); err != nil {
@@ -223,19 +306,21 @@ func setupOIDCMocksHandler(w http.ResponseWriter, r *http.Request, privKey *rsa.
 	}
 }
 
-func createStandardClaims() jwt.MapClaims {
+func createStandardClaims(issuer string, audience []string) jwt.MapClaims {
 	return jwt.MapClaims{
-		"iss":        expectedGitHubIssuer,
-		"sub":        "repo:octo-org/octo-repo:ref:refs/heads/main",
-		"aud":        "test-audience",
-		"exp":        time.Now().Add(time.Hour).Unix(),
-		"nbf":        time.Now().Add(-time.Minute).Unix(),
-		"iat":        time.Now().Unix(),
-		"jti":        "test-jti",
-		"ref":        "refs/heads/main",
-		"repository": "octo-org/octo-repo",
-		"run_id":     "1234567890",
-		"sha":        "test-sha",
+		"iss":                issuer,
+		"sub":                "repo:octo-org/octo-repo:ref:refs/heads/main",
+		"aud":                audience[0], // JWT library expects a string for single audience
+		"exp":                time.Now().Add(time.Hour).Unix(),
+		"nbf":                time.Now().Add(-time.Minute).Unix(),
+		"iat":                time.Now().Unix(),
+		"jti":                "test-jti",
+		"ref":                "refs/heads/main",
+		"repository":         "octo-org/octo-repo",
+		"run_id":             "1234567890",
+		"sha":                "test-sha",
+		"job_workflow_ref":   "repo:octo-org/octo-repo:ref:refs/heads/main",
+		"runner_environment": "github-hosted",
 	}
 }
 

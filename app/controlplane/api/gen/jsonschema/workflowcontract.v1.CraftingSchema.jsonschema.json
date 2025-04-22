@@ -10,10 +10,6 @@
       },
       "type": "array"
     },
-    "^(is_hosted_runner)$": {
-      "description": "Whether the runner is hosted or not",
-      "type": "boolean"
-    },
     "^(policy_groups)$": {
       "description": "Policy groups to apply to this schema",
       "items": {
@@ -26,10 +22,6 @@
       "enum": [
         "v1"
       ],
-      "type": "string"
-    },
-    "^(workflow_file)$": {
-      "description": "Optional path to the workflow file content",
       "type": "string"
     }
   },
@@ -46,10 +38,6 @@
         "type": "string"
       },
       "type": "array"
-    },
-    "isHostedRunner": {
-      "description": "Whether the runner is hosted or not",
-      "type": "boolean"
     },
     "materials": {
       "items": {
@@ -76,10 +64,6 @@
       "enum": [
         "v1"
       ],
-      "type": "string"
-    },
-    "workflowFile": {
-      "description": "Optional path to the workflow file content",
       "type": "string"
     }
   },

@@ -90,5 +90,13 @@ func (r *AzurePipeline) WorkflowFilePath(_ context.Context) string {
 }
 
 func (r *AzurePipeline) IsHosted(_ context.Context) bool {
+	return true
+}
+
+func (r *AzurePipeline) IsAuthenticated(_ context.Context) bool {
 	return false
+}
+
+func (r *AzurePipeline) RunnerEnvironment(_ context.Context) string {
+	return ""
 }

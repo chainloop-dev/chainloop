@@ -27,6 +27,14 @@
     "^(initializedAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
+    "^(isAuthenticatedRunner)$": {
+      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
+      "type": "boolean"
+    },
+    "^(isHostedRunner)$": {
+      "description": "Whether the runner is hosted",
+      "type": "boolean"
+    },
     "^(policyEvaluations)$": {
       "description": "Policies that materials in this attestation were validated against",
       "items": {
@@ -62,6 +70,10 @@
     "^(signingOptions)$": {
       "$ref": "attestation.v1.Attestation.SigningOptions.schema.json",
       "description": "Signing options"
+    },
+    "^(workflowFilePath)$": {
+      "description": "Workflow file path that was used during build",
+      "type": "string"
     }
   },
   "properties": {
@@ -103,6 +115,14 @@
     },
     "initialized_at": {
       "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "is_authenticated_runner": {
+      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
+      "type": "boolean"
+    },
+    "is_hosted_runner": {
+      "description": "Whether the runner is hosted",
+      "type": "boolean"
     },
     "materials": {
       "additionalProperties": {
@@ -151,6 +171,10 @@
     },
     "workflow": {
       "$ref": "attestation.v1.WorkflowMetadata.schema.json"
+    },
+    "workflow_file_path": {
+      "description": "Workflow file path that was used during build",
+      "type": "string"
     }
   },
   "required": [

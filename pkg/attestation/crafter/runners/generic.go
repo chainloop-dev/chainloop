@@ -56,3 +56,11 @@ func (r *Generic) WorkflowFilePath(_ context.Context) string {
 func (r *Generic) IsHosted(_ context.Context) bool {
 	return false
 }
+
+func (r *Generic) IsAuthenticated(_ context.Context) bool {
+	return false
+}
+
+func (r *Generic) RunnerEnvironment(_ context.Context) string {
+	return ""
+}

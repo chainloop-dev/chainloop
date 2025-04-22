@@ -61,11 +61,18 @@ var (
 
 // Client is the interface for an OIDC client.
 type Client interface {
-	Token(ctx context.Context) (*Token, error)
+	WithAudience(audience []string) Client
+	IsHosted(ctx context.Context) bool
+	WorkflowFilePath(ctx context.Context) string
+	RunnerEnvironment(ctx context.Context) string
 }
 
 // NoOPClient is a empty implementation of Client that returns an empty token.
 type NoOPClient struct{}
+
+func NewNoOPClient() Client {
+	return &NoOPClient{}
+}
 
 func (r *NoOPClient) Token(_ context.Context) (*Token, error) {
 	return &Token{
@@ -76,6 +83,18 @@ func (r *NoOPClient) Token(_ context.Context) (*Token, error) {
 	}, nil
 }
 
-func NewNoOPClient() Client {
-	return &NoOPClient{}
+func (r *NoOPClient) WithAudience(_ []string) Client {
+	return r
+}
+
+func (r *NoOPClient) WorkflowFilePath(_ context.Context) string {
+	return ""
+}
+
+func (r *NoOPClient) IsHosted(_ context.Context) bool {
+	return false
+}
+
+func (r *NoOPClient) RunnerEnvironment(_ context.Context) string {
+	return ""
 }

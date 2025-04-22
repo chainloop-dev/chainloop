@@ -23,10 +23,6 @@ export interface CraftingSchema {
   policies?: Policies;
   /** Policy groups to apply to this schema */
   policyGroups: PolicyGroupAttachment[];
-  /** Optional path to the workflow file content */
-  workflowFile: string;
-  /** Whether the runner is hosted or not */
-  isHostedRunner: boolean;
 }
 
 export interface CraftingSchema_Runner {
@@ -488,8 +484,6 @@ function createBaseCraftingSchema(): CraftingSchema {
     annotations: [],
     policies: undefined,
     policyGroups: [],
-    workflowFile: "",
-    isHostedRunner: false,
   };
 }
 
@@ -515,12 +509,6 @@ export const CraftingSchema = {
     }
     for (const v of message.policyGroups) {
       PolicyGroupAttachment.encode(v!, writer.uint32(58).fork()).ldelim();
-    }
-    if (message.workflowFile !== "") {
-      writer.uint32(66).string(message.workflowFile);
-    }
-    if (message.isHostedRunner === true) {
-      writer.uint32(72).bool(message.isHostedRunner);
     }
     return writer;
   },
@@ -581,20 +569,6 @@ export const CraftingSchema = {
 
           message.policyGroups.push(PolicyGroupAttachment.decode(reader, reader.uint32()));
           continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.workflowFile = reader.string();
-          continue;
-        case 9:
-          if (tag !== 72) {
-            break;
-          }
-
-          message.isHostedRunner = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -617,8 +591,6 @@ export const CraftingSchema = {
       policyGroups: Array.isArray(object?.policyGroups)
         ? object.policyGroups.map((e: any) => PolicyGroupAttachment.fromJSON(e))
         : [],
-      workflowFile: isSet(object.workflowFile) ? String(object.workflowFile) : "",
-      isHostedRunner: isSet(object.isHostedRunner) ? Boolean(object.isHostedRunner) : false,
     };
   },
 
@@ -648,8 +620,6 @@ export const CraftingSchema = {
     } else {
       obj.policyGroups = [];
     }
-    message.workflowFile !== undefined && (obj.workflowFile = message.workflowFile);
-    message.isHostedRunner !== undefined && (obj.isHostedRunner = message.isHostedRunner);
     return obj;
   },
 
@@ -670,8 +640,6 @@ export const CraftingSchema = {
       ? Policies.fromPartial(object.policies)
       : undefined;
     message.policyGroups = object.policyGroups?.map((e) => PolicyGroupAttachment.fromPartial(e)) || [];
-    message.workflowFile = object.workflowFile ?? "";
-    message.isHostedRunner = object.isHostedRunner ?? false;
     return message;
   },
 };

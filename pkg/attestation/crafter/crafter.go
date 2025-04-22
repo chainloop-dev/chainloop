@@ -429,9 +429,11 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 
 func (c *Crafter) ResolveHostedRunnerContext(ctx context.Context) {
 	c.Logger.Debug().Bool("isHosted", c.Runner.IsHosted(ctx)).Msg("is runner hosted")
-	c.CraftingState.InputSchema.IsHostedRunner = c.Runner.IsHosted(ctx)
-	c.Logger.Debug().Str("workflowFile", c.Runner.WorkflowFilePath(ctx)).Msg("resolved workflow file")
-	c.CraftingState.InputSchema.WorkflowFile = c.Runner.WorkflowFilePath(ctx)
+	c.CraftingState.Attestation.IsHostedRunner = c.Runner.IsHosted(ctx)
+	c.Logger.Debug().Bool("isHosted", c.Runner.IsHosted(ctx)).Msg("is runner authenticated")
+	c.CraftingState.Attestation.IsAuthenticatedRunner = c.Runner.IsAuthenticated(ctx)
+	c.Logger.Debug().Str("workflowFile", c.Runner.WorkflowFilePath(ctx)).Msg("resolved workflow file path")
+	c.CraftingState.Attestation.WorkflowFilePath = c.Runner.WorkflowFilePath(ctx)
 }
 
 // AddMaterialContractFree adds a material to the crafting state without checking the contract schema.

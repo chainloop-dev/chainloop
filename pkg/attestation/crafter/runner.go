@@ -48,6 +48,12 @@ type SupportedRunner interface {
 
 	// IsHosted returns whether the runner is hosted or not
 	IsHosted(ctx context.Context) bool
+
+	// IsAuthenticated returns whether the runner is authenticated or not
+	IsAuthenticated(ctx context.Context) bool
+
+	// RunnerEnvironment returns the runner environment
+	RunnerEnvironment(ctx context.Context) string
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner

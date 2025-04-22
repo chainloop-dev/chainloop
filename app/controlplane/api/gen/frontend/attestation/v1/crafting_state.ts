@@ -36,6 +36,12 @@ export interface Attestation {
   bypassPolicyCheck: boolean;
   /** Signing options */
   signingOptions?: Attestation_SigningOptions;
+  /** Workflow file path that was used during build */
+  workflowFilePath: string;
+  /** Whether the runner is hosted */
+  isHostedRunner: boolean;
+  /** Whether the runner is authenticated, i.e. via the OIDC token */
+  isAuthenticatedRunner: boolean;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -326,6 +332,9 @@ function createBaseAttestation(): Attestation {
     blockOnPolicyViolation: false,
     bypassPolicyCheck: false,
     signingOptions: undefined,
+    workflowFilePath: "",
+    isHostedRunner: false,
+    isAuthenticatedRunner: false,
   };
 }
 
@@ -369,6 +378,15 @@ export const Attestation = {
     }
     if (message.signingOptions !== undefined) {
       Attestation_SigningOptions.encode(message.signingOptions, writer.uint32(122).fork()).ldelim();
+    }
+    if (message.workflowFilePath !== "") {
+      writer.uint32(130).string(message.workflowFilePath);
+    }
+    if (message.isHostedRunner === true) {
+      writer.uint32(136).bool(message.isHostedRunner);
+    }
+    if (message.isAuthenticatedRunner === true) {
+      writer.uint32(144).bool(message.isAuthenticatedRunner);
     }
     return writer;
   },
@@ -480,6 +498,27 @@ export const Attestation = {
 
           message.signingOptions = Attestation_SigningOptions.decode(reader, reader.uint32());
           continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.workflowFilePath = reader.string();
+          continue;
+        case 17:
+          if (tag !== 136) {
+            break;
+          }
+
+          message.isHostedRunner = reader.bool();
+          continue;
+        case 18:
+          if (tag !== 144) {
+            break;
+          }
+
+          message.isAuthenticatedRunner = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -523,6 +562,9 @@ export const Attestation = {
       signingOptions: isSet(object.signingOptions)
         ? Attestation_SigningOptions.fromJSON(object.signingOptions)
         : undefined,
+      workflowFilePath: isSet(object.workflowFilePath) ? String(object.workflowFilePath) : "",
+      isHostedRunner: isSet(object.isHostedRunner) ? Boolean(object.isHostedRunner) : false,
+      isAuthenticatedRunner: isSet(object.isAuthenticatedRunner) ? Boolean(object.isAuthenticatedRunner) : false,
     };
   },
 
@@ -563,6 +605,9 @@ export const Attestation = {
     message.signingOptions !== undefined && (obj.signingOptions = message.signingOptions
       ? Attestation_SigningOptions.toJSON(message.signingOptions)
       : undefined);
+    message.workflowFilePath !== undefined && (obj.workflowFilePath = message.workflowFilePath);
+    message.isHostedRunner !== undefined && (obj.isHostedRunner = message.isHostedRunner);
+    message.isAuthenticatedRunner !== undefined && (obj.isAuthenticatedRunner = message.isAuthenticatedRunner);
     return obj;
   },
 
@@ -610,6 +655,9 @@ export const Attestation = {
     message.signingOptions = (object.signingOptions !== undefined && object.signingOptions !== null)
       ? Attestation_SigningOptions.fromPartial(object.signingOptions)
       : undefined;
+    message.workflowFilePath = object.workflowFilePath ?? "";
+    message.isHostedRunner = object.isHostedRunner ?? false;
+    message.isAuthenticatedRunner = object.isAuthenticatedRunner ?? false;
     return message;
   },
 };

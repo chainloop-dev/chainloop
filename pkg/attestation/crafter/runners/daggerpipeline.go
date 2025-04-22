@@ -63,5 +63,13 @@ func (r *DaggerPipeline) WorkflowFilePath(_ context.Context) string {
 }
 
 func (r *DaggerPipeline) IsHosted(_ context.Context) bool {
+	return true
+}
+
+func (r *DaggerPipeline) IsAuthenticated(_ context.Context) bool {
 	return false
+}
+
+func (r *DaggerPipeline) RunnerEnvironment(_ context.Context) string {
+	return ""
 }
