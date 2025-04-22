@@ -75,12 +75,6 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 
 	// Create a successful token for comparison
 	expectedToken := &GitHubToken{
-		IDToken: coreoidc.IDToken{
-			Issuer:   expectedIssuer,
-			Audience: testAudience,
-			Expiry:   time.Now().Add(time.Hour),
-			IssuedAt: time.Now(),
-		},
 		JobWorkflowRef:    "repo:octo-org/octo-repo:ref:refs/heads/main",
 		RunnerEnvironment: "github-hosted",
 		RawToken:          signedToken,
@@ -195,6 +189,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			workflowPath := client.WorkflowFilePath(context.Background())
 			runnerEnv := client.RunnerEnvironment(context.Background())
 			isHosted := client.IsHosted(context.Background())
+			isAuthenticated := client.IsAuthenticated(context.Background())
 
 			// Get the token for testing
 			var actualToken *GitHubToken
@@ -229,7 +224,6 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 					return
 				}
 				// Verify token fields
-				assert.Equal(t, tt.expectToken.Issuer, actualToken.Issuer)
 				assert.Equal(t, tt.expectToken.JobWorkflowRef, actualToken.JobWorkflowRef)
 				assert.Equal(t, tt.expectToken.RunnerEnvironment, actualToken.RunnerEnvironment)
 				assert.Equal(t, tt.expectToken.RawToken, actualToken.RawToken)
@@ -238,6 +232,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 				assert.Equal(t, tt.expectToken.JobWorkflowRef, workflowPath)
 				assert.Equal(t, tt.expectToken.RunnerEnvironment, runnerEnv)
 				assert.True(t, isHosted)
+				assert.True(t, isAuthenticated)
 
 				// Test WithAudience method
 				newClient := client.WithAudience([]string{"new-audience"})
