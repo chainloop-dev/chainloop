@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"slices"
+	"time"
 
 	"bytes"
 	"io"
@@ -46,7 +47,28 @@ type GitHubOIDCClient struct {
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
 	audience     []string
-	token        *Token
+	token        *GitHubToken
+}
+
+// Token represents the contents of a GitHub OIDC JWT token.
+type GitHubToken struct {
+	// Expiry is the expiration date of the token.
+	Expiry time.Time
+
+	// Issuer is the token issuer.
+	Issuer string
+
+	// JobWorkflowRef is a reference to the current job workflow.
+	JobWorkflowRef string `json:"job_workflow_ref"`
+
+	// RunnerEnvironment is the environment the runner is running in.
+	RunnerEnvironment string `json:"runner_environment"`
+
+	// RawToken is the unparsed oidc token.
+	RawToken string
+
+	// Audience is the audience for which the token was granted.
+	Audience []string
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
@@ -117,7 +139,7 @@ func (c *GitHubOIDCClient) RunnerEnvironment(ctx context.Context) string {
 }
 
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
-func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
+func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 	if c.token != nil {
 		return c.token, nil
 	}
@@ -232,8 +254,8 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 	return idToken, nil
 }
 
-func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
-	var t Token
+func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*GitHubToken, error) {
+	var t GitHubToken
 	t.Issuer = token.Issuer
 	t.Audience = token.Audience
 	t.Expiry = token.Expiry
@@ -245,7 +267,7 @@ func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
 	return &t, nil
 }
 
-func (c *GitHubOIDCClient) verifyClaims(token *Token) error {
+func (c *GitHubOIDCClient) verifyClaims(token *GitHubToken) error {
 	if token.JobWorkflowRef == "" {
 		return fmt.Errorf("%w: job workflow ref is empty", errClaims)
 	}

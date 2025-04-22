@@ -74,7 +74,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 	mockServer.Config.Handler = baseHandler
 
 	// Create a successful token for comparison
-	expectedToken := &Token{
+	expectedToken := &GitHubToken{
 		Issuer:            expectedIssuer,
 		JobWorkflowRef:    "repo:octo-org/octo-repo:ref:refs/heads/main",
 		RunnerEnvironment: "github-hosted",
@@ -85,7 +85,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 	tests := []struct {
 		name              string
 		mockHandler       http.HandlerFunc
-		expectToken       *Token
+		expectToken       *GitHubToken
 		expectErr         bool
 		expectErrContains string
 		setupEnv          func(t *testing.T)
@@ -193,7 +193,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			isHosted := client.IsHosted(context.Background())
 
 			// Get the token for testing
-			var actualToken *Token
+			var actualToken *GitHubToken
 			func() {
 				defer func() {
 					if r := recover(); r != nil {

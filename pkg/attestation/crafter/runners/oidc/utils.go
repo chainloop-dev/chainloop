@@ -18,29 +18,7 @@ package oidc
 import (
 	"context"
 	"errors"
-	"time"
 )
-
-// Token represents the contents of a GitHub OIDC JWT token.
-type Token struct {
-	// Expiry is the expiration date of the token.
-	Expiry time.Time
-
-	// Issuer is the token issuer.
-	Issuer string
-
-	// JobWorkflowRef is a reference to the current job workflow.
-	JobWorkflowRef string `json:"job_workflow_ref"`
-
-	// RunnerEnvironment is the environment the runner is running in.
-	RunnerEnvironment string `json:"runner_environment"`
-
-	// RawToken is the unparsed oidc token.
-	RawToken string
-
-	// Audience is the audience for which the token was granted.
-	Audience []string
-}
 
 var (
 	// errURLError indicates the OIDC server URL is invalid.
@@ -72,15 +50,6 @@ type NoOPClient struct{}
 
 func NewNoOPClient() Client {
 	return &NoOPClient{}
-}
-
-func (r *NoOPClient) Token(_ context.Context) (*Token, error) {
-	return &Token{
-		Expiry:            time.Now(),
-		RunnerEnvironment: "",
-		Issuer:            "",
-		JobWorkflowRef:    "",
-	}, nil
 }
 
 func (r *NoOPClient) WithAudience(_ []string) Client {
