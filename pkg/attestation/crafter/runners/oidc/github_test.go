@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,8 +131,8 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			}
 			t.Cleanup(func() { mockServer.Config.Handler = baseHandler })
 
-			ctx := oidc.ClientContext(context.Background(), mockServer.Client())
-			client, err := NewOIDCGitHubClient(ctx)
+			//ctx := oidc.ClientContext(context.Background(), mockServer.Client())
+			client, err := NewOIDCGitHubClient()
 			require.NoError(t, err)
 
 			var actualToken *Token

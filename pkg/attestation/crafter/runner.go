@@ -43,8 +43,8 @@ type SupportedRunner interface {
 	// ID returns the runner type
 	ID() schemaapi.CraftingSchema_Runner_RunnerType
 
-	// WorkflowFile returns the workflow file associated with this runner
-	WorkflowFile(ctx context.Context) string
+	// WorkflowFilePath returns the workflow file path associated with this runner
+	WorkflowFilePath(ctx context.Context) string
 
 	// IsHosted returns whether the runner is hosted or not
 	IsHosted(ctx context.Context) bool

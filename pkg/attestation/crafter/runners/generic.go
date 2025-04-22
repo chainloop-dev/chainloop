@@ -49,7 +49,7 @@ func (r *Generic) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *Generic) WorkflowFile(_ context.Context) string {
+func (r *Generic) WorkflowFilePath(_ context.Context) string {
 	return ""
 }
 

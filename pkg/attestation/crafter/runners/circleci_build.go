@@ -65,7 +65,7 @@ func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *CircleCIBuild) WorkflowFile(_ context.Context) string {
+func (r *CircleCIBuild) WorkflowFilePath(_ context.Context) string {
 	return ""
 }
 

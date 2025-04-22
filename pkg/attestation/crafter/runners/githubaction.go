@@ -29,7 +29,10 @@ type GitHubAction struct {
 }
 
 func NewGithubAction() *GitHubAction {
-	client, err := oidc.NewOIDCGitHubClient(context.Background())
+	// In order to ensure that we are running in a non-falsifiable environment we get the OIDC
+	// from Github. That allows us to read the workflow file path and runnner type. If that can't
+	// be done we fallback to reading the env vars directly.
+	client, err := oidc.NewOIDCGitHubClient()
 	if err != nil {
 		client = oidc.NewNoOPClient()
 	}
@@ -80,7 +83,7 @@ func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *GitHubAction) WorkflowFile(ctx context.Context) string {
+func (r *GitHubAction) WorkflowFilePath(ctx context.Context) string {
 	token, err := r.oidcClient.Token(ctx)
 	if err != nil {
 		return ""

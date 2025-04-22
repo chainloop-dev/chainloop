@@ -72,7 +72,7 @@ func (r *JenkinsJob) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *JenkinsJob) WorkflowFile(_ context.Context) string {
+func (r *JenkinsJob) WorkflowFilePath(_ context.Context) string {
 	return ""
 }
 

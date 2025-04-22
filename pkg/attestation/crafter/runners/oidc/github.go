@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 
 	"bytes"
 	"io"
@@ -44,10 +45,11 @@ type GitHubOIDCClient struct {
 	requestURL   *url.URL
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
+	audience     []string
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
-func NewOIDCGitHubClient(_ context.Context) (Client, error) {
+func NewOIDCGitHubClient() (Client, error) {
 	var c GitHubOIDCClient
 
 	// Get the request URL and token from env vars
@@ -65,9 +67,14 @@ func NewOIDCGitHubClient(_ context.Context) (Client, error) {
 		)
 	}
 
+	bearerToken := os.Getenv(requestTokenEnvKey)
+	if len(bearerToken) <= 0 {
+		return nil, fmt.Errorf("token: %s environment variable not set; does your workflow have `id-token: write` scope?", requestTokenEnvKey)
+	}
+
 	c = GitHubOIDCClient{
 		requestURL:  parsedURL,
-		bearerToken: os.Getenv(requestTokenEnvKey),
+		bearerToken: bearerToken,
 	}
 	c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
 		provider, err := oidc.NewProvider(ctx, defaultActionsProviderURL)
@@ -75,15 +82,25 @@ func NewOIDCGitHubClient(_ context.Context) (Client, error) {
 			return nil, err
 		}
 		return provider.Verifier(&oidc.Config{
+			// we skip the check since we are not using a client IDs
 			SkipClientIDCheck: true,
 		}), nil
 	}
+
+	// set the default audience
+	c.audience = defaultAudience
+
 	return &c, nil
 }
 
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
 func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
-	tokenBytes, err := c.requestToken(ctx, defaultAudience)
+	audience := c.audience
+	if len(audience) == 0 {
+		audience = defaultAudience
+	}
+
+	tokenBytes, err := c.requestToken(ctx, audience)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +110,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
 		return nil, err
 	}
 
-	t, err := c.verifyToken(ctx, defaultAudience, tokenPayload)
+	t, err := c.verifyToken(ctx, audience, tokenPayload)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +127,15 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
 	token.RawToken = tokenPayload
 
 	return token, nil
+}
+
+// WithAudience sets the OIDC token audience for the client.
+// If audience is nil or empty, defaultAudience will be used in token requests.
+func (c *GitHubOIDCClient) WithAudience(audience []string) *GitHubOIDCClient {
+	if len(audience) > 0 {
+		c.audience = audience
+	}
+	return c
 }
 
 func (c *GitHubOIDCClient) newRequestURL(audience []string) string {
@@ -170,7 +196,7 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 	}
 
 	// Verify the audience received is the one we requested.
-	if !compareStringSlice(audience, idToken.Audience) {
+	if slices.Compare(audience, idToken.Audience) != 0 {
 		return nil, fmt.Errorf("%w: audience not equal %q != %q", errVerify, audience, idToken.Audience)
 	}
 

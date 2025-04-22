@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package oidc
 import (
 	"context"
 	"errors"
-	"sort"
 	"time"
 )
 
@@ -79,25 +78,4 @@ func (r *NoOPClient) Token(_ context.Context) (*Token, error) {
 
 func NewNoOPClient() Client {
 	return &NoOPClient{}
-}
-
-func compareStringSlice(s1, s2 []string) bool {
-	// Verify the audience received is the one we requested.
-	if len(s1) != len(s2) {
-		return false
-	}
-
-	c1 := append([]string{}, s1...)
-	sort.Strings(c1)
-
-	c2 := append([]string{}, s2...)
-	sort.Strings(c2)
-
-	for i := range c1 {
-		if c1[i] != c2[i] {
-			return false
-		}
-	}
-
-	return true
 }

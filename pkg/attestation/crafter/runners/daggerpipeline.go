@@ -58,7 +58,7 @@ func (r *DaggerPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *DaggerPipeline) WorkflowFile(_ context.Context) string {
+func (r *DaggerPipeline) WorkflowFilePath(_ context.Context) string {
 	return ""
 }
 

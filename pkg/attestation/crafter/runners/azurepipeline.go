@@ -85,7 +85,7 @@ func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *AzurePipeline) WorkflowFile(_ context.Context) string {
+func (r *AzurePipeline) WorkflowFilePath(_ context.Context) string {
 	return ""
 }
 

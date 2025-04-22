@@ -65,7 +65,7 @@ func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *GitlabPipeline) WorkflowFile(_ context.Context) string {
+func (r *GitlabPipeline) WorkflowFilePath(_ context.Context) string {
 	return ""
 }
 
