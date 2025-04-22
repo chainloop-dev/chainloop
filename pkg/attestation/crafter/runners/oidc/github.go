@@ -130,6 +130,11 @@ func (c *GitHubOIDCClient) RunnerEnvironment(ctx context.Context) string {
 	return token.RunnerEnvironment
 }
 
+func (c *GitHubOIDCClient) IsAuthenticated(ctx context.Context) bool {
+	_, err := c.Token(ctx)
+	return err == nil
+}
+
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
 func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 	if c.token != nil {
@@ -248,10 +253,6 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 
 func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*GitHubToken, error) {
 	var t GitHubToken
-	t.Issuer = token.Issuer
-	t.Audience = token.Audience
-	t.Expiry = token.Expiry
-
 	if err := token.Claims(&t); err != nil {
 		return nil, fmt.Errorf("%w: getting claims: %w", errToken, err)
 	}

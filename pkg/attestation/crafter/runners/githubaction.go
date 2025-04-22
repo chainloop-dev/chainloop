@@ -95,6 +95,6 @@ func (r *GitHubAction) IsHosted(ctx context.Context) bool {
 	return r.oidcClient.IsHosted(ctx)
 }
 
-func (r *GitHubAction) IsAuthenticated(_ context.Context) bool {
-	return r.oidcClient != nil
+func (r *GitHubAction) IsAuthenticated(ctx context.Context) bool {
+	return r.oidcClient.IsAuthenticated(ctx)
 }

@@ -41,6 +41,7 @@ var (
 type Client interface {
 	WithAudience(audience []string) Client
 	IsHosted(ctx context.Context) bool
+	IsAuthenticated(ctx context.Context) bool
 	WorkflowFilePath(ctx context.Context) string
 	RunnerEnvironment(ctx context.Context) string
 }
@@ -66,4 +67,8 @@ func (r *NoOPClient) IsHosted(_ context.Context) bool {
 
 func (r *NoOPClient) RunnerEnvironment(_ context.Context) string {
 	return ""
+}
+
+func (r *NoOPClient) IsAuthenticated(_ context.Context) bool {
+	return false
 }
