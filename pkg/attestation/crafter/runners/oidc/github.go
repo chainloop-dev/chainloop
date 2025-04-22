@@ -46,6 +46,7 @@ type GitHubOIDCClient struct {
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
 	audience     []string
+	token        *Token
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
@@ -68,7 +69,7 @@ func NewOIDCGitHubClient() (Client, error) {
 	}
 
 	bearerToken := os.Getenv(requestTokenEnvKey)
-	if len(bearerToken) <= 0 {
+	if len(bearerToken) == 0 {
 		return nil, fmt.Errorf("token: %s environment variable not set; does your workflow have `id-token: write` scope?", requestTokenEnvKey)
 	}
 
@@ -76,6 +77,7 @@ func NewOIDCGitHubClient() (Client, error) {
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
 	}
+
 	c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
 		provider, err := oidc.NewProvider(ctx, defaultActionsProviderURL)
 		if err != nil {
@@ -95,6 +97,10 @@ func NewOIDCGitHubClient() (Client, error) {
 
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
 func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
+	if c.token != nil {
+		return c.token, nil
+	}
+
 	audience := c.audience
 	if len(audience) == 0 {
 		audience = defaultAudience
@@ -126,6 +132,8 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*Token, error) {
 
 	token.RawToken = tokenPayload
 
+	// store the token for later re-use
+	c.token = token
 	return token, nil
 }
 

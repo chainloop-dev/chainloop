@@ -131,7 +131,6 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			}
 			t.Cleanup(func() { mockServer.Config.Handler = baseHandler })
 
-			//ctx := oidc.ClientContext(context.Background(), mockServer.Client())
 			client, err := NewOIDCGitHubClient()
 			require.NoError(t, err)
 
