@@ -112,8 +112,8 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
 	}
 
-	// Include the main component information if available
 	if err == nil {
+		// Include the main component information if available
 		err := i.extractMainComponent(m, &doc)
 		if err != nil {
 			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
