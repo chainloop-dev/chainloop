@@ -422,6 +422,9 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 		}
 	}
 
+	// Resolve runner information
+	c.ResolveRunnerInfo(ctx)
+
 	c.CraftingState.Attestation.EnvVars = outputEnvVars
 
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
@@ -431,7 +434,7 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	return nil
 }
 
-func (c *Crafter) ResolveHostedRunnerContext(ctx context.Context) {
+func (c *Crafter) ResolveRunnerInfo(ctx context.Context) {
 	c.Logger.Debug().Bool("isHosted", c.Runner.IsHosted(ctx)).Msg("is runner hosted")
 	c.CraftingState.Attestation.IsHostedRunner = c.Runner.IsHosted(ctx)
 	c.Logger.Debug().Bool("isAuthenticated", c.Runner.IsAuthenticated(ctx)).Msg("is runner authenticated")
