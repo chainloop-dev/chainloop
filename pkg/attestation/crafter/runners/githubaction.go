@@ -91,7 +91,7 @@ func (r *GitHubAction) WorkflowFilePath(ctx context.Context) string {
 	return r.oidcClient.WorkflowFilePath(ctx)
 }
 
-func (r *GitHubAction) IsHosted(ctx context.Context) bool {
+func (r *GitHubAction) IsHosted(_ context.Context) bool {
 	return true
 }
 
