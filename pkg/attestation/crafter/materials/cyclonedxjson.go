@@ -27,7 +27,6 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	remotename "github.com/google/go-containerregistry/pkg/name"
-
 	"github.com/rs/zerolog"
 )
 
@@ -149,19 +148,19 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material,
 			kind:    component.Type,
 			version: component.Version,
 		}
-	}
+	} else {
+		// Standardize the name to have the full repository name including the registry and
+		// sanitize the name to remove the possible tag from the repository name
+		ref, err := remotename.ParseReference(component.Name)
+		if err != nil {
+			return fmt.Errorf("couldn't parse OCI image repository name: %w", err)
+		}
 
-	// Standardize the name to have the full repository name including the registry and
-	// sanitize the name to remove the possible tag from the repository name
-	ref, err := remotename.ParseReference(component.Name)
-	if err != nil {
-		return fmt.Errorf("couldn't parse OCI image repository name: %w", err)
-	}
-
-	mainComponent = &SBOMMainComponentInfo{
-		name:    ref.Context().String(),
-		kind:    component.Type,
-		version: component.Version,
+		mainComponent = &SBOMMainComponentInfo{
+			name:    ref.Context().String(),
+			kind:    component.Type,
+			version: component.Version,
+		}
 	}
 
 	// If the main component is available, include it in the material
