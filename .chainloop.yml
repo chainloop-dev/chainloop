@@ -3,13 +3,6 @@ projectVersion: v1.0.0-rc.11
 
 # Experimental feature used by Chainloop labs shared workflow https://github.com/chainloop-dev/labs
 # It maps the material names with location in disk so they get automatically attested
-docs:
-  - name: sbom-cdx
-    path: reports/sbom.cyclonedx.json
-  - name: sbom-spdx
-    path: reports/sbom.spdx.json
-  - name: built-site
-    path: reports/build.tar.gz
 
 scorecards:
   - name: sarif-results

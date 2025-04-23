@@ -1,2 +1,0 @@
-exclude:
-  - "**/node_modules/rtl-detect/.github"
