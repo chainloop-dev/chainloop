@@ -43,6 +43,7 @@
       "type": "array"
     },
     "^(runner_environment)$": {
+      "description": "Runner environment name, i.e. github-hosted",
       "type": "string"
     },
     "^(runner_type)$": {
@@ -144,6 +145,7 @@
       "type": "array"
     },
     "runnerEnvironment": {
+      "description": "Runner environment name, i.e. github-hosted",
       "type": "string"
     },
     "runnerType": {

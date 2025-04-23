@@ -34,7 +34,6 @@ import (
 )
 
 var defaultActionsProviderURL = "https://token.actions.githubusercontent.com"
-var defaultAudience = []string{"nobody"}
 
 const (
 	requestTokenEnvKey = "ACTIONS_ID_TOKEN_REQUEST_TOKEN"
@@ -64,7 +63,8 @@ type GitHubToken struct {
 }
 
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
-func NewOIDCGitHubClient() (Client, error) {
+// If audience is nil or empty, defaultAudience will be used in token requests.
+func NewOIDCGitHubClient(audience []string) (*GitHubOIDCClient, error) {
 	var c GitHubOIDCClient
 
 	// Get the request URL and token from env vars
@@ -90,6 +90,7 @@ func NewOIDCGitHubClient() (Client, error) {
 	c = GitHubOIDCClient{
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
+		audience:    audience,
 	}
 
 	c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
@@ -102,9 +103,6 @@ func NewOIDCGitHubClient() (Client, error) {
 			SkipClientIDCheck: true,
 		}), nil
 	}
-
-	// set the default audience
-	c.audience = defaultAudience
 
 	return &c, nil
 }
@@ -141,12 +139,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 		return c.token, nil
 	}
 
-	audience := c.audience
-	if len(audience) == 0 {
-		audience = defaultAudience
-	}
-
-	tokenBytes, err := c.requestToken(ctx, audience)
+	tokenBytes, err := c.requestToken(ctx, c.audience)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +149,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 		return nil, err
 	}
 
-	t, err := c.verifyToken(ctx, audience, tokenPayload)
+	t, err := c.verifyToken(ctx, c.audience, tokenPayload)
 	if err != nil {
 		return nil, err
 	}
@@ -177,9 +170,9 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 	return token, nil
 }
 
-// WithAudience sets the OIDC token audience for the client.
-// If audience is nil or empty, defaultAudience will be used in token requests.
-func (c *GitHubOIDCClient) WithAudience(audience []string) Client {
+// WithAudience is deprecated. Use NewOIDCGitHubClient with audience parameter instead.
+// This method is kept for backward compatibility.
+func (c *GitHubOIDCClient) WithAudience(audience []string) *GitHubOIDCClient {
 	if len(audience) > 0 {
 		c.audience = audience
 	}

@@ -153,6 +153,7 @@ message Attestation {
   // Workflow file path that was used during build 
   string workflow_file_path = 16;
 
+  // Runner environment name, i.e. github-hosted
   string runner_environment = 17;
 
   // Whether the runner is hosted

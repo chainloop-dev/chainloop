@@ -66,7 +66,8 @@ type Attestation struct {
 	// Signing options
 	SigningOptions *Attestation_SigningOptions `protobuf:"bytes,15,opt,name=signing_options,json=signingOptions,proto3" json:"signing_options,omitempty"`
 	// Workflow file path that was used during build
-	WorkflowFilePath  string `protobuf:"bytes,16,opt,name=workflow_file_path,json=workflowFilePath,proto3" json:"workflow_file_path,omitempty"`
+	WorkflowFilePath string `protobuf:"bytes,16,opt,name=workflow_file_path,json=workflowFilePath,proto3" json:"workflow_file_path,omitempty"`
+	// Runner environment name, i.e. github-hosted
 	RunnerEnvironment string `protobuf:"bytes,17,opt,name=runner_environment,json=runnerEnvironment,proto3" json:"runner_environment,omitempty"`
 	// Whether the runner is hosted
 	IsHostedRunner bool `protobuf:"varint,18,opt,name=is_hosted_runner,json=isHostedRunner,proto3" json:"is_hosted_runner,omitempty"`

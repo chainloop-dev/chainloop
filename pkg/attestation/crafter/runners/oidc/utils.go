@@ -39,7 +39,6 @@ var (
 
 // Client is the interface for an OIDC client.
 type Client interface {
-	WithAudience(audience []string) Client
 	IsHosted(ctx context.Context) bool
 	IsAuthenticated(ctx context.Context) bool
 	WorkflowFilePath(ctx context.Context) string
@@ -49,7 +48,7 @@ type Client interface {
 // NoOPClient is a empty implementation of Client that returns an empty token.
 type NoOPClient struct{}
 
-func NewNoOPClient() Client {
+func NewNoOPClient() *NoOPClient {
 	return &NoOPClient{}
 }
 

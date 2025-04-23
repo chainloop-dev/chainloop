@@ -44,6 +44,8 @@ const (
 	testKeyID            = "test-key-id"
 )
 
+var defaultAudience = []string{"nobody"}
+
 func TestGitHubOIDCClient_Token(t *testing.T) {
 	// Override the verifier function for testing
 	originalDefaultActionsProviderURL := defaultActionsProviderURL
@@ -162,34 +164,30 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			}
 			t.Cleanup(func() { mockServer.Config.Handler = baseHandler })
 
-			client, err := NewOIDCGitHubClient()
+			client, err := NewOIDCGitHubClient(testAudience)
 			require.NoError(t, err)
 
 			// For non-error cases, we need to mock the verification function
 			if !tt.expectErr {
-				// Override the verifier function for the client
-				githubClient, ok := client.(*GitHubOIDCClient)
-				if ok {
-					// Create a custom verifier that always succeeds for our test token
-					githubClient.verifierFunc = func(ctx context.Context) (*coreoidc.IDTokenVerifier, error) {
-						provider, err := coreoidc.NewProvider(ctx, serverURL)
-						if err != nil {
-							return nil, err
-						}
-						return provider.Verifier(&coreoidc.Config{
-							SkipClientIDCheck: true,
-							SkipExpiryCheck:   true,
-							SkipIssuerCheck:   true,
-						}), nil
+				// Create a custom verifier that always succeeds for our test token
+				client.verifierFunc = func(ctx context.Context) (*coreoidc.IDTokenVerifier, error) {
+					provider, err := coreoidc.NewProvider(ctx, serverURL)
+					if err != nil {
+						return nil, err
 					}
+					return provider.Verifier(&coreoidc.Config{
+						SkipClientIDCheck: true,
+						SkipExpiryCheck:   true,
+						SkipIssuerCheck:   true,
+					}), nil
 				}
 			}
 
 			// Test additional methods of the client interface
-			workflowPath := client.WorkflowFilePath(context.Background())
-			runnerEnv := client.RunnerEnvironment(context.Background())
-			isHosted := client.IsHosted(context.Background())
-			isAuthenticated := client.IsAuthenticated(context.Background())
+			workflowPath := client.WorkflowFilePath(t.Context())
+			runnerEnv := client.RunnerEnvironment(t.Context())
+			isHosted := client.IsHosted(t.Context())
+			isAuthenticated := client.IsAuthenticated(t.Context())
 
 			// Get the token for testing
 			var actualToken *GitHubToken
@@ -199,13 +197,8 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 						err = fmt.Errorf("panic occurred: %v", r)
 					}
 				}()
-				// Use type assertion to access the token method which is not part of the interface
-				githubClient, ok := client.(*GitHubOIDCClient)
-				if ok {
-					actualToken, err = githubClient.Token(context.Background())
-				} else {
-					err = fmt.Errorf("client is not a GitHubOIDCClient")
-				}
+				// No need for type assertion anymore since client is directly a *GitHubOIDCClient
+				actualToken, err = client.Token(t.Context())
 			}()
 
 			if tt.expectErr {
@@ -234,9 +227,10 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 				assert.True(t, isHosted)
 				assert.True(t, isAuthenticated)
 
-				// Test WithAudience method
+				// Test WithAudience method (deprecated but still functional)
 				newClient := client.WithAudience([]string{"new-audience"})
 				assert.NotNil(t, newClient)
+				assert.Equal(t, []string{"new-audience"}, newClient.audience)
 			}
 		})
 	}

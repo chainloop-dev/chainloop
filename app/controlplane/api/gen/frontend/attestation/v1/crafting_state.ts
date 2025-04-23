@@ -38,6 +38,7 @@ export interface Attestation {
   signingOptions?: Attestation_SigningOptions;
   /** Workflow file path that was used during build */
   workflowFilePath: string;
+  /** Runner environment name, i.e. github-hosted */
   runnerEnvironment: string;
   /** Whether the runner is hosted */
   isHostedRunner: boolean;
