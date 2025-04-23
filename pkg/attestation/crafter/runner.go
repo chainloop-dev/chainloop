@@ -44,22 +44,19 @@ type SupportedRunner interface {
 	ID() schemaapi.CraftingSchema_Runner_RunnerType
 
 	// WorkflowFilePath returns the workflow file path associated with this runner
-	WorkflowFilePath(ctx context.Context) string
-
-	// IsHosted returns whether the runner is hosted or not
-	IsHosted(ctx context.Context) bool
+	WorkflowFilePath() string
 
 	// IsAuthenticated returns whether the runner is authenticated or not
-	IsAuthenticated(ctx context.Context) bool
+	IsAuthenticated() bool
 
 	// RunnerEnvironment returns the runner environment
-	RunnerEnvironment(ctx context.Context) string
+	RunnerEnvironment() runners.RunnerEnvironment
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
 
 var RunnersMap = map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner{
-	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(),
+	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(context.Background()),
 	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: runners.NewGitlabPipeline(),
 	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:  runners.NewAzurePipeline(),
 	schemaapi.CraftingSchema_Runner_JENKINS_JOB:     runners.NewJenkinsJob(),

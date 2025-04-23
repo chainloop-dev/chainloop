@@ -16,7 +16,6 @@
 package runners
 
 import (
-	"context"
 	neturl "net/url"
 	"os"
 	"path"
@@ -85,18 +84,14 @@ func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *AzurePipeline) WorkflowFilePath(_ context.Context) string {
+func (r *AzurePipeline) WorkflowFilePath() string {
 	return ""
 }
 
-func (r *AzurePipeline) IsHosted(_ context.Context) bool {
-	return true
-}
-
-func (r *AzurePipeline) IsAuthenticated(_ context.Context) bool {
+func (r *AzurePipeline) IsAuthenticated() bool {
 	return false
 }
 
-func (r *AzurePipeline) RunnerEnvironment(_ context.Context) string {
-	return ""
+func (r *AzurePipeline) RunnerEnvironment() RunnerEnvironment {
+	return Unknown
 }

@@ -27,21 +27,36 @@ import (
 var defaultAudience = []string{"nobody"}
 
 type GitHubAction struct {
-	oidcClient oidc.Client
+	githubToken *oidc.Token
 }
 
-func NewGithubAction() *GitHubAction {
+func NewGithubAction(ctx context.Context) *GitHubAction {
 	// In order to ensure that we are running in a non-falsifiable environment we get the OIDC
 	// from Github. That allows us to read the workflow file path and runnner type. If that can't
 	// be done we fallback to reading the env vars directly.
-	var client oidc.Client
-	client, err := oidc.NewOIDCGitHubClient(oidc.WithAudience(defaultAudience))
+	client, err := oidc.NewGitHubClient(oidc.WithAudience(defaultAudience))
 	if err != nil {
-		client = oidc.NewNoOPClient()
+		return &GitHubAction{
+			githubToken: nil,
+		}
+	}
+
+	token, err := client.Token(ctx)
+	if err != nil {
+		return &GitHubAction{
+			githubToken: nil,
+		}
+	}
+
+	ghToken, ok := token.(*oidc.Token)
+	if !ok {
+		return &GitHubAction{
+			githubToken: nil,
+		}
 	}
 
 	return &GitHubAction{
-		oidcClient: client,
+		githubToken: ghToken,
 	}
 }
 
@@ -86,20 +101,27 @@ func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *GitHubAction) RunnerEnvironment(ctx context.Context) string {
-	runnerEnv, _ := r.oidcClient.RunnerEnvironment(ctx)
-	return runnerEnv
+func (r *GitHubAction) RunnerEnvironment() RunnerEnvironment {
+	if r.githubToken != nil {
+		switch r.githubToken.RunnerEnvironment {
+		case "github-hosted":
+			return Managed
+		case "self-hosted":
+			return SelfHosted
+		default:
+			return Unknown
+		}
+	}
+	return Unknown
 }
 
-func (r *GitHubAction) WorkflowFilePath(ctx context.Context) string {
-	workflowFilePath, _ := r.oidcClient.WorkflowFilePath(ctx)
-	return workflowFilePath
+func (r *GitHubAction) WorkflowFilePath() string {
+	if r.githubToken != nil {
+		return r.githubToken.JobWorkflowRef
+	}
+	return ""
 }
 
-func (r *GitHubAction) IsHosted(_ context.Context) bool {
-	return true
-}
-
-func (r *GitHubAction) IsAuthenticated(ctx context.Context) bool {
-	return r.oidcClient.IsAuthenticated(ctx)
+func (r *GitHubAction) IsAuthenticated() bool {
+	return r.githubToken != nil
 }

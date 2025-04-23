@@ -175,7 +175,7 @@ func (c *Crafter) AlreadyInitialized(ctx context.Context, stateID string) (bool,
 // Initialize the temporary file with the content of the schema
 func (c *Crafter) initCraftingStateFile(ctx context.Context, opts *InitOpts) error {
 	// Generate Crafting state
-	state, err := initialCraftingState(ctx, c.workingDir, opts)
+	state, err := initialCraftingState(c.workingDir, opts)
 	if err != nil {
 		return fmt.Errorf("initializing crafting state: %w", err)
 	}
@@ -325,7 +325,7 @@ func sanitizeRemoteURL(remoteURL string) (string, error) {
 	return uri.String(), nil
 }
 
-func initialCraftingState(ctx context.Context, cwd string, opts *InitOpts) (*api.CraftingState, error) {
+func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error) {
 	if opts.WfInfo == nil || opts.Runner == nil || opts.SchemaV1 == nil {
 		return nil, errors.New("required init options not provided")
 	}
@@ -370,10 +370,13 @@ func initialCraftingState(ctx context.Context, cwd string, opts *InitOpts) (*api
 			Head:                   headCommitP,
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
 			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
-			WorkflowFilePath:       opts.Runner.WorkflowFilePath(ctx),
-			RunnerEnvironment:      opts.Runner.RunnerEnvironment(ctx),
-			IsHostedRunner:         opts.Runner.IsHosted(ctx),
-			IsAuthenticatedRunner:  opts.Runner.IsAuthenticated(ctx),
+			RunnerEnvironment: &api.RunnerEnvironment{
+				WorkflowFilePath:      opts.Runner.WorkflowFilePath(),
+				Environment:           opts.Runner.RunnerEnvironment().String(),
+				IsAuthenticatedRunner: opts.Runner.IsAuthenticated(),
+				Type:                  opts.Runner.ID().String(),
+				Url:                   opts.Runner.RunURI(),
+			},
 		},
 		DryRun: opts.DryRun,
 	}, nil
@@ -423,7 +426,7 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	}
 
 	// Resolve runner information
-	c.resolveRunnerInfo(ctx)
+	c.resolveRunnerInfo()
 
 	c.CraftingState.Attestation.EnvVars = outputEnvVars
 
@@ -434,13 +437,14 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	return nil
 }
 
-func (c *Crafter) resolveRunnerInfo(ctx context.Context) {
-	c.Logger.Debug().Bool("isHosted", c.Runner.IsHosted(ctx)).Msg("is runner hosted")
-	c.CraftingState.Attestation.IsHostedRunner = c.Runner.IsHosted(ctx)
-	c.Logger.Debug().Bool("isAuthenticated", c.Runner.IsAuthenticated(ctx)).Msg("is runner authenticated")
-	c.CraftingState.Attestation.IsAuthenticatedRunner = c.Runner.IsAuthenticated(ctx)
-	c.Logger.Debug().Str("workflowFile", c.Runner.WorkflowFilePath(ctx)).Msg("resolved workflow file path")
-	c.CraftingState.Attestation.WorkflowFilePath = c.Runner.WorkflowFilePath(ctx)
+func (c *Crafter) resolveRunnerInfo() {
+	c.CraftingState.Attestation.RunnerEnvironment = &api.RunnerEnvironment{
+		Environment:           c.Runner.RunnerEnvironment().String(),
+		IsAuthenticatedRunner: c.Runner.IsAuthenticated(),
+		WorkflowFilePath:      c.Runner.WorkflowFilePath(),
+		Type:                  c.Runner.ID().String(),
+		Url:                   c.Runner.RunURI(),
+	}
 }
 
 // AddMaterialContractFree adds a material to the crafting state without checking the contract schema.

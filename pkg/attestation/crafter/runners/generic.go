@@ -16,8 +16,6 @@
 package runners
 
 import (
-	"context"
-
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
@@ -49,18 +47,14 @@ func (r *Generic) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *Generic) WorkflowFilePath(_ context.Context) string {
+func (r *Generic) WorkflowFilePath() string {
 	return ""
 }
 
-func (r *Generic) IsHosted(_ context.Context) bool {
+func (r *Generic) IsAuthenticated() bool {
 	return false
 }
 
-func (r *Generic) IsAuthenticated(_ context.Context) bool {
-	return false
-}
-
-func (r *Generic) RunnerEnvironment(_ context.Context) string {
-	return ""
+func (r *Generic) RunnerEnvironment() RunnerEnvironment {
+	return Unknown
 }

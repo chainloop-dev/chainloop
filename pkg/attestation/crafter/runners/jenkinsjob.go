@@ -16,7 +16,6 @@
 package runners
 
 import (
-	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -72,18 +71,14 @@ func (r *JenkinsJob) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *JenkinsJob) WorkflowFilePath(_ context.Context) string {
+func (r *JenkinsJob) WorkflowFilePath() string {
 	return ""
 }
 
-func (r *JenkinsJob) IsHosted(_ context.Context) bool {
-	return true
-}
-
-func (r *JenkinsJob) IsAuthenticated(_ context.Context) bool {
+func (r *JenkinsJob) IsAuthenticated() bool {
 	return false
 }
 
-func (r *JenkinsJob) RunnerEnvironment(_ context.Context) string {
-	return ""
+func (r *JenkinsJob) RunnerEnvironment() RunnerEnvironment {
+	return Unknown
 }

@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -117,7 +118,7 @@ func (s *githubActionSuite) TestRunnerName() {
 
 // Run before each test
 func (s *githubActionSuite) SetupTest() {
-	s.runner = NewGithubAction()
+	s.runner = NewGithubAction(context.Background())
 	t := s.T()
 	for k, v := range gitHubTestingEnvVars {
 		t.Setenv(k, v)

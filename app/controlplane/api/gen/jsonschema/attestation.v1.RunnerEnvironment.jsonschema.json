@@ -1,0 +1,40 @@
+{
+  "$id": "attestation.v1.RunnerEnvironment.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The runner environment in which the attestation was crafted",
+  "patternProperties": {
+    "^(is_authenticated_runner)$": {
+      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
+      "type": "boolean"
+    },
+    "^(workflow_file_path)$": {
+      "description": "Workflow file path that was used during build",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "environment": {
+      "description": "Runner environment name, i.e. github-hosted",
+      "type": "string"
+    },
+    "isAuthenticatedRunner": {
+      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
+      "type": "boolean"
+    },
+    "type": {
+      "description": "Runner type",
+      "type": "string"
+    },
+    "url": {
+      "description": "Runner URL",
+      "type": "string"
+    },
+    "workflowFilePath": {
+      "description": "Workflow file path that was used during build",
+      "type": "string"
+    }
+  },
+  "title": "Runner Environment",
+  "type": "object"
+}

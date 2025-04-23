@@ -88,7 +88,6 @@ type ProvenancePredicateCommon struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// Additional properties related to runner
 	RunnerEnvironment   string `json:"runnerEnvironment,omitempty"`
-	RunnerHosted        bool   `json:"runnerHosted,omitempty"`
 	RunnerAuthenticated bool   `json:"runnerAuthenticated,omitempty"`
 	WorkflowFilePath    string `json:"workflowFilePath,omitempty"`
 }
@@ -128,6 +127,18 @@ type RendererCommon struct {
 }
 
 func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenancePredicateCommon {
+	var (
+		environment      string
+		authenticated    bool
+		workflowFilePath string
+	)
+
+	if att.RunnerEnvironment != nil {
+		environment = att.RunnerEnvironment.Environment
+		authenticated = att.RunnerEnvironment.IsAuthenticatedRunner
+		workflowFilePath = att.RunnerEnvironment.WorkflowFilePath
+	}
+
 	return &ProvenancePredicateCommon{
 		BuildType:           chainloopBuildType,
 		Builder:             &builder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
@@ -136,10 +147,9 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		RunnerType:          att.GetRunnerType().String(),
 		RunnerURL:           att.GetRunnerUrl(),
 		Annotations:         att.Annotations,
-		RunnerEnvironment:   att.GetRunnerEnvironment(),
-		RunnerHosted:        att.GetIsHostedRunner(),
-		RunnerAuthenticated: att.GetIsAuthenticatedRunner(),
-		WorkflowFilePath:    att.GetWorkflowFilePath(),
+		RunnerEnvironment:   environment,
+		RunnerAuthenticated: authenticated,
+		WorkflowFilePath:    workflowFilePath,
 	}
 }
 

@@ -16,7 +16,6 @@
 package runners
 
 import (
-	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -65,18 +64,14 @@ func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *CircleCIBuild) WorkflowFilePath(_ context.Context) string {
+func (r *CircleCIBuild) WorkflowFilePath() string {
 	return ""
 }
 
-func (r *CircleCIBuild) IsHosted(_ context.Context) bool {
-	return true
-}
-
-func (r *CircleCIBuild) IsAuthenticated(_ context.Context) bool {
+func (r *CircleCIBuild) IsAuthenticated() bool {
 	return false
 }
 
-func (r *CircleCIBuild) RunnerEnvironment(_ context.Context) string {
-	return ""
+func (r *CircleCIBuild) RunnerEnvironment() RunnerEnvironment {
+	return Unknown
 }

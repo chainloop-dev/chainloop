@@ -52,29 +52,34 @@ type crafterSuite struct {
 
 func (s *crafterSuite) TestInit() {
 	testCases := []struct {
-		name             string
-		contractPath     string
-		workingDir       string
-		workflowMetadata *v1.WorkflowMetadata
-		wantErr          bool
-		wantRepoDigest   bool
-		dryRun           bool
-		hostedRunner     bool
+		name              string
+		contractPath      string
+		workingDir        string
+		workflowMetadata  *v1.WorkflowMetadata
+		wantErr           bool
+		wantRepoDigest    bool
+		dryRun            bool
+		runnerEnvironment string
+		runnerType        string
 	}{
 		{
-			name:             "happy path inside a git repo",
-			contractPath:     "testdata/contracts/empty_generic.yaml",
-			workflowMetadata: s.workflowMetadata,
-			dryRun:           true,
-			workingDir:       s.repoPath,
-			wantRepoDigest:   true,
+			name:              "happy path inside a git repo",
+			contractPath:      "testdata/contracts/empty_generic.yaml",
+			workflowMetadata:  s.workflowMetadata,
+			dryRun:            true,
+			workingDir:        s.repoPath,
+			wantRepoDigest:    true,
+			runnerEnvironment: "unknown",
+			runnerType:        "RUNNER_TYPE_UNSPECIFIED",
 		},
 		{
-			name:             "happy path outside a git repo",
-			contractPath:     "testdata/contracts/empty_generic.yaml",
-			workflowMetadata: s.workflowMetadata,
-			workingDir:       s.T().TempDir(),
-			dryRun:           true,
+			name:              "happy path outside a git repo",
+			contractPath:      "testdata/contracts/empty_generic.yaml",
+			workflowMetadata:  s.workflowMetadata,
+			workingDir:        s.T().TempDir(),
+			dryRun:            true,
+			runnerEnvironment: "unknown",
+			runnerType:        "RUNNER_TYPE_UNSPECIFIED",
 		},
 		{
 			name:             "missing metadata",
@@ -83,20 +88,23 @@ func (s *crafterSuite) TestInit() {
 			wantErr:          true,
 		},
 		{
-			name:             "required github action env (dry run)",
-			contractPath:     "testdata/contracts/empty_github.yaml",
-			workflowMetadata: s.workflowMetadata,
-			wantErr:          false,
-			dryRun:           true,
-			workingDir:       s.T().TempDir(),
-			hostedRunner:     true,
+			name:              "required github action env (dry run)",
+			contractPath:      "testdata/contracts/empty_github.yaml",
+			workflowMetadata:  s.workflowMetadata,
+			wantErr:           false,
+			dryRun:            true,
+			workingDir:        s.T().TempDir(),
+			runnerEnvironment: "unknown",
+			runnerType:        "GITHUB_ACTION",
 		},
 		{
-			name:             "with annotations",
-			contractPath:     "testdata/contracts/with_material_annotations.yaml",
-			workflowMetadata: s.workflowMetadata,
-			workingDir:       s.T().TempDir(),
-			dryRun:           true,
+			name:              "with annotations",
+			contractPath:      "testdata/contracts/with_material_annotations.yaml",
+			workflowMetadata:  s.workflowMetadata,
+			workingDir:        s.T().TempDir(),
+			dryRun:            true,
+			runnerEnvironment: "unknown",
+			runnerType:        "RUNNER_TYPE_UNSPECIFIED",
 		},
 	}
 
@@ -122,7 +130,10 @@ func (s *crafterSuite) TestInit() {
 					Workflow:       tc.workflowMetadata,
 					RunnerType:     contract.GetRunner().GetType(),
 					SigningOptions: &v1.Attestation_SigningOptions{},
-					IsHostedRunner: tc.hostedRunner,
+					RunnerEnvironment: &v1.RunnerEnvironment{
+						Environment: tc.runnerEnvironment,
+						Type:        tc.runnerType,
+					},
 				},
 				DryRun: tc.dryRun,
 			}
@@ -323,7 +334,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
-				runner = runners.NewGithubAction()
+				runner = runners.NewGithubAction(s.T().Context())
 			} else if tc.inJenkinsEnv {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
 				s.T().Setenv("JOB_NAME", "some-job")

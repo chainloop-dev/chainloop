@@ -48,3 +48,21 @@ func resolveEnvVars(envVarsDefinitions []*EnvVarDefinition) (map[string]string, 
 
 	return result, errors
 }
+
+type RunnerEnvironment int
+
+const (
+	Managed RunnerEnvironment = iota
+	SelfHosted
+	Unknown
+)
+
+func (r RunnerEnvironment) String() string {
+	switch r {
+	case Managed:
+		return "managed"
+	case SelfHosted:
+		return "self-hosted"
+	}
+	return "unknown"
+}

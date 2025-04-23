@@ -33,11 +33,14 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 )
 
-var defaultActionsProviderURL = "https://token.actions.githubusercontent.com"
+// DefaultActionsProviderURL is the default URL for GitHub Actions OIDC provider
+var DefaultActionsProviderURL = "https://token.actions.githubusercontent.com"
 
 const (
-	requestTokenEnvKey = "ACTIONS_ID_TOKEN_REQUEST_TOKEN"
-	requestURLEnvKey   = "ACTIONS_ID_TOKEN_REQUEST_URL"
+	// RequestTokenEnvKey is the environment variable for the GitHub Actions OIDC token request token
+	RequestTokenEnvKey = "ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+	// RequestURLEnvKey is the environment variable for the GitHub Actions OIDC token request URL
+	RequestURLEnvKey = "ACTIONS_ID_TOKEN_REQUEST_URL"
 )
 
 type GitHubOIDCClient struct {
@@ -45,11 +48,11 @@ type GitHubOIDCClient struct {
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
 	audience     []string
-	token        *GitHubToken
+	token        *Token
 }
 
 // Token represents the contents of a GitHub OIDC JWT token.
-type GitHubToken struct {
+type Token struct {
 	oidc.IDToken
 
 	// JobWorkflowRef is a reference to the current job workflow.
@@ -58,8 +61,8 @@ type GitHubToken struct {
 	// RunnerEnvironment is the environment the runner is running in.
 	RunnerEnvironment string `json:"runner_environment"`
 
-	// RawToken is the unparsed oidc token.
-	RawToken string
+	// RawToken is the raw token string (for testing)
+	RawToken string `json:"-"`
 }
 
 // Option is a functional option for configuring a GitHubOIDCClient.
@@ -72,14 +75,17 @@ func WithAudience(audience []string) Option {
 	}
 }
 
-// NewOIDCGitHubClient returns new GitHub OIDC provider client.
-func NewOIDCGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
+// NewGitHubClient returns new GitHub OIDC provider client.
+func NewGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 	var c GitHubOIDCClient
+	for _, opt := range opts {
+		opt(&c)
+	}
 
 	// Get the request URL and token from env vars
-	requestURL := os.Getenv(requestURLEnvKey)
+	requestURL := os.Getenv(RequestURLEnvKey)
 	if requestURL == "" {
-		return nil, fmt.Errorf("url: %s environment variable not set; does your workflow have `id-token: write` scope?", requestURLEnvKey)
+		return nil, fmt.Errorf("url: %s environment variable not set; does your workflow have `id-token: write` scope?", RequestURLEnvKey)
 	}
 
 	parsedURL, err := url.ParseRequestURI(requestURL)
@@ -91,9 +97,9 @@ func NewOIDCGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 		)
 	}
 
-	bearerToken := os.Getenv(requestTokenEnvKey)
+	bearerToken := os.Getenv(RequestTokenEnvKey)
 	if len(bearerToken) == 0 {
-		return nil, fmt.Errorf("token: %s environment variable not set; does your workflow have `id-token: write` scope?", requestTokenEnvKey)
+		return nil, fmt.Errorf("token: %s environment variable not set; does your workflow have `id-token: write` scope?", RequestTokenEnvKey)
 	}
 
 	c = GitHubOIDCClient{
@@ -101,53 +107,25 @@ func NewOIDCGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 		bearerToken: bearerToken,
 	}
 
-	// Apply the options
-	for _, opt := range opts {
-		opt(&c)
-	}
-
-	c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
-		provider, err := oidc.NewProvider(ctx, defaultActionsProviderURL)
-		if err != nil {
-			return nil, err
+	// Only set the default verifier function if it hasn't been set by an option
+	if c.verifierFunc == nil {
+		c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
+			provider, err := oidc.NewProvider(ctx, DefaultActionsProviderURL)
+			if err != nil {
+				return nil, err
+			}
+			return provider.Verifier(&oidc.Config{
+				// we skip the check since we are not using a client IDs
+				SkipClientIDCheck: true,
+			}), nil
 		}
-		return provider.Verifier(&oidc.Config{
-			// we skip the check since we are not using a client IDs
-			SkipClientIDCheck: true,
-		}), nil
 	}
 
 	return &c, nil
 }
 
-func (c *GitHubOIDCClient) IsHosted(_ context.Context) bool {
-	return true
-}
-
-func (c *GitHubOIDCClient) IsAuthenticated(ctx context.Context) bool {
-	_, err := c.Token(ctx)
-	return err == nil
-}
-
-func (c *GitHubOIDCClient) WorkflowFilePath(ctx context.Context) (string, error) {
-	token, err := c.Token(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return token.JobWorkflowRef, nil
-}
-
-func (c *GitHubOIDCClient) RunnerEnvironment(ctx context.Context) (string, error) {
-	token, err := c.Token(ctx)
-	if err != nil {
-		return "", err
-	}
-	return token.RunnerEnvironment, nil
-}
-
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.
-func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
+func (c *GitHubOIDCClient) Token(ctx context.Context) (any, error) {
 	if c.token != nil {
 		return c.token, nil
 	}
@@ -176,20 +154,9 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 		return nil, err
 	}
 
-	token.RawToken = tokenPayload
-
 	// store the token for later re-use
 	c.token = token
 	return token, nil
-}
-
-// WithAudience is deprecated. Use NewOIDCGitHubClient with WithAudience option instead.
-// This method is kept for backward compatibility.
-func (c *GitHubOIDCClient) WithAudience(audience []string) *GitHubOIDCClient {
-	if len(audience) > 0 {
-		c.audience = audience
-	}
-	return c
 }
 
 func (c *GitHubOIDCClient) newRequestURL(audience []string) string {
@@ -257,8 +224,8 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 	return idToken, nil
 }
 
-func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*GitHubToken, error) {
-	var t GitHubToken
+func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
+	var t Token
 	if err := token.Claims(&t); err != nil {
 		return nil, fmt.Errorf("%w: getting claims: %w", errToken, err)
 	}
@@ -266,7 +233,7 @@ func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*GitHubToken, error
 	return &t, nil
 }
 
-func (c *GitHubOIDCClient) verifyClaims(token *GitHubToken) error {
+func (c *GitHubOIDCClient) verifyClaims(token *Token) error {
 	if token.JobWorkflowRef == "" {
 		return fmt.Errorf("%w: job workflow ref is empty", errClaims)
 	}

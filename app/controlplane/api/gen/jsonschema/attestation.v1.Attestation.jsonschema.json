@@ -27,14 +27,6 @@
     "^(initialized_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
-    "^(is_authenticated_runner)$": {
-      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
-      "type": "boolean"
-    },
-    "^(is_hosted_runner)$": {
-      "description": "Whether the runner is hosted",
-      "type": "boolean"
-    },
     "^(policy_evaluations)$": {
       "description": "Policies that materials in this attestation were validated against",
       "items": {
@@ -43,8 +35,8 @@
       "type": "array"
     },
     "^(runner_environment)$": {
-      "description": "Runner environment name, i.e. github-hosted",
-      "type": "string"
+      "$ref": "attestation.v1.RunnerEnvironment.jsonschema.json",
+      "description": "Runner environment in which the attestation was crafted"
     },
     "^(runner_type)$": {
       "anyOf": [
@@ -74,10 +66,6 @@
     "^(signing_options)$": {
       "$ref": "attestation.v1.Attestation.SigningOptions.jsonschema.json",
       "description": "Signing options"
-    },
-    "^(workflow_file_path)$": {
-      "description": "Workflow file path that was used during build",
-      "type": "string"
     }
   },
   "properties": {
@@ -120,14 +108,6 @@
     "initializedAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
-    "isAuthenticatedRunner": {
-      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
-      "type": "boolean"
-    },
-    "isHostedRunner": {
-      "description": "Whether the runner is hosted",
-      "type": "boolean"
-    },
     "materials": {
       "additionalProperties": {
         "$ref": "attestation.v1.Attestation.Material.jsonschema.json"
@@ -145,8 +125,8 @@
       "type": "array"
     },
     "runnerEnvironment": {
-      "description": "Runner environment name, i.e. github-hosted",
-      "type": "string"
+      "$ref": "attestation.v1.RunnerEnvironment.jsonschema.json",
+      "description": "Runner environment in which the attestation was crafted"
     },
     "runnerType": {
       "anyOf": [
@@ -179,10 +159,6 @@
     },
     "workflow": {
       "$ref": "attestation.v1.WorkflowMetadata.jsonschema.json"
-    },
-    "workflowFilePath": {
-      "description": "Workflow file path that was used during build",
-      "type": "string"
     }
   },
   "required": [
