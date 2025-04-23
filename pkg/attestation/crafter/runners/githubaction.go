@@ -87,11 +87,13 @@ func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 }
 
 func (r *GitHubAction) RunnerEnvironment(ctx context.Context) string {
-	return r.oidcClient.RunnerEnvironment(ctx)
+	runnerEnv, _ := r.oidcClient.RunnerEnvironment(ctx)
+	return runnerEnv
 }
 
 func (r *GitHubAction) WorkflowFilePath(ctx context.Context) string {
-	return r.oidcClient.WorkflowFilePath(ctx)
+	workflowFilePath, _ := r.oidcClient.WorkflowFilePath(ctx)
+	return workflowFilePath
 }
 
 func (r *GitHubAction) IsHosted(_ context.Context) bool {

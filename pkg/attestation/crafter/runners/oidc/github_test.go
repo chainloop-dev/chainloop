@@ -184,8 +184,8 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			}
 
 			// Test additional methods of the client interface
-			workflowPath := client.WorkflowFilePath(t.Context())
-			runnerEnv := client.RunnerEnvironment(t.Context())
+			workflowPath, _ := client.WorkflowFilePath(t.Context())
+			runnerEnv, _ := client.RunnerEnvironment(t.Context())
 			isHosted := client.IsHosted(t.Context())
 			isAuthenticated := client.IsAuthenticated(t.Context())
 

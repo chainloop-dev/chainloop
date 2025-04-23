@@ -100,7 +100,7 @@ func NewOIDCGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
 	}
-	
+
 	// Apply the options
 	for _, opt := range opts {
 		opt(&c)
@@ -120,30 +120,30 @@ func NewOIDCGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 	return &c, nil
 }
 
-func (c *GitHubOIDCClient) WorkflowFilePath(ctx context.Context) string {
-	token, err := c.Token(ctx)
-	if err != nil {
-		return ""
-	}
-
-	return token.JobWorkflowRef
-}
-
 func (c *GitHubOIDCClient) IsHosted(_ context.Context) bool {
 	return true
-}
-
-func (c *GitHubOIDCClient) RunnerEnvironment(ctx context.Context) string {
-	token, err := c.Token(ctx)
-	if err != nil {
-		return ""
-	}
-	return token.RunnerEnvironment
 }
 
 func (c *GitHubOIDCClient) IsAuthenticated(ctx context.Context) bool {
 	_, err := c.Token(ctx)
 	return err == nil
+}
+
+func (c *GitHubOIDCClient) WorkflowFilePath(ctx context.Context) (string, error) {
+	token, err := c.Token(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return token.JobWorkflowRef, nil
+}
+
+func (c *GitHubOIDCClient) RunnerEnvironment(ctx context.Context) (string, error) {
+	token, err := c.Token(ctx)
+	if err != nil {
+		return "", err
+	}
+	return token.RunnerEnvironment, nil
 }
 
 // Token requests an OIDC token from GitHub's provider, verifies it, and returns the token.

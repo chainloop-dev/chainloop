@@ -41,8 +41,8 @@ var (
 type Client interface {
 	IsHosted(ctx context.Context) bool
 	IsAuthenticated(ctx context.Context) bool
-	WorkflowFilePath(ctx context.Context) string
-	RunnerEnvironment(ctx context.Context) string
+	WorkflowFilePath(ctx context.Context) (string, error)
+	RunnerEnvironment(ctx context.Context) (string, error)
 }
 
 // NoOPClient is a empty implementation of Client that returns an empty token.
@@ -56,18 +56,18 @@ func (r *NoOPClient) WithAudience(_ []string) Client {
 	return r
 }
 
-func (r *NoOPClient) WorkflowFilePath(_ context.Context) string {
-	return ""
-}
-
 func (r *NoOPClient) IsHosted(_ context.Context) bool {
 	return false
 }
 
-func (r *NoOPClient) RunnerEnvironment(_ context.Context) string {
-	return ""
-}
-
 func (r *NoOPClient) IsAuthenticated(_ context.Context) bool {
 	return false
+}
+
+func (r *NoOPClient) RunnerEnvironment(_ context.Context) (string, error) {
+	return "", nil
+}
+
+func (r *NoOPClient) WorkflowFilePath(_ context.Context) (string, error) {
+	return "", nil
 }
