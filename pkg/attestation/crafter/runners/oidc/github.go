@@ -62,9 +62,18 @@ type GitHubToken struct {
 	RawToken string
 }
 
+// Option is a functional option for configuring a GitHubOIDCClient.
+type Option func(*GitHubOIDCClient)
+
+// WithAudience sets the audience for the OIDC token.
+func WithAudience(audience []string) Option {
+	return func(c *GitHubOIDCClient) {
+		c.audience = audience
+	}
+}
+
 // NewOIDCGitHubClient returns new GitHub OIDC provider client.
-// If audience is nil or empty, defaultAudience will be used in token requests.
-func NewOIDCGitHubClient(audience []string) (*GitHubOIDCClient, error) {
+func NewOIDCGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 	var c GitHubOIDCClient
 
 	// Get the request URL and token from env vars
@@ -90,7 +99,11 @@ func NewOIDCGitHubClient(audience []string) (*GitHubOIDCClient, error) {
 	c = GitHubOIDCClient{
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
-		audience:    audience,
+	}
+	
+	// Apply the options
+	for _, opt := range opts {
+		opt(&c)
 	}
 
 	c.verifierFunc = func(ctx context.Context) (*oidc.IDTokenVerifier, error) {
@@ -170,7 +183,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (*GitHubToken, error) {
 	return token, nil
 }
 
-// WithAudience is deprecated. Use NewOIDCGitHubClient with audience parameter instead.
+// WithAudience is deprecated. Use NewOIDCGitHubClient with WithAudience option instead.
 // This method is kept for backward compatibility.
 func (c *GitHubOIDCClient) WithAudience(audience []string) *GitHubOIDCClient {
 	if len(audience) > 0 {

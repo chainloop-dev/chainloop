@@ -35,7 +35,7 @@ func NewGithubAction() *GitHubAction {
 	// from Github. That allows us to read the workflow file path and runnner type. If that can't
 	// be done we fallback to reading the env vars directly.
 	var client oidc.Client
-	client, err := oidc.NewOIDCGitHubClient(defaultAudience)
+	client, err := oidc.NewOIDCGitHubClient(oidc.WithAudience(defaultAudience))
 	if err != nil {
 		client = oidc.NewNoOPClient()
 	}

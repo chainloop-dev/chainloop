@@ -164,7 +164,7 @@ func TestGitHubOIDCClient_Token(t *testing.T) {
 			}
 			t.Cleanup(func() { mockServer.Config.Handler = baseHandler })
 
-			client, err := NewOIDCGitHubClient(testAudience)
+			client, err := NewOIDCGitHubClient(WithAudience(testAudience))
 			require.NoError(t, err)
 
 			// For non-error cases, we need to mock the verification function
