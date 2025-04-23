@@ -59,6 +59,7 @@ func (s *crafterSuite) TestInit() {
 		wantErr          bool
 		wantRepoDigest   bool
 		dryRun           bool
+		hostedRunner     bool
 	}{
 		{
 			name:             "happy path inside a git repo",
@@ -88,6 +89,7 @@ func (s *crafterSuite) TestInit() {
 			wantErr:          false,
 			dryRun:           true,
 			workingDir:       s.T().TempDir(),
+			hostedRunner:     true,
 		},
 		{
 			name:             "with annotations",
@@ -120,6 +122,7 @@ func (s *crafterSuite) TestInit() {
 					Workflow:       tc.workflowMetadata,
 					RunnerType:     contract.GetRunner().GetType(),
 					SigningOptions: &v1.Attestation_SigningOptions{},
+					IsHostedRunner: tc.hostedRunner,
 				},
 				DryRun: tc.dryRun,
 			}
