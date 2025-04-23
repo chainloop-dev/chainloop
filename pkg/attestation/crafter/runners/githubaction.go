@@ -92,7 +92,7 @@ func (r *GitHubAction) WorkflowFilePath(ctx context.Context) string {
 }
 
 func (r *GitHubAction) IsHosted(ctx context.Context) bool {
-	return r.oidcClient.IsHosted(ctx)
+	return true
 }
 
 func (r *GitHubAction) IsAuthenticated(ctx context.Context) bool {
