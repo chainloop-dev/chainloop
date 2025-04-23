@@ -19,11 +19,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/spdx/tools-golang/json"
+	"github.com/spdx/tools-golang/spdx"
 
 	"github.com/rs/zerolog"
 )
@@ -52,11 +54,36 @@ func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 	defer f.Close()
 
 	// Decode the file to check it's a valid SPDX BOM
-	_, err = json.Read(f)
+	doc, err := json.Read(f)
 	if err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid spdx sbom file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	m, err := uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	if err != nil {
+		return nil, err
+	}
+
+	i.injectAnnotations(m, doc)
+
+	return m, nil
+}
+
+func (i *SPDXJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *spdx.Document) {
+	for _, c := range doc.CreationInfo.Creators {
+		if c.CreatorType == "Tool" {
+			m.Annotations = make(map[string]string)
+			m.Annotations[AnnotationToolNameKey] = c.Creator
+
+			// try to extract the tool name and version
+			// e.g. "myTool-1.0.0"
+			parts := strings.SplitN(c.Creator, "-", 2)
+			if len(parts) == 2 {
+				m.Annotations[AnnotationToolNameKey] = parts[0]
+				m.Annotations[AnnotationToolVersionKey] = parts[1]
+			}
+			break
+		}
+	}
 }

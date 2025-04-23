@@ -43,9 +43,15 @@ type CyclonedxJSONCrafter struct {
 	*crafterCommon
 }
 
-// mainComponentStruct internal struct to unmarshall the incoming CycloneDX JSON
-type mainComponentStruct struct {
+// cyclonedxDoc internal struct to unmarshall the incoming CycloneDX JSON
+type cyclonedxDoc struct {
 	Metadata struct {
+		Tools struct {
+			Components []struct { // available from 1.5 onwards
+				Name    string `json:"name"`
+				Version string `json:"version"`
+			} `json:"components"`
+		} `json:"tools"`
 		Component struct {
 			Name       string `json:"name"`
 			Type       string `json:"type"`
@@ -100,33 +106,30 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		},
 	}
 
-	// Include the main component information if available
-	mainComponent, err := i.extractMainComponent(f)
-	if err != nil {
-		i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+	// parse the file to extract the main information
+	var doc cyclonedxDoc
+	if err = json.Unmarshal(f, &doc); err != nil {
+		i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
 	}
 
-	// If the main component is available, include it in the material
-	if mainComponent != nil {
-		res.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
-			Name:    mainComponent.name,
-			Kind:    mainComponent.kind,
-			Version: mainComponent.version,
+	// Include the main component information if available
+	if err == nil {
+		err := i.extractMainComponent(m, &doc)
+		if err != nil {
+			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
 		}
+
+		// inject annotations
+		i.injectAnnotations(res, &doc)
 	}
 
 	return res, nil
 }
 
 // extractMainComponent inspects the SBOM and extracts the main component if any and available
-func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainComponentInfo, error) {
-	var mainComponent mainComponentStruct
-	err := json.Unmarshal(rawFile, &mainComponent)
-	if err != nil {
-		return nil, fmt.Errorf("error extracting main component: %w", err)
-	}
-
-	component := mainComponent.Metadata.Component
+func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material, doc *cyclonedxDoc) error {
+	var mainComponent *SBOMMainComponentInfo
+	component := doc.Metadata.Component
 
 	// If the version is empty, try to extract it from the properties
 	if component.Version == "" {
@@ -141,23 +144,43 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	}
 
 	if component.Type != containerComponentKind {
-		return &SBOMMainComponentInfo{
+		mainComponent = &SBOMMainComponentInfo{
 			name:    component.Name,
 			kind:    component.Type,
 			version: component.Version,
-		}, nil
+		}
 	}
 
 	// Standardize the name to have the full repository name including the registry and
 	// sanitize the name to remove the possible tag from the repository name
 	ref, err := remotename.ParseReference(component.Name)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't parse OCI image repository name: %w", err)
+		return fmt.Errorf("couldn't parse OCI image repository name: %w", err)
 	}
 
-	return &SBOMMainComponentInfo{
+	mainComponent = &SBOMMainComponentInfo{
 		name:    ref.Context().String(),
 		kind:    component.Type,
 		version: component.Version,
-	}, nil
+	}
+
+	// If the main component is available, include it in the material
+	if mainComponent != nil {
+		m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
+			Name:    mainComponent.name,
+			Kind:    mainComponent.kind,
+			Version: mainComponent.version,
+		}
+	}
+
+	return nil
+}
+
+func (i *CyclonedxJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *cyclonedxDoc) {
+	// add tool information
+	if len(doc.Metadata.Tools.Components) > 0 {
+		m.Annotations = make(map[string]string)
+		m.Annotations[AnnotationToolNameKey] = doc.Metadata.Tools.Components[0].Name
+		m.Annotations[AnnotationToolVersionKey] = doc.Metadata.Tools.Components[0].Version
+	}
 }
