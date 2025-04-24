@@ -34,8 +34,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const AnnotationToolNameKey = "chainloop.material.tool-name"
-const AnnotationToolVersionKey = "chainloop.material.tool-version"
+const AnnotationToolNameKey = "chainloop.material.tool.name"
+const AnnotationToolVersionKey = "chainloop.material.tool.version"
 
 var (
 	// ErrInvalidMaterialType is returned when the provided material type
