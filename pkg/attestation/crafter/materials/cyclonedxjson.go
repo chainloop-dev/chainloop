@@ -44,23 +44,36 @@ type CyclonedxJSONCrafter struct {
 
 // cyclonedxDoc internal struct to unmarshall the incoming CycloneDX JSON
 type cyclonedxDoc struct {
-	Metadata struct {
-		Tools struct {
-			Components []struct { // available from 1.5 onwards
-				Name    string `json:"name"`
-				Version string `json:"version"`
-			} `json:"components"`
-		} `json:"tools"`
-		Component struct {
-			Name       string `json:"name"`
-			Type       string `json:"type"`
-			Version    string `json:"version"`
-			Properties []struct {
-				Name  string `json:"name"`
-				Value string `json:"value"`
-			} `json:"properties"`
-		} `json:"component"`
-	} `json:"metadata"`
+	SpecVersion string          `json:"specVersion"`
+	Metadata    json.RawMessage `json:"metadata"`
+}
+
+type cyclonedxMetadataV14 struct {
+	Tools []struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	} `json:"tools"`
+	Component cyclonedxComponent `json:"component"`
+}
+
+type cyclonedxComponent struct {
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Version    string `json:"version"`
+	Properties []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"properties"`
+}
+
+type cyclonedxMetadataV15 struct {
+	Tools struct {
+		Components []struct { // available from 1.5 onwards
+			Name    string `json:"name"`
+			Version string `json:"version"`
+		} `json:"components"`
+	} `json:"tools"`
+	Component cyclonedxComponent `json:"component"`
 }
 
 func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CyclonedxJSONCrafter, error) {
@@ -111,24 +124,56 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
 	}
 
-	if err == nil {
-		// Include the main component information if available
-		err := i.extractMainComponent(m, &doc)
-		if err != nil {
-			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+	switch doc.SpecVersion {
+	case "1.4":
+		var metaV14 cyclonedxMetadataV14
+		if err = json.Unmarshal(doc.Metadata, &metaV14); err != nil {
+			i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
+		} else {
+			i.extractMetadata(m, &metaV14)
 		}
-
-		// inject annotations
-		i.injectAnnotations(res, &doc)
+	default: // 1.5 onwards
+		var metaV15 cyclonedxMetadataV15
+		if err = json.Unmarshal(doc.Metadata, &metaV15); err != nil {
+			i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
+		} else {
+			i.extractMetadata(m, &metaV15)
+		}
 	}
 
 	return res, nil
 }
 
+func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, metadata any) {
+	m.Annotations = make(map[string]string)
+
+	switch meta := metadata.(type) {
+	case *cyclonedxMetadataV14:
+		if err := i.extractMainComponent(m, &meta.Component); err != nil {
+			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+		}
+
+		if len(meta.Tools) > 0 {
+			m.Annotations[AnnotationToolNameKey] = meta.Tools[0].Name
+			m.Annotations[AnnotationToolVersionKey] = meta.Tools[0].Version
+		}
+	case *cyclonedxMetadataV15:
+		if err := i.extractMainComponent(m, &meta.Component); err != nil {
+			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+		}
+
+		if len(meta.Tools.Components) > 0 {
+			m.Annotations[AnnotationToolNameKey] = meta.Tools.Components[0].Name
+			m.Annotations[AnnotationToolVersionKey] = meta.Tools.Components[0].Version
+		}
+	default:
+		i.logger.Debug().Msg("unknown metadata version")
+	}
+}
+
 // extractMainComponent inspects the SBOM and extracts the main component if any and available
-func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material, doc *cyclonedxDoc) error {
+func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material, component *cyclonedxComponent) error {
 	var mainComponent *SBOMMainComponentInfo
-	component := doc.Metadata.Component
 
 	// If the version is empty, try to extract it from the properties
 	if component.Version == "" {
@@ -171,13 +216,4 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material,
 	}
 
 	return nil
-}
-
-func (i *CyclonedxJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *cyclonedxDoc) {
-	// add tool information
-	if len(doc.Metadata.Tools.Components) > 0 {
-		m.Annotations = make(map[string]string)
-		m.Annotations[AnnotationToolNameKey] = doc.Metadata.Tools.Components[0].Name
-		m.Annotations[AnnotationToolVersionKey] = doc.Metadata.Tools.Components[0].Version
-	}
 }
