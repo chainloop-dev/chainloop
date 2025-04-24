@@ -19,6 +19,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"regexp"
 	"strconv"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -101,52 +104,11 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 
-	// 0 - find or create the contract if we are creating the workflow (if any)
-	contractRef := opts.NewWorkflowContractRef
-	// Not found, let's see if we need to create the contract
-	if contractRef != "" {
-		// Try to find it by name
-		_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
-		// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
-		if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
-			var wfContractItem *WorkflowContractItem
-			// the contract might be a file. look for the default name
-			contractWithRevision, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), 0)
-			switch {
-			case err != nil && status.Code(err) == codes.NotFound:
-				// Not found, let's create it
-				wfContractItem, err = NewWorkflowContractCreate(action.ActionsOpts).Run(defaultContractName(opts.ProjectName, opts.WorkflowName), nil, contractRef)
-				if err != nil {
-					return "", err
-				}
-			case err != nil:
-				return "", err
-			default:
-				wfContractItem = contractWithRevision.Contract
-			}
-
-			// it exists, let's update it (chainloop will validate that there is an actual change in the contract file)
-			updateResp, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(wfContractItem.Name, &wfContractItem.Description, contractRef)
-			if err != nil {
-				return "", err
-			}
-
-			contractRef = updateResp.Contract.Name
-		} else if err != nil {
-			return "", err
-		}
-	}
-
-	// 1 - Find or create the workflow
-	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
-		ProjectName:  opts.ProjectName,
-		WorkflowName: opts.WorkflowName,
-		ContractName: contractRef,
-	})
+	// 1 - Create the workflow (and contract) if it doesn't exist
+	wf, err := action.createWorkflow(ctx, opts)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating workflow: %w", err)
 	}
-	workflow := workflowsResp.GetResult()
 
 	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
@@ -160,12 +122,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	contractVersion := contractResp.Result.GetContract()
 	workflowMeta := &clientAPI.WorkflowMetadata{
-		WorkflowId:     workflow.GetId(),
-		Name:           workflow.GetName(),
-		Project:        workflow.GetProject(),
-		Team:           workflow.GetTeam(),
+		WorkflowId:     wf.ID,
+		Name:           wf.Name,
+		Project:        wf.Project,
+		Team:           wf.Team,
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
-		ContractName:   workflow.ContractName,
+		ContractName:   wf.ContractName,
 	}
 
 	if opts.ProjectVersion != "" {
@@ -256,6 +218,95 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	return attestationID, nil
+}
+
+// createWorkflow creates a new workflow if it doesn't exist, as well as its contract
+func (action *AttestationInit) createWorkflow(ctx context.Context, opts *AttestationInitRunOpts) (*WorkflowItem, error) {
+	// 1. find workflow if exists
+	wf, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
+	if err != nil && status.Code(err) != codes.NotFound {
+		return nil, fmt.Errorf("error looking for workflow %q: %w", opts.WorkflowName, err)
+	}
+
+	contractRef := opts.NewWorkflowContractRef
+	contractName := contractRef
+	if contractRef != "" {
+		if isContractReference(contractRef) {
+			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
+			if err != nil {
+				return nil, fmt.Errorf("contract %q could not be found", contractRef)
+			}
+			// the contract exists
+		} else {
+			// use a default name for the contract
+			contractName = defaultContractName(opts.ProjectName, opts.WorkflowName)
+			var wfContractItem *WorkflowContractItem
+
+			// if the workflow exists, we just update its contract with the new contents
+			if wf != nil {
+				_, err = NewWorkflowContractUpdate(action.ActionsOpts).Run(wf.ContractName, nil, contractRef)
+				if err != nil {
+					return nil, fmt.Errorf("error updating contract %q: %w", wf.ContractName, err)
+				}
+				contractName = wf.ContractName
+			} else {
+				// if the workflow doesn't exist, let's create or update the contract
+				contractWithRevision, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractName, 0)
+				switch {
+				case err != nil && status.Code(err) == codes.NotFound:
+					// Contract not found, let's create it
+					wfContractItem, err = NewWorkflowContractCreate(action.ActionsOpts).Run(contractName, nil, contractRef)
+					if err != nil {
+						return nil, err
+					}
+				case err != nil:
+					return nil, err
+				default:
+					// contract found, let's update it
+					wfContractItem = contractWithRevision.Contract
+					// it exists, let's update it (chainloop will validate that there is an actual change in the contract file)
+					_, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(wfContractItem.Name, &wfContractItem.Description, contractRef)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+	}
+
+	// if workflow doesn't exist, let's create it with the contract
+	if wf == nil {
+		wf, err = NewWorkflowCreate(action.ActionsOpts).Run(&NewWorkflowCreateOpts{
+			Name:         opts.WorkflowName,
+			Project:      opts.ProjectName,
+			ContractName: contractName,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error creating workflow %q: %w", opts.WorkflowName, err)
+		}
+	}
+
+	return wf, nil
+}
+
+// isContractReference checks if the reference points to an existent contract name (DNS-1123
+func isContractReference(ref string) bool {
+	// Check if the reference is a valid URL
+	if _, err := url.ParseRequestURI(ref); err == nil {
+		return false
+	}
+
+	// is it a local file?
+	if _, err := os.Stat(ref); err == nil {
+		return false
+	}
+
+	// Check if the reference is a valid DNS-1123 name
+	if matched, _ := regexp.Match("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", []byte(ref)); matched {
+		return true
+	}
+
+	return false
 }
 
 func defaultContractName(project, workflow string) string {
