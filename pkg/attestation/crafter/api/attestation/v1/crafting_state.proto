@@ -168,7 +168,7 @@ message RunnerEnvironment {
   string environment = 2;
 
   // Whether the runner is authenticated, i.e. via the OIDC token
-  bool is_authenticated_runner = 3;
+  bool authenticated = 3;
 
   // Runner type
   string type = 4;
