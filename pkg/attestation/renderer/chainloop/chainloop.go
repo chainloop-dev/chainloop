@@ -89,7 +89,7 @@ type ProvenancePredicateCommon struct {
 	// Additional properties related to runner
 	RunnerEnvironment   string `json:"runnerEnvironment,omitempty"`
 	RunnerAuthenticated bool   `json:"runnerAuthenticated,omitempty"`
-	WorkflowFilePath    string `json:"workflowFilePath,omitempty"`
+	RunnerWorkflowFilePath    string `json:"RunnerWorkflowFilePath,omitempty"`
 }
 
 type Metadata struct {
