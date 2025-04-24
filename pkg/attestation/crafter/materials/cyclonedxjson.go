@@ -27,7 +27,6 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	remotename "github.com/google/go-containerregistry/pkg/name"
-
 	"github.com/rs/zerolog"
 )
 
@@ -43,19 +42,38 @@ type CyclonedxJSONCrafter struct {
 	*crafterCommon
 }
 
-// mainComponentStruct internal struct to unmarshall the incoming CycloneDX JSON
-type mainComponentStruct struct {
-	Metadata struct {
-		Component struct {
-			Name       string `json:"name"`
-			Type       string `json:"type"`
-			Version    string `json:"version"`
-			Properties []struct {
-				Name  string `json:"name"`
-				Value string `json:"value"`
-			} `json:"properties"`
-		} `json:"component"`
-	} `json:"metadata"`
+// cyclonedxDoc internal struct to unmarshall the incoming CycloneDX JSON
+type cyclonedxDoc struct {
+	SpecVersion string          `json:"specVersion"`
+	Metadata    json.RawMessage `json:"metadata"`
+}
+
+type cyclonedxMetadataV14 struct {
+	Tools []struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	} `json:"tools"`
+	Component cyclonedxComponent `json:"component"`
+}
+
+type cyclonedxComponent struct {
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Version    string `json:"version"`
+	Properties []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"properties"`
+}
+
+type cyclonedxMetadataV15 struct {
+	Tools struct {
+		Components []struct { // available from 1.5 onwards
+			Name    string `json:"name"`
+			Version string `json:"version"`
+		} `json:"components"`
+	} `json:"tools"`
+	Component cyclonedxComponent `json:"component"`
 }
 
 func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CyclonedxJSONCrafter, error) {
@@ -100,33 +118,62 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		},
 	}
 
-	// Include the main component information if available
-	mainComponent, err := i.extractMainComponent(f)
-	if err != nil {
-		i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+	// parse the file to extract the main information
+	var doc cyclonedxDoc
+	if err = json.Unmarshal(f, &doc); err != nil {
+		i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
 	}
 
-	// If the main component is available, include it in the material
-	if mainComponent != nil {
-		res.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
-			Name:    mainComponent.name,
-			Kind:    mainComponent.kind,
-			Version: mainComponent.version,
+	switch doc.SpecVersion {
+	case "1.4":
+		var metaV14 cyclonedxMetadataV14
+		if err = json.Unmarshal(doc.Metadata, &metaV14); err != nil {
+			i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
+		} else {
+			i.extractMetadata(m, &metaV14)
+		}
+	default: // 1.5 onwards
+		var metaV15 cyclonedxMetadataV15
+		if err = json.Unmarshal(doc.Metadata, &metaV15); err != nil {
+			i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
+		} else {
+			i.extractMetadata(m, &metaV15)
 		}
 	}
 
 	return res, nil
 }
 
-// extractMainComponent inspects the SBOM and extracts the main component if any and available
-func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainComponentInfo, error) {
-	var mainComponent mainComponentStruct
-	err := json.Unmarshal(rawFile, &mainComponent)
-	if err != nil {
-		return nil, fmt.Errorf("error extracting main component: %w", err)
-	}
+func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, metadata any) {
+	m.Annotations = make(map[string]string)
 
-	component := mainComponent.Metadata.Component
+	switch meta := metadata.(type) {
+	case *cyclonedxMetadataV14:
+		if err := i.extractMainComponent(m, &meta.Component); err != nil {
+			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+		}
+
+		if len(meta.Tools) > 0 {
+			m.Annotations[AnnotationToolNameKey] = meta.Tools[0].Name
+			m.Annotations[AnnotationToolVersionKey] = meta.Tools[0].Version
+		}
+	case *cyclonedxMetadataV15:
+		if err := i.extractMainComponent(m, &meta.Component); err != nil {
+			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
+		}
+
+		if len(meta.Tools.Components) > 0 {
+			m.Annotations[AnnotationToolNameKey] = meta.Tools.Components[0].Name
+			m.Annotations[AnnotationToolVersionKey] = meta.Tools.Components[0].Version
+		}
+	default:
+		i.logger.Debug().Msg("unknown metadata version")
+	}
+}
+
+// extractMainComponent inspects the SBOM and extracts the main component if any and available
+func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material, component *cyclonedxComponent) error {
+	var mainComponent *SBOMMainComponentInfo
 
 	// If the version is empty, try to extract it from the properties
 	if component.Version == "" {
@@ -141,23 +188,32 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(rawFile []byte) (*SBOMMainCo
 	}
 
 	if component.Type != containerComponentKind {
-		return &SBOMMainComponentInfo{
+		mainComponent = &SBOMMainComponentInfo{
 			name:    component.Name,
 			kind:    component.Type,
 			version: component.Version,
-		}, nil
+		}
+	} else {
+		// Standardize the name to have the full repository name including the registry and
+		// sanitize the name to remove the possible tag from the repository name
+		ref, err := remotename.ParseReference(component.Name)
+		if err != nil {
+			return fmt.Errorf("couldn't parse OCI image repository name: %w", err)
+		}
+
+		mainComponent = &SBOMMainComponentInfo{
+			name:    ref.Context().String(),
+			kind:    component.Type,
+			version: component.Version,
+		}
 	}
 
-	// Standardize the name to have the full repository name including the registry and
-	// sanitize the name to remove the possible tag from the repository name
-	ref, err := remotename.ParseReference(component.Name)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't parse OCI image repository name: %w", err)
+	// If the main component is available, include it in the material
+	m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
+		Name:    mainComponent.name,
+		Kind:    mainComponent.kind,
+		Version: mainComponent.version,
 	}
 
-	return &SBOMMainComponentInfo{
-		name:    ref.Context().String(),
-		kind:    component.Type,
-		version: component.Version,
-	}, nil
+	return nil
 }
