@@ -164,12 +164,10 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material,
 	}
 
 	// If the main component is available, include it in the material
-	if mainComponent != nil {
-		m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
-			Name:    mainComponent.name,
-			Kind:    mainComponent.kind,
-			Version: mainComponent.version,
-		}
+	m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
+		Name:    mainComponent.name,
+		Kind:    mainComponent.kind,
+		Version: mainComponent.version,
 	}
 
 	return nil
