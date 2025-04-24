@@ -50,7 +50,7 @@ type SupportedRunner interface {
 	IsAuthenticated() bool
 
 	// RunnerEnvironment returns the runner environment
-	RunnerEnvironment() runners.RunnerEnvironment
+	Environment() runners.RunnerEnvironment
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
