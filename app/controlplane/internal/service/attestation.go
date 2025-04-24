@@ -531,6 +531,7 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 					Name:         r.Name,
 					Digest:       r.Digest,
 					Organization: orgName,
+					Uri:          r.Uri,
 				}
 			}
 			if ev.GroupReference != nil {
@@ -539,6 +540,7 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 					Name:         ev.GroupReference.Name,
 					Digest:       ev.GroupReference.Digest,
 					Organization: orgName,
+					Uri:          ev.GroupReference.Uri,
 				}
 			}
 

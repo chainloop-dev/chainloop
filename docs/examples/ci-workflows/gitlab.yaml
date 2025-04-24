@@ -38,7 +38,7 @@ download_chainloop:
       - tags
   script:
     # We need to install it in the current path in order to be archived
-    - curl -sfL https://docs.chainloop.dev/install.sh | bash -s -- --path .
+    - curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --path .
   artifacts:
     paths:
       - chainloop

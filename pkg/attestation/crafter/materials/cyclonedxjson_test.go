@@ -73,6 +73,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 		wantMainComponent        string
 		wantMainComponentKind    string
 		wantMainComponentVersion string
+		annotations              map[string]string
 	}{
 		{
 			name:     "invalid path",
@@ -96,6 +97,10 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantFilename:          "sbom.cyclonedx.json",
 			wantMainComponent:     ".",
 			wantMainComponentKind: "file",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "syft",
+				"chainloop.material.tool.version": "0.73.0",
+			},
 		},
 		{
 			name:                     "1.5 version",
@@ -105,6 +110,10 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantMainComponent:        "ghcr.io/chainloop-dev/chainloop/control-plane",
 			wantMainComponentKind:    "container",
 			wantMainComponentVersion: "v0.55.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "syft",
+				"chainloop.material.tool.version": "0.101.1",
+			},
 		},
 	}
 
@@ -151,6 +160,12 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 				},
 				got.GetSbomArtifact(),
 			)
+
+			if tc.annotations != nil {
+				for k, v := range tc.annotations {
+					ast.Equal(v, got.Annotations[k])
+				}
+			}
 		})
 	}
 }

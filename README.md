@@ -13,7 +13,7 @@
 
 [Chainloop](https://github.com/chainloop-dev/chainloop) is an open-source evidence store for your Software Supply Chain attestations, Software Bill of Materials (SBOMs), VEX, SARIF, QA reports, and more. With Chainloop, Security, Compliance, and Risk management teams can define security and compliance policies, what evidence and artifacts they want to receive, and where to store them. On the other hand, developers are shielded from all this complexity by being given simple instructions on what to provide when instrumenting their CI/CD pipelines.
 
-To learn more about the project motivation please look at [our documentation](https://docs.chainloop.dev) and see it in action in [this video](https://www.youtube.com/watch?v=GfSR2ZkZ3as).
+To learn more about the project motivation please look at [our documentation](https://docs.chainloop.dev).
 
 ## How does it work?
 
@@ -29,17 +29,17 @@ Chainloop also makes sure the crafting of artifacts and attestation follows **be
 
 ### Declarative, contract-based attestation
 
-One key aspect is that in Chainloop, CI/CD integrations are declared via [**Workflow Contracts**](https://docs.chainloop.dev/getting-started/workflow-definition#workflow-contracts).
+One key aspect is that in Chainloop, CI/CD integrations are declared via [**Workflow Contracts**](https://docs.chainloop.dev/concepts/contracts).
 
-A [Workflow Contract](https://docs.chainloop.dev/reference/operator/contract) gives Compliance and Security teams **full control over what kind of data (build info, materials) must be received as part of the attestation and the environment where these workflows must be executed at**. This enables an easy, and maintainable, way of propagating and enforcing requirements downstream to your organization.
+A Workflow Contract gives Compliance and Security teams **full control over what kind of data (build info, materials) must be received as part of the attestation and the environment where these workflows must be executed at**. This enables an easy, and maintainable, way of propagating and enforcing requirements downstream to your organization.
 
-You can think of it as an [**API for your organization's Software Supply Chain**](https://docs.chainloop.dev/reference/operator/contract) that both parties, development and Compliance and Security teams can use to interact effectively.
+You can think of it as an **API for your organization's Software Supply Chain** that both parties, development and Compliance and Security teams can use to interact effectively.
 
 ![Chainloop Contracts](./docs/img/overview-3.png)
 
 ### Policy as code
 
-Compliance and Security teams can [craft](https://docs.chainloop.dev/guides/rego-policies/) [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) policies, and [attach](https://docs.chainloop.dev/reference/policies) them to workflow contracts. Those policies will be automatically evaluated, and their results will be added to the attestation before signing and storage.
+Compliance and Security teams can [craft](https://docs.chainloop.dev/guides/custom-policies) [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) policies, and [attach](https://docs.chainloop.dev/concepts/policies) them to workflow contracts. Those policies will be automatically evaluated, and their results will be added to the attestation before signing and storage.
 
 
 ### We meet you where you are with third-party integrations
@@ -58,13 +58,13 @@ Chainloop makes sure to clearly define the responsibilities, experience and func
 
 Compliance and Security teams are the ones in charge of defining the Workflow Contracts, crafting policies, setting up third-party integrations, or having access to the control plane where all the Software Supply Chain Security bells and whistles are exposed.
 
-Development teams on the other hand, just need to integrate Chainloop's jargon-free [crafting tool](https://docs.chainloop.dev/getting-started/attestation-crafting) and follow the steps via a familiar DevExp to make sure they comply with the Workflow Contract defined by the SecOps team. No need to learn in-toto, signing, SLSA, OCI, APIs, nada :)
+Development teams on the other hand, just need to integrate Chainloop's jargon-free [crafting tool](https://docs.chainloop.dev/concepts/attestations#attestation-lifecycle) and follow the steps via a familiar DevExp to make sure they comply with the Workflow Contract defined by the SecOps team. No need to learn in-toto, signing, SLSA, OCI, APIs, nada :)
 
 ## Supported Pieces of Evidence / Materials
 
-During the attestation process, you can attach different pieces of evidence and artifacts that will get uploaded to the [Content Addressable Storage](https://docs.chainloop.dev/reference/operator/cas-backend/) (if applicable) and referenced in a signed in-toto attestation.
+During the attestation process, you can attach different pieces of evidence and artifacts that will get uploaded to the [Content Addressable Storage](https://docs.chainloop.dev/concepts/cas-backend) (if applicable) and referenced in a signed in-toto attestation.
 
-Chainloop supports the collection of the following list of evidence types. For the full list please refer to [this page](https://docs.chainloop.dev/reference/operator/material-types)
+Chainloop supports the collection of the following list of evidence types. For the full list please refer to [this page](https://docs.chainloop.dev/concepts/material-types)
 
 - [CycloneDX SBOM](https://github.com/CycloneDX/specification)
 - [SPDX SBOM](https://spdx.dev/specifications/)
@@ -82,6 +82,7 @@ Chainloop supports the collection of the following list of evidence types. For t
 - [Gitlab Security report](https://docs.gitlab.com/ee/user/application_security/)
 - [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
 - [JaCoCo XML Coverage Reports](https://www.jacoco.org/jacoco/trunk/doc/)
+- [SLSA Provenance files](https://slsa.dev/spec/v1.1/provenance)
 - Attestation: existing Chainloop attestations.
 - Artifact Type: It represents a software artifact.
 - Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.
@@ -89,7 +90,7 @@ Chainloop supports the collection of the following list of evidence types. For t
 
 ## Getting started
 
-See the [getting started guide](https://docs.chainloop.dev/getting-started/installation#command-line-interface-cli-installation) for detailed information on a) how to download and configure the Chainloop CLI and b) how to deploy Chainloop on your Kubernetes Cluster.
+Follow the [quickstart](https://docs.chainloop.dev/quickstart) or the [getting started guide](https://docs.chainloop.dev/get-started) for detailed information on a) how to download and configure the Chainloop CLI and b) how to deploy Chainloop on your Kubernetes Cluster.
 
 ### Command Line Interface (CLI) installation
 
@@ -145,7 +146,7 @@ $ chainloop auth login
 
 ### Finishing the setup
 
-Once you've been logged in, follow [these instructions](https://docs.chainloop.dev/getting-started/setup) to learn how to set up your account.
+Once you've been logged in, follow [these instructions](https://docs.chainloop.dev/get-started/setup) to learn how to set up your account.
 ## Documentation
 
 To learn more, please visit the Chainloop project's documentation website, https://docs.chainloop.dev where you will find a getting started guide, FAQ, examples, and more.

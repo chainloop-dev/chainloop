@@ -129,5 +129,30 @@ func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestat
 		return nil, fmt.Errorf("invalid CSAF file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
+	m, err := uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
+	if err != nil {
+		return nil, err
+	}
+
+	i.injectAnnotations(m, documentMap)
+
+	return m, nil
+}
+
+func (i *CSAFCrafter) injectAnnotations(m *api.Attestation_Material, documentMap map[string]any) {
+	m.Annotations = make(map[string]string)
+
+	// extract vendor info
+	if tracking, ok := documentMap["tracking"].(map[string]any); ok {
+		if generator, ok := tracking["generator"].(map[string]any); ok {
+			if engine, ok := generator["engine"].(map[string]any); ok {
+				if name, ok := engine["name"].(string); ok {
+					m.Annotations[AnnotationToolNameKey] = name
+				}
+				if version, ok := engine["version"].(string); ok {
+					m.Annotations[AnnotationToolVersionKey] = version
+				}
+			}
+		}
+	}
 }

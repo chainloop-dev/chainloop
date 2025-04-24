@@ -54,5 +54,24 @@ func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*api.Attesta
 		return nil, fmt.Errorf("invalid SARIF file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
+	m, err := uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
+	if err != nil {
+		return nil, err
+	}
+
+	i.injectAnnotations(m, doc)
+
+	return m, nil
+}
+
+func (i *SARIFCrafter) injectAnnotations(m *api.Attestation_Material, doc *sarif.Report) {
+	// add vendor information
+	if len(doc.Runs) > 0 {
+		// assuming vendor from first run.
+		m.Annotations = make(map[string]string)
+		m.Annotations[AnnotationToolNameKey] = doc.Runs[0].Tool.Driver.Name
+		if doc.Runs[0].Tool.Driver.Version != nil {
+			m.Annotations[AnnotationToolVersionKey] = *doc.Runs[0].Tool.Driver.Version
+		}
+	}
 }

@@ -471,6 +471,21 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 		m.Tag = v.GetStringValue()
 	}
 
+	// Extract the referenced source component
+	if v, ok := mAnnotationsMap[v1.AnnotationsSBOMMainComponentName]; ok && v.GetStringValue() != "" {
+		m.ReferencedSourceComponent = &ReferencedSourceComponent{
+			Name: v.GetStringValue(),
+		}
+
+		if v, ok := mAnnotationsMap[v1.AnnotationsSBOMMainComponentVersion]; ok && v.GetStringValue() != "" {
+			m.ReferencedSourceComponent.Version = v.GetStringValue()
+		}
+
+		if v, ok := mAnnotationsMap[v1.AnnotationsSBOMMainComponentType]; ok && v.GetStringValue() != "" {
+			m.ReferencedSourceComponent.Type = v.GetStringValue()
+		}
+	}
+
 	// In the case of an artifact type or derivative the filename is set and the inline content if any
 	if m.EmbeddedInline || m.UploadedToCAS {
 		m.Filename = material.Name

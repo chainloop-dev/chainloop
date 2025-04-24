@@ -269,12 +269,31 @@ func populateContractMaterials(inputSchemaMaterials []*pbc.CraftingSchema_Materi
 			if err := setMaterialValue(cm, materialResult); err != nil {
 				return fmt.Errorf("setting material value: %w", err)
 			}
+
+			// Update the expected annotations of the material stated on the contract with the ones in the attestation
+			updateMaterialAnnotations(cm, materialResult)
 		}
 
 		res.Materials = append(res.Materials, *materialResult)
 		visitedMaterials[m.Name] = struct{}{}
 	}
 	return nil
+}
+
+// updateMaterialAnnotations iterates through all expected annotations for the material
+// and attempts to find their corresponding values in the incoming attestation result.
+func updateMaterialAnnotations(cm *v1.Attestation_Material, attsMaterial *AttestationStatusMaterial) {
+	// Loop through the expected annotations in the attestation material
+	for k := range cm.Annotations {
+		// Check if the annotation exists in the provided attestation material
+		for _, a := range attsMaterial.Annotations {
+			// If the annotation name matches, update its value
+			if a.Name == k {
+				a.Value = cm.Annotations[k]
+				break
+			}
+		}
+	}
 }
 
 // populateAdditionalMaterials populates the materials that are not defined in the contract schema

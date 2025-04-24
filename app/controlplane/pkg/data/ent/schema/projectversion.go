@@ -55,6 +55,7 @@ func (ProjectVersion) Fields() []ent.Field {
 		field.Int("workflow_run_count").Default(0),
 		// When the version was released
 		field.Time("released_at").Optional(),
+		field.Bool("latest").Default(false).Comment("Whether this is the latest version of the project"),
 	}
 }
 

@@ -162,6 +162,7 @@ message PolicyReference {
   string name = 1;
   map<string, string> digest = 2;
   string organization = 3;
+  string uri = 4;
 }
 
 message WorkflowContractItem {
