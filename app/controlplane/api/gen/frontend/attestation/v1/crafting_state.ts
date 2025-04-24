@@ -172,9 +172,9 @@ export interface RunnerEnvironment {
   /** Runner environment name, i.e. github-hosted */
   environment: string;
   /** Whether the runner is authenticated, i.e. via the OIDC token */
-  isAuthenticatedRunner: boolean;
+  authenticated: boolean;
   /** Runner type */
-  type: string;
+  type: CraftingSchema_Runner_RunnerType;
   /** Runner URL */
   url: string;
 }
@@ -1790,7 +1790,7 @@ export const Attestation_SigningOptions = {
 };
 
 function createBaseRunnerEnvironment(): RunnerEnvironment {
-  return { workflowFilePath: "", environment: "", isAuthenticatedRunner: false, type: "", url: "" };
+  return { workflowFilePath: "", environment: "", authenticated: false, type: 0, url: "" };
 }
 
 export const RunnerEnvironment = {
@@ -1801,11 +1801,11 @@ export const RunnerEnvironment = {
     if (message.environment !== "") {
       writer.uint32(18).string(message.environment);
     }
-    if (message.isAuthenticatedRunner === true) {
-      writer.uint32(24).bool(message.isAuthenticatedRunner);
+    if (message.authenticated === true) {
+      writer.uint32(24).bool(message.authenticated);
     }
-    if (message.type !== "") {
-      writer.uint32(34).string(message.type);
+    if (message.type !== 0) {
+      writer.uint32(32).int32(message.type);
     }
     if (message.url !== "") {
       writer.uint32(42).string(message.url);
@@ -1839,14 +1839,14 @@ export const RunnerEnvironment = {
             break;
           }
 
-          message.isAuthenticatedRunner = reader.bool();
+          message.authenticated = reader.bool();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag !== 32) {
             break;
           }
 
-          message.type = reader.string();
+          message.type = reader.int32() as any;
           continue;
         case 5:
           if (tag !== 42) {
@@ -1868,8 +1868,8 @@ export const RunnerEnvironment = {
     return {
       workflowFilePath: isSet(object.workflowFilePath) ? String(object.workflowFilePath) : "",
       environment: isSet(object.environment) ? String(object.environment) : "",
-      isAuthenticatedRunner: isSet(object.isAuthenticatedRunner) ? Boolean(object.isAuthenticatedRunner) : false,
-      type: isSet(object.type) ? String(object.type) : "",
+      authenticated: isSet(object.authenticated) ? Boolean(object.authenticated) : false,
+      type: isSet(object.type) ? craftingSchema_Runner_RunnerTypeFromJSON(object.type) : 0,
       url: isSet(object.url) ? String(object.url) : "",
     };
   },
@@ -1878,8 +1878,8 @@ export const RunnerEnvironment = {
     const obj: any = {};
     message.workflowFilePath !== undefined && (obj.workflowFilePath = message.workflowFilePath);
     message.environment !== undefined && (obj.environment = message.environment);
-    message.isAuthenticatedRunner !== undefined && (obj.isAuthenticatedRunner = message.isAuthenticatedRunner);
-    message.type !== undefined && (obj.type = message.type);
+    message.authenticated !== undefined && (obj.authenticated = message.authenticated);
+    message.type !== undefined && (obj.type = craftingSchema_Runner_RunnerTypeToJSON(message.type));
     message.url !== undefined && (obj.url = message.url);
     return obj;
   },
@@ -1892,8 +1892,8 @@ export const RunnerEnvironment = {
     const message = createBaseRunnerEnvironment();
     message.workflowFilePath = object.workflowFilePath ?? "";
     message.environment = object.environment ?? "";
-    message.isAuthenticatedRunner = object.isAuthenticatedRunner ?? false;
-    message.type = object.type ?? "";
+    message.authenticated = object.authenticated ?? false;
+    message.type = object.type ?? 0;
     message.url = object.url ?? "";
     return message;
   },

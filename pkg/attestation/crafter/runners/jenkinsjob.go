@@ -79,6 +79,6 @@ func (r *JenkinsJob) IsAuthenticated() bool {
 	return false
 }
 
-func (r *JenkinsJob) RunnerEnvironment() RunnerEnvironment {
+func (r *JenkinsJob) Environment() RunnerEnvironment {
 	return Unknown
 }

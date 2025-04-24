@@ -65,6 +65,6 @@ func (r *DaggerPipeline) IsAuthenticated() bool {
 	return false
 }
 
-func (r *DaggerPipeline) RunnerEnvironment() RunnerEnvironment {
+func (r *DaggerPipeline) Environment() RunnerEnvironment {
 	return Unknown
 }

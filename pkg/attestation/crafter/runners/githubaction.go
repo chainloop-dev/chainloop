@@ -101,7 +101,7 @@ func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
 
-func (r *GitHubAction) RunnerEnvironment() RunnerEnvironment {
+func (r *GitHubAction) Environment() RunnerEnvironment {
 	if r.githubToken != nil {
 		switch r.githubToken.RunnerEnvironment {
 		case "github-hosted":

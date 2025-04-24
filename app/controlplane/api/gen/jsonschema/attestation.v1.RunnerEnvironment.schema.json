@@ -4,27 +4,42 @@
   "additionalProperties": false,
   "description": "The runner environment in which the attestation was crafted",
   "patternProperties": {
-    "^(isAuthenticatedRunner)$": {
-      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
-      "type": "boolean"
-    },
     "^(workflowFilePath)$": {
       "description": "Workflow file path that was used during build",
       "type": "string"
     }
   },
   "properties": {
+    "authenticated": {
+      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
+      "type": "boolean"
+    },
     "environment": {
       "description": "Runner environment name, i.e. github-hosted",
       "type": "string"
     },
-    "is_authenticated_runner": {
-      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
-      "type": "boolean"
-    },
     "type": {
-      "description": "Runner type",
-      "type": "string"
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Runner type"
     },
     "url": {
       "description": "Runner URL",

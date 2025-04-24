@@ -371,11 +371,11 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
 			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
 			RunnerEnvironment: &api.RunnerEnvironment{
-				WorkflowFilePath:      opts.Runner.WorkflowFilePath(),
-				Environment:           opts.Runner.RunnerEnvironment().String(),
-				IsAuthenticatedRunner: opts.Runner.IsAuthenticated(),
-				Type:                  opts.Runner.ID().String(),
-				Url:                   opts.Runner.RunURI(),
+				WorkflowFilePath: opts.Runner.WorkflowFilePath(),
+				Environment:      opts.Runner.Environment().String(),
+				Authenticated:    opts.Runner.IsAuthenticated(),
+				Type:             opts.Runner.ID(),
+				Url:              opts.Runner.RunURI(),
 			},
 		},
 		DryRun: opts.DryRun,
@@ -439,11 +439,11 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 
 func (c *Crafter) resolveRunnerInfo() {
 	c.CraftingState.Attestation.RunnerEnvironment = &api.RunnerEnvironment{
-		Environment:           c.Runner.RunnerEnvironment().String(),
-		IsAuthenticatedRunner: c.Runner.IsAuthenticated(),
-		WorkflowFilePath:      c.Runner.WorkflowFilePath(),
-		Type:                  c.Runner.ID().String(),
-		Url:                   c.Runner.RunURI(),
+		Environment:      c.Runner.Environment().String(),
+		Authenticated:    c.Runner.IsAuthenticated(),
+		WorkflowFilePath: c.Runner.WorkflowFilePath(),
+		Type:             c.Runner.ID(),
+		Url:              c.Runner.RunURI(),
 	}
 }
 

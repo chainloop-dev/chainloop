@@ -171,7 +171,7 @@ message RunnerEnvironment {
   bool authenticated = 3;
 
   // Runner type
-  string type = 4;
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType type = 4;
 
   // Runner URL
   string url = 5;

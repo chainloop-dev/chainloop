@@ -60,7 +60,7 @@ func (s *crafterSuite) TestInit() {
 		wantRepoDigest    bool
 		dryRun            bool
 		runnerEnvironment string
-		runnerType        string
+		runnerType        schemaapi.CraftingSchema_Runner_RunnerType
 	}{
 		{
 			name:              "happy path inside a git repo",
@@ -70,7 +70,7 @@ func (s *crafterSuite) TestInit() {
 			workingDir:        s.repoPath,
 			wantRepoDigest:    true,
 			runnerEnvironment: "unknown",
-			runnerType:        "RUNNER_TYPE_UNSPECIFIED",
+			runnerType:        schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED,
 		},
 		{
 			name:              "happy path outside a git repo",
@@ -79,7 +79,7 @@ func (s *crafterSuite) TestInit() {
 			workingDir:        s.T().TempDir(),
 			dryRun:            true,
 			runnerEnvironment: "unknown",
-			runnerType:        "RUNNER_TYPE_UNSPECIFIED",
+			runnerType:        schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED,
 		},
 		{
 			name:             "missing metadata",
@@ -95,7 +95,7 @@ func (s *crafterSuite) TestInit() {
 			dryRun:            true,
 			workingDir:        s.T().TempDir(),
 			runnerEnvironment: "unknown",
-			runnerType:        "GITHUB_ACTION",
+			runnerType:        schemaapi.CraftingSchema_Runner_GITHUB_ACTION,
 		},
 		{
 			name:              "with annotations",
@@ -104,7 +104,7 @@ func (s *crafterSuite) TestInit() {
 			workingDir:        s.T().TempDir(),
 			dryRun:            true,
 			runnerEnvironment: "unknown",
-			runnerType:        "RUNNER_TYPE_UNSPECIFIED",
+			runnerType:        schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED,
 		},
 	}
 

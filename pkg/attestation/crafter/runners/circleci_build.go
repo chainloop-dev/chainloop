@@ -72,6 +72,6 @@ func (r *CircleCIBuild) IsAuthenticated() bool {
 	return false
 }
 
-func (r *CircleCIBuild) RunnerEnvironment() RunnerEnvironment {
+func (r *CircleCIBuild) Environment() RunnerEnvironment {
 	return Unknown
 }

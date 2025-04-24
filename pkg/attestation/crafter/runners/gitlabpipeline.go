@@ -72,6 +72,6 @@ func (r *GitlabPipeline) IsAuthenticated() bool {
 	return false
 }
 
-func (r *GitlabPipeline) RunnerEnvironment() RunnerEnvironment {
+func (r *GitlabPipeline) Environment() RunnerEnvironment {
 	return Unknown
 }

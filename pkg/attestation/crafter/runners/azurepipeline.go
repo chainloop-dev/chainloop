@@ -92,6 +92,6 @@ func (r *AzurePipeline) IsAuthenticated() bool {
 	return false
 }
 
-func (r *AzurePipeline) RunnerEnvironment() RunnerEnvironment {
+func (r *AzurePipeline) Environment() RunnerEnvironment {
 	return Unknown
 }

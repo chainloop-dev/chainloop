@@ -55,6 +55,6 @@ func (r *Generic) IsAuthenticated() bool {
 	return false
 }
 
-func (r *Generic) RunnerEnvironment() RunnerEnvironment {
+func (r *Generic) Environment() RunnerEnvironment {
 	return Unknown
 }

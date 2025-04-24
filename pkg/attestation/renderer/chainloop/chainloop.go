@@ -87,9 +87,9 @@ type ProvenancePredicateCommon struct {
 	// Custom annotations
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// Additional properties related to runner
-	RunnerEnvironment   string `json:"runnerEnvironment,omitempty"`
-	RunnerAuthenticated bool   `json:"runnerAuthenticated,omitempty"`
-	RunnerWorkflowFilePath    string `json:"RunnerWorkflowFilePath,omitempty"`
+	RunnerEnvironment      string `json:"runnerEnvironment,omitempty"`
+	RunnerAuthenticated    bool   `json:"runnerAuthenticated,omitempty"`
+	RunnerWorkflowFilePath string `json:"RunnerWorkflowFilePath,omitempty"`
 }
 
 type Metadata struct {
@@ -134,22 +134,22 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 	)
 
 	if att.RunnerEnvironment != nil {
-		environment = att.RunnerEnvironment.Environment
-		authenticated = att.RunnerEnvironment.IsAuthenticatedRunner
-		workflowFilePath = att.RunnerEnvironment.WorkflowFilePath
+		environment = att.RunnerEnvironment.GetEnvironment()
+		authenticated = att.RunnerEnvironment.GetAuthenticated()
+		workflowFilePath = att.RunnerEnvironment.GetWorkflowFilePath()
 	}
 
 	return &ProvenancePredicateCommon{
-		BuildType:           chainloopBuildType,
-		Builder:             &builder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
-		Metadata:            getChainloopMeta(att),
-		Env:                 att.EnvVars,
-		RunnerType:          att.GetRunnerType().String(),
-		RunnerURL:           att.GetRunnerUrl(),
-		Annotations:         att.Annotations,
-		RunnerEnvironment:   environment,
-		RunnerAuthenticated: authenticated,
-		WorkflowFilePath:    workflowFilePath,
+		BuildType:              chainloopBuildType,
+		Builder:                &builder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
+		Metadata:               getChainloopMeta(att),
+		Env:                    att.EnvVars,
+		RunnerType:             att.GetRunnerType().String(),
+		RunnerURL:              att.GetRunnerUrl(),
+		Annotations:            att.Annotations,
+		RunnerEnvironment:      environment,
+		RunnerAuthenticated:    authenticated,
+		RunnerWorkflowFilePath: workflowFilePath,
 	}
 }
 
