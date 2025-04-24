@@ -132,26 +132,26 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (any, error) {
 
 	tokenBytes, err := c.requestToken(ctx, c.audience)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving request token: %w", err)
 	}
 
 	tokenPayload, err := c.decodePayload(tokenBytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding payload: %w", err)
 	}
 
 	t, err := c.verifyToken(ctx, c.audience, tokenPayload)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error verifying token: %w", err)
 	}
 
 	token, err := c.decodeToken(t)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding token: %w", err)
 	}
 
 	if err := c.verifyClaims(token); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error verifying claims: %w", err)
 	}
 
 	// store the token for later re-use
