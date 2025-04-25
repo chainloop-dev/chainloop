@@ -36,6 +36,9 @@ import (
 // DefaultActionsProviderURL is the default URL for GitHub Actions OIDC provider
 var DefaultActionsProviderURL = "https://token.actions.githubusercontent.com"
 
+// DefaultGitHubAudience is the default audience for GitHub Actions OIDC
+var DefaultGitHubAudience = []string{"nobody"}
+
 const (
 	// RequestTokenEnvKey is the environment variable for the GitHub Actions OIDC token request token
 	RequestTokenEnvKey = "ACTIONS_ID_TOKEN_REQUEST_TOKEN"
@@ -47,6 +50,7 @@ type GitHubOIDCClient struct {
 	requestURL   *url.URL
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
+	actor        string
 	audience     []string
 	token        *Token
 }
@@ -75,12 +79,16 @@ func WithAudience(audience []string) Option {
 	}
 }
 
+// WithAudience sets the audience for the OIDC token.
+func WithActor(actor string) Option {
+	return func(c *GitHubOIDCClient) {
+		c.actor = actor
+	}
+}
+
 // NewGitHubClient returns new GitHub OIDC provider client.
 func NewGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 	var c GitHubOIDCClient
-	for _, opt := range opts {
-		opt(&c)
-	}
 
 	// Get the request URL and token from env vars
 	requestURL := os.Getenv(RequestURLEnvKey)
@@ -106,6 +114,9 @@ func NewGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
 	}
+	for _, opt := range opts {
+		opt(&c)
+	}
 
 	// Only set the default verifier function if it hasn't been set by an option
 	if c.verifierFunc == nil {
@@ -130,6 +141,11 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (any, error) {
 		return c.token, nil
 	}
 
+	audience := c.audience
+	if len(audience) == 0 {
+		audience = DefaultGitHubAudience
+	}
+
 	tokenBytes, err := c.requestToken(ctx, c.audience)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving request token: %w", err)
@@ -140,7 +156,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (any, error) {
 		return nil, fmt.Errorf("error decoding payload: %w", err)
 	}
 
-	t, err := c.verifyToken(ctx, c.audience, tokenPayload)
+	t, err := c.verifyToken(ctx, audience, c.actor, tokenPayload)
 	if err != nil {
 		return nil, fmt.Errorf("error verifying token: %w", err)
 	}
@@ -204,7 +220,7 @@ func (c *GitHubOIDCClient) decodePayload(b []byte) (string, error) {
 }
 
 // verifyToken verifies the token contents and signature.
-func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, rawIDToken string) (*oidc.IDToken, error) {
+func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, actor string, rawIDToken string) (*oidc.IDToken, error) {
 	// Verify the token.
 	verifier, err := c.verifierFunc(ctx)
 	if err != nil {
@@ -216,9 +232,9 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, r
 		return nil, fmt.Errorf("verify: could not verify token: %w", err)
 	}
 
-	// Verify the audience received is the one we requested.
-	if slices.Compare(audience, idToken.Audience) != 0 {
-		return nil, fmt.Errorf("%w: audience not equal %q != %q", errVerify, audience, idToken.Audience)
+	// Verify the audience received is the one we requested or is equal to the actor
+	if slices.Compare(audience, idToken.Audience) != 0 && slices.Compare([]string{actor}, idToken.Audience) != 0 {
+		return nil, fmt.Errorf("%w: audience not equal %q != %q or not equal to actor %q", errVerify, audience, idToken.Audience, []string{actor})
 	}
 
 	return idToken, nil

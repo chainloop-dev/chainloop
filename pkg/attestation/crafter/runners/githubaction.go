@@ -24,8 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 )
 
-var defaultAudience = []string{"nobody"}
-
 type GitHubAction struct {
 	githubToken *oidc.Token
 }
@@ -34,7 +32,8 @@ func NewGithubAction(ctx context.Context) *GitHubAction {
 	// In order to ensure that we are running in a non-falsifiable environment we get the OIDC
 	// from Github. That allows us to read the workflow file path and runnner type. If that can't
 	// be done we fallback to reading the env vars directly.
-	client, err := oidc.NewGitHubClient(oidc.WithAudience(defaultAudience))
+	actor := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_ACTOR"))
+	client, err := oidc.NewGitHubClient(oidc.WithActor(actor))
 	if err != nil {
 		return &GitHubAction{
 			githubToken: nil,
