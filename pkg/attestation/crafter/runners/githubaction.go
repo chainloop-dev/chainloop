@@ -16,16 +16,47 @@
 package runners
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 )
 
-type GitHubAction struct{}
+type GitHubAction struct {
+	githubToken *oidc.Token
+}
 
-func NewGithubAction() *GitHubAction {
-	return &GitHubAction{}
+func NewGithubAction(ctx context.Context) *GitHubAction {
+	// In order to ensure that we are running in a non-falsifiable environment we get the OIDC
+	// from Github. That allows us to read the workflow file path and runnner type. If that can't
+	// be done we fallback to reading the env vars directly.
+	actor := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_ACTOR"))
+	client, err := oidc.NewGitHubClient(oidc.WithActor(actor))
+	if err != nil {
+		return &GitHubAction{
+			githubToken: nil,
+		}
+	}
+
+	token, err := client.Token(ctx)
+	if err != nil {
+		return &GitHubAction{
+			githubToken: nil,
+		}
+	}
+
+	ghToken, ok := token.(*oidc.Token)
+	if !ok {
+		return &GitHubAction{
+			githubToken: nil,
+		}
+	}
+
+	return &GitHubAction{
+		githubToken: ghToken,
+	}
 }
 
 func (r *GitHubAction) ID() schemaapi.CraftingSchema_Runner_RunnerType {
@@ -67,4 +98,29 @@ func (r *GitHubAction) RunURI() (url string) {
 
 func (r *GitHubAction) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *GitHubAction) Environment() RunnerEnvironment {
+	if r.githubToken != nil {
+		switch r.githubToken.RunnerEnvironment {
+		case "github-hosted":
+			return Managed
+		case "self-hosted":
+			return SelfHosted
+		default:
+			return Unknown
+		}
+	}
+	return Unknown
+}
+
+func (r *GitHubAction) WorkflowFilePath() string {
+	if r.githubToken != nil {
+		return r.githubToken.JobWorkflowRef
+	}
+	return ""
+}
+
+func (r *GitHubAction) IsAuthenticated() bool {
+	return r.githubToken != nil
 }

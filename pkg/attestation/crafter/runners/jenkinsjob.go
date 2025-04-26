@@ -70,3 +70,15 @@ func (r *JenkinsJob) RunURI() string {
 func (r *JenkinsJob) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
+
+func (r *JenkinsJob) WorkflowFilePath() string {
+	return ""
+}
+
+func (r *JenkinsJob) IsAuthenticated() bool {
+	return false
+}
+
+func (r *JenkinsJob) Environment() RunnerEnvironment {
+	return Unknown
+}

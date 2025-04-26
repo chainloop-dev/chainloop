@@ -150,10 +150,31 @@ message Attestation {
   // Signing options
   SigningOptions signing_options = 15;
 
+  // Runner environment in which the attestation was crafted
+  RunnerEnvironment runner_environment = 16;
+
   message SigningOptions {
     // TSA URL
     string timestamp_authority_url = 1;
   }
+}
+
+// The runner environment in which the attestation was crafted
+message RunnerEnvironment {
+     // Workflow file path that was used during build 
+  string workflow_file_path = 1;
+
+  // Runner environment name, i.e. github-hosted
+  string environment = 2;
+
+  // Whether the runner is authenticated, i.e. via the OIDC token
+  bool authenticated = 3;
+
+  // Runner type
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType type = 4;
+
+  // Runner URL
+  string url = 5;
 }
 
 // A policy executed against an attestation or material

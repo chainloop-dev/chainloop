@@ -15,7 +15,9 @@
 
 package runners
 
-import schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+import (
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+)
 
 type Generic struct{}
 
@@ -43,4 +45,16 @@ func (r *Generic) RunURI() string {
 
 func (r *Generic) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
+}
+
+func (r *Generic) WorkflowFilePath() string {
+	return ""
+}
+
+func (r *Generic) IsAuthenticated() bool {
+	return false
+}
+
+func (r *Generic) Environment() RunnerEnvironment {
+	return Unknown
 }

@@ -370,6 +370,13 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			Head:                   headCommitP,
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
 			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
+			RunnerEnvironment: &api.RunnerEnvironment{
+				WorkflowFilePath: opts.Runner.WorkflowFilePath(),
+				Environment:      opts.Runner.Environment().String(),
+				Authenticated:    opts.Runner.IsAuthenticated(),
+				Type:             opts.Runner.ID(),
+				Url:              opts.Runner.RunURI(),
+			},
 		},
 		DryRun: opts.DryRun,
 	}, nil
@@ -418,6 +425,9 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 		}
 	}
 
+	// Resolve runner information
+	c.resolveRunnerInfo()
+
 	c.CraftingState.Attestation.EnvVars = outputEnvVars
 
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
@@ -425,6 +435,16 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	}
 
 	return nil
+}
+
+func (c *Crafter) resolveRunnerInfo() {
+	c.CraftingState.Attestation.RunnerEnvironment = &api.RunnerEnvironment{
+		Environment:      c.Runner.Environment().String(),
+		Authenticated:    c.Runner.IsAuthenticated(),
+		WorkflowFilePath: c.Runner.WorkflowFilePath(),
+		Type:             c.Runner.ID(),
+		Url:              c.Runner.RunURI(),
+	}
 }
 
 // AddMaterialContractFree adds a material to the crafting state without checking the contract schema.

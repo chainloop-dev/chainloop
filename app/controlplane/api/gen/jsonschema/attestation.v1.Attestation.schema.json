@@ -34,6 +34,10 @@
       },
       "type": "array"
     },
+    "^(runnerEnvironment)$": {
+      "$ref": "attestation.v1.RunnerEnvironment.schema.json",
+      "description": "Runner environment in which the attestation was crafted"
+    },
     "^(runnerType)$": {
       "anyOf": [
         {
@@ -119,6 +123,10 @@
         "$ref": "attestation.v1.PolicyEvaluation.schema.json"
       },
       "type": "array"
+    },
+    "runner_environment": {
+      "$ref": "attestation.v1.RunnerEnvironment.schema.json",
+      "description": "Runner environment in which the attestation was crafted"
     },
     "runner_type": {
       "anyOf": [

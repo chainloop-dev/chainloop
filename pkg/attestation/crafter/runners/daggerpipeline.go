@@ -56,3 +56,15 @@ func (r *DaggerPipeline) RunURI() string {
 func (r *DaggerPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
+
+func (r *DaggerPipeline) WorkflowFilePath() string {
+	return ""
+}
+
+func (r *DaggerPipeline) IsAuthenticated() bool {
+	return false
+}
+
+func (r *DaggerPipeline) Environment() RunnerEnvironment {
+	return Unknown
+}

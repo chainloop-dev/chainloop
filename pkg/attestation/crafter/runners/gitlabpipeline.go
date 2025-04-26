@@ -63,3 +63,15 @@ func (r *GitlabPipeline) RunURI() (url string) {
 func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
+
+func (r *GitlabPipeline) WorkflowFilePath() string {
+	return ""
+}
+
+func (r *GitlabPipeline) IsAuthenticated() bool {
+	return false
+}
+
+func (r *GitlabPipeline) Environment() RunnerEnvironment {
+	return Unknown
+}
