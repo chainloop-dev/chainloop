@@ -34,6 +34,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const AnnotationToolNameKey = "chainloop.material.tool.name"
+const AnnotationToolVersionKey = "chainloop.material.tool.version"
+
 var (
 	// ErrInvalidMaterialType is returned when the provided material type
 	// is not from the kind we are expecting
@@ -232,7 +235,9 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	}
 
 	m.AddedAt = timestamppb.New(time.Now())
-	m.Annotations = make(map[string]string)
+	if m.Annotations == nil {
+		m.Annotations = make(map[string]string)
+	}
 
 	for _, annotation := range materialSchema.Annotations {
 		m.Annotations[annotation.Name] = annotation.Value
