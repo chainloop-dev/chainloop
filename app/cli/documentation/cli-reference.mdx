@@ -1,5 +1,5 @@
 ---
-title: Commands Reference
+title: CLI Command Reference
 ---
 
 Chainloop CLI is a command-line tool designed to streamline the process of crafting, managing, and storing software supply chain attestations. The CLI enables developers to generate and submit evidence-such as build artifacts, SBOMs, 
@@ -196,7 +196,7 @@ Options
 --annotation strings         additional annotation in the format of key=value
 --attestation-id string      Unique identifier of the in-progress attestation
 -h, --help                       help for add
---kind string                kind of the material to be recorded: ["HELM_CHART" "CSAF_INFORMATIONAL_ADVISORY" "GHAS_CODE_SCAN" "STRING" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "BLACKDUCK_SCA_JSON" "TWISTCLI_SCAN_JSON" "GHAS_DEPENDENCY_SCAN" "SLSA_PROVENANCE" "CONTAINER_IMAGE" "OPENVEX" "SARIF" "EVIDENCE" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "GITLAB_SECURITY_REPORT" "ZAP_DAST_ZIP" "ARTIFACT" "ATTESTATION" "CSAF_VEX" "GHAS_SECRET_SCAN" "JACOCO_XML" "JUNIT_XML"]
+--kind string                kind of the material to be recorded: ["BLACKDUCK_SCA_JSON" "JACOCO_XML" "STRING" "OPENVEX" "HELM_CHART" "EVIDENCE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "GITLAB_SECURITY_REPORT" "TWISTCLI_SCAN_JSON" "ARTIFACT" "SARIF" "CSAF_VEX" "CSAF_SECURITY_INCIDENT_RESPONSE" "ZAP_DAST_ZIP" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "GHAS_SECRET_SCAN" "SLSA_PROVENANCE" "CONTAINER_IMAGE" "JUNIT_XML" "ATTESTATION"]
 --name string                name of the material as shown in the contract
 --registry-password string   registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string     OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
@@ -3327,7 +3327,7 @@ Options
 --limit int         number of items to show (default 50)
 --next string       cursor to load the next page
 --project string    project name
---status string     filter by workflow run status: [INITIALIZED SUCCEEDED FAILED EXPIRED CANCELLED]
+--status string     filter by workflow run status: [EXPIRED CANCELLED INITIALIZED SUCCEEDED FAILED]
 --workflow string   workflow name
 ```
 
