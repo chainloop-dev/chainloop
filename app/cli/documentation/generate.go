@@ -38,7 +38,7 @@ Chainloop CLI is a command-line tool designed to streamline the process of craft
 and vulnerability reports-directly from their CI/CD workflows, ensuring compliance with organizational policies without introducing friction into the development process.
 
 The CLI operates through a contract-based workflow. Security teams define workflow contracts specifying which types of evidence must be collected and how they should be validated. Developers then use the Chainloop CLI to initialize 
-an attestation, add the required materials, and submit the attestation for validation and storage. Each command can accept arguments as traditional flags or as environment variables
+an attestation, add the required materials, and submit the attestation for validation and storage.
 
 `
 
