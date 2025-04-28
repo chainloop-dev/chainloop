@@ -22,19 +22,21 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
+	"github.com/rs/zerolog"
 )
 
 type GitHubAction struct {
 	githubToken *oidc.Token
 }
 
-func NewGithubAction(ctx context.Context) *GitHubAction {
+func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction {
 	// In order to ensure that we are running in a non-falsifiable environment we get the OIDC
 	// from Github. That allows us to read the workflow file path and runnner type. If that can't
 	// be done we fallback to reading the env vars directly.
 	actor := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_ACTOR"))
 	client, err := oidc.NewGitHubClient(oidc.WithActor(actor))
 	if err != nil {
+		logger.Debug().Err(err).Msg("failed creating GitHub OIDC client")
 		return &GitHubAction{
 			githubToken: nil,
 		}
@@ -42,6 +44,7 @@ func NewGithubAction(ctx context.Context) *GitHubAction {
 
 	token, err := client.Token(ctx)
 	if err != nil {
+		logger.Debug().Err(err).Msg("failed to get github token")
 		return &GitHubAction{
 			githubToken: nil,
 		}
@@ -49,6 +52,7 @@ func NewGithubAction(ctx context.Context) *GitHubAction {
 
 	ghToken, ok := token.(*oidc.Token)
 	if !ok {
+		logger.Debug().Err(err).Msg("failed casting to OIDC token")
 		return &GitHubAction{
 			githubToken: nil,
 		}

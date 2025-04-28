@@ -20,6 +20,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -118,7 +120,9 @@ func (s *githubActionSuite) TestRunnerName() {
 
 // Run before each test
 func (s *githubActionSuite) SetupTest() {
-	s.runner = NewGithubAction(context.Background())
+	// Create a logger for testing
+	testLogger := zerolog.New(os.Stdout).Level(zerolog.DebugLevel)
+	s.runner = NewGithubAction(context.Background(), &testLogger)
 	t := s.T()
 	for k, v := range gitHubTestingEnvVars {
 		t.Setenv(k, v)

@@ -59,19 +59,35 @@ type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
 // timeoutCtx is a context with a 15-second timeout
 var timeoutCtx, _ = context.WithTimeout(context.Background(), 15*time.Second)
 
-var RunnersMap = map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner{
-	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(timeoutCtx),
-	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: runners.NewGitlabPipeline(),
-	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:  runners.NewAzurePipeline(),
-	schemaapi.CraftingSchema_Runner_JENKINS_JOB:     runners.NewJenkinsJob(),
-	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD:  runners.NewCircleCIBuild(),
-	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: runners.NewDaggerPipeline(),
+// RunnerFactory is a function that creates a runner
+type RunnerFactory func(logger *zerolog.Logger) SupportedRunner
+
+// RunnerFactories maps runner types to factory functions that create them
+var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFactory{
+	schemaapi.CraftingSchema_Runner_GITHUB_ACTION: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewGithubAction(timeoutCtx, logger)
+	},
+	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewGitlabPipeline()
+	},
+	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewAzurePipeline()
+	},
+	schemaapi.CraftingSchema_Runner_JENKINS_JOB: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewJenkinsJob()
+	},
+	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewCircleCIBuild()
+	},
+	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewDaggerPipeline()
+	},
 }
 
 // Load a specific runner
-func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) SupportedRunner {
-	if r, ok := RunnersMap[t]; ok {
-		return r
+func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType, logger *zerolog.Logger) SupportedRunner {
+	if factory, ok := RunnerFactories[t]; ok {
+		return factory(logger)
 	}
 
 	return runners.NewGeneric()
@@ -83,7 +99,10 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType) SupportedRunner {
 // If more than one runner is detected, we default to generic since its an incongruent result
 func DiscoverRunner(logger zerolog.Logger) SupportedRunner {
 	detected := []SupportedRunner{}
-	for _, r := range RunnersMap {
+
+	// Create all runners and check their environment
+	for _, factory := range RunnerFactories {
+		r := factory(&logger)
 		if r.CheckEnv() {
 			detected = append(detected, r)
 		}

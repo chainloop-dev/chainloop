@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -113,7 +115,9 @@ func (s *crafterSuite) TestInit() {
 			contract, err := loadSchema(tc.contractPath)
 			require.NoError(s.T(), err)
 
-			runner := crafter.NewRunner(contract.GetRunner().GetType())
+			// Create a logger for testing
+			testLogger := zerolog.New(os.Stdout).Level(zerolog.DebugLevel)
+			runner := crafter.NewRunner(contract.GetRunner().GetType(), &testLogger)
 			// Make sure that the tests context indicate that we are not in a CI
 			// this makes the github action runner context to fail
 			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
@@ -334,7 +338,9 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
-				runner = runners.NewGithubAction(s.T().Context())
+				// Create a logger for testing
+				testLogger := zerolog.New(os.Stdout).Level(zerolog.DebugLevel)
+				runner = runners.NewGithubAction(s.T().Context(), &testLogger)
 			} else if tc.inJenkinsEnv {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
 				s.T().Setenv("JOB_NAME", "some-job")
