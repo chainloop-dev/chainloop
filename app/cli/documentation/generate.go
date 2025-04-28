@@ -64,7 +64,7 @@ func main() {
 	formatted := processFinalDocument(builder.String())
 	withHeader := fmt.Sprintf("%s%s", fileHeader, formatted)
 
-	err := os.WriteFile(filepath.Join(out, "cli-reference.mdx"), []byte(withHeader), 0755)
+	err := os.WriteFile(filepath.Join(out, "cli-reference.mdx"), []byte(withHeader), 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,6 +91,7 @@ func generateCommandDocs(cmd *cobra.Command, builder *strings.Builder, currentDe
 // processCommand processes the command documentation, filtering out unnecessary sections and formatting headers.
 func processCommand(content string, depth int) string {
 	lines := strings.Split(content, "\n")
+	// nolint: prealloc
 	var filtered []string
 	inSeeAlso := false
 
