@@ -31,7 +31,7 @@ import (
 )
 
 const fileHeader = `---
-title: CLI
+title: Commands Reference
 ---
 
 Chainloop CLI is a command-line tool designed to streamline the process of crafting, managing, and storing software supply chain attestations. The CLI enables developers to generate and submit evidence-such as build artifacts, SBOMs, 
