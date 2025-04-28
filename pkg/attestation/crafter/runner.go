@@ -67,19 +67,19 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	schemaapi.CraftingSchema_Runner_GITHUB_ACTION: func(logger *zerolog.Logger) SupportedRunner {
 		return runners.NewGithubAction(timeoutCtx, logger)
 	},
-	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewGitlabPipeline()
 	},
-	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewAzurePipeline()
 	},
-	schemaapi.CraftingSchema_Runner_JENKINS_JOB: func(logger *zerolog.Logger) SupportedRunner {
+	schemaapi.CraftingSchema_Runner_JENKINS_JOB: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewJenkinsJob()
 	},
-	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD: func(logger *zerolog.Logger) SupportedRunner {
+	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewCircleCIBuild()
 	},
-	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewDaggerPipeline()
 	},
 }
