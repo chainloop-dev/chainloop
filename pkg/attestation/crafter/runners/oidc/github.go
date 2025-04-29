@@ -52,7 +52,7 @@ type GitHubOIDCClient struct {
 	requestURL   *url.URL
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
-	actor        string
+	actor        []string
 	audience     []string
 	token        *Token
 }
@@ -81,10 +81,10 @@ func WithAudience(audience []string) Option {
 	}
 }
 
-// WithAudience sets the audience for the OIDC token.
+// WithActor sets the audience for the OIDC token.
 func WithActor(actor string) Option {
 	return func(c *GitHubOIDCClient) {
-		c.actor = actor
+		c.actor = append(c.actor, actor)
 	}
 }
 
@@ -119,6 +119,7 @@ func NewGitHubClient(logger *zerolog.Logger, opts ...Option) (*GitHubOIDCClient,
 		logger:      logger,
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
+		actor:       []string{},
 	}
 	for _, opt := range opts {
 		opt(&c)
@@ -229,7 +230,7 @@ func (c *GitHubOIDCClient) decodePayload(b []byte) (string, error) {
 }
 
 // verifyToken verifies the token contents and signature.
-func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, actor string, rawIDToken string) (*oidc.IDToken, error) {
+func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, actor []string, rawIDToken string) (*oidc.IDToken, error) {
 	// Verify the token.
 	c.logger.Debug().Msgf("verifying token: %s with audience: %s and actor: %s", rawIDToken, audience, actor)
 	verifier, err := c.verifierFunc(ctx)
@@ -242,9 +243,20 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, a
 		return nil, fmt.Errorf("verify: could not verify token: %w", err)
 	}
 
-	// Verify the audience received is the one we requested or is equal to the actor
-	if slices.Compare(audience, idToken.Audience) != 0 && slices.Compare([]string{actor}, idToken.Audience) != 0 {
-		return nil, fmt.Errorf("%w: audience not equal %q != %q or not equal to actor %q", errVerify, audience, idToken.Audience, []string{actor})
+	// Verify the audience received is the one we requested or is equal to any of the actors
+	if slices.Compare(audience, idToken.Audience) != 0 {
+		// Check if any of the actors matches the idToken.Audience
+		actorMatch := false
+		for _, a := range actor {
+			if slices.Compare([]string{a}, idToken.Audience) == 0 {
+				actorMatch = true
+				break
+			}
+		}
+
+		if !actorMatch {
+			return nil, fmt.Errorf("%w: audience not equal %q != %q and none of the actors %q match the audience", errVerify, audience, idToken.Audience, actor)
+		}
 	}
 
 	return idToken, nil
