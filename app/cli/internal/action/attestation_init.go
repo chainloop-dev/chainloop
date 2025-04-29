@@ -19,9 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"os"
-	"regexp"
 	"strconv"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -32,6 +29,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 type AttestationInitOpts struct {
@@ -228,6 +226,11 @@ func (action *AttestationInit) createWorkflow(ctx context.Context, opts *Attesta
 		return nil, fmt.Errorf("error looking for workflow %q: %w", opts.WorkflowName, err)
 	}
 
+	// if no new contract is provided, there's nothing to update
+	if wf != nil && opts.NewWorkflowContractRef == "" {
+		return wf, nil
+	}
+
 	contractRef := opts.NewWorkflowContractRef
 	contractName := contractRef
 	if contractRef != "" {
@@ -286,24 +289,10 @@ func (action *AttestationInit) createWorkflow(ctx context.Context, opts *Attesta
 	return wf, nil
 }
 
-// isContractReference checks if the reference points to an existent contract name (DNS-1123
+// isContractReference checks if the reference points to an existent contract name (DNS-1123)
 func isContractReference(ref string) bool {
-	// Check if the reference is a valid URL
-	if _, err := url.ParseRequestURI(ref); err == nil {
-		return false
-	}
-
-	// is it a local file?
-	if _, err := os.Stat(ref); err == nil {
-		return false
-	}
-
-	// Check if the reference is a valid DNS-1123 name
-	if matched, _ := regexp.Match("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", []byte(ref)); matched {
-		return true
-	}
-
-	return false
+	err := validation.IsDNS1123Label(ref)
+	return len(err) == 0
 }
 
 func defaultContractName(project, workflow string) string {
