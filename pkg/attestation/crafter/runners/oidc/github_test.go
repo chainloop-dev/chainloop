@@ -23,11 +23,13 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewGitHubClient(t *testing.T) {
+	testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
 	originalRequestURL := os.Getenv(oidc.RequestURLEnvKey)
 	originalRequestToken := os.Getenv(oidc.RequestTokenEnvKey)
 	defer func() {
@@ -81,7 +83,7 @@ func TestNewGitHubClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupEnv(t)
-			client, err := oidc.NewGitHubClient()
+			client, err := oidc.NewGitHubClient(&testLogger)
 
 			if tt.expectErr {
 				assert.Error(t, err)
@@ -101,8 +103,10 @@ func TestWithAudience(t *testing.T) {
 	t.Setenv(oidc.RequestURLEnvKey, "https://example.com/token")
 	t.Setenv(oidc.RequestTokenEnvKey, "test-token")
 
+	testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
 	testAudience := []string{"test-audience"}
 	_, err := oidc.NewGitHubClient(
+		&testLogger,
 		oidc.WithAudience(testAudience),
 	)
 	require.NoError(t, err)
@@ -111,6 +115,7 @@ func TestWithAudience(t *testing.T) {
 }
 
 func TestTokenRequest(t *testing.T) {
+	testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
 	originalRequestURL := os.Getenv(oidc.RequestURLEnvKey)
 	originalRequestToken := os.Getenv(oidc.RequestTokenEnvKey)
 	defer func() {
@@ -153,7 +158,7 @@ func TestTokenRequest(t *testing.T) {
 			t.Setenv(oidc.RequestURLEnvKey, server.URL)
 			t.Setenv(oidc.RequestTokenEnvKey, "test-token")
 
-			client, err := oidc.NewGitHubClient()
+			client, err := oidc.NewGitHubClient(&testLogger)
 			require.NoError(t, err)
 
 			_, err = client.Token(context.Background())
