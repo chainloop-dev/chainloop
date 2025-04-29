@@ -34,7 +34,7 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 	// from Github. That allows us to read the workflow file path and runnner type. If that can't
 	// be done we fallback to reading the env vars directly.
 	actor := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_ACTOR"))
-	client, err := oidc.NewGitHubClient(oidc.WithActor(actor))
+	client, err := oidc.NewGitHubClient(logger, oidc.WithActor(actor))
 	if err != nil {
 		logger.Debug().Err(err).Msg("failed creating GitHub OIDC client")
 		return &GitHubAction{

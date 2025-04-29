@@ -31,6 +31,7 @@ import (
 	"io"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/rs/zerolog"
 )
 
 // DefaultActionsProviderURL is the default URL for GitHub Actions OIDC provider
@@ -47,6 +48,7 @@ const (
 )
 
 type GitHubOIDCClient struct {
+	logger       *zerolog.Logger
 	requestURL   *url.URL
 	verifierFunc func(context.Context) (*oidc.IDTokenVerifier, error)
 	bearerToken  string
@@ -87,17 +89,19 @@ func WithActor(actor string) Option {
 }
 
 // NewGitHubClient returns new GitHub OIDC provider client.
-func NewGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
+func NewGitHubClient(logger *zerolog.Logger, opts ...Option) (*GitHubOIDCClient, error) {
 	var c GitHubOIDCClient
 
 	// Get the request URL and token from env vars
 	requestURL := os.Getenv(RequestURLEnvKey)
 	if requestURL == "" {
+		logger.Debug().Msgf("url: %s environment variable not set", RequestURLEnvKey)
 		return nil, fmt.Errorf("url: %s environment variable not set; does your workflow have `id-token: write` scope?", RequestURLEnvKey)
 	}
 
 	parsedURL, err := url.ParseRequestURI(requestURL)
 	if err != nil {
+		logger.Debug().Err(err).Msgf("invalid request URL: %q", requestURL)
 		return nil, fmt.Errorf(
 			"%w: invalid request URL %q: %w; does your workflow have `id-token: write` scope?",
 			errURLError,
@@ -107,10 +111,12 @@ func NewGitHubClient(opts ...Option) (*GitHubOIDCClient, error) {
 
 	bearerToken := os.Getenv(RequestTokenEnvKey)
 	if len(bearerToken) == 0 {
+		logger.Debug().Msgf("token: %s environment variable not set", RequestTokenEnvKey)
 		return nil, fmt.Errorf("token: %s environment variable not set; does your workflow have `id-token: write` scope?", RequestTokenEnvKey)
 	}
 
 	c = GitHubOIDCClient{
+		logger:      logger,
 		requestURL:  parsedURL,
 		bearerToken: bearerToken,
 	}
@@ -143,6 +149,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (any, error) {
 
 	audience := c.audience
 	if len(audience) == 0 {
+		c.logger.Debug().Msgf("audience: %s environment variable not set, using default: %s", RequestTokenEnvKey, DefaultGitHubAudience)
 		audience = DefaultGitHubAudience
 	}
 
@@ -186,6 +193,7 @@ func (c *GitHubOIDCClient) newRequestURL(audience []string) string {
 }
 
 func (c *GitHubOIDCClient) requestToken(ctx context.Context, audience []string) ([]byte, error) {
+	c.logger.Debug().Msgf("requesting token with audience: %s", audience)
 	req, err := http.NewRequest("GET", c.newRequestURL(audience), nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: creating request: %w", errRequestError, err)
@@ -209,6 +217,7 @@ func (c *GitHubOIDCClient) requestToken(ctx context.Context, audience []string) 
 }
 
 func (c *GitHubOIDCClient) decodePayload(b []byte) (string, error) {
+	c.logger.Debug().Msgf("decoding payload: %s", b)
 	var payload struct {
 		Value string `json:"value"`
 	}
@@ -222,6 +231,7 @@ func (c *GitHubOIDCClient) decodePayload(b []byte) (string, error) {
 // verifyToken verifies the token contents and signature.
 func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, actor string, rawIDToken string) (*oidc.IDToken, error) {
 	// Verify the token.
+	c.logger.Debug().Msgf("verifying token: %s with audience: %s and actor: %s", rawIDToken, audience, actor)
 	verifier, err := c.verifierFunc(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w: creating verifier: %w", errVerify, err)
@@ -241,6 +251,7 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, a
 }
 
 func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
+	c.logger.Debug().Msgf("decoding token: %s", token)
 	var t Token
 	if err := token.Claims(&t); err != nil {
 		return nil, fmt.Errorf("%w: getting claims: %w", errToken, err)
@@ -250,6 +261,7 @@ func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
 }
 
 func (c *GitHubOIDCClient) verifyClaims(token *Token) error {
+	c.logger.Debug().Msgf("verifying claims: %s", token)
 	if token.JobWorkflowRef == "" {
 		return fmt.Errorf("%w: job workflow ref is empty", errClaims)
 	}
