@@ -121,7 +121,7 @@ func (s *githubActionSuite) TestRunnerName() {
 // Run before each test
 func (s *githubActionSuite) SetupTest() {
 	// Create a logger for testing
-	testLogger := zerolog.New(os.Stdout).Level(zerolog.DebugLevel)
+	testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
 	s.runner = NewGithubAction(context.Background(), &testLogger)
 	t := s.T()
 	for k, v := range gitHubTestingEnvVars {

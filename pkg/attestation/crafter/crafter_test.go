@@ -116,7 +116,7 @@ func (s *crafterSuite) TestInit() {
 			require.NoError(s.T(), err)
 
 			// Create a logger for testing
-			testLogger := zerolog.New(os.Stdout).Level(zerolog.DebugLevel)
+			testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
 			runner := crafter.NewRunner(contract.GetRunner().GetType(), &testLogger)
 			// Make sure that the tests context indicate that we are not in a CI
 			// this makes the github action runner context to fail
@@ -338,8 +338,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
-				// Create a logger for testing
-				testLogger := zerolog.New(os.Stdout).Level(zerolog.DebugLevel)
+				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
 				runner = runners.NewGithubAction(s.T().Context(), &testLogger)
 			} else if tc.inJenkinsEnv {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
