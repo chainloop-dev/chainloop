@@ -16,8 +16,10 @@
 package crafter
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
@@ -41,12 +43,24 @@ type SupportedRunner interface {
 
 	// ID returns the runner type
 	ID() schemaapi.CraftingSchema_Runner_RunnerType
+
+	// WorkflowFilePath returns the workflow file path associated with this runner
+	WorkflowFilePath() string
+
+	// IsAuthenticated returns whether the runner is authenticated or not
+	IsAuthenticated() bool
+
+	// RunnerEnvironment returns the runner environment
+	Environment() runners.RunnerEnvironment
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
 
+// timeoutCtx is a context with a 15-second timeout
+var timeoutCtx, _ = context.WithTimeout(context.Background(), 15*time.Second)
+
 var RunnersMap = map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner{
-	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(),
+	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(timeoutCtx),
 	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: runners.NewGitlabPipeline(),
 	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:  runners.NewAzurePipeline(),
 	schemaapi.CraftingSchema_Runner_JENKINS_JOB:     runners.NewJenkinsJob(),

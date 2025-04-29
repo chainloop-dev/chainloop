@@ -1,0 +1,55 @@
+{
+  "$id": "attestation.v1.RunnerEnvironment.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The runner environment in which the attestation was crafted",
+  "patternProperties": {
+    "^(workflowFilePath)$": {
+      "description": "Workflow file path that was used during build",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "authenticated": {
+      "description": "Whether the runner is authenticated, i.e. via the OIDC token",
+      "type": "boolean"
+    },
+    "environment": {
+      "description": "Runner environment name, i.e. github-hosted",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "RUNNER_TYPE_UNSPECIFIED",
+            "GITHUB_ACTION",
+            "GITLAB_PIPELINE",
+            "AZURE_PIPELINE",
+            "JENKINS_JOB",
+            "CIRCLECI_BUILD",
+            "DAGGER_PIPELINE"
+          ],
+          "title": "Runner Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Runner type"
+    },
+    "url": {
+      "description": "Runner URL",
+      "type": "string"
+    },
+    "workflow_file_path": {
+      "description": "Workflow file path that was used during build",
+      "type": "string"
+    }
+  },
+  "title": "Runner Environment",
+  "type": "object"
+}

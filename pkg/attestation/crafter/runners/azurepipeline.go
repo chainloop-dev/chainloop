@@ -83,3 +83,15 @@ func (r *AzurePipeline) RunURI() (url string) {
 func (r *AzurePipeline) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
+
+func (r *AzurePipeline) WorkflowFilePath() string {
+	return ""
+}
+
+func (r *AzurePipeline) IsAuthenticated() bool {
+	return false
+}
+
+func (r *AzurePipeline) Environment() RunnerEnvironment {
+	return Unknown
+}

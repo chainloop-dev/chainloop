@@ -36,6 +36,8 @@ export interface Attestation {
   bypassPolicyCheck: boolean;
   /** Signing options */
   signingOptions?: Attestation_SigningOptions;
+  /** Runner environment in which the attestation was crafted */
+  runnerEnvironment?: RunnerEnvironment;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -161,6 +163,20 @@ export interface Attestation_EnvVarsEntry {
 export interface Attestation_SigningOptions {
   /** TSA URL */
   timestampAuthorityUrl: string;
+}
+
+/** The runner environment in which the attestation was crafted */
+export interface RunnerEnvironment {
+  /** Workflow file path that was used during build */
+  workflowFilePath: string;
+  /** Runner environment name, i.e. github-hosted */
+  environment: string;
+  /** Whether the runner is authenticated, i.e. via the OIDC token */
+  authenticated: boolean;
+  /** Runner type */
+  type: CraftingSchema_Runner_RunnerType;
+  /** Runner URL */
+  url: string;
 }
 
 /** A policy executed against an attestation or material */
@@ -326,6 +342,7 @@ function createBaseAttestation(): Attestation {
     blockOnPolicyViolation: false,
     bypassPolicyCheck: false,
     signingOptions: undefined,
+    runnerEnvironment: undefined,
   };
 }
 
@@ -369,6 +386,9 @@ export const Attestation = {
     }
     if (message.signingOptions !== undefined) {
       Attestation_SigningOptions.encode(message.signingOptions, writer.uint32(122).fork()).ldelim();
+    }
+    if (message.runnerEnvironment !== undefined) {
+      RunnerEnvironment.encode(message.runnerEnvironment, writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -480,6 +500,13 @@ export const Attestation = {
 
           message.signingOptions = Attestation_SigningOptions.decode(reader, reader.uint32());
           continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.runnerEnvironment = RunnerEnvironment.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -523,6 +550,9 @@ export const Attestation = {
       signingOptions: isSet(object.signingOptions)
         ? Attestation_SigningOptions.fromJSON(object.signingOptions)
         : undefined,
+      runnerEnvironment: isSet(object.runnerEnvironment)
+        ? RunnerEnvironment.fromJSON(object.runnerEnvironment)
+        : undefined,
     };
   },
 
@@ -562,6 +592,9 @@ export const Attestation = {
     message.bypassPolicyCheck !== undefined && (obj.bypassPolicyCheck = message.bypassPolicyCheck);
     message.signingOptions !== undefined && (obj.signingOptions = message.signingOptions
       ? Attestation_SigningOptions.toJSON(message.signingOptions)
+      : undefined);
+    message.runnerEnvironment !== undefined && (obj.runnerEnvironment = message.runnerEnvironment
+      ? RunnerEnvironment.toJSON(message.runnerEnvironment)
       : undefined);
     return obj;
   },
@@ -609,6 +642,9 @@ export const Attestation = {
     message.bypassPolicyCheck = object.bypassPolicyCheck ?? false;
     message.signingOptions = (object.signingOptions !== undefined && object.signingOptions !== null)
       ? Attestation_SigningOptions.fromPartial(object.signingOptions)
+      : undefined;
+    message.runnerEnvironment = (object.runnerEnvironment !== undefined && object.runnerEnvironment !== null)
+      ? RunnerEnvironment.fromPartial(object.runnerEnvironment)
       : undefined;
     return message;
   },
@@ -1749,6 +1785,116 @@ export const Attestation_SigningOptions = {
   fromPartial<I extends Exact<DeepPartial<Attestation_SigningOptions>, I>>(object: I): Attestation_SigningOptions {
     const message = createBaseAttestation_SigningOptions();
     message.timestampAuthorityUrl = object.timestampAuthorityUrl ?? "";
+    return message;
+  },
+};
+
+function createBaseRunnerEnvironment(): RunnerEnvironment {
+  return { workflowFilePath: "", environment: "", authenticated: false, type: 0, url: "" };
+}
+
+export const RunnerEnvironment = {
+  encode(message: RunnerEnvironment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.workflowFilePath !== "") {
+      writer.uint32(10).string(message.workflowFilePath);
+    }
+    if (message.environment !== "") {
+      writer.uint32(18).string(message.environment);
+    }
+    if (message.authenticated === true) {
+      writer.uint32(24).bool(message.authenticated);
+    }
+    if (message.type !== 0) {
+      writer.uint32(32).int32(message.type);
+    }
+    if (message.url !== "") {
+      writer.uint32(42).string(message.url);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RunnerEnvironment {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunnerEnvironment();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.workflowFilePath = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.environment = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.authenticated = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunnerEnvironment {
+    return {
+      workflowFilePath: isSet(object.workflowFilePath) ? String(object.workflowFilePath) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
+      authenticated: isSet(object.authenticated) ? Boolean(object.authenticated) : false,
+      type: isSet(object.type) ? craftingSchema_Runner_RunnerTypeFromJSON(object.type) : 0,
+      url: isSet(object.url) ? String(object.url) : "",
+    };
+  },
+
+  toJSON(message: RunnerEnvironment): unknown {
+    const obj: any = {};
+    message.workflowFilePath !== undefined && (obj.workflowFilePath = message.workflowFilePath);
+    message.environment !== undefined && (obj.environment = message.environment);
+    message.authenticated !== undefined && (obj.authenticated = message.authenticated);
+    message.type !== undefined && (obj.type = craftingSchema_Runner_RunnerTypeToJSON(message.type));
+    message.url !== undefined && (obj.url = message.url);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RunnerEnvironment>, I>>(base?: I): RunnerEnvironment {
+    return RunnerEnvironment.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RunnerEnvironment>, I>>(object: I): RunnerEnvironment {
+    const message = createBaseRunnerEnvironment();
+    message.workflowFilePath = object.workflowFilePath ?? "";
+    message.environment = object.environment ?? "";
+    message.authenticated = object.authenticated ?? false;
+    message.type = object.type ?? 0;
+    message.url = object.url ?? "";
     return message;
   },
 };

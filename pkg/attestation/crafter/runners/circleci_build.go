@@ -63,3 +63,15 @@ func (r *CircleCIBuild) RunURI() string {
 func (r *CircleCIBuild) ResolveEnvVars() (map[string]string, []*error) {
 	return resolveEnvVars(r.ListEnvVars())
 }
+
+func (r *CircleCIBuild) WorkflowFilePath() string {
+	return ""
+}
+
+func (r *CircleCIBuild) IsAuthenticated() bool {
+	return false
+}
+
+func (r *CircleCIBuild) Environment() RunnerEnvironment {
+	return Unknown
+}

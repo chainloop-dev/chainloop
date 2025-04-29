@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -60,6 +61,9 @@ func ListAvailableMaterialKind() []string {
 			res = append(res, strings.Replace(k, "MATERIAL_TYPE_", "", 1))
 		}
 	}
+
+	// Sort the list alphabetically
+	sort.Strings(res)
 
 	return res
 }
