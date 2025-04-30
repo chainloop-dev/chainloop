@@ -52,7 +52,7 @@ func TestInvalidSLSAProvenance(t *testing.T) {
 
 	t.Run("is not a sigstore bundle but a DSSE envelope", func(_ *testing.T) {
 		// Invalid payload
-		_, err := crafter.Craft(context.TODO(), "./testdata/attestation.json")
+		_, err := crafter.Craft(context.TODO(), "./testdata/attestation-dsse.json")
 		assert.Contains(err.Error(), "failed to unmarshal bundle")
 	})
 
