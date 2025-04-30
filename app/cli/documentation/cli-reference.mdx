@@ -270,7 +270,7 @@ chainloop attestation init [flags]
 Options
 
 ```
---contract string         name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)
+--contract string         name of an existing contract or the path/URL to a contract file to be used in the attestation. It will update any existing contract for the workflow
 --contract-revision int   revision of the contract to retrieve, "latest" by default
 --dry-run                 do not record attestation in the control plane, useful for development
 -h, --help                    help for init

@@ -138,6 +138,8 @@ message AttestationServiceInitResponse {
   message SigningOptions {
     // TSA service to be used for signing
     string timestamp_authority_url = 1;
+    // If set, the attestation wil be signed with ephemeral certificates issued by this CA
+    string signing_ca = 2;
   }
 }
 

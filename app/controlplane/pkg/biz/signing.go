@@ -142,6 +142,17 @@ func (s *SigningUseCase) GetCurrentTSA() *TimestampAuthority {
 	return nil
 }
 
+// GetSigningCA returns the current CA authority (if any) used for signing
+func (s *SigningUseCase) GetSigningCA() ca.CertificateAuthority {
+	// No CA configured
+	if s.CAs == nil {
+		return nil
+	}
+
+	// Return signing CA (it can be nil if not configured)
+	return s.CAs.SignerCA
+}
+
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
 func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
 	if s.CAs == nil {

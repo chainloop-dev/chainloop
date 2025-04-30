@@ -185,9 +185,16 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
 	}
 
+	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}
 	tsa := s.signingUseCase.GetCurrentTSA()
 	if tsa != nil {
-		resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{TimestampAuthorityUrl: tsa.URL.String()}
+		resp.SigningOptions.TimestampAuthorityUrl = tsa.URL.String()
+	}
+
+	ca := s.signingUseCase.GetSigningCA()
+	if ca != nil {
+		// Return the name of the configured signing CA
+		resp.SigningOptions.SigningCa = ca.GetName()
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil

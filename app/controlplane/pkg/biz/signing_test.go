@@ -57,6 +57,10 @@ func (e TestCA) GetRootChain(ctx context.Context) ([]*x509.Certificate, error) {
 	return tb[0], nil
 }
 
+func (e TestCA) GetName() string {
+	return "test"
+}
+
 func NewTestCA() (*TestCA, error) {
 	ca, err := ephemeralca.NewEphemeralCA()
 	if err != nil {

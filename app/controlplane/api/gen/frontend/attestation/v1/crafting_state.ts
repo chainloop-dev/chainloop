@@ -163,6 +163,8 @@ export interface Attestation_EnvVarsEntry {
 export interface Attestation_SigningOptions {
   /** TSA URL */
   timestampAuthorityUrl: string;
+  /** Signing CA to be used for signing */
+  signingCa: string;
 }
 
 /** The runner environment in which the attestation was crafted */
@@ -1734,13 +1736,16 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBaseAttestation_SigningOptions(): Attestation_SigningOptions {
-  return { timestampAuthorityUrl: "" };
+  return { timestampAuthorityUrl: "", signingCa: "" };
 }
 
 export const Attestation_SigningOptions = {
   encode(message: Attestation_SigningOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.timestampAuthorityUrl !== "") {
       writer.uint32(10).string(message.timestampAuthorityUrl);
+    }
+    if (message.signingCa !== "") {
+      writer.uint32(18).string(message.signingCa);
     }
     return writer;
   },
@@ -1759,6 +1764,13 @@ export const Attestation_SigningOptions = {
 
           message.timestampAuthorityUrl = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.signingCa = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1769,12 +1781,16 @@ export const Attestation_SigningOptions = {
   },
 
   fromJSON(object: any): Attestation_SigningOptions {
-    return { timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "" };
+    return {
+      timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "",
+      signingCa: isSet(object.signingCa) ? String(object.signingCa) : "",
+    };
   },
 
   toJSON(message: Attestation_SigningOptions): unknown {
     const obj: any = {};
     message.timestampAuthorityUrl !== undefined && (obj.timestampAuthorityUrl = message.timestampAuthorityUrl);
+    message.signingCa !== undefined && (obj.signingCa = message.signingCa);
     return obj;
   },
 
@@ -1785,6 +1801,7 @@ export const Attestation_SigningOptions = {
   fromPartial<I extends Exact<DeepPartial<Attestation_SigningOptions>, I>>(object: I): Attestation_SigningOptions {
     const message = createBaseAttestation_SigningOptions();
     message.timestampAuthorityUrl = object.timestampAuthorityUrl ?? "";
+    message.signingCa = object.signingCa ?? "";
     return message;
   },
 };

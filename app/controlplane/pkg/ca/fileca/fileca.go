@@ -25,6 +25,8 @@ import (
 	"github.com/sigstore/fulcio/pkg/identity"
 )
 
+const CAName = "fileCA"
+
 type FileCA struct {
 	ca fulcioca.CertificateAuthority
 }
@@ -49,4 +51,8 @@ func (f FileCA) GetRootChain(ctx context.Context) ([]*x509.Certificate, error) {
 		return nil, fmt.Errorf("failed to load trust bundle: %w", err)
 	}
 	return tb[0], nil
+}
+
+func (f FileCA) GetName() string {
+	return CAName
 }
