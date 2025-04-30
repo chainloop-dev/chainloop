@@ -21,16 +21,17 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
+	"github.com/rs/zerolog"
 )
 
 type GitlabPipeline struct {
 	gitlabToken *oidc.GitlabToken
 }
 
-func NewGitlabPipeline(ctx context.Context) *GitlabPipeline {
-	client, err := oidc.NewGitlabClient(ctx)
+func NewGitlabPipeline(ctx context.Context, logger *zerolog.Logger) *GitlabPipeline {
+	client, err := oidc.NewGitlabClient(ctx, logger)
 	if err != nil {
-		// TODO: add logging
+		logger.Debug().Err(err).Msg("failed to create Gitlab OIDC client")
 		return &GitlabPipeline{
 			gitlabToken: nil,
 		}

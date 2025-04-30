@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"slices"
+	"sort"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
@@ -141,6 +142,9 @@ func listAvailableWorkflowStatusFlag() []string {
 	for k := range m {
 		r = append(r, k)
 	}
+
+	// Sort the list of status
+	sort.Strings(r)
 
 	return r
 }

@@ -211,7 +211,7 @@ func (c *Crafter) LoadCraftingState(ctx context.Context, attestationID string) e
 		return errors.New("runner type not set in the crafting state")
 	}
 
-	c.Runner = NewRunner(runnerType)
+	c.Runner = NewRunner(runnerType, c.Logger)
 	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loaded state")
 
 	return nil

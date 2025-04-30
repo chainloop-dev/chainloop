@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/rs/zerolog"
 )
 
 // GITLAB_OIDC_TOKEN_ENV_KEY is the environment variable name for Gitlab OIDC token.
@@ -40,19 +41,22 @@ type GitlabToken struct {
 }
 
 type GitlabOIDCClient struct {
-	Token *GitlabToken
+	logger *zerolog.Logger
+	Token  *GitlabToken
 }
 
-func NewGitlabClient(ctx context.Context) (*GitlabOIDCClient, error) {
+func NewGitlabClient(ctx context.Context, logger *zerolog.Logger) (*GitlabOIDCClient, error) {
 	var c GitlabOIDCClient
 
 	// retrieve the Gitlab server on which the pipeline is running, which is the provider URL
 	providerURL := os.Getenv(CI_SERVER_URL_ENV_KEY)
+	logger.Debug().Str("providerURL", providerURL).Msg("retrieved provider URL")
 	if providerURL == "" {
 		return nil, fmt.Errorf("%s environment variable not set", CI_SERVER_URL_ENV_KEY)
 	}
 
 	tokenContent := os.Getenv(GITLAB_OIDC_TOKEN_ENV_KEY)
+	logger.Debug().Str("tokenContent", tokenContent).Msg("retrieved token content")
 	if tokenContent == "" {
 		return nil, fmt.Errorf("%s environment variable not set", GITLAB_OIDC_TOKEN_ENV_KEY)
 	}

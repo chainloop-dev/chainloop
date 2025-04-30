@@ -29,6 +29,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 type AttestationInitOpts struct {
@@ -99,38 +100,13 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	action.Logger.Debug().Msg("Retrieving attestation definition")
-	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
+	client := pb.NewAttestationServiceClient(action.CPConnection)
 
-	// 0 - find or create the contract if we are creating the workflow (if any)
-	contractRef := opts.NewWorkflowContractRef
-	_, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
-	if err != nil && status.Code(err) == codes.NotFound {
-		// Not found, let's see if we need to create the contract
-		if contractRef != "" {
-			// Try to find it by name
-			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
-			// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
-			// TODO: validate locally before doing the query
-			if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
-				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
-				if err != nil {
-					return "", err
-				}
-				contractRef = createResp.Name
-			}
-		}
-	}
-
-	// 1 - Find or create the workflow
-	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
-		ProjectName:  opts.ProjectName,
-		WorkflowName: opts.WorkflowName,
-		ContractName: contractRef,
-	})
+	// 1 - Create the workflow (and contract) if it doesn't exist
+	wf, err := action.createWorkflow(ctx, opts)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating workflow: %w", err)
 	}
-	workflow := workflowsResp.GetResult()
 
 	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
@@ -144,12 +120,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	contractVersion := contractResp.Result.GetContract()
 	workflowMeta := &clientAPI.WorkflowMetadata{
-		WorkflowId:     workflow.GetId(),
-		Name:           workflow.GetName(),
-		Project:        workflow.GetProject(),
-		Team:           workflow.GetTeam(),
+		WorkflowId:     wf.ID,
+		Name:           wf.Name,
+		Project:        wf.Project,
+		Team:           wf.Team,
 		SchemaRevision: strconv.Itoa(int(contractVersion.GetRevision())),
-		ContractName:   workflow.ContractName,
+		ContractName:   wf.ContractName,
 	}
 
 	if opts.ProjectVersion != "" {
@@ -240,6 +216,87 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	return attestationID, nil
+}
+
+// createWorkflow creates a new workflow if it doesn't exist, as well as its contract
+func (action *AttestationInit) createWorkflow(ctx context.Context, opts *AttestationInitRunOpts) (*WorkflowItem, error) {
+	// 1. find workflow if exists
+	wf, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
+	if err != nil && status.Code(err) != codes.NotFound {
+		return nil, fmt.Errorf("error looking for workflow %q: %w", opts.WorkflowName, err)
+	}
+
+	// if no new contract is provided, there's nothing to update
+	if wf != nil && opts.NewWorkflowContractRef == "" {
+		return wf, nil
+	}
+
+	contractRef := opts.NewWorkflowContractRef
+	contractName := contractRef
+	if contractRef != "" {
+		if isContractReference(contractRef) {
+			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
+			if err != nil {
+				return nil, fmt.Errorf("contract %q could not be found", contractRef)
+			}
+			// the contract exists
+		} else {
+			// use a default name for the contract
+			contractName = defaultContractName(opts.ProjectName, opts.WorkflowName)
+
+			// if the workflow exists, we just update its contract with the new contents
+			if wf != nil {
+				_, err = NewWorkflowContractUpdate(action.ActionsOpts).Run(wf.ContractName, nil, contractRef)
+				if err != nil {
+					return nil, fmt.Errorf("error updating contract %q: %w", wf.ContractName, err)
+				}
+				contractName = wf.ContractName
+			} else {
+				// if the workflow doesn't exist, let's create or update the contract
+				cont, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractName, 0)
+				switch {
+				case err != nil && status.Code(err) == codes.NotFound:
+					// Contract not found, let's create it
+					_, err = NewWorkflowContractCreate(action.ActionsOpts).Run(contractName, nil, contractRef)
+					if err != nil {
+						return nil, err
+					}
+				case err != nil:
+					return nil, err
+				default:
+					// contract found, let's update it (chainloop will validate that there is an actual change in the contract file)
+					_, err := NewWorkflowContractUpdate(action.ActionsOpts).Run(cont.Contract.Name, &cont.Contract.Description, contractRef)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+	}
+
+	// if workflow doesn't exist, let's create it with the contract
+	if wf == nil {
+		wf, err = NewWorkflowCreate(action.ActionsOpts).Run(&NewWorkflowCreateOpts{
+			Name:         opts.WorkflowName,
+			Project:      opts.ProjectName,
+			ContractName: contractName,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error creating workflow %q: %w", opts.WorkflowName, err)
+		}
+	}
+
+	return wf, nil
+}
+
+// isContractReference checks if the reference points to an existent contract name (DNS-1123)
+func isContractReference(ref string) bool {
+	err := validation.IsDNS1123Label(ref)
+	return len(err) == 0
+}
+
+func defaultContractName(project, workflow string) string {
+	return fmt.Sprintf("%s-%s", project, workflow)
 }
 
 func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, client pb.AttestationServiceClient, logger *zerolog.Logger) error {

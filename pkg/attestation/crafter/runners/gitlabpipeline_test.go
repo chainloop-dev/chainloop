@@ -20,6 +20,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -118,7 +119,8 @@ func (s *gitlabPipelineSuite) TestRunnerName() {
 
 // Run before each test
 func (s *gitlabPipelineSuite) SetupTest() {
-	s.runner = NewGitlabPipeline(context.Background())
+	logger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+	s.runner = NewGitlabPipeline(context.Background(), &logger)
 	t := s.T()
 	t.Setenv("GITLAB_CI", "true")
 	t.Setenv("GITLAB_USER_EMAIL", "foo@foo.com")
