@@ -55,7 +55,7 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 		return nil, fmt.Errorf("artifact file cannot be read: %w", err)
 	}
 
-	// try to read it as a Sigstore bundle first
+	// extract the DSSE envelope (from the bundle if needed)
 	dsseEnvelope, err := attestation2.ExtractDSSEEnvelope(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the provided file as a DSSE envelope: %w", err)
