@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -117,7 +118,7 @@ func (s *gitlabPipelineSuite) TestRunnerName() {
 
 // Run before each test
 func (s *gitlabPipelineSuite) SetupTest() {
-	s.runner = NewGitlabPipeline()
+	s.runner = NewGitlabPipeline(context.Background())
 	t := s.T()
 	t.Setenv("GITLAB_CI", "true")
 	t.Setenv("GITLAB_USER_EMAIL", "foo@foo.com")

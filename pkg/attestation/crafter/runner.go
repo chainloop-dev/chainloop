@@ -61,7 +61,7 @@ var timeoutCtx, _ = context.WithTimeout(context.Background(), 15*time.Second)
 
 var RunnersMap = map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner{
 	schemaapi.CraftingSchema_Runner_GITHUB_ACTION:   runners.NewGithubAction(timeoutCtx),
-	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: runners.NewGitlabPipeline(),
+	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: runners.NewGitlabPipeline(timeoutCtx),
 	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE:  runners.NewAzurePipeline(),
 	schemaapi.CraftingSchema_Runner_JENKINS_JOB:     runners.NewJenkinsJob(),
 	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD:  runners.NewCircleCIBuild(),
