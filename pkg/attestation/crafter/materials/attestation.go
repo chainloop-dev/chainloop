@@ -29,6 +29,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type AttestationCrafter struct {
@@ -54,9 +56,22 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 	if err != nil {
 		return nil, fmt.Errorf("artifact file cannot be read: %w", err)
 	}
+
+	//var isBundle bool
+
+	// try to read it as a Sigstore bundle first
+	var bundle protobundle.Bundle
 	var dsseEnvelope dsse.Envelope
-	if err := json.Unmarshal(data, &dsseEnvelope); err != nil {
-		return nil, fmt.Errorf("artifact is not a valid DSEE Envelope: %w", err)
+	if err = protojson.Unmarshal(data, &bundle); err == nil && bundle.GetMediaType() != "" {
+		// if it has a media type, we can confirm it's a bundle
+		//isBundle = true
+		env := attestation.DSSEEnvelopeFromBundle(&bundle)
+		dsseEnvelope = *env
+	} else {
+		// try to parse it as a DSSE envelope
+		if err = json.Unmarshal(data, &dsseEnvelope); err != nil {
+			return nil, fmt.Errorf("failed to parse the provided file as a DSSE envelope: %w", err)
+		}
 	}
 
 	predicate, err := chainloop.ExtractPredicate(&dsseEnvelope)
