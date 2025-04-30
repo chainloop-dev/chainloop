@@ -95,7 +95,7 @@ func (r *GitlabPipeline) Environment() RunnerEnvironment {
 		switch r.gitlabToken.RunnerEnvironment {
 		case "gitlab-hosted":
 			return Managed
-		case "self-hosted":
+		case oidc.SelfHostedRunner:
 			return SelfHosted
 		default:
 			return Unknown

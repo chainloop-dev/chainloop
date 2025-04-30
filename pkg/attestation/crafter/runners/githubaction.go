@@ -110,7 +110,7 @@ func (r *GitHubAction) Environment() RunnerEnvironment {
 		switch r.githubToken.RunnerEnvironment {
 		case "github-hosted":
 			return Managed
-		case "self-hosted":
+		case oidc.SelfHostedRunner:
 			return SelfHosted
 		default:
 			return Unknown

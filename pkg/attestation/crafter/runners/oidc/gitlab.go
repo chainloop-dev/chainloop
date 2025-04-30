@@ -24,11 +24,12 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// GITLAB_OIDC_TOKEN_ENV_KEY is the environment variable name for Gitlab OIDC token.
-var GITLAB_OIDC_TOKEN_ENV_KEY = "GITLAB_OIDC"
+// GitlabTokenEnv is the environment variable name for Gitlab OIDC token.
+// #nosec G101 - This is just the name of an environment variable, not a credential
+const GitlabTokenEnv = "GITLAB_OIDC"
 
-// CI_SERVER_URL_ENV_KEY is the environment variable name for Gitlab CI server URL.
-var CI_SERVER_URL_ENV_KEY = "CI_SERVER_URL"
+// CIServerURLEnv is the environment variable name for Gitlab CI server URL.
+const CIServerURLEnv = "CI_SERVER_URL"
 
 type GitlabToken struct {
 	oidc.IDToken
@@ -41,24 +42,23 @@ type GitlabToken struct {
 }
 
 type GitlabOIDCClient struct {
-	logger *zerolog.Logger
-	Token  *GitlabToken
+	Token *GitlabToken
 }
 
 func NewGitlabClient(ctx context.Context, logger *zerolog.Logger) (*GitlabOIDCClient, error) {
 	var c GitlabOIDCClient
 
 	// retrieve the Gitlab server on which the pipeline is running, which is the provider URL
-	providerURL := os.Getenv(CI_SERVER_URL_ENV_KEY)
+	providerURL := os.Getenv(CIServerURLEnv)
 	logger.Debug().Str("providerURL", providerURL).Msg("retrieved provider URL")
 	if providerURL == "" {
-		return nil, fmt.Errorf("%s environment variable not set", CI_SERVER_URL_ENV_KEY)
+		return nil, fmt.Errorf("%s environment variable not set", CIServerURLEnv)
 	}
 
-	tokenContent := os.Getenv(GITLAB_OIDC_TOKEN_ENV_KEY)
+	tokenContent := os.Getenv(GitlabTokenEnv)
 	logger.Debug().Str("tokenContent", tokenContent).Msg("retrieved token content")
 	if tokenContent == "" {
-		return nil, fmt.Errorf("%s environment variable not set", GITLAB_OIDC_TOKEN_ENV_KEY)
+		return nil, fmt.Errorf("%s environment variable not set", GitlabTokenEnv)
 	}
 
 	token, err := parseToken(ctx, providerURL, tokenContent)
@@ -73,7 +73,7 @@ func NewGitlabClient(ctx context.Context, logger *zerolog.Logger) (*GitlabOIDCCl
 func parseToken(ctx context.Context, providerURL string, tokenString string) (*GitlabToken, error) {
 	provider, err := oidc.NewProvider(ctx, providerURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to OIDC provider: %v", err)
+		return nil, fmt.Errorf("failed to connect to OIDC provider: %w", err)
 	}
 
 	verifier := provider.Verifier(&oidc.Config{
@@ -83,7 +83,7 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 
 	idToken, err := verifier.Verify(ctx, tokenString)
 	if err != nil {
-		return nil, fmt.Errorf("token verification failed: %v", err)
+		return nil, fmt.Errorf("token verification failed: %w", err)
 	}
 
 	token := &GitlabToken{
@@ -93,7 +93,7 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 	// Extract claims to populate our custom fields
 	var claims map[string]interface{}
 	if err := idToken.Claims(&claims); err != nil {
-		return nil, fmt.Errorf("failed to extract claims: %v", err)
+		return nil, fmt.Errorf("failed to extract claims: %w", err)
 	}
 
 	if configRefURI, ok := claims["ci_config_ref_uri"].(string); ok {
