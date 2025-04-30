@@ -33,6 +33,8 @@ type CertificateAuthority interface {
 	CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*ca.CodeSigningCertificate, error)
 	// GetRootChain returns the root certificate chain
 	GetRootChain(ctx context.Context) ([]*x509.Certificate, error)
+	// GetName returns the name of the CA
+	GetName() string
 }
 
 type CertificateAuthorities struct {

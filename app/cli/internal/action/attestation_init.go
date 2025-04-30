@@ -154,7 +154,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		attestationID          string
 		blockOnPolicyViolation bool
 		// Timestamp Authority URL for new attestations
-		timestampAuthorityURL string
+		timestampAuthorityURL, signingCAName string
 	)
 
 	// Init in the control plane if needed including the runner context
@@ -180,6 +180,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowMeta.Organization = runResp.GetResult().GetOrganization()
 		blockOnPolicyViolation = runResp.GetResult().GetBlockOnPolicyViolation()
 		timestampAuthorityURL = runResp.GetResult().GetSigningOptions().GetTimestampAuthorityUrl()
+		signingCAName = runResp.GetResult().GetSigningOptions().GetSigningCa()
 		if v := workflowMeta.Version; v != nil {
 			workflowMeta.Version.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
 		}
@@ -198,7 +199,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		AttestationID:          attestationID,
 		Runner:                 discoveredRunner,
 		BlockOnPolicyViolation: blockOnPolicyViolation,
-		SigningOptions:         &crafter.SigningOpts{TimestampAuthorityURL: timestampAuthorityURL},
+		SigningOptions: &crafter.SigningOpts{
+			TimestampAuthorityURL: timestampAuthorityURL,
+			SigningCAName:         signingCAName,
+		},
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

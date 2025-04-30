@@ -156,6 +156,8 @@ message Attestation {
   message SigningOptions {
     // TSA URL
     string timestamp_authority_url = 1;
+    // Signing CA to be used for signing
+    string signing_ca = 2;
   }
 }
 

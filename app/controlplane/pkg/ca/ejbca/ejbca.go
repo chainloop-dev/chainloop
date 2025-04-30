@@ -33,6 +33,8 @@ import (
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
+const CAName = "ejbCA"
+
 type EJBCA struct {
 	// Connection settings
 	// EJBCA installation. ie https://localhost/ejbca/
@@ -177,7 +179,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 }
 
 func (e EJBCA) GetRootChain(_ context.Context) ([]*x509.Certificate, error) {
-	// current implementation relies on the rootCAPath from the config. Future implementation should use
+	// The current implementation relies on the rootCAPath from the config. Future implementation should use
 	//  /v1/ca and /v1/ca/{subject_dn}/certificate/download APIs instead
 	if e.rootCAPath != "" {
 		caCert, err := os.ReadFile(e.rootCAPath)
@@ -187,4 +189,8 @@ func (e EJBCA) GetRootChain(_ context.Context) ([]*x509.Certificate, error) {
 		return cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(caCert))
 	}
 	return nil, nil
+}
+
+func (e EJBCA) GetName() string {
+	return CAName
 }

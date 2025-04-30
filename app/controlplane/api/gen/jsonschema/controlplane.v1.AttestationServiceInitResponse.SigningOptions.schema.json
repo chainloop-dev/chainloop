@@ -3,12 +3,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(signingCa)$": {
+      "description": "If set, the attestation wil be signed with ephemeral certificates issued by this CA",
+      "type": "string"
+    },
     "^(timestampAuthorityUrl)$": {
       "description": "TSA service to be used for signing",
       "type": "string"
     }
   },
   "properties": {
+    "signing_ca": {
+      "description": "If set, the attestation wil be signed with ephemeral certificates issued by this CA",
+      "type": "string"
+    },
     "timestamp_authority_url": {
       "description": "TSA service to be used for signing",
       "type": "string"

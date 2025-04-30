@@ -3,12 +3,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(signing_ca)$": {
+      "description": "Signing CA to be used for signing",
+      "type": "string"
+    },
     "^(timestamp_authority_url)$": {
       "description": "TSA URL",
       "type": "string"
     }
   },
   "properties": {
+    "signingCa": {
+      "description": "Signing CA to be used for signing",
+      "type": "string"
+    },
     "timestampAuthorityUrl": {
       "description": "TSA URL",
       "type": "string"
