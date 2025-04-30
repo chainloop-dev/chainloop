@@ -54,6 +54,10 @@ type ProvenancePredicateV02 struct {
 	PolicyBlockBypassEnabled bool `json:"policyBlockBypassEnabled"`
 	// Whether the attestation was blocked due to policy violations
 	PolicyAttBlocked bool `json:"policyAttBlocked"`
+	// Default keyless signing authority (not necessarily the one used)
+	SigningCA string `json:"signingCA,omitempty"`
+	// Default TSA used for signing (not necessarily the one used)
+	SigningTSA string `json:"signingTSA,omitempty"`
 }
 
 type PolicyViolationBlockingStrategy string
@@ -227,6 +231,8 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
 		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
 		PolicyAttBlocked:            hasViolations && r.att.GetBlockOnPolicyViolation() && !r.att.GetBypassPolicyCheck(),
+		SigningCA:                   r.att.GetSigningOptions().GetSigningCa(),
+		SigningTSA:                  r.att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 
 	// transform to structpb.Struct in a two steps process

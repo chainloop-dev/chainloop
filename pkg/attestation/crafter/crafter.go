@@ -155,9 +155,11 @@ type InitOpts struct {
 type SigningOpts struct {
 	// Timestamp Authority to use
 	TimestampAuthorityURL string
+	// Signing CA name
+	SigningCAName string
 }
 
-// Initialize the crafter with a remote or local schema
+// Init initializes the crafter with a remote or local schema
 func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
 	if opts.SchemaV1 == nil {
 		return errors.New("schema is nil")
@@ -354,9 +356,10 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		}
 	}
 
-	var tsURL string
+	var tsURL, caName string
 	if opts.SigningOptions != nil {
 		tsURL = opts.SigningOptions.TimestampAuthorityURL
+		caName = opts.SigningOptions.SigningCAName
 	}
 
 	// Generate Crafting state
@@ -369,7 +372,10 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			RunnerUrl:              opts.Runner.RunURI(),
 			Head:                   headCommitP,
 			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
-			SigningOptions:         &api.Attestation_SigningOptions{TimestampAuthorityUrl: tsURL},
+			SigningOptions: &api.Attestation_SigningOptions{
+				TimestampAuthorityUrl: tsURL,
+				SigningCa:             caName,
+			},
 			RunnerEnvironment: &api.RunnerEnvironment{
 				WorkflowFilePath: opts.Runner.WorkflowFilePath(),
 				Environment:      opts.Runner.Environment().String(),

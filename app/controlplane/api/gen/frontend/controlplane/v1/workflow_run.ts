@@ -111,6 +111,8 @@ export interface AttestationServiceInitResponse_Result {
 export interface AttestationServiceInitResponse_SigningOptions {
   /** TSA service to be used for signing */
   timestampAuthorityUrl: string;
+  /** If set, the attestation wil be signed with ephemeral certificates issued by this CA */
+  signingCa: string;
 }
 
 export interface AttestationServiceStoreRequest {
@@ -1335,13 +1337,16 @@ export const AttestationServiceInitResponse_Result = {
 };
 
 function createBaseAttestationServiceInitResponse_SigningOptions(): AttestationServiceInitResponse_SigningOptions {
-  return { timestampAuthorityUrl: "" };
+  return { timestampAuthorityUrl: "", signingCa: "" };
 }
 
 export const AttestationServiceInitResponse_SigningOptions = {
   encode(message: AttestationServiceInitResponse_SigningOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.timestampAuthorityUrl !== "") {
       writer.uint32(10).string(message.timestampAuthorityUrl);
+    }
+    if (message.signingCa !== "") {
+      writer.uint32(18).string(message.signingCa);
     }
     return writer;
   },
@@ -1360,6 +1365,13 @@ export const AttestationServiceInitResponse_SigningOptions = {
 
           message.timestampAuthorityUrl = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.signingCa = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1370,12 +1382,16 @@ export const AttestationServiceInitResponse_SigningOptions = {
   },
 
   fromJSON(object: any): AttestationServiceInitResponse_SigningOptions {
-    return { timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "" };
+    return {
+      timestampAuthorityUrl: isSet(object.timestampAuthorityUrl) ? String(object.timestampAuthorityUrl) : "",
+      signingCa: isSet(object.signingCa) ? String(object.signingCa) : "",
+    };
   },
 
   toJSON(message: AttestationServiceInitResponse_SigningOptions): unknown {
     const obj: any = {};
     message.timestampAuthorityUrl !== undefined && (obj.timestampAuthorityUrl = message.timestampAuthorityUrl);
+    message.signingCa !== undefined && (obj.signingCa = message.signingCa);
     return obj;
   },
 
@@ -1390,6 +1406,7 @@ export const AttestationServiceInitResponse_SigningOptions = {
   ): AttestationServiceInitResponse_SigningOptions {
     const message = createBaseAttestationServiceInitResponse_SigningOptions();
     message.timestampAuthorityUrl = object.timestampAuthorityUrl ?? "";
+    message.signingCa = object.signingCa ?? "";
     return message;
   },
 };
