@@ -81,13 +81,17 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 		return nil, NewPolicyError(err)
 	}
 
-	for _, attachment := range attachments {
-		// Load material content
-		subject, err := material.GetEvaluableContent(artifactPath)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
+	if len(attachments) == 0 {
+		return result, nil
+	}
 
+	// Load material content
+	subject, err := material.GetEvaluableContent(artifactPath)
+	if err != nil {
+		return nil, NewPolicyError(err)
+	}
+
+	for _, attachment := range attachments {
 		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject,
 			&evalOpts{kind: material.MaterialType, name: material.GetId()},
 		)

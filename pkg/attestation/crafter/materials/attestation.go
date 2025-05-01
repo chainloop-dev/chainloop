@@ -17,18 +17,18 @@ package materials
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	attestation2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/rs/zerolog"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type AttestationCrafter struct {
@@ -54,37 +54,32 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 	if err != nil {
 		return nil, fmt.Errorf("artifact file cannot be read: %w", err)
 	}
-	var dsseEnvelope dsse.Envelope
-	if err := json.Unmarshal(data, &dsseEnvelope); err != nil {
-		return nil, fmt.Errorf("artifact is not a valid DSEE Envelope: %w", err)
-	}
 
-	predicate, err := chainloop.ExtractPredicate(&dsseEnvelope)
+	// extract the DSSE envelope (from the bundle if needed)
+	dsseEnvelope, err := attestation2.ExtractDSSEEnvelope(data)
 	if err != nil {
-		return nil, fmt.Errorf("the provided file does not seem to be a chainloop-generated attestation: %w", err)
+		return nil, fmt.Errorf("failed to parse the provided file as a DSSE envelope: %w", err)
 	}
 
-	// regenerate the json from the parsed data, just to remove any formating from the incoming json and preserve
-	// the digest
-	jsonContent, _, err := attestation.JSONEnvelopeWithDigest(&dsseEnvelope)
+	// run some validations
+	if dsseEnvelope.PayloadType != in_toto.PayloadType {
+		return nil, fmt.Errorf("the payload %q is not of type in-toto", dsseEnvelope.PayloadType)
+	}
+
+	dec, err := dsseEnvelope.DecodeB64Payload()
 	if err != nil {
-		return nil, fmt.Errorf("creating CAS payload: %w", err)
+		return nil, fmt.Errorf("failed to decode the DSSE payload: %w", err)
 	}
 
-	// Create a temp file with this content and upload to the CAS
-	dir := os.TempDir()
-	filename := fmt.Sprintf("%s-%s-attestation.json", predicate.GetMetadata().Name, predicate.GetMetadata().WorkflowRunID)
-
-	file, err := os.Create(path.Join(dir, filename))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	// decode the intoto payload
+	var intotoStatement intoto.Statement
+	if err = protojson.Unmarshal(dec, &intotoStatement); err != nil {
+		return nil, fmt.Errorf("failed to parse the DSSE payload as an in-toto statement: %w", err)
 	}
-	defer file.Close()
-	defer os.Remove(file.Name())
-
-	if _, err := file.Write(jsonContent); err != nil {
-		return nil, fmt.Errorf("failed to write JSON payload: %w", err)
+	// check if the statement predicate is of expected type
+	if intotoStatement.PredicateType != chainloop.PredicateTypeV02 {
+		return nil, fmt.Errorf("the provided predicate is not a valid chainloop attestation: found=%q", intotoStatement.PredicateType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, file.Name(), i.logger)
+	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
 }

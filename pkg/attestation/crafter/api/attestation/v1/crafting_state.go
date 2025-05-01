@@ -25,10 +25,10 @@ import (
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	intoto "github.com/in-toto/attestation/go/v1"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -110,9 +110,10 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 
 	// special case for ATTESTATION materials, the statement needs to be extracted from the dsse wrapper.
 	if m.MaterialType == v1.CraftingSchema_Material_ATTESTATION {
-		var envelope dsse.Envelope
-		if err := json.Unmarshal(rawMaterial, &envelope); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal attestation material: %w", err)
+		// support both DSSE envelope and Sigstore bundle
+		envelope, err := attestation.ExtractDSSEEnvelope(rawMaterial)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract DSSE envelope: %w", err)
 		}
 
 		rawMaterial, err = envelope.DecodeB64Payload()

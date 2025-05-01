@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"code.cloudfoundry.org/bytefmt"
@@ -94,42 +95,76 @@ func TestInvalidAttestation(t *testing.T) {
 	t.Run("wrong in-toto statement", func(_ *testing.T) {
 		// Invalid payload
 		_, err := crafter.Craft(context.TODO(), "./testdata/attestation-invalid-intoto.json")
-		assert.Contains(err.Error(), "un-marshaling predicate")
+		assert.Contains(err.Error(), "failed to parse the DSSE payload")
 	})
 }
 
 func TestAttestationCraft(t *testing.T) {
-	assert := assert.New(t)
-	schema := &contractAPI.CraftingSchema_Material{
-		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_ATTESTATION,
+	var testCases = []struct {
+		name      string
+		filePath  string
+		digest    string
+		expectErr bool
+	}{
+		{
+			name:     "DSSE envelope",
+			filePath: "./testdata/attestation-dsse.json",
+			digest:   "sha256:3911ab20e43d801d35459c53168f6cba66d50af99dcc9e12aeb84a95c0d231df",
+		},
+		{
+			name:     "Sigstore bundle",
+			filePath: "./testdata/attestation-bundle.json",
+			digest:   "sha256:fa7165a16cc1efdd24457a12dda613bbbfc903d3a2538a5ce8779b157d39b04c",
+		},
+		{
+			name:      "Invalid payload type",
+			filePath:  "./testdata/attestation-dsse-invalidtype.json",
+			expectErr: true,
+		},
 	}
 
+	assert := assert.New(t)
 	l := zerolog.Nop()
 
-	// Mock uploader
-	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), mock.Anything).
-		Return(&casclient.UpDownStatus{
-			Digest:   "deadbeef",
-			Filename: "attestation.json",
-		}, nil)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_ATTESTATION,
+			}
 
-	backend := &casclient.CASBackend{Uploader: uploader}
+			// Mock uploader
+			uploader := mUploader.NewUploader(t)
+			if !tc.expectErr {
+				uploader.On("UploadFile", context.Background(), mock.Anything).
+					Return(&casclient.UpDownStatus{
+						Digest:   "deadbeef",
+						Filename: "attestation.json",
+					}, nil)
+			}
 
-	crafter, err := materials.NewAttestationCrafter(schema, backend, &l)
-	require.NoError(t, err)
+			backend := &casclient.CASBackend{Uploader: uploader}
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/attestation.json")
-	assert.NoError(err)
-	assert.Equal(contractAPI.CraftingSchema_Material_ATTESTATION.String(), got.MaterialType.String())
-	assert.True(got.UploadedToCas)
+			crafter, err := materials.NewAttestationCrafter(schema, backend, &l)
+			require.NoError(t, err)
 
-	// The result includes the digest reference
-	assert.Equal("test", got.GetArtifact().Id)
-	assert.Equal("sha256:30f98082cf71a990787755b360443711735de4041f27bf4a49d61bb8e6f29e92", got.GetArtifact().Digest)
+			got, err := crafter.Craft(context.Background(), tc.filePath)
+			if tc.expectErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(contractAPI.CraftingSchema_Material_ATTESTATION.String(), got.MaterialType.String())
+			assert.True(got.UploadedToCas)
 
-	uploader.AssertExpectations(t)
+			// The result includes the name and digest reference
+			assert.Equal(path.Base(tc.filePath), got.GetArtifact().GetName())
+			assert.Equal(tc.digest, got.GetArtifact().GetDigest())
+
+			uploader.AssertExpectations(t)
+		})
+	}
+
 }
 
 func TestAttestationCraftInline(t *testing.T) {
@@ -146,7 +181,7 @@ func TestAttestationCraftInline(t *testing.T) {
 		crafter, err := materials.NewAttestationCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/attestation.json")
+		got, err := crafter.Craft(context.TODO(), "./testdata/attestation-dsse.json")
 		assert.NoError(err)
 
 		assert.NotNil(got)
@@ -160,7 +195,7 @@ func TestAttestationCraftInline(t *testing.T) {
 		crafter, err := materials.NewAttestationCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		_, err = crafter.Craft(context.TODO(), "./testdata/attestation.json")
+		_, err = crafter.Craft(context.TODO(), "./testdata/attestation-dsse.json")
 		assert.Error(err)
 	})
 }
