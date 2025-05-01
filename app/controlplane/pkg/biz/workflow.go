@@ -151,11 +151,25 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
 	}
 
-	// Dispatch events to the audit log regarding the contract
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		uc.logger.Warn("failed to parse org id", "err", err)
 	} else {
+		// Dispatch events to the audit log regarding the workflow
+		uc.auditorUC.Dispatch(ctx, &events.WorkflowCreated{
+			WorkflowBase: &events.WorkflowBase{
+				WorkflowID:   &wf.ID,
+				WorkflowName: wf.Name,
+				ProjectName:  opts.Project,
+			},
+			WorkflowContractID:   &contract.ID,
+			WorkflowContractName: contract.Name,
+			WorkflowDescription:  &opts.Description,
+			Team:                 &opts.Team,
+			Public:               opts.Public,
+		}, &orgUUID)
+
+		// Dispatch events to the audit log regarding the contract
 		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractAttached{
 			WorkflowContractBase: &events.WorkflowContractBase{
 				WorkflowContractID:   &contract.ID,
@@ -213,28 +227,55 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 		return nil, NewErrNotFound("workflow")
 	}
 
-	// Dispatch events to the audit log regarding the contract if it has changed
-	// or if it has been attached or detached
-	if opts.ContractID != nil {
-		if preUpdateWorkflow.ContractID != uuid.Nil {
-			uc.dispatchContractEvent(ctx, orgID, preUpdateWorkflow.ContractID, preUpdateWorkflow.ContractName, wf.ID, wf.Name, false)
-		}
-
-		if wfContract != nil {
-			uc.dispatchContractEvent(ctx, orgID, wfContract.ID, wfContract.Name, wf.ID, wf.Name, true)
-		}
-	}
+	// Dispatch events to the audit log regarding the workflow
+	uc.handleWorkflowUpdateEvents(ctx, wf, preUpdateWorkflow, opts, wfContract, orgUUID)
 
 	return wf, err
 }
 
-// dispatchContractEvent dispatches events to the audit log regarding the contract
-func (uc *WorkflowUseCase) dispatchContractEvent(ctx context.Context, orgID string, contractID uuid.UUID, contractName string, wfID uuid.UUID, wfName string, attached bool) {
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		uc.logger.Warn("failed to parse org id", "err", err)
-		return
+// handleWorkflowUpdateEvents dispatches events to the audit log regarding the workflow
+func (uc *WorkflowUseCase) handleWorkflowUpdateEvents(ctx context.Context, wf *Workflow, preUpdateWorkflow *Workflow, opts *WorkflowUpdateOpts, newWfContract *WorkflowContract, orgUUID uuid.UUID) {
+	uc.dispatchWorkflowUpdatedEvent(ctx, wf, opts, newWfContract, orgUUID)
+
+	if opts.ContractID != nil {
+		uc.handleContractChangeEvents(ctx, preUpdateWorkflow, wf, newWfContract, orgUUID)
 	}
+}
+
+// dispatchWorkflowUpdatedEvent dispatches events to the audit log regarding the workflow
+func (uc *WorkflowUseCase) dispatchWorkflowUpdatedEvent(ctx context.Context, wf *Workflow, opts *WorkflowUpdateOpts, newWfContract *WorkflowContract, orgUUID uuid.UUID) {
+	baseOptions := &events.WorkflowUpdated{
+		WorkflowBase: &events.WorkflowBase{
+			WorkflowID:   &wf.ID,
+			WorkflowName: wf.Name,
+			ProjectName:  wf.Project,
+		},
+		NewDescription: opts.Description,
+		NewTeam:        opts.Team,
+		NewPublic:      opts.Public,
+	}
+
+	if opts.ContractID != nil && newWfContract != nil {
+		baseOptions.NewWorkflowContractName = &newWfContract.Name
+		baseOptions.NewWorkflowContractID = &newWfContract.ID
+	}
+
+	uc.auditorUC.Dispatch(ctx, baseOptions, &orgUUID)
+}
+
+// handleContractChangeEvents dispatches events to the audit log regarding the contract
+func (uc *WorkflowUseCase) handleContractChangeEvents(ctx context.Context, preUpdateWorkflow *Workflow, wf *Workflow, newWfContract *WorkflowContract, orgUUID uuid.UUID) {
+	// Only process contract events if the contract ID has actually changed
+	if newWfContract != nil && preUpdateWorkflow.ContractID != newWfContract.ID {
+		if preUpdateWorkflow.ContractID != uuid.Nil {
+			uc.dispatchContractEvent(ctx, orgUUID, preUpdateWorkflow.ContractID, preUpdateWorkflow.ContractName, wf.ID, wf.Name, false)
+		}
+		uc.dispatchContractEvent(ctx, orgUUID, newWfContract.ID, newWfContract.Name, wf.ID, wf.Name, true)
+	}
+}
+
+// dispatchContractEvent dispatches events to the audit log regarding the contract
+func (uc *WorkflowUseCase) dispatchContractEvent(ctx context.Context, orgID uuid.UUID, contractID uuid.UUID, contractName string, wfID uuid.UUID, wfName string, attached bool) {
 	contractBase := &events.WorkflowContractBase{
 		WorkflowContractID:   &contractID,
 		WorkflowContractName: contractName,
@@ -245,13 +286,13 @@ func (uc *WorkflowUseCase) dispatchContractEvent(ctx context.Context, orgID stri
 			WorkflowContractBase: contractBase,
 			WorkflowID:           &wfID,
 			WorkflowName:         wfName,
-		}, &orgUUID)
+		}, &orgID)
 	} else {
 		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractDetached{
 			WorkflowContractBase: contractBase,
 			WorkflowID:           &wfID,
 			WorkflowName:         wfName,
-		}, &orgUUID)
+		}, &orgID)
 	}
 }
 
@@ -351,11 +392,24 @@ func (uc *WorkflowUseCase) Delete(ctx context.Context, orgID, workflowID string)
 	}
 
 	// Check that the workflow to delete belongs to the provided organization
-	if wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
-		return err
+	wf, err := uc.wfRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
+	if err != nil {
+		return fmt.Errorf("failed to get workflow: %w", err)
 	} else if wf == nil {
 		return NewErrNotFound("organization")
 	}
 
-	return uc.wfRepo.SoftDelete(ctx, workflowUUID)
+	if err := uc.wfRepo.SoftDelete(ctx, workflowUUID); err != nil {
+		return fmt.Errorf("failed to soft delete workflow: %w", err)
+	}
+
+	uc.auditorUC.Dispatch(ctx, &events.WorkflowDeleted{
+		WorkflowBase: &events.WorkflowBase{
+			WorkflowID:   &workflowUUID,
+			WorkflowName: wf.Name,
+			ProjectName:  wf.Project,
+		},
+	}, &orgUUID)
+
+	return nil
 }

@@ -1,0 +1,19 @@
+{
+  "ActionType": "WorkflowUpdated",
+  "TargetType": "Workflow",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "API Token 2089bb36-e27b-428b-8009-d015c8737c55 has updated the workflow test-contract on project test-project",
+  "Info": {
+    "workflow_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_name": "test-contract",
+    "project_name": "test-project",
+    "new_description": "test description",
+    "new_team": "test-team",
+    "new_public": true
+  },
+  "Digest": "sha256:fc33dee1b1a043d847a6c4c0d945f75d18508675569f43915a7149e9e756ad65"
+}
