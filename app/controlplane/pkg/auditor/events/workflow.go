@@ -88,7 +88,7 @@ func (w *WorkflowCreated) ActionType() string {
 }
 
 func (w *WorkflowCreated) ActionInfo() (json.RawMessage, error) {
-	if w.WorkflowBase.WorkflowID == nil || w.WorkflowBase.WorkflowName == "" || w.WorkflowBase.ProjectName == "" || w.WorkflowContractID == nil || w.WorkflowContractName == "" {
+	if w.WorkflowID == nil || w.WorkflowName == "" || w.ProjectName == "" || w.WorkflowContractID == nil || w.WorkflowContractName == "" {
 		return nil, errors.New("workflow id, name, project name, contract id and contract name required")
 	}
 
@@ -109,7 +109,7 @@ func (w *WorkflowUpdated) ActionType() string {
 }
 
 func (w *WorkflowUpdated) ActionInfo() (json.RawMessage, error) {
-	if w.WorkflowBase.WorkflowID == nil || w.WorkflowBase.WorkflowName == "" || w.WorkflowBase.ProjectName == "" {
+	if w.WorkflowID == nil || w.WorkflowName == "" || w.ProjectName == "" {
 		return nil, errors.New("workflow id, name and project name are required")
 	}
 
@@ -117,8 +117,8 @@ func (w *WorkflowUpdated) ActionInfo() (json.RawMessage, error) {
 }
 
 func (w *WorkflowUpdated) Description() string {
-	workflowName := w.WorkflowBase.WorkflowName
-	projectName := w.WorkflowBase.ProjectName
+	workflowName := w.WorkflowName
+	projectName := w.ProjectName
 	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated the workflow %s on project %s", workflowName, projectName)
 }
 
@@ -131,7 +131,7 @@ func (w *WorkflowDeleted) ActionType() string {
 }
 
 func (w *WorkflowDeleted) ActionInfo() (json.RawMessage, error) {
-	if w.WorkflowBase.WorkflowID == nil || w.WorkflowBase.WorkflowName == "" || w.WorkflowBase.ProjectName == "" {
+	if w.WorkflowID == nil || w.WorkflowName == "" || w.ProjectName == "" {
 		return nil, errors.New("workflow id, name and project name are required")
 	}
 
@@ -139,6 +139,6 @@ func (w *WorkflowDeleted) ActionInfo() (json.RawMessage, error) {
 }
 
 func (w *WorkflowDeleted) Description() string {
-	wfName := w.WorkflowBase.WorkflowName
+	wfName := w.WorkflowName
 	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has deleted the workflow %s", wfName)
 }
