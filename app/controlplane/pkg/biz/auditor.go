@@ -41,7 +41,7 @@ func NewAuditorUseCase(p *auditor.AuditLogPublisher, logger log.Logger) *Auditor
 // Dispatch logs an entry to the audit log asynchronously.
 func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, orgID *uuid.UUID) {
 	// dynamically load user information from the context
-	opts := []auditor.GeneratorOption{}
+	var opts []auditor.GeneratorOption
 	var gotActor bool
 	if user := entities.CurrentUser(ctx); user != nil {
 		parsedUUID, _ := uuid.Parse(user.ID)

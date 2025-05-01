@@ -21,10 +21,12 @@ import (
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -63,16 +65,18 @@ type APITokenUseCase struct {
 	DefaultAuthzPolicies []*authz.Policy
 	// Use Cases
 	orgUseCase *OrganizationUseCase
+	auditorUC  *AuditorUseCase
 }
 
 type APITokenSyncerUseCase struct {
 	base *APITokenUseCase
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
 		orgUseCase:   orgUseCase,
+		auditorUC:    auditorUC,
 		logger:       servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
 		enforcer:     authzE,
 		DefaultAuthzPolicies: []*authz.Policy{
@@ -164,6 +168,16 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, fmt.Errorf("adding default policies: %w", err)
 	}
 
+	// Dispatch the event to the auditor to notify the creation of the token
+	uc.auditorUC.Dispatch(ctx, &events.APITokenCreated{
+		APITokenBase: &events.APITokenBase{
+			APITokenID:   &token.ID,
+			APITokenName: name,
+		},
+		APITokenDescription: description,
+		ExpiresAt:           expiresAt,
+	}, &orgUUID)
+
 	return token, nil
 }
 
@@ -182,7 +196,7 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 		return NewErrInvalidUUID(err)
 	}
 
-	uuid, err := uuid.Parse(id)
+	tokenUUID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
 	}
@@ -192,7 +206,24 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 		return fmt.Errorf("removing policies: %w", err)
 	}
 
-	return uc.apiTokenRepo.Revoke(ctx, orgUUID, uuid)
+	token, err := uc.apiTokenRepo.FindByID(ctx, tokenUUID)
+	if err != nil {
+		return fmt.Errorf("finding token: %w", err)
+	}
+
+	if rvErr := uc.apiTokenRepo.Revoke(ctx, orgUUID, tokenUUID); rvErr != nil {
+		return fmt.Errorf("revoking token: %w", rvErr)
+	}
+
+	// Dispatch the event to the auditor to notify the revocation of the token
+	uc.auditorUC.Dispatch(ctx, &events.APITokenRevoked{
+		APITokenBase: &events.APITokenBase{
+			APITokenID:   &tokenUUID,
+			APITokenName: token.Name,
+		},
+	}, &orgUUID)
+
+	return nil
 }
 
 func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*APIToken, error) {

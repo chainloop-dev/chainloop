@@ -1,0 +1,15 @@
+{
+  "ActionType": "APITokenRevoked",
+  "TargetType": "APIToken",
+  "TargetID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": " has revoked the API token test-token",
+  "Info": {
+    "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
+    "api_token_name": "test-token"
+  },
+  "Digest": "sha256:bc5eda0247c58cee660f7c83ce5378e3965db738c6c0b998138ee86313c802b8"
+}
