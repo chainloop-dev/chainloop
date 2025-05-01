@@ -86,9 +86,9 @@ func (a *APITokenCreated) ActionInfo() (json.RawMessage, error) {
 
 func (a *APITokenCreated) Description() string {
 	if a.ExpiresAt != nil {
-		return fmt.Sprintf("{{ .ActorEmail }} has created the API token %s expiring at %s", a.APITokenBase.APITokenName, a.ExpiresAt.Format(time.RFC3339))
+		return fmt.Sprintf("{{ .ActorEmail }} has created the API token %s expiring at %s", a.APITokenName, a.ExpiresAt.Format(time.RFC3339))
 	}
-	return fmt.Sprintf("{{ .ActorEmail }} has created the API token %s", a.APITokenBase.APITokenName)
+	return fmt.Sprintf("{{ .ActorEmail }} has created the API token %s", a.APITokenName)
 }
 
 type APITokenRevoked struct {
@@ -109,5 +109,5 @@ func (a *APITokenRevoked) ActionInfo() (json.RawMessage, error) {
 }
 
 func (a *APITokenRevoked) Description() string {
-	return fmt.Sprintf("{{ .ActorEmail }} has revoked the API token %s", a.APITokenBase.APITokenName)
+	return fmt.Sprintf("{{ .ActorEmail }} has revoked the API token %s", a.APITokenName)
 }
