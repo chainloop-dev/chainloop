@@ -45,7 +45,6 @@ func TestWorkflowEvents(t *testing.T) {
 	wfName := "test-workflow"
 	projectName := "test-project"
 	newTeam := "test-team"
-	description := "test description"
 
 	tests := []struct {
 		name     string
@@ -64,7 +63,7 @@ func TestWorkflowEvents(t *testing.T) {
 				},
 				WorkflowContractID:   &wfContractUUID,
 				WorkflowContractName: wfContractName,
-				WorkflowDescription:  &description,
+				WorkflowDescription:  &wfDescription,
 				Team:                 &newTeam,
 				Public:               false,
 			},
@@ -82,7 +81,7 @@ func TestWorkflowEvents(t *testing.T) {
 				},
 				WorkflowContractID:   &wfContractUUID,
 				WorkflowContractName: wfContractName,
-				WorkflowDescription:  &description,
+				WorkflowDescription:  &wfDescription,
 				Team:                 &newTeam,
 				Public:               false,
 			},

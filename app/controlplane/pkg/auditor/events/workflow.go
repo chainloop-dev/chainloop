@@ -73,12 +73,12 @@ type WorkflowCreated struct {
 }
 
 func (w *WorkflowCreated) TargetID() *uuid.UUID {
-	return w.WorkflowBase.WorkflowID
+	return w.WorkflowID
 }
 
 func (w *WorkflowCreated) Description() string {
-	workflowName := w.WorkflowBase.WorkflowName
-	projectName := w.WorkflowBase.ProjectName
+	workflowName := w.WorkflowName
+	projectName := w.ProjectName
 	workflowContractName := w.WorkflowContractName
 	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has created the workflow %s on project %s with the contract %s", workflowName, projectName, workflowContractName)
 }
