@@ -1,0 +1,16 @@
+{
+  "ActionType": "WorkflowDeleted",
+  "TargetType": "Workflow",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "API Token 2089bb36-e27b-428b-8009-d015c8737c55 has deleted the workflow test-contract",
+  "Info": {
+    "workflow_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_name": "test-contract",
+    "project_name": "test-project"
+  },
+  "Digest": "sha256:e461b550b100a5891dbcf62db574afe9a7b4562cc062725c2c4da90b56674ac9"
+}

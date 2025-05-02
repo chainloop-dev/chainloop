@@ -17,7 +17,7 @@ server:
     #   private_key: "../../devel/devkeys/selfsigned/controlplane.key"
 
 # nats_server:
-#   uri: nats://0.0.0.0:4222
+#  uri: nats://0.0.0.0:4222
 
 certificate_authorities:
   - issuer: true
