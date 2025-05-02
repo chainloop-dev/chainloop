@@ -8,4 +8,4 @@ materials:
 policyGroups:
   - ref: slsa-checks
     with:
-      runner: GITHUB_ACTION
+      runner: GITHUB_ACTION # or GITLAB_PIPELINE
