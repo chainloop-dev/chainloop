@@ -56,7 +56,7 @@ func NewGitlabClient(ctx context.Context, logger *zerolog.Logger) (*GitlabOIDCCl
 	}
 
 	tokenContent := os.Getenv(GitlabTokenEnv)
-	logger.Debug().Str("tokenContent", tokenContent).Msg("retrieved token content")
+	logger.Debug().Msg("retrieved token content")
 	if tokenContent == "" {
 		return nil, fmt.Errorf("%s environment variable not set", GitlabTokenEnv)
 	}
@@ -78,7 +78,6 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 
 	verifier := provider.Verifier(&oidc.Config{
 		SkipClientIDCheck: true, // Skip client ID check since we're just parsing
-		SkipExpiryCheck:   true, // Skip expiry check to allow viewing expired tokens
 	})
 
 	idToken, err := verifier.Verify(ctx, tokenString)

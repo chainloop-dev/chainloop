@@ -31,7 +31,7 @@ type GitlabPipeline struct {
 func NewGitlabPipeline(ctx context.Context, logger *zerolog.Logger) *GitlabPipeline {
 	client, err := oidc.NewGitlabClient(ctx, logger)
 	if err != nil {
-		logger.Debug().Err(err).Msg("failed to create Gitlab OIDC client")
+		logger.Debug().Err(err).Msgf("failed to create Gitlab OIDC client: %v", err)
 		return &GitlabPipeline{
 			gitlabToken: nil,
 		}
