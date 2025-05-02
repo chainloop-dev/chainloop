@@ -18,6 +18,8 @@ package runners
 import (
 	"fmt"
 	"os"
+
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 )
 
 type EnvVarDefinition struct {
@@ -62,7 +64,7 @@ func (r RunnerEnvironment) String() string {
 	case Managed:
 		return "managed"
 	case SelfHosted:
-		return "self-hosted"
+		return oidc.SelfHostedRunner
 	}
 	return "unknown"
 }

@@ -16,15 +16,30 @@
 package runners
 
 import (
+	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
+	"github.com/rs/zerolog"
 )
 
-type GitlabPipeline struct{}
+type GitlabPipeline struct {
+	gitlabToken *oidc.GitlabToken
+}
 
-func NewGitlabPipeline() *GitlabPipeline {
-	return &GitlabPipeline{}
+func NewGitlabPipeline(ctx context.Context, logger *zerolog.Logger) *GitlabPipeline {
+	client, err := oidc.NewGitlabClient(ctx, logger)
+	if err != nil {
+		logger.Debug().Err(err).Msgf("failed to create Gitlab OIDC client: %v", err)
+		return &GitlabPipeline{
+			gitlabToken: nil,
+		}
+	}
+
+	return &GitlabPipeline{
+		gitlabToken: client.Token,
+	}
 }
 
 func (r *GitlabPipeline) ID() schemaapi.CraftingSchema_Runner_RunnerType {
@@ -65,13 +80,26 @@ func (r *GitlabPipeline) ResolveEnvVars() (map[string]string, []*error) {
 }
 
 func (r *GitlabPipeline) WorkflowFilePath() string {
+	if r.gitlabToken != nil {
+		return r.gitlabToken.ConfigRefURI
+	}
 	return ""
 }
 
 func (r *GitlabPipeline) IsAuthenticated() bool {
-	return false
+	return r.gitlabToken != nil
 }
 
 func (r *GitlabPipeline) Environment() RunnerEnvironment {
+	if r.gitlabToken != nil {
+		switch r.gitlabToken.RunnerEnvironment {
+		case "gitlab-hosted":
+			return Managed
+		case oidc.SelfHostedRunner:
+			return SelfHosted
+		default:
+			return Unknown
+		}
+	}
 	return Unknown
 }

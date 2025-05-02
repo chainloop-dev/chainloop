@@ -20,6 +20,8 @@ import (
 	"errors"
 )
 
+const SelfHostedRunner = "self-hosted"
+
 var (
 	// errURLError indicates the OIDC server URL is invalid.
 	errURLError = errors.New("url")

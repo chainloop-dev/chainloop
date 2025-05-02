@@ -67,8 +67,8 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	schemaapi.CraftingSchema_Runner_GITHUB_ACTION: func(logger *zerolog.Logger) SupportedRunner {
 		return runners.NewGithubAction(timeoutCtx, logger)
 	},
-	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
-		return runners.NewGitlabPipeline()
+	schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE: func(logger *zerolog.Logger) SupportedRunner {
+		return runners.NewGitlabPipeline(timeoutCtx, logger)
 	},
 	schemaapi.CraftingSchema_Runner_AZURE_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewAzurePipeline()
