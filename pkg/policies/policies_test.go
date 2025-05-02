@@ -932,6 +932,15 @@ func (s *testSuite) TestComputePolicyArguments() {
 			bindings: map[string]string{"foo": "world", "bar": "template"},
 			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},
+		{
+			name: "required input with missing binding",
+			inputs: []*v12.PolicyInput{{
+				Name:     "arg1",
+				Required: true,
+			}},
+			args:      map[string]string{"arg1": "{{ inputs.foo }}"},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range cases {

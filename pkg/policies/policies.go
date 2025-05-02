@@ -230,12 +230,24 @@ func ComputeArguments(inputs []*v1.PolicyInput, args map[string]string, bindings
 		if input.Required && input.Default != "" {
 			return nil, fmt.Errorf("input %s can not be required and have a default at the same time", input.Name)
 		}
-		if _, ok := args[input.Name]; !ok {
+
+		// if the input exists, it might be an expression, apply bindings to see if it has a value
+		argValue := args[input.Name]
+		var err error
+		if argValue != "" {
+			argValue, err = templates.ApplyBinding(argValue, bindings)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// if the input is not present, or the computed value is empty, we need to check if it's required
+		if _, ok := args[input.Name]; !ok || argValue == "" {
 			if input.Required {
 				return nil, fmt.Errorf("missing required input %q", input.Name)
 			}
 			// if not required, and it has a default value, let's use it
-			if args[input.Name] == "" && input.Default != "" {
+			if argValue == "" && input.Default != "" {
 				value, err := templates.ApplyBinding(input.Default, bindings)
 				if err != nil {
 					return nil, err
