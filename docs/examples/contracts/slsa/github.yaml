@@ -9,4 +9,3 @@ policyGroups:
   - ref: slsa-checks
     with:
       runner: GITHUB_ACTION
-      environment: "managed"
