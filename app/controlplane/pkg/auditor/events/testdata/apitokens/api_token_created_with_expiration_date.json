@@ -1,0 +1,17 @@
+{
+  "ActionType": "APITokenCreated",
+  "TargetType": "APIToken",
+  "TargetID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io has created the API token test-token expiring at 2025-01-01T00:00:00Z",
+  "Info": {
+    "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
+    "api_token_name": "test-token",
+    "description": "test description",
+    "expires_at": "2025-01-01T00:00:00Z"
+  },
+  "Digest": "sha256:69f991f315a482b12d037900fdf7de77c621e23ab26f2781663c99d64e297c0b"
+}

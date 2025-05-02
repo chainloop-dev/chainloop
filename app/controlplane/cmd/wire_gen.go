@@ -106,7 +106,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, organizationUseCase, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
