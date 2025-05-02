@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rs/zerolog"
@@ -30,6 +31,9 @@ const GitlabTokenEnv = "GITLAB_OIDC"
 
 // CIServerURLEnv is the environment variable name for Gitlab CI server URL.
 const CIServerURLEnv = "CI_SERVER_URL"
+
+// ExpectedAudience is the expected audience for the Gitlab OIDC token.
+const ExpectedAudience = "chainloop"
 
 type GitlabToken struct {
 	oidc.IDToken
@@ -83,6 +87,10 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 	idToken, err := verifier.Verify(ctx, tokenString)
 	if err != nil {
 		return nil, fmt.Errorf("token verification failed: %w", err)
+	}
+
+	if slices.Compare(idToken.Audience, []string{ExpectedAudience}) != 0 {
+		return nil, fmt.Errorf("audience not equal %q != %q", idToken.Audience, ExpectedAudience)
 	}
 
 	token := &GitlabToken{
