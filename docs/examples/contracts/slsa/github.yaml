@@ -1,15 +1,12 @@
-# Require a container image reference, SLSA provenance and include SLSA complicance verification
+# Require a container image reference and include SLSA complicance verification
 schemaVersion: v1
 
 materials:
   - type: CONTAINER_IMAGE
     name: container
-  - type: SLSA_PROVENANCE
-    name: slsa-attestation
 
 policyGroups:
   - ref: slsa-checks
     with:
-      provenance_material_name: slsa-attestation
       runner: GITHUB_ACTION
-      issuer: "GitHub"
+      environment: "managed"
