@@ -53,7 +53,7 @@ jobs:
       # see https://entgo.io/docs/ci/
       - uses: ent/contrib/ci@e38dfb6484dfbe64b8bd060fe6a219a1aa5da770 # master
         name: "Check all ent generated code is checked in"
-        if: ${{ matrix.app != 'main-module' && matrix.app != 'cli' }}
+        if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
           tidy: true
