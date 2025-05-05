@@ -1,0 +1,9 @@
+#release-contract
+schemaVersion: v1
+materials:
+  # SBOMs will be uploaded to your artifact registry and referenced by digest in the attestation
+  # Both SBOM_CYCLONEDX_JSON and SBOM_SPDX_JSON are supported
+  - type: SBOM_CYCLONEDX_JSON
+    name: sbom
+policyGroups:
+  - ref: sbom-quality
