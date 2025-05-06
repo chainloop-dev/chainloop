@@ -17,12 +17,11 @@ package oidc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 )
 
@@ -94,28 +93,15 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 		IDToken: *idToken,
 	}
 
+	// Verify the audience
+	if !slices.Contains(idToken.Audience, ExpectedAudience) {
+		return nil, fmt.Errorf("invalid audience: expected %q", ExpectedAudience)
+	}
+
 	// Extract claims to populate our custom fields
 	var claims map[string]interface{}
 	if err := idToken.Claims(&claims); err != nil {
 		return nil, fmt.Errorf("failed to extract claims: %w", err)
-	}
-
-	// Convert raw token to JWT token to use VerifyAudience
-	// Parse the JWT token without validation (we already validated it with the OIDC provider)
-	parsedToken, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse JWT token: %w", err)
-	}
-
-	// Get the claims from the parsed token
-	genericClaims, ok := parsedToken.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.New("error mapping the claims")
-	}
-
-	// Verify the audience
-	if !genericClaims.VerifyAudience(ExpectedAudience, true) {
-		return nil, fmt.Errorf("invalid audience: expected %q", ExpectedAudience)
 	}
 
 	if configRefURI, ok := claims["ci_config_ref_uri"].(string); ok {
