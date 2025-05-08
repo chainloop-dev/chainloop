@@ -20,8 +20,6 @@ permissions: read-all
 jobs:
   chainloop_init:
     name: Chainloop Init
-    permissions:
-      id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
     uses: chainloop-dev/labs/.github/workflows/chainloop_init.yml@6bbd1c2b3022e48ae60afa0c2b90f3b6d31bcf11
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
