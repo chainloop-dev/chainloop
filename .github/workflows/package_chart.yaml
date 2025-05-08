@@ -58,7 +58,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT}  --debug
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --debug
 
       - name: Package Chart
         run: helm package deployment/chainloop/
