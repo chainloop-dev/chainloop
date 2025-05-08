@@ -38,7 +38,7 @@ jobs:
       - name: Initialize Attestation
         run: |
           tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag"
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag" --debug
 
       - name: Attest all assets
         run: |
