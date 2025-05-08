@@ -10,7 +10,8 @@ on:
       chainloop_token:
         required: true
 
-permissions: {}
+permissions:
+  id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
 
 jobs:
   # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
@@ -22,7 +23,6 @@ jobs:
     permissions:
       packages: write
       contents: write
-      id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
     env:
       CHAINLOOP_TOKEN: ${{ secrets.chainloop_token }}
       CHAINLOOP_WORKFLOW_NAME: chainloop-vault-release
