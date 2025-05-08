@@ -29,7 +29,7 @@ jobs:
       - name: Initialize Attestation
         id: init_attestation
         run: |
-          attestation_id=$(chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME} --debug --release --remote-state -o json | jq -r .attestationID)
+          attestation_id=$(chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME} --release --remote-state -o json | jq -r .attestationID)
           echo "attestation_id=$attestation_id" >> $GITHUB_OUTPUT
         env:
           CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}

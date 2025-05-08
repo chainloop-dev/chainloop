@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
 
 jobs:
   # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
