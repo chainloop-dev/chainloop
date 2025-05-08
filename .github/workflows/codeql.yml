@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   analyze:
@@ -21,6 +20,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
+      id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
       CHAINLOOP_WORKFLOW_NAME: "codeql"
