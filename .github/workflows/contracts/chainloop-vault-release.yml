@@ -1,10 +1,5 @@
 # Contract for the release workflow
 schemaVersion: v1
-materials:
-  - name: slsa-attestation
-    type: SLSA_PROVENANCE
-    annotations:
-      - name: github_attestation
 policies:
   attestation:
     - ref: source-commit
@@ -24,8 +19,6 @@ policyGroups:
       bannedComponents: log4j@2.14.1
   - ref: slsa-checks
     with:
-      provenance_material_name: slsa-attestation
       runner: GITHUB_ACTION
-      issuer: "sigstore.dev"
 runner:
   type: GITHUB_ACTION

@@ -13,3 +13,7 @@ policies:
         check_signature: yes
       requirements:
         - chainloop-best-practices/commit-signed
+policyGroups:
+  - ref: slsa-checks
+    with:
+      runner: GITHUB_ACTION

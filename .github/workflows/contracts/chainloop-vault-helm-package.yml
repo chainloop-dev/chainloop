@@ -24,3 +24,7 @@ policies:
       requirements:
         - chainloop-best-practices/container-signed
         - chainloop-best-practices/helm-chart-signed
+policyGroups:
+  - ref: slsa-checks
+    with:
+      runner: GITHUB_ACTION

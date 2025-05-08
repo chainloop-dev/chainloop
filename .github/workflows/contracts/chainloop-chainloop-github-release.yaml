@@ -5,4 +5,7 @@ policies:
     - ref: source-commit
       with:
         check_signature: yes
-
+policyGroups:
+  - ref: slsa-checks
+    with:
+      runner: GITHUB_ACTION
