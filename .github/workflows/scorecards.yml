@@ -14,8 +14,10 @@ on:
   push:
     branches: ["main"]
 
-# Declare default permissions as read only.
-permissions: read-all
+# Declare default permissions to read contents and write id-token
+permissions: 
+  contents: read
+  id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
 
 jobs:
   chainloop_init:
