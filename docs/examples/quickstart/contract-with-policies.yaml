@@ -1,0 +1,15 @@
+schemaVersion: v1
+materials:
+  - name: container
+    type: CONTAINER_IMAGE
+  - name: sbom
+    type: SBOM_CYCLONEDX_JSON
+    optional: true
+policies:
+  materials:
+    # artifact-signed checks that all OCI artifacts such as Container Images and Charts are signed
+    - ref: artifact-signed
+    # sbom-version checks the expected version for a CycloneDX report.
+    - ref: sbom-version
+      with:
+        min_version: "1.6"
