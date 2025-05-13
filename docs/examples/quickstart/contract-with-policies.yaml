@@ -4,12 +4,24 @@ materials:
     type: CONTAINER_IMAGE
   - name: sbom
     type: SBOM_CYCLONEDX_JSON
-    optional: true
+  - name: vulnerabilities-report
+    type: SARIF
+
+# We can attach policies from the provided library of policies https://app.chainloop.dev/policies
+# or custom ones as explained here https://docs.chainloop.dev/concepts/policies
 policies:
   materials:
     # artifact-signed checks that all OCI artifacts such as Container Images and Charts are signed
     - ref: artifact-signed
-    # sbom-version checks the expected version for a CycloneDX report.
-    - ref: sbom-version
-      with:
-        min_version: "1.6"
+    # Make sure we are not using latest in the container image
+    - ref: artifact-tag-not-latest
+
+# alternatively to policies you can apply policy groups
+# https://docs.chainloop.dev/concepts/policy-groups#policy-groups
+policyGroups:
+  - ref: slsa-checks
+  - ref: vulnerability-management
+  - ref: sbom-quality
+    with:
+      bannedComponents: log4j@2.14.1
+      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
