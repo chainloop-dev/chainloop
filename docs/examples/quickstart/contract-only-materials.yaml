@@ -4,4 +4,5 @@ materials:
     type: CONTAINER_IMAGE
   - name: sbom
     type: SBOM_CYCLONEDX_JSON
-    optional: true
+  - name: vulnerabilities-report
+    type: SARIF
