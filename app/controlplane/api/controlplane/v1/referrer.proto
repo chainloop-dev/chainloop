@@ -25,10 +25,12 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 
 service ReferrerService {
   // DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
-  rpc DiscoverPrivate(ReferrerServiceDiscoverPrivateRequest) returns (ReferrerServiceDiscoverPrivateResponse);
+  rpc DiscoverPrivate(ReferrerServiceDiscoverPrivateRequest) returns (ReferrerServiceDiscoverPrivateResponse) {
+    option (google.api.http) = {get: "/discover/{digest}"};
+  }
   // DiscoverPublicShared returns the referrer item for a given digest in the public shared index
   rpc DiscoverPublicShared(DiscoverPublicSharedRequest) returns (DiscoverPublicSharedResponse) {
-    option (google.api.http) = {get: "/discover/{digest}"};
+    option (google.api.http) = {get: "/discover/shared/{digest}"};
   }
 }
 
