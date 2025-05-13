@@ -1,0 +1,7 @@
+schemaVersion: v1
+materials:
+  - name: container
+    type: CONTAINER_IMAGE
+  - name: sbom
+    type: SBOM_CYCLONEDX_JSON
+    optional: true
