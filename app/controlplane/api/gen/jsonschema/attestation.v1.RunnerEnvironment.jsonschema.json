@@ -28,7 +28,8 @@
             "AZURE_PIPELINE",
             "JENKINS_JOB",
             "CIRCLECI_BUILD",
-            "DAGGER_PIPELINE"
+            "DAGGER_PIPELINE",
+            "TEAMCITY_PIPELINE"
           ],
           "title": "Runner Type",
           "type": "string"

@@ -82,6 +82,9 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
 		return runners.NewDaggerPipeline()
 	},
+	schemaapi.CraftingSchema_Runner_TEAMCITY_PIPELINE: func(_ *zerolog.Logger) SupportedRunner {
+		return runners.NewTeamCityPipeline()
+	},
 }
 
 // Load a specific runner
