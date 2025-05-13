@@ -92,32 +92,27 @@ func TestAttestationAPITokenProvider(t *testing.T) {
 		tokenProviders []attjwtmiddleware.JWTOption
 	}{
 		{
-			name:           "invalid audience on robot account token",
+			name:           "invalid audience",
 			wantErr:        true,
 			expectedError:  "unexpected token, invalid audience",
-			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoicmFuZG9tLmF1ZGllbmNlIiwic3ViIjoicmFuZG9tIHJhbmRvbSJ9.2tw4BWUAH_ISlk6rFTIQoDSxGEpUesmKae9pD3ck-_I"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
+			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3NDcxMjY4OTUsImV4cCI6bnVsbCwiYXVkIjoicmFuZG9tLWF1ZGllbmNlIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.nhs12KaDj0vHuR6nbBD_Qo4cPE-nXNFoWskEJNNXOys"),
+			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAPITokenProvider(signingKey)},
 		},
 		{
 			name:           "invalid token",
 			wantErr:        true,
 			expectedError:  "signature is invalid",
 			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcxNTMzMjUwOSwiaWF0IjoxNzE1MzMyNTA5fQ.41X6FyZ5xo0ckpkOkQbe2wLpFZ4Emtb8aMy_-3ZFs6Y"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
-		},
-		{
-			name:           "valid robot account token",
-			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoiYXR0ZXN0YXRpb25zLmNoYWlubG9vcCIsInN1YiI6InJhbmRvbSByYW5kb20ifQ._8EU10CtgVtfD6NEQCP4Uco7FAZ1mvqgsjuPkZNa0pc"),
-			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewRobotAccountProvider(signingKey)},
+			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAPITokenProvider(signingKey)},
 		},
 		{
 			name:           "valid api token",
-			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIiwic3ViIjoicmFuZG9tIHJhbmRvbSJ9.MHBtf4cKu2d8KDS5M5d-uKHYBbLEYOdhvacNFIB3MHI"),
+			tokenHeader:    newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3NDcxMjY4OTUsImV4cCI6bnVsbCwiYXVkIjoiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.8O872KxwVpC8ErjOiioo-rdoV_tQgOyGDTbmC4bbHbo"),
 			tokenProviders: []attjwtmiddleware.JWTOption{attjwtmiddleware.NewAPITokenProvider(signingKey)},
 		},
 		{
 			name:        "token validates when multiple providers are set",
-			tokenHeader: newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3MTUzMjY4NzIsImV4cCI6MTc0Njg2Mjg3MiwiYXVkIjoiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIiwic3ViIjoicmFuZG9tIHJhbmRvbSJ9.MHBtf4cKu2d8KDS5M5d-uKHYBbLEYOdhvacNFIB3MHI"),
+			tokenHeader: newTokenHeader("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3NDcxMjY4OTUsImV4cCI6bnVsbCwiYXVkIjoiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.8O872KxwVpC8ErjOiioo-rdoV_tQgOyGDTbmC4bbHbo"),
 			tokenProviders: []attjwtmiddleware.JWTOption{
 				attjwtmiddleware.NewRobotAccountProvider(signingKey),
 				attjwtmiddleware.NewAPITokenProvider(signingKey),
