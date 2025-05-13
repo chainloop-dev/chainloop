@@ -61,6 +61,10 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 			testInput:      v1.CraftingSchema_Runner_CIRCLECI_BUILD,
 			expectedOutput: "CircleCI Build",
 		}, {
+			name:           "teamcity runner",
+			testInput:      v1.CraftingSchema_Runner_TEAMCITY_PIPELINE,
+			expectedOutput: "TeamCity Pipeline",
+		}, {
 			name:           "unknown runner",
 			testInput:      -34,
 			expectedOutput: "Unknown",
