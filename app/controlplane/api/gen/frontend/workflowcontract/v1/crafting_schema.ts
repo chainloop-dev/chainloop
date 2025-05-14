@@ -37,6 +37,7 @@ export enum CraftingSchema_Runner_RunnerType {
   JENKINS_JOB = 4,
   CIRCLECI_BUILD = 5,
   DAGGER_PIPELINE = 6,
+  TEAMCITY_PIPELINE = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -63,6 +64,9 @@ export function craftingSchema_Runner_RunnerTypeFromJSON(object: any): CraftingS
     case 6:
     case "DAGGER_PIPELINE":
       return CraftingSchema_Runner_RunnerType.DAGGER_PIPELINE;
+    case 7:
+    case "TEAMCITY_PIPELINE":
+      return CraftingSchema_Runner_RunnerType.TEAMCITY_PIPELINE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -86,6 +90,8 @@ export function craftingSchema_Runner_RunnerTypeToJSON(object: CraftingSchema_Ru
       return "CIRCLECI_BUILD";
     case CraftingSchema_Runner_RunnerType.DAGGER_PIPELINE:
       return "DAGGER_PIPELINE";
+    case CraftingSchema_Runner_RunnerType.TEAMCITY_PIPELINE:
+      return "TEAMCITY_PIPELINE";
     case CraftingSchema_Runner_RunnerType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

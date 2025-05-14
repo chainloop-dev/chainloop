@@ -56,6 +56,7 @@ message CraftingSchema {
       JENKINS_JOB = 4;
       CIRCLECI_BUILD = 5;
       DAGGER_PIPELINE = 6;
+      TEAMCITY_PIPELINE = 7;
     }
   }
 
