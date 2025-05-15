@@ -160,7 +160,8 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, di
 	}
 
 	// Update the access restriction status initial value based on an pre-existing allowlist
-	if err := uc.userAccessSyncer.UpdateUserAccessRestriction(ctx, u); err != nil {
+	u, err = uc.userAccessSyncer.UpdateUserAccessRestriction(ctx, u)
+	if err != nil {
 		return nil, fmt.Errorf("failed to update user access: %w", err)
 	}
 

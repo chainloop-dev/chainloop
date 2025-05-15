@@ -67,7 +67,7 @@ func (u *UserAccessSyncerUseCase) reconciliateUsersWithAccessNull(ctx context.Co
 	}
 
 	for _, user := range users {
-		if err := u.UpdateUserAccessRestriction(ctx, user); err != nil {
+		if _, err := u.UpdateUserAccessRestriction(ctx, user); err != nil {
 			return fmt.Errorf("failed to update user access: %w", err)
 		}
 	}
@@ -94,7 +94,7 @@ func (u *UserAccessSyncerUseCase) reconciliateAllUsersAccess(ctx context.Context
 		}
 
 		for _, user := range users {
-			if err := u.UpdateUserAccessRestriction(ctx, user); err != nil {
+			if _, err := u.UpdateUserAccessRestriction(ctx, user); err != nil {
 				return fmt.Errorf("failed to update user access: %w", err)
 			}
 		}
@@ -110,7 +110,7 @@ func (u *UserAccessSyncerUseCase) reconciliateAllUsersAccess(ctx context.Context
 }
 
 // UpdateUserAccessRestriction updates the access restriction status of a user
-func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Context, user *User) error {
+func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Context, user *User) (*User, error) {
 	isAllowListDeactivated := u.allowList == nil || len(u.allowList.GetRules()) == 0
 
 	var hasRestrictedAccess bool
@@ -122,7 +122,7 @@ func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Contex
 		// Check if the user email is in the allowlist and update the access restriction status accordingly
 		allow, err := userEmailInAllowlist(u.allowList, user.Email)
 		if err != nil {
-			return fmt.Errorf("error checking user in allowList: %w", err)
+			return nil, fmt.Errorf("error checking user in allowList: %w", err)
 		}
 
 		hasRestrictedAccess = !allow
@@ -130,14 +130,14 @@ func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Contex
 
 	parsedUserUUID, err := uuid.Parse(user.ID)
 	if err != nil {
-		return fmt.Errorf("invalid user ID: %w", err)
+		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
 	if err := u.userRepo.UpdateAccess(ctx, parsedUserUUID, hasRestrictedAccess); err != nil {
-		return fmt.Errorf("failed to update user access: %w", err)
+		return nil, fmt.Errorf("failed to update user access: %w", err)
 	}
 
-	return nil
+	return user, nil
 }
 
 // userEmailInAllowlist checks if the user email is in the allowlist
