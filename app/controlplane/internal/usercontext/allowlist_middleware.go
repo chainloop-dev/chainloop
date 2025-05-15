@@ -28,9 +28,9 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 )
 
-// Middleware that checks that the user is defined in the allow list
+// Middleware that checks that the user has access to the current route
 // Note that the source of truth is in the end the property set in the DB
-// The value in the allowlist is used as a starting point to populate the property in the DB
+// The value in the allowlist conf setting is used as a starting point to populate the property in the DB
 func CheckUserHasAccess(allowList *conf.Auth_AllowList, userUC biz.UserOrgFinder) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -56,6 +56,7 @@ func CheckUserHasAccess(allowList *conf.Auth_AllowList, userUC biz.UserOrgFinder
 				return nil, v1.ErrorAllowListErrorNotInList("error loading user: %v", err)
 			}
 
+			// If the user doesn't have the setting yet or it's set to true, we need to block the access
 			if userFromDB.HasRestrictedAccess == nil || *userFromDB.HasRestrictedAccess {
 				msg := fmt.Sprintf("user %q not in the allowList", user.Email)
 				if allowList.GetCustomMessage() != "" {
