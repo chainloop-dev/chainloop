@@ -81,13 +81,13 @@ func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
 }
 
 // UpdateAccess updates the access restriction for a user
-func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error {
-	_, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
+func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*biz.User, error) {
+	u, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
 	if err != nil {
-		return fmt.Errorf("error updating user access: %w", err)
+		return nil, fmt.Errorf("error updating user access: %w", err)
 	}
 
-	return nil
+	return entUserToBizUser(u), nil
 }
 
 // FindAll get all users in the system using pagination

@@ -45,7 +45,7 @@ type UserRepo interface {
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
 	Delete(ctx context.Context, userID uuid.UUID) error
 	FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*User, int, error)
-	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error
+	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*User, error)
 	HasUsersWithAccessPropertyNotSet(ctx context.Context) (bool, error)
 	FindUsersWithAccessPropertyNotSet(ctx context.Context) ([]*User, error)
 }

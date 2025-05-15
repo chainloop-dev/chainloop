@@ -133,11 +133,12 @@ func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Contex
 		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	if err := u.userRepo.UpdateAccess(ctx, parsedUserUUID, hasRestrictedAccess); err != nil {
+	updatedUser, err := u.userRepo.UpdateAccess(ctx, parsedUserUUID, hasRestrictedAccess)
+	if err != nil {
 		return nil, fmt.Errorf("failed to update user access: %w", err)
 	}
 
-	return user, nil
+	return updatedUser, nil
 }
 
 // userEmailInAllowlist checks if the user email is in the allowlist
