@@ -372,7 +372,7 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 
 	if !c.SkipGetReferences {
 		query = query.WithWorkflows(func(q *ent.WorkflowQuery) {
-			q.Where(workflow.DeletedAtIsNil())
+			q.Where(workflow.DeletedAtIsNil()).WithProject()
 		})
 	}
 
@@ -406,9 +406,11 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 	workflows := schema.Edges.Workflows
 	if workflows == nil {
 		var err error
-		workflows, err = schema.QueryWorkflows().WithProject().
-			Where(workflow.DeletedAtIsNil()).WithProject().
-			Select(workflowcontract.FieldID).All(ctx)
+		workflows, err = schema.QueryWorkflows().
+			Where(workflow.DeletedAtIsNil()).
+			WithProject().
+			Select(workflow.FieldID, workflow.FieldName).
+			All(ctx)
 		if err != nil {
 			return nil, err
 		}
