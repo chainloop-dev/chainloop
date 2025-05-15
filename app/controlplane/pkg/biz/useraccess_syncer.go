@@ -3,7 +3,7 @@
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// You may obtain a copy of the License a
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 
@@ -44,52 +43,40 @@ func NewUserAccessSyncerUseCase(logger log.Logger, userRepo UserRepo, allowList 
 	}
 }
 
-// StartSyncingUserAccess starts syncing the access restriction status of all users based on the allowlist
-func (u *UserAccessSyncerUseCase) StartSyncingUserAccess(ctx context.Context) error {
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	u.logger.Infow("msg", "syncing user access")
-
-	for {
-		select {
-		case <-ctx.Done():
-			u.logger.Infow("msg", "stopping user access sync")
-			return nil
-		case <-ticker.C:
-			// Update the access restriction status of all users based on the allowlist
-			if err := u.updateUserAccessBasedOnAllowList(ctx); err != nil {
-				return fmt.Errorf("update user access based on allow list: %w", err)
-			}
-		}
+// SyncUserAccess syncs the access restriction status of all users based on the allowlist into their DB entries
+// If allowDbOverrides is true, the access restriction status of users that have the access property set to null will be updated
+// If allowDbOverrides is true, the DB entries of all users will be updated to match the allowlist
+func (u *UserAccessSyncerUseCase) SyncUserAccess(ctx context.Context) error {
+	if u.allowList.GetAllowDbOverrides() {
+		return u.reconciliateUsersWithAccessNull(ctx)
 	}
+
+	return u.reconciliateAllUsersAccess(ctx)
 }
 
-// updateUserAccessBasedOnAllowList updates the access restriction status of all users based on the allowlist
-func (u *UserAccessSyncerUseCase) updateUserAccessBasedOnAllowList(ctx context.Context) error {
-	// Count the number of users with restricted access or brand-new users where its access has not been set yet
-	usersWithRestrictedAccess, err := u.userRepo.CountUsersWithRestrictedOrUnsetAccess(ctx)
-	if err != nil {
+func (u *UserAccessSyncerUseCase) reconciliateUsersWithAccessNull(ctx context.Context) error {
+	if hasUsersWithAccessPropertyNull, err := u.userRepo.HasUsersWithAccessPropertyNotSet(ctx); err != nil {
 		return fmt.Errorf("count users with access: %w", err)
+	} else if !hasUsersWithAccessPropertyNull {
+		return nil
 	}
 
-	// If the allowlist is empty and there are no users with restricted access, we can skip the sync
-	if u.allowList == nil || len(u.allowList.GetRules()) == 0 {
-		if usersWithRestrictedAccess == 0 {
-			return nil
+	users, err := u.userRepo.FindUsersWithAccessPropertyNotSet(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+
+	for _, user := range users {
+		if err := u.UpdateUserAccessRestriction(ctx, user); err != nil {
+			return fmt.Errorf("failed to update user access: %w", err)
 		}
-	}
-
-	// Sync the access restriction status of all users based on the allowlist
-	if err := u.syncUserAccess(ctx); err != nil {
-		return fmt.Errorf("sync user access: %w", err)
 	}
 
 	return nil
 }
 
-// syncUserAccess syncs the access restriction status of all users based on the allowlist
-func (u *UserAccessSyncerUseCase) syncUserAccess(ctx context.Context) error {
+// reconciliateAllUsersAccess syncs the DB entry with the allowlist for all users
+func (u *UserAccessSyncerUseCase) reconciliateAllUsersAccess(ctx context.Context) error {
 	var (
 		offset = 1
 		limit  = 50
@@ -107,7 +94,7 @@ func (u *UserAccessSyncerUseCase) syncUserAccess(ctx context.Context) error {
 		}
 
 		for _, user := range users {
-			if err := u.updateUserAccessRestriction(ctx, user); err != nil {
+			if err := u.UpdateUserAccessRestriction(ctx, user); err != nil {
 				return fmt.Errorf("failed to update user access: %w", err)
 			}
 		}
@@ -122,23 +109,23 @@ func (u *UserAccessSyncerUseCase) syncUserAccess(ctx context.Context) error {
 	return nil
 }
 
-// updateUserAccessRestriction updates the access restriction status of a user
-func (u *UserAccessSyncerUseCase) updateUserAccessRestriction(ctx context.Context, user *User) error {
+// UpdateUserAccessRestriction updates the access restriction status of a user
+func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Context, user *User) error {
 	isAllowListDeactivated := u.allowList == nil || len(u.allowList.GetRules()) == 0
 
-	var isAccessRestricted bool
+	var hasRestrictedAccess bool
 
 	// If the allowlist is empty, we deactivate the access restriction for all users
 	if isAllowListDeactivated {
-		isAccessRestricted = false
+		hasRestrictedAccess = false
 	} else {
 		// Check if the user email is in the allowlist and update the access restriction status accordingly
-		allow, err := UserEmailInAllowlist(u.allowList.GetRules(), user.Email)
+		allow, err := userEmailInAllowlist(u.allowList, user.Email)
 		if err != nil {
 			return fmt.Errorf("error checking user in allowList: %w", err)
 		}
 
-		isAccessRestricted = !allow
+		hasRestrictedAccess = !allow
 	}
 
 	parsedUserUUID, err := uuid.Parse(user.ID)
@@ -146,16 +133,16 @@ func (u *UserAccessSyncerUseCase) updateUserAccessRestriction(ctx context.Contex
 		return fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	if err := u.userRepo.UpdateAccess(ctx, parsedUserUUID, isAccessRestricted); err != nil {
+	if err := u.userRepo.UpdateAccess(ctx, parsedUserUUID, hasRestrictedAccess); err != nil {
 		return fmt.Errorf("failed to update user access: %w", err)
 	}
 
 	return nil
 }
 
-// UserEmailInAllowlist checks if the user email is in the allowlist
-func UserEmailInAllowlist(allowList []string, email string) (bool, error) {
-	for _, allowListEntry := range allowList {
+// userEmailInAllowlist checks if the user email is in the allowlist
+func userEmailInAllowlist(allowList *conf.Auth_AllowList, email string) (bool, error) {
+	for _, allowListEntry := range allowList.GetRules() {
 		// it's a direct email match
 		if allowListEntry == email {
 			return true, nil

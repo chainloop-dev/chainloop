@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,14 +29,11 @@ import (
 )
 
 // Middleware that checks that the user is defined in the allow list
-func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware {
+// Note that the source of truth is in the end the property set in the DB
+// The value in the allowlist is used as a starting point to populate the property in the DB
+func CheckUserHasAccess(allowList *conf.Auth_AllowList, userUC biz.UserOrgFinder) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			// Allowlist disabled
-			if allowList == nil || len(allowList.GetRules()) == 0 {
-				return handler(ctx, req)
-			}
-
 			// API tokens skip the allowlist since they are meant to represent a service
 			if token := entities.CurrentAPIToken(ctx); token != nil {
 				return handler(ctx, req)
@@ -49,17 +46,17 @@ func CheckUserInAllowList(allowList *conf.Auth_AllowList) middleware.Middleware 
 			}
 
 			// Skip if we have explicitly set some routes and the current request is not part of them
-			if len(allowList.GetSelectedRoutes()) > 0 && !selectedRoute(ctx, allowList.GetSelectedRoutes()) {
+			if allowList != nil && len(allowList.GetSelectedRoutes()) > 0 && !selectedRoute(ctx, allowList.GetSelectedRoutes()) {
 				return handler(ctx, req)
 			}
 
-			// If there are not items in the allowList we allow all users
-			allow, err := biz.UserEmailInAllowlist(allowList.GetRules(), user.Email)
+			// Load the user from the DB to check the restricted access flag
+			userFromDB, err := userUC.FindByID(ctx, user.ID)
 			if err != nil {
-				return nil, v1.ErrorAllowListErrorNotInList("error checking user in allowList: %v", err)
+				return nil, v1.ErrorAllowListErrorNotInList("error loading user: %v", err)
 			}
 
-			if !allow {
+			if userFromDB.HasRestrictedAccess == nil || *userFromDB.HasRestrictedAccess {
 				msg := fmt.Sprintf("user %q not in the allowList", user.Email)
 				if allowList.GetCustomMessage() != "" {
 					msg = allowList.GetCustomMessage()

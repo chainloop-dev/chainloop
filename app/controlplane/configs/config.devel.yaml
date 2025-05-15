@@ -83,7 +83,7 @@ auth:
     # rules: ["@chainloop.local"]
     # selected_routes: ["/controlplane.v1.WorkflowRunService/List"]
     # custom_message: "you need to require access here http://foo.com"
-    
+    # allow_db_overrides: true # if false, the user access flag in the DB will mirror the allowlist, otherwise it will be respected
 
 # referrer_shared_index:
 #   enabled: true
