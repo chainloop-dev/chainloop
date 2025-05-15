@@ -194,7 +194,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
 			// 4 - Make sure the account is fully functional
 			selector.Server(
-				usercontext.CheckUserInAllowList(opts.AuthConfig.AllowList),
+				usercontext.CheckUserHasAccess(opts.AuthConfig.AllowList, opts.UserUseCase),
 			).Match(allowListEnabled()).Build(),
 			selector.Server(
 				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),

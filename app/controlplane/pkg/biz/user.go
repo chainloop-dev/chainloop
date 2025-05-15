@@ -45,8 +45,9 @@ type UserRepo interface {
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
 	Delete(ctx context.Context, userID uuid.UUID) error
 	FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*User, int, error)
-	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error
-	CountUsersWithRestrictedOrUnsetAccess(ctx context.Context) (int, error)
+	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*User, error)
+	HasUsersWithAccessPropertyNotSet(ctx context.Context) (bool, error)
+	FindUsersWithAccessPropertyNotSet(ctx context.Context) ([]*User, error)
 }
 
 type UserOrgFinder interface {
@@ -62,6 +63,7 @@ type UserUseCase struct {
 	organizationUseCase *OrganizationUseCase
 	onboardingConfig    []*config.OnboardingSpec
 	auditorUC           *AuditorUseCase
+	userAccessSyncer    *UserAccessSyncerUseCase
 }
 
 type NewUserUseCaseParams struct {
@@ -71,6 +73,7 @@ type NewUserUseCaseParams struct {
 	OnboardingConfig    []*config.OnboardingSpec
 	Logger              log.Logger
 	AuditorUseCase      *AuditorUseCase
+	UserAccessSyncer    *UserAccessSyncerUseCase
 }
 
 func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
@@ -81,6 +84,7 @@ func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
 		onboardingConfig:    opts.OnboardingConfig,
 		logger:              log.NewHelper(opts.Logger),
 		auditorUC:           opts.AuditorUseCase,
+		userAccessSyncer:    opts.UserAccessSyncer,
 	}
 }
 
@@ -153,6 +157,12 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, di
 		if err := uc.organizationUseCase.AutoOnboardOrganizations(ctx, u.ID); err != nil {
 			return nil, fmt.Errorf("failed to auto-onboard user: %w", err)
 		}
+	}
+
+	// Update the access restriction status initial value based on an pre-existing allowlist
+	u, err = uc.userAccessSyncer.UpdateUserAccessRestriction(ctx, u)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user access: %w", err)
 	}
 
 	return u, err

@@ -101,6 +101,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v2, organizationUseCase, orgMetricsUseCase, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
+	auth_AllowList := newAuthAllowList(bootstrap)
+	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, auth_AllowList)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -108,6 +110,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		OnboardingConfig:    arg,
 		Logger:              logger,
 		AuditorUseCase:      auditorUseCase,
+		UserAccessSyncer:    userAccessSyncerUseCase,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
@@ -196,4 +199,8 @@ var (
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {
 	return nil, nil
+}
+
+func newAuthAllowList(conf2 *conf.Bootstrap) *conf.Auth_AllowList {
+	return conf2.Auth.GetAllowList()
 }

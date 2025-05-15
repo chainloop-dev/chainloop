@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,11 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // mockTransport is a gRPC transport.
@@ -57,118 +60,77 @@ func (tr *mockTransport) ReplyHeader() transport.Header {
 }
 
 func TestCheckUserInAllowList(t *testing.T) {
-	const email = "sarah@cyberdyne.io"
-
-	defaultRules := []string{
-		"foo@foo.com",
-		"sarah@cyberdyne.io",
-		// it can also contain domains
-		"@cyberdyne.io",
-		"@dyson-industries.io",
-	}
-
 	testCases := []struct {
-		name           string
-		rules          []string
-		selectedRoutes []string
-		runningRoute   string
-		email          string
-		isAPIToken     bool
-		wantErr        bool
-		customErrMsg   string
+		name                string
+		selectedRoutes      []string
+		runningRoute        string
+		hasRestrictedAccess bool
+		isAPIToken          bool
+		wantErr             bool
+		customErrMsg        string
 	}{
 		{
-			name:  "empty allow list",
-			email: email,
+			name: "empty allow list",
 		},
 		{
-			name:    "user not in allow list",
-			email:   email,
-			rules:   []string{"nothere@cyberdyne.io"},
-			wantErr: true,
+			name:                "is an API token so allow-list gets skipped",
+			isAPIToken:          true,
+			wantErr:             false,
+			hasRestrictedAccess: true,
 		},
 		{
-			name:       "is an API token so allow-list gets skipped",
-			isAPIToken: true,
-			rules:      []string{"nothere@cyberdyne.io"},
-			wantErr:    false,
+			name:                "user not in allow list",
+			wantErr:             true,
+			hasRestrictedAccess: true,
 		},
 		{
-			name:           "user not allowed to access the route",
-			email:          "random@example.com",
-			runningRoute:   "/foo/bar",
-			selectedRoutes: []string{"/foo/bar"},
-			wantErr:        true,
+			name:                "user in allow list",
+			hasRestrictedAccess: false,
 		},
 		{
-			name:           "route not in selected routes",
-			email:          "random@example.com",
-			runningRoute:   "/foo/bar",
-			selectedRoutes: []string{"/bar/foo", "/request-access", "/forbidden/route"},
+			name:                "user not allowed to access the route",
+			runningRoute:        "/foo/bar",
+			selectedRoutes:      []string{"/foo/bar"},
+			wantErr:             true,
+			hasRestrictedAccess: true,
 		},
 		{
-			name:         "return custom error message",
-			email:        email,
-			rules:        []string{"nothere@cyberdyne.io"},
-			wantErr:      true,
-			customErrMsg: "custom error message",
+			name:                "route not in selected routes",
+			runningRoute:        "/foo/bar",
+			selectedRoutes:      []string{"/bar/foo", "/request-access", "/forbidden/route"},
+			hasRestrictedAccess: true,
 		},
 		{
-			name:    "context missing, no user loaded",
-			wantErr: true,
+			name:                "return custom error message",
+			wantErr:             true,
+			customErrMsg:        "custom error message",
+			hasRestrictedAccess: true,
 		},
 		{
-			name:  "user in allow list",
-			email: email,
-		},
-		{
-			name:  "user in one of the valid domains",
-			email: "miguel@dyson-industries.io",
-		},
-		{
-			name:  "user in one of the valid domains",
-			email: "john@dyson-industries.io",
-		},
-		{
-			name:  "and can use modifiers",
-			email: "john+chainloop@dyson-industries.io",
-		},
-		{
-			name:    "it needs to be an email",
-			email:   "dyson-industries.io",
-			wantErr: true,
-		},
-		{
-			name:    "domain position is important",
-			email:   "dyson-industries.io@john",
-			wantErr: true,
-		},
-		{
-			name:    "and can't be typosquated",
-			email:   "john@dyson-industriesss.io",
-			wantErr: true,
+			name:                "context missing, no user loaded",
+			wantErr:             true,
+			hasRestrictedAccess: true,
 		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			allowList := &conf.Auth_AllowList{
-				Rules:          defaultRules,
 				CustomMessage:  tc.customErrMsg,
 				SelectedRoutes: tc.selectedRoutes,
 			}
 
-			if tc.rules != nil {
-				allowList.Rules = tc.rules
-			}
-
-			m := CheckUserInAllowList(allowList)
 			ctx := context.Background()
-			if tc.email != "" {
-				ctx = entities.WithCurrentUser(ctx, &entities.User{Email: tc.email, ID: "124"})
-			} else if tc.isAPIToken {
+			usecase := bizMocks.NewUserOrgFinder(t)
+			usecase.On("FindByID", mock.Anything, "124").
+				Return(&biz.User{HasRestrictedAccess: biz.ToPtr(tc.hasRestrictedAccess)}, nil).
+				Maybe()
+
+			m := CheckUserHasAccess(allowList, usecase)
+			if tc.isAPIToken {
 				ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: "124"})
+			} else {
+				ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "124"})
 			}
 
 			if tc.runningRoute != "" {

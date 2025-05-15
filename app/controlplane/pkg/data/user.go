@@ -81,13 +81,13 @@ func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
 }
 
 // UpdateAccess updates the access restriction for a user
-func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) error {
-	_, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
+func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*biz.User, error) {
+	u, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
 	if err != nil {
-		return fmt.Errorf("error updating user access: %w", err)
+		return nil, fmt.Errorf("error updating user access: %w", err)
 	}
 
-	return nil
+	return entUserToBizUser(u), nil
 }
 
 // FindAll get all users in the system using pagination
@@ -120,16 +120,23 @@ func (r *userRepo) FindAll(ctx context.Context, pagination *pagination.OffsetPag
 	return result, count, nil
 }
 
-// CountUsersWithRestrictedOrUnsetAccess returns the number of users with restricted access or unset access
-func (r *userRepo) CountUsersWithRestrictedOrUnsetAccess(ctx context.Context) (int, error) {
-	return r.data.DB.User.Query().
-		Where(
-			user.Or(
-				user.HasRestrictedAccess(true),
-				user.HasRestrictedAccessIsNil(),
-			),
-		).
-		Count(ctx)
+// HasUsersWithAccessPropertyNotSet returns the number of users with restricted access or unset access
+func (r *userRepo) HasUsersWithAccessPropertyNotSet(ctx context.Context) (bool, error) {
+	return r.data.DB.User.Query().Where(user.HasRestrictedAccessIsNil()).Exist(ctx)
+}
+
+func (r *userRepo) FindUsersWithAccessPropertyNotSet(ctx context.Context) ([]*biz.User, error) {
+	users, err := r.data.DB.User.Query().Where(user.HasRestrictedAccessIsNil()).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("find users with access property not set: %w", err)
+	}
+
+	result := make([]*biz.User, 0, len(users))
+	for _, u := range users {
+		result = append(result, entUserToBizUser(u))
+	}
+
+	return result, nil
 }
 
 func entUserToBizUser(eu *ent.User) *biz.User {

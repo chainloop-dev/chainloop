@@ -204,6 +204,10 @@ message Auth {
     string custom_message = 2;
     // The list of routes that will be affected by this middleware, by default all of them
     repeated string selected_routes = 3;
+    // Whether to treat the information stored in the user table as the source of truth
+    // if false, the allowList rules will be used as source of truth
+    // if true, the allowList rules will be used as a starting point to populate the property in the DB
+    bool allow_db_overrides = 4;
   }
 }
 

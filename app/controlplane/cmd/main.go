@@ -162,7 +162,7 @@ func main() {
 
 	// Sync user access
 	go func() {
-		if err := app.userAccessSyncer.StartSyncingUserAccess(ctx); err != nil {
+		if err := app.userAccessSyncer.SyncUserAccess(ctx); err != nil {
 			_ = logger.Log(log.LevelError, "msg", "syncing user access", "error", err)
 		}
 	}()

@@ -74,6 +74,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v := bootstrap.Onboarding
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, v, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, logger)
+	auth_AllowList := newAuthAllowList(bootstrap)
+	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, auth_AllowList)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -81,6 +83,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OnboardingConfig:    v,
 		Logger:              logger,
 		AuditorUseCase:      auditorUseCase,
+		UserAccessSyncer:    userAccessSyncerUseCase,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
@@ -287,8 +290,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
 	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
-	auth_AllowList := newAuthAllowList(bootstrap)
-	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, auth_AllowList)
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, userAccessSyncerUseCase, bootstrap)
 	return mainApp, func() {
 		cleanup()

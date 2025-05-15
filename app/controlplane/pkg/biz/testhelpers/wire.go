@@ -59,6 +59,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
 			NewCASServerOptions,
+			newAuthAllowList,
 		),
 	)
 }
@@ -66,4 +67,8 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {
 	return nil, nil
+}
+
+func newAuthAllowList(conf *conf.Bootstrap) *conf.Auth_AllowList {
+	return conf.Auth.GetAllowList()
 }
