@@ -25,10 +25,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -372,7 +374,7 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 
 	if !c.SkipGetReferences {
 		query = query.WithWorkflows(func(q *ent.WorkflowQuery) {
-			q.Where(workflow.DeletedAtIsNil())
+			q.Where(workflow.DeletedAtIsNil()).WithProject().Select(project.FieldID, project.FieldName)
 		})
 	}
 
@@ -406,9 +408,11 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 	workflows := schema.Edges.Workflows
 	if workflows == nil {
 		var err error
-		workflows, err = schema.QueryWorkflows().WithProject().
-			Where(workflow.DeletedAtIsNil()).WithProject().
-			Select(workflowcontract.FieldID).All(ctx)
+		workflows, err = schema.QueryWorkflows().
+			Where(workflow.DeletedAtIsNil()).
+			WithProject().
+			Select(workflow.FieldID, workflow.FieldName).
+			All(ctx)
 		if err != nil {
 			return nil, err
 		}
