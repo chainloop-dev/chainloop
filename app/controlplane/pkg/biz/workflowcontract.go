@@ -76,6 +76,8 @@ type WorkflowContractRepo interface {
 }
 
 type ContractQueryOpts struct {
+	// SkipGetReferences will skip the get references subquery
+	// The references are composed by the project name and workflow name
 	SkipGetReferences bool
 }
 
