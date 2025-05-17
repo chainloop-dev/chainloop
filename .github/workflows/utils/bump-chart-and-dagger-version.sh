@@ -51,5 +51,5 @@ sed -i "s/:v.*/:${semVer}/g" "${chart_yaml}"
 sed -i "s/tag: .*/tag: \"${semVer}\"/g" "${values_yaml}"
 
 ## Update Dagger version
-sed -i "s/chainloopVersion = v.*\"/chainloopVersion = \"${semVer}\"/" "${dagger_main}"
+sed -i "s/chainloopVersion = \"v.*\"/chainloopVersion = \"${semVer}\"/" "${dagger_main}"
 
