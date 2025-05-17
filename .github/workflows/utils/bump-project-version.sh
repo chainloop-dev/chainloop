@@ -35,7 +35,7 @@ version=$(cat "${project_yaml}" | awk '/^projectVersion:/ {
         # Handle minor version bumps (e.g., v1.0.0 -> v1.1.0)
         split(version, ver_parts, /\./);
         ver_parts[2] = ver_parts[2] + 1;
-        print ver_parts[1] "." ver_parts[2] "." ver_parts[3];
+        print ver_parts[1] "." ver_parts[2] ".0";
     }
 }')
 
