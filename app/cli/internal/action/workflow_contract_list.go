@@ -87,7 +87,7 @@ func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContra
 		ID:                      in.GetId(),
 		LatestRevision:          int(in.GetLatestRevision()),
 		CreatedAt:               toTimePtr(in.GetCreatedAt().AsTime()),
-		Workflows:               in.WorkflowNames,
+		Workflows:               in.WorkflowNames, // nolint:staticcheck
 		WorkflowRefs:            workflowRefs,
 		Description:             in.GetDescription(),
 		LatestRevisionCreatedAt: toTimePtr(in.GetLatestRevisionCreatedAt().AsTime()),
