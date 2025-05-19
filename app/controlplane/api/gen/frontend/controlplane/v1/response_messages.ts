@@ -422,6 +422,7 @@ export interface WorkflowContractItem {
   description: string;
   createdAt?: Date;
   latestRevision: number;
+  latestRevisionCreatedAt?: Date;
   /**
    * Workflows associated with this contract
    *
@@ -2771,6 +2772,7 @@ function createBaseWorkflowContractItem(): WorkflowContractItem {
     description: "",
     createdAt: undefined,
     latestRevision: 0,
+    latestRevisionCreatedAt: undefined,
     workflowNames: [],
     workflowRefs: [],
   };
@@ -2792,6 +2794,9 @@ export const WorkflowContractItem = {
     }
     if (message.latestRevision !== 0) {
       writer.uint32(32).int32(message.latestRevision);
+    }
+    if (message.latestRevisionCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.latestRevisionCreatedAt), writer.uint32(66).fork()).ldelim();
     }
     for (const v of message.workflowNames) {
       writer.uint32(42).string(v!);
@@ -2844,6 +2849,13 @@ export const WorkflowContractItem = {
 
           message.latestRevision = reader.int32();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.latestRevisionCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
         case 5:
           if (tag !== 42) {
             break;
@@ -2874,6 +2886,9 @@ export const WorkflowContractItem = {
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       latestRevision: isSet(object.latestRevision) ? Number(object.latestRevision) : 0,
+      latestRevisionCreatedAt: isSet(object.latestRevisionCreatedAt)
+        ? fromJsonTimestamp(object.latestRevisionCreatedAt)
+        : undefined,
       workflowNames: Array.isArray(object?.workflowNames) ? object.workflowNames.map((e: any) => String(e)) : [],
       workflowRefs: Array.isArray(object?.workflowRefs)
         ? object.workflowRefs.map((e: any) => WorkflowRef.fromJSON(e))
@@ -2888,6 +2903,8 @@ export const WorkflowContractItem = {
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.latestRevision !== undefined && (obj.latestRevision = Math.round(message.latestRevision));
+    message.latestRevisionCreatedAt !== undefined &&
+      (obj.latestRevisionCreatedAt = message.latestRevisionCreatedAt.toISOString());
     if (message.workflowNames) {
       obj.workflowNames = message.workflowNames.map((e) => e);
     } else {
@@ -2912,6 +2929,7 @@ export const WorkflowContractItem = {
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.latestRevision = object.latestRevision ?? 0;
+    message.latestRevisionCreatedAt = object.latestRevisionCreatedAt ?? undefined;
     message.workflowNames = object.workflowNames?.map((e) => e) || [];
     message.workflowRefs = object.workflowRefs?.map((e) => WorkflowRef.fromPartial(e)) || [];
     return message;

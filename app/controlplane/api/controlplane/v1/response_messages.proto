@@ -171,6 +171,7 @@ message WorkflowContractItem {
   string description = 6;
   google.protobuf.Timestamp created_at = 3;
   int32 latest_revision = 4;
+  google.protobuf.Timestamp latest_revision_created_at = 8;
   // Workflows associated with this contract
   repeated string workflow_names = 5 [deprecated = true];
   repeated WorkflowRef workflow_refs = 7;

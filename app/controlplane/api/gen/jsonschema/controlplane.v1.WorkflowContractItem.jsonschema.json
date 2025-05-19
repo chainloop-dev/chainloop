@@ -11,6 +11,9 @@
       "minimum": -2147483648,
       "type": "integer"
     },
+    "^(latest_revision_created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
     "^(workflow_names)$": {
       "description": "Workflows associated with this contract",
       "items": {
@@ -39,6 +42,9 @@
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
+    },
+    "latestRevisionCreatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
     "name": {
       "type": "string"
