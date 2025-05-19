@@ -88,9 +88,9 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 }
 
 // Load a specific runner
-func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType, logger *zerolog.Logger) SupportedRunner {
+func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType, authToken string, logger *zerolog.Logger) SupportedRunner {
 	if factory, ok := RunnerFactories[t]; ok {
-		return factory("TODO", logger)
+		return factory(authToken, logger)
 	}
 
 	return runners.NewGeneric()
