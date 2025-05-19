@@ -116,7 +116,7 @@ func (tg Tags) WithRuntimeInfo() Tags {
 
 // WithEnvironmentInfo adds environment information to the Tags.
 func (tg Tags) WithEnvironmentInfo() Tags {
-	runner := crafter.DiscoverRunner(zerolog.Nop())
+	runner := crafter.DiscoverRunner("", zerolog.Nop())
 	tg["ci"] = "false"
 	// Check if the ID of the runner matches the unspecified one, meaning it's the Generic Runner
 	if runner.ID() != schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED {

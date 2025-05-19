@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,9 @@ type GitlabPipeline struct {
 	gitlabToken *oidc.GitlabToken
 }
 
-func NewGitlabPipeline(ctx context.Context, logger *zerolog.Logger) *GitlabPipeline {
-	client, err := oidc.NewGitlabClient(ctx, logger)
+// authtoken is a possible oidc token that could be used to authenticate the runner
+func NewGitlabPipeline(ctx context.Context, authToken string, logger *zerolog.Logger) *GitlabPipeline {
+	client, err := oidc.NewGitlabClient(ctx, authToken, logger)
 	if err != nil {
 		logger.Debug().Err(err).Msgf("failed to create Gitlab OIDC client: %v", err)
 		return &GitlabPipeline{
@@ -61,6 +62,7 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
 		{"GITLAB_USER_EMAIL", false},
 		{"GITLAB_USER_LOGIN", false},
+		{"CI_SERVER_URL", false},
 		{"CI_PROJECT_URL", false},
 		{"CI_COMMIT_SHA", false},
 		{"CI_JOB_URL", false},

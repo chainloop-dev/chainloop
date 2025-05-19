@@ -168,7 +168,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	// Auto discover the runner context and enforce against the one in the contract if needed
-	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.Logger)
+	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.AuthTokenRaw, action.Logger)
 	if err != nil {
 		return "", ErrRunnerContextNotFound{err.Error()}
 	}

@@ -37,6 +37,7 @@ const (
 type ActionsOpts struct {
 	CPConnection *grpc.ClientConn
 	Logger       zerolog.Logger
+	AuthTokenRaw string
 }
 
 type OffsetPagination struct {

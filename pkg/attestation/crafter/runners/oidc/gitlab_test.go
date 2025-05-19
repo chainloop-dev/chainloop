@@ -40,6 +40,7 @@ func TestNewGitlabClient(t *testing.T) {
 	tests := []struct {
 		name              string
 		setupEnv          func(t *testing.T)
+		explicitToken     string
 		expectErr         bool
 		expectErrContains string
 	}{
@@ -59,14 +60,24 @@ func TestNewGitlabClient(t *testing.T) {
 				t.Setenv(oidc.GitlabTokenEnv, "")
 			},
 			expectErr:         true,
-			expectErrContains: "environment variable not set",
+			expectErrContains: "no token provided",
+		},
+		{
+			name: "explicit wrong token",
+			setupEnv: func(t *testing.T) {
+				t.Setenv(oidc.CIServerURLEnv, "https://gitlab.example.com")
+				t.Setenv(oidc.GitlabTokenEnv, "")
+			},
+			expectErr:         true,
+			explicitToken:     "wrong-token",
+			expectErrContains: "Invalid authentication token provided",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupEnv(t)
-			client, err := oidc.NewGitlabClient(ctx, &testLogger)
+			client, err := oidc.NewGitlabClient(ctx, tt.explicitToken, &testLogger)
 
 			if tt.expectErr {
 				assert.Error(t, err)
