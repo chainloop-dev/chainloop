@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,13 +28,14 @@ type WorkflowContractList struct {
 }
 
 type WorkflowContractItem struct {
-	Name           string         `json:"name"`
-	Description    string         `json:"description,omitempty"`
-	ID             string         `json:"id"`
-	LatestRevision int            `json:"latestRevision,omitempty"`
-	CreatedAt      *time.Time     `json:"createdAt"`
-	Workflows      []string       `json:"workflows,omitempty"` // TODO: remove this field after all clients are updated
-	WorkflowRefs   []*WorkflowRef `json:"workflowRefs,omitempty"`
+	Name                    string         `json:"name"`
+	Description             string         `json:"description,omitempty"`
+	ID                      string         `json:"id"`
+	LatestRevision          int            `json:"latestRevision,omitempty"`
+	LatestRevisionCreatedAt *time.Time     `json:"latestRevisionCreatedAt,omitempty"`
+	CreatedAt               *time.Time     `json:"createdAt"`
+	Workflows               []string       `json:"workflows,omitempty"` // TODO: remove this field after all clients are updated
+	WorkflowRefs            []*WorkflowRef `json:"workflowRefs,omitempty"`
 }
 
 type WorkflowRef struct {
@@ -82,8 +83,14 @@ func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContra
 		workflowRefs = append(workflowRefs, pbWorkflowRefToAction(w))
 	}
 	return &WorkflowContractItem{
-		Name: in.GetName(), ID: in.GetId(), LatestRevision: int(in.GetLatestRevision()),
-		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()), Workflows: in.WorkflowNames, WorkflowRefs: workflowRefs, Description: in.GetDescription(),
+		Name:                    in.GetName(),
+		ID:                      in.GetId(),
+		LatestRevision:          int(in.GetLatestRevision()),
+		CreatedAt:               toTimePtr(in.GetCreatedAt().AsTime()),
+		Workflows:               in.WorkflowNames, // nolint:staticcheck
+		WorkflowRefs:            workflowRefs,
+		Description:             in.GetDescription(),
+		LatestRevisionCreatedAt: toTimePtr(in.GetLatestRevisionCreatedAt().AsTime()),
 	}
 }
 

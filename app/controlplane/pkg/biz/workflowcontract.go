@@ -33,11 +33,12 @@ import (
 )
 
 type WorkflowContract struct {
-	ID             uuid.UUID
-	Name           string
-	Description    string
-	LatestRevision int
-	CreatedAt      *time.Time
+	ID                      uuid.UUID
+	Name                    string
+	Description             string
+	LatestRevision          int
+	LatestRevisionCreatedAt *time.Time
+	CreatedAt               *time.Time
 	// WorkflowRefs is the list of workflows associated with this contract
 	WorkflowRefs []*WorkflowRef
 }

@@ -179,13 +179,14 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 	}
 
 	return &pb.WorkflowContractItem{
-		Id:             schema.ID.String(),
-		CreatedAt:      timestamppb.New(*schema.CreatedAt),
-		Name:           schema.Name,
-		LatestRevision: int32(schema.LatestRevision),
-		WorkflowNames:  workflowNames,
-		WorkflowRefs:   workflowRefs,
-		Description:    schema.Description,
+		Id:                      schema.ID.String(),
+		CreatedAt:               timestamppb.New(*schema.CreatedAt),
+		Name:                    schema.Name,
+		LatestRevision:          int32(schema.LatestRevision),
+		LatestRevisionCreatedAt: timestamppb.New(*schema.LatestRevisionCreatedAt),
+		WorkflowNames:           workflowNames,
+		WorkflowRefs:            workflowRefs,
+		Description:             schema.Description,
 	}
 }
 

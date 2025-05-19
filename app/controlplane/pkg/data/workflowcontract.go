@@ -391,11 +391,12 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 
 func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowReferences []*biz.WorkflowRef) *biz.WorkflowContract {
 	c := &biz.WorkflowContract{
-		Name:         w.Name,
-		ID:           w.ID,
-		CreatedAt:    toTimePtr(w.CreatedAt),
-		WorkflowRefs: workflowReferences,
-		Description:  w.Description,
+		Name:                    w.Name,
+		ID:                      w.ID,
+		CreatedAt:               toTimePtr(w.CreatedAt),
+		LatestRevisionCreatedAt: toTimePtr(version.CreatedAt),
+		WorkflowRefs:            workflowReferences,
+		Description:             w.Description,
 	}
 
 	c.LatestRevision = version.Revision

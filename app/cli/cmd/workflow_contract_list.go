@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ func contractItemTableOutput(contract *action.WorkflowContractItem) error {
 func contractListTableOutput(contracts []*action.WorkflowContractItem) error {
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "# Workflows"})
+	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "Updated At", "# Workflows"})
 	for _, p := range contracts {
-		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), len(p.WorkflowRefs)})
+		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), p.LatestRevisionCreatedAt.Format(time.RFC822), len(p.WorkflowRefs)})
 	}
 
 	t.Render()
