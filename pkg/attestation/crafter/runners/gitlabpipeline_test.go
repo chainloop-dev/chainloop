@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ func (s *gitlabPipelineSuite) TestListEnvVars() {
 	assert.Equal(s.T(), []*EnvVarDefinition{
 		{"GITLAB_USER_EMAIL", false},
 		{"GITLAB_USER_LOGIN", false},
+		{"CI_SERVER_URL", false},
 		{"CI_PROJECT_URL", false},
 		{"CI_COMMIT_SHA", false},
 		{"CI_JOB_URL", false},
@@ -106,6 +107,7 @@ func (s *gitlabPipelineSuite) TestResolveEnvVars() {
 		"CI_RUNNER_VERSION":     "13.10.0",
 		"CI_RUNNER_DESCRIPTION": "chainloop-runner",
 		"CI_COMMIT_REF_NAME":    "main",
+		"CI_SERVER_URL":         "https://gitlab.com",
 	}, resolvedEnvVars)
 }
 
@@ -120,7 +122,7 @@ func (s *gitlabPipelineSuite) TestRunnerName() {
 // Run before each test
 func (s *gitlabPipelineSuite) SetupTest() {
 	logger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
-	s.runner = NewGitlabPipeline(context.Background(), &logger)
+	s.runner = NewGitlabPipeline(context.Background(), "test-token", &logger)
 	t := s.T()
 	t.Setenv("GITLAB_CI", "true")
 	t.Setenv("GITLAB_USER_EMAIL", "foo@foo.com")
@@ -132,6 +134,7 @@ func (s *gitlabPipelineSuite) SetupTest() {
 	t.Setenv("CI_RUNNER_VERSION", "13.10.0")
 	t.Setenv("CI_RUNNER_DESCRIPTION", "chainloop-runner")
 	t.Setenv("CI_COMMIT_REF_NAME", "main")
+	t.Setenv("CI_SERVER_URL", "https://gitlab.com")
 }
 
 // Run the tests

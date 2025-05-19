@@ -77,7 +77,7 @@ type AttestationStatusMaterial struct {
 }
 
 func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
-	c, err := newCrafter(&newCrafterStateOpts{enableRemoteState: cfg.UseAttestationRemoteState, localStatePath: cfg.LocalStatePath}, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
+	c, err := newCrafter(&newCrafterStateOpts{enableRemoteState: cfg.UseAttestationRemoteState, localStatePath: cfg.LocalStatePath}, cfg.CPConnection, crafter.WithLogger(&cfg.Logger), crafter.WithAuthRawToken(cfg.AuthTokenRaw))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

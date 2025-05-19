@@ -61,7 +61,7 @@ func (e ErrRunnerContextNotFound) Error() string {
 }
 
 func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
-	c, err := newCrafter(&newCrafterStateOpts{enableRemoteState: cfg.UseRemoteState, localStatePath: cfg.LocalStatePath}, cfg.CPConnection, crafter.WithLogger(&cfg.Logger))
+	c, err := newCrafter(&newCrafterStateOpts{enableRemoteState: cfg.UseRemoteState, localStatePath: cfg.LocalStatePath}, cfg.CPConnection, crafter.WithLogger(&cfg.Logger), crafter.WithAuthRawToken(cfg.AuthTokenRaw))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -168,7 +168,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	// Auto discover the runner context and enforce against the one in the contract if needed
-	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.Logger)
+	// nolint:staticcheck
+	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.AuthTokenRaw, action.Logger)
 	if err != nil {
 		return "", ErrRunnerContextNotFound{err.Error()}
 	}

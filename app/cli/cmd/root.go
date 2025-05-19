@@ -137,7 +137,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 					return err
 				}
 
-				currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn)).Run()
+				currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, token)).Run()
 				if err == nil && currentContext.CurrentMembership != nil {
 					if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
 						return fmt.Errorf("writing config file: %w", err)
@@ -162,7 +162,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			actionOpts = newActionOpts(logger, conn)
+			actionOpts = newActionOpts(logger, conn, token)
 
 			if !isTelemetryDisabled() {
 				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
@@ -332,8 +332,8 @@ func initConfigFile() {
 	cobra.CheckErr(viper.ReadInConfig())
 }
 
-func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnection: conn, Logger: logger}
+func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *action.ActionsOpts {
+	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token}
 }
 
 func cleanup(conn *grpc.ClientConn) error {

@@ -49,7 +49,7 @@ type GitlabOIDCClient struct {
 	Token *GitlabToken
 }
 
-func NewGitlabClient(ctx context.Context, logger *zerolog.Logger) (*GitlabOIDCClient, error) {
+func NewGitlabClient(ctx context.Context, authToken string, logger *zerolog.Logger) (*GitlabOIDCClient, error) {
 	var c GitlabOIDCClient
 
 	// retrieve the Gitlab server on which the pipeline is running, which is the provider URL
@@ -59,16 +59,12 @@ func NewGitlabClient(ctx context.Context, logger *zerolog.Logger) (*GitlabOIDCCl
 		return nil, fmt.Errorf("%s environment variable not set", CIServerURLEnv)
 	}
 
-	tokenContent := os.Getenv(GitlabTokenEnv)
-	logger.Debug().Msg("retrieved token content")
-	if tokenContent == "" {
-		return nil, fmt.Errorf("%s environment variable not set", GitlabTokenEnv)
+	token, err := loadTokenFromEnvOrRawToken(ctx, authToken, providerURL, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load token: %w", err)
 	}
 
-	token, err := parseToken(ctx, providerURL, tokenContent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
-	}
+	logger.Debug().Msg("OIDC token loaded successfully")
 
 	c.Token = token
 	return &c, nil
@@ -113,4 +109,27 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 	}
 
 	return token, nil
+}
+
+// To load the auth token we do it in two steps:
+// 1 - check if it's explicitly set as an environment variable GITLAB_OIDC
+// 2 - if not, try to parse it from the input token string
+func loadTokenFromEnvOrRawToken(ctx context.Context, authToken string, providerURL string, logger *zerolog.Logger) (*GitlabToken, error) {
+	tokenContent := os.Getenv(GitlabTokenEnv)
+	if tokenContent == "" && authToken == "" {
+		return nil, fmt.Errorf("no token provided, neither explicitly nor as an environment variable %s", GitlabTokenEnv)
+	}
+
+	if tokenContent != "" {
+		logger.Debug().Msgf("retrieved token content from environment variable %s", GitlabTokenEnv)
+		return parseToken(ctx, providerURL, tokenContent)
+	}
+
+	logger.Debug().Msg("no token content in environment variable, trying to parse from raw token")
+	parsedToken, err := parseToken(ctx, providerURL, authToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid authentication token provided, %w", err)
+	}
+
+	return parsedToken, nil
 }

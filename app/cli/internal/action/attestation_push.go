@@ -65,7 +65,7 @@ type AttestationPush struct {
 }
 
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
-	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger)}
+	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger), crafter.WithAuthRawToken(cfg.AuthTokenRaw)}
 	return &AttestationPush{
 		ActionsOpts:    cfg.ActionsOpts,
 		keyPath:        cfg.KeyPath,

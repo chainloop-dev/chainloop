@@ -59,6 +59,7 @@ type StateManager interface {
 
 type Crafter struct {
 	Logger        *zerolog.Logger
+	AuthRawToken  string
 	CraftingState *VersionedCraftingState
 	Runner        SupportedRunner
 	workingDir    string
@@ -80,6 +81,13 @@ type VersionedCraftingState struct {
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
 type NewOpt func(c *Crafter) error
+
+func WithAuthRawToken(token string) NewOpt {
+	return func(c *Crafter) error {
+		c.AuthRawToken = token
+		return nil
+	}
+}
 
 func WithLogger(l *zerolog.Logger) NewOpt {
 	return func(c *Crafter) error {
@@ -213,7 +221,7 @@ func (c *Crafter) LoadCraftingState(ctx context.Context, attestationID string) e
 		return errors.New("runner type not set in the crafting state")
 	}
 
-	c.Runner = NewRunner(runnerType, c.Logger)
+	c.Runner = NewRunner(runnerType, c.AuthRawToken, c.Logger)
 	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, attestationID)).Msg("loaded state")
 
 	return nil
