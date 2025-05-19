@@ -632,6 +632,11 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
+				Name:    "workflowrun_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowRunsColumns[1]},
+			},
+			{
 				Name:    "workflowrun_workflow_id_created_at",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[13], WorkflowRunsColumns[1]},
