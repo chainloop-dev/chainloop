@@ -234,36 +234,38 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		return nil, "", errors.New("pagination options is required")
 	}
 
-	orgQuery := r.data.DB.Organization.Query().Where(organization.ID(orgID))
-	// Skip the runs that have a workflow marked as deleted
-	wfQuery := orgQuery.QueryWorkflows().Where(workflow.DeletedAtIsNil())
+	q := r.data.DB.WorkflowRun.Query().Where(
+		workflowrun.HasWorkflowWith(
+			workflow.DeletedAtIsNil(),
+			workflow.HasOrganizationWith(organization.ID(orgID)),
+		)).
+		Order(ent.Desc(workflowrun.FieldCreatedAt)).
+		WithWorkflowAndProject().WithVersion().
+		Limit(p.Limit + 1)
+
 	// Append the workflow filter if present
 	if filters != nil && filters.WorkflowID != nil {
-		wfQuery = wfQuery.Where(workflow.ID(*filters.WorkflowID))
+		q = q.Where(workflowrun.HasWorkflowWith(workflow.ID(*filters.WorkflowID)))
 	}
-
-	wfRunsQuery := wfQuery.QueryWorkflowruns().
-		Order(ent.Desc(workflowrun.FieldCreatedAt)).WithWorkflowAndProject().
-		Limit(p.Limit + 1)
 
 	// Append the state filter if present, i.e only running
 	if filters != nil && filters.Status != "" {
-		wfRunsQuery = wfRunsQuery.Where(workflowrun.StateEQ(filters.Status))
+		q = q.Where(workflowrun.StateEQ(filters.Status))
 	}
 
 	// or the project version
 	if filters != nil && filters.VersionID != nil {
-		wfRunsQuery = wfRunsQuery.Where(workflowrun.VersionID(*filters.VersionID))
+		q = q.Where(workflowrun.VersionID(*filters.VersionID))
 	}
 
 	if p.Cursor != nil {
-		wfRunsQuery = wfRunsQuery.Where(
+		q = q.Where(
 			func(s *sql.Selector) {
 				s.Where(sql.CompositeLT([]string{s.C(workflowrun.FieldCreatedAt), s.C(workflowrun.FieldID)}, p.Cursor.Timestamp, p.Cursor.ID))
 			})
 	}
 
-	workflowRuns, err := wfRunsQuery.WithVersion().All(ctx)
+	workflowRuns, err := q.All(ctx)
 	if err != nil {
 		return nil, "", err
 	}
