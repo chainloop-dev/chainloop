@@ -70,7 +70,7 @@ func TestNewGitlabClient(t *testing.T) {
 			},
 			expectErr:         true,
 			explicitToken:     "wrong-token",
-			expectErrContains: "Invalid authentication token provided",
+			expectErrContains: "invalid authentication token provided",
 		},
 	}
 

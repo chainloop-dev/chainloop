@@ -128,7 +128,7 @@ func loadTokenFromEnvOrRawToken(ctx context.Context, authToken string, providerU
 	logger.Debug().Msg("no token content in environment variable, trying to parse from raw token")
 	parsedToken, err := parseToken(ctx, providerURL, authToken)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid authentication token provided, %w", err)
+		return nil, fmt.Errorf("invalid authentication token provided, %w", err)
 	}
 
 	return parsedToken, nil
