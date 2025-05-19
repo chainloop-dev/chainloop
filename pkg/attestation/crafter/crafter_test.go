@@ -117,7 +117,7 @@ func (s *crafterSuite) TestInit() {
 
 			// Create a logger for testing
 			testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
-			runner := crafter.NewRunner(contract.GetRunner().GetType(), &testLogger)
+			runner := crafter.NewRunner(contract.GetRunner().GetType(), "", &testLogger)
 			// Make sure that the tests context indicate that we are not in a CI
 			// this makes the github action runner context to fail
 			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
