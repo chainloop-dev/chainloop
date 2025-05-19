@@ -84,6 +84,8 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Fields("workflow_id", "state", "created_at").Annotations(entsql.DescColumns("created_at")),
 		// Expiration job
 		index.Fields("state", "created_at").Annotations(entsql.DescColumns("created_at")),
+		// search and order by finish date
+		index.Fields("state", "finished_at"),
 		// Referrer
 		index.Fields("attestation_digest"),
 		index.Edges("workflow"),

@@ -662,6 +662,11 @@ var (
 				},
 			},
 			{
+				Name:    "workflowrun_state_finished_at",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowRunsColumns[3], WorkflowRunsColumns[2]},
+			},
+			{
 				Name:    "workflowrun_attestation_digest",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[8]},
