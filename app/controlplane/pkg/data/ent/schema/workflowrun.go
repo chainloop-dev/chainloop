@@ -80,6 +80,7 @@ func (WorkflowRun) Edges() []ent.Edge {
 func (WorkflowRun) Indexes() []ent.Index {
 	return []ent.Index{
 		// Workflow List
+		index.Fields("created_at").Annotations(entsql.DescColumns("created_at")),
 		index.Fields("workflow_id", "created_at").Annotations(entsql.DescColumns("created_at")),
 		index.Fields("workflow_id", "state", "created_at").Annotations(entsql.DescColumns("created_at")),
 		// Expiration job
