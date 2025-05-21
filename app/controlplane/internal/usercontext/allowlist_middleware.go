@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
@@ -31,7 +31,7 @@ import (
 // Middleware that checks that the user has access to the current route
 // Note that the source of truth is in the end the property set in the DB
 // The value in the allowlist conf setting is used as a starting point to populate the property in the DB
-func CheckUserHasAccess(allowList *conf.Auth_AllowList, userUC biz.UserOrgFinder) middleware.Middleware {
+func CheckUserHasAccess(allowList *conf.AllowList, userUC biz.UserOrgFinder) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// API tokens skip the allowlist since they are meant to represent a service

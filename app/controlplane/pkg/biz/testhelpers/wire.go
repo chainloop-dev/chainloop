@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	pkgConf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -69,6 +70,6 @@ func newNatsConnection() (*nats.Conn, error) {
 	return nil, nil
 }
 
-func newAuthAllowList(conf *conf.Bootstrap) *conf.Auth_AllowList {
+func newAuthAllowList(conf *conf.Bootstrap) *pkgConf.AllowList {
 	return conf.Auth.GetAllowList()
 }

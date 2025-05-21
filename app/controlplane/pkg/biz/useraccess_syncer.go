@@ -22,7 +22,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/google/uuid"
 )
@@ -32,10 +32,10 @@ type UserAccessSyncerUseCase struct {
 	// Repositories
 	userRepo UserRepo
 	// Configuration
-	allowList *conf.Auth_AllowList
+	allowList *conf.AllowList
 }
 
-func NewUserAccessSyncerUseCase(logger log.Logger, userRepo UserRepo, allowList *conf.Auth_AllowList) *UserAccessSyncerUseCase {
+func NewUserAccessSyncerUseCase(logger log.Logger, userRepo UserRepo, allowList *conf.AllowList) *UserAccessSyncerUseCase {
 	return &UserAccessSyncerUseCase{
 		userRepo:  userRepo,
 		allowList: allowList,
@@ -142,7 +142,7 @@ func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Contex
 }
 
 // userEmailInAllowlist checks if the user email is in the allowlist
-func userEmailInAllowlist(allowList *conf.Auth_AllowList, email string) (bool, error) {
+func userEmailInAllowlist(allowList *conf.AllowList, email string) (bool, error) {
 	for _, allowListEntry := range allowList.GetRules() {
 		// it's a direct email match
 		if allowListEntry == email {

@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -74,8 +75,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v := bootstrap.Onboarding
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, v, logger)
 	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, logger)
-	auth_AllowList := newAuthAllowList(bootstrap)
-	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, auth_AllowList)
+	allowList := newAuthAllowList(bootstrap)
+	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, allowList)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -331,6 +332,6 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	}
 }
 
-func newAuthAllowList(conf2 *conf.Bootstrap) *conf.Auth_AllowList {
+func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
 	return conf2.Auth.GetAllowList()
 }
