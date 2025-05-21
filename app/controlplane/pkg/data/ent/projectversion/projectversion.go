@@ -19,6 +19,8 @@ const (
 	FieldVersion = "version"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
 	// FieldProjectID holds the string denoting the project_id field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldID,
 	FieldVersion,
 	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldDeletedAt,
 	FieldProjectID,
 	FieldPrerelease,
@@ -83,6 +86,8 @@ var (
 	VersionValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
 	// DefaultPrerelease holds the default value on creation for the "prerelease" field.
 	DefaultPrerelease bool
 	// DefaultWorkflowRunCount holds the default value on creation for the "workflow_run_count" field.
@@ -109,6 +114,11 @@ func ByVersion(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByDeletedAt orders the results by the deleted_at field.

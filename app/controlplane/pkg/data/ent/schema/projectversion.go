@@ -37,7 +37,7 @@ func (ProjectVersion) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		// empty version means no defined version
-		field.String("version").Immutable().Default("").Validate(func(s string) error {
+		field.String("version").Default("").Validate(func(s string) error {
 			if s == "" {
 				return nil
 			}
@@ -46,6 +46,11 @@ func (ProjectVersion) Fields() []ent.Field {
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
+			Annotations(&entsql.Annotation{
+				Default: "CURRENT_TIMESTAMP",
+			}),
+		field.Time("updated_at").
+			Default(time.Now).
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),

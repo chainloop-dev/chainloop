@@ -175,16 +175,20 @@ func init() {
 	projectversionDescCreatedAt := projectversionFields[2].Descriptor()
 	// projectversion.DefaultCreatedAt holds the default value on creation for the created_at field.
 	projectversion.DefaultCreatedAt = projectversionDescCreatedAt.Default.(func() time.Time)
+	// projectversionDescUpdatedAt is the schema descriptor for updated_at field.
+	projectversionDescUpdatedAt := projectversionFields[3].Descriptor()
+	// projectversion.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	projectversion.DefaultUpdatedAt = projectversionDescUpdatedAt.Default.(func() time.Time)
 	// projectversionDescPrerelease is the schema descriptor for prerelease field.
-	projectversionDescPrerelease := projectversionFields[5].Descriptor()
+	projectversionDescPrerelease := projectversionFields[6].Descriptor()
 	// projectversion.DefaultPrerelease holds the default value on creation for the prerelease field.
 	projectversion.DefaultPrerelease = projectversionDescPrerelease.Default.(bool)
 	// projectversionDescWorkflowRunCount is the schema descriptor for workflow_run_count field.
-	projectversionDescWorkflowRunCount := projectversionFields[6].Descriptor()
+	projectversionDescWorkflowRunCount := projectversionFields[7].Descriptor()
 	// projectversion.DefaultWorkflowRunCount holds the default value on creation for the workflow_run_count field.
 	projectversion.DefaultWorkflowRunCount = projectversionDescWorkflowRunCount.Default.(int)
 	// projectversionDescLatest is the schema descriptor for latest field.
-	projectversionDescLatest := projectversionFields[8].Descriptor()
+	projectversionDescLatest := projectversionFields[9].Descriptor()
 	// projectversion.DefaultLatest holds the default value on creation for the latest field.
 	projectversion.DefaultLatest = projectversionDescLatest.Default.(bool)
 	// projectversionDescID is the schema descriptor for id field.

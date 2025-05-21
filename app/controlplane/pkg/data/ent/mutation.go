@@ -7843,6 +7843,7 @@ type ProjectVersionMutation struct {
 	id                    *uuid.UUID
 	version               *string
 	created_at            *time.Time
+	updated_at            *time.Time
 	deleted_at            *time.Time
 	prerelease            *bool
 	workflow_run_count    *int
@@ -8034,6 +8035,42 @@ func (m *ProjectVersionMutation) OldCreatedAt(ctx context.Context) (v time.Time,
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectVersionMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ProjectVersionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ProjectVersionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ProjectVersion entity.
+// If the ProjectVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectVersionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ProjectVersionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -8413,12 +8450,15 @@ func (m *ProjectVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectVersionMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.version != nil {
 		fields = append(fields, projectversion.FieldVersion)
 	}
 	if m.created_at != nil {
 		fields = append(fields, projectversion.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, projectversion.FieldUpdatedAt)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, projectversion.FieldDeletedAt)
@@ -8450,6 +8490,8 @@ func (m *ProjectVersionMutation) Field(name string) (ent.Value, bool) {
 		return m.Version()
 	case projectversion.FieldCreatedAt:
 		return m.CreatedAt()
+	case projectversion.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case projectversion.FieldDeletedAt:
 		return m.DeletedAt()
 	case projectversion.FieldProjectID:
@@ -8475,6 +8517,8 @@ func (m *ProjectVersionMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldVersion(ctx)
 	case projectversion.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case projectversion.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case projectversion.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	case projectversion.FieldProjectID:
@@ -8509,6 +8553,13 @@ func (m *ProjectVersionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case projectversion.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	case projectversion.FieldDeletedAt:
 		v, ok := value.(time.Time)
@@ -8636,6 +8687,9 @@ func (m *ProjectVersionMutation) ResetField(name string) error {
 		return nil
 	case projectversion.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case projectversion.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	case projectversion.FieldDeletedAt:
 		m.ResetDeletedAt()
