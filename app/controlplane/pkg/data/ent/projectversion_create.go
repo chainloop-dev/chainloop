@@ -54,6 +54,20 @@ func (pvc *ProjectVersionCreate) SetNillableCreatedAt(t *time.Time) *ProjectVers
 	return pvc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (pvc *ProjectVersionCreate) SetUpdatedAt(t time.Time) *ProjectVersionCreate {
+	pvc.mutation.SetUpdatedAt(t)
+	return pvc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pvc *ProjectVersionCreate) SetNillableUpdatedAt(t *time.Time) *ProjectVersionCreate {
+	if t != nil {
+		pvc.SetUpdatedAt(*t)
+	}
+	return pvc
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (pvc *ProjectVersionCreate) SetDeletedAt(t time.Time) *ProjectVersionCreate {
 	pvc.mutation.SetDeletedAt(t)
@@ -207,6 +221,10 @@ func (pvc *ProjectVersionCreate) defaults() {
 		v := projectversion.DefaultCreatedAt()
 		pvc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := pvc.mutation.UpdatedAt(); !ok {
+		v := projectversion.DefaultUpdatedAt()
+		pvc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := pvc.mutation.Prerelease(); !ok {
 		v := projectversion.DefaultPrerelease
 		pvc.mutation.SetPrerelease(v)
@@ -237,6 +255,9 @@ func (pvc *ProjectVersionCreate) check() error {
 	}
 	if _, ok := pvc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectVersion.created_at"`)}
+	}
+	if _, ok := pvc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectVersion.updated_at"`)}
 	}
 	if _, ok := pvc.mutation.ProjectID(); !ok {
 		return &ValidationError{Name: "project_id", err: errors.New(`ent: missing required field "ProjectVersion.project_id"`)}
@@ -296,6 +317,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 	if value, ok := pvc.mutation.CreatedAt(); ok {
 		_spec.SetField(projectversion.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := pvc.mutation.UpdatedAt(); ok {
+		_spec.SetField(projectversion.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := pvc.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)
@@ -401,6 +426,30 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetVersion sets the "version" field.
+func (u *ProjectVersionUpsert) SetVersion(v string) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldVersion, v)
+	return u
+}
+
+// UpdateVersion sets the "version" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdateVersion() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldVersion)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *ProjectVersionUpsert) SetUpdatedAt(v time.Time) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdateUpdatedAt() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldUpdatedAt)
+	return u
+}
 
 // SetDeletedAt sets the "deleted_at" field.
 func (u *ProjectVersionUpsert) SetDeletedAt(v time.Time) *ProjectVersionUpsert {
@@ -509,9 +558,6 @@ func (u *ProjectVersionUpsertOne) UpdateNewValues() *ProjectVersionUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(projectversion.FieldID)
 		}
-		if _, exists := u.create.mutation.Version(); exists {
-			s.SetIgnore(projectversion.FieldVersion)
-		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(projectversion.FieldCreatedAt)
 		}
@@ -544,6 +590,34 @@ func (u *ProjectVersionUpsertOne) Update(set func(*ProjectVersionUpsert)) *Proje
 		set(&ProjectVersionUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetVersion sets the "version" field.
+func (u *ProjectVersionUpsertOne) SetVersion(v string) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetVersion(v)
+	})
+}
+
+// UpdateVersion sets the "version" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdateVersion() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateVersion()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *ProjectVersionUpsertOne) SetUpdatedAt(v time.Time) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdateUpdatedAt() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateUpdatedAt()
+	})
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -834,9 +908,6 @@ func (u *ProjectVersionUpsertBulk) UpdateNewValues() *ProjectVersionUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(projectversion.FieldID)
 			}
-			if _, exists := b.mutation.Version(); exists {
-				s.SetIgnore(projectversion.FieldVersion)
-			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(projectversion.FieldCreatedAt)
 			}
@@ -870,6 +941,34 @@ func (u *ProjectVersionUpsertBulk) Update(set func(*ProjectVersionUpsert)) *Proj
 		set(&ProjectVersionUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetVersion sets the "version" field.
+func (u *ProjectVersionUpsertBulk) SetVersion(v string) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetVersion(v)
+	})
+}
+
+// UpdateVersion sets the "version" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdateVersion() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateVersion()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *ProjectVersionUpsertBulk) SetUpdatedAt(v time.Time) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdateUpdatedAt() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateUpdatedAt()
+	})
 }
 
 // SetDeletedAt sets the "deleted_at" field.

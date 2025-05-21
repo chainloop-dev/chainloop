@@ -343,6 +343,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "version", Type: field.TypeString, Default: ""},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "prerelease", Type: field.TypeBool, Default: true},
 		{Name: "workflow_run_count", Type: field.TypeInt, Default: 0},
@@ -358,7 +359,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_versions_projects_versions",
-				Columns:    []*schema.Column{ProjectVersionsColumns[8]},
+				Columns:    []*schema.Column{ProjectVersionsColumns[9]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -367,7 +368,7 @@ var (
 			{
 				Name:    "projectversion_version_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectVersionsColumns[1], ProjectVersionsColumns[8]},
+				Columns: []*schema.Column{ProjectVersionsColumns[1], ProjectVersionsColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

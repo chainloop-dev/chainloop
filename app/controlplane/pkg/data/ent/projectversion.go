@@ -23,6 +23,8 @@ type ProjectVersion struct {
 	Version string `json:"version,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
@@ -83,7 +85,7 @@ func (*ProjectVersion) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case projectversion.FieldVersion:
 			values[i] = new(sql.NullString)
-		case projectversion.FieldCreatedAt, projectversion.FieldDeletedAt, projectversion.FieldReleasedAt:
+		case projectversion.FieldCreatedAt, projectversion.FieldUpdatedAt, projectversion.FieldDeletedAt, projectversion.FieldReleasedAt:
 			values[i] = new(sql.NullTime)
 		case projectversion.FieldID, projectversion.FieldProjectID:
 			values[i] = new(uuid.UUID)
@@ -119,6 +121,12 @@ func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				pv.CreatedAt = value.Time
+			}
+		case projectversion.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				pv.UpdatedAt = value.Time
 			}
 		case projectversion.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -207,6 +215,9 @@ func (pv *ProjectVersion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(pv.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(pv.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(pv.DeletedAt.Format(time.ANSIC))

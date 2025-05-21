@@ -32,6 +32,34 @@ func (pvu *ProjectVersionUpdate) Where(ps ...predicate.ProjectVersion) *ProjectV
 	return pvu
 }
 
+// SetVersion sets the "version" field.
+func (pvu *ProjectVersionUpdate) SetVersion(s string) *ProjectVersionUpdate {
+	pvu.mutation.SetVersion(s)
+	return pvu
+}
+
+// SetNillableVersion sets the "version" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillableVersion(s *string) *ProjectVersionUpdate {
+	if s != nil {
+		pvu.SetVersion(*s)
+	}
+	return pvu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pvu *ProjectVersionUpdate) SetUpdatedAt(t time.Time) *ProjectVersionUpdate {
+	pvu.mutation.SetUpdatedAt(t)
+	return pvu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillableUpdatedAt(t *time.Time) *ProjectVersionUpdate {
+	if t != nil {
+		pvu.SetUpdatedAt(*t)
+	}
+	return pvu
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (pvu *ProjectVersionUpdate) SetDeletedAt(t time.Time) *ProjectVersionUpdate {
 	pvu.mutation.SetDeletedAt(t)
@@ -216,6 +244,11 @@ func (pvu *ProjectVersionUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (pvu *ProjectVersionUpdate) check() error {
+	if v, ok := pvu.mutation.Version(); ok {
+		if err := projectversion.VersionValidator(v); err != nil {
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectVersion.version": %w`, err)}
+		}
+	}
 	if pvu.mutation.ProjectCleared() && len(pvu.mutation.ProjectIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProjectVersion.project"`)
 	}
@@ -239,6 +272,12 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pvu.mutation.Version(); ok {
+		_spec.SetField(projectversion.FieldVersion, field.TypeString, value)
+	}
+	if value, ok := pvu.mutation.UpdatedAt(); ok {
+		_spec.SetField(projectversion.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pvu.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)
@@ -358,6 +397,34 @@ type ProjectVersionUpdateOne struct {
 	hooks     []Hook
 	mutation  *ProjectVersionMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetVersion sets the "version" field.
+func (pvuo *ProjectVersionUpdateOne) SetVersion(s string) *ProjectVersionUpdateOne {
+	pvuo.mutation.SetVersion(s)
+	return pvuo
+}
+
+// SetNillableVersion sets the "version" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillableVersion(s *string) *ProjectVersionUpdateOne {
+	if s != nil {
+		pvuo.SetVersion(*s)
+	}
+	return pvuo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pvuo *ProjectVersionUpdateOne) SetUpdatedAt(t time.Time) *ProjectVersionUpdateOne {
+	pvuo.mutation.SetUpdatedAt(t)
+	return pvuo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillableUpdatedAt(t *time.Time) *ProjectVersionUpdateOne {
+	if t != nil {
+		pvuo.SetUpdatedAt(*t)
+	}
+	return pvuo
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -557,6 +624,11 @@ func (pvuo *ProjectVersionUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (pvuo *ProjectVersionUpdateOne) check() error {
+	if v, ok := pvuo.mutation.Version(); ok {
+		if err := projectversion.VersionValidator(v); err != nil {
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectVersion.version": %w`, err)}
+		}
+	}
 	if pvuo.mutation.ProjectCleared() && len(pvuo.mutation.ProjectIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProjectVersion.project"`)
 	}
@@ -597,6 +669,12 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pvuo.mutation.Version(); ok {
+		_spec.SetField(projectversion.FieldVersion, field.TypeString, value)
+	}
+	if value, ok := pvuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(projectversion.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pvuo.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)

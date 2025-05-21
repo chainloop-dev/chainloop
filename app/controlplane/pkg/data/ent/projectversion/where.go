@@ -66,6 +66,11 @@ func CreatedAt(v time.Time) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldDeletedAt, v))
@@ -199,6 +204,46 @@ func CreatedAtLT(v time.Time) predicate.ProjectVersion {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
 // DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
