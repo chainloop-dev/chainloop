@@ -18,7 +18,8 @@ package biz
 import (
 	"testing"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,7 +92,7 @@ func TestUserEmailInAllowlist(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			allowList := &conf.Auth_AllowList{
+			allowList := &conf.AllowList{
 				Rules: defaultRules,
 			}
 

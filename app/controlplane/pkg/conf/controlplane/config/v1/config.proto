@@ -33,3 +33,17 @@ message OnboardingSpec {
     (buf.validate.field).enum.defined_only = true
   ];
 }
+
+message AllowList {
+  // allow_list is a list of allowed email addresses or domains
+  // for example ["@chainloop.dev", "foo@mycompany.org"]
+  repeated string rules = 1;
+  // Custom message to show when a user is not allowed
+  string custom_message = 2;
+  // The list of routes that will be affected by this middleware, by default all of them
+  repeated string selected_routes = 3;
+  // Whether to treat the information stored in the user table as the source of truth
+  // if false, the allowList rules will be used as source of truth
+  // if true, the allowList rules will be used as a starting point to populate the property in the DB
+  bool allow_db_overrides = 4;
+}

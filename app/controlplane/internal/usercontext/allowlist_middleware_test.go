@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -115,7 +115,7 @@ func TestCheckUserInAllowList(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			allowList := &conf.Auth_AllowList{
+			allowList := &conf.AllowList{
 				CustomMessage:  tc.customErrMsg,
 				SelectedRoutes: tc.selectedRoutes,
 			}

@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	pkgConf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -97,6 +98,6 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 	}
 }
 
-func newAuthAllowList(conf *conf.Bootstrap) *conf.Auth_AllowList {
+func newAuthAllowList(conf *conf.Bootstrap) *pkgConf.AllowList {
 	return conf.Auth.GetAllowList()
 }

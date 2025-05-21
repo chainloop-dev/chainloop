@@ -101,8 +101,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v2, organizationUseCase, orgMetricsUseCase, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
-	auth_AllowList := newAuthAllowList(bootstrap)
-	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, auth_AllowList)
+	allowList := newAuthAllowList(bootstrap)
+	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, allowList)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
 		UserRepo:            userRepo,
 		MembershipUseCase:   membershipUseCase,
@@ -201,6 +201,6 @@ func newNatsConnection() (*nats.Conn, error) {
 	return nil, nil
 }
 
-func newAuthAllowList(conf2 *conf.Bootstrap) *conf.Auth_AllowList {
+func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
 	return conf2.Auth.GetAllowList()
 }
