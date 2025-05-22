@@ -234,24 +234,11 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		return nil, "", errors.New("pagination options is required")
 	}
 
-	// query first for workflows to avoid joining the workflow_runs table
-	wfs, err := r.data.DB.Workflow.Query().Where(
-		workflow.DeletedAtIsNil(),
-		workflow.HasOrganizationWith(organization.ID(orgID)),
-	).All(ctx)
-	if err != nil {
-		return nil, "", fmt.Errorf("getting workflows: %w", err)
-	}
-	if len(wfs) == 0 {
-		return nil, "", nil
-	}
-
-	wfIDs := make([]uuid.UUID, 0, len(wfs))
-	for _, wf := range wfs {
-		wfIDs = append(wfIDs, wf.ID)
-	}
-
-	q := r.data.DB.WorkflowRun.Query().Where(workflowrun.WorkflowIDIn(wfIDs...)).
+	q := r.data.DB.WorkflowRun.Query().Where(
+		workflowrun.HasWorkflowWith(
+			workflow.DeletedAtIsNil(),
+			workflow.HasOrganizationWith(organization.ID(orgID)),
+		)).
 		Order(ent.Desc(workflowrun.FieldCreatedAt)).
 		WithWorkflowAndProject().WithVersion().
 		Limit(p.Limit + 1)
