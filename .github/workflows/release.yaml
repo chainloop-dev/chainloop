@@ -117,11 +117,14 @@ jobs:
     
               # Extract repo name (component after last slash, before colon)
               repo_name="$(echo $entry | sed 's#.*/##' | sed 's#:.*##')"
-              
+
+              # Extract tag and architecture from the entry
+              tag_with_arch="$(echo $entry | sed 's#.*:##')"
+
               # Extract just the architecture (after the last dash)
-              arch="$(echo $material_name | sed 's#.*-##')"
-              
-              # Create attestation names (without version)
+              arch="$(echo $tag_with_arch | sed 's#.*-##')"
+
+              # Create attestation names (without version or colon)
               container_name="${repo_name}-${arch}"
               sbom_name="${repo_name}-sbom-${arch}"
 
