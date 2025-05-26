@@ -11,22 +11,3 @@ materials:
   - name: vulnerabilities-report
     type: SARIF
     optional: true
-policies:
-  attestation:
-    # Container with sbom checks that all containers added to the attestation
-    # have a valid SBOM also present in the attestation
-    - ref: containers-with-sbom
-  materials:
-    # Artifact signed checks that all artifacts such as Container Images and Charts are signed
-    - ref: artifact-signed
-    # Vulnerabilities checks the vulnerabilities reports if present in the attestation
-    # does not contain any vulnerabilities with severity higher than the specified
-    - ref: vulnerabilities
-      with:
-        severity: "MEDIUM"
-policyGroups:
-  # This policy group applies a number of SBOM-related policies
-  - ref: sbom-quality
-    with:
-      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
-      bannedComponents: log4j@2.14.1
