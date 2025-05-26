@@ -114,23 +114,10 @@ jobs:
             # exclude latest tag
             if [[ $entry != *latest ]]; then
               material_name="$(echo $entry | sed 's#.*/##')"
-    
-              # Extract repo name (component after last slash, before colon)
-              repo_name="$(echo $entry | sed 's#.*/##' | sed 's#:.*##')"
-
-              # Extract tag and architecture from the entry
-              tag_with_arch="$(echo $entry | sed 's#.*:##')"
-
-              # Extract just the architecture (after the last dash)
-              arch="$(echo $tag_with_arch | sed 's#.*-##')"
-
-              # Create attestation names (without version or colon)
-              container_name="${repo_name}-${arch}"
-              sbom_name="${repo_name}-sbom-${arch}"
 
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
-              chainloop attestation add --name $container_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-              chainloop attestation add --name $sbom_name --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
 
               # Upload the SBOM to the release
               gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
