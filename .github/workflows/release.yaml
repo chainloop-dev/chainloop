@@ -115,9 +115,25 @@ jobs:
             if [[ $entry != *latest ]]; then
               material_name="$(echo $entry | sed 's#.*/##')"
 
+              # Extract repository with tag from the full image path (format: ghcr.io/org/repo:tag)
+              repo_with_tag="$(echo $entry | awk -F'/' '{print $4}')"
+
+              # Extract just the repository name by splitting at the colon and taking the first part
+              repo_name="$(echo $repo_with_tag | awk -F':' '{print $1}')"
+
+              # Extract the tag by splitting at the colon and taking the second part
+              tag="$(echo $repo_with_tag | awk -F':' '{print $2}')"
+
+              # Extract the architecture from the tag (assumed to be the last part after the dash)
+              # and replace dots with dashes for consistency
+              arch="$(echo $tag | awk -F'-' '{print $NF}' | tr '.' '-')"
+
+              container_name="${repo_name}-${arch}"
+              sbom_name="${repo_name}-sbom-${arch}"
+
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
-              chainloop attestation add --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
-              chainloop attestation add --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name $container_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
+              chainloop attestation add --name $sbom_name --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
 
               # Upload the SBOM to the release
               gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
