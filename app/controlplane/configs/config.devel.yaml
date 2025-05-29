@@ -94,10 +94,11 @@ auth:
 prometheus_integration:
   - org_name: "development"
 
-policy_providers:
-  - name: chainloop
-    default: true
-    url: http://localhost:8002/v1
+# Policy providers configuration
+# policy_providers:
+#   - name: chainloop
+#     default: true
+#     url: http://localhost:8002/v1
 
 enable_profiler: true
 
