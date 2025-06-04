@@ -136,7 +136,7 @@ func newPluginListCmd() *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List installed plugins and their commands",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			plugins := pluginManager.GetAllPlugins()
 
 			if flagOutputFormat == formatJSON {

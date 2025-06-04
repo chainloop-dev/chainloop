@@ -1,10 +1,11 @@
+//
 // Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,7 +31,7 @@ func (p *ChainloopCliPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
 	return &RPCServer{Impl: p.Impl}, nil
 }
 
-func (ChainloopCliPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
+func (ChainloopCliPlugin) Client(_ *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
 	return &RPCClient{client: c}, nil
 }
 
@@ -39,7 +40,7 @@ type RPCClient struct {
 	client *rpc.Client
 }
 
-func (m *RPCClient) Exec(ctx context.Context, command string, arguments map[string]any) (ExecResult, error) {
+func (m *RPCClient) Exec(_ context.Context, command string, arguments map[string]any) (ExecResult, error) {
 	var resp ExecResponse
 	err := m.client.Call("Plugin.Exec", map[string]any{
 		"command":   command,
@@ -51,7 +52,7 @@ func (m *RPCClient) Exec(ctx context.Context, command string, arguments map[stri
 	return &resp, nil
 }
 
-func (m *RPCClient) GetMetadata(ctx context.Context) (PluginMetadata, error) {
+func (m *RPCClient) GetMetadata(_ context.Context) (PluginMetadata, error) {
 	var resp PluginMetadata
 	err := m.client.Call("Plugin.GetMetadata", new(any), &resp)
 	return resp, err
@@ -81,7 +82,7 @@ func (m *RPCServer) Exec(args map[string]any, resp *ExecResponse) error {
 	return nil
 }
 
-func (m *RPCServer) GetMetadata(args any, resp *PluginMetadata) error {
+func (m *RPCServer) GetMetadata(_ any, resp *PluginMetadata) error {
 	metadata, err := m.Impl.GetMetadata(context.Background())
 	if err != nil {
 		return err
