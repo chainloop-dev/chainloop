@@ -25,6 +25,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	stringFlagType = "string"
+	boolFlagType   = "bool"
+	intFlagType    = "int"
+)
+
 var (
 	pluginManager      *plugins.Manager
 	registeredCommands map[string]string // Track which plugin registered which command
@@ -62,15 +68,15 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 			// Collect flag values
 			for _, flag := range cmdInfo.Flags {
 				switch flag.Type {
-				case "string":
+				case stringFlagType:
 					if val, err := cmd.Flags().GetString(flag.Name); err == nil {
 						arguments[flag.Name] = val
 					}
-				case "bool":
+				case boolFlagType:
 					if val, err := cmd.Flags().GetBool(flag.Name); err == nil {
 						arguments[flag.Name] = val
 					}
-				case "int":
+				case intFlagType:
 					if val, err := cmd.Flags().GetInt(flag.Name); err == nil {
 						arguments[flag.Name] = val
 					}
@@ -79,22 +85,6 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 
 			// Add positional arguments
 			arguments["args"] = args
-
-			// Add GitHub environment variables to arguments if they exist
-			if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-				arguments["github_token"] = token
-			}
-			if org := os.Getenv("GITHUB_ORG"); org != "" {
-				arguments["github_org"] = org
-			}
-			if repo := os.Getenv("GITHUB_REPO"); repo != "" {
-				arguments["github_repo"] = repo
-			}
-			if apiURL := os.Getenv("GITHUB_API_URL"); apiURL != "" {
-				arguments["github_api_url"] = apiURL
-			} else {
-				arguments["github_api_url"] = "https://api.github.com"
-			}
 
 			// Execute plugin command
 			result, err := plugin.Plugin.Exec(ctx, cmdInfo.Name, arguments)
@@ -121,19 +111,20 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 	// Add flags
 	for _, flag := range cmdInfo.Flags {
 		switch flag.Type {
-		case "string":
+		case stringFlagType:
 			defaultVal, _ := flag.Default.(string)
 			cmd.Flags().String(flag.Name, defaultVal, flag.Description)
-		case "bool":
+		case boolFlagType:
 			defaultVal, _ := flag.Default.(bool)
 			cmd.Flags().Bool(flag.Name, defaultVal, flag.Description)
-		case "int":
+		case intFlagType:
 			defaultVal, _ := flag.Default.(int)
 			cmd.Flags().Int(flag.Name, defaultVal, flag.Description)
 		}
 
 		if flag.Required {
-			cmd.MarkFlagRequired(flag.Name)
+			err := cmd.MarkFlagRequired(flag.Name)
+			cobra.CheckErr(err)
 		}
 	}
 
@@ -145,7 +136,7 @@ func newPluginListCmd() *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List installed plugins and their commands",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			plugins := pluginManager.GetAllPlugins()
 
 			if flagOutputFormat == formatJSON {
@@ -176,7 +167,9 @@ func newPluginListCmd() *cobra.Command {
 				return encodeJSON(items)
 			}
 
-			return pluginListTableOutput(plugins)
+			pluginListTableOutput(plugins)
+
+			return nil
 		},
 	}
 }
@@ -186,7 +179,7 @@ func newPluginInfoCmd() *cobra.Command {
 		Use:   "info [plugin-name]",
 		Short: "Show detailed information about a plugin",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			pluginName := args[0]
 			plugin, ok := pluginManager.GetPlugin(pluginName)
 			if !ok {
@@ -213,7 +206,9 @@ func newPluginInfoCmd() *cobra.Command {
 				return encodeJSON(detail)
 			}
 
-			return pluginInfoTableOutput(plugin)
+			pluginInfoTableOutput(plugin)
+
+			return nil
 		},
 	}
 }
@@ -277,10 +272,10 @@ func cleanupPlugins() {
 }
 
 // Table output functions
-func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) error {
+func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
 	if len(plugins) == 0 {
 		fmt.Println("No plugins installed")
-		return nil
+		return
 	}
 
 	t := newTableWriter()
@@ -305,11 +300,9 @@ func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) error {
 		t.AppendSeparator()
 	}
 	t.Render()
-
-	return nil
 }
 
-func pluginInfoTableOutput(plugin *plugins.LoadedPlugin) error {
+func pluginInfoTableOutput(plugin *plugins.LoadedPlugin) {
 	t := newTableWriter()
 
 	t.AppendHeader(table.Row{"Name", "Version", "Description", "Commands"})
@@ -319,11 +312,9 @@ func pluginInfoTableOutput(plugin *plugins.LoadedPlugin) error {
 
 	pluginInfoCommandsTableOutput(plugin)
 	pluginInfoFlagsTableOutput(plugin)
-
-	return nil
 }
 
-func pluginInfoCommandsTableOutput(plugin *plugins.LoadedPlugin) error {
+func pluginInfoCommandsTableOutput(plugin *plugins.LoadedPlugin) {
 	t := newTableWriter()
 
 	t.AppendHeader(table.Row{"Plugin", "Command", "Description", "Usage"})
@@ -333,11 +324,9 @@ func pluginInfoCommandsTableOutput(plugin *plugins.LoadedPlugin) error {
 	}
 
 	t.Render()
-
-	return nil
 }
 
-func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) error {
+func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
 	t := newTableWriter()
 
 	t.AppendHeader(table.Row{"Plugin", "Command", "Flag", "Description", "Type", "Default", "Required"})
@@ -349,6 +338,4 @@ func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) error {
 	}
 
 	t.Render()
-
-	return nil
 }
