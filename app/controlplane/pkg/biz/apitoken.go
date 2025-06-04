@@ -187,6 +187,27 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	return token, nil
 }
 
+// RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
+func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresAt *time.Time) (*APIToken, error) {
+	token, err := uc.apiTokenRepo.FindByID(ctx, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("finding token: %w", err)
+	}
+
+	org, err := uc.orgUseCase.FindByID(ctx, token.OrganizationID.String())
+	if err != nil {
+		return nil, fmt.Errorf("finding organization: %w", err)
+	}
+
+	// generate the JWT
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), expiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("generating jwt: %w", err)
+	}
+
+	return token, nil
+}
+
 func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool) ([]*APIToken, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
