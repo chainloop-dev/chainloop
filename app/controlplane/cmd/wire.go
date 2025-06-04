@@ -63,14 +63,21 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			auditor.NewAuditLogPublisher,
 			newCASServerOptions,
 			newAuthAllowList,
+			newJWTConfig,
 		),
 	)
 }
 
-func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
+func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf.GeneratedJwsHmacSecret,
+	}
+}
+
+func newDataConf(in *conf.Data_Database) *pkgConf.DatabaseConfig {
+	c := &pkgConf.DatabaseConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
 	if in.MaxConnIdleTime != nil {
-		c.MaxConnIdleTime = in.MaxConnIdleTime.AsDuration()
+		c.MaxConnIdleTime = in.MaxConnIdleTime
 	}
 	return c
 }

@@ -32,8 +32,8 @@ import (
 // wireTestData init testing data
 func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*v1.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
-	newConfig := NewDataConfig(confData)
-	dataData, cleanup, err := data.NewData(newConfig, logger)
+	databaseConfig := NewDataConfig(confData)
+	dataData, cleanup, err := data.NewData(databaseConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,13 +131,13 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	data_Database := confData.Database
-	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
+	apiTokenJWTConfig := newJWTConfig(auth)
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, organizationUseCase, auditorUseCase, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -195,6 +195,12 @@ var (
 )
 
 // wire.go:
+
+func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf2.GeneratedJwsHmacSecret,
+	}
+}
 
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {

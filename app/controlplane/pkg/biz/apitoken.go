@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
@@ -31,7 +30,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// API Token is used for unattended access to the control plane API.
+type APITokenJWTConfig struct {
+	SymmetricHmacKey string
+}
+
+// APIToken is used for unattended access to the control plane API.
 type APIToken struct {
 	ID          uuid.UUID
 	Name        string
@@ -72,7 +75,7 @@ type APITokenSyncerUseCase struct {
 	base *APITokenUseCase
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
 		orgUseCase:   orgUseCase,
@@ -100,13 +103,16 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 			authz.PolicyRegisteredIntegrationAdd,
 			authz.PolicyAttachedIntegrationList,
 			authz.PolicyAttachedIntegrationAttach,
+
+			// to upload CAS artifacts
+			authz.PolicyArtifactUpload,
 		},
 	}
 
 	// Create the JWT builder for the API token
 	b, err := apitoken.NewBuilder(
 		apitoken.WithIssuer(jwt.DefaultIssuer),
-		apitoken.WithKeySecret(conf.GeneratedJwsHmacSecret),
+		apitoken.WithKeySecret(jwtConfig.SymmetricHmacKey),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating jwt builder: %w", err)

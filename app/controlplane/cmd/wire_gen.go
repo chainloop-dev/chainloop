@@ -32,8 +32,8 @@ import (
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
 	confData := bootstrap.Data
 	data_Database := confData.Database
-	newConfig := newDataConf(data_Database)
-	dataData, cleanup, err := data.NewData(newConfig, logger)
+	databaseConfig := newDataConf(data_Database)
+	dataData, cleanup, err := data.NewData(databaseConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -105,12 +105,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
+	apiTokenJWTConfig := newJWTConfig(auth)
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, organizationUseCase, auditorUseCase, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -303,10 +304,16 @@ var (
 
 // wire.go:
 
-func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
+func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf2.GeneratedJwsHmacSecret,
+	}
+}
+
+func newDataConf(in *conf.Data_Database) *v1.DatabaseConfig {
+	c := &v1.DatabaseConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
 	if in.MaxConnIdleTime != nil {
-		c.MaxConnIdleTime = in.MaxConnIdleTime.AsDuration()
+		c.MaxConnIdleTime = in.MaxConnIdleTime
 	}
 	return c
 }

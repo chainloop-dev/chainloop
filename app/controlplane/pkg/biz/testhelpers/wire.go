@@ -55,14 +55,20 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewPolicyProviderConfig,
 			policies.NewRegistry,
 			authz.NewDatabaseEnforcer,
-			wire.FieldsOf(new(*conf.Data), "Database"),
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
 			NewCASServerOptions,
 			newAuthAllowList,
+			newJWTConfig,
 		),
 	)
+}
+
+func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf.GeneratedJwsHmacSecret,
+	}
 }
 
 // Connection to nats is optional, if not configured, pubsub will be disabled
