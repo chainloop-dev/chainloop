@@ -56,6 +56,7 @@ type APITokenRepo interface {
 	// List all the tokens optionally filtering it by organization and including revoked tokens
 	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
+	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
 }
@@ -188,7 +189,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 }
 
 // RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
-func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresAt *time.Time) (*APIToken, error) {
+func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresAt time.Time) (*APIToken, error) {
+	if expiresAt.IsZero() {
+		return nil, fmt.Errorf("expiresAt is mandatory")
+	}
+
 	token, err := uc.apiTokenRepo.FindByID(ctx, tokenID)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
@@ -200,9 +205,14 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 	}
 
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), &expiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
+	}
+
+	// update the token expiration in db
+	if err = uc.apiTokenRepo.UpdateExpiration(ctx, tokenID, expiresAt); err != nil {
+		return nil, fmt.Errorf("updating expiration for token: %w", err)
 	}
 
 	return token, nil
