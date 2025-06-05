@@ -189,10 +189,12 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 }
 
 // RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
-func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresAt time.Time) (*APIToken, error) {
-	if expiresAt.IsZero() {
+func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresIn time.Duration) (*APIToken, error) {
+	if expiresIn == 0 {
 		return nil, fmt.Errorf("expiresAt is mandatory")
 	}
+
+	expiresAt := time.Now().Add(expiresIn)
 
 	token, err := uc.apiTokenRepo.FindByID(ctx, tokenID)
 	if err != nil {
