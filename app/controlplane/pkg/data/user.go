@@ -54,14 +54,24 @@ func (r *userRepo) FindByEmail(ctx context.Context, email string) (*biz.User, er
 	return entUserToBizUser(u), nil
 }
 
-func (r *userRepo) CreateByEmail(ctx context.Context, email string) (*biz.User, error) {
-	u, err := r.data.DB.User.Create().SetEmail(email).Save(ctx)
+func (r *userRepo) CreateByEmail(ctx context.Context, email string, firstName, lastName *string) (*biz.User, error) {
+	u, err := r.data.DB.User.Create().SetEmail(email).SetNillableFirstName(firstName).SetNillableLastName(lastName).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Query it to load the fully formed object, including proper casted dates that come from the DB
 	return r.FindByID(ctx, u.ID)
+}
+
+// UpdateNameAndLastName updates the first and last name of a user
+func (r *userRepo) UpdateNameAndLastName(ctx context.Context, userID uuid.UUID, firstName, lastName *string) (*biz.User, error) {
+	u, err := r.data.DB.User.UpdateOneID(userID).SetNillableFirstName(firstName).SetNillableLastName(lastName).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error updating user name: %w", err)
+	}
+
+	return entUserToBizUser(u), nil
 }
 
 // Find by ID, returns nil if not found
@@ -141,8 +151,10 @@ func (r *userRepo) FindUsersWithAccessPropertyNotSet(ctx context.Context) ([]*bi
 
 func entUserToBizUser(eu *ent.User) *biz.User {
 	base := &biz.User{
-		Email:     eu.Email,
 		ID:        eu.ID.String(),
+		Email:     eu.Email,
+		FirstName: eu.FirstName,
+		LastName:  eu.LastName,
 		CreatedAt: toTimePtr(eu.CreatedAt),
 	}
 

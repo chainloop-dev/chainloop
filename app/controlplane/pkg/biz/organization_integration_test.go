@@ -219,7 +219,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	s.org, err = s.Organization.Create(ctx, "testing-org")
 	assert.NoError(err)
 
-	s.user, err = s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	s.user, err = s.User.FindOrCreateByEmail(ctx, "foo@test.com", nil)
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
@@ -291,10 +291,10 @@ func (s *AuthOnboardingTestSuite) SetupTest() {
 	s.existingOrg, err = s.Organization.Create(ctx, "existing-org")
 	require.NoError(s.T(), err)
 
-	s.userWithoutOrg, err = s.User.FindOrCreateByEmail(ctx, "foo@bar", true)
+	s.userWithoutOrg, err = s.User.FindOrCreateByEmail(ctx, "foo@bar", &biz.FindOrCreateByEmailOpts{DisableAutoOnboarding: toPtrBool(true)})
 	require.NoError(s.T(), err)
 
-	s.userInOrg, err = s.User.FindOrCreateByEmail(ctx, "bar@foo", true)
+	s.userInOrg, err = s.User.FindOrCreateByEmail(ctx, "bar@foo", &biz.FindOrCreateByEmailOpts{DisableAutoOnboarding: toPtrBool(true)})
 	require.NoError(s.T(), err)
 
 	// usr1 is already a member of the org

@@ -37,8 +37,8 @@ type ConfigContextItem struct {
 }
 
 type UserItem struct {
-	ID, Email string
-	CreatedAt *time.Time
+	ID, Email, FirstName, LastName string
+	CreatedAt                      *time.Time
 }
 
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
@@ -65,6 +65,8 @@ func pbUserItemToAction(in *pb.User) *UserItem {
 	return &UserItem{
 		ID:        in.Id,
 		Email:     in.Email,
+		FirstName: in.FirstName,
+		LastName:  in.LastName,
 		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
 	}
 }

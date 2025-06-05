@@ -185,7 +185,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 
 func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 	ctx := context.Background()
-	receiver, err := s.User.FindOrCreateByEmail(ctx, receiverEmail)
+	receiver, err := s.User.FindOrCreateByEmail(ctx, receiverEmail, nil)
 	require.NoError(s.T(), err)
 
 	s.T().Run("user doesn't exist", func(t *testing.T) {
@@ -225,7 +225,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 		for i, r := range []authz.Role{authz.RoleOwner, authz.RoleAdmin, authz.RoleViewer} {
 			// Create user and invite it with different roles
 			receiverEmail := fmt.Sprintf("user%d@cyberdyne.io", i)
-			receiver, err := s.User.FindOrCreateByEmail(ctx, receiverEmail)
+			receiver, err := s.User.FindOrCreateByEmail(ctx, receiverEmail, nil)
 			s.NoError(err)
 			invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.ID, receiverEmail, biz.WithInvitationRole(r))
 			s.NoError(err)
@@ -316,7 +316,7 @@ func (s *OrgInvitationIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Create User 1
-	s.user, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com")
+	s.user, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com", nil)
 	assert.NoError(err)
 	// Attach both orgs
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.user.ID, biz.WithCurrentMembership())
@@ -324,7 +324,7 @@ func (s *OrgInvitationIntegrationTestSuite) SetupTest() {
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.user.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
 
-	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com")
+	s.user2, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com", nil)
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.user2.ID)
 	assert.NoError(err)

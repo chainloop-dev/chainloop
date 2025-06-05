@@ -21,6 +21,10 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldHasRestrictedAccess holds the string denoting the has_restricted_access field in the database.
 	FieldHasRestrictedAccess = "has_restricted_access"
+	// FieldFirstName holds the string denoting the first_name field in the database.
+	FieldFirstName = "first_name"
+	// FieldLastName holds the string denoting the last_name field in the database.
+	FieldLastName = "last_name"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// Table holds the table name of the user in the database.
@@ -40,6 +44,8 @@ var Columns = []string{
 	FieldEmail,
 	FieldCreatedAt,
 	FieldHasRestrictedAccess,
+	FieldFirstName,
+	FieldLastName,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -82,6 +88,16 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByHasRestrictedAccess orders the results by the has_restricted_access field.
 func ByHasRestrictedAccess(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHasRestrictedAccess, opts...).ToFunc()
+}
+
+// ByFirstName orders the results by the first_name field.
+func ByFirstName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFirstName, opts...).ToFunc()
+}
+
+// ByLastName orders the results by the last_name field.
+func ByLastName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastName, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.
