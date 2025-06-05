@@ -186,7 +186,7 @@ jobs:
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
     outputs:
-      attestation_hash: ${{ steps.attestation_push.attestation_sha }}
+      attestation_hash: ${{ steps.attestation_push.outputs.attestation_sha }}
     steps:
       - name: Install Chainloop
         run: |
