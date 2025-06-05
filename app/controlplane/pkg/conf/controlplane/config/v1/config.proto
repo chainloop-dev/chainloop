@@ -52,7 +52,7 @@ message AllowList {
 message DatabaseConfig {
   string driver = 1;
   string source = 2;
-  int32 minOpenConns = 3;
-  int32 maxOpenConns = 4;
+  int32 min_open_conns = 3;
+  int32 max_open_conns = 4;
   google.protobuf.Duration max_conn_idle_time = 5;
 }
