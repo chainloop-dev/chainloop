@@ -41,7 +41,7 @@ func NewSigningService(signing *biz.SigningUseCase, opts ...NewOpt) *SigningServ
 }
 
 func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.GenerateSigningCertRequest) (*v1.GenerateSigningCertResponse, error) {
-	ra := usercontext.CurrentRobotAccount(ctx)
+	ra := usercontext.CurrentAPIToken(ctx)
 	if ra == nil {
 		return nil, errors.Unauthorized("missing org", "authentication data is required")
 	}

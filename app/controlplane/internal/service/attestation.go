@@ -26,7 +26,7 @@ import (
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/multijwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
@@ -98,7 +98,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 }
 
 func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.AttestationServiceGetContractRequest) (*cpAPI.AttestationServiceGetContractResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	robotAccount := usercontext.CurrentAPIToken(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
@@ -129,7 +129,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 }
 
 func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationServiceInitRequest) (*cpAPI.AttestationServiceInitResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	robotAccount := usercontext.CurrentAPIToken(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
@@ -201,7 +201,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	robotAccount := usercontext.CurrentAPIToken(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -243,7 +243,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
+func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.APIToken, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
 	workflowRunID := wfRun.ID.String()
 	casBackend := wfRun.CASBackends[0]
 
@@ -341,7 +341,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 }
 
 func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationServiceCancelRequest) (*cpAPI.AttestationServiceCancelResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	robotAccount := usercontext.CurrentAPIToken(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -381,7 +381,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 // There is another endpoint to get credentials via casCredentialsService.Get
 // This one is kept since it leverages robot-accounts in the context of a workflow
 func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
-	robotAccount := usercontext.CurrentRobotAccount(ctx)
+	robotAccount := usercontext.CurrentAPIToken(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -419,7 +419,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 }
 
 func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.AttestationServiceGetPolicyRequest) (*cpAPI.AttestationServiceGetPolicyResponse, error) {
-	token, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+	token, ok := multijwtmiddleware.FromJWTAuthContext(ctx)
 	if !ok {
 		return nil, errors.Forbidden("forbidden", "token not found")
 	}
@@ -441,7 +441,7 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 }
 
 func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.AttestationServiceGetPolicyGroupRequest) (*cpAPI.AttestationServiceGetPolicyGroupResponse, error) {
-	token, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+	token, ok := multijwtmiddleware.FromJWTAuthContext(ctx)
 	if !ok {
 		return nil, errors.Forbidden("forbidden", "token not found")
 	}
@@ -623,13 +623,13 @@ func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Cont
 	return nil, biz.NewErrValidationStr("workflowName or workflowRunId must be provided")
 }
 
-func checkAuthRequirements(attToken *usercontext.RobotAccount, workflowName string) error {
+func checkAuthRequirements(attToken *usercontext.APIToken, workflowName string) error {
 	if attToken == nil {
 		return errors.Forbidden("forbidden", "authentication not found")
 	}
 
 	// For API tokens we do not support explicit workflowName. It is inside the token
-	if attToken.ProviderKey == attjwtmiddleware.APITokenProviderKey && workflowName == "" {
+	if attToken.ProviderKey == multijwtmiddleware.APITokenProviderKey && workflowName == "" {
 		return errors.BadRequest("bad request", "when using an API Token, workflow name is required as parameter")
 	}
 
@@ -637,7 +637,7 @@ func checkAuthRequirements(attToken *usercontext.RobotAccount, workflowName stri
 }
 
 func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAPI.FindOrCreateWorkflowRequest) (*cpAPI.FindOrCreateWorkflowResponse, error) {
-	apiToken := usercontext.CurrentRobotAccount(ctx)
+	apiToken := usercontext.CurrentAPIToken(ctx)
 	if apiToken == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}

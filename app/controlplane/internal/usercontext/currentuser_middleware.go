@@ -23,27 +23,30 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/multijwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/go-kratos/kratos/v2/middleware"
-	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
 
 // Middleware that injects the current user + organization to the context
 func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			rawClaims, ok := jwtMiddleware.FromContext(ctx)
+			authInfo, ok := multijwtmiddleware.FromJWTAuthContext(ctx)
 			// If not found means that there is no currentUser set in the context
 			if !ok {
 				logger.Warn("couldn't extract user, JWT parser middleware not running before this one?")
 				return nil, errors.New("can't extract JWT info from the context")
 			}
 
-			genericClaims, ok := rawClaims.(jwt.MapClaims)
+			if authInfo.ProviderKey != multijwtmiddleware.UserTokenProviderKey {
+				return handler(ctx, req)
+			}
+
+			genericClaims, ok := authInfo.Claims.(jwt.MapClaims)
 			if !ok {
 				return nil, errors.New("error mapping the claims")
 			}
@@ -93,19 +96,17 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// If the token is not an user token, we don't need to do anything
 			// note that this middleware is called by a multi-middleware that works in cascade mode
-			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+			authInfo, ok := multijwtmiddleware.FromJWTAuthContext(ctx)
 			// If not found means that there is no currentUser set in the context
 			if !ok {
 				logger.Warn("couldn't extract org/user, JWT parser middleware not running before this one?")
 				return nil, errors.New("can't extract JWT info from the context")
 			}
 
-			if authInfo.ProviderKey != attjwtmiddleware.UserTokenProviderKey {
+			if authInfo.ProviderKey != multijwtmiddleware.UserTokenProviderKey {
 				return handler(ctx, req)
 			}
 
-			// set the raw claims in the default context field so the user middleware can understand it
-			ctx = jwtMiddleware.NewContext(ctx, authInfo.Claims)
 			// We received a user token during the attestation process
 			// 1 - Set the current user from the user token
 			// 2 - Set the current organization for the user token from the DB, header or default
@@ -132,8 +133,8 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 						return nil, fmt.Errorf("your user doesn't have permissions to perform attestations in this organization, role=%s, orgID=%s", subject, org.ID)
 					}
 
-					ctx = withRobotAccount(ctx, &RobotAccount{OrgID: org.ID, ProviderKey: attjwtmiddleware.UserTokenProviderKey})
-					logger.Infow("msg", "[authN] processed credentials", "type", attjwtmiddleware.UserTokenProviderKey)
+					ctx = withAPIToken(ctx, &APIToken{OrgID: org.ID, ProviderKey: multijwtmiddleware.UserTokenProviderKey})
+					logger.Infow("msg", "[authN] processed credentials", "type", multijwtmiddleware.UserTokenProviderKey)
 
 					return handler(ctx, req)
 				})(ctx, req)
