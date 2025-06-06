@@ -37,8 +37,29 @@ type ConfigContextItem struct {
 }
 
 type UserItem struct {
-	ID, Email string
-	CreatedAt *time.Time
+	ID, Email, FirstName, LastName string
+	CreatedAt                      *time.Time
+}
+
+// PrintUserProfileWithEmail formats the user's profile with their email.
+func (u *UserItem) PrintUserProfileWithEmail() string {
+	var name string
+
+	// Build name based on available parts
+	switch {
+	case u.FirstName != "" && u.LastName != "":
+		name = u.FirstName + " " + u.LastName
+	case u.FirstName != "":
+		name = u.FirstName
+	case u.LastName != "":
+		name = u.LastName
+	}
+
+	// If we have a name, format with email, otherwise just return email
+	if name != "" {
+		return name + " <" + u.Email + ">"
+	}
+	return u.Email
 }
 
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
@@ -65,6 +86,8 @@ func pbUserItemToAction(in *pb.User) *UserItem {
 	return &UserItem{
 		ID:        in.Id,
 		Email:     in.Email,
+		FirstName: in.FirstName,
+		LastName:  in.LastName,
 		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
 	}
 }

@@ -30,9 +30,9 @@ import (
 
 func (s *membershipIntegrationTestSuite) TestByOrg() {
 	ctx := context.Background()
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	user, err := s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	s.NoError(err)
-	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	user2, err := s.User.UpsertByEmail(ctx, "foo-2@test.com", nil)
 	s.NoError(err)
 	userOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
@@ -71,9 +71,9 @@ func (s *membershipIntegrationTestSuite) TestByOrg() {
 func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	ctx := context.Background()
 
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	user, err := s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	s.NoError(err)
-	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	user2, err := s.User.UpsertByEmail(ctx, "foo-2@test.com", nil)
 	s.NoError(err)
 	userOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
@@ -135,9 +135,9 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 func (s *membershipIntegrationTestSuite) TestDeleteOther() {
 	ctx := context.Background()
 
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	user, err := s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	s.NoError(err)
-	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	user2, err := s.User.UpsertByEmail(ctx, "foo-2@test.com", nil)
 	s.NoError(err)
 	otherOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
@@ -174,9 +174,9 @@ func (s *membershipIntegrationTestSuite) TestDeleteOther() {
 func (s *membershipIntegrationTestSuite) TestUpdateRole() {
 	ctx := context.Background()
 
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	user, err := s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	s.NoError(err)
-	user2, err := s.User.FindOrCreateByEmail(ctx, "foo-2@test.com")
+	user2, err := s.User.UpsertByEmail(ctx, "foo-2@test.com", nil)
 	s.NoError(err)
 	otherOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
@@ -218,7 +218,7 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	ctx := context.Background()
 
 	// Create User
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	user, err := s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	assert.NoError(err)
 
 	s.T().Run("Create current", func(t *testing.T) {

@@ -5,6 +5,12 @@
   "patternProperties": {
     "^(createdAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(firstName)$": {
+      "type": "string"
+    },
+    "^(lastName)$": {
+      "type": "string"
     }
   },
   "properties": {
@@ -14,7 +20,13 @@
     "email": {
       "type": "string"
     },
+    "first_name": {
+      "type": "string"
+    },
     "id": {
+      "type": "string"
+    },
+    "last_name": {
       "type": "string"
     }
   },

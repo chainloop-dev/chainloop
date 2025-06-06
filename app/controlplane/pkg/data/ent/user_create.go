@@ -59,6 +59,34 @@ func (uc *UserCreate) SetNillableHasRestrictedAccess(b *bool) *UserCreate {
 	return uc
 }
 
+// SetFirstName sets the "first_name" field.
+func (uc *UserCreate) SetFirstName(s string) *UserCreate {
+	uc.mutation.SetFirstName(s)
+	return uc
+}
+
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (uc *UserCreate) SetNillableFirstName(s *string) *UserCreate {
+	if s != nil {
+		uc.SetFirstName(*s)
+	}
+	return uc
+}
+
+// SetLastName sets the "last_name" field.
+func (uc *UserCreate) SetLastName(s string) *UserCreate {
+	uc.mutation.SetLastName(s)
+	return uc
+}
+
+// SetNillableLastName sets the "last_name" field if the given value is not nil.
+func (uc *UserCreate) SetNillableLastName(s *string) *UserCreate {
+	if s != nil {
+		uc.SetLastName(*s)
+	}
+	return uc
+}
+
 // SetID sets the "id" field.
 func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
 	uc.mutation.SetID(u)
@@ -194,6 +222,14 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
 		_node.HasRestrictedAccess = &value
 	}
+	if value, ok := uc.mutation.FirstName(); ok {
+		_spec.SetField(user.FieldFirstName, field.TypeString, value)
+		_node.FirstName = value
+	}
+	if value, ok := uc.mutation.LastName(); ok {
+		_spec.SetField(user.FieldLastName, field.TypeString, value)
+		_node.LastName = value
+	}
 	if nodes := uc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -292,6 +328,42 @@ func (u *UserUpsert) ClearHasRestrictedAccess() *UserUpsert {
 	return u
 }
 
+// SetFirstName sets the "first_name" field.
+func (u *UserUpsert) SetFirstName(v string) *UserUpsert {
+	u.Set(user.FieldFirstName, v)
+	return u
+}
+
+// UpdateFirstName sets the "first_name" field to the value that was provided on create.
+func (u *UserUpsert) UpdateFirstName() *UserUpsert {
+	u.SetExcluded(user.FieldFirstName)
+	return u
+}
+
+// ClearFirstName clears the value of the "first_name" field.
+func (u *UserUpsert) ClearFirstName() *UserUpsert {
+	u.SetNull(user.FieldFirstName)
+	return u
+}
+
+// SetLastName sets the "last_name" field.
+func (u *UserUpsert) SetLastName(v string) *UserUpsert {
+	u.Set(user.FieldLastName, v)
+	return u
+}
+
+// UpdateLastName sets the "last_name" field to the value that was provided on create.
+func (u *UserUpsert) UpdateLastName() *UserUpsert {
+	u.SetExcluded(user.FieldLastName)
+	return u
+}
+
+// ClearLastName clears the value of the "last_name" field.
+func (u *UserUpsert) ClearLastName() *UserUpsert {
+	u.SetNull(user.FieldLastName)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -375,6 +447,48 @@ func (u *UserUpsertOne) UpdateHasRestrictedAccess() *UserUpsertOne {
 func (u *UserUpsertOne) ClearHasRestrictedAccess() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearHasRestrictedAccess()
+	})
+}
+
+// SetFirstName sets the "first_name" field.
+func (u *UserUpsertOne) SetFirstName(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetFirstName(v)
+	})
+}
+
+// UpdateFirstName sets the "first_name" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateFirstName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateFirstName()
+	})
+}
+
+// ClearFirstName clears the value of the "first_name" field.
+func (u *UserUpsertOne) ClearFirstName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearFirstName()
+	})
+}
+
+// SetLastName sets the "last_name" field.
+func (u *UserUpsertOne) SetLastName(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLastName(v)
+	})
+}
+
+// UpdateLastName sets the "last_name" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateLastName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLastName()
+	})
+}
+
+// ClearLastName clears the value of the "last_name" field.
+func (u *UserUpsertOne) ClearLastName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearLastName()
 	})
 }
 
@@ -628,6 +742,48 @@ func (u *UserUpsertBulk) UpdateHasRestrictedAccess() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearHasRestrictedAccess() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearHasRestrictedAccess()
+	})
+}
+
+// SetFirstName sets the "first_name" field.
+func (u *UserUpsertBulk) SetFirstName(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetFirstName(v)
+	})
+}
+
+// UpdateFirstName sets the "first_name" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateFirstName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateFirstName()
+	})
+}
+
+// ClearFirstName clears the value of the "first_name" field.
+func (u *UserUpsertBulk) ClearFirstName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearFirstName()
+	})
+}
+
+// SetLastName sets the "last_name" field.
+func (u *UserUpsertBulk) SetLastName(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLastName(v)
+	})
+}
+
+// UpdateLastName sets the "last_name" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateLastName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLastName()
+	})
+}
+
+// ClearLastName clears the value of the "last_name" field.
+func (u *UserUpsertBulk) ClearLastName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearLastName()
 	})
 }
 
