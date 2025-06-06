@@ -46,11 +46,12 @@ func (u *UserItem) PrintUserProfileWithEmail() string {
 	var name string
 
 	// Build name based on available parts
-	if u.FirstName != "" && u.LastName != "" {
+	switch {
+	case u.FirstName != "" && u.LastName != "":
 		name = u.FirstName + " " + u.LastName
-	} else if u.FirstName != "" {
+	case u.FirstName != "":
 		name = u.FirstName
-	} else if u.LastName != "" {
+	case u.LastName != "":
 		name = u.LastName
 	}
 
