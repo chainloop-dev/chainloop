@@ -23,7 +23,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"
@@ -71,14 +71,8 @@ func (data *Data) SchemaLoad() error {
 	return data.DB.Schema.Create(context.Background())
 }
 
-type NewConfig struct {
-	Driver, Source             string
-	MinOpenConns, MaxOpenConns int32
-	MaxConnIdleTime            time.Duration
-}
-
 // NewData .
-func NewData(c *NewConfig, logger log.Logger) (*Data, func(), error) {
+func NewData(c *config.DatabaseConfig, logger log.Logger) (*Data, func(), error) {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
@@ -100,7 +94,7 @@ func NewData(c *NewConfig, logger log.Logger) (*Data, func(), error) {
 	return &Data{DB: db}, cleanup, nil
 }
 
-func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
+func initSQLDatabase(c *config.DatabaseConfig, log *log.Helper) (*ent.Client, error) {
 	if c.Driver != "pgx" {
 		return nil, fmt.Errorf("unsupported driver: %s", c.Driver)
 	}
@@ -121,7 +115,7 @@ func initSQLDatabase(c *NewConfig, log *log.Helper) (*ent.Client, error) {
 		poolConfig.MinConns = c.MinOpenConns
 	}
 
-	if t := c.MaxConnIdleTime; t > 0 {
+	if t := c.MaxConnIdleTime.AsDuration(); t > 0 {
 		log.Infof("DB: setting max conn idle time: %v", t)
 		poolConfig.MaxConnIdleTime = t
 	}

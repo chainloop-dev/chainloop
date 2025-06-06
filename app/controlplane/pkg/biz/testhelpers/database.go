@@ -217,8 +217,8 @@ func NewPromSpec() []*conf.PrometheusIntegrationSpec {
 	return []*conf.PrometheusIntegrationSpec{}
 }
 
-func NewDataConfig(in *conf.Data) *data.NewConfig {
-	return &data.NewConfig{
+func NewDataConfig(in *conf.Data) *config.DatabaseConfig {
+	return &config.DatabaseConfig{
 		Driver: in.Database.Driver,
 		Source: in.Database.Source,
 	}

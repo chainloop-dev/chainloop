@@ -27,9 +27,8 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
 	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
-
 	entadapter "github.com/casbin/ent-adapter"
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 )
 
 type Role string
@@ -274,7 +273,7 @@ func (e *Enforcer) ClearPolicies(sub *SubjectAPIToken) error {
 
 // NewDatabaseEnforcer creates a new casbin authorization enforcer
 // based on a database backend as policies storage backend
-func NewDatabaseEnforcer(c *conf.Data_Database) (*Enforcer, error) {
+func NewDatabaseEnforcer(c *config.DatabaseConfig) (*Enforcer, error) {
 	// policy storage in database
 	a, err := entadapter.NewAdapter(c.Driver, c.Source)
 	if err != nil {

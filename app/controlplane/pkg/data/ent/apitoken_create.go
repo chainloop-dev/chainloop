@@ -314,6 +314,24 @@ func (u *APITokenUpsert) ClearDescription() *APITokenUpsert {
 	return u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (u *APITokenUpsert) SetExpiresAt(v time.Time) *APITokenUpsert {
+	u.Set(apitoken.FieldExpiresAt, v)
+	return u
+}
+
+// UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateExpiresAt() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldExpiresAt)
+	return u
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (u *APITokenUpsert) ClearExpiresAt() *APITokenUpsert {
+	u.SetNull(apitoken.FieldExpiresAt)
+	return u
+}
+
 // SetRevokedAt sets the "revoked_at" field.
 func (u *APITokenUpsert) SetRevokedAt(v time.Time) *APITokenUpsert {
 	u.Set(apitoken.FieldRevokedAt, v)
@@ -367,9 +385,6 @@ func (u *APITokenUpsertOne) UpdateNewValues() *APITokenUpsertOne {
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(apitoken.FieldCreatedAt)
 		}
-		if _, exists := u.create.mutation.ExpiresAt(); exists {
-			s.SetIgnore(apitoken.FieldExpiresAt)
-		}
 	}))
 	return u
 }
@@ -419,6 +434,27 @@ func (u *APITokenUpsertOne) UpdateDescription() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearDescription() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (u *APITokenUpsertOne) SetExpiresAt(v time.Time) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetExpiresAt(v)
+	})
+}
+
+// UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateExpiresAt() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateExpiresAt()
+	})
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (u *APITokenUpsertOne) ClearExpiresAt() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearExpiresAt()
 	})
 }
 
@@ -646,9 +682,6 @@ func (u *APITokenUpsertBulk) UpdateNewValues() *APITokenUpsertBulk {
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(apitoken.FieldCreatedAt)
 			}
-			if _, exists := b.mutation.ExpiresAt(); exists {
-				s.SetIgnore(apitoken.FieldExpiresAt)
-			}
 		}
 	}))
 	return u
@@ -699,6 +732,27 @@ func (u *APITokenUpsertBulk) UpdateDescription() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearDescription() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (u *APITokenUpsertBulk) SetExpiresAt(v time.Time) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetExpiresAt(v)
+	})
+}
+
+// UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateExpiresAt() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateExpiresAt()
+	})
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (u *APITokenUpsertBulk) ClearExpiresAt() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearExpiresAt()
 	})
 }
 

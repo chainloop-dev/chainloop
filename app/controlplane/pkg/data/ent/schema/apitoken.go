@@ -39,7 +39,7 @@ func (APIToken) Fields() []ent.Field {
 		// Optional description
 		field.String("description").Optional(),
 		field.Time("created_at").Default(time.Now).Immutable().Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
-		field.Time("expires_at").Optional().Immutable(),
+		field.Time("expires_at").Optional(),
 		// the token can be manually revoked
 		field.Time("revoked_at").Optional(),
 		field.UUID("organization_id", uuid.UUID{}),

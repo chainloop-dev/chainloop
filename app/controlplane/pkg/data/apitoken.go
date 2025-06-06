@@ -123,6 +123,15 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 	return nil
 }
 
+func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expiresAt time.Time) error {
+	err := r.data.DB.APIToken.UpdateOneID(id).SetExpiresAt(expiresAt).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("updating APIToken: %w", err)
+	}
+
+	return nil
+}
+
 func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	result := &biz.APIToken{
 		ID:             t.ID,
