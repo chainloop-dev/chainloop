@@ -251,7 +251,15 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
 		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
 		newReferrerDiscoverCmd(),
+		newPluginCmd(),
 	)
+
+	// Load plugins if we are not running a subcommand
+	if len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help" {
+		if err := loadAllPlugins(rootCmd); err != nil {
+			logger.Debug().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
+		}
+	}
 
 	return rootCmd
 }
@@ -337,6 +345,7 @@ func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *
 }
 
 func cleanup(conn *grpc.ClientConn) error {
+	cleanupPlugins()
 	if conn != nil {
 		if err := conn.Close(); err != nil {
 			return err
