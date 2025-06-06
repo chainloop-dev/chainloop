@@ -44,7 +44,7 @@ func newOrganizationDescribeCmd() *cobra.Command {
 func contextTableOutput(config *action.ConfigContextItem) error {
 	gt := newTableWriter()
 	gt.SetTitle("Current Context")
-	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.Email})
+	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.PrintUserProfileWithEmail()})
 	gt.AppendSeparator()
 
 	if m := config.CurrentMembership; m != nil {

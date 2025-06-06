@@ -511,6 +511,8 @@ export interface User {
   id: string;
   email: string;
   createdAt?: Date;
+  firstName: string;
+  lastName: string;
 }
 
 export interface OrgMembershipItem {
@@ -3226,7 +3228,7 @@ export const WorkflowContractVersionItem_RawBody = {
 };
 
 function createBaseUser(): User {
-  return { id: "", email: "", createdAt: undefined };
+  return { id: "", email: "", createdAt: undefined, firstName: "", lastName: "" };
 }
 
 export const User = {
@@ -3239,6 +3241,12 @@ export const User = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.firstName !== "") {
+      writer.uint32(34).string(message.firstName);
+    }
+    if (message.lastName !== "") {
+      writer.uint32(42).string(message.lastName);
     }
     return writer;
   },
@@ -3271,6 +3279,20 @@ export const User = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.firstName = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.lastName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3285,6 +3307,8 @@ export const User = {
       id: isSet(object.id) ? String(object.id) : "",
       email: isSet(object.email) ? String(object.email) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      firstName: isSet(object.firstName) ? String(object.firstName) : "",
+      lastName: isSet(object.lastName) ? String(object.lastName) : "",
     };
   },
 
@@ -3293,6 +3317,8 @@ export const User = {
     message.id !== undefined && (obj.id = message.id);
     message.email !== undefined && (obj.email = message.email);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.firstName !== undefined && (obj.firstName = message.firstName);
+    message.lastName !== undefined && (obj.lastName = message.lastName);
     return obj;
   },
 
@@ -3305,6 +3331,8 @@ export const User = {
     message.id = object.id ?? "";
     message.email = object.email ?? "";
     message.createdAt = object.createdAt ?? undefined;
+    message.firstName = object.firstName ?? "";
+    message.lastName = object.lastName ?? "";
     return message;
   },
 };

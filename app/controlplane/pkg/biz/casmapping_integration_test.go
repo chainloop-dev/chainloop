@@ -404,10 +404,10 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Create User
-	s.userOrg1And2, err = s.User.FindOrCreateByEmail(ctx, "foo@test.com")
+	s.userOrg1And2, err = s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	assert.NoError(err)
 
-	s.userOrg2, err = s.User.FindOrCreateByEmail(ctx, "foo-org2@test.com")
+	s.userOrg2, err = s.User.UpsertByEmail(ctx, "foo-org2@test.com", nil)
 	assert.NoError(err)
 
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1And2.ID)

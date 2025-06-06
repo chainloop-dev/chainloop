@@ -82,7 +82,7 @@ func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string
 		return nil, errors.New("user not found")
 	}
 
-	return entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, CreatedAt: u.CreatedAt}), nil
+	return entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, FirstName: u.FirstName, LastName: u.LastName, CreatedAt: u.CreatedAt}), nil
 }
 
 // Middleware that injects the current user + organization to the context during the attestation process

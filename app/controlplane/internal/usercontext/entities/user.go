@@ -22,8 +22,8 @@ import (
 
 // Utils to get and set information from context
 type User struct {
-	Email, ID string
-	CreatedAt *time.Time
+	Email, ID, FirstName, LastName string
+	CreatedAt                      *time.Time
 }
 
 func WithCurrentUser(ctx context.Context, user *User) context.Context {

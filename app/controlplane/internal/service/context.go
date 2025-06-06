@@ -67,7 +67,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		}
 	} else if currentUser != nil {
 		res.CurrentUser = &pb.User{
-			Id: currentUser.ID, Email: currentUser.Email, CreatedAt: timestamppb.New(*currentUser.CreatedAt),
+			Id: currentUser.ID, Email: currentUser.Email, FirstName: currentUser.FirstName, LastName: currentUser.LastName, CreatedAt: timestamppb.New(*currentUser.CreatedAt),
 		}
 
 		// For regular users, we need to load the membership manually
@@ -121,7 +121,7 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 }
 
 func bizUserToPb(u *biz.User) *pb.User {
-	return &pb.User{Id: u.ID, Email: u.Email, CreatedAt: timestamppb.New(*u.CreatedAt)}
+	return &pb.User{Id: u.ID, Email: u.Email, CreatedAt: timestamppb.New(*u.CreatedAt), FirstName: u.FirstName, LastName: u.LastName}
 }
 
 func bizPolicyViolationBlockingStrategyToPb(blockOnPolicyViolation bool) pb.OrgItem_PolicyViolationBlockingStrategy {
