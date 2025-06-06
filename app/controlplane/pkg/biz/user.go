@@ -115,19 +115,19 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 	return uc.userRepo.Delete(ctx, userUUID)
 }
 
-type FindOrCreateByEmailOpts struct {
+type UpsertByEmailOpts struct {
 	// DisableAutoOnboarding, if set to true, will skip the auto-onboarding process
 	DisableAutoOnboarding *bool
 	FirstName             *string
 	LastName              *string
 }
 
-// FindOrCreateByEmail finds or creates a user by email. By default, it will auto-onboard the user
+// UpsertByEmail finds or creates a user by email. By default, it will auto-onboard the user
 // to the organizations defined in the configuration. If disableAutoOnboarding is set to true, it will
 // skip the auto-onboarding process.
-func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, opts *FindOrCreateByEmailOpts) (*User, error) {
+func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *UpsertByEmailOpts) (*User, error) {
 	if opts == nil {
-		opts = &FindOrCreateByEmailOpts{}
+		opts = &UpsertByEmailOpts{}
 	}
 	// emails are case-insensitive
 	email = strings.ToLower(email)

@@ -31,25 +31,25 @@ import (
 
 func (s *userIntegrationTestSuite) TestFindOrCreateByEmail() {
 	// It will create a new user
-	u, err := s.User.FindOrCreateByEmail(context.Background(), "user1@user.com", nil)
+	u, err := s.User.UpsertByEmail(context.Background(), "user1@user.com", nil)
 	s.NoError(err)
 	s.Equal("user1@user.com", u.Email)
 
 	// running it again has the same ID
-	u2, err := s.User.FindOrCreateByEmail(context.Background(), "user1@user.com", nil)
+	u2, err := s.User.UpsertByEmail(context.Background(), "user1@user.com", nil)
 	s.NoError(err)
 	s.Equal(u2.ID, u.ID)
 
 	// It will downcase the email
 	// running it again has the same ID
-	u3, err := s.User.FindOrCreateByEmail(context.Background(), "WAS-UPPERCASE@user.com", nil)
+	u3, err := s.User.UpsertByEmail(context.Background(), "WAS-UPPERCASE@user.com", nil)
 	s.NoError(err)
 	s.Equal("was-uppercase@user.com", u3.Email)
 
 	// Include now the first and last name
 	firstName := "First"
 	lastName := "Last"
-	u4, err := s.User.FindOrCreateByEmail(context.Background(), "with-names@user.com", &biz.FindOrCreateByEmailOpts{
+	u4, err := s.User.UpsertByEmail(context.Background(), "with-names@user.com", &biz.UpsertByEmailOpts{
 		FirstName: &firstName,
 		LastName:  &lastName,
 	})
@@ -61,7 +61,7 @@ func (s *userIntegrationTestSuite) TestFindOrCreateByEmail() {
 	// Run it again with the same email, but different names to ensure it does update the names
 	updatedFirstName := "UpdatedFirst"
 	updatedLastName := "UpdatedLast"
-	u5, err := s.User.FindOrCreateByEmail(context.Background(), "with-names@user.com", &biz.FindOrCreateByEmailOpts{
+	u5, err := s.User.UpsertByEmail(context.Background(), "with-names@user.com", &biz.UpsertByEmailOpts{
 		FirstName: &updatedFirstName,
 		LastName:  &updatedLastName,
 	})
@@ -173,7 +173,7 @@ type userOnboardingTestSuite struct {
 func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsNoConfiguration() {
 	ctx := context.Background()
 	// Create a user with no orgs
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@bar.com", &biz.FindOrCreateByEmailOpts{DisableAutoOnboarding: toPtrBool(true)})
+	user, err := s.User.UpsertByEmail(ctx, "foo@bar.com", &biz.UpsertByEmailOpts{DisableAutoOnboarding: toPtrBool(true)})
 	s.NoError(err)
 	s.NotNil(user)
 }
@@ -192,7 +192,7 @@ func (s *userOnboardingTestSuite) TestAutoOnboardOrganizationsWithConfiguration(
 	org, err := s.Organization.Create(ctx, orgName)
 	require.NoError(s.T(), err)
 
-	user, err := s.User.FindOrCreateByEmail(ctx, "foo@bar.com", nil)
+	user, err := s.User.UpsertByEmail(ctx, "foo@bar.com", nil)
 	s.NoError(err)
 	s.NotNil(user)
 
@@ -222,7 +222,7 @@ func (s *userIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Create User 1
-	s.userOne, err = s.User.FindOrCreateByEmail(ctx, "user-1@test.com", nil)
+	s.userOne, err = s.User.UpsertByEmail(ctx, "user-1@test.com", nil)
 	assert.NoError(err)
 	// Attach both orgs
 	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID)
@@ -231,7 +231,7 @@ func (s *userIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Create User 2 and attach shared org
-	s.userTwo, err = s.User.FindOrCreateByEmail(ctx, "user-2@test.com", nil)
+	s.userTwo, err = s.User.UpsertByEmail(ctx, "user-2@test.com", nil)
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, biz.WithCurrentMembership())
 	assert.NoError(err)

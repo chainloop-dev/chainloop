@@ -306,7 +306,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	}
 
 	// Create user if needed
-	u, err := svc.userUseCase.FindOrCreateByEmail(ctx, claims.preferredEmail(), &biz.FindOrCreateByEmailOpts{
+	u, err := svc.userUseCase.UpsertByEmail(ctx, claims.preferredEmail(), &biz.UpsertByEmailOpts{
 		FirstName: &claims.GivenName,
 		LastName:  &claims.FamilyName,
 	})
@@ -437,7 +437,7 @@ func setOauthCookie(w http.ResponseWriter, name, value string) {
 
 func generateAndLogDevUser(userUC *biz.UserUseCase, log *log.Helper, authConfig *conf.Auth) error {
 	// Create user if needed
-	u, err := userUC.FindOrCreateByEmail(context.Background(), authConfig.DevUser, nil)
+	u, err := userUC.UpsertByEmail(context.Background(), authConfig.DevUser, nil)
 	if err != nil {
 		return sl.LogAndMaskErr(err, log)
 	}
