@@ -23,8 +23,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/multijwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
@@ -32,7 +32,7 @@ import (
 func WithAttestationContextFromFederatedInfo(orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+			authInfo, ok := multijwtmiddleware.FromJWTAuthContext(ctx)
 			// If not found means that there is no currentUser set in the context
 			if !ok {
 				logger.Warn("couldn't extract org/user, JWT parser middleware not running before this one?")
@@ -40,7 +40,7 @@ func WithAttestationContextFromFederatedInfo(orgUC *biz.OrganizationUseCase, log
 			}
 
 			// If the token is not an API token, we don't need to do anything
-			if authInfo.ProviderKey != attjwtmiddleware.FederatedProviderKey {
+			if authInfo.ProviderKey != multijwtmiddleware.FederatedProviderKey {
 				return handler(ctx, req)
 			}
 
@@ -51,7 +51,7 @@ func WithAttestationContextFromFederatedInfo(orgUC *biz.OrganizationUseCase, log
 
 			orgID := (*claims)["orgId"].(string)
 
-			ctx = withRobotAccount(ctx, &RobotAccount{OrgID: orgID, ProviderKey: attjwtmiddleware.FederatedProviderKey})
+			ctx = withAPIToken(ctx, &APIToken{OrgID: orgID, ProviderKey: multijwtmiddleware.FederatedProviderKey})
 			// Find the associated organization
 			org, err := orgUC.FindByID(ctx, orgID)
 			if err != nil {

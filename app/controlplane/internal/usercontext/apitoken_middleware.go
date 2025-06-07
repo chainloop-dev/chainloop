@@ -21,15 +21,13 @@ import (
 	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/golang-jwt/jwt/v4"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/multijwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/middleware"
-	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
 
 // Store the authorization subject
@@ -47,48 +45,11 @@ func CurrentAuthzSubject(ctx context.Context) string {
 
 type currentAuthzSubjectKey struct{}
 
-// Middleware that injects the API-Token + organization to the context
+// WithCurrentAPITokenAndOrgMiddleware injects the API-Token, organization + robot account to the context
 func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			rawClaims, ok := jwtMiddleware.FromContext(ctx)
-			// If not found means that there is no currentUser set in the context
-			if !ok {
-				logger.Warn("couldn't extract org/user, JWT parser middleware not running before this one?")
-				return nil, errors.New("can't extract JWT info from the context")
-			}
-
-			genericClaims, ok := rawClaims.(jwt.MapClaims)
-			if !ok {
-				return nil, errors.New("error mapping the claims")
-			}
-
-			// We've received an API-token
-			if genericClaims.VerifyAudience(apitoken.Audience, true) {
-				var err error
-				tokenID, ok := genericClaims["jti"].(string)
-				if !ok || tokenID == "" {
-					return nil, errors.New("error mapping the API-token claims")
-				}
-
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID)
-				if err != nil {
-					return nil, fmt.Errorf("error setting current org and user: %w", err)
-				}
-
-				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
-			}
-
-			return handler(ctx, req)
-		}
-	}
-}
-
-// WithAttestationContextFromAPIToken injects the API-Token, organization + robot account to the context
-func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
-	return func(handler middleware.Handler) middleware.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			authInfo, ok := attjwtmiddleware.FromJWTAuthContext(ctx)
+			authInfo, ok := multijwtmiddleware.FromJWTAuthContext(ctx)
 			// If not found means that there is no currentUser set in the context
 			if !ok {
 				logger.Warn("couldn't extract org/user, JWT parser middleware not running before this one?")
@@ -96,7 +57,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 			}
 
 			// If the token is not an API token, we don't need to do anything
-			if authInfo.ProviderKey != attjwtmiddleware.APITokenProviderKey {
+			if authInfo.ProviderKey != multijwtmiddleware.APITokenProviderKey {
 				return handler(ctx, req)
 			}
 
@@ -151,7 +112,7 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 		return nil, errors.New("API token revoked")
 	}
 
-	ctx = withRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
+	ctx = withAPIToken(ctx, &APIToken{OrgID: token.OrganizationID.String(), ProviderKey: multijwtmiddleware.APITokenProviderKey})
 
 	return ctx, nil
 }
@@ -194,3 +155,22 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 
 	return ctx, nil
 }
+
+type APIToken struct {
+	ID, WorkflowID, OrgID, ProviderKey string
+}
+
+func withAPIToken(ctx context.Context, acc *APIToken) context.Context {
+	return context.WithValue(ctx, currentRobotAccountCtxKey{}, acc)
+}
+
+func CurrentAPIToken(ctx context.Context) *APIToken {
+	res := ctx.Value(currentRobotAccountCtxKey{})
+	if res == nil {
+		return nil
+	}
+
+	return res.(*APIToken)
+}
+
+type currentRobotAccountCtxKey struct{}
