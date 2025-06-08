@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chainloop-dev/chainloop/pkg/plugins"
+	"github.com/chainloop-dev/chainloop/app/cli/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
