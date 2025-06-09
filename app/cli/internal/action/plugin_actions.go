@@ -65,7 +65,7 @@ func NewPluginList(cfg *ActionsOpts, manager *plugins.Manager) *PluginList {
 }
 
 // Run executes the PluginList action
-func (action *PluginList) Run(ctx context.Context) (*PluginListResult, error) {
+func (action *PluginList) Run(_ context.Context) (*PluginListResult, error) {
 	action.cfg.Logger.Debug().Msg("Listing all plugins")
 	plugins := action.manager.GetAllPlugins()
 
@@ -90,7 +90,7 @@ func NewPluginInfo(cfg *ActionsOpts, manager *plugins.Manager) *PluginInfo {
 }
 
 // Run executes the PluginInfo action
-func (action *PluginInfo) Run(ctx context.Context, pluginName string) (*PluginInfoResult, error) {
+func (action *PluginInfo) Run(_ context.Context, pluginName string) (*PluginInfoResult, error) {
 	action.cfg.Logger.Debug().Str("pluginName", pluginName).Msg("Getting plugin info")
 	plugin, ok := action.manager.GetPlugin(pluginName)
 	if !ok {
