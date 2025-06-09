@@ -23,15 +23,14 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/rs/zerolog"
 )
 
 // Manager handles loading and managing plugins.
 type Manager struct {
 	plugins       map[string]*LoadedPlugin
 	pluginClients map[string]*plugin.Client
-	logger        zerolog.Logger
 }
 
 // LoadedPlugin represents a loaded plugin with its metadata.
@@ -42,11 +41,10 @@ type LoadedPlugin struct {
 }
 
 // NewManager creates a new plugin manager.
-func NewManager(logger zerolog.Logger) *Manager {
+func NewManager() *Manager {
 	return &Manager{
 		plugins:       make(map[string]*LoadedPlugin),
 		pluginClients: make(map[string]*plugin.Client),
-		logger:        logger,
 	}
 }
 
@@ -75,25 +73,13 @@ func (m *Manager) LoadPlugins(ctx context.Context) error {
 
 		pluginPath := filepath.Join(pluginsDir, entry.Name())
 
-		info, err := entry.Info()
-		if err != nil {
-			m.logger.Err(err).Str("pluginPath", pluginPath).Msg("failed to get info for plugin")
-			continue
-		}
-
 		// On Windows, check for .exe extension
 		if runtime.GOOS == "windows" && filepath.Ext(pluginPath) != ".exe" {
 			continue
 		}
 
-		// On Unix, check if executable
-		if runtime.GOOS != "windows" && info.Mode()&0111 == 0 {
-			continue
-		}
-
-		// Load the plugin
+		// Load the plugin - if there is an error just skip it - we can think of a better strategy later
 		if err := m.loadPlugin(ctx, pluginPath); err != nil {
-			m.logger.Err(err).Str("pluginPath", pluginPath).Msg("failed to load plugin")
 			continue
 		}
 	}
@@ -110,6 +96,15 @@ func (m *Manager) loadPlugin(ctx context.Context, path string) error {
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC,
 		},
+		// By default the go-plugin logger is set to TRACE level, which is very verbose.
+		// We can't set it to the level set by the command at this point, because we need to
+		// load the commands first before running the cobra command where the debug flag is set
+		// We set it to WARN level, so we don't get too much noise from the plugins.
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Output: hclog.DefaultOutput,
+			Level:  hclog.Warn,
+			Name:   "plugin",
+		}),
 	})
 
 	// Connect via RPC
@@ -148,7 +143,6 @@ func (m *Manager) loadPlugin(ctx context.Context, path string) error {
 	}
 	m.pluginClients[metadata.Name] = client
 
-	m.logger.Debug().Str("pluginName", metadata.Name).Str("pluginVersion", metadata.Version).Msg("loaded plugin")
 	return nil
 }
 
@@ -165,8 +159,7 @@ func (m *Manager) GetAllPlugins() map[string]*LoadedPlugin {
 
 // Shutdown closes all plugin connections.
 func (m *Manager) Shutdown() {
-	for name, client := range m.pluginClients {
-		m.logger.Debug().Str("pluginName", name).Msg("shutting down plugin")
+	for _, client := range m.pluginClients {
 		client.Kill()
 	}
 }

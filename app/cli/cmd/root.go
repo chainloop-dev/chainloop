@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
+	"github.com/chainloop-dev/chainloop/app/cli/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/golang-jwt/jwt/v4"
@@ -256,8 +257,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	// Load plugins if we are not running a subcommand
 	if len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help" {
+		pluginManager = plugins.NewManager()
 		if err := loadAllPlugins(rootCmd); err != nil {
-			logger.Debug().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
+			logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
 		}
 	}
 

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -37,7 +38,6 @@ var (
 )
 
 func init() {
-	pluginManager = plugins.NewManager(logger)
 	registeredCommands = make(map[string]string)
 }
 
@@ -86,22 +86,23 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 			// Add positional arguments
 			arguments["args"] = args
 
-			// Execute plugin command
-			result, err := plugin.Plugin.Exec(ctx, cmdInfo.Name, arguments)
+			// Execute plugin command using the action pattern
+			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, arguments)
 			if err != nil {
-				return fmt.Errorf("plugin execution failed: %w", err)
+				return fmt.Errorf("failed to execute plugin command: %w", err)
 			}
 
 			// Handle result
-			if result.GetError() != "" {
-				return fmt.Errorf("%s", result.GetError())
+			if result.Error != "" {
+				return fmt.Errorf("the plugin command failed: %s", result.Error)
 			}
 
-			fmt.Print(result.GetOutput())
+			// TODO: for now just print the output
+			fmt.Print(result.Output)
 
 			// Return with appropriate exit code
-			if result.GetExitCode() != 0 {
-				os.Exit(result.GetExitCode())
+			if result.ExitCode != 0 {
+				os.Exit(result.ExitCode)
 			}
 
 			return nil
@@ -137,7 +138,10 @@ func newPluginListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List installed plugins and their commands",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			plugins := pluginManager.GetAllPlugins()
+			result, err := action.NewPluginList(actionOpts, pluginManager).Run(context.Background())
+			if err != nil {
+				return err
+			}
 
 			if flagOutputFormat == formatJSON {
 				type pluginInfo struct {
@@ -149,7 +153,7 @@ func newPluginListCmd() *cobra.Command {
 				}
 
 				var items []pluginInfo
-				for name, plugin := range plugins {
+				for name, plugin := range result.Plugins {
 					var commands []string
 					for _, cmd := range plugin.Metadata.Commands {
 						commands = append(commands, cmd.Name)
@@ -167,7 +171,7 @@ func newPluginListCmd() *cobra.Command {
 				return encodeJSON(items)
 			}
 
-			pluginListTableOutput(plugins)
+			pluginListTableOutput(result.Plugins, result.CommandsMap)
 
 			return nil
 		},
@@ -175,15 +179,15 @@ func newPluginListCmd() *cobra.Command {
 }
 
 func newPluginInfoCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "info [plugin-name]",
 		Short: "Show detailed information about a plugin",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			pluginName := args[0]
-			plugin, ok := pluginManager.GetPlugin(pluginName)
-			if !ok {
-				return fmt.Errorf("plugin '%s' not found", pluginName)
+			result, err := action.NewPluginInfo(actionOpts, pluginManager).Run(context.Background(), pluginName)
+			if err != nil {
+				return err
 			}
 
 			if flagOutputFormat == formatJSON {
@@ -196,21 +200,22 @@ func newPluginInfoCmd() *cobra.Command {
 				}
 
 				detail := pluginDetail{
-					Name:        plugin.Metadata.Name,
-					Version:     plugin.Metadata.Version,
-					Description: plugin.Metadata.Description,
-					Path:        plugin.Path,
-					Commands:    plugin.Metadata.Commands,
+					Name:        result.Plugin.Metadata.Name,
+					Version:     result.Plugin.Metadata.Version,
+					Description: result.Plugin.Metadata.Description,
+					Path:        result.Plugin.Path,
+					Commands:    result.Plugin.Metadata.Commands,
 				}
 
 				return encodeJSON(detail)
 			}
 
-			pluginInfoTableOutput(plugin)
+			pluginInfoTableOutput(result.Plugin)
 
 			return nil
 		},
 	}
+	return cmd
 }
 
 // loadAllPlugins loads all plugins and registers their commands to the root command
@@ -225,19 +230,11 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 	// Get all loaded plugins
 	allPlugins := pluginManager.GetAllPlugins()
 	if len(allPlugins) == 0 {
-		logger.Debug().Msg("No plugins found in plugins directory")
 		return nil
 	}
 
-	logger.Debug().Int("count", len(allPlugins)).Msg("Found plugins")
-
 	// Register commands from all plugins, checking for conflicts
 	for pluginName, plugin := range allPlugins {
-		logger.Debug().
-			Str("name", pluginName).
-			Str("version", plugin.Metadata.Version).
-			Msg("Processing plugin")
-
 		for _, cmdInfo := range plugin.Metadata.Commands {
 			if existingPlugin, exists := registeredCommands[cmdInfo.Name]; exists {
 				return fmt.Errorf("command conflict: command '%s' is provided by both '%s' and '%s' plugins",
@@ -248,18 +245,8 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 			pluginCmd := createPluginCommand(plugin, cmdInfo)
 			rootCmd.AddCommand(pluginCmd)
 			registeredCommands[cmdInfo.Name] = pluginName
-
-			logger.Debug().
-				Str("command", cmdInfo.Name).
-				Str("plugin", pluginName).
-				Msg("Registered plugin command")
 		}
 	}
-
-	logger.Debug().
-		Int("commands", len(registeredCommands)).
-		Int("plugins", len(allPlugins)).
-		Msg("Successfully registered plugin commands")
 
 	return nil
 }
@@ -272,7 +259,7 @@ func cleanupPlugins() {
 }
 
 // Table output functions
-func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
+func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin, commandsMap map[string]string) {
 	if len(plugins) == 0 {
 		fmt.Println("No plugins installed")
 		return
@@ -295,7 +282,7 @@ func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
 
 	t = newTableWriter()
 	t.AppendHeader(table.Row{"Plugin", "Command"})
-	for cmd, plugin := range registeredCommands {
+	for cmd, plugin := range commandsMap {
 		t.AppendRow(table.Row{plugin, cmd})
 		t.AppendSeparator()
 	}
