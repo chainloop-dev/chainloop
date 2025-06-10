@@ -2565,23 +2565,19 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
-### chainloop plugin help
+### chainloop plugin describe
 
-Help about any command
-
-Synopsis
-
-Help provides help for any command in the application.
-Simply type plugin help [path to command] for full details.
+Show detailed information about a plugin
 
 ```
-chainloop plugin help [command] [flags]
+chainloop plugin describe [flags]
 ```
 
 Options
 
 ```
--h, --help   help for help
+-h, --help          help for describe
+--name string   Name of the plugin to describe (required)
 ```
 
 Options inherited from parent commands
@@ -2600,18 +2596,23 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
-### chainloop plugin info
+### chainloop plugin help
 
-Show detailed information about a plugin
+Help about any command
+
+Synopsis
+
+Help provides help for any command in the application.
+Simply type plugin help [path to command] for full details.
 
 ```
-chainloop plugin info [plugin-name] [flags]
+chainloop plugin help [command] [flags]
 ```
 
 Options
 
 ```
--h, --help   help for info
+-h, --help   help for help
 ```
 
 Options inherited from parent commands
