@@ -57,7 +57,7 @@ func NewAttestationStateService(opts *NewAttestationStateServiceOpt) *Attestatio
 }
 
 func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.AttestationStateServiceInitializedRequest) (*cpAPI.AttestationStateServiceInitializedResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -79,7 +79,7 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 }
 
 func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.AttestationStateServiceSaveRequest) (*cpAPI.AttestationStateServiceSaveResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -107,7 +107,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 }
 
 func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.AttestationStateServiceReadRequest) (*cpAPI.AttestationStateServiceReadResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -136,7 +136,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 }
 
 func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.AttestationStateServiceResetRequest) (*cpAPI.AttestationStateServiceResetResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -159,7 +159,7 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 // NOTE: Using the robot-account as JWT is not ideal but it's a start
 // TODO: look into using some identifier from the actual client like machine-uuid
 func encryptionPassphrase(ctx context.Context) (string, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return "", errors.NotFound("not found", "robot account not found")
 		// If we are using a federated provider, we'll use the provider key as the passphrase since we can not guarantee the stability of the token

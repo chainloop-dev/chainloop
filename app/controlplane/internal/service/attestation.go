@@ -98,7 +98,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 }
 
 func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.AttestationServiceGetContractRequest) (*cpAPI.AttestationServiceGetContractResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
@@ -129,7 +129,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 }
 
 func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationServiceInitRequest) (*cpAPI.AttestationServiceInitResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
@@ -201,7 +201,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -243,7 +243,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 }
 
 // Stores and process a DSSE Envelope with a Chainloop attestation
-func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.APIToken, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
+func (s *AttestationService) storeAttestation(ctx context.Context, envelope []byte, bundle []byte, robotAccount *usercontext.AttAuth, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
 	workflowRunID := wfRun.ID.String()
 	casBackend := wfRun.CASBackends[0]
 
@@ -341,7 +341,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 }
 
 func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationServiceCancelRequest) (*cpAPI.AttestationServiceCancelResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -381,7 +381,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 // There is another endpoint to get credentials via casCredentialsService.Get
 // This one is kept since it leverages robot-accounts in the context of a workflow
 func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.AttestationServiceGetUploadCredsRequest) (*cpAPI.AttestationServiceGetUploadCredsResponse, error) {
-	robotAccount := usercontext.CurrentAPIToken(ctx)
+	robotAccount := usercontext.CurrentAttestationAuth(ctx)
 	if robotAccount == nil {
 		return nil, errors.NotFound("not found", "robot account not found")
 	}
@@ -623,7 +623,7 @@ func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Cont
 	return nil, biz.NewErrValidationStr("workflowName or workflowRunId must be provided")
 }
 
-func checkAuthRequirements(attToken *usercontext.APIToken, workflowName string) error {
+func checkAuthRequirements(attToken *usercontext.AttAuth, workflowName string) error {
 	if attToken == nil {
 		return errors.Forbidden("forbidden", "authentication not found")
 	}
@@ -637,7 +637,7 @@ func checkAuthRequirements(attToken *usercontext.APIToken, workflowName string) 
 }
 
 func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAPI.FindOrCreateWorkflowRequest) (*cpAPI.FindOrCreateWorkflowResponse, error) {
-	apiToken := usercontext.CurrentAPIToken(ctx)
+	apiToken := usercontext.CurrentAttestationAuth(ctx)
 	if apiToken == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}

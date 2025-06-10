@@ -112,7 +112,7 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 		return nil, errors.New("API token revoked")
 	}
 
-	ctx = withAPIToken(ctx, &APIToken{OrgID: token.OrganizationID.String(), ProviderKey: multijwtmiddleware.APITokenProviderKey})
+	ctx = withAPIToken(ctx, &AttAuth{OrgID: token.OrganizationID.String(), ProviderKey: multijwtmiddleware.APITokenProviderKey})
 
 	return ctx, nil
 }
@@ -156,21 +156,21 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	return ctx, nil
 }
 
-type APIToken struct {
+type AttAuth struct {
 	ID, WorkflowID, OrgID, ProviderKey string
 }
 
-func withAPIToken(ctx context.Context, acc *APIToken) context.Context {
+func withAPIToken(ctx context.Context, acc *AttAuth) context.Context {
 	return context.WithValue(ctx, currentRobotAccountCtxKey{}, acc)
 }
 
-func CurrentAPIToken(ctx context.Context) *APIToken {
+func CurrentAttestationAuth(ctx context.Context) *AttAuth {
 	res := ctx.Value(currentRobotAccountCtxKey{})
 	if res == nil {
 		return nil
 	}
 
-	return res.(*APIToken)
+	return res.(*AttAuth)
 }
 
 type currentRobotAccountCtxKey struct{}

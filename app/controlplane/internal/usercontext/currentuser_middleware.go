@@ -133,7 +133,7 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 						return nil, fmt.Errorf("your user doesn't have permissions to perform attestations in this organization, role=%s, orgID=%s", subject, org.ID)
 					}
 
-					ctx = withAPIToken(ctx, &APIToken{OrgID: org.ID, ProviderKey: multijwtmiddleware.UserTokenProviderKey})
+					ctx = withAPIToken(ctx, &AttAuth{OrgID: org.ID, ProviderKey: multijwtmiddleware.UserTokenProviderKey})
 					logger.Infow("msg", "[authN] processed credentials", "type", multijwtmiddleware.UserTokenProviderKey)
 
 					return handler(ctx, req)

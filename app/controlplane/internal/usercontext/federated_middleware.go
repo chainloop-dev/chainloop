@@ -51,7 +51,7 @@ func WithAttestationContextFromFederatedInfo(orgUC *biz.OrganizationUseCase, log
 
 			orgID := (*claims)["orgId"].(string)
 
-			ctx = withAPIToken(ctx, &APIToken{OrgID: orgID, ProviderKey: multijwtmiddleware.FederatedProviderKey})
+			ctx = withAPIToken(ctx, &AttAuth{OrgID: orgID, ProviderKey: multijwtmiddleware.FederatedProviderKey})
 			// Find the associated organization
 			org, err := orgUC.FindByID(ctx, orgID)
 			if err != nil {
