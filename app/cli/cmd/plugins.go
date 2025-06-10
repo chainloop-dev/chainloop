@@ -222,7 +222,7 @@ func newPluginDescribeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&pluginName, "name", "", "", "Name of the plugin to describe (required)")
-	cmd.MarkFlagRequired("name")
+	cobra.CheckErr(cmd.MarkFlagRequired("name"))
 
 	return cmd
 }
