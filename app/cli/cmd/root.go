@@ -21,12 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/adrg/xdg"
+	"github.com/chainloop-dev/chainloop/app/cli/common"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
@@ -57,7 +56,6 @@ const (
 	useAPIToken = "withAPITokenAuth"
 	// Ask for confirmation when user token is used and API token is preferred
 	confirmWhenUserToken = "confirmWhenUserToken"
-	appName              = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	userAudience    = "user-auth.chainloop"
@@ -98,7 +96,7 @@ func Execute(l zerolog.Logger) error {
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:           appName,
+		Use:           common.AppName,
 		Short:         "Chainloop Command Line Interface",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -310,7 +308,7 @@ func initConfigFile() {
 	}
 
 	// If no config file was passed as a flag we use the default one
-	configPath := filepath.Join(xdg.ConfigHome, appName)
+	configPath := common.GetConfigDir()
 	// Create the file if it does not exist
 	if _, err := os.Stat(configPath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(configPath, os.ModePerm)

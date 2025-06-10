@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/chainloop-dev/chainloop/app/cli/common"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
@@ -50,12 +51,7 @@ func NewManager() *Manager {
 
 // LoadPlugins loads all plugins from the plugins directory.
 func (m *Manager) LoadPlugins(ctx context.Context) error {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %w", err)
-	}
-
-	pluginsDir := filepath.Join(homeDir, ".config", "chainloop", "plugins") // TODO: make this configurable
+	pluginsDir := common.GetPluginsDir()
 
 	if err := os.MkdirAll(pluginsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create plugins directory: %w", err)
