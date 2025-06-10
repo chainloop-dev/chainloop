@@ -17,6 +17,7 @@ package common
 
 import (
 	"path/filepath"
+	"runtime"
 
 	"github.com/adrg/xdg"
 )
@@ -32,4 +33,9 @@ func GetPluginsDir() string {
 
 func GetConfigDir() string {
 	return filepath.Join(xdg.ConfigHome, AppName)
+}
+
+// IsWindows returns true if the current OS is Windows
+func IsWindows() bool {
+	return runtime.GOOS == "windows"
 }

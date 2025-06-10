@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 
 	"github.com/chainloop-dev/chainloop/app/cli/common"
 	"github.com/hashicorp/go-hclog"
@@ -57,25 +55,20 @@ func (m *Manager) LoadPlugins(ctx context.Context) error {
 		return fmt.Errorf("failed to create plugins directory: %w", err)
 	}
 
-	entries, err := os.ReadDir(pluginsDir)
-	if err != nil {
-		return fmt.Errorf("failed to read plugins directory: %w", err)
+	// Use appropriate glob pattern based on OS
+	glob := "*"
+	if common.IsWindows() {
+		glob = "*.exe"
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
+	plugins, err := plugin.Discover(glob, pluginsDir)
+	if err != nil {
+		return fmt.Errorf("failed to discover plugins: %w", err)
+	}
 
-		pluginPath := filepath.Join(pluginsDir, entry.Name())
-
-		// On Windows, check for .exe extension
-		if runtime.GOOS == "windows" && filepath.Ext(pluginPath) != ".exe" {
-			continue
-		}
-
+	for _, plugin := range plugins {
 		// Load the plugin - if there is an error just skip it - we can think of a better strategy later
-		if err := m.loadPlugin(ctx, pluginPath); err != nil {
+		if err := m.loadPlugin(ctx, plugin); err != nil {
 			continue
 		}
 	}
