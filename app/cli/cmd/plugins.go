@@ -49,7 +49,7 @@ func newPluginCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newPluginListCmd())
-	cmd.AddCommand(newPluginInfoCmd())
+	cmd.AddCommand(newPluginDescribeCmd())
 
 	return cmd
 }
@@ -178,14 +178,19 @@ func newPluginListCmd() *cobra.Command {
 	}
 }
 
-func newPluginInfoCmd() *cobra.Command {
+func newPluginDescribeCmd() *cobra.Command {
+	var pluginName string
+
 	cmd := &cobra.Command{
-		Use:   "info [plugin-name]",
+		Use:   "describe",
 		Short: "Show detailed information about a plugin",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
-			pluginName := args[0]
-			result, err := action.NewPluginInfo(actionOpts, pluginManager).Run(context.Background(), pluginName)
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if pluginName == "" {
+				return fmt.Errorf("plugin name is required")
+			}
+
+			result, err := action.NewPluginDescribe(actionOpts, pluginManager).Run(context.Background(), pluginName)
 			if err != nil {
 				return err
 			}
@@ -215,6 +220,10 @@ func newPluginInfoCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVarP(&pluginName, "name", "", "", "Name of the plugin to describe (required)")
+	cmd.MarkFlagRequired("name")
+
 	return cmd
 }
 

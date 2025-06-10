@@ -29,7 +29,7 @@ type PluginList struct {
 }
 
 // PluginInfo handles showing detailed information about a specific plugin
-type PluginInfo struct {
+type PluginDescribe struct {
 	cfg     *ActionsOpts
 	manager *plugins.Manager
 }
@@ -46,8 +46,8 @@ type PluginListResult struct {
 	CommandsMap map[string]string // Maps command names to plugin names
 }
 
-// PluginInfoResult represents the result of getting plugin info
-type PluginInfoResult struct {
+// PluginDescribeResult represents the result of getting plugin info
+type PluginDescribeResult struct {
 	Plugin *plugins.LoadedPlugin
 }
 
@@ -84,13 +84,13 @@ func (action *PluginList) Run(_ context.Context) (*PluginListResult, error) {
 	}, nil
 }
 
-// NewPluginInfo creates a new PluginInfo action
-func NewPluginInfo(cfg *ActionsOpts, manager *plugins.Manager) *PluginInfo {
-	return &PluginInfo{cfg: cfg, manager: manager}
+// NewPluginDescribe creates a new NewPluginDescribe action
+func NewPluginDescribe(cfg *ActionsOpts, manager *plugins.Manager) *PluginDescribe {
+	return &PluginDescribe{cfg: cfg, manager: manager}
 }
 
-// Run executes the PluginInfo action
-func (action *PluginInfo) Run(_ context.Context, pluginName string) (*PluginInfoResult, error) {
+// Run executes the NewPluginDescribe action
+func (action *PluginDescribe) Run(_ context.Context, pluginName string) (*PluginDescribeResult, error) {
 	action.cfg.Logger.Debug().Str("pluginName", pluginName).Msg("Getting plugin info")
 	plugin, ok := action.manager.GetPlugin(pluginName)
 	if !ok {
@@ -98,7 +98,7 @@ func (action *PluginInfo) Run(_ context.Context, pluginName string) (*PluginInfo
 	}
 
 	action.cfg.Logger.Debug().Str("pluginName", pluginName).Str("version", plugin.Metadata.Version).Int("commandCount", len(plugin.Metadata.Commands)).Msg("Found plugin")
-	return &PluginInfoResult{
+	return &PluginDescribeResult{
 		Plugin: plugin,
 	}, nil
 }
