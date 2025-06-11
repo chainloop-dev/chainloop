@@ -323,6 +323,21 @@ func pluginInfoCommandsTableOutput(plugin *plugins.LoadedPlugin) {
 }
 
 func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
+	if len(plugin.Metadata.Commands) == 0 {
+		return
+	}
+
+	flagsPresent := false
+	for _, cmd := range plugin.Metadata.Commands {
+		if len(cmd.Flags) > 0 {
+			flagsPresent = true
+		}
+	}
+
+	if !flagsPresent {
+		return
+	}
+
 	t := newTableWriter()
 
 	t.AppendHeader(table.Row{"Plugin", "Command", "Flag", "Description", "Type", "Default", "Required"})
