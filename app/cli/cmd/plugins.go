@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -86,6 +87,11 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 			// Add positional arguments
 			arguments["args"] = args
 
+			// Pass the persistent flags from the root command to the plugin command
+			arguments["chainloop_cp_url"] = viper.GetString(confOptions.controlplaneAPI.viperKey)
+			arguments["chainloop_cas_url"] = viper.GetString(confOptions.CASAPI.viperKey)
+			arguments["chainloop_api_token"] = apiToken
+
 			// Execute plugin command using the action pattern
 			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, arguments)
 			if err != nil {
@@ -97,7 +103,6 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 				return fmt.Errorf("the plugin command failed: %s", result.Error)
 			}
 
-			// TODO: for now just print the output
 			fmt.Print(result.Output)
 
 			// Return with appropriate exit code
