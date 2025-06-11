@@ -74,7 +74,7 @@ func parseTimestamps(config *conf.Bootstrap, logger *log.Helper) ([]*TimestampAu
 		if issuerFound && tsa.Issuer {
 			return nil, fmt.Errorf("duplicate timestamp issuer in tsa config")
 		}
-		issuerFound = tsa.Issuer
+		issuerFound = issuerFound || tsa.Issuer
 		auths = append(auths, tsa)
 	}
 	// set default if there's only one
