@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/multijwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 
-	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/common/expfmt"
 )
@@ -60,13 +60,13 @@ func (p *PrometheusService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extracts the organization name from the request
-	rawClaims, ok := jwtmiddleware.FromContext(r.Context())
+	rawClaims, ok := multijwtmiddleware.FromJWTAuthContext(r.Context())
 	if !ok {
 		http.Error(w, "Error extracting claims from context", http.StatusInternalServerError)
 		return
 	}
 
-	apiTokenClaims, ok := rawClaims.(*apitoken.CustomClaims)
+	apiTokenClaims, ok := rawClaims.Claims.(*apitoken.CustomClaims)
 	if !ok {
 		http.Error(w, "Error extracting API Token claims", http.StatusInternalServerError)
 		return
