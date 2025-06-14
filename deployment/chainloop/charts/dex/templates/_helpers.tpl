@@ -12,13 +12,6 @@ Return the proper Dex image name
 {{- end -}}
 
 {{/*
-Return the proper service name for Dex
-*/}}
-{{- define "chainloop.dex" -}}
-  {{- printf "%s" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end -}}
-
-{{/*
 Create the name of the service account to use for Dex
 */}}
 {{- define "chainloop.dex.serviceAccountName" -}}
@@ -30,10 +23,18 @@ Create the name of the service account to use for Dex
 {{- end -}}
 
 {{/*
+Chainloop Dex name
+*/}}
+{{- define "chainloop.dex.name" -}}
+{{- printf "%s-%s" (include "common.names.name" .) "dex" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+
+{{/*
 Chainloop Dex release name
 */}}
 {{- define "chainloop.dex.fullname" -}}
-{{- printf "%s-%s" (include "common.names.fullname" .) "dex" | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -44,10 +45,18 @@ Figure out the external URL for Dex service
 {{- $ingress := .Values.dex.ingress }}
 
 {{- if (and $ingress $ingress.enabled $ingress.hostname) }}
-{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- printf "%s://%s/dex" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
 {{- else -}}
-{{- printf "http://%s:%d/dex" ( include "chainloop.dex.fullname" $ ) ( int $service.ports.http ) }}
+{{- printf "http://%s-dex:%d/dex" ( include "chainloop.dex.fullname" . ) ( int $service.ports.http ) }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Common labels
+*/}}
+{{- define "chainloop.dex.labels" -}}
+{{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" .) }}
+app.kubernetes.io/component: dex
+{{- end }}
