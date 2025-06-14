@@ -35,3 +35,19 @@ Chainloop Dex release name
 {{- define "chainloop.dex.fullname" -}}
 {{- printf "%s-%s" (include "common.names.fullname" .) "dex" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/*
+Figure out the external URL for Dex service
+*/}}
+{{- define "chainloop.dex.external_url" -}}
+{{- $service := .Values.dex.service }}
+{{- $ingress := .Values.dex.ingress }}
+
+{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
+{{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- else -}}
+{{- printf "http://%s:%d/dex" ( include "chainloop.dex.fullname" $ ) ( int $service.ports.http ) }}
+{{- end -}}
+{{- end -}}

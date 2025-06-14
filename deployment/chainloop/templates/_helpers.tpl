@@ -187,7 +187,8 @@ OIDC settings, will fallback to development settings if needed
 {{- define "controlplane.oidc_settings" -}}
   {{- if .Values.development }}
     {{- with .Values.controlplane.auth }}
-    domain: "{{ coalesce .oidc.url (include "chainloop.dex.external_url" $ ) }}"
+    {{- $dexContext := dict "Values" $.Values.dex "Chart" $.Chart "Release" $.Release "Capabilities" $.Capabilities "Template" $.Template }}
+    domain: "{{ coalesce .oidc.url (include "chainloop.dex.external_url" $dexContext ) }}"
     client_id: "{{ coalesce .oidc.clientID "chainloop-dev" }}"
     client_secret: "{{ coalesce .oidc.clientSecret "ZXhhbXBsZS1hcHAtc2VjcmV0" }}"
     {{- if .oidc.loginURLOverride }}
@@ -453,18 +454,3 @@ Return the Nats connection string
 {{- printf "nats://%s:%d" $host ($port | int) }}
 {{- end -}}
 
-{{/*
-Figure out the external URL for Dex service
-*/}}
-{{- define "chainloop.dex.external_url" -}}
-{{- $service := .Values.dex.dex.service }}
-{{- $ingress := .Values.dex.dex.ingress }}
-
-{{- if (and $ingress $ingress.enabled $ingress.hostname) }}
-{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
-{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
-{{- printf "http://localhost:%s" $service.nodePorts.http }}
-{{- else -}}
-{{- printf "http://%s:%d/dex" ( include "chainloop.dex.fullname" $ ) ( int $service.ports.http ) }}
-{{- end -}}
-{{- end -}}
