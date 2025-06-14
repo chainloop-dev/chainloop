@@ -39,6 +39,8 @@ rbac:
 ## Dex configuration running in development mode --set development=true
 ##
 dex:
+  ## @param dex.redirectURL Additional redirect URL for Dex
+  redirectURL: ""
   ## Bitnami Dex image
   ## ref: https://hub.docker.com/r/bitnami/argo-cd/tags/
   ## @skip dex.staticUsers[0].email

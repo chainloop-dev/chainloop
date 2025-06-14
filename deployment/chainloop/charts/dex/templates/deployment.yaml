@@ -26,8 +26,10 @@ spec:
       app.kubernetes.io/component: dex
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
       {{- if .Values.dex.podAnnotations }}
-      annotations: {{- include "common.tplvalues.render" (dict "value" .Values.dex.podAnnotations "context" $) | nindent 8 }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.dex.podAnnotations "context" $) | nindent 8 }}
       {{- end }}
       labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
         app.kubernetes.io/component: dex
