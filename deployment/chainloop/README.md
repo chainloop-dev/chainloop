@@ -489,6 +489,27 @@ chainloop config save \
   --artifact-cas cas.acme.com:443
 ```
 
+### Use the built-in Dex Instance in development mode 
+
+In development mode, a Dex instance is deployed by default, to use it, you need configure it in the `values.yaml` file like this:
+
+> **CAUTION**: Do not use this mode in production, for that, deploy in [standard mode](#standard-default) and connect your OIDC provider.
+
+```yaml
+# Yes, dex.dex, since we are overriding the dex section in the dex subchart
+dex:
+  dex:
+    # Point to the [controlplane http ingress]/auth/callback
+    redirectURL: https://[your controlplane hostname]/auth/callback
+    # Expose the dex instance to the outside world
+    ingress:
+      enabled: true
+      tls: true
+      hostname: [your dex hostname]
+```
+
+Once done, you can access with [two predefined users](https://github.com/chainloop-dev/chainloop/blob/0b165fa27d1973be55422065bd25efee95c5db9b/deployment/chainloop/charts/dex/values.yaml#L48), but is highly recommended to change those users to your own.
+
 ## Parameters
 
 ### Global parameters
@@ -927,7 +948,7 @@ service_registration "kubernetes" {}` |
 
 ## License
 
-Copyright &copy; 2023 The Chainloop Authors
+Copyright &copy; 2023-2025 The Chainloop Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
