@@ -33,6 +33,11 @@ type Membership struct {
 	Org                  *Organization
 	User                 *User
 	Role                 authz.Role
+	// polymorphic membership
+	MembershipType MembershipType
+	MemberID       uuid.UUID
+	ResourceType   ResourceType
+	ResourceID     uuid.UUID
 }
 
 type MembershipRepo interface {

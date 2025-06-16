@@ -241,5 +241,10 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 		res.User = entUserToBizUser(m.Edges.User)
 	}
 
+	res.MembershipType = m.MembershipType
+	res.MemberID = m.MemberID
+	res.ResourceType = m.ResourceType
+	res.ResourceID = m.ResourceID
+
 	return res
 }
