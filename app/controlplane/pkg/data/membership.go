@@ -159,7 +159,7 @@ func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID 
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(biz.MembershipTypeUser),
 		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
-		membership.ResourceIDGT(orgID),
+		membership.ResourceIDEQ(orgID),
 		membership.ID(membershipID),
 	).WithUser().WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
