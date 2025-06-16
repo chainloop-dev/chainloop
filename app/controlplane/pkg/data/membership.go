@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -47,6 +46,10 @@ func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, cu
 		SetOrganizationID(orgID).
 		SetCurrent(current).
 		SetRole(role).
+		SetMembershipType(biz.MembershipTypeUser).
+		SetMemberID(userID).
+		SetResourceType(biz.ResourceTypeOrganization).
+		SetResourceID(orgID).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -66,8 +69,11 @@ func (r *MembershipRepo) loadMembership(ctx context.Context, id uuid.UUID) (*ent
 }
 
 func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := r.data.DB.User.Query().Where(user.ID(userID)).QueryMemberships().
-		WithOrganization().All(ctx)
+	memberships, err := r.data.DB.Membership.Query().Where(
+		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MemberID(userID),
+	).WithOrganization().All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -82,9 +88,11 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 
 // FindByOrg finds all memberships for a given organization
 func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := orgScopedQuery(r.data.DB, orgID).
-		QueryMemberships().WithUser().
-		WithOrganization().All(ctx)
+	memberships, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+	).WithUser().WithOrganization().All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +107,12 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz
 
 // FindByOrgAndUser finds the membership for a given organization and user
 func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
-	m, err := orgScopedQuery(r.data.DB, orgID).
-		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
-		WithOrganization().WithUser().Only(ctx)
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+	).WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -109,9 +120,20 @@ func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uui
 	return entMembershipToBiz(m), nil
 }
 func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).
-		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
-		WithOrganization().WithUser().Only(ctx)
+	org, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("organization %s not found", orgName))
+		}
+		return nil, fmt.Errorf("organization %s not found", orgName)
+	}
+
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceID(org.ID),
+	).WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -120,11 +142,12 @@ func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName strin
 }
 
 func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.User.Query().Where(user.ID(userID)).
-		QueryMemberships().
-		Where(membership.ID(membershipID)).
-		WithUser().
-		WithOrganization().Only(ctx)
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ID(membershipID),
+	).WithUser().WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -133,11 +156,12 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 }
 
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).
-		QueryMemberships().
-		Where(membership.ID(membershipID)).
-		WithUser().
-		WithOrganization().Only(ctx)
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceIDGT(orgID),
+		membership.ID(membershipID),
+	).WithUser().WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -154,7 +178,10 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// 1 - Set all the memberships to current=false
-		if err = tx.Membership.Update().Where(membership.HasUserWith(user.ID(m.Edges.User.ID))).
+		if err = tx.Membership.Update().Where(
+			membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+			membership.MembershipTypeEQ(biz.MembershipTypeUser),
+			membership.MemberID(m.MemberID)).
 			SetCurrent(false).Exec(ctx); err != nil {
 			return err
 		}

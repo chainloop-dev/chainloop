@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
@@ -72,6 +73,30 @@ func (mc *MembershipCreate) SetNillableUpdatedAt(t *time.Time) *MembershipCreate
 // SetRole sets the "role" field.
 func (mc *MembershipCreate) SetRole(a authz.Role) *MembershipCreate {
 	mc.mutation.SetRole(a)
+	return mc
+}
+
+// SetMembershipType sets the "membership_type" field.
+func (mc *MembershipCreate) SetMembershipType(bt biz.MembershipType) *MembershipCreate {
+	mc.mutation.SetMembershipType(bt)
+	return mc
+}
+
+// SetMemberID sets the "member_id" field.
+func (mc *MembershipCreate) SetMemberID(u uuid.UUID) *MembershipCreate {
+	mc.mutation.SetMemberID(u)
+	return mc
+}
+
+// SetResourceType sets the "resource_type" field.
+func (mc *MembershipCreate) SetResourceType(bt biz.ResourceType) *MembershipCreate {
+	mc.mutation.SetResourceType(bt)
+	return mc
+}
+
+// SetResourceID sets the "resource_id" field.
+func (mc *MembershipCreate) SetResourceID(u uuid.UUID) *MembershipCreate {
+	mc.mutation.SetResourceID(u)
 	return mc
 }
 
@@ -183,6 +208,28 @@ func (mc *MembershipCreate) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
 		}
 	}
+	if _, ok := mc.mutation.MembershipType(); !ok {
+		return &ValidationError{Name: "membership_type", err: errors.New(`ent: missing required field "Membership.membership_type"`)}
+	}
+	if v, ok := mc.mutation.MembershipType(); ok {
+		if err := membership.MembershipTypeValidator(v); err != nil {
+			return &ValidationError{Name: "membership_type", err: fmt.Errorf(`ent: validator failed for field "Membership.membership_type": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.MemberID(); !ok {
+		return &ValidationError{Name: "member_id", err: errors.New(`ent: missing required field "Membership.member_id"`)}
+	}
+	if _, ok := mc.mutation.ResourceType(); !ok {
+		return &ValidationError{Name: "resource_type", err: errors.New(`ent: missing required field "Membership.resource_type"`)}
+	}
+	if v, ok := mc.mutation.ResourceType(); ok {
+		if err := membership.ResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.ResourceID(); !ok {
+		return &ValidationError{Name: "resource_id", err: errors.New(`ent: missing required field "Membership.resource_id"`)}
+	}
 	if len(mc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Membership.organization"`)}
 	}
@@ -240,6 +287,22 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 		_node.Role = value
+	}
+	if value, ok := mc.mutation.MembershipType(); ok {
+		_spec.SetField(membership.FieldMembershipType, field.TypeEnum, value)
+		_node.MembershipType = value
+	}
+	if value, ok := mc.mutation.MemberID(); ok {
+		_spec.SetField(membership.FieldMemberID, field.TypeUUID, value)
+		_node.MemberID = value
+	}
+	if value, ok := mc.mutation.ResourceType(); ok {
+		_spec.SetField(membership.FieldResourceType, field.TypeEnum, value)
+		_node.ResourceType = value
+	}
+	if value, ok := mc.mutation.ResourceID(); ok {
+		_spec.SetField(membership.FieldResourceID, field.TypeUUID, value)
+		_node.ResourceID = value
 	}
 	if nodes := mc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -363,6 +426,54 @@ func (u *MembershipUpsert) UpdateRole() *MembershipUpsert {
 	return u
 }
 
+// SetMembershipType sets the "membership_type" field.
+func (u *MembershipUpsert) SetMembershipType(v biz.MembershipType) *MembershipUpsert {
+	u.Set(membership.FieldMembershipType, v)
+	return u
+}
+
+// UpdateMembershipType sets the "membership_type" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateMembershipType() *MembershipUpsert {
+	u.SetExcluded(membership.FieldMembershipType)
+	return u
+}
+
+// SetMemberID sets the "member_id" field.
+func (u *MembershipUpsert) SetMemberID(v uuid.UUID) *MembershipUpsert {
+	u.Set(membership.FieldMemberID, v)
+	return u
+}
+
+// UpdateMemberID sets the "member_id" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateMemberID() *MembershipUpsert {
+	u.SetExcluded(membership.FieldMemberID)
+	return u
+}
+
+// SetResourceType sets the "resource_type" field.
+func (u *MembershipUpsert) SetResourceType(v biz.ResourceType) *MembershipUpsert {
+	u.Set(membership.FieldResourceType, v)
+	return u
+}
+
+// UpdateResourceType sets the "resource_type" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateResourceType() *MembershipUpsert {
+	u.SetExcluded(membership.FieldResourceType)
+	return u
+}
+
+// SetResourceID sets the "resource_id" field.
+func (u *MembershipUpsert) SetResourceID(v uuid.UUID) *MembershipUpsert {
+	u.Set(membership.FieldResourceID, v)
+	return u
+}
+
+// UpdateResourceID sets the "resource_id" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateResourceID() *MembershipUpsert {
+	u.SetExcluded(membership.FieldResourceID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -453,6 +564,62 @@ func (u *MembershipUpsertOne) SetRole(v authz.Role) *MembershipUpsertOne {
 func (u *MembershipUpsertOne) UpdateRole() *MembershipUpsertOne {
 	return u.Update(func(s *MembershipUpsert) {
 		s.UpdateRole()
+	})
+}
+
+// SetMembershipType sets the "membership_type" field.
+func (u *MembershipUpsertOne) SetMembershipType(v biz.MembershipType) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetMembershipType(v)
+	})
+}
+
+// UpdateMembershipType sets the "membership_type" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateMembershipType() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateMembershipType()
+	})
+}
+
+// SetMemberID sets the "member_id" field.
+func (u *MembershipUpsertOne) SetMemberID(v uuid.UUID) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetMemberID(v)
+	})
+}
+
+// UpdateMemberID sets the "member_id" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateMemberID() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateMemberID()
+	})
+}
+
+// SetResourceType sets the "resource_type" field.
+func (u *MembershipUpsertOne) SetResourceType(v biz.ResourceType) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetResourceType(v)
+	})
+}
+
+// UpdateResourceType sets the "resource_type" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateResourceType() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateResourceType()
+	})
+}
+
+// SetResourceID sets the "resource_id" field.
+func (u *MembershipUpsertOne) SetResourceID(v uuid.UUID) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetResourceID(v)
+	})
+}
+
+// UpdateResourceID sets the "resource_id" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateResourceID() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateResourceID()
 	})
 }
 
@@ -713,6 +880,62 @@ func (u *MembershipUpsertBulk) SetRole(v authz.Role) *MembershipUpsertBulk {
 func (u *MembershipUpsertBulk) UpdateRole() *MembershipUpsertBulk {
 	return u.Update(func(s *MembershipUpsert) {
 		s.UpdateRole()
+	})
+}
+
+// SetMembershipType sets the "membership_type" field.
+func (u *MembershipUpsertBulk) SetMembershipType(v biz.MembershipType) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetMembershipType(v)
+	})
+}
+
+// UpdateMembershipType sets the "membership_type" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateMembershipType() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateMembershipType()
+	})
+}
+
+// SetMemberID sets the "member_id" field.
+func (u *MembershipUpsertBulk) SetMemberID(v uuid.UUID) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetMemberID(v)
+	})
+}
+
+// UpdateMemberID sets the "member_id" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateMemberID() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateMemberID()
+	})
+}
+
+// SetResourceType sets the "resource_type" field.
+func (u *MembershipUpsertBulk) SetResourceType(v biz.ResourceType) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetResourceType(v)
+	})
+}
+
+// UpdateResourceType sets the "resource_type" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateResourceType() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateResourceType()
+	})
+}
+
+// SetResourceID sets the "resource_id" field.
+func (u *MembershipUpsertBulk) SetResourceID(v uuid.UUID) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetResourceID(v)
+	})
+}
+
+// UpdateResourceID sets the "resource_id" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateResourceID() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateResourceID()
 	})
 }
 

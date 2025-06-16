@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
@@ -29,6 +30,14 @@ type Membership struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Role holds the value of the "role" field.
 	Role authz.Role `json:"role,omitempty"`
+	// MembershipType holds the value of the "membership_type" field.
+	MembershipType biz.MembershipType `json:"membership_type,omitempty"`
+	// MemberID holds the value of the "member_id" field.
+	MemberID uuid.UUID `json:"member_id,omitempty"`
+	// ResourceType holds the value of the "resource_type" field.
+	ResourceType biz.ResourceType `json:"resource_type,omitempty"`
+	// ResourceID holds the value of the "resource_id" field.
+	ResourceID uuid.UUID `json:"resource_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MembershipQuery when eager-loading is set.
 	Edges                    MembershipEdges `json:"edges"`
@@ -77,11 +86,11 @@ func (*Membership) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case membership.FieldCurrent:
 			values[i] = new(sql.NullBool)
-		case membership.FieldRole:
+		case membership.FieldRole, membership.FieldMembershipType, membership.FieldResourceType:
 			values[i] = new(sql.NullString)
 		case membership.FieldCreatedAt, membership.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case membership.FieldID:
+		case membership.FieldID, membership.FieldMemberID, membership.FieldResourceID:
 			values[i] = new(uuid.UUID)
 		case membership.ForeignKeys[0]: // organization_memberships
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -131,6 +140,30 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
 				m.Role = authz.Role(value.String)
+			}
+		case membership.FieldMembershipType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field membership_type", values[i])
+			} else if value.Valid {
+				m.MembershipType = biz.MembershipType(value.String)
+			}
+		case membership.FieldMemberID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field member_id", values[i])
+			} else if value != nil {
+				m.MemberID = *value
+			}
+		case membership.FieldResourceType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
+			} else if value.Valid {
+				m.ResourceType = biz.ResourceType(value.String)
+			}
+		case membership.FieldResourceID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field resource_id", values[i])
+			} else if value != nil {
+				m.ResourceID = *value
 			}
 		case membership.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -203,6 +236,18 @@ func (m *Membership) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", m.Role))
+	builder.WriteString(", ")
+	builder.WriteString("membership_type=")
+	builder.WriteString(fmt.Sprintf("%v", m.MembershipType))
+	builder.WriteString(", ")
+	builder.WriteString("member_id=")
+	builder.WriteString(fmt.Sprintf("%v", m.MemberID))
+	builder.WriteString(", ")
+	builder.WriteString("resource_type=")
+	builder.WriteString(fmt.Sprintf("%v", m.ResourceType))
+	builder.WriteString(", ")
+	builder.WriteString("resource_id=")
+	builder.WriteString(fmt.Sprintf("%v", m.ResourceID))
 	builder.WriteByte(')')
 	return builder.String()
 }
