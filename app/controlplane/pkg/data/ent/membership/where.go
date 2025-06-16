@@ -233,6 +233,16 @@ func MembershipTypeNotIn(vs ...biz.MembershipType) predicate.Membership {
 	return predicate.Membership(sql.FieldNotIn(FieldMembershipType, v...))
 }
 
+// MembershipTypeIsNil applies the IsNil predicate on the "membership_type" field.
+func MembershipTypeIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldMembershipType))
+}
+
+// MembershipTypeNotNil applies the NotNil predicate on the "membership_type" field.
+func MembershipTypeNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldMembershipType))
+}
+
 // MemberIDEQ applies the EQ predicate on the "member_id" field.
 func MemberIDEQ(v uuid.UUID) predicate.Membership {
 	return predicate.Membership(sql.FieldEQ(FieldMemberID, v))
@@ -273,6 +283,16 @@ func MemberIDLTE(v uuid.UUID) predicate.Membership {
 	return predicate.Membership(sql.FieldLTE(FieldMemberID, v))
 }
 
+// MemberIDIsNil applies the IsNil predicate on the "member_id" field.
+func MemberIDIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldMemberID))
+}
+
+// MemberIDNotNil applies the NotNil predicate on the "member_id" field.
+func MemberIDNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldMemberID))
+}
+
 // ResourceTypeEQ applies the EQ predicate on the "resource_type" field.
 func ResourceTypeEQ(v biz.ResourceType) predicate.Membership {
 	vc := v
@@ -301,6 +321,16 @@ func ResourceTypeNotIn(vs ...biz.ResourceType) predicate.Membership {
 		v[i] = vs[i]
 	}
 	return predicate.Membership(sql.FieldNotIn(FieldResourceType, v...))
+}
+
+// ResourceTypeIsNil applies the IsNil predicate on the "resource_type" field.
+func ResourceTypeIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldResourceType))
+}
+
+// ResourceTypeNotNil applies the NotNil predicate on the "resource_type" field.
+func ResourceTypeNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldResourceType))
 }
 
 // ResourceIDEQ applies the EQ predicate on the "resource_id" field.
@@ -341,6 +371,16 @@ func ResourceIDLT(v uuid.UUID) predicate.Membership {
 // ResourceIDLTE applies the LTE predicate on the "resource_id" field.
 func ResourceIDLTE(v uuid.UUID) predicate.Membership {
 	return predicate.Membership(sql.FieldLTE(FieldResourceID, v))
+}
+
+// ResourceIDIsNil applies the IsNil predicate on the "resource_id" field.
+func ResourceIDIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldResourceID))
+}
+
+// ResourceIDNotNil applies the NotNil predicate on the "resource_id" field.
+func ResourceIDNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldResourceID))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

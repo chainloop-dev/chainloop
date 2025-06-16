@@ -4879,9 +4879,22 @@ func (m *MembershipMutation) OldMembershipType(ctx context.Context) (v biz.Membe
 	return oldValue.MembershipType, nil
 }
 
+// ClearMembershipType clears the value of the "membership_type" field.
+func (m *MembershipMutation) ClearMembershipType() {
+	m.membership_type = nil
+	m.clearedFields[membership.FieldMembershipType] = struct{}{}
+}
+
+// MembershipTypeCleared returns if the "membership_type" field was cleared in this mutation.
+func (m *MembershipMutation) MembershipTypeCleared() bool {
+	_, ok := m.clearedFields[membership.FieldMembershipType]
+	return ok
+}
+
 // ResetMembershipType resets all changes to the "membership_type" field.
 func (m *MembershipMutation) ResetMembershipType() {
 	m.membership_type = nil
+	delete(m.clearedFields, membership.FieldMembershipType)
 }
 
 // SetMemberID sets the "member_id" field.
@@ -4915,9 +4928,22 @@ func (m *MembershipMutation) OldMemberID(ctx context.Context) (v uuid.UUID, err 
 	return oldValue.MemberID, nil
 }
 
+// ClearMemberID clears the value of the "member_id" field.
+func (m *MembershipMutation) ClearMemberID() {
+	m.member_id = nil
+	m.clearedFields[membership.FieldMemberID] = struct{}{}
+}
+
+// MemberIDCleared returns if the "member_id" field was cleared in this mutation.
+func (m *MembershipMutation) MemberIDCleared() bool {
+	_, ok := m.clearedFields[membership.FieldMemberID]
+	return ok
+}
+
 // ResetMemberID resets all changes to the "member_id" field.
 func (m *MembershipMutation) ResetMemberID() {
 	m.member_id = nil
+	delete(m.clearedFields, membership.FieldMemberID)
 }
 
 // SetResourceType sets the "resource_type" field.
@@ -4951,9 +4977,22 @@ func (m *MembershipMutation) OldResourceType(ctx context.Context) (v biz.Resourc
 	return oldValue.ResourceType, nil
 }
 
+// ClearResourceType clears the value of the "resource_type" field.
+func (m *MembershipMutation) ClearResourceType() {
+	m.resource_type = nil
+	m.clearedFields[membership.FieldResourceType] = struct{}{}
+}
+
+// ResourceTypeCleared returns if the "resource_type" field was cleared in this mutation.
+func (m *MembershipMutation) ResourceTypeCleared() bool {
+	_, ok := m.clearedFields[membership.FieldResourceType]
+	return ok
+}
+
 // ResetResourceType resets all changes to the "resource_type" field.
 func (m *MembershipMutation) ResetResourceType() {
 	m.resource_type = nil
+	delete(m.clearedFields, membership.FieldResourceType)
 }
 
 // SetResourceID sets the "resource_id" field.
@@ -4987,9 +5026,22 @@ func (m *MembershipMutation) OldResourceID(ctx context.Context) (v uuid.UUID, er
 	return oldValue.ResourceID, nil
 }
 
+// ClearResourceID clears the value of the "resource_id" field.
+func (m *MembershipMutation) ClearResourceID() {
+	m.resource_id = nil
+	m.clearedFields[membership.FieldResourceID] = struct{}{}
+}
+
+// ResourceIDCleared returns if the "resource_id" field was cleared in this mutation.
+func (m *MembershipMutation) ResourceIDCleared() bool {
+	_, ok := m.clearedFields[membership.FieldResourceID]
+	return ok
+}
+
 // ResetResourceID resets all changes to the "resource_id" field.
 func (m *MembershipMutation) ResetResourceID() {
 	m.resource_id = nil
+	delete(m.clearedFields, membership.FieldResourceID)
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
@@ -5272,7 +5324,20 @@ func (m *MembershipMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *MembershipMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(membership.FieldMembershipType) {
+		fields = append(fields, membership.FieldMembershipType)
+	}
+	if m.FieldCleared(membership.FieldMemberID) {
+		fields = append(fields, membership.FieldMemberID)
+	}
+	if m.FieldCleared(membership.FieldResourceType) {
+		fields = append(fields, membership.FieldResourceType)
+	}
+	if m.FieldCleared(membership.FieldResourceID) {
+		fields = append(fields, membership.FieldResourceID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -5285,6 +5350,20 @@ func (m *MembershipMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *MembershipMutation) ClearField(name string) error {
+	switch name {
+	case membership.FieldMembershipType:
+		m.ClearMembershipType()
+		return nil
+	case membership.FieldMemberID:
+		m.ClearMemberID()
+		return nil
+	case membership.FieldResourceType:
+		m.ClearResourceType()
+		return nil
+	case membership.FieldResourceID:
+		m.ClearResourceID()
+		return nil
+	}
 	return fmt.Errorf("unknown Membership nullable field %s", name)
 }
 

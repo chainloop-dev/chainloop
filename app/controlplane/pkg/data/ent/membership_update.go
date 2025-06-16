@@ -90,6 +90,12 @@ func (mu *MembershipUpdate) SetNillableMembershipType(bt *biz.MembershipType) *M
 	return mu
 }
 
+// ClearMembershipType clears the value of the "membership_type" field.
+func (mu *MembershipUpdate) ClearMembershipType() *MembershipUpdate {
+	mu.mutation.ClearMembershipType()
+	return mu
+}
+
 // SetMemberID sets the "member_id" field.
 func (mu *MembershipUpdate) SetMemberID(u uuid.UUID) *MembershipUpdate {
 	mu.mutation.SetMemberID(u)
@@ -101,6 +107,12 @@ func (mu *MembershipUpdate) SetNillableMemberID(u *uuid.UUID) *MembershipUpdate 
 	if u != nil {
 		mu.SetMemberID(*u)
 	}
+	return mu
+}
+
+// ClearMemberID clears the value of the "member_id" field.
+func (mu *MembershipUpdate) ClearMemberID() *MembershipUpdate {
+	mu.mutation.ClearMemberID()
 	return mu
 }
 
@@ -118,6 +130,12 @@ func (mu *MembershipUpdate) SetNillableResourceType(bt *biz.ResourceType) *Membe
 	return mu
 }
 
+// ClearResourceType clears the value of the "resource_type" field.
+func (mu *MembershipUpdate) ClearResourceType() *MembershipUpdate {
+	mu.mutation.ClearResourceType()
+	return mu
+}
+
 // SetResourceID sets the "resource_id" field.
 func (mu *MembershipUpdate) SetResourceID(u uuid.UUID) *MembershipUpdate {
 	mu.mutation.SetResourceID(u)
@@ -129,6 +147,12 @@ func (mu *MembershipUpdate) SetNillableResourceID(u *uuid.UUID) *MembershipUpdat
 	if u != nil {
 		mu.SetResourceID(*u)
 	}
+	return mu
+}
+
+// ClearResourceID clears the value of the "resource_id" field.
+func (mu *MembershipUpdate) ClearResourceID() *MembershipUpdate {
+	mu.mutation.ClearResourceID()
 	return mu
 }
 
@@ -254,14 +278,26 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mu.mutation.MembershipType(); ok {
 		_spec.SetField(membership.FieldMembershipType, field.TypeEnum, value)
 	}
+	if mu.mutation.MembershipTypeCleared() {
+		_spec.ClearField(membership.FieldMembershipType, field.TypeEnum)
+	}
 	if value, ok := mu.mutation.MemberID(); ok {
 		_spec.SetField(membership.FieldMemberID, field.TypeUUID, value)
+	}
+	if mu.mutation.MemberIDCleared() {
+		_spec.ClearField(membership.FieldMemberID, field.TypeUUID)
 	}
 	if value, ok := mu.mutation.ResourceType(); ok {
 		_spec.SetField(membership.FieldResourceType, field.TypeEnum, value)
 	}
+	if mu.mutation.ResourceTypeCleared() {
+		_spec.ClearField(membership.FieldResourceType, field.TypeEnum)
+	}
 	if value, ok := mu.mutation.ResourceID(); ok {
 		_spec.SetField(membership.FieldResourceID, field.TypeUUID, value)
+	}
+	if mu.mutation.ResourceIDCleared() {
+		_spec.ClearField(membership.FieldResourceID, field.TypeUUID)
 	}
 	if mu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -399,6 +435,12 @@ func (muo *MembershipUpdateOne) SetNillableMembershipType(bt *biz.MembershipType
 	return muo
 }
 
+// ClearMembershipType clears the value of the "membership_type" field.
+func (muo *MembershipUpdateOne) ClearMembershipType() *MembershipUpdateOne {
+	muo.mutation.ClearMembershipType()
+	return muo
+}
+
 // SetMemberID sets the "member_id" field.
 func (muo *MembershipUpdateOne) SetMemberID(u uuid.UUID) *MembershipUpdateOne {
 	muo.mutation.SetMemberID(u)
@@ -410,6 +452,12 @@ func (muo *MembershipUpdateOne) SetNillableMemberID(u *uuid.UUID) *MembershipUpd
 	if u != nil {
 		muo.SetMemberID(*u)
 	}
+	return muo
+}
+
+// ClearMemberID clears the value of the "member_id" field.
+func (muo *MembershipUpdateOne) ClearMemberID() *MembershipUpdateOne {
+	muo.mutation.ClearMemberID()
 	return muo
 }
 
@@ -427,6 +475,12 @@ func (muo *MembershipUpdateOne) SetNillableResourceType(bt *biz.ResourceType) *M
 	return muo
 }
 
+// ClearResourceType clears the value of the "resource_type" field.
+func (muo *MembershipUpdateOne) ClearResourceType() *MembershipUpdateOne {
+	muo.mutation.ClearResourceType()
+	return muo
+}
+
 // SetResourceID sets the "resource_id" field.
 func (muo *MembershipUpdateOne) SetResourceID(u uuid.UUID) *MembershipUpdateOne {
 	muo.mutation.SetResourceID(u)
@@ -438,6 +492,12 @@ func (muo *MembershipUpdateOne) SetNillableResourceID(u *uuid.UUID) *MembershipU
 	if u != nil {
 		muo.SetResourceID(*u)
 	}
+	return muo
+}
+
+// ClearResourceID clears the value of the "resource_id" field.
+func (muo *MembershipUpdateOne) ClearResourceID() *MembershipUpdateOne {
+	muo.mutation.ClearResourceID()
 	return muo
 }
 
@@ -593,14 +653,26 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 	if value, ok := muo.mutation.MembershipType(); ok {
 		_spec.SetField(membership.FieldMembershipType, field.TypeEnum, value)
 	}
+	if muo.mutation.MembershipTypeCleared() {
+		_spec.ClearField(membership.FieldMembershipType, field.TypeEnum)
+	}
 	if value, ok := muo.mutation.MemberID(); ok {
 		_spec.SetField(membership.FieldMemberID, field.TypeUUID, value)
+	}
+	if muo.mutation.MemberIDCleared() {
+		_spec.ClearField(membership.FieldMemberID, field.TypeUUID)
 	}
 	if value, ok := muo.mutation.ResourceType(); ok {
 		_spec.SetField(membership.FieldResourceType, field.TypeEnum, value)
 	}
+	if muo.mutation.ResourceTypeCleared() {
+		_spec.ClearField(membership.FieldResourceType, field.TypeEnum)
+	}
 	if value, ok := muo.mutation.ResourceID(); ok {
 		_spec.SetField(membership.FieldResourceID, field.TypeUUID, value)
+	}
+	if muo.mutation.ResourceIDCleared() {
+		_spec.ClearField(membership.FieldResourceID, field.TypeUUID)
 	}
 	if muo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

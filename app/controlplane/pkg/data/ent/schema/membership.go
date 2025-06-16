@@ -52,11 +52,11 @@ func (Membership) Fields() []ent.Field {
 		field.Enum("role").GoType(authz.Role("")),
 
 		// polymorphic membership for RBAC
-		field.Enum("membership_type").GoType(biz.MembershipType("")),
-		field.UUID("member_id", uuid.UUID{}),
+		field.Enum("membership_type").GoType(biz.MembershipType("")).Optional(),
+		field.UUID("member_id", uuid.UUID{}).Optional(),
 
-		field.Enum("resource_type").GoType(biz.ResourceType("")),
-		field.UUID("resource_id", uuid.UUID{}),
+		field.Enum("resource_type").GoType(biz.ResourceType("")).Optional(),
+		field.UUID("resource_id", uuid.UUID{}).Optional(),
 	}
 }
 
