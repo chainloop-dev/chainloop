@@ -9,7 +9,7 @@
     "limit": {
       "description": "Limit pagination to 100",
       "maximum": 100,
-      "minimum": 2,
+      "minimum": 1,
       "type": "integer"
     }
   },
