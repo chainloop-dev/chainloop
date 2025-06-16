@@ -30,7 +30,7 @@ message CursorPaginationRequest {
   // Limit pagination to 100
   int32 limit = 3 [
     (buf.validate.field).int32 = {
-      gte: 2,
+      gte: 1,
       lte: 100
     },
     (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
