@@ -17,6 +17,10 @@ package plugins
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/spf13/viper"
 )
 
 // Plugin is the interface that plugins must implement.
@@ -67,4 +71,32 @@ type FlagInfo struct {
 	Type        string
 	Default     any
 	Required    bool
+}
+
+// ProcessViperConfig extracts and processes viper configuration from plugin arguments.
+func ProcessViperConfig(args map[string]interface{}) (*viper.Viper, error) {
+	if viperConfigRaw, ok := args["viper_config"]; ok {
+		var viperConfig map[string]interface{}
+
+		switch val := viperConfigRaw.(type) {
+		case string:
+			err := json.Unmarshal([]byte(val), &viperConfig)
+			if err != nil {
+				return nil, fmt.Errorf("error deserializing viper_config JSON: %w", err)
+			}
+		default:
+			return nil, fmt.Errorf("viper config is not a string, got: %T", viperConfigRaw)
+		}
+
+		if viperConfig != nil {
+			v := viper.New()
+			for key, value := range viperConfig {
+				v.Set(key, value)
+			}
+			return v, nil
+		}
+		return nil, nil
+	}
+
+	return nil, fmt.Errorf("no viper_config found in arguments")
 }

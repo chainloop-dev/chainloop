@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -87,10 +88,17 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 			// Add positional arguments
 			arguments["args"] = args
 
-			// Pass the persistent flags from the root command to the plugin command
-			arguments["chainloop_cp_url"] = viper.GetString(confOptions.controlplaneAPI.viperKey)
-			arguments["chainloop_cas_url"] = viper.GetString(confOptions.CASAPI.viperKey)
-			arguments["chainloop_api_token"] = apiToken
+			// prepare Viper configuration for serialization and sending to the plugin durign execution
+			viperConfig := make(map[string]interface{})
+			for _, key := range viper.AllKeys() {
+				viperConfig[key] = viper.Get(key)
+			}
+
+			serializedConfig, err := json.Marshal(viperConfig)
+			if err != nil {
+				return fmt.Errorf("error while serializing viper config: %w", err)
+			}
+			arguments["viper_config"] = string(serializedConfig)
 
 			// Execute plugin command using the action pattern
 			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, arguments)
