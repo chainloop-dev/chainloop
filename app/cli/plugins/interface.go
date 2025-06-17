@@ -82,7 +82,7 @@ func ProcessViperConfig(args map[string]interface{}) (*viper.Viper, error) {
 		case string:
 			err := json.Unmarshal([]byte(val), &viperConfig)
 			if err != nil {
-				return nil, fmt.Errorf("error deserializing viper_config JSON: %w", err)
+				return nil, fmt.Errorf("error deserializing viper config JSON: %w", err)
 			}
 		default:
 			return nil, fmt.Errorf("viper config is not a string, got: %T", viperConfigRaw)
@@ -98,5 +98,5 @@ func ProcessViperConfig(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, nil
 	}
 
-	return nil, fmt.Errorf("no viper_config found in arguments")
+	return nil, fmt.Errorf("no viper config found in arguments")
 }

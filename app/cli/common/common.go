@@ -24,11 +24,11 @@ import (
 
 const (
 	AppName    = "chainloop"
-	PluginsDir = "plugins"
+	pluginsDir = "plugins"
 )
 
 func GetPluginsDir() string {
-	return filepath.Join(xdg.ConfigHome, AppName, PluginsDir)
+	return filepath.Join(xdg.ConfigHome, AppName, pluginsDir)
 }
 
 func GetConfigDir() string {
