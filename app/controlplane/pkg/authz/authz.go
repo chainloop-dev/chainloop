@@ -35,6 +35,7 @@ type Role string
 
 const (
 	// Actions
+
 	ActionRead   = "read"
 	ActionList   = "list"
 	ActionCreate = "create"
@@ -42,6 +43,7 @@ const (
 	ActionDelete = "delete"
 
 	// Resources
+
 	ResourceWorkflowContract      = "workflow_contract"
 	ResourceCASArtifact           = "cas_artifact"
 	ResourceCASBackend            = "cas_backend"
@@ -55,6 +57,7 @@ const (
 	ResourceWorkflow              = "workflow"
 	UserMembership                = "membership_user"
 	Organization                  = "organization"
+	ResourceProject               = "project"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -65,6 +68,14 @@ const (
 	RoleOwner  Role = "role:org:owner"
 	RoleAdmin  Role = "role:org:admin"
 	RoleViewer Role = "role:org:viewer"
+
+	// New RBAC roles
+
+	// RoleOrgMember is the role that users get by default when they join an organization.
+	// They cannot see projects until they are invited. However, they are able to create their own projects,
+	// so Casbin rules (role, resource-type, action) are NOT enough to check for permission, since we must check for ownership as well.
+	// That last check will be done at the service level.
+	RoleOrgMember Role = "role:org:member"
 )
 
 // resource, action tuple
@@ -111,6 +122,14 @@ var (
 
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
+
+	// Projects
+
+	PolicyProjectList   = &Policy{ResourceProject, ActionList}
+	PolicyProjectRead   = &Policy{ResourceProject, ActionRead}
+	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
+	PolicyProjectUpdate = &Policy{ResourceProject, ActionUpdate}
+	PolicyProjectDelete = &Policy{ResourceProject, ActionDelete}
 )
 
 // List of policies for each role
@@ -152,6 +171,13 @@ var rolesMap = map[Role][]*Policy{
 		// so we need the actual policy in place skipping it is not enough
 		PolicyArtifactUpload,
 		// + all the policies from the viewer role inherited automatically
+	},
+	RoleOrgMember: {
+		PolicyProjectList,
+		PolicyProjectRead,
+		PolicyProjectCreate,
+		PolicyProjectUpdate,
+		PolicyProjectDelete,
 	},
 }
 
