@@ -33,6 +33,11 @@ type Membership struct {
 	Org                  *Organization
 	User                 *User
 	Role                 authz.Role
+	// polymorphic membership
+	MembershipType MembershipType
+	MemberID       uuid.UUID
+	ResourceType   ResourceType
+	ResourceID     uuid.UUID
 }
 
 type MembershipRepo interface {
@@ -300,4 +305,37 @@ func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, 
 	}
 
 	return m, nil
+}
+
+// Polymorphic membership
+
+type MembershipType string
+type ResourceType string
+
+const (
+	MembershipTypeUser  MembershipType = "user"
+	MembershipTypeGroup MembershipType = "group"
+
+	ResourceTypeOrganization ResourceType = "organization"
+	ResourceTypeProject      ResourceType = "project"
+)
+
+// Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+func (MembershipType) Values() (values []string) {
+	values = append(values,
+		string(MembershipTypeUser),
+		string(MembershipTypeGroup),
+	)
+
+	return
+}
+
+// Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+func (ResourceType) Values() (values []string) {
+	values = append(values,
+		string(ResourceTypeOrganization),
+		string(ResourceTypeProject),
+	)
+
+	return
 }

@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -70,6 +71,16 @@ func CreatedAt(v time.Time) predicate.Membership {
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.Membership {
 	return predicate.Membership(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// MemberID applies equality check predicate on the "member_id" field. It's identical to MemberIDEQ.
+func MemberID(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldMemberID, v))
+}
+
+// ResourceID applies equality check predicate on the "resource_id" field. It's identical to ResourceIDEQ.
+func ResourceID(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldResourceID, v))
 }
 
 // CurrentEQ applies the EQ predicate on the "current" field.
@@ -190,6 +201,186 @@ func RoleNotIn(vs ...authz.Role) predicate.Membership {
 		v[i] = vs[i]
 	}
 	return predicate.Membership(sql.FieldNotIn(FieldRole, v...))
+}
+
+// MembershipTypeEQ applies the EQ predicate on the "membership_type" field.
+func MembershipTypeEQ(v biz.MembershipType) predicate.Membership {
+	vc := v
+	return predicate.Membership(sql.FieldEQ(FieldMembershipType, vc))
+}
+
+// MembershipTypeNEQ applies the NEQ predicate on the "membership_type" field.
+func MembershipTypeNEQ(v biz.MembershipType) predicate.Membership {
+	vc := v
+	return predicate.Membership(sql.FieldNEQ(FieldMembershipType, vc))
+}
+
+// MembershipTypeIn applies the In predicate on the "membership_type" field.
+func MembershipTypeIn(vs ...biz.MembershipType) predicate.Membership {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Membership(sql.FieldIn(FieldMembershipType, v...))
+}
+
+// MembershipTypeNotIn applies the NotIn predicate on the "membership_type" field.
+func MembershipTypeNotIn(vs ...biz.MembershipType) predicate.Membership {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Membership(sql.FieldNotIn(FieldMembershipType, v...))
+}
+
+// MembershipTypeIsNil applies the IsNil predicate on the "membership_type" field.
+func MembershipTypeIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldMembershipType))
+}
+
+// MembershipTypeNotNil applies the NotNil predicate on the "membership_type" field.
+func MembershipTypeNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldMembershipType))
+}
+
+// MemberIDEQ applies the EQ predicate on the "member_id" field.
+func MemberIDEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldMemberID, v))
+}
+
+// MemberIDNEQ applies the NEQ predicate on the "member_id" field.
+func MemberIDNEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNEQ(FieldMemberID, v))
+}
+
+// MemberIDIn applies the In predicate on the "member_id" field.
+func MemberIDIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldIn(FieldMemberID, vs...))
+}
+
+// MemberIDNotIn applies the NotIn predicate on the "member_id" field.
+func MemberIDNotIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNotIn(FieldMemberID, vs...))
+}
+
+// MemberIDGT applies the GT predicate on the "member_id" field.
+func MemberIDGT(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldGT(FieldMemberID, v))
+}
+
+// MemberIDGTE applies the GTE predicate on the "member_id" field.
+func MemberIDGTE(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldGTE(FieldMemberID, v))
+}
+
+// MemberIDLT applies the LT predicate on the "member_id" field.
+func MemberIDLT(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldLT(FieldMemberID, v))
+}
+
+// MemberIDLTE applies the LTE predicate on the "member_id" field.
+func MemberIDLTE(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldLTE(FieldMemberID, v))
+}
+
+// MemberIDIsNil applies the IsNil predicate on the "member_id" field.
+func MemberIDIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldMemberID))
+}
+
+// MemberIDNotNil applies the NotNil predicate on the "member_id" field.
+func MemberIDNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldMemberID))
+}
+
+// ResourceTypeEQ applies the EQ predicate on the "resource_type" field.
+func ResourceTypeEQ(v biz.ResourceType) predicate.Membership {
+	vc := v
+	return predicate.Membership(sql.FieldEQ(FieldResourceType, vc))
+}
+
+// ResourceTypeNEQ applies the NEQ predicate on the "resource_type" field.
+func ResourceTypeNEQ(v biz.ResourceType) predicate.Membership {
+	vc := v
+	return predicate.Membership(sql.FieldNEQ(FieldResourceType, vc))
+}
+
+// ResourceTypeIn applies the In predicate on the "resource_type" field.
+func ResourceTypeIn(vs ...biz.ResourceType) predicate.Membership {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Membership(sql.FieldIn(FieldResourceType, v...))
+}
+
+// ResourceTypeNotIn applies the NotIn predicate on the "resource_type" field.
+func ResourceTypeNotIn(vs ...biz.ResourceType) predicate.Membership {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Membership(sql.FieldNotIn(FieldResourceType, v...))
+}
+
+// ResourceTypeIsNil applies the IsNil predicate on the "resource_type" field.
+func ResourceTypeIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldResourceType))
+}
+
+// ResourceTypeNotNil applies the NotNil predicate on the "resource_type" field.
+func ResourceTypeNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldResourceType))
+}
+
+// ResourceIDEQ applies the EQ predicate on the "resource_id" field.
+func ResourceIDEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldResourceID, v))
+}
+
+// ResourceIDNEQ applies the NEQ predicate on the "resource_id" field.
+func ResourceIDNEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNEQ(FieldResourceID, v))
+}
+
+// ResourceIDIn applies the In predicate on the "resource_id" field.
+func ResourceIDIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldIn(FieldResourceID, vs...))
+}
+
+// ResourceIDNotIn applies the NotIn predicate on the "resource_id" field.
+func ResourceIDNotIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNotIn(FieldResourceID, vs...))
+}
+
+// ResourceIDGT applies the GT predicate on the "resource_id" field.
+func ResourceIDGT(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldGT(FieldResourceID, v))
+}
+
+// ResourceIDGTE applies the GTE predicate on the "resource_id" field.
+func ResourceIDGTE(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldGTE(FieldResourceID, v))
+}
+
+// ResourceIDLT applies the LT predicate on the "resource_id" field.
+func ResourceIDLT(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldLT(FieldResourceID, v))
+}
+
+// ResourceIDLTE applies the LTE predicate on the "resource_id" field.
+func ResourceIDLTE(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldLTE(FieldResourceID, v))
+}
+
+// ResourceIDIsNil applies the IsNil predicate on the "resource_id" field.
+func ResourceIDIsNil() predicate.Membership {
+	return predicate.Membership(sql.FieldIsNull(FieldResourceID))
+}
+
+// ResourceIDNotNil applies the NotNil predicate on the "resource_id" field.
+func ResourceIDNotNil() predicate.Membership {
+	return predicate.Membership(sql.FieldNotNull(FieldResourceID))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

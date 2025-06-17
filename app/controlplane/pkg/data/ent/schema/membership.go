@@ -24,6 +24,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -49,12 +50,21 @@ func (Membership) Fields() []ent.Field {
 			}),
 		// rbac role in the organization
 		field.Enum("role").GoType(authz.Role("")),
+
+		// polymorphic membership for RBAC
+		field.Enum("membership_type").GoType(biz.MembershipType("")).Optional(),
+		field.UUID("member_id", uuid.UUID{}).Optional(),
+
+		field.Enum("resource_type").GoType(biz.ResourceType("")).Optional(),
+		field.UUID("resource_id", uuid.UUID{}).Optional(),
 	}
 }
 
 func (Membership) Edges() []ent.Edge {
 	return []ent.Edge{
+		// Deprecated: use polymorphic membership instead
 		edge.From("organization", Organization.Type).Ref("memberships").Unique().Required(),
+		// Deprecated: use polymorphic membership instead
 		edge.From("user", User.Type).Ref("memberships").Unique().Required(),
 	}
 }
@@ -62,5 +72,6 @@ func (Membership) Edges() []ent.Edge {
 func (Membership) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("organization", "user").Unique(),
+		index.Fields("membership_type", "member_id", "resource_type", "resource_id").Unique(),
 	}
 }
