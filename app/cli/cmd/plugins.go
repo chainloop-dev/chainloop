@@ -52,6 +52,7 @@ func newPluginCmd() *cobra.Command {
 
 	cmd.AddCommand(newPluginListCmd())
 	cmd.AddCommand(newPluginDescribeCmd())
+	cmd.AddCommand(newPluginDownloadCmd())
 
 	return cmd
 }
@@ -85,7 +86,6 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 				}
 			}
 
-			// Add positional arguments
 			arguments["args"] = args
 
 			// prepare Viper configuration for serialization and sending to the plugin durign execution
@@ -236,6 +236,34 @@ func newPluginDescribeCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&pluginName, "name", "", "", "Name of the plugin to describe (required)")
 	cobra.CheckErr(cmd.MarkFlagRequired("name"))
+
+	return cmd
+}
+
+func newPluginDownloadCmd() *cobra.Command {
+	var url string
+	var filename string
+
+	cmd := &cobra.Command{
+		Use:   "download",
+		Short: "Download a plugin from a URL",
+		Long:  "Download a plugin from a specified URL to the plugins directory",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			result, err := action.NewPluginDownload(actionOpts, pluginManager).Run(ctx, url, filename)
+			if err != nil {
+				return fmt.Errorf("failed to download plugin: %w", err)
+			}
+
+			fmt.Printf("Plugin downloaded successfully to: %s\n", result.FilePath)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVarP(&url, "url", "u", "", "URL of the plugin to download (required)")
+	cmd.Flags().StringVarP(&filename, "filename", "f", "", "Custom filename to save the plugin as (optional)")
+	cobra.CheckErr(cmd.MarkFlagRequired("url"))
 
 	return cmd
 }
