@@ -241,17 +241,32 @@ func newPluginDescribeCmd() *cobra.Command {
 }
 
 func newPluginDownloadCmd() *cobra.Command {
-	var url string
+	var file string
 	var filename string
+	var useAlternate bool
+	var accessKeyID string
+	var secretAccessKey string
+	var location string
+	var region string
 
 	cmd := &cobra.Command{
 		Use:   "download",
-		Short: "Download a plugin from a URL",
-		Long:  "Download a plugin from a specified URL to the plugins directory",
+		Short: "Download a plugin from S3 or a HTTP URL",
+		Long:  "Download a plugin from a specified URL or S3 bucket to the plugins directory. By default, uses S3 download unless --alternate flag is specified.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			result, err := action.NewPluginDownload(actionOpts, pluginManager).Run(ctx, url, filename)
+			opts := &action.PluginDownloadOptions{
+				File:            file,
+				Filename:        filename,
+				UseAlternate:    useAlternate,
+				AccessKeyID:     accessKeyID,
+				SecretAccessKey: secretAccessKey,
+				Location:        location,
+				Region:          region,
+			}
+
+			result, err := action.NewPluginDownload(actionOpts, pluginManager).Run(ctx, opts)
 			if err != nil {
 				return fmt.Errorf("failed to download plugin: %w", err)
 			}
@@ -261,9 +276,18 @@ func newPluginDownloadCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&url, "url", "u", "", "URL of the plugin to download (required)")
-	cmd.Flags().StringVarP(&filename, "filename", "f", "", "Custom filename to save the plugin as (optional)")
-	cobra.CheckErr(cmd.MarkFlagRequired("url"))
+	// Common flags
+	cmd.Flags().StringVarP(&file, "file", "f", "", "S3 object key of the plugin to download or a URL of the file (required)")
+	cmd.Flags().StringVarP(&filename, "filename", "", "", "Custom filename to save the plugin as (optional)")
+	cmd.Flags().BoolVar(&useAlternate, "alternate", false, "Use HTTP download instead of S3 (optional)")
+
+	// S3 specific flags
+	cmd.Flags().StringVar(&accessKeyID, "access-key-id", "", "AWS Access Key ID for S3 download")
+	cmd.Flags().StringVar(&secretAccessKey, "secret-access-key", "", "AWS Secret Access Key for S3 download")
+	cmd.Flags().StringVar(&location, "location", "", "S3 location")
+	cmd.Flags().StringVar(&region, "region", "us-east-1", "AWS region for S3 download")
+
+	cobra.CheckErr(cmd.MarkFlagRequired("file"))
 
 	return cmd
 }
@@ -291,7 +315,6 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 					cmdInfo.Name, existingPlugin, pluginName)
 			}
 
-			// Register the command
 			pluginCmd := createPluginCommand(plugin, cmdInfo)
 			rootCmd.AddCommand(pluginCmd)
 			registeredCommands[cmdInfo.Name] = pluginName

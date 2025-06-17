@@ -25,6 +25,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/common"
 	"github.com/chainloop-dev/chainloop/app/cli/plugins"
+	s3backend "github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
 )
 
 // PluginList handles listing installed plugins
@@ -64,10 +65,22 @@ type PluginExecResult struct {
 	Data     map[string]any
 }
 
-// PluginDownload handles downloading a plugin from a URL
+// PluginDownload handles downloading a plugin from a URL or S3
 type PluginDownload struct {
 	cfg     *ActionsOpts
 	manager *plugins.Manager
+}
+
+// PluginDownloadOptions contains all options for downloading a plugin
+type PluginDownloadOptions struct {
+	File            string
+	Filename        string
+	UseAlternate    bool // If true, use HTTP download instead of S3
+	AccessKeyID     string
+	SecretAccessKey string
+	Location        string
+	Region          string
+	Endpoint        string
 }
 
 // PluginDownloadResult represents the result of downloading a plugin
@@ -157,8 +170,8 @@ func NewPluginDownload(cfg *ActionsOpts, manager *plugins.Manager) *PluginDownlo
 }
 
 // Run executes the PluginDownload action
-func (action *PluginDownload) Run(ctx context.Context, url string, customFilename string) (*PluginDownloadResult, error) {
-	action.cfg.Logger.Debug().Str("url", url).Msg("Downloading plugin")
+func (action *PluginDownload) Run(ctx context.Context, opts *PluginDownloadOptions) (*PluginDownloadResult, error) {
+	action.cfg.Logger.Debug().Str("file", opts.File).Bool("useAlternate", opts.UseAlternate).Msg("Downloading plugin")
 
 	// Create plugins directory if it doesn't exist
 	pluginsDir := common.GetPluginsDir()
@@ -167,13 +180,14 @@ func (action *PluginDownload) Run(ctx context.Context, url string, customFilenam
 		return nil, fmt.Errorf("failed to create plugins directory: %w", err)
 	}
 
-	filename := filepath.Base(url)
-	if customFilename != "" {
-		filename = customFilename
-		action.cfg.Logger.Debug().Str("customFilename", customFilename).Msg("Using custom filename")
+	// Determine filename
+	filename := filepath.Base(opts.File)
+	if opts.Filename != "" {
+		filename = opts.Filename
+		action.cfg.Logger.Debug().Str("customFilename", opts.Filename).Msg("Using custom filename")
 	} else if filename == "." || filename == "/" {
-		action.cfg.Logger.Error().Str("url", url).Msg("Invalid URL, could not determine filename")
-		return nil, fmt.Errorf("invalid URL, could not determine filename")
+		action.cfg.Logger.Error().Str("file", opts.File).Msg("Invalid URL or object key, could not determine filename")
+		return nil, fmt.Errorf("invalid URL or object key, could not determine filename")
 	}
 
 	filePath := filepath.Join(pluginsDir, filename)
@@ -187,29 +201,20 @@ func (action *PluginDownload) Run(ctx context.Context, url string, customFilenam
 	}
 	defer tempFile.Close()
 
-	resp, err := http.Get(url)
-	if err != nil {
-		os.Remove(tempFilePath)
-		action.cfg.Logger.Error().Err(err).Str("url", url).Msg("Failed to download plugin")
-		return nil, fmt.Errorf("failed to download plugin: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		os.Remove(tempFilePath)
-		action.cfg.Logger.Error().Int("statusCode", resp.StatusCode).Str("url", url).Msg("Failed to download plugin, server returned non-OK status")
-		return nil, fmt.Errorf("failed to download plugin, server returned status: %d", resp.StatusCode)
+	if opts.UseAlternate {
+		if err := downloadFromHTTP(ctx, action.cfg, tempFile, opts.File, tempFilePath); err != nil {
+			return nil, fmt.Errorf("failed to download file from a given URL: %w", err)
+		}
+	} else {
+		if err := downloadFromS3(ctx, action.cfg, tempFile, opts, tempFilePath); err != nil {
+			return nil, fmt.Errorf("failed to download file from S3: %w", err)
+		}
 	}
 
-	_, err = io.Copy(tempFile, resp.Body)
-	if err != nil {
-		os.Remove(tempFilePath)
-		action.cfg.Logger.Error().Err(err).Str("url", url).Msg("Failed to save plugin file")
-		return nil, fmt.Errorf("failed to save plugin file: %w", err)
-	}
-
+	// Close the file before renaming
 	tempFile.Close()
 
+	// Rename the temporary file to the final file
 	if err := os.Rename(tempFilePath, filePath); err != nil {
 		os.Remove(tempFilePath)
 		action.cfg.Logger.Error().Err(err).Str("tempPath", tempFilePath).Str("finalPath", filePath).Msg("Failed to rename temporary file")
@@ -223,8 +228,63 @@ func (action *PluginDownload) Run(ctx context.Context, url string, customFilenam
 		return nil, fmt.Errorf("failed to set executable permissions: %w", err)
 	}
 
-	action.cfg.Logger.Debug().Str("url", url).Str("path", filePath).Msg("Plugin downloaded successfully")
+	action.cfg.Logger.Debug().Str("file", opts.File).Str("path", filePath).Msg("Plugin downloaded successfully")
 	return &PluginDownloadResult{
 		FilePath: filePath,
 	}, nil
+}
+
+func downloadFromHTTP(_ context.Context, cfg *ActionsOpts, tempFile *os.File, url string, tempFilePath string) error {
+	cfg.Logger.Debug().Str("url", url).Msg("Downloading plugin from HTTP URL")
+
+	// Download the file using HTTP
+	resp, err := http.Get(url)
+	if err != nil {
+		os.Remove(tempFilePath)
+		cfg.Logger.Error().Err(err).Str("url", url).Msg("Failed to download plugin")
+		return fmt.Errorf("failed to download plugin: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		os.Remove(tempFilePath)
+		cfg.Logger.Error().Int("statusCode", resp.StatusCode).Str("url", url).Msg("Failed to download plugin, server returned non-OK status")
+		return fmt.Errorf("failed to download plugin, server returned status: %d", resp.StatusCode)
+	}
+
+	_, err = io.Copy(tempFile, resp.Body)
+	if err != nil {
+		os.Remove(tempFilePath)
+		cfg.Logger.Error().Err(err).Str("url", url).Msg("Failed to save plugin file")
+		return fmt.Errorf("failed to save plugin file: %w", err)
+	}
+
+	return nil
+}
+
+func downloadFromS3(ctx context.Context, cfg *ActionsOpts, tempFile *os.File, opts *PluginDownloadOptions, tempFilePath string) error {
+	cfg.Logger.Debug().Str("location", opts.Location).Str("key", opts.File).Msg("Downloading plugin from S3")
+
+	// Create S3 credentials
+	creds := &s3backend.Credentials{
+		AccessKeyID:     opts.AccessKeyID,
+		SecretAccessKey: opts.SecretAccessKey,
+		Region:          opts.Region,
+		Location:        opts.Location,
+	}
+
+	backend, err := s3backend.NewBackend(creds)
+	if err != nil {
+		os.Remove(tempFilePath)
+		cfg.Logger.Error().Err(err).Msg("Failed to create S3 backend")
+		return fmt.Errorf("failed to create S3 backend: %w", err)
+	}
+
+	if err := backend.Download(ctx, tempFile, opts.File); err != nil {
+		os.Remove(tempFilePath)
+		cfg.Logger.Error().Err(err).Str("key", opts.File).Msg("Failed to download plugin from S3")
+		return fmt.Errorf("failed to download plugin from S3: %w", err)
+	}
+
+	return nil
 }

@@ -1233,11 +1233,11 @@ Options inherited from parent commands
 
 #### chainloop config plugin download
 
-Download a plugin from a URL
+Download a plugin from S3 or a HTTP URL
 
 Synopsis
 
-Download a plugin from a specified URL to the plugins directory
+Download a plugin from a specified URL or S3 bucket to the plugins directory. By default, uses S3 download unless --alternate flag is specified.
 
 ```
 chainloop config plugin download [flags]
@@ -1246,9 +1246,14 @@ chainloop config plugin download [flags]
 Options
 
 ```
--f, --filename string   Custom filename to save the plugin as (optional)
--h, --help              help for download
--u, --url string        URL of the plugin to download (required)
+--access-key-id string       AWS Access Key ID for S3 download
+--alternate                  Use HTTP download instead of S3 (optional)
+-f, --file string                S3 object key of the plugin to download or a URL of the file (required)
+--filename string            Custom filename to save the plugin as (optional)
+-h, --help                       help for download
+--location string            S3 location
+--region string              AWS region for S3 download (default "us-east-1")
+--secret-access-key string   AWS Secret Access Key for S3 download
 ```
 
 Options inherited from parent commands
