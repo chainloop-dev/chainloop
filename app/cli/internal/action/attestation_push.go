@@ -154,6 +154,19 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	action.Logger.Debug().Msg("validation completed")
 
+	// Update status annotations
+	finalAnnotations := make([]*Annotation, 0, len(craftedAnnotations))
+	for name, value := range craftedAnnotations {
+		finalAnnotations = append(finalAnnotations, &Annotation{
+			Name:  name,
+			Value: value,
+		})
+	}
+
+	if attestationStatus != nil {
+		attestationStatus.Annotations = finalAnnotations
+	}
+
 	// Indicate that we are done with the attestation
 	crafter.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())
 	crafter.CraftingState.Attestation.BypassPolicyCheck = bypassPolicyCheck
