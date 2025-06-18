@@ -78,12 +78,7 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 		return nil, err
 	}
 
-	result := make([]*biz.Membership, 0, len(memberships))
-	for _, m := range memberships {
-		result = append(result, entMembershipToBiz(m))
-	}
-
-	return result, nil
+	return entMembershipsToBiz(memberships), nil
 }
 
 // FindByOrg finds all memberships for a given organization
@@ -97,12 +92,7 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz
 		return nil, err
 	}
 
-	result := make([]*biz.Membership, 0, len(memberships))
-	for _, m := range memberships {
-		result = append(result, entMembershipToBiz(m))
-	}
-
-	return result, nil
+	return entMembershipsToBiz(memberships), nil
 }
 
 // FindByOrgAndUser finds the membership for a given organization and user
@@ -152,6 +142,36 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 		return nil, err
 	}
 
+	return entMembershipToBiz(m), nil
+}
+
+func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	mm, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MemberID(userID),
+	).All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query memberships: %v", err)
+	}
+
+	return entMembershipsToBiz(mm), nil
+}
+
+func (r *MembershipRepo) GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType biz.ResourceType, resourceID uuid.UUID) (*biz.Membership, error) {
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(resourceType),
+		membership.ResourceID(resourceID),
+	).Only(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("resource %s not found", resourceID))
+		}
+		return nil, fmt.Errorf("failed to query memberships: %v", err)
+	}
 	return entMembershipToBiz(m), nil
 }
 
@@ -220,6 +240,15 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 // Delete deletes a membership by ID.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.Membership.DeleteOneID(id).Exec(ctx)
+}
+
+func entMembershipsToBiz(memberships []*ent.Membership) []*biz.Membership {
+	result := make([]*biz.Membership, 0, len(memberships))
+	for _, m := range memberships {
+		result = append(result, entMembershipToBiz(m))
+	}
+
+	return result
 }
 
 func entMembershipToBiz(m *ent.Membership) *biz.Membership {

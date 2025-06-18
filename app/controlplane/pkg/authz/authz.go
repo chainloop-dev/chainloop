@@ -441,6 +441,12 @@ func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
 		return fmt.Errorf("failed to add grouping policy: %w", err)
 	}
 
+	// org member inherits permissions, but in their own resources
+	_, err = e.AddGroupingPolicy(string(RoleOrgMember), string(RoleViewer))
+	if err != nil {
+		return fmt.Errorf("failed to add grouping policy: %w", err)
+	}
+
 	return nil
 }
 

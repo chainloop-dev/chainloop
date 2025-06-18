@@ -152,6 +152,14 @@ func (mc *MembershipCreate) SetOrganizationID(id uuid.UUID) *MembershipCreate {
 	return mc
 }
 
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (mc *MembershipCreate) SetNillableOrganizationID(id *uuid.UUID) *MembershipCreate {
+	if id != nil {
+		mc = mc.SetOrganizationID(*id)
+	}
+	return mc
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (mc *MembershipCreate) SetOrganization(o *Organization) *MembershipCreate {
 	return mc.SetOrganizationID(o.ID)
@@ -160,6 +168,14 @@ func (mc *MembershipCreate) SetOrganization(o *Organization) *MembershipCreate {
 // SetUserID sets the "user" edge to the User entity by ID.
 func (mc *MembershipCreate) SetUserID(id uuid.UUID) *MembershipCreate {
 	mc.mutation.SetUserID(id)
+	return mc
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (mc *MembershipCreate) SetNillableUserID(id *uuid.UUID) *MembershipCreate {
+	if id != nil {
+		mc = mc.SetUserID(*id)
+	}
 	return mc
 }
 
@@ -249,12 +265,6 @@ func (mc *MembershipCreate) check() error {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
-	}
-	if len(mc.mutation.OrganizationIDs()) == 0 {
-		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Membership.organization"`)}
-	}
-	if len(mc.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Membership.user"`)}
 	}
 	return nil
 }

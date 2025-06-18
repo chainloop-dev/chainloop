@@ -162,6 +162,14 @@ func (mu *MembershipUpdate) SetOrganizationID(id uuid.UUID) *MembershipUpdate {
 	return mu
 }
 
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (mu *MembershipUpdate) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdate {
+	if id != nil {
+		mu = mu.SetOrganizationID(*id)
+	}
+	return mu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (mu *MembershipUpdate) SetOrganization(o *Organization) *MembershipUpdate {
 	return mu.SetOrganizationID(o.ID)
@@ -170,6 +178,14 @@ func (mu *MembershipUpdate) SetOrganization(o *Organization) *MembershipUpdate {
 // SetUserID sets the "user" edge to the User entity by ID.
 func (mu *MembershipUpdate) SetUserID(id uuid.UUID) *MembershipUpdate {
 	mu.mutation.SetUserID(id)
+	return mu
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (mu *MembershipUpdate) SetNillableUserID(id *uuid.UUID) *MembershipUpdate {
+	if id != nil {
+		mu = mu.SetUserID(*id)
+	}
 	return mu
 }
 
@@ -238,12 +254,6 @@ func (mu *MembershipUpdate) check() error {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
-	}
-	if mu.mutation.OrganizationCleared() && len(mu.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.organization"`)
-	}
-	if mu.mutation.UserCleared() && len(mu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.user"`)
 	}
 	return nil
 }
@@ -507,6 +517,14 @@ func (muo *MembershipUpdateOne) SetOrganizationID(id uuid.UUID) *MembershipUpdat
 	return muo
 }
 
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (muo *MembershipUpdateOne) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdateOne {
+	if id != nil {
+		muo = muo.SetOrganizationID(*id)
+	}
+	return muo
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (muo *MembershipUpdateOne) SetOrganization(o *Organization) *MembershipUpdateOne {
 	return muo.SetOrganizationID(o.ID)
@@ -515,6 +533,14 @@ func (muo *MembershipUpdateOne) SetOrganization(o *Organization) *MembershipUpda
 // SetUserID sets the "user" edge to the User entity by ID.
 func (muo *MembershipUpdateOne) SetUserID(id uuid.UUID) *MembershipUpdateOne {
 	muo.mutation.SetUserID(id)
+	return muo
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (muo *MembershipUpdateOne) SetNillableUserID(id *uuid.UUID) *MembershipUpdateOne {
+	if id != nil {
+		muo = muo.SetUserID(*id)
+	}
 	return muo
 }
 
@@ -596,12 +622,6 @@ func (muo *MembershipUpdateOne) check() error {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
-	}
-	if muo.mutation.OrganizationCleared() && len(muo.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.organization"`)
-	}
-	if muo.mutation.UserCleared() && len(muo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.user"`)
 	}
 	return nil
 }

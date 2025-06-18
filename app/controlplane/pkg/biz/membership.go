@@ -51,6 +51,11 @@ type MembershipRepo interface {
 	SetRole(ctx context.Context, ID uuid.UUID, role authz.Role) (*Membership, error)
 	Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*Membership, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
+
+	// RBAC methods
+
+	ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType ResourceType, resourceID uuid.UUID) (*Membership, error)
 }
 
 type MembershipUseCase struct {
@@ -245,6 +250,15 @@ func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string) ([]*Member
 	}
 
 	return uc.repo.FindByOrg(ctx, orgUUID)
+}
+
+// ListAllMembershipsForUser retrieves all membership records by resource type
+func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error) {
+	return uc.repo.ListAllByUser(ctx, userID)
+}
+
+func (uc *MembershipUseCase) GetMembershipForResource(ctx context.Context, userID uuid.UUID, resourceType ResourceType, resourceID uuid.UUID) (*Membership, error) {
+	return uc.repo.GetMembershipByUserAndResource(ctx, userID, resourceType, resourceID)
 }
 
 // SetCurrent sets the current membership for the user

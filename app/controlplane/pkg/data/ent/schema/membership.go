@@ -63,15 +63,15 @@ func (Membership) Fields() []ent.Field {
 func (Membership) Edges() []ent.Edge {
 	return []ent.Edge{
 		// Deprecated: use polymorphic membership instead
-		edge.From("organization", Organization.Type).Ref("memberships").Unique().Required(),
+		edge.From("organization", Organization.Type).Ref("memberships").Unique(),
 		// Deprecated: use polymorphic membership instead
-		edge.From("user", User.Type).Ref("memberships").Unique().Required(),
+		edge.From("user", User.Type).Ref("memberships").Unique(),
 	}
 }
 
 func (Membership) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Edges("organization", "user").Unique(),
+		index.Edges("organization", "user"),
 		index.Fields("membership_type", "member_id", "resource_type", "resource_id").Unique(),
 	}
 }
