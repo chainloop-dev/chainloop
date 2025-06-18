@@ -32,7 +32,7 @@ import (
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
 
-// Middleware that injects the current user + organization to the context
+// WithCurrentUserMiddleware injects the current user + organization to the context
 func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -85,7 +85,7 @@ func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string
 	return entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, FirstName: u.FirstName, LastName: u.LastName, CreatedAt: u.CreatedAt}), nil
 }
 
-// Middleware that injects the current user + organization to the context during the attestation process
+// WithAttestationContextFromUser injects the current user + organization to the context during the attestation process
 // it leverages the existing middlewares to set the current user and organization
 // but with a skipping behavior since that's the one required by the attMiddleware multi-selector
 func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper) middleware.Middleware {

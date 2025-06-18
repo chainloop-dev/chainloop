@@ -178,6 +178,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyProjectCreate,
 		PolicyProjectUpdate,
 		PolicyProjectDelete,
+		PolicyWorkflowCreate,
 	},
 }
 
@@ -437,12 +438,6 @@ func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
 
 	// same for the owner
 	_, err = e.AddGroupingPolicy(string(RoleOwner), string(RoleAdmin))
-	if err != nil {
-		return fmt.Errorf("failed to add grouping policy: %w", err)
-	}
-
-	// org member inherits permissions, but in their own resources
-	_, err = e.AddGroupingPolicy(string(RoleOrgMember), string(RoleViewer))
 	if err != nil {
 		return fmt.Errorf("failed to add grouping policy: %w", err)
 	}
