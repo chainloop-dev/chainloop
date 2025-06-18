@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -237,8 +238,14 @@ func (action *PluginDownload) Run(ctx context.Context, opts *PluginDownloadOptio
 func downloadFromHTTP(_ context.Context, cfg *ActionsOpts, tempFile *os.File, url string, tempFilePath string) error {
 	cfg.Logger.Debug().Str("url", url).Msg("Downloading plugin from HTTP URL")
 
-	// Download the file using HTTP
-	resp, err := http.Get(url)
+	parsedURL, err := validateURL(url)
+	if err != nil {
+		os.Remove(tempFilePath)
+		cfg.Logger.Error().Err(err).Str("url", url).Msg("Invalid plugin URL")
+		return fmt.Errorf("invalid plugin URL: %w", err)
+	}
+
+	resp, err := http.Get(parsedURL.String())
 	if err != nil {
 		os.Remove(tempFilePath)
 		cfg.Logger.Error().Err(err).Str("url", url).Msg("Failed to download plugin")
@@ -262,10 +269,31 @@ func downloadFromHTTP(_ context.Context, cfg *ActionsOpts, tempFile *os.File, ur
 	return nil
 }
 
+// validateURL checks if the URL is valid and safe to use
+func validateURL(rawURL string) (*url.URL, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	if parsedURL.Scheme == "" {
+		return nil, fmt.Errorf("URL must have a scheme (http or https)")
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return nil, fmt.Errorf("URL scheme must be http or https, got: %s", parsedURL.Scheme)
+	}
+
+	if parsedURL.Host == "" {
+		return nil, fmt.Errorf("URL must have a host")
+	}
+
+	return parsedURL, nil
+}
+
 func downloadFromS3(ctx context.Context, cfg *ActionsOpts, tempFile *os.File, opts *PluginDownloadOptions, tempFilePath string) error {
 	cfg.Logger.Debug().Str("location", opts.Location).Str("key", opts.File).Msg("Downloading plugin from S3")
 
-	// Create S3 credentials
 	creds := &s3backend.Credentials{
 		AccessKeyID:     opts.AccessKeyID,
 		SecretAccessKey: opts.SecretAccessKey,

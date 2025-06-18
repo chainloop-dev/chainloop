@@ -62,7 +62,7 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 		Use:   cmdInfo.Name,
 		Short: cmdInfo.Description,
 		Long:  fmt.Sprintf("%s\n\nProvided by plugin: %s v%s", cmdInfo.Description, plugin.Metadata.Name, plugin.Metadata.Version),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
 			// Collect arguments
@@ -85,8 +85,6 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 					}
 				}
 			}
-
-			arguments["args"] = args
 
 			// prepare Viper configuration for serialization and sending to the plugin durign execution
 			viperConfig := make(map[string]interface{})
