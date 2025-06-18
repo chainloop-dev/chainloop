@@ -8,7 +8,7 @@ info:
   title: Chainloop API
   version: '1.0'
 servers:
-  - url: https://api.cp.chainloop.dev/
+  - url: https://cp.chainloop.dev/
 tags:
   - description: Referrer service for discovering referred content by digest
     name: ReferrerService
@@ -195,11 +195,6 @@ paths:
               schema:
                 type: string
                 example: Your download will begin shortly...
-              description: >
-                User-friendly message shown to browser users during the 1-second
-                delay.
-
-                Only present when Accept header contains "text/html".
       tags:
         - DownloadService
       security:

@@ -78,9 +78,6 @@ paths:
               schema:
                 type: string
                 example: "Your download will begin shortly..."
-              description: |
-                User-friendly message shown to browser users during the 1-second delay.
-                Only present when Accept header contains "text/html".
       tags:
         - DownloadService
       security:

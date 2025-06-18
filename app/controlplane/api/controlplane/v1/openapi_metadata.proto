@@ -18,7 +18,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   }
   schemes: [HTTPS]
   consumes: ["application/json"]
-  host: "api.cp.chainloop.dev"
+  host: "cp.chainloop.dev"
   security_definitions: {
     security: {
       key: "bearerToken"
