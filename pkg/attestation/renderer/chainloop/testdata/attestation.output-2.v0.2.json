@@ -115,6 +115,7 @@
       "projectVersionPrerelease": false,
       "team": "",
       "workflowID": "ab98be70-041b-4a82-97f3-daa56f61262b",
+      "workflowName": "test-new-types",
       "workflowRunID": "f97a0680-e64b-478a-9eea-df8864fa27f8"
     },
     "policyAttBlocked": false,
