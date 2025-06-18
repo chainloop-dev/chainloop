@@ -180,6 +180,9 @@ message Data {
 message Auth {
   // Authentication creates a JWT that uses this secret for signing
   string generated_jws_hmac_secret = 2;
+  // Additional HMAC verification keys for the JWT
+  // useful for key rotation
+  repeated string additional_hmac_verification_keys = 8;
   AllowList allow_list = 3;
   string cas_robot_account_private_key_path = 4;
   OIDC oidc = 6;
