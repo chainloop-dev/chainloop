@@ -1,6 +1,9 @@
+# This file is meant to document endpoints that cannot be generated automatically from the GRPc service definitions.
+# And to include additional metadata for the OpenAPI specification if needed and required.
+# This file will be automatically merged with the OpenAPI specification generated from the GRPC service definitions.
 openapi: 3.0.3
 info:
-  title: Chainloop API
+  title: Chainloop Controlplane API
   version: '1.0'
 
 paths:

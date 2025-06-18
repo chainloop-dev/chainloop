@@ -5,7 +5,7 @@ info:
     name: Chainloop Support
     url: https://chainloop.dev
   termsOfService: https://chainloop.dev/terms
-  title: Chainloop API
+  title: Chainloop Controlplane API
   version: '1.0'
 servers:
   - url: https://cp.chainloop.dev/
