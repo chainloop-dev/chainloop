@@ -1,0 +1,338 @@
+openapi: 3.0.1
+info:
+  contact:
+    email: support@chainloop.dev
+    name: Chainloop Support
+    url: https://chainloop.dev
+  termsOfService: https://chainloop.dev/terms
+  title: Chainloop API
+  version: '1.0'
+servers:
+  - url: https://api.cp.chainloop.dev/
+tags:
+  - description: Referrer service for discovering referred content by digest
+    name: ReferrerService
+    x-displayName: ReferrerService
+  - name: DownloadService
+    description: >-
+      Operations for downloading and managing artifacts from the Content
+      Addressable Storage
+    x-displayName: DownloadService
+externalDocs:
+  description: Chainloop Official Documentation
+  url: https://docs.chainloop.dev
+paths:
+  /discover/shared/{digest}:
+    get:
+      description: Returns the referrer item for a given digest in the public shared index
+      operationId: ReferrerService_DiscoverPublicShared
+      parameters:
+        - description: Digest is the unique identifier of the referrer to discover
+          in: path
+          name: digest
+          required: true
+          schema:
+            type: string
+        - description: >-
+            Kind is the optional type of referrer, i.e CONTAINER_IMAGE,
+            GIT_HEAD, ...
+
+            Used to filter and resolve ambiguities
+          in: query
+          name: kind
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1DiscoverPublicSharedResponse'
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+          description: An unexpected error response.
+      summary: Discover public shared referrer
+      tags:
+        - ReferrerService
+      security:
+        - bearerToken: []
+  /discover/{digest}:
+    get:
+      description: >-
+        Returns the referrer item for a given digest in the organizations of the
+        logged-in user
+      operationId: ReferrerService_DiscoverPrivate
+      parameters:
+        - description: Digest is the unique identifier of the referrer to discover
+          in: path
+          name: digest
+          required: true
+          schema:
+            type: string
+        - description: >-
+            Kind is the optional type of referrer, i.e CONTAINER_IMAGE,
+            GIT_HEAD, ...
+
+            Used to filter and resolve ambiguities
+          in: query
+          name: kind
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1ReferrerServiceDiscoverPrivateResponse'
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+          description: An unexpected error response.
+      summary: Discover private referrer
+      tags:
+        - ReferrerService
+      security:
+        - bearerToken: []
+  /download/{digest}:
+    get:
+      summary: Download Artifacts from CAS
+      description: >
+        Downloads artifacts stored in the Chainloop Content Addressable Storage
+        (CAS).
+
+
+        The artifact is identified by its cryptographic digest, which serves as
+        both the unique
+
+        identifier and integrity verification mechanism. The endpoint behavior
+        varies based on
+
+        the client type detected via the Accept header.
+
+
+        **Client-Specific Behavior:**
+
+        - **Browser clients** (Accept contains "text/html"): Receives a
+        user-friendly message with 
+          a 1-second delayed redirect using the Refresh header
+        - **CLI/API clients** (other Accept values): Receives immediate 302
+        redirect via Location header
+      parameters:
+        - name: digest
+          in: path
+          required: true
+          description: >
+            The full cryptographic digest of the artifact including algorithm
+            prefix.
+
+            Currently supports SHA-256 hashes only.
+          schema:
+            type: string
+            pattern: ^sha256:[a-f0-9]{64}$
+            minLength: 71
+            maxLength: 71
+          example: >-
+            sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        - name: Accept
+          in: header
+          required: false
+          description: >
+            Content type preferences. Affects redirect behavior:
+
+            - Contains "text/html": Browser-friendly redirect with delay and
+            message
+
+            - Other values: Direct 302 redirect (suitable for CLI tools like
+            curl)
+          schema:
+            type: string
+            example: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+      responses:
+        '302':
+          description: |
+            Successful redirect to artifact download URL.
+            Response behavior depends on the Accept header:
+
+            **For browsers** (Accept contains "text/html"):
+            - Uses `Refresh` header with 1-second delay
+            - Returns user-friendly message in response body
+            - Provides better UX for browser downloads
+
+            **For CLI tools** (other Accept values):
+            - Uses standard `Location` header for immediate redirect
+            - Empty response body
+            - Suitable for automated tools like curl
+          headers:
+            Location:
+              description: >
+                Pre-signed download URL for the artifact.
+
+                Present when client is NOT a browser (no "text/html" in Accept
+                header).
+              schema:
+                type: string
+                format: uri
+                example: >-
+                  https://api.cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=...
+            Refresh:
+              description: |
+                Browser redirect with delay and URL.
+                Present when client IS a browser ("text/html" in Accept header).
+                Format: "delay_seconds;url=redirect_url"
+              schema:
+                type: string
+                example: >-
+                  1;url=https://api.cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=...
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Your download will begin shortly...
+              description: >
+                User-friendly message shown to browser users during the 1-second
+                delay.
+
+                Only present when Accept header contains "text/html".
+      tags:
+        - DownloadService
+      security:
+        - bearerToken: []
+components:
+  schemas:
+    protobufAny:
+      additionalProperties:
+        type: object
+      example:
+        '@type': '@type'
+      properties:
+        '@type':
+          type: string
+      type: object
+    rpcStatus:
+      example:
+        code: 0
+        details:
+          - '@type': '@type'
+          - '@type': '@type'
+        message: message
+      properties:
+        code:
+          format: int32
+          type: integer
+        message:
+          type: string
+        details:
+          items:
+            $ref: '#/components/schemas/protobufAny'
+          type: array
+      type: object
+    v1DiscoverPublicSharedResponse:
+      description: Response for the DiscoverPublicShared method
+      example:
+        result:
+          downloadable: true
+          metadata:
+            key: metadata
+          public: true
+          references:
+            - null
+            - null
+          kind: kind
+          digest: digest
+          created_at: '2000-01-23T04:56:07.000+00:00'
+          annotations:
+            key: annotations
+      properties:
+        result:
+          $ref: '#/components/schemas/v1ReferrerItem'
+      title: DiscoverPublicSharedResponse
+      type: object
+    v1ReferrerItem:
+      description: It represents a referrer object in the system
+      example:
+        downloadable: true
+        metadata:
+          key: metadata
+        public: true
+        references:
+          - null
+          - null
+        kind: kind
+        digest: digest
+        created_at: '2000-01-23T04:56:07.000+00:00'
+        annotations:
+          key: annotations
+      properties:
+        digest:
+          title: Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead
+          type: string
+        kind:
+          description: Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+          type: string
+        downloadable:
+          title: >-
+            Downloadable indicates whether the referrer is downloadable or not
+            from CAS
+          type: boolean
+        public:
+          title: >-
+            Public indicates whether the referrer is public since it belongs to
+            a public workflow
+          type: boolean
+        references:
+          items:
+            $ref: '#/components/schemas/v1ReferrerItem'
+          title: References contains the list of related referrer items
+          type: array
+        created_at:
+          format: date-time
+          title: CreatedAt is the timestamp when the referrer was created
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          title: >-
+            Metadata contains additional descriptive information about the
+            referrer
+          type: object
+        annotations:
+          additionalProperties:
+            type: string
+          title: Annotations are key-value pairs associated with the referrer
+          type: object
+      title: ReferrerItem
+      type: object
+    v1ReferrerServiceDiscoverPrivateResponse:
+      description: Response for the DiscoverPrivate method
+      example:
+        result:
+          downloadable: true
+          metadata:
+            key: metadata
+          public: true
+          references:
+            - null
+            - null
+          kind: kind
+          digest: digest
+          created_at: '2000-01-23T04:56:07.000+00:00'
+          annotations:
+            key: annotations
+      properties:
+        result:
+          $ref: '#/components/schemas/v1ReferrerItem'
+      title: ReferrerServiceDiscoverPrivateResponse
+      type: object
+  securitySchemes:
+    bearerToken:
+      description: Bearer token for authentication
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

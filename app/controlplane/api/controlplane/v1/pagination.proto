@@ -30,7 +30,7 @@ message CursorPaginationRequest {
   // Limit pagination to 100
   int32 limit = 3 [
     (buf.validate.field).int32 = {
-      gte: 1,
+      gte: 1
       lte: 100
     },
     (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
@@ -42,7 +42,10 @@ message OffsetPaginationRequest {
   // The (zero-based) offset of the first item returned in the collection.
   int32 page = 1 [(buf.validate.field).int32.gte = 1];
   // The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.
-  int32 page_size = 2 [(buf.validate.field).int32.gt = 0, (buf.validate.field).int32.lte = 100];
+  int32 page_size = 2 [
+    (buf.validate.field).int32.gt = 0,
+    (buf.validate.field).int32.lte = 100
+  ];
 }
 
 // OffsetPaginationResponse is used to return the pagination information

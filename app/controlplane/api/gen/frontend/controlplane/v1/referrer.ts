@@ -6,44 +6,57 @@ import { Timestamp } from "../../google/protobuf/timestamp";
 
 export const protobufPackage = "controlplane.v1";
 
+/** ReferrerServiceDiscoverPrivateRequest is the request for the DiscoverPrivate method */
 export interface ReferrerServiceDiscoverPrivateRequest {
+  /** Digest is the unique identifier of the referrer to discover */
   digest: string;
   /**
-   * Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+   * Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
    * Used to filter and resolve ambiguities
    */
   kind: string;
 }
 
+/** DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method */
 export interface DiscoverPublicSharedRequest {
+  /** Digest is the unique identifier of the referrer to discover */
   digest: string;
   /**
-   * Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+   * Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
    * Used to filter and resolve ambiguities
    */
   kind: string;
 }
 
+/** DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method */
 export interface DiscoverPublicSharedResponse {
+  /** Result is the discovered referrer item */
   result?: ReferrerItem;
 }
 
+/** ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method */
 export interface ReferrerServiceDiscoverPrivateResponse {
+  /** Result is the discovered referrer item */
   result?: ReferrerItem;
 }
 
+/** ReferrerItem represents a referrer object in the system */
 export interface ReferrerItem {
   /** Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead */
   digest: string;
   /** Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ... */
   kind: string;
-  /** Whether the referrer is downloadable or not from CAS */
+  /** Downloadable indicates whether the referrer is downloadable or not from CAS */
   downloadable: boolean;
-  /** Whether the referrer is public since it belongs to a public workflow */
+  /** Public indicates whether the referrer is public since it belongs to a public workflow */
   public: boolean;
+  /** References contains the list of related referrer items */
   references: ReferrerItem[];
+  /** CreatedAt is the timestamp when the referrer was created */
   createdAt?: Date;
+  /** Metadata contains additional descriptive information about the referrer */
   metadata: { [key: string]: string };
+  /** Annotations are key-value pairs associated with the referrer */
   annotations: { [key: string]: string };
 }
 

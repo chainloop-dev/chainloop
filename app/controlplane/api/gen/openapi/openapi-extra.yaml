@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: Chainloop API
+  version: '1.0'
+
+paths:
+  /download/{digest}:
+    get:
+      summary: Download Artifacts from CAS
+      description: |
+        Downloads artifacts stored in the Chainloop Content Addressable Storage (CAS).
+        
+        The artifact is identified by its cryptographic digest, which serves as both the unique
+        identifier and integrity verification mechanism. The endpoint behavior varies based on
+        the client type detected via the Accept header.
+        
+        **Client-Specific Behavior:**
+        - **Browser clients** (Accept contains "text/html"): Receives a user-friendly message with 
+          a 1-second delayed redirect using the Refresh header
+        - **CLI/API clients** (other Accept values): Receives immediate 302 redirect via Location header
+      parameters:
+        - name: digest
+          in: path
+          required: true
+          description: |
+            The full cryptographic digest of the artifact including algorithm prefix.
+            Currently supports SHA-256 hashes only.
+          schema:
+            type: string
+            pattern: '^sha256:[a-f0-9]{64}$'
+            minLength: 71
+            maxLength: 71
+          example: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        - name: Accept
+          in: header
+          required: false
+          description: |
+            Content type preferences. Affects redirect behavior:
+            - Contains "text/html": Browser-friendly redirect with delay and message
+            - Other values: Direct 302 redirect (suitable for CLI tools like curl)
+          schema:
+            type: string
+            example: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      responses:
+        '302':
+          description: |
+            Successful redirect to artifact download URL.
+            Response behavior depends on the Accept header:
+            
+            **For browsers** (Accept contains "text/html"):
+            - Uses `Refresh` header with 1-second delay
+            - Returns user-friendly message in response body
+            - Provides better UX for browser downloads
+            
+            **For CLI tools** (other Accept values):
+            - Uses standard `Location` header for immediate redirect
+            - Empty response body
+            - Suitable for automated tools like curl
+          headers:
+            Location:
+              description: |
+                Pre-signed download URL for the artifact.
+                Present when client is NOT a browser (no "text/html" in Accept header).
+              schema:
+                type: string
+                format: uri
+                example: "https://api.cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=..."
+            Refresh:
+              description: |
+                Browser redirect with delay and URL.
+                Present when client IS a browser ("text/html" in Accept header).
+                Format: "delay_seconds;url=redirect_url"
+              schema:
+                type: string
+                example: "1;url=https://api.cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=..."
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Your download will begin shortly..."
+              description: |
+                User-friendly message shown to browser users during the 1-second delay.
+                Only present when Accept header contains "text/html".
+      tags:
+        - DownloadService
+      security:
+        - bearerToken: []
+tags:
+  - name: DownloadService
+    description: Operations for downloading and managing artifacts from the Content Addressable Storage
