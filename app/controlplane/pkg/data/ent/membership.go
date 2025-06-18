@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
@@ -31,11 +30,11 @@ type Membership struct {
 	// Role holds the value of the "role" field.
 	Role authz.Role `json:"role,omitempty"`
 	// MembershipType holds the value of the "membership_type" field.
-	MembershipType biz.MembershipType `json:"membership_type,omitempty"`
+	MembershipType authz.MembershipType `json:"membership_type,omitempty"`
 	// MemberID holds the value of the "member_id" field.
 	MemberID uuid.UUID `json:"member_id,omitempty"`
 	// ResourceType holds the value of the "resource_type" field.
-	ResourceType biz.ResourceType `json:"resource_type,omitempty"`
+	ResourceType authz.ResourceType `json:"resource_type,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID uuid.UUID `json:"resource_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -145,7 +144,7 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field membership_type", values[i])
 			} else if value.Valid {
-				m.MembershipType = biz.MembershipType(value.String)
+				m.MembershipType = authz.MembershipType(value.String)
 			}
 		case membership.FieldMemberID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -157,7 +156,7 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
 			} else if value.Valid {
-				m.ResourceType = biz.ResourceType(value.String)
+				m.ResourceType = authz.ResourceType(value.String)
 			}
 		case membership.FieldResourceID:
 			if value, ok := values[i].(*uuid.UUID); !ok {

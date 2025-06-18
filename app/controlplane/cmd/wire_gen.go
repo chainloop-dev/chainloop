@@ -242,6 +242,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		APITokenUseCase:     apiTokenUseCase,
 		OrganizationUseCase: organizationUseCase,
 		WorkflowUseCase:     workflowUseCase,
+		MembershipUseCase:   membershipUseCase,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
 		RobotAccountSvc:     robotAccountService,

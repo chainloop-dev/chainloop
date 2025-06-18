@@ -22,12 +22,14 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/google/uuid"
 )
 
-func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
+func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membershipUC *biz.MembershipUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
@@ -55,6 +57,15 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				}
 			}
 
+			orgRole := CurrentAuthzSubject(ctx)
+			if orgRole == string(authz.RoleOrgMember) {
+				// Org member enables the new RBAC behavior. Let's store all memberships in the context.
+				ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC, logger);
+				if err != nil {
+					return nil, fmt.Errorf("error setting current org membership: %w", err)
+				}
+			}
+
 			org := entities.CurrentOrg(ctx)
 			if org == nil {
 				return nil, errors.New("org not found")
@@ -65,6 +76,28 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 			return handler(ctx, req)
 		}
 	}
+}
+
+func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC *biz.MembershipUseCase, logger *log.Helper) (context.Context, error) {
+	uid, err := uuid.Parse(u.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	mm, err := membershipUC.ListAllMembershipsForUser(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("error getting membership list: %w", err)
+	}
+
+	resourceMemberships := make([]*entities.ResourceMembership, 0, len(mm))
+	for _, m := range mm {
+		resourceMemberships = append(resourceMemberships, &entities.ResourceMembership{
+			Role:         m.Role,
+			ResourceType: m.ResourceType,
+			ResourceID:   m.ResourceID,
+		})
+	}
+	return entities.WithMembership(ctx, &entities.Membership{Resources: resourceMemberships}), nil
 }
 
 func setCurrentOrganizationFromHeader(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder) (context.Context, error) {

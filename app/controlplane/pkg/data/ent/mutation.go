@@ -4586,9 +4586,9 @@ type MembershipMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	role                *authz.Role
-	membership_type     *biz.MembershipType
+	membership_type     *authz.MembershipType
 	member_id           *uuid.UUID
-	resource_type       *biz.ResourceType
+	resource_type       *authz.ResourceType
 	resource_id         *uuid.UUID
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
@@ -4849,12 +4849,12 @@ func (m *MembershipMutation) ResetRole() {
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (m *MembershipMutation) SetMembershipType(bt biz.MembershipType) {
-	m.membership_type = &bt
+func (m *MembershipMutation) SetMembershipType(at authz.MembershipType) {
+	m.membership_type = &at
 }
 
 // MembershipType returns the value of the "membership_type" field in the mutation.
-func (m *MembershipMutation) MembershipType() (r biz.MembershipType, exists bool) {
+func (m *MembershipMutation) MembershipType() (r authz.MembershipType, exists bool) {
 	v := m.membership_type
 	if v == nil {
 		return
@@ -4865,7 +4865,7 @@ func (m *MembershipMutation) MembershipType() (r biz.MembershipType, exists bool
 // OldMembershipType returns the old "membership_type" field's value of the Membership entity.
 // If the Membership object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MembershipMutation) OldMembershipType(ctx context.Context) (v biz.MembershipType, err error) {
+func (m *MembershipMutation) OldMembershipType(ctx context.Context) (v authz.MembershipType, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMembershipType is only allowed on UpdateOne operations")
 	}
@@ -4947,12 +4947,12 @@ func (m *MembershipMutation) ResetMemberID() {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (m *MembershipMutation) SetResourceType(bt biz.ResourceType) {
-	m.resource_type = &bt
+func (m *MembershipMutation) SetResourceType(at authz.ResourceType) {
+	m.resource_type = &at
 }
 
 // ResourceType returns the value of the "resource_type" field in the mutation.
-func (m *MembershipMutation) ResourceType() (r biz.ResourceType, exists bool) {
+func (m *MembershipMutation) ResourceType() (r authz.ResourceType, exists bool) {
 	v := m.resource_type
 	if v == nil {
 		return
@@ -4963,7 +4963,7 @@ func (m *MembershipMutation) ResourceType() (r biz.ResourceType, exists bool) {
 // OldResourceType returns the old "resource_type" field's value of the Membership entity.
 // If the Membership object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MembershipMutation) OldResourceType(ctx context.Context) (v biz.ResourceType, err error) {
+func (m *MembershipMutation) OldResourceType(ctx context.Context) (v authz.ResourceType, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldResourceType is only allowed on UpdateOne operations")
 	}
@@ -5268,7 +5268,7 @@ func (m *MembershipMutation) SetField(name string, value ent.Value) error {
 		m.SetRole(v)
 		return nil
 	case membership.FieldMembershipType:
-		v, ok := value.(biz.MembershipType)
+		v, ok := value.(authz.MembershipType)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5282,7 +5282,7 @@ func (m *MembershipMutation) SetField(name string, value ent.Value) error {
 		m.SetMemberID(v)
 		return nil
 	case membership.FieldResourceType:
-		v, ok := value.(biz.ResourceType)
+		v, ok := value.(authz.ResourceType)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

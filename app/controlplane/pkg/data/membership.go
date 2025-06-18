@@ -46,9 +46,9 @@ func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, cu
 		SetOrganizationID(orgID).
 		SetCurrent(current).
 		SetRole(role).
-		SetMembershipType(biz.MembershipTypeUser).
+		SetMembershipType(authz.MembershipTypeUser).
 		SetMemberID(userID).
-		SetResourceType(biz.ResourceTypeOrganization).
+		SetResourceType(authz.ResourceTypeOrganization).
 		SetResourceID(orgID).
 		Save(ctx)
 	if err != nil {
@@ -70,8 +70,8 @@ func (r *MembershipRepo) loadMembership(ctx context.Context, id uuid.UUID) (*ent
 
 func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
 	memberships, err := r.data.DB.Membership.Query().Where(
-		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
 	).WithOrganization().All(ctx)
 	if err != nil {
@@ -84,8 +84,8 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 // FindByOrg finds all memberships for a given organization
 func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
 	memberships, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
-		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ResourceIDEQ(orgID),
 	).WithUser().WithOrganization().All(ctx)
 	if err != nil {
@@ -98,9 +98,9 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz
 // FindByOrgAndUser finds the membership for a given organization and user
 func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
-		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ResourceIDEQ(orgID),
 	).WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -119,9 +119,9 @@ func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName strin
 	}
 
 	m, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
-		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ResourceID(org.ID),
 	).WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -133,9 +133,9 @@ func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName strin
 
 func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
-		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ID(membershipID),
 	).WithUser().WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -147,7 +147,7 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 
 func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
 	mm, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
 	).All(ctx)
 
@@ -158,9 +158,9 @@ func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([
 	return entMembershipsToBiz(mm), nil
 }
 
-func (r *MembershipRepo) GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType biz.ResourceType, resourceID uuid.UUID) (*biz.Membership, error) {
+func (r *MembershipRepo) GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType authz.ResourceType, resourceID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
 		membership.ResourceTypeEQ(resourceType),
 		membership.ResourceID(resourceID),
@@ -177,8 +177,8 @@ func (r *MembershipRepo) GetMembershipByUserAndResource(ctx context.Context, use
 
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(biz.MembershipTypeUser),
-		membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ResourceIDEQ(orgID),
 		membership.ID(membershipID),
 	).WithUser().WithOrganization().Only(ctx)
@@ -199,8 +199,8 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// 1 - Set all the memberships to current=false
 		if err = tx.Membership.Update().Where(
-			membership.ResourceTypeEQ(biz.ResourceTypeOrganization),
-			membership.MembershipTypeEQ(biz.MembershipTypeUser),
+			membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+			membership.MembershipTypeEQ(authz.MembershipTypeUser),
 			membership.MemberID(m.MemberID)).
 			SetCurrent(false).Exec(ctx); err != nil {
 			return err

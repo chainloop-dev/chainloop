@@ -9,7 +9,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -113,7 +112,7 @@ func RoleValidator(r authz.Role) error {
 }
 
 // MembershipTypeValidator is a validator for the "membership_type" field enum values. It is called by the builders before save.
-func MembershipTypeValidator(mt biz.MembershipType) error {
+func MembershipTypeValidator(mt authz.MembershipType) error {
 	switch mt {
 	case "user", "group":
 		return nil
@@ -123,7 +122,7 @@ func MembershipTypeValidator(mt biz.MembershipType) error {
 }
 
 // ResourceTypeValidator is a validator for the "resource_type" field enum values. It is called by the builders before save.
-func ResourceTypeValidator(rt biz.ResourceType) error {
+func ResourceTypeValidator(rt authz.ResourceType) error {
 	switch rt {
 	case "organization", "project":
 		return nil

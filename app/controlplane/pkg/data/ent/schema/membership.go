@@ -24,7 +24,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -52,10 +51,10 @@ func (Membership) Fields() []ent.Field {
 		field.Enum("role").GoType(authz.Role("")),
 
 		// polymorphic membership for RBAC
-		field.Enum("membership_type").GoType(biz.MembershipType("")).Optional(),
+		field.Enum("membership_type").GoType(authz.MembershipType("")).Optional(),
 		field.UUID("member_id", uuid.UUID{}).Optional(),
 
-		field.Enum("resource_type").GoType(biz.ResourceType("")).Optional(),
+		field.Enum("resource_type").GoType(authz.ResourceType("")).Optional(),
 		field.UUID("resource_id", uuid.UUID{}).Optional(),
 	}
 }

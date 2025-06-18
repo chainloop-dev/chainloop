@@ -34,9 +34,9 @@ type Membership struct {
 	User                 *User
 	Role                 authz.Role
 	// polymorphic membership
-	MembershipType MembershipType
+	MembershipType authz.MembershipType
 	MemberID       uuid.UUID
-	ResourceType   ResourceType
+	ResourceType   authz.ResourceType
 	ResourceID     uuid.UUID
 }
 
@@ -55,7 +55,7 @@ type MembershipRepo interface {
 	// RBAC methods
 
 	ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
-	GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType ResourceType, resourceID uuid.UUID) (*Membership, error)
+	GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType authz.ResourceType, resourceID uuid.UUID) (*Membership, error)
 }
 
 type MembershipUseCase struct {
@@ -257,7 +257,7 @@ func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, user
 	return uc.repo.ListAllByUser(ctx, userID)
 }
 
-func (uc *MembershipUseCase) GetMembershipForResource(ctx context.Context, userID uuid.UUID, resourceType ResourceType, resourceID uuid.UUID) (*Membership, error) {
+func (uc *MembershipUseCase) GetMembershipForResource(ctx context.Context, userID uuid.UUID, resourceType authz.ResourceType, resourceID uuid.UUID) (*Membership, error) {
 	return uc.repo.GetMembershipByUserAndResource(ctx, userID, resourceType, resourceID)
 }
 
@@ -319,37 +319,4 @@ func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, 
 	}
 
 	return m, nil
-}
-
-// Polymorphic membership
-
-type MembershipType string
-type ResourceType string
-
-const (
-	MembershipTypeUser  MembershipType = "user"
-	MembershipTypeGroup MembershipType = "group"
-
-	ResourceTypeOrganization ResourceType = "organization"
-	ResourceTypeProject      ResourceType = "project"
-)
-
-// Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
-func (MembershipType) Values() (values []string) {
-	values = append(values,
-		string(MembershipTypeUser),
-		string(MembershipTypeGroup),
-	)
-
-	return
-}
-
-// Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
-func (ResourceType) Values() (values []string) {
-	values = append(values,
-		string(ResourceTypeOrganization),
-		string(ResourceTypeProject),
-	)
-
-	return
 }

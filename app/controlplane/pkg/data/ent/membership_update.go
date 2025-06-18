@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
@@ -77,15 +76,15 @@ func (mu *MembershipUpdate) SetNillableRole(a *authz.Role) *MembershipUpdate {
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (mu *MembershipUpdate) SetMembershipType(bt biz.MembershipType) *MembershipUpdate {
-	mu.mutation.SetMembershipType(bt)
+func (mu *MembershipUpdate) SetMembershipType(at authz.MembershipType) *MembershipUpdate {
+	mu.mutation.SetMembershipType(at)
 	return mu
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableMembershipType(bt *biz.MembershipType) *MembershipUpdate {
-	if bt != nil {
-		mu.SetMembershipType(*bt)
+func (mu *MembershipUpdate) SetNillableMembershipType(at *authz.MembershipType) *MembershipUpdate {
+	if at != nil {
+		mu.SetMembershipType(*at)
 	}
 	return mu
 }
@@ -117,15 +116,15 @@ func (mu *MembershipUpdate) ClearMemberID() *MembershipUpdate {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (mu *MembershipUpdate) SetResourceType(bt biz.ResourceType) *MembershipUpdate {
-	mu.mutation.SetResourceType(bt)
+func (mu *MembershipUpdate) SetResourceType(at authz.ResourceType) *MembershipUpdate {
+	mu.mutation.SetResourceType(at)
 	return mu
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableResourceType(bt *biz.ResourceType) *MembershipUpdate {
-	if bt != nil {
-		mu.SetResourceType(*bt)
+func (mu *MembershipUpdate) SetNillableResourceType(at *authz.ResourceType) *MembershipUpdate {
+	if at != nil {
+		mu.SetResourceType(*at)
 	}
 	return mu
 }
@@ -432,15 +431,15 @@ func (muo *MembershipUpdateOne) SetNillableRole(a *authz.Role) *MembershipUpdate
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (muo *MembershipUpdateOne) SetMembershipType(bt biz.MembershipType) *MembershipUpdateOne {
-	muo.mutation.SetMembershipType(bt)
+func (muo *MembershipUpdateOne) SetMembershipType(at authz.MembershipType) *MembershipUpdateOne {
+	muo.mutation.SetMembershipType(at)
 	return muo
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableMembershipType(bt *biz.MembershipType) *MembershipUpdateOne {
-	if bt != nil {
-		muo.SetMembershipType(*bt)
+func (muo *MembershipUpdateOne) SetNillableMembershipType(at *authz.MembershipType) *MembershipUpdateOne {
+	if at != nil {
+		muo.SetMembershipType(*at)
 	}
 	return muo
 }
@@ -472,15 +471,15 @@ func (muo *MembershipUpdateOne) ClearMemberID() *MembershipUpdateOne {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (muo *MembershipUpdateOne) SetResourceType(bt biz.ResourceType) *MembershipUpdateOne {
-	muo.mutation.SetResourceType(bt)
+func (muo *MembershipUpdateOne) SetResourceType(at authz.ResourceType) *MembershipUpdateOne {
+	muo.mutation.SetResourceType(at)
 	return muo
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableResourceType(bt *biz.ResourceType) *MembershipUpdateOne {
-	if bt != nil {
-		muo.SetResourceType(*bt)
+func (muo *MembershipUpdateOne) SetNillableResourceType(at *authz.ResourceType) *MembershipUpdateOne {
+	if at != nil {
+		muo.SetResourceType(*at)
 	}
 	return muo
 }
