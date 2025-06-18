@@ -49,6 +49,7 @@ type attachmentRequest struct {
 	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1,description=The name of the project to create and send the SBOMs to"`
 
 	ParentID string `json:"parentID,omitempty" jsonschema:"minLength=1,description=ID of parent project to create a new project under"`
+	Filter   string `json:"filter,omitempty" jsonschema:"minLength=1,description=Annotation filter in format 'key=value' (e.g. 'environment=prod')"`
 }
 
 // Enforces the requirement that parentID requires the presence of projectName
@@ -71,6 +72,7 @@ type attachmentConfig struct {
 	ProjectID   string `json:"projectId"`
 	ProjectName string `json:"projectName"`
 	ParentID    string `json:"parentId"`
+	Filter      string `json:"filter"`
 }
 
 const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
@@ -148,10 +150,10 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
-	i.Logger.Infow("msg", "attachment OK", "projectID", request.ProjectID, "projectName", request.ProjectName, "parentID", request.ParentID)
+	i.Logger.Infow("msg", "attachment OK", "projectID", request.ProjectID, "projectName", request.ProjectName, "parentID", request.ParentID, "filter", request.Filter)
 
 	// We want to store the project configuration
-	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.ProjectID, ProjectName: request.ProjectName, ParentID: request.ParentID})
+	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.ProjectID, ProjectName: request.ProjectName, ParentID: request.ParentID, Filter: request.Filter})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -195,6 +197,23 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	var attachmentConfig *attachmentConfig
 	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
 		return errors.New("invalid attachment configuration")
+	}
+
+	// Check if upload filter is specified
+	if attachmentConfig.Filter != "" {
+		filterKey, filterValue, err := parseFilter(attachmentConfig.Filter)
+		if err != nil {
+			return fmt.Errorf("invalid filter format: %w", err)
+		}
+
+		attAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
+		if !annotationMatches(attAnnotations, filterKey, filterValue) {
+			l.Infow("msg", "filter condition not met, skipping SBOM upload",
+				"filter", attachmentConfig.Filter,
+				"materialName", sbom.Name,
+			)
+			return nil
+		}
 	}
 
 	// Calculate the project name based on the template
@@ -242,6 +261,21 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	l.Info("execution finished")
 
 	return nil
+}
+
+func parseFilter(filter string) (key, value string, err error) {
+	parts := strings.SplitN(filter, "=", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("filter must be in 'key=value' format")
+	}
+	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
+}
+
+func annotationMatches(annotations map[string]string, key, expectedValue string) bool {
+	if val, exists := annotations[key]; exists {
+		return val == expectedValue
+	}
+	return false
 }
 
 type interpolationContext struct {
@@ -330,6 +364,14 @@ func validateAttachmentConfiguration(rc *registrationConfig, ac *attachmentReque
 
 	if ac.ParentID != "" && ac.ProjectName == "" {
 		return errors.New("project name must be provided to work with parent id")
+	}
+
+	if ac.Filter != "" {
+		if !strings.Contains(ac.Filter, "=") ||
+			strings.HasPrefix(ac.Filter, "=") ||
+			strings.HasSuffix(ac.Filter, "=") {
+			return errors.New("filter must be in 'key=value' format")
+		}
 	}
 
 	return nil

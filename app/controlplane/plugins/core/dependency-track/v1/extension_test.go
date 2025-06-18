@@ -305,16 +305,18 @@ func TestValidateExecuteOpts(t *testing.T) {
 
 func TestValidateAttachmentConfiguration(t *testing.T) {
 	testCases := []struct {
-		allowAutoCreate                  bool
-		projectID, projectName, parentID string
-		errMsg                           string
+		allowAutoCreate                          bool
+		projectID, projectName, parentID, filter string
+		errMsg                                   string
 	}{
-		{false, "project-id", "", "", ""},
-		{true, "", "project-name", "", ""},
-		{true, "", "project-name", "parent-id", ""},
-		{false, "", "project-name", "", "auto creation of projects is not supported in this integration"},
-		{false, "", "", "", "project id or name must be provided"},
-		{false, "project-id", "", "parent-id", "project name must be provided to work with parent id"},
+		{false, "project-id", "", "", "", ""},
+		{true, "", "project-name", "", "", ""},
+		{true, "", "project-name", "parent-id", "", ""},
+		{false, "", "project-name", "", "", "auto creation of projects is not supported in this integration"},
+		{false, "", "", "", "", "project id or name must be provided"},
+		{false, "project-id", "", "parent-id", "", "project name must be provided to work with parent id"},
+		{true, "", "project-name", "", "environment=prod", ""},
+		{true, "", "project-name", "", "filter", "filter must be in 'key=value' format"},
 	}
 
 	for _, tc := range testCases {
@@ -326,6 +328,7 @@ func TestValidateAttachmentConfiguration(t *testing.T) {
 			ProjectID:   tc.projectID,
 			ProjectName: tc.projectName,
 			ParentID:    tc.parentID,
+			Filter:      tc.filter,
 		}
 		err := validateAttachmentConfiguration(rc, ac)
 		if tc.errMsg != "" {
