@@ -158,23 +158,6 @@ func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([
 	return entMembershipsToBiz(mm), nil
 }
 
-func (r *MembershipRepo) GetMembershipByUserAndResource(ctx context.Context, userID uuid.UUID, resourceType authz.ResourceType, resourceID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(authz.MembershipTypeUser),
-		membership.MemberID(userID),
-		membership.ResourceTypeEQ(resourceType),
-		membership.ResourceID(resourceID),
-	).Only(ctx)
-
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, biz.NewErrNotFound(fmt.Sprintf("resource %s not found", resourceID))
-		}
-		return nil, fmt.Errorf("failed to query memberships: %v", err)
-	}
-	return entMembershipToBiz(m), nil
-}
-
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),

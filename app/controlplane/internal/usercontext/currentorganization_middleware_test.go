@@ -65,6 +65,7 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			usecase := bizMocks.NewUserOrgFinder(t)
+			msMock := bizMocks.NewMembershipsRBAC(t)
 			ctx := context.Background()
 			if tc.loggedIn {
 				ctx = entities.WithCurrentUser(ctx, &entities.User{ID: wantUser.ID})
@@ -80,7 +81,7 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
-			m := WithCurrentOrganizationMiddleware(usecase, logger)
+			m := WithCurrentOrganizationMiddleware(usecase, msMock, logger)
 			_, err := m(
 				func(ctx context.Context, _ interface{}) (interface{}, error) {
 					if tc.wantErr {

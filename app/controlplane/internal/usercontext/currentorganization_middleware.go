@@ -33,7 +33,7 @@ import (
 
 var membershipsCache = expirable.NewLRU[string, *entities.Membership](0, nil, time.Second*10)
 
-func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membershipUC *biz.MembershipUseCase, logger *log.Helper) middleware.Middleware {
+func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membershipUC biz.MembershipsRBAC, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
@@ -83,7 +83,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membership
 }
 
 // setCurrentMembershipsForUser retrieves all user memberships for RBAC
-func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC *biz.MembershipUseCase) (context.Context, error) {
+func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC biz.MembershipsRBAC) (context.Context, error) {
 	var membership *entities.Membership
 	var ok bool
 
