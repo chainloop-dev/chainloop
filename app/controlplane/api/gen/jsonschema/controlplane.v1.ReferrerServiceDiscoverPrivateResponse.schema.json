@@ -2,9 +2,11 @@
   "$id": "controlplane.v1.ReferrerServiceDiscoverPrivateResponse.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method",
   "properties": {
     "result": {
-      "$ref": "controlplane.v1.ReferrerItem.schema.json"
+      "$ref": "controlplane.v1.ReferrerItem.schema.json",
+      "description": "Result is the discovered referrer item"
     }
   },
   "title": "Referrer Service Discover Private Response",

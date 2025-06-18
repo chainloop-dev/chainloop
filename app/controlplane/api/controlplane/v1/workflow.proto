@@ -18,10 +18,10 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "buf/validate/validate.proto";
-import "controlplane/v1/response_messages.proto";
 import "controlplane/v1/pagination.proto";
-import "workflowcontract/v1/crafting_schema.proto";
+import "controlplane/v1/response_messages.proto";
 import "jsonfilter/v1/jsonfilter.proto";
+import "workflowcontract/v1/crafting_schema.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -116,17 +116,26 @@ message WorkflowServiceListRequest {
   // If the workflow is public
   optional bool workflow_public = 5;
   // The type of runner that ran the workflow
-  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 6 [(buf.validate.field).enum = {
-    not_in: [0]
-  }, (buf.validate.field).ignore_empty = true];
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 6 [
+    (buf.validate.field).enum = {
+      not_in: [0]
+    },
+    (buf.validate.field).ignore_empty = true
+  ];
   // The status of the last workflow run
-  RunStatus workflow_run_last_status = 7 [(buf.validate.field).enum = {
-    not_in: [0]
-  }, (buf.validate.field).ignore_empty = true];
+  RunStatus workflow_run_last_status = 7 [
+    (buf.validate.field).enum = {
+      not_in: [0]
+    },
+    (buf.validate.field).ignore_empty = true
+  ];
   // The time window for the last known workflow activity
-  WorkflowActivityWindow workflow_last_activity_window = 8 [(buf.validate.field).enum = {
-    not_in: [0]
-  }, (buf.validate.field).ignore_empty = true];
+  WorkflowActivityWindow workflow_last_activity_window = 8 [
+    (buf.validate.field).enum = {
+      not_in: [0]
+    },
+    (buf.validate.field).ignore_empty = true
+  ];
   // Pagination options
   OffsetPaginationRequest pagination = 9;
   // JSON filters to apply to the workflow

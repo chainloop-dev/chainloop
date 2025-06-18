@@ -17,13 +17,13 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
 import "buf/validate/validate.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
 service CASRedirectService {
-	// Retrieve the URL to download an artifact in CAS
-	rpc GetDownloadURL (GetDownloadURLRequest) returns (GetDownloadURLResponse);
+  // Retrieve the URL to download an artifact in CAS
+  rpc GetDownloadURL(GetDownloadURLRequest) returns (GetDownloadURLResponse);
 }
 
 message GetDownloadURLRequest {
@@ -32,7 +32,7 @@ message GetDownloadURLRequest {
 
 message GetDownloadURLResponse {
   Result result = 1;
-  
+
   message Result {
     string url = 2;
   }

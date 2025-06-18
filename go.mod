@@ -74,6 +74,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/in-toto/attestation v1.1.0
 	github.com/invopop/jsonschema v0.7.0
@@ -155,7 +156,6 @@ require (
 	github.com/google/go-github/v55 v55.0.0 // indirect
 	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect

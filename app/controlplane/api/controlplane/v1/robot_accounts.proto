@@ -17,19 +17,19 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
 service RobotAccountService {
-	rpc Create (RobotAccountServiceCreateRequest) returns (RobotAccountServiceCreateResponse);
-	rpc List (RobotAccountServiceListRequest) returns (RobotAccountServiceListResponse);
-	rpc Revoke (RobotAccountServiceRevokeRequest) returns (RobotAccountServiceRevokeResponse);
+  rpc Create(RobotAccountServiceCreateRequest) returns (RobotAccountServiceCreateResponse);
+  rpc List(RobotAccountServiceListRequest) returns (RobotAccountServiceListResponse);
+  rpc Revoke(RobotAccountServiceRevokeRequest) returns (RobotAccountServiceRevokeResponse);
 }
 
 message RobotAccountServiceCreateRequest {
-  string name = 1; 
+  string name = 1;
   string workflow_id = 2 [(buf.validate.field).string.uuid = true];
 }
 
@@ -37,13 +37,13 @@ message RobotAccountServiceCreateResponse {
   RobotAccountFull result = 1;
 
   message RobotAccountFull {
-      string id = 1;
-      string name = 2;
-      string workflow_id = 3;
-      google.protobuf.Timestamp created_at = 4;
-      google.protobuf.Timestamp revoked_at = 5;
-      // The key is returned only during creation
-      string key = 6;
+    string id = 1;
+    string name = 2;
+    string workflow_id = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp revoked_at = 5;
+    // The key is returned only during creation
+    string key = 6;
   }
 }
 

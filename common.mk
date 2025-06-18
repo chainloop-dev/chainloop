@@ -14,8 +14,10 @@ init: init-api-tools
 init-api-tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-	go install github.com/bufbuild/buf/cmd/buf@v1.40.1
+	go install github.com/bufbuild/buf/cmd/buf@v1.49.0
 	go install github.com/envoyproxy/protoc-gen-validate@v1.0.1
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.26.3
+	go install github.com/mikefarah/yq/v4@v4.45.1
 	# Tools fixed to a specific version via its commit since they are not released standalone
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@v2.0.0-20231102162905-3fc8fb7a0a0b
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20231102162905-3fc8fb7a0a0b

@@ -7,8 +7,8 @@ API_PROTO_FILES=$(shell find api -name *.proto)
 # generate api proto
 api:
 	cd ./pkg/attestation/crafter/api && buf generate
-	make -C ./app/controlplane api
-	make -C ./app/artifact-cas api
+	cd ./app/controlplane && make api
+	cd ./app/artifact-cas && make api
 
 .PHONY: config
 # generate config proto

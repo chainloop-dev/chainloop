@@ -163,7 +163,7 @@ message Attestation {
 
 // The runner environment in which the attestation was crafted
 message RunnerEnvironment {
-     // Workflow file path that was used during build 
+  // Workflow file path that was used during build
   string workflow_file_path = 1;
 
   // Runner environment name, i.e. github-hosted
