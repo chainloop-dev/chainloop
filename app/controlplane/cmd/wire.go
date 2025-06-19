@@ -90,9 +90,10 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger) []service.NewOpt {
+func serviceOpts(l log.Logger, enforcer *authz.Enforcer) []service.NewOpt {
 	return []service.NewOpt{
 		service.WithLogger(l),
+		service.WithEnforcer(enforcer),
 	}
 }
 

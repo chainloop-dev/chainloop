@@ -21,11 +21,13 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 	"github.com/google/wire"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -125,7 +127,8 @@ func newService(opts ...NewOpt) *service {
 }
 
 type service struct {
-	log *log.Helper
+	log      *log.Helper
+	enforcer *authz.Enforcer
 }
 
 type NewOpt func(s *service)
@@ -134,6 +137,36 @@ func WithLogger(logger log.Logger) NewOpt {
 	return func(s *service) {
 		s.log = servicelogger.ScopedHelper(logger, "service")
 	}
+}
+
+func WithEnforcer(enforcer *authz.Enforcer) NewOpt {
+	return func(s *service) {
+		s.enforcer = enforcer
+	}
+}
+
+func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resourceType authz.ResourceType, resourceID uuid.UUID) error {
+	sub := usercontext.CurrentAuthzSubject(ctx)
+	if sub != string(authz.RoleOrgMember) {
+		return nil
+	}
+
+	// Apply RBAC
+	m := entities.CurrentMembership(ctx)
+	// check for specific resource role
+	for _, rm := range m.Resources {
+		if rm.ResourceType == resourceType && rm.ResourceID == resourceID {
+			pass, err := s.enforcer.Enforce(string(rm.Role), op)
+			if err != nil {
+				return handleUseCaseErr(err, s.log)
+			}
+			if !pass {
+				return errors.Forbidden("forbidden", "user not authorized")
+			}
+			return nil
+		}
+	}
+	return errors.Forbidden("forbidden", "user not authorized")
 }
 
 // NOTE: some of these http errors get automatically translated to gRPC status codes

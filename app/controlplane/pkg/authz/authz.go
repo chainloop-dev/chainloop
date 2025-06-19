@@ -76,6 +76,9 @@ const (
 	// so Casbin rules (role, resource-type, action) are NOT enough to check for permission, since we must check for ownership as well.
 	// That last check will be done at the service level.
 	RoleOrgMember Role = "role:org:member"
+
+	RoleProjectAdmin Role = "role:project:admin"
+	RoleProjectViewer Role = "role:project:viewer"
 )
 
 // resource, action tuple
@@ -178,6 +181,8 @@ var rolesMap = map[Role][]*Policy{
 		PolicyProjectCreate,
 		PolicyProjectUpdate,
 		PolicyProjectDelete,
+	},
+	RoleProjectAdmin: {
 		PolicyWorkflowCreate,
 	},
 }

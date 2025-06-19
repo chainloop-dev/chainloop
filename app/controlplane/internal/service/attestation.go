@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
@@ -54,6 +55,7 @@ type AttestationService struct {
 	orgUseCase              *biz.OrganizationUseCase
 	prometheusUseCase       *biz.PrometheusUseCase
 	projectVersionUseCase   *biz.ProjectVersionUseCase
+	projectUseCase          *biz.ProjectUseCase
 	signingUseCase          *biz.SigningUseCase
 }
 
@@ -71,6 +73,7 @@ type NewAttestationServiceOpts struct {
 	ReferrerUC         *biz.ReferrerUseCase
 	OrgUC              *biz.OrganizationUseCase
 	PromUC             *biz.PrometheusUseCase
+	ProjectUC          *biz.ProjectUseCase
 	ProjectVersionUC   *biz.ProjectVersionUseCase
 	SigningUseCase     *biz.SigningUseCase
 	Opts               []NewOpt
@@ -92,6 +95,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		referrerUseCase:         opts.ReferrerUC,
 		orgUseCase:              opts.OrgUC,
 		prometheusUseCase:       opts.PromUC,
+		projectUseCase:          opts.ProjectUC,
 		projectVersionUseCase:   opts.ProjectVersionUC,
 		signingUseCase:          opts.SigningUseCase,
 	}
@@ -640,6 +644,16 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	apiToken := usercontext.CurrentRobotAccount(ctx)
 	if apiToken == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
+	}
+
+	// try to load project and apply RBAC if needed
+	p, err := s.projectUseCase.FindProjectByReference(ctx, apiToken.OrgID, &biz.EntityRef{Name: req.ProjectName})
+	if err != nil {
+		if !biz.IsNotFound(err) {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	} else if err = s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, p.ID); err != nil {
+		return nil, err
 	}
 
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
