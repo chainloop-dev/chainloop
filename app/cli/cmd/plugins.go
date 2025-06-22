@@ -147,7 +147,7 @@ func newPluginListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List installed plugins and their commands",
+		Short:   "List installed plugins",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			result, err := action.NewPluginList(actionOpts, pluginManager).Run(context.Background())
 			if err != nil {
@@ -156,33 +156,26 @@ func newPluginListCmd() *cobra.Command {
 
 			if flagOutputFormat == formatJSON {
 				type pluginInfo struct {
-					Name        string   `json:"name"`
-					Version     string   `json:"version"`
-					Description string   `json:"description"`
-					Path        string   `json:"path"`
-					Commands    []string `json:"commands"`
+					Name        string `json:"name"`
+					Version     string `json:"version"`
+					Description string `json:"description"`
+					Path        string `json:"path"`
 				}
 
 				var items []pluginInfo
 				for name, plugin := range result.Plugins {
-					var commands []string
-					for _, cmd := range plugin.Metadata.Commands {
-						commands = append(commands, cmd.Name)
-					}
-
 					items = append(items, pluginInfo{
 						Name:        name,
 						Version:     plugin.Metadata.Version,
 						Description: plugin.Metadata.Description,
 						Path:        plugin.Path,
-						Commands:    commands,
 					})
 				}
 
 				return encodeJSON(items)
 			}
 
-			pluginListTableOutput(result.Plugins, result.CommandsMap)
+			pluginListTableOutput(result.Plugins)
 
 			return nil
 		},
@@ -330,7 +323,7 @@ func cleanupPlugins() {
 }
 
 // Table output functions
-func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin, commandsMap map[string]string) {
+func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
 	if len(plugins) == 0 {
 		fmt.Println("No plugins installed")
 		return
@@ -349,14 +342,6 @@ func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin, commandsMap
 		t.AppendSeparator()
 	}
 
-	t.Render()
-
-	t = newTableWriter()
-	t.AppendHeader(table.Row{"Plugin", "Command"})
-	for cmd, plugin := range commandsMap {
-		t.AppendRow(table.Row{plugin, cmd})
-		t.AppendSeparator()
-	}
 	t.Render()
 }
 
