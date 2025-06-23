@@ -316,7 +316,7 @@ func TestValidateAttachmentConfiguration(t *testing.T) {
 		{false, "", "", "", "", "project id or name must be provided"},
 		{false, "project-id", "", "parent-id", "", "project name must be provided to work with parent id"},
 		{true, "", "project-name", "", "environment=prod", ""},
-		{true, "", "project-name", "", "filter", "filter must be in 'key=value' format"},
+		{true, "", "project-name", "", "filter", "invalid filter: invalid filter segment 'filter' - must be 'key=value'"},
 	}
 
 	for _, tc := range testCases {
