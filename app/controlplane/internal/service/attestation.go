@@ -690,5 +690,10 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// reset cache, since we might have created a new project
+	if rbacEnabled(ctx) {
+		usercontext.ResetMembershipsCache()
+	}
+
 	return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 }

@@ -171,6 +171,7 @@ var rolesMap = map[Role][]*Policy{
 	RoleOrgMember: {
 		// Allowed endpoints. RBAC will be applied where needed
 		PolicyWorkflowRead,
+		PolicyWorkflowContractRead,
 		PolicyWorkflowContractCreate,
 	},
 	RoleProjectAdmin: {

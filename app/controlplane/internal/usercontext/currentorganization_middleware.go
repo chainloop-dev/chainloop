@@ -114,6 +114,10 @@ func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, members
 	return entities.WithMembership(ctx, membership), nil
 }
 
+func ResetMembershipsCache() {
+	membershipsCache.Purge()
+}
+
 func setCurrentOrganizationFromHeader(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder) (context.Context, error) {
 	membership, err := userUC.MembershipInOrg(ctx, user.ID, orgName)
 	if err != nil {
