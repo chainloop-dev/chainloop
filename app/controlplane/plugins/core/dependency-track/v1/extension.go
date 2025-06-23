@@ -199,16 +199,11 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 		return errors.New("invalid attachment configuration")
 	}
 
-	// Check if upload filter is specified
+	// Check if upload filter is specified and if it matches attestation annotations
 	if attachmentConfig.Filter != "" {
-		filterKey, filterValue, err := parseFilter(attachmentConfig.Filter)
-		if err != nil {
-			return fmt.Errorf("invalid filter format: %w", err)
-		}
-
 		attAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
-		if !annotationMatches(attAnnotations, filterKey, filterValue) {
-			l.Infow("msg", "filter condition not met, skipping SBOM upload",
+		if !matchesAllFilters(attAnnotations, attachmentConfig.Filter) {
+			l.Infow("filter conditions not met, skipping SBOM upload",
 				"filter", attachmentConfig.Filter,
 				"materialName", sbom.Name,
 			)
@@ -263,12 +258,23 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	return nil
 }
 
-func parseFilter(filter string) (key, value string, err error) {
-	parts := strings.SplitN(filter, "=", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("filter must be in 'key=value' format")
+func matchesAllFilters(annotations map[string]string, filter string) bool {
+	if filter == "" {
+		return true
 	}
-	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
+
+	for _, f := range strings.Split(filter, ",") {
+		parts := strings.SplitN(strings.TrimSpace(f), "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key, value := parts[0], parts[1]
+		if !annotationMatches(annotations, key, value) {
+			return false
+		}
+	}
+	return true
 }
 
 func annotationMatches(annotations map[string]string, key, expectedValue string) bool {
@@ -366,12 +372,8 @@ func validateAttachmentConfiguration(rc *registrationConfig, ac *attachmentReque
 		return errors.New("project name must be provided to work with parent id")
 	}
 
-	if ac.Filter != "" {
-		if !strings.Contains(ac.Filter, "=") ||
-			strings.HasPrefix(ac.Filter, "=") ||
-			strings.HasSuffix(ac.Filter, "=") {
-			return errors.New("filter must be in 'key=value' format")
-		}
+	if err := validateFilter(ac.Filter); err != nil {
+		return fmt.Errorf("invalid filter: %w", err)
 	}
 
 	return nil
@@ -398,5 +400,19 @@ func validateExecuteOpts(m *sdk.ExecuteMaterial, regConfig *sdk.RegistrationResp
 		return errors.New("missing attachment configuration")
 	}
 
+	return nil
+}
+
+func validateFilter(filter string) error {
+	if filter == "" {
+		return nil
+	}
+
+	for _, f := range strings.Split(filter, ",") {
+		f = strings.TrimSpace(f)
+		if !strings.Contains(f, "=") || strings.HasPrefix(f, "=") || strings.HasSuffix(f, "=") {
+			return fmt.Errorf("invalid filter segment '%s' - must be 'key=value'", f)
+		}
+	}
 	return nil
 }
