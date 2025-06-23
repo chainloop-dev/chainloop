@@ -126,14 +126,6 @@ var (
 
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
-
-	// Projects
-
-	PolicyProjectList   = &Policy{ResourceProject, ActionList}
-	PolicyProjectRead   = &Policy{ResourceProject, ActionRead}
-	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
-	PolicyProjectUpdate = &Policy{ResourceProject, ActionUpdate}
-	PolicyProjectDelete = &Policy{ResourceProject, ActionDelete}
 )
 
 // List of policies for each role
@@ -178,11 +170,6 @@ var rolesMap = map[Role][]*Policy{
 	},
 	RoleOrgMember: {
 		// Allowed endpoints. RBAC will be applied where needed
-		PolicyProjectList,
-		PolicyProjectRead,
-		PolicyProjectCreate,
-		PolicyProjectUpdate,
-		PolicyProjectDelete,
 		PolicyWorkflowRead,
 		PolicyWorkflowContractCreate,
 	},
