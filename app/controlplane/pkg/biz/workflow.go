@@ -72,6 +72,9 @@ type WorkflowCreateOpts struct {
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	Public bool
+
+	// Owner identifies the user to be marked as owner of the project
+	Owner *uuid.UUID
 }
 
 type WorkflowUpdateOpts struct {
@@ -102,15 +105,16 @@ type WorkflowListOpts struct {
 }
 
 type WorkflowUseCase struct {
-	wfRepo      WorkflowRepo
-	projectRepo ProjectsRepo
-	contractUC  *WorkflowContractUseCase
-	auditorUC   *AuditorUseCase
-	logger      *log.Helper
+	wfRepo       WorkflowRepo
+	projectRepo  ProjectsRepo
+	contractUC   *WorkflowContractUseCase
+	auditorUC    *AuditorUseCase
+	membershipUC *MembershipUseCase
+	logger       *log.Helper
 }
 
-func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, logger log.Logger) *WorkflowUseCase {
-	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, logger: log.NewHelper(logger)}
+func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, membershipUC *MembershipUseCase, logger log.Logger) *WorkflowUseCase {
+	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, membershipUC: membershipUC, logger: log.NewHelper(logger)}
 }
 
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
@@ -149,6 +153,13 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		}
 
 		return nil, fmt.Errorf("failed to create workflow: %w", err)
+	}
+
+	// Set project admin if a new project has been created
+	if opts.Owner != nil {
+		if err = uc.membershipUC.SetProjectOwner(ctx, wf.ProjectID, *opts.Owner); err != nil {
+			return nil, fmt.Errorf("failed to set project owner: %w", err)
+		}
 	}
 
 	orgUUID, err := uuid.Parse(opts.OrgID)

@@ -126,7 +126,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
-	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, logger)
+	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
 	v5 := serviceOpts(logger, enforcer)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)

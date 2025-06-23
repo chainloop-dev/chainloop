@@ -80,7 +80,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	projectsRepo := data.NewProjectsRepo(dataData, logger)
-	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, logger)
+	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {

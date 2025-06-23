@@ -146,8 +146,7 @@ func WithEnforcer(enforcer *authz.Enforcer) NewOpt {
 }
 
 func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resourceType authz.ResourceType, resourceID uuid.UUID) error {
-	sub := usercontext.CurrentAuthzSubject(ctx)
-	if sub != string(authz.RoleOrgMember) {
+	if !rbacEnabled(ctx) {
 		return nil
 	}
 
@@ -167,6 +166,10 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		}
 	}
 	return errors.Forbidden("forbidden", "user not authorized")
+}
+
+func rbacEnabled(ctx context.Context) bool {
+	return usercontext.CurrentAuthzSubject(ctx) == string(authz.RoleOrgMember)
 }
 
 // NOTE: some of these http errors get automatically translated to gRPC status codes

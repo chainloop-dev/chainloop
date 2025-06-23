@@ -222,7 +222,7 @@ var (
 		{Name: "current", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer"}},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer"}},
 		{Name: "membership_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"user", "group"}},
 		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project"}},
@@ -269,7 +269,7 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer"}},
+		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer"}},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "sender_id", Type: field.TypeUUID},
 	}

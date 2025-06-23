@@ -145,19 +145,6 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 	return entMembershipToBiz(m), nil
 }
 
-func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
-	mm, err := r.data.DB.Membership.Query().Where(
-		membership.MembershipTypeEQ(authz.MembershipTypeUser),
-		membership.MemberID(userID),
-	).All(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to query memberships: %v", err)
-	}
-
-	return entMembershipsToBiz(mm), nil
-}
-
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
@@ -223,6 +210,54 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 // Delete deletes a membership by ID.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.Membership.DeleteOneID(id).Exec(ctx)
+}
+
+// RBAC methods
+
+func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	mm, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(userID),
+	).All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipsToBiz(mm), nil
+}
+
+func (r *MembershipRepo) ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*biz.Membership, error) {
+	mm, err := r.data.DB.Membership.Query().Where(
+		membership.ResourceTypeEQ(rt),
+		membership.ResourceID(id),
+	).All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipsToBiz(mm), nil
+}
+
+func (r *MembershipRepo) AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error {
+	err := r.data.DB.Membership.Create().
+		SetMembershipType(mType).
+		SetMemberID(memberID).
+		SetResourceType(resourceType).
+		SetResourceID(resID).
+		SetRole(role).Exec(ctx)
+
+	if err != nil {
+		if !ent.IsConstraintError(err) {
+			return fmt.Errorf("failed to add resource role: %w", err)
+		}
+
+		// combination already existed, ignore error
+		return nil
+	}
+
+	return nil
 }
 
 func entMembershipsToBiz(memberships []*ent.Membership) []*biz.Membership {

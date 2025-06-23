@@ -55,6 +55,8 @@ type MembershipRepo interface {
 	// RBAC methods
 
 	ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*Membership, error)
+	AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error
 }
 
 type MembershipsRBAC interface {
@@ -69,7 +71,7 @@ type MembershipUseCase struct {
 }
 
 func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, logger log.Logger) *MembershipUseCase {
-	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger), auditor}
+	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), auditor: auditor}
 }
 
 // LeaveAndDeleteOrg deletes a membership (and the org i) from the database associated with the current user
@@ -255,11 +257,6 @@ func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string) ([]*Member
 	return uc.repo.FindByOrg(ctx, orgUUID)
 }
 
-// ListAllMembershipsForUser retrieves all membership records by resource type
-func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error) {
-	return uc.repo.ListAllByUser(ctx, userID)
-}
-
 // SetCurrent sets the current membership for the user
 // and unsets the previous one
 func (uc *MembershipUseCase) SetCurrent(ctx context.Context, userID, membershipID string) (*Membership, error) {
@@ -318,4 +315,32 @@ func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, 
 	}
 
 	return m, nil
+}
+
+// RBAC methods
+
+// ListAllMembershipsForUser retrieves all membership records by resource type
+func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error) {
+	return uc.repo.ListAllByUser(ctx, userID)
+}
+
+// SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
+func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, projectID, userID uuid.UUID) error {
+	mm, err := uc.repo.ListAllByResource(ctx, authz.ResourceTypeProject, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to find membership: %w", err)
+	}
+
+	for _, m := range mm {
+		if m.Role == authz.RoleProjectAdmin {
+			// Found one already
+			return nil
+		}
+	}
+
+	if err = uc.repo.AddResourceRole(ctx, authz.ResourceTypeProject, projectID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin); err != nil {
+		return fmt.Errorf("failed to set project owner: %w", err)
+	}
+
+	return nil
 }

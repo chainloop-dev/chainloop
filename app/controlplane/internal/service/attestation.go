@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -35,6 +36,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/uuid"
 )
 
 type AttestationService struct {
@@ -652,8 +654,10 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		if !biz.IsNotFound(err) {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-	} else if err = s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, p.ID); err != nil {
-		return nil, err
+	} else if p != nil {
+		if err = s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, p.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
@@ -670,6 +674,15 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		Name:         req.GetWorkflowName(),
 		Project:      req.GetProjectName(),
 		ContractName: req.GetContractName(),
+	}
+
+	// set project owner if RBAC is enabled
+	if user := entities.CurrentUser(ctx); user != nil && rbacEnabled(ctx) {
+		userID, err := uuid.Parse(user.ID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		createOpts.Owner = &userID
 	}
 
 	wf, err := s.workflowUseCase.Create(ctx, createOpts)

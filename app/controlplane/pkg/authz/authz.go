@@ -77,7 +77,7 @@ const (
 	// That last check will be done at the service level.
 	RoleOrgMember Role = "role:org:member"
 
-	RoleProjectAdmin Role = "role:project:admin"
+	RoleProjectAdmin  Role = "role:project:admin"
 	RoleProjectViewer Role = "role:project:viewer"
 )
 
@@ -181,6 +181,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyProjectCreate,
 		PolicyProjectUpdate,
 		PolicyProjectDelete,
+		PolicyWorkflowContractCreate,
 	},
 	RoleProjectAdmin: {
 		PolicyWorkflowCreate,
@@ -457,6 +458,11 @@ func (Role) Values() (roles []string) {
 		RoleOwner,
 		RoleAdmin,
 		RoleViewer,
+
+		// RBAC roles
+		RoleOrgMember,
+		RoleProjectAdmin,
+		RoleProjectViewer,
 	} {
 		roles = append(roles, string(s))
 	}

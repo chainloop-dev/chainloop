@@ -104,7 +104,7 @@ var (
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r authz.Role) error {
 	switch r {
-	case "role:org:owner", "role:org:admin", "role:org:viewer":
+	case "role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer":
 		return nil
 	default:
 		return fmt.Errorf("membership: invalid enum value for role field: %q", r)
