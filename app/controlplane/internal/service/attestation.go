@@ -155,7 +155,6 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	// Apply RBAC on the project
-	// try to load project and apply RBAC if needed
 	if err = s.userHasPermissionOnProject(ctx, s.projectUseCase, org.ID, req.ProjectName, authz.PolicyWorkflowRunCreate); err != nil {
 		return nil, err
 	}
@@ -231,6 +230,11 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC on the project
+	if err = s.userHasPermissionOnProject(ctx, s.projectUseCase, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
 	}
 
 	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
