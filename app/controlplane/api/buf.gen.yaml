@@ -21,3 +21,8 @@ plugins:
       - useOptionals=messages # use optional TypeScript properties instead of undefined
   - plugin: buf.build/bufbuild/protoschema-jsonschema:v0.2.0
     out: ./gen/jsonschema
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.26.3
+    out: gen/temp-openapi
+    opt:
+      - allow_merge=true
+      - json_names_for_fields=false

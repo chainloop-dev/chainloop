@@ -119,17 +119,14 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	// 2 - Populate annotation values from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
-	// b) we do not allow adding annotations that are not defined in the contract
+	// b) we allow runtime annotations not specified in the contract
 	for kr, vr := range runtimeAnnotations {
-		// If the annotation is not defined in the material we fail
-		if v, found := craftedAnnotations[kr]; !found {
-			return nil, fmt.Errorf("annotation %q not found", kr)
-		} else if v == "" {
+		if v, found := craftedAnnotations[kr]; found && v != "" {
+			// NOTE: we do not allow overriding values that come from the contract
+			action.Logger.Info().Str("annotation", kr).Msg("contract annotation can't be changed, skipping")
+		} else {
 			// Set it only if it's not set
 			craftedAnnotations[kr] = vr
-		} else {
-			// NOTE: we do not allow overriding values that come from the contract
-			action.Logger.Info().Str("annotation", kr).Msg("annotation can't be changed, skipping")
 		}
 	}
 
@@ -153,6 +150,19 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	action.Logger.Debug().Msg("validation completed")
+
+	// Update status annotations
+	finalAnnotations := make([]*Annotation, 0, len(craftedAnnotations))
+	for name, value := range craftedAnnotations {
+		finalAnnotations = append(finalAnnotations, &Annotation{
+			Name:  name,
+			Value: value,
+		})
+	}
+
+	if attestationStatus != nil {
+		attestationStatus.Annotations = finalAnnotations
+	}
 
 	// Indicate that we are done with the attestation
 	crafter.CraftingState.Attestation.FinishedAt = timestamppb.New(time.Now())

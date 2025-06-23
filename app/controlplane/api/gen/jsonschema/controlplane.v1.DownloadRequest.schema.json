@@ -1,0 +1,13 @@
+{
+  "$id": "controlplane.v1.DownloadRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digest": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Download Request",
+  "type": "object"
+}

@@ -16,15 +16,15 @@
 syntax = "proto3";
 
 package controlplane.v1;
+
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service AuthService {
-	rpc DeleteAccount (AuthServiceDeleteAccountRequest) returns (AuthServiceDeleteAccountResponse);
+  rpc DeleteAccount(AuthServiceDeleteAccountRequest) returns (AuthServiceDeleteAccountResponse);
 }
 
 // AuthServiceDeleteAccountResponse is the response for the DeleteAccount method.
 message AuthServiceDeleteAccountRequest {}
 
 // AuthServiceDeleteAccountResponse is the response for the DeleteAccount method.
-message AuthServiceDeleteAccountResponse {
-}
+message AuthServiceDeleteAccountResponse {}

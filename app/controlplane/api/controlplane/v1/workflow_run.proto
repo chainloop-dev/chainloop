@@ -145,9 +145,9 @@ message AttestationServiceInitResponse {
 
 message AttestationServiceStoreRequest {
   // encoded DSEE envelope
-  bytes attestation = 1 [deprecated=true];
+  bytes attestation = 1 [deprecated = true];
   // deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832
-  bytes bundle = 4 [deprecated=true];
+  bytes bundle = 4 [deprecated = true];
   // encoded Sigstore attestation bundle
   bytes attestation_bundle = 5;
 

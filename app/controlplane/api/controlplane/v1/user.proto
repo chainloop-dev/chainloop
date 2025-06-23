@@ -17,8 +17,8 @@ syntax = "proto3";
 
 package controlplane.v1;
 
-import "controlplane/v1/response_messages.proto";
 import "buf/validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 

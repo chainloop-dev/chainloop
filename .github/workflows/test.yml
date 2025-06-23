@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.24.2"
+          go-version: "1.24.4"
           cache: true
           cache-dependency-path: go.sum
 
@@ -42,7 +42,7 @@ jobs:
       - name: Generate migrations
         if: ${{ matrix.app == 'controlplane' }}
         env:
-          ATLAS_VERSION: v0.32.0
+          ATLAS_VERSION: v0.35.0
         run: |
           wget -q https://release.ariga.io/atlas/atlas-linux-amd64-$ATLAS_VERSION -O /tmp/atlas
           sudo install /tmp/atlas /usr/local/bin/atlas
