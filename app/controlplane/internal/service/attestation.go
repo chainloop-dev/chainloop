@@ -665,7 +665,8 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// try to load project and apply RBAC if needed
-	if err := s.userHasPermissionOnProject(ctx, s.projectUseCase, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); err != nil {
+	if err := s.userHasPermissionOnProject(ctx, s.projectUseCase, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); !biz.IsNotFound(err) {
+		// Only return the error when the project exists. Otherwise, we will create the project
 		return nil, err
 	}
 

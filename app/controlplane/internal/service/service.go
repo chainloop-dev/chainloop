@@ -172,18 +172,40 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, pUC *biz.Proje
 	if !rbacEnabled(ctx) {
 		return nil
 	}
+
 	p, err := pUC.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
 	if err != nil {
-		if !biz.IsNotFound(err) {
-			return handleUseCaseErr(err, s.log)
-		}
-	} else if p != nil {
-		if err = s.authorizeResource(ctx, policy, authz.ResourceTypeProject, p.ID); err != nil {
+		// communicate not found error to the caller
+		if biz.IsNotFound(err) {
 			return err
+		}
+		return handleUseCaseErr(err, s.log)
+	}
+
+	return s.authorizeResource(ctx, policy, authz.ResourceTypeProject, p.ID)
+}
+
+func (s *service) visibleProjects(ctx context.Context, policy *authz.Policy) ([]uuid.UUID, error) {
+	if !rbacEnabled(ctx) {
+		return nil, nil
+	}
+
+	projects := make([]uuid.UUID, 0)
+
+	m := entities.CurrentMembership(ctx)
+	for _, rm := range m.Resources {
+		if rm.ResourceType == authz.ResourceTypeProject {
+			pass, err := s.enforcer.Enforce(string(rm.Role), policy)
+			if err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
+			if pass {
+				projects = append(projects, rm.ResourceID)
+			}
 		}
 	}
 
-	return nil
+	return projects, nil
 }
 
 func rbacEnabled(ctx context.Context) bool {

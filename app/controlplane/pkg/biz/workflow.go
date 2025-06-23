@@ -102,6 +102,8 @@ type WorkflowListOpts struct {
 	WorkflowRunLastStatus WorkflowRunStatus
 	// JSONFilters is the filters to apply to the JSON fields
 	JSONFilters []*jsonfilter.JSONFilter
+	//
+	VisibleProjectsFromRBAC []uuid.UUID
 }
 
 type WorkflowUseCase struct {

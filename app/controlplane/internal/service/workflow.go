@@ -21,6 +21,7 @@ import (
 	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/jsonfilter/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
 
@@ -58,6 +59,11 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		return nil, err
 	}
 
+	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowCreate); !biz.IsNotFound(err) {
+		// Only return the error when the project exists. Otherwise, we will create the project
+		return nil, err
+	}
+
 	createOpts := &biz.WorkflowCreateOpts{
 		OrgID:        currentOrg.ID,
 		Name:         req.GetName(),
@@ -66,6 +72,16 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		ContractName: req.GetContractName(),
 		Description:  req.GetDescription(),
 		Public:       req.GetPublic(),
+	}
+
+	// add current user as the owner of the project in case it needs to be created
+	if rbacEnabled(ctx) {
+		user := entities.CurrentUser(ctx)
+		userID, err := uuid.Parse(user.ID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		createOpts.Owner = &userID
 	}
 
 	p, err := s.useCase.Create(ctx, createOpts)
@@ -79,6 +95,10 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpdateRequest) (*pb.WorkflowServiceUpdateResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowUpdate); err != nil {
 		return nil, err
 	}
 
@@ -196,6 +216,15 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		filters.WorkflowActiveWindow = timeWindow
 	}
 
+	if rbacEnabled(ctx) {
+		// filter by visible projects
+		projectIDs, err := s.visibleProjects(ctx, authz.PolicyWorkflowRead)
+		if err != nil {
+			return nil, err
+		}
+		filters.VisibleProjectsFromRBAC = projectIDs
+	}
+
 	workflows, count, err := s.useCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -215,6 +244,10 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDeleteRequest) (*pb.WorkflowServiceDeleteResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowDelete); err != nil {
 		return nil, err
 	}
 

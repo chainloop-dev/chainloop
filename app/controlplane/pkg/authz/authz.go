@@ -124,7 +124,8 @@ var (
 	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
 	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
 	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
-
+	PolicyWorkflowUpdate = &Policy{ResourceWorkflow, ActionUpdate}
+	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
 	// User Membership
 	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 )
@@ -174,13 +175,25 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		PolicyWorkflowContractRead,
 		PolicyWorkflowContractCreate,
+
+		PolicyWorkflowList,
+		PolicyWorkflowCreate,
+		PolicyWorkflowUpdate,
+		PolicyWorkflowDelete,
 	},
+	// RoleProjectAdmin: RBAC will be applied in all these
 	RoleProjectAdmin: {
-		// RBAC will be applied in all these
+		// attestations
+
 		PolicyWorkflowRead,
 		PolicyWorkflowCreate,
 		PolicyWorkflowRunCreate,
 		PolicyWorkflowRunUpdate, // to reset attestations
+
+		// workflow operations
+		
+		PolicyWorkflowUpdate,
+		PolicyWorkflowDelete,
 	},
 }
 
@@ -218,6 +231,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.WorkflowService/List":   {PolicyWorkflowList},
 	"/controlplane.v1.WorkflowService/View":   {PolicyWorkflowRead},
 	"/controlplane.v1.WorkflowService/Create": {PolicyWorkflowCreate},
+	"/controlplane.v1.WorkflowService/Update": {PolicyWorkflowUpdate},
+	"/controlplane.v1.WorkflowService/Delete": {PolicyWorkflowDelete},
 	// WorkflowRun
 	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
 	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
