@@ -418,6 +418,11 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
 
+	// Apply RBAC on the project
+	if err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wRun.Workflow.Project, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
+	}
+
 	if len(wRun.CASBackends) == 0 {
 		return nil, errors.NotFound("not found", "workflow run has no CAS backend")
 	}
