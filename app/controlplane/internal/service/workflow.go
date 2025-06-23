@@ -216,14 +216,12 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 		filters.WorkflowActiveWindow = timeWindow
 	}
 
-	if rbacEnabled(ctx) {
-		// filter by visible projects
-		projectIDs, err := s.visibleProjects(ctx, authz.PolicyWorkflowRead)
-		if err != nil {
-			return nil, err
-		}
-		filters.VisibleProjectsFromRBAC = projectIDs
+	// filter by visible projects if RBAC is enabled
+	projectIDs, err := s.visibleProjects(ctx, authz.PolicyWorkflowRead)
+	if err != nil {
+		return nil, err
 	}
+	filters.VisibleProjectsFromRBAC = projectIDs
 
 	workflows, count, err := s.useCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {
