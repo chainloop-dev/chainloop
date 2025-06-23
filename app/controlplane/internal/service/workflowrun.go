@@ -21,6 +21,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -65,6 +66,12 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 
 	// Configure filters
 	filters := &biz.RunListFilters{}
+
+	projectIDs, err := s.visibleProjects(ctx, authz.PolicyWorkflowRunRead)
+	if err != nil {
+		return nil, err
+	}
+	filters.VisibleProjectsFromRBAC = projectIDs
 
 	// by workflow
 	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {

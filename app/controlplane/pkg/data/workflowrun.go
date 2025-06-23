@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -233,11 +234,17 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		return nil, "", errors.New("pagination options is required")
 	}
 
-	// query first for workflows to avoid joining the workflow_runs table
-	wfExist, err := r.data.DB.Workflow.Query().Where(
+	// workflow filters
+	wfPredicates := []predicate.Workflow{
 		workflow.DeletedAtIsNil(),
 		workflow.OrganizationID(orgID),
-	).Exist(ctx)
+	}
+	if filters.VisibleProjectsFromRBAC != nil {
+		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(filters.VisibleProjectsFromRBAC...))
+	}
+
+	// query first for workflows to avoid joining the workflow_runs table
+	wfExist, err := r.data.DB.Workflow.Query().Where(wfPredicates...).Exist(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("getting workflows: %w", err)
 	}
@@ -248,10 +255,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 
 	// Query workflow runs by joining with workflows
 	q := r.data.DB.WorkflowRun.Query().Where(
-		workflowrun.HasWorkflowWith(
-			workflow.OrganizationID(orgID),
-			workflow.DeletedAtIsNil(),
-		)).
+		workflowrun.HasWorkflowWith(wfPredicates...)).
 		Order(ent.Desc(workflowrun.FieldCreatedAt)).
 		WithWorkflowAndProject().WithVersion().
 		Limit(p.Limit + 1)
