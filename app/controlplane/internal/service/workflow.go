@@ -75,8 +75,8 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	}
 
 	// add current user as the owner of the project in case it needs to be created
-	if rbacEnabled(ctx) {
-		user := entities.CurrentUser(ctx)
+	user := entities.CurrentUser(ctx)
+	if user != nil {
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
@@ -217,11 +217,11 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 	}
 
 	// filter by visible projects if RBAC is enabled
-	projectIDs, err := s.visibleProjects(ctx, authz.PolicyWorkflowRead)
+	projectIDs, err := s.visibleProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
-	filters.VisibleProjectsFromRBAC = projectIDs
+	filters.ProjectIDs = projectIDs
 
 	workflows, count, err := s.useCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {

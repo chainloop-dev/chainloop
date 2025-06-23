@@ -239,8 +239,8 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		workflow.DeletedAtIsNil(),
 		workflow.OrganizationID(orgID),
 	}
-	if filters.VisibleProjectsFromRBAC != nil {
-		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(filters.VisibleProjectsFromRBAC...))
+	if filters.ProjectIDs != nil {
+		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(filters.ProjectIDs...))
 	}
 
 	// query first for workflows to avoid joining the workflow_runs table

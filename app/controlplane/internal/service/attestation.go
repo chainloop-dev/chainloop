@@ -687,8 +687,8 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// set project owner if RBAC is enabled
-	if rbacEnabled(ctx) {
-		user := entities.CurrentUser(ctx)
+	user := entities.CurrentUser(ctx)
+	if user != nil {
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
@@ -701,10 +701,8 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	// reset cache, since we might have created a new project
-	if rbacEnabled(ctx) {
-		usercontext.ResetMembershipsCache()
-	}
+	// reset RBAC cache, since we might have created a new project
+	usercontext.ResetMembershipsCache()
 
 	return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 }

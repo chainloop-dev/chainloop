@@ -15,9 +15,10 @@
 
 package authz
 
-// Polymorphic membership
-
+// MembershipType represents a polymorphic membership subject (user or group)
 type MembershipType string
+
+// ResourceType represent a membership resource (organizations, projects)
 type ResourceType string
 
 const (

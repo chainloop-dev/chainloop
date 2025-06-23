@@ -67,11 +67,11 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	// Configure filters
 	filters := &biz.RunListFilters{}
 
-	projectIDs, err := s.visibleProjects(ctx, authz.PolicyWorkflowRunRead)
+	projectIDs, err := s.visibleProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
-	filters.VisibleProjectsFromRBAC = projectIDs
+	filters.ProjectIDs = projectIDs
 
 	// by workflow
 	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {

@@ -102,8 +102,9 @@ type WorkflowListOpts struct {
 	WorkflowRunLastStatus WorkflowRunStatus
 	// JSONFilters is the filters to apply to the JSON fields
 	JSONFilters []*jsonfilter.JSONFilter
-	//
-	VisibleProjectsFromRBAC []uuid.UUID
+	// ProjectIDs is used to filter the result by a project list
+	// Note that a `nil` value means "no filter", and an empty slice will cause an empty result
+	ProjectIDs []uuid.UUID
 }
 
 type WorkflowUseCase struct {

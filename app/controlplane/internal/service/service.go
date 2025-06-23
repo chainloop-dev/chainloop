@@ -181,8 +181,10 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, pUC *biz.Proje
 	return s.authorizeResource(ctx, policy, authz.ResourceTypeProject, p.ID)
 }
 
-func (s *service) visibleProjects(ctx context.Context, policy *authz.Policy) ([]uuid.UUID, error) {
+// visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
+func (s *service) visibleProjects(ctx context.Context) ([]uuid.UUID, error) {
 	if !rbacEnabled(ctx) {
+		// returning a NIL slice to denote that RBAC has not been applied, to differentiate from the empty slice case
 		return nil, nil
 	}
 
@@ -191,13 +193,7 @@ func (s *service) visibleProjects(ctx context.Context, policy *authz.Policy) ([]
 	m := entities.CurrentMembership(ctx)
 	for _, rm := range m.Resources {
 		if rm.ResourceType == authz.ResourceTypeProject {
-			pass, err := s.enforcer.Enforce(string(rm.Role), policy)
-			if err != nil {
-				return nil, handleUseCaseErr(err, s.log)
-			}
-			if pass {
-				projects = append(projects, rm.ResourceID)
-			}
+			projects = append(projects, rm.ResourceID)
 		}
 	}
 

@@ -212,8 +212,8 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 			wfQuery = wfQuery.Where(workflow.Public(*opts.WorkflowPublic))
 		}
 
-		if opts.VisibleProjectsFromRBAC != nil {
-			wfQuery = wfQuery.Where(workflow.ProjectIDIn(opts.VisibleProjectsFromRBAC...))
+		if opts.ProjectIDs != nil {
+			wfQuery = wfQuery.Where(workflow.ProjectIDIn(opts.ProjectIDs...))
 		}
 
 		// Updated at on Workflows is only updated when a new workflow run is referenced meaning
