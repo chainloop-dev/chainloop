@@ -52,7 +52,7 @@ func newPluginCmd() *cobra.Command {
 
 	cmd.AddCommand(newPluginListCmd())
 	cmd.AddCommand(newPluginDescribeCmd())
-	cmd.AddCommand(newPluginDownloadCmd())
+	cmd.AddCommand(newPluginInstallCmd())
 
 	return cmd
 }
@@ -231,53 +231,37 @@ func newPluginDescribeCmd() *cobra.Command {
 	return cmd
 }
 
-func newPluginDownloadCmd() *cobra.Command {
+func newPluginInstallCmd() *cobra.Command {
 	var file string
 	var filename string
-	var useAlternate bool
-	var accessKeyID string
-	var secretAccessKey string
 	var location string
-	var region string
 
 	cmd := &cobra.Command{
-		Use:   "download",
-		Short: "Download a plugin from S3 or a HTTP URL",
-		Long:  "Download a plugin from a specified URL or S3 bucket to the plugins directory. By default, uses S3 download unless --alternate flag is specified.",
+		Use:   "install",
+		Short: "Install a plugin",
+		Long:  "Install a plugin to the plugins directory from a specified URL or local file.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			opts := &action.PluginDownloadOptions{
-				File:            file,
-				Filename:        filename,
-				UseAlternate:    useAlternate,
-				AccessKeyID:     accessKeyID,
-				SecretAccessKey: secretAccessKey,
-				Location:        location,
-				Region:          region,
+			opts := &action.PluginInstallOptions{
+				File:     file,
+				Filename: filename,
+				Location: location,
 			}
 
-			result, err := action.NewPluginDownload(actionOpts, pluginManager).Run(ctx, opts)
+			result, err := action.NewPluginInstall(actionOpts, pluginManager).Run(ctx, opts)
 			if err != nil {
-				return fmt.Errorf("failed to download plugin: %w", err)
+				return fmt.Errorf("failed to install plugin: %w", err)
 			}
 
-			fmt.Printf("Plugin downloaded successfully to: %s\n", result.FilePath)
+			fmt.Printf("Plugin installed successfully to: %s\n", result.FilePath)
 			return nil
 		},
 	}
 
 	// Common flags
-	cmd.Flags().StringVarP(&file, "file", "f", "", "S3 object key of the plugin to download or a URL of the file (required)")
+	cmd.Flags().StringVarP(&file, "file", "f", "", "URL of the plugin to download (required)")
 	cmd.Flags().StringVarP(&filename, "filename", "", "", "Custom filename to save the plugin as (optional)")
-	cmd.Flags().BoolVar(&useAlternate, "alternate", false, "Use HTTP download instead of S3 (optional)")
-
-	// S3 specific flags
-	cmd.Flags().StringVar(&accessKeyID, "access-key-id", "", "AWS Access Key ID for S3 download")
-	cmd.Flags().StringVar(&secretAccessKey, "secret-access-key", "", "AWS Secret Access Key for S3 download")
-	cmd.Flags().StringVar(&location, "location", "", "S3 location")
-	cmd.Flags().StringVar(&region, "region", "us-east-1", "AWS region for S3 download")
-
 	cobra.CheckErr(cmd.MarkFlagRequired("file"))
 
 	return cmd
