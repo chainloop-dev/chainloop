@@ -151,6 +151,11 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.BadRequest("invalid", "id or digest required")
 	}
 
+	// Apply RBAC if needed
+	if err = s.authorizeResource(ctx, authz.PolicyWorkflowRunRead, authz.ResourceTypeProject, run.Workflow.ProjectID); err != nil {
+		return nil, err
+	}
+
 	var verificationResult *pb.WorkflowRunServiceViewResponse_VerificationResult
 	if req.Verify {
 		// it might be nil if it doesn't apply
