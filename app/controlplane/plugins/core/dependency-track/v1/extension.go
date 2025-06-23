@@ -49,7 +49,7 @@ type attachmentRequest struct {
 	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1,description=The name of the project to create and send the SBOMs to"`
 
 	ParentID string `json:"parentID,omitempty" jsonschema:"minLength=1,description=ID of parent project to create a new project under"`
-	Filter   string `json:"filter,omitempty" jsonschema:"minLength=1,description=Annotation filter in format 'key=value' (e.g. 'environment=prod')"`
+	Filter   string `json:"filter,omitempty" jsonschema:"minLength=1,description=Annotation and its value required for SBOM forwarding"`
 }
 
 // Enforces the requirement that parentID requires the presence of projectName

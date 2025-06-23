@@ -45,6 +45,7 @@ See https://docs.chainloop.dev/guides/dependency-track/
 
 |Field|Type|Required|Description|
 |---|---|---|---|
+|filter|string|no|Annotation and its value required for SBOM forwarding|
 |parentID|string|no|ID of parent project to create a new project under|
 |projectID|string|no|The ID of the existing project to send the SBOMs to|
 |projectName|string|no|The name of the project to create and send the SBOMs to|
@@ -82,6 +83,11 @@ See https://docs.chainloop.dev/guides/dependency-track/
       "type": "string",
       "minLength": 1,
       "description": "ID of parent project to create a new project under"
+    },
+    "filter": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Annotation and its value required for SBOM forwarding"
     }
   },
   "additionalProperties": false,
