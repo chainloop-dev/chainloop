@@ -127,7 +127,8 @@ var (
 	PolicyWorkflowUpdate = &Policy{ResourceWorkflow, ActionUpdate}
 	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
 	// User Membership
-	PolicyOrganizationRead = &Policy{Organization, ActionRead}
+	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
+	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
 )
 
 // List of policies for each role
@@ -172,9 +173,13 @@ var rolesMap = map[Role][]*Policy{
 	},
 	RoleOrgMember: {
 		// Allowed endpoints. RBAC will be applied where needed
+		PolicyOrganizationListMemberships,
+
 		PolicyWorkflowRead,
+		PolicyWorkflowContractList,
 		PolicyWorkflowContractRead,
 		PolicyWorkflowContractCreate,
+		PolicyWorkflowContractUpdate,
 
 		PolicyWorkflowList,
 		PolicyWorkflowCreate,
@@ -260,6 +265,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Leave the organization or delete your account
 	"/controlplane.v1.UserService/DeleteMembership": {},
 	"/controlplane.v1.AuthService/DeleteAccount":    {},
+
+	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
 }
 
 type SubjectAPIToken struct {
