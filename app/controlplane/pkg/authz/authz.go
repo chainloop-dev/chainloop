@@ -188,6 +188,11 @@ var rolesMap = map[Role][]*Policy{
 
 		PolicyWorkflowRunList,
 		PolicyWorkflowRunRead,
+
+		PolicyArtifactDownload,
+		PolicyArtifactUpload,
+
+		PolicyCASBackendList,
 	},
 	// RoleProjectAdmin: RBAC will be applied in all these
 	RoleProjectAdmin: {
