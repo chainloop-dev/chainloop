@@ -167,12 +167,12 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 				return handleUseCaseErr(err, s.log)
 			}
 			if !pass {
-				return errors.Forbidden("forbidden", "user not authorized")
+				return errors.Forbidden("forbidden", "operation not allowed")
 			}
 			return nil
 		}
 	}
-	return errors.Forbidden("forbidden", "user not authorized")
+	return errors.Forbidden("forbidden", "operation not allowed")
 }
 
 func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, pName string, policy *authz.Policy) error {
