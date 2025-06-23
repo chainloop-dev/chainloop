@@ -3,8 +3,8 @@ breaking:
   use:
     - FILE
 deps:
-  - buf.build/googleapis/googleapis
-  - buf.build/bufbuild/protovalidate
+  - buf.build/googleapis/googleapis:4ed3bc159a8b4ac68fe253218760d035
+  - buf.build/bufbuild/protovalidate:b983156c5e994cc9892e0ce3e64e17e0
 lint:
   use:
     - DEFAULT

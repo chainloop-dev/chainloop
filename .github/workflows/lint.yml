@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.24.2"
+          go-version: "1.24.4"
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -49,11 +49,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: bufbuild/buf-setup-action@eb60cd0de4f14f1f57cf346916b8cd69a9e7ed0b # v1.26.1
+      - uses: bufbuild/buf-action@5150a1eef5c10b6a5cf8a69fc872f24a09473195 # v1.1.1
         with:
-          buf_user: ${{ secrets.buf_user }}
-          buf_api_token: ${{ secrets.buf_api_token }}
-      - uses: bufbuild/buf-lint-action@bd48f53224baaaf0fc55de9a913e7680ca6dbea4 # v1.0.3
+          version: 1.49.0
+          token: ${{ secrets.buf_api_token }}
+          breaking: false
+          pr_comment: false
 
   lint-dagger-module:
     runs-on: ubuntu-latest
@@ -66,7 +67,7 @@ jobs:
 
       - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.24.2"
+          go-version: "1.24.4"
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 

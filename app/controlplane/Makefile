@@ -9,7 +9,11 @@ config: check-buf-tool
 # generate api proto bindings
 api: check-buf-tool
 	cd ./plugins/sdk/v1/plugin/api && buf generate
-	cd ./api && buf generate
+	cd ./api && buf generate && \
+	buf generate \
+		--path ./controlplane/v1/referrer.proto \
+		--path ./controlplane/v1/openapi_metadata.proto && \
+		../scripts/modify-openapi-schema.sh ${PWD}/api/gen temp-openapi/apidocs.swagger.json openapi/openapi/openapi.yaml openapi/openapi-extra.yaml
 
 .PHONY: build
 # build

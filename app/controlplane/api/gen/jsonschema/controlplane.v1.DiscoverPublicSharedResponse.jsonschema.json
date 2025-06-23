@@ -2,9 +2,11 @@
   "$id": "controlplane.v1.DiscoverPublicSharedResponse.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method",
   "properties": {
     "result": {
-      "$ref": "controlplane.v1.ReferrerItem.jsonschema.json"
+      "$ref": "controlplane.v1.ReferrerItem.jsonschema.json",
+      "description": "Result is the discovered referrer item"
     }
   },
   "title": "Discover Public Shared Response",
