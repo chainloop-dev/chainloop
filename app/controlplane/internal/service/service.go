@@ -175,10 +175,6 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, pUC *biz.Proje
 
 	p, err := pUC.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
 	if err != nil {
-		// communicate not found error to the caller
-		if biz.IsNotFound(err) {
-			return err
-		}
 		return handleUseCaseErr(err, s.log)
 	}
 

@@ -59,7 +59,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		return nil, err
 	}
 
-	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowCreate); !biz.IsNotFound(err) {
+	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowCreate); !errors.IsNotFound(err) {
 		// Only return the error when the project exists. Otherwise, we will create the project
 		return nil, err
 	}
