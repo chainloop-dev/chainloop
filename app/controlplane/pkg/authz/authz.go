@@ -191,7 +191,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRunUpdate, // to reset attestations
 
 		// workflow operations
-		
+
 		PolicyWorkflowUpdate,
 		PolicyWorkflowDelete,
 	},
