@@ -128,7 +128,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
-	v5 := serviceOpts(logger, enforcer)
+	v5 := serviceOpts(logger, enforcer, projectUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
@@ -328,8 +328,8 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger, enforcer *authz.Enforcer) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer)}
+func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC)}
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {

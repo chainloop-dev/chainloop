@@ -127,8 +127,9 @@ func newService(opts ...NewOpt) *service {
 }
 
 type service struct {
-	log      *log.Helper
-	enforcer *authz.Enforcer
+	log            *log.Helper
+	enforcer       *authz.Enforcer
+	projectUseCase *biz.ProjectUseCase
 }
 
 type NewOpt func(s *service)
@@ -142,6 +143,12 @@ func WithLogger(logger log.Logger) NewOpt {
 func WithEnforcer(enforcer *authz.Enforcer) NewOpt {
 	return func(s *service) {
 		s.enforcer = enforcer
+	}
+}
+
+func WithProjectUseCase(projectUseCase *biz.ProjectUseCase) NewOpt {
+	return func(s *service) {
+		s.projectUseCase = projectUseCase
 	}
 }
 
@@ -168,12 +175,12 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	return errors.Forbidden("forbidden", "user not authorized")
 }
 
-func (s *service) userHasPermissionOnProject(ctx context.Context, pUC *biz.ProjectUseCase, orgID string, pName string, policy *authz.Policy) error {
+func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, pName string, policy *authz.Policy) error {
 	if !rbacEnabled(ctx) {
 		return nil
 	}
 
-	p, err := pUC.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
+	p, err := s.projectUseCase.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
 	if err != nil {
 		return handleUseCaseErr(err, s.log)
 	}
