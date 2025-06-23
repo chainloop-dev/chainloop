@@ -92,7 +92,7 @@ func (m *Manager) loadPlugin(ctx context.Context, path string) error {
 		// We set it to WARN level, so we don't get too much noise from the plugins.
 		Logger: hclog.New(&hclog.LoggerOptions{
 			Output: hclog.DefaultOutput,
-			Level:  hclog.Trace,
+			Level:  hclog.Warn,
 			Name:   "plugin",
 		}),
 	})

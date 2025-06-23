@@ -88,7 +88,6 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 			config := plugins.PluginConfig{
 				Command:   cmdInfo.Name,
 				Arguments: arguments,
-				Flags:     cmd.Flags(),
 			}
 
 			// execute plugin command using the action pattern

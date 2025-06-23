@@ -17,8 +17,6 @@ package plugins
 
 import (
 	"context"
-
-	"github.com/spf13/pflag"
 )
 
 // Plugin is the interface that plugins must implement.
@@ -75,5 +73,4 @@ type FlagInfo struct {
 type PluginConfig struct {
 	Command   string
 	Arguments map[string]any
-	Flags     *pflag.FlagSet
 }
