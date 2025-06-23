@@ -40,12 +40,9 @@ type RPCClient struct {
 	client *rpc.Client
 }
 
-func (m *RPCClient) Exec(_ context.Context, command string, arguments map[string]any) (ExecResult, error) {
+func (m *RPCClient) Exec(_ context.Context, config PluginConfig) (ExecResult, error) {
 	var resp ExecResponse
-	err := m.client.Call("Plugin.Exec", map[string]any{
-		"command":   command,
-		"arguments": arguments,
-	}, &resp)
+	err := m.client.Call("Plugin.Exec", config, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -63,12 +60,10 @@ type RPCServer struct {
 	Impl Plugin
 }
 
-func (m *RPCServer) Exec(args map[string]any, resp *ExecResponse) error {
+func (m *RPCServer) Exec(config PluginConfig, resp *ExecResponse) error {
 	ctx := context.Background()
-	command := args["command"].(string)
-	arguments := args["arguments"].(map[string]any)
 
-	result, err := m.Impl.Exec(ctx, command, arguments)
+	result, err := m.Impl.Exec(ctx, config)
 	if err != nil {
 		return err
 	}

@@ -69,6 +69,7 @@ func (m *Manager) LoadPlugins(ctx context.Context) error {
 	for _, plugin := range plugins {
 		// Load the plugin - if there is an error just skip it - we can think of a better strategy later
 		if err := m.loadPlugin(ctx, plugin); err != nil {
+			fmt.Printf("failed to load plugin: %s\n", err)
 			continue
 		}
 	}
@@ -91,7 +92,7 @@ func (m *Manager) loadPlugin(ctx context.Context, path string) error {
 		// We set it to WARN level, so we don't get too much noise from the plugins.
 		Logger: hclog.New(&hclog.LoggerOptions{
 			Output: hclog.DefaultOutput,
-			Level:  hclog.Warn,
+			Level:  hclog.Trace,
 			Name:   "plugin",
 		}),
 	})

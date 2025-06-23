@@ -17,16 +17,14 @@ package plugins
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
-	"github.com/spf13/viper"
+	"github.com/spf13/pflag"
 )
 
 // Plugin is the interface that plugins must implement.
 type Plugin interface {
 	// Exec executes a command within the plugin
-	Exec(ctx context.Context, command string, arguments map[string]any) (ExecResult, error)
+	Exec(ctx context.Context, config PluginConfig) (ExecResult, error)
 
 	// GetMetadata returns plugin metadata including commands it provides
 	GetMetadata(ctx context.Context) (PluginMetadata, error)
@@ -63,7 +61,7 @@ type CommandInfo struct {
 	Flags       []FlagInfo
 }
 
-// FlagInfo describes a command flag
+// FlagInfo describes a command flag.
 type FlagInfo struct {
 	Name        string
 	Shorthand   string
@@ -73,30 +71,9 @@ type FlagInfo struct {
 	Required    bool
 }
 
-// ProcessViperConfig extracts and processes viper configuration from plugin arguments.
-func ProcessViperConfig(args map[string]interface{}) (*viper.Viper, error) {
-	if viperConfigRaw, ok := args["viper_config"]; ok {
-		var viperConfig map[string]interface{}
-
-		switch val := viperConfigRaw.(type) {
-		case string:
-			err := json.Unmarshal([]byte(val), &viperConfig)
-			if err != nil {
-				return nil, fmt.Errorf("error deserializing viper config JSON: %w", err)
-			}
-		default:
-			return nil, fmt.Errorf("viper config is not a string, got: %T", viperConfigRaw)
-		}
-
-		if viperConfig != nil {
-			v := viper.New()
-			for key, value := range viperConfig {
-				v.Set(key, value)
-			}
-			return v, nil
-		}
-		return nil, nil
-	}
-
-	return nil, fmt.Errorf("no viper config found in arguments")
+// PluginConfig is the configuration for a plugin command execution.
+type PluginConfig struct {
+	Command   string
+	Arguments map[string]any
+	Flags     *pflag.FlagSet
 }

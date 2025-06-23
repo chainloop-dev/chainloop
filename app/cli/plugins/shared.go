@@ -25,6 +25,7 @@ func init() {
 	// Register types that will be sent over RPC
 	gob.Register(map[string]any{})
 	gob.Register([]any{})
+	gob.Register(PluginConfig{})
 	gob.Register(ExecResponse{})
 	gob.Register(PluginMetadata{})
 	gob.Register(CommandInfo{})

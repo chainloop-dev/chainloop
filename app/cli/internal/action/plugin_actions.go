@@ -130,14 +130,14 @@ func NewPluginExec(cfg *ActionsOpts, manager *plugins.Manager) *PluginExec {
 }
 
 // Run executes the PluginExec action
-func (action *PluginExec) Run(ctx context.Context, pluginName string, commandName string, arguments map[string]interface{}) (*PluginExecResult, error) {
+func (action *PluginExec) Run(ctx context.Context, pluginName string, commandName string, config plugins.PluginConfig) (*PluginExecResult, error) {
 	action.cfg.Logger.Debug().Str("pluginName", pluginName).Str("command", commandName).Msg("Executing plugin command")
 	plugin, ok := action.manager.GetPlugin(pluginName)
 	if !ok {
 		return nil, fmt.Errorf("plugin '%s' not found", pluginName)
 	}
 
-	result, err := plugin.Plugin.Exec(ctx, commandName, arguments)
+	result, err := plugin.Plugin.Exec(ctx, config)
 	if err != nil {
 		action.cfg.Logger.Error().Err(err).Str("pluginName", pluginName).Str("command", commandName).Msg("Plugin execution failed")
 		return nil, fmt.Errorf("plugin execution failed: %w", err)
@@ -165,14 +165,14 @@ func NewPluginInstall(cfg *ActionsOpts, manager *plugins.Manager) *PluginInstall
 func (action *PluginInstall) Run(ctx context.Context, opts *PluginInstallOptions) (*PluginInstallResult, error) {
 	action.cfg.Logger.Debug().Str("file", opts.File).Msg("Downloading plugin")
 
-	// Create plugins directory if it doesn't exist
+	// create plugins directory if it doesn't exist
 	pluginsDir := common.GetPluginsDir()
 	if err := os.MkdirAll(pluginsDir, 0755); err != nil {
 		action.cfg.Logger.Error().Err(err).Str("directory", pluginsDir).Msg("Failed to create plugins directory")
 		return nil, fmt.Errorf("failed to create plugins directory: %w", err)
 	}
 
-	// Determine filename
+	// determine filename
 	filename := filepath.Base(opts.File)
 	if opts.Filename != "" {
 		filename = opts.Filename
@@ -184,7 +184,7 @@ func (action *PluginInstall) Run(ctx context.Context, opts *PluginInstallOptions
 
 	filePath := filepath.Join(pluginsDir, filename)
 
-	// Create a temporary file for downloading
+	// create a temporary file for downloading
 	tempFilePath := filePath + ".tmp"
 	tempFile, err := os.Create(tempFilePath)
 	if err != nil {
@@ -204,10 +204,10 @@ func (action *PluginInstall) Run(ctx context.Context, opts *PluginInstallOptions
 		return nil, fmt.Errorf("failed to write file to temporary file: %w", err)
 	}
 
-	// Close the file before renaming
+	// close the file before renaming
 	tempFile.Close()
 
-	// Rename the temporary file to the final file
+	// rename the temporary file to the final file
 	if err := os.Rename(tempFilePath, filePath); err != nil {
 		os.Remove(tempFilePath)
 		action.cfg.Logger.Error().Err(err).Str("tempPath", tempFilePath).Str("finalPath", filePath).Msg("Failed to rename temporary file")

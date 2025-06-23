@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -25,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -86,32 +84,27 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 				}
 			}
 
-			// prepare Viper configuration for serialization and sending to the plugin durign execution
-			viperConfig := make(map[string]interface{})
-			for _, key := range viper.AllKeys() {
-				viperConfig[key] = viper.Get(key)
+			// TODO - think about which configuration values to pass further to the plugin
+			config := plugins.PluginConfig{
+				Command:   cmdInfo.Name,
+				Arguments: arguments,
+				Flags:     cmd.Flags(),
 			}
 
-			serializedConfig, err := json.Marshal(viperConfig)
-			if err != nil {
-				return fmt.Errorf("error while serializing viper config: %w", err)
-			}
-			arguments["viper_config"] = string(serializedConfig)
-
-			// Execute plugin command using the action pattern
-			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, arguments)
+			// execute plugin command using the action pattern
+			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, config)
 			if err != nil {
 				return fmt.Errorf("failed to execute plugin command: %w", err)
 			}
 
-			// Handle result
+			// handle result
 			if result.Error != "" {
 				return fmt.Errorf("the plugin command failed: %s", result.Error)
 			}
 
 			fmt.Print(result.Output)
 
-			// Return with appropriate exit code
+			// return with appropriate exit code
 			if result.ExitCode != 0 {
 				os.Exit(result.ExitCode)
 			}
@@ -120,7 +113,7 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 		},
 	}
 
-	// Add flags
+	// add flags to the command
 	for _, flag := range cmdInfo.Flags {
 		switch flag.Type {
 		case stringFlagType:
