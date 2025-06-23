@@ -369,7 +369,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	}
 
 	// Apply RBAC on the project
-	if err := s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunUpdate); err != nil {
+	if err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunUpdate); err != nil {
 		return nil, err
 	}
 
@@ -665,9 +665,11 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// try to load project and apply RBAC if needed
-	if err := s.userHasPermissionOnProject(ctx, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); err != nil && !errors.IsNotFound(err) {
-		// Only return the error when the project exists. Otherwise, we will create the project
-		return nil, err
+	if err := s.userHasPermissionOnProject(ctx, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); err != nil {
+		// if the project is not found, we ignore the error, since we'll create the project in this call
+		if !errors.IsNotFound(err) {
+			return nil, err
+		}
 	}
 
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
