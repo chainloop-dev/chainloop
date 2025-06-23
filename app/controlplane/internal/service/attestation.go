@@ -363,13 +363,13 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId);
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Apply RBAC on the project
-	if err := s.userHasPermissionOnProject(ctx, s.projectUseCase, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunCreate); err != nil {
+	if err := s.userHasPermissionOnProject(ctx, s.projectUseCase, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunUpdate); err != nil {
 		return nil, err
 	}
 

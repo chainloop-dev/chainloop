@@ -119,6 +119,7 @@ var (
 	PolicyWorkflowRunList   = &Policy{ResourceWorkflowRun, ActionList}
 	PolicyWorkflowRunRead   = &Policy{ResourceWorkflowRun, ActionRead}
 	PolicyWorkflowRunCreate = &Policy{ResourceWorkflowRun, ActionCreate}
+	PolicyWorkflowRunUpdate = &Policy{ResourceWorkflowRun, ActionUpdate}
 	// Workflow
 	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
 	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
@@ -179,6 +180,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		PolicyWorkflowCreate,
 		PolicyWorkflowRunCreate,
+		PolicyWorkflowRunUpdate, // to reset attestations
 	},
 }
 
