@@ -59,7 +59,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		return nil, err
 	}
 
-	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowCreate); err != nil && !errors.IsNotFound(err) {
+	if err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowCreate); err != nil && !errors.IsNotFound(err) {
 		// Only return the error when the project exists. Otherwise, we will create the project
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 		return nil, err
 	}
 
-	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowUpdate); err != nil {
+	if err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowUpdate); err != nil {
 		return nil, err
 	}
 
@@ -245,7 +245,7 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 		return nil, err
 	}
 
-	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowDelete); err != nil {
+	if err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectName(), authz.PolicyWorkflowDelete); err != nil {
 		return nil, err
 	}
 
@@ -268,7 +268,7 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 	}
 
 	// try to load project and apply RBAC if needed
-	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.ProjectName, authz.PolicyWorkflowRead); err != nil {
+	if err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyWorkflowRead); err != nil {
 		return nil, err
 	}
 
