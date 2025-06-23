@@ -104,20 +104,24 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// 0 - find or create the contract if we are creating the workflow (if any)
 	contractRef := opts.NewWorkflowContractRef
 	_, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
-	if err != nil && status.Code(err) == codes.NotFound {
-		// Not found, let's see if we need to create the contract
-		if contractRef != "" {
-			// Try to find it by name
-			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
-			// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
-			// TODO: validate locally before doing the query
-			if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
-				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
-				if err != nil {
-					return "", err
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Not found, let's see if we need to create the contract
+			if contractRef != "" {
+				// Try to find it by name
+				_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
+				// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
+				// TODO: validate locally before doing the query
+				if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
+					createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
+					if err != nil {
+						return "", err
+					}
+					contractRef = createResp.Name
 				}
-				contractRef = createResp.Name
 			}
+		} else {
+			return "", err
 		}
 	}
 

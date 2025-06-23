@@ -116,8 +116,9 @@ var (
 	PolicyWorkflowContractUpdate = &Policy{ResourceWorkflowContract, ActionUpdate}
 	PolicyWorkflowContractCreate = &Policy{ResourceWorkflowContract, ActionCreate}
 	// WorkflowRun
-	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
-	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
+	PolicyWorkflowRunList   = &Policy{ResourceWorkflowRun, ActionList}
+	PolicyWorkflowRunRead   = &Policy{ResourceWorkflowRun, ActionRead}
+	PolicyWorkflowRunCreate = &Policy{ResourceWorkflowRun, ActionCreate}
 	// Workflow
 	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
 	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
@@ -176,15 +177,20 @@ var rolesMap = map[Role][]*Policy{
 		// + all the policies from the viewer role inherited automatically
 	},
 	RoleOrgMember: {
+		// Allowed endpoints. RBAC will be applied where needed
 		PolicyProjectList,
 		PolicyProjectRead,
 		PolicyProjectCreate,
 		PolicyProjectUpdate,
 		PolicyProjectDelete,
+		PolicyWorkflowRead,
 		PolicyWorkflowContractCreate,
 	},
 	RoleProjectAdmin: {
+		// RBAC will be applied in all these
+		PolicyWorkflowRead,
 		PolicyWorkflowCreate,
+		PolicyWorkflowRunCreate,
 	},
 }
 

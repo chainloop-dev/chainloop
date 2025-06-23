@@ -21,6 +21,7 @@ import (
 	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/jsonfilter/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -232,6 +233,11 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewRequest) (*pb.WorkflowServiceViewResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	// try to load project and apply RBAC if needed
+	if err = s.userHasPermissionOnProject(ctx, s.projectsUseCase, currentOrg.ID, req.ProjectName, authz.PolicyWorkflowRead); err != nil {
 		return nil, err
 	}
 

@@ -168,6 +168,24 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	return errors.Forbidden("forbidden", "user not authorized")
 }
 
+func (s *service) userHasPermissionOnProject(ctx context.Context, pUC *biz.ProjectUseCase, orgID string, pName string, policy *authz.Policy) error {
+	if !rbacEnabled(ctx) {
+		return nil
+	}
+	p, err := pUC.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
+	if err != nil {
+		if !biz.IsNotFound(err) {
+			return handleUseCaseErr(err, s.log)
+		}
+	} else if p != nil {
+		if err = s.authorizeResource(ctx, policy, authz.ResourceTypeProject, p.ID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func rbacEnabled(ctx context.Context) bool {
 	return usercontext.CurrentAuthzSubject(ctx) == string(authz.RoleOrgMember)
 }

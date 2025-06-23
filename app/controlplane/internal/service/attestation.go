@@ -154,6 +154,12 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Apply RBAC on the project
+	// try to load project and apply RBAC if needed
+	if err = s.userHasPermissionOnProject(ctx, s.projectUseCase, org.ID, req.ProjectName, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
+	}
+
 	// Find contract revision
 	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision), biz.WithoutReferences())
 	if err != nil || contractVersion == nil {
@@ -649,15 +655,8 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// try to load project and apply RBAC if needed
-	p, err := s.projectUseCase.FindProjectByReference(ctx, apiToken.OrgID, &biz.EntityRef{Name: req.ProjectName})
-	if err != nil {
-		if !biz.IsNotFound(err) {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-	} else if p != nil {
-		if err = s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, p.ID); err != nil {
-			return nil, err
-		}
+	if err := s.userHasPermissionOnProject(ctx, s.projectUseCase, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); err != nil {
+		return nil, err
 	}
 
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
@@ -677,7 +676,8 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// set project owner if RBAC is enabled
-	if user := entities.CurrentUser(ctx); user != nil && rbacEnabled(ctx) {
+	if rbacEnabled(ctx) {
+		user := entities.CurrentUser(ctx)
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
