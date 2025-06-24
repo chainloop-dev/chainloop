@@ -351,60 +351,50 @@ func TestVerifyAllFilters(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name    string
-		filter  string
-		wantErr bool
-		errMsg  string
+		name   string
+		filter string
+		errMsg string
 	}{
 		{
-			name:    "material annotation exact match",
-			filter:  "critical=true",
-			wantErr: false,
+			name:   "material annotation exact match",
+			filter: "critical=true",
 		},
 		{
-			name:    "material precedence over attestation for same key",
-			filter:  "environment=staging",
-			wantErr: false,
+			name:   "material precedence over attestation for same key",
+			filter: "environment=staging",
 		},
 		{
-			name:    "material value mismatch fails",
-			filter:  "environment=prod",
-			wantErr: true,
-			errMsg:  "material annotation mismatch",
+			name:   "material value mismatch fails",
+			filter: "environment=prod",
+			errMsg: "material annotation mismatch",
 		},
 		{
-			name:    "attestation annotation fallback match",
-			filter:  "team=security",
-			wantErr: false,
+			name:   "attestation annotation fallback match",
+			filter: "team=security",
 		},
 		{
-			name:    "attestation value mismatch fails",
-			filter:  "team=infra",
-			wantErr: true,
-			errMsg:  "attestation annotation mismatch",
+			name:   "attestation value mismatch fails",
+			filter: "team=infra",
+			errMsg: "attestation annotation mismatch",
 		},
 		{
-			name:    "missing annotation fails",
-			filter:  "nonexistent=value",
-			wantErr: true,
-			errMsg:  "missing required annotation",
+			name:   "missing annotation fails",
+			filter: "nonexistent=value",
+			errMsg: "missing required annotation",
 		},
 		{
-			name:    "multiple conditions all match",
-			filter:  "environment=staging,team=security",
-			wantErr: false,
+			name:   "multiple conditions all match",
+			filter: "environment=staging,team=security",
 		},
 		{
-			name:    "one mismatched condition fails entire filter",
-			filter:  "environment=staging,team=infra",
-			wantErr: true,
-			errMsg:  "attestation annotation mismatch",
+			name:   "one mismatched condition fails entire filter",
+			filter: "environment=staging,team=infra",
+			errMsg: "attestation annotation mismatch",
 		},
 		{
-			name:    "invalid filter format",
-			filter:  "environment",
-			wantErr: true,
-			errMsg:  "invalid filter segment",
+			name:   "invalid filter format",
+			filter: "environment",
+			errMsg: "invalid filter segment",
 		},
 	}
 
@@ -412,11 +402,9 @@ func TestVerifyAllFilters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := verifyAllFilters(attestationAnnotations, materialAnnotations, tc.filter)
 
-			if tc.wantErr {
+			if tc.errMsg != "" {
 				require.Error(t, err)
-				if tc.errMsg != "" {
-					assert.Contains(t, err.Error(), tc.errMsg)
-				}
+				assert.Contains(t, err.Error(), tc.errMsg)
 			} else {
 				assert.NoError(t, err)
 			}
