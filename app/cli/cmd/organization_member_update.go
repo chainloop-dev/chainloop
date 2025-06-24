@@ -54,7 +54,7 @@ func newOrganizationMemberUpdateCmd() *cobra.Command {
 	err := cmd.MarkFlagRequired("id")
 	cobra.CheckErr(err)
 
-	cmd.Flags().StringVar(&role, "role", string(action.RoleViewer), fmt.Sprintf("Role of the user in the organization, available %s", action.AvailableRoles))
+	cmd.Flags().StringVar(&role, "role", string(action.RoleViewer), fmt.Sprintf("Role of the user in the organization, available %s", action.AvailableRoles[:3]))
 	cobra.CheckErr(err)
 
 	return cmd
