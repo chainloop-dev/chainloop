@@ -60,34 +60,33 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 		Use:   cmdInfo.Name,
 		Short: cmdInfo.Description,
 		Long:  fmt.Sprintf("%s\n\nProvided by plugin: %s v%s", cmdInfo.Description, plugin.Metadata.Name, plugin.Metadata.Version),
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			// Collect arguments
-			arguments := make(map[string]interface{})
-
-			// Collect flag values
+			// Collect all flags that were set
+			flags := make(map[string]any)
 			for _, flag := range cmdInfo.Flags {
 				switch flag.Type {
 				case stringFlagType:
 					if val, err := cmd.Flags().GetString(flag.Name); err == nil {
-						arguments[flag.Name] = val
+						flags[flag.Name] = val
 					}
 				case boolFlagType:
 					if val, err := cmd.Flags().GetBool(flag.Name); err == nil {
-						arguments[flag.Name] = val
+						flags[flag.Name] = val
 					}
 				case intFlagType:
 					if val, err := cmd.Flags().GetInt(flag.Name); err == nil {
-						arguments[flag.Name] = val
+						flags[flag.Name] = val
 					}
 				}
 			}
 
-			// TODO - think about which configuration values to pass further to the plugin
+			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginConfig{
-				Command:   cmdInfo.Name,
-				Arguments: arguments,
+				Command: cmdInfo.Name,
+				Args:    args,
+				Flags:   flags,
 			}
 
 			// execute plugin command using the action pattern
