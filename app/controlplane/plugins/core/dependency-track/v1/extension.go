@@ -289,13 +289,6 @@ func matchesAllFilters(attestationAnnotations, materialAnnotations map[string]st
 	return true
 }
 
-func annotationMatches(annotations map[string]string, key, expectedValue string) bool {
-	if val, exists := annotations[key]; exists {
-		return val == expectedValue
-	}
-	return false
-}
-
 type interpolationContext struct {
 	Material    *annotations
 	Attestation *annotations
