@@ -54,7 +54,7 @@ func newOrganizationInvitationCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&receiverEmail, "receiver", "", "Email of the user to invite")
 	err := cmd.MarkFlagRequired("receiver")
 
-	cmd.Flags().StringVar(&role, "role", string(action.RoleViewer), fmt.Sprintf("Role of the user in the organization, available %s", action.AvailableRoles))
+	cmd.Flags().StringVar(&role, "role", string(action.RoleViewer), fmt.Sprintf("Role of the user in the organization, available %s", action.AvailableRoles[:3]))
 	cobra.CheckErr(err)
 
 	return cmd
