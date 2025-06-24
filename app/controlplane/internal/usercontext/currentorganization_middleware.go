@@ -31,7 +31,8 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
-var membershipsCache = expirable.NewLRU[string, *entities.Membership](0, nil, time.Second*10)
+// membershipsCache caches user memberships to save some database queries during intensive sessions
+var membershipsCache = expirable.NewLRU[string, *entities.Membership](0, nil, time.Second*1)
 
 func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membershipUC biz.MembershipsRBAC, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
