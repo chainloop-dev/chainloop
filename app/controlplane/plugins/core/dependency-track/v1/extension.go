@@ -203,11 +203,8 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	if attachmentConfig.Filter != "" {
 		attestationAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
 		materialAnnotations := sbom.Annotations
-		if !matchesAllFilters(attestationAnnotations, materialAnnotations, attachmentConfig.Filter) {
-			l.Infow("filter conditions not met, skipping SBOM upload",
-				"filter", attachmentConfig.Filter,
-				"materialName", sbom.Name,
-			)
+		if err := verifyAllFilters(attestationAnnotations, materialAnnotations, attachmentConfig.Filter); err != nil {
+			l.Infow("msg", "filter conditions not met, SKIPPING", "err", err, "materialName", sbom.Name)
 			return nil
 		}
 	}
@@ -259,34 +256,36 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	return nil
 }
 
-// checks if all filter conditions are met by either:
+// verify if all filter conditions are met by either:
 // 1) Material annotations (higher precedence if same key exists in both)
 // 2) Attestation annotations (fallback if key not in material)
-func matchesAllFilters(attestationAnnotations, materialAnnotations map[string]string, filter string) bool {
+func verifyAllFilters(attestationAnnotations, materialAnnotations map[string]string, filter string) error {
 	if filter == "" {
-		return true
+		return nil
 	}
 
 	for _, f := range strings.Split(filter, ",") {
 		parts := strings.SplitN(strings.TrimSpace(f), "=", 2)
 		if len(parts) != 2 {
-			continue
+			return fmt.Errorf("invalid filter segment '%s' - must be 'key=value'", f)
 		}
 
 		key, value := parts[0], parts[1]
 
 		if matVal, exists := materialAnnotations[key]; exists {
-			if matVal == value {
-				continue
+			if matVal != value {
+				return fmt.Errorf("material annotation mismatch: %s=%s (expected %s)", key, matVal, value)
 			}
-			return false
+			continue
 		}
 
-		if attVal, exists := attestationAnnotations[key]; !exists || attVal != value {
-			return false
+		if attVal, exists := attestationAnnotations[key]; !exists {
+			return fmt.Errorf("missing required annotation: %s", key)
+		} else if attVal != value {
+			return fmt.Errorf("attestation annotation mismatch: %s=%s (expected %s)", key, attVal, value)
 		}
 	}
-	return true
+	return nil
 }
 
 type interpolationContext struct {

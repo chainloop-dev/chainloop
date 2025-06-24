@@ -338,3 +338,88 @@ func TestValidateAttachmentConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestVerifyAllFilters(t *testing.T) {
+	attestationAnnotations := map[string]string{
+		"environment": "prod",
+		"team":        "security",
+	}
+
+	materialAnnotations := map[string]string{
+		"environment": "staging",
+		"critical":    "true",
+	}
+
+	testCases := []struct {
+		name    string
+		filter  string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "material annotation exact match",
+			filter:  "critical=true",
+			wantErr: false,
+		},
+		{
+			name:    "material precedence over attestation for same key",
+			filter:  "environment=staging",
+			wantErr: false,
+		},
+		{
+			name:    "material value mismatch fails",
+			filter:  "environment=prod",
+			wantErr: true,
+			errMsg:  "material annotation mismatch",
+		},
+		{
+			name:    "attestation annotation fallback match",
+			filter:  "team=security",
+			wantErr: false,
+		},
+		{
+			name:    "attestation value mismatch fails",
+			filter:  "team=infra",
+			wantErr: true,
+			errMsg:  "attestation annotation mismatch",
+		},
+		{
+			name:    "missing annotation fails",
+			filter:  "nonexistent=value",
+			wantErr: true,
+			errMsg:  "missing required annotation",
+		},
+		{
+			name:    "multiple conditions all match",
+			filter:  "environment=staging,team=security",
+			wantErr: false,
+		},
+		{
+			name:    "one mismatched condition fails entire filter",
+			filter:  "environment=staging,team=infra",
+			wantErr: true,
+			errMsg:  "attestation annotation mismatch",
+		},
+		{
+			name:    "invalid filter format",
+			filter:  "environment",
+			wantErr: true,
+			errMsg:  "invalid filter segment",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := verifyAllFilters(attestationAnnotations, materialAnnotations, tc.filter)
+
+			if tc.wantErr {
+				require.Error(t, err)
+				if tc.errMsg != "" {
+					assert.Contains(t, err.Error(), tc.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
