@@ -152,6 +152,10 @@ func WithProjectUseCase(projectUseCase *biz.ProjectUseCase) NewOpt {
 	}
 }
 
+// authorizeResource is a helper that checks if the user has a particular `op` permission policy on a particular resource
+// For example: `s.authorizeResource(ctx, authz.PolicyAttachedIntegrationDetach, authz.ResourceTypeProject, projectUUID);`
+// checks if the user has a role in the project that allows to detach integrations on it.
+// This method is available to every service that embeds `service`
 func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resourceType authz.ResourceType, resourceID uuid.UUID) error {
 	if !rbacEnabled(ctx) {
 		return nil
@@ -175,6 +179,9 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	return errors.Forbidden("forbidden", "operation not allowed")
 }
 
+// userHasPermissionOnProject is a helper method that checks if a policy can be applied to a project. It looks for a project
+// by name and ensures that the user has a role that allows that specific operation in the project.
+// check authorizeResource method
 func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, pName string, policy *authz.Policy) error {
 	if !rbacEnabled(ctx) {
 		return nil
@@ -207,6 +214,7 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
+// RBAC feature is enabled if the user has the `Org Member` role.
 func rbacEnabled(ctx context.Context) bool {
 	return usercontext.CurrentAuthzSubject(ctx) == string(authz.RoleOrgMember)
 }
