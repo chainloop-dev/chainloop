@@ -203,6 +203,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyAvailableIntegrationList,
 		PolicyAvailableIntegrationRead,
 		PolicyRegisteredIntegrationList,
+		PolicyRegisteredIntegrationRead,
 		// attachments (RBAC will be applied)
 		PolicyAttachedIntegrationList,
 		PolicyAttachedIntegrationAttach,
@@ -263,6 +264,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Attached integrations
 	"/controlplane.v1.IntegrationsService/ListAttachments": {PolicyAttachedIntegrationList},
 	"/controlplane.v1.IntegrationsService/Attach":          {PolicyAttachedIntegrationAttach},
+	"/controlplane.v1.IntegrationsService/Detach":          {PolicyAttachedIntegrationDetach},
 	// Metrics
 	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
 	// Robot Account
