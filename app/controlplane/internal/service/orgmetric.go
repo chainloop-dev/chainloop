@@ -80,7 +80,10 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 
 	timeWindow := calculateTimeWindow(&req.TimeWindow)
 
-	res, err := s.uc.TopWorkflowsByRunsCount(ctx, currentOrg.ID, int(req.GetNumWorkflows()), timeWindow)
+	// get user visible projects
+	projectIDs := s.visibleProjects(ctx)
+
+	res, err := s.uc.TopWorkflowsByRunsCount(ctx, currentOrg.ID, int(req.GetNumWorkflows()), timeWindow, projectIDs)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -104,7 +107,10 @@ func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRun
 
 	timeWindow := calculateTimeWindow(&req.TimeWindow)
 
-	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, timeWindow)
+	// get user visible projects
+	projectIDs := s.visibleProjects(ctx)
+
+	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, timeWindow, projectIDs)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

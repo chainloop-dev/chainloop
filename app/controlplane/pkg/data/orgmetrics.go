@@ -130,7 +130,7 @@ func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uui
 	return result, nil
 }
 
-func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, tw *biz.TimeWindow) ([]*biz.TopWorkflowsByRunsCountItem, error) {
+func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, tw *biz.TimeWindow, projectIDs []uuid.UUID) ([]*biz.TopWorkflowsByRunsCountItem, error) {
 	var runs []struct {
 		WorkflowID string `json:"workflow_id"`
 		State      string
@@ -138,9 +138,14 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 	}
 
 	// Get workflow runs grouped by state and workflowRunID
-	if err := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows().
-		QueryWorkflowruns().
+	wfQuery := orgScopedQuery(repo.data.DB, orgID).
+		QueryWorkflows()
+
+	if projectIDs != nil {
+		wfQuery = wfQuery.Where(workflow.ProjectIDIn(projectIDs...))
+	}
+
+	if err := wfQuery.QueryWorkflowruns().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
 			workflowrun.CreatedAtLTE(tw.To),
@@ -201,7 +206,7 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 	return result[0:numWorkflows], nil
 }
 
-func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, tw *biz.TimeWindow) ([]*biz.DayRunsCount, error) {
+func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) ([]*biz.DayRunsCount, error) {
 	var runsByStateAndDay []struct {
 		State     string
 		Count     int32
@@ -210,6 +215,12 @@ func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowI
 
 	// Get workflow runs grouped by state and day
 	q := orgScopedQuery(repo.data.DB, orgID).QueryWorkflows()
+
+	// filter by visible projects
+	if projectIDs != nil {
+		q = q.Where(workflow.ProjectIDIn(projectIDs...))
+	}
+
 	// optionally filter by workflowID
 	if workflowID != uuid.Nil {
 		q = q.Where(workflow.ID(workflowID))

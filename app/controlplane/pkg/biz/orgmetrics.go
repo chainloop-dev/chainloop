@@ -42,8 +42,8 @@ type OrgMetricsRepo interface {
 	// Total number by run status
 	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error)
 	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error)
-	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow *TimeWindow) ([]*TopWorkflowsByRunsCountItem, error)
-	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow *TimeWindow) ([]*DayRunsCount, error)
+	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow *TimeWindow, projectIDs []uuid.UUID) ([]*TopWorkflowsByRunsCountItem, error)
+	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow *TimeWindow, projectIDs []uuid.UUID) ([]*DayRunsCount, error)
 }
 
 type DayRunsCount struct {
@@ -121,7 +121,7 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 
 // DailyRunsCount returns the number of runs per day within the provided time window (from now)
 // Optionally filtered by workflowID
-func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow *TimeWindow) ([]*DayRunsCount, error) {
+func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow *TimeWindow, projectIDs []uuid.UUID) ([]*DayRunsCount, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -139,7 +139,7 @@ func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, w
 		}
 	}
 
-	return uc.repo.DailyRunsCount(ctx, orgUUID, workflowUUID, timeWindow)
+	return uc.repo.DailyRunsCount(ctx, orgUUID, workflowUUID, timeWindow, projectIDs)
 }
 
 type TopWorkflowsByRunsCountItem struct {
@@ -148,7 +148,7 @@ type TopWorkflowsByRunsCountItem struct {
 	Total    int32
 }
 
-func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow *TimeWindow) ([]*TopWorkflowsByRunsCountItem, error) {
+func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow *TimeWindow, projectIDs []uuid.UUID) ([]*TopWorkflowsByRunsCountItem, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID 
 		return nil, err
 	}
 
-	return uc.repo.TopWorkflowsByRunsCount(ctx, orgUUID, numWorkflows, timeWindow)
+	return uc.repo.TopWorkflowsByRunsCount(ctx, orgUUID, numWorkflows, timeWindow, projectIDs)
 }
 
 // GetLastWorkflowStatusByRun returns the last status of each workflow by its last run
