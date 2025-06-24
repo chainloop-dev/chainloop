@@ -87,7 +87,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	})
 
 	s.T().Run("it should appear if we whitelist org2", func(t *testing.T) {
-		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,
+		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership, nil,
 			&conf.ReferrerSharedIndex{
 				Enabled:     true,
 				AllowedOrgs: []string{s.org2.ID},
@@ -463,7 +463,7 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.user2.ID, biz.WithCurrentMembership())
 	require.NoError(s.T(), err)
 
-	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership,
+	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Repos.Membership, nil,
 		&conf.ReferrerSharedIndex{
 			Enabled:     true,
 			AllowedOrgs: []string{s.org1.ID},
