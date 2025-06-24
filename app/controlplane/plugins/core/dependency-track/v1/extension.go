@@ -199,7 +199,7 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 		return errors.New("invalid attachment configuration")
 	}
 
-	// Check if upload filter is specified and if it matches attestation annotations
+	// Check if upload filter is specified and if it matches annotations
 	if attachmentConfig.Filter != "" {
 		attestationAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
 		materialAnnotations := sbom.Annotations
