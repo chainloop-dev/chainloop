@@ -136,6 +136,7 @@ var (
 // NOTE: roles are hierarchical, this means that the Admin Role can inherit all the policies from the Viewer Role
 // so we do not need to add them as well.
 var rolesMap = map[Role][]*Policy{
+	// RoleViewer is an org-scoped role that provides read-only access to all resources
 	RoleViewer: {
 		// Referrer
 		PolicyReferrerRead,
@@ -166,12 +167,15 @@ var rolesMap = map[Role][]*Policy{
 		// Organization
 		PolicyOrganizationRead,
 	},
+	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
 		// We do a manual check in the artifact upload endpoint
 		// so we need the actual policy in place skipping it is not enough
 		PolicyArtifactUpload,
 		// + all the policies from the viewer role inherited automatically
 	},
+	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at
+	// the organization level will need specific project roles to access their contents
 	RoleOrgMember: {
 		// Allowed endpoints. RBAC will be applied where needed
 		PolicyWorkflowRead,
@@ -207,7 +211,8 @@ var rolesMap = map[Role][]*Policy{
 		PolicyOrgMetricsRead,
 		PolicyReferrerRead,
 	},
-	// RoleProjectAdmin: RBAC will be applied in all these
+	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
+	// and it's only considered when the org-level role is `RoleOrgMember`
 	RoleProjectAdmin: {
 		// attestations
 
@@ -228,6 +233,7 @@ var rolesMap = map[Role][]*Policy{
 		PolicyAttachedIntegrationAttach,
 		PolicyAttachedIntegrationDetach,
 
+		// metrics
 		PolicyOrgMetricsRead,
 	},
 }
