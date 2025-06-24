@@ -203,6 +203,8 @@ var rolesMap = map[Role][]*Policy{
 		PolicyAttachedIntegrationList,
 		PolicyAttachedIntegrationAttach,
 		PolicyAttachedIntegrationDetach,
+
+		PolicyOrgMetricsRead,
 	},
 	// RoleProjectAdmin: RBAC will be applied in all these
 	RoleProjectAdmin: {
