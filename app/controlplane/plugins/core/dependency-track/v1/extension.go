@@ -49,7 +49,7 @@ type attachmentRequest struct {
 	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1,description=The name of the project to create and send the SBOMs to"`
 
 	ParentID string `json:"parentID,omitempty" jsonschema:"minLength=1,description=ID of parent project to create a new project under"`
-	Filter   string `json:"filter,omitempty" jsonschema:"minLength=1,description=Annotation and its value required for SBOM forwarding"`
+	Filter   string `json:"filter,omitempty" jsonschema:"minLength=1,description=Comma-separated annotation filters where material annotations take precedence over attestation when keys match"`
 }
 
 // Enforces the requirement that parentID requires the presence of projectName
@@ -201,8 +201,9 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 
 	// Check if upload filter is specified and if it matches attestation annotations
 	if attachmentConfig.Filter != "" {
-		attAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
-		if !matchesAllFilters(attAnnotations, attachmentConfig.Filter) {
+		attestationAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
+		materialAnnotations := sbom.Annotations
+		if !matchesAllFilters(attestationAnnotations, materialAnnotations, attachmentConfig.Filter) {
 			l.Infow("filter conditions not met, skipping SBOM upload",
 				"filter", attachmentConfig.Filter,
 				"materialName", sbom.Name,
@@ -258,7 +259,10 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	return nil
 }
 
-func matchesAllFilters(annotations map[string]string, filter string) bool {
+// checks if all filter conditions are met by either:
+// 1) Material annotations (higher precedence if same key exists in both)
+// 2) Attestation annotations (fallback if key not in material)
+func matchesAllFilters(attestationAnnotations, materialAnnotations map[string]string, filter string) bool {
 	if filter == "" {
 		return true
 	}
@@ -270,7 +274,15 @@ func matchesAllFilters(annotations map[string]string, filter string) bool {
 		}
 
 		key, value := parts[0], parts[1]
-		if !annotationMatches(annotations, key, value) {
+
+		if matVal, exists := materialAnnotations[key]; exists {
+			if matVal == value {
+				continue
+			}
+			return false
+		}
+
+		if attVal, exists := attestationAnnotations[key]; !exists || attVal != value {
 			return false
 		}
 	}
