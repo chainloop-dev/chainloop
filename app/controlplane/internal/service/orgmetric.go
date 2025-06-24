@@ -45,19 +45,22 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 
 	timeWindow := calculateTimeWindow(&req.TimeWindow)
 
+	// get user visible projects
+	projectIDs := s.visibleProjects(ctx)
+
 	// totals
 	// TODO: Merge it to a single request
-	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, timeWindow)
+	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, timeWindow, projectIDs)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	totalsByStatus, err := s.uc.RunsTotalByStatus(ctx, currentOrg.ID, timeWindow)
+	totalsByStatus, err := s.uc.RunsTotalByStatus(ctx, currentOrg.ID, timeWindow, projectIDs)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	totalsByRunnerType, err := s.uc.RunsTotalByRunnerType(ctx, currentOrg.ID, timeWindow)
+	totalsByRunnerType, err := s.uc.RunsTotalByRunnerType(ctx, currentOrg.ID, timeWindow, projectIDs)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

@@ -224,6 +224,8 @@ var rolesMap = map[Role][]*Policy{
 		// integrations
 		PolicyAttachedIntegrationAttach,
 		PolicyAttachedIntegrationDetach,
+
+		PolicyOrgMetricsRead,
 	},
 }
 

@@ -42,9 +42,15 @@ func NewOrgMetricsRepo(data *Data, l log.Logger) biz.OrgMetricsRepo {
 	}
 }
 
-func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow) (int32, error) {
-	total, err := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows().WithProject().
+func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) (int32, error) {
+	wfQuery := orgScopedQuery(repo.data.DB, orgID).
+		QueryWorkflows()
+
+	if projectIDs != nil {
+		wfQuery = wfQuery.Where(workflow.ProjectIDIn(projectIDs...))
+	}
+
+	total, err := wfQuery.WithProject().
 		QueryWorkflowruns().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
@@ -59,14 +65,20 @@ func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *
 	return int32(total), nil
 }
 
-func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow) (map[string]int32, error) {
+func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
 	var runs []struct {
 		State string
 		Count int32
 	}
 
-	if err := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows().WithProject().
+	wfQuery := orgScopedQuery(repo.data.DB, orgID).
+		QueryWorkflows()
+
+	if projectIDs != nil {
+		wfQuery = wfQuery.Where(workflow.ProjectIDIn(projectIDs...))
+	}
+
+	if err := wfQuery.WithProject().
 		QueryWorkflowruns().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
@@ -86,15 +98,20 @@ func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UU
 	return result, nil
 }
 
-func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow) (map[string]int32, error) {
+func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
 	var runs []struct {
 		RunnerType string `json:"runner_type"`
 		Count      int32
 	}
 
-	if err := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows().
-		QueryWorkflowruns().
+	wfQuery := orgScopedQuery(repo.data.DB, orgID).
+		QueryWorkflows()
+
+	if projectIDs != nil {
+		wfQuery = wfQuery.Where(workflow.ProjectIDIn(projectIDs...))
+	}
+
+	if err := wfQuery.QueryWorkflowruns().
 		Where(
 			workflowrun.CreatedAtGTE(tw.From),
 			workflowrun.CreatedAtLTE(tw.To),

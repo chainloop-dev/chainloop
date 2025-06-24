@@ -38,10 +38,10 @@ type OrgMetricsUseCase struct {
 
 type OrgMetricsRepo interface {
 	// Total number of runs within the provided time window (from now)
-	RunsTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow) (int32, error)
+	RunsTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow, projectIDs []uuid.UUID) (int32, error)
 	// Total number by run status
-	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow) (map[string]int32, error)
-	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow) (map[string]int32, error)
+	RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error)
+	RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error)
 	TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, timeWindow *TimeWindow) ([]*TopWorkflowsByRunsCountItem, error)
 	DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, timeWindow *TimeWindow) ([]*DayRunsCount, error)
 }
@@ -80,7 +80,7 @@ func NewOrgMetricsUseCase(r OrgMetricsRepo, orgRepo OrganizationRepo, wfUseCase 
 	}, nil
 }
 
-func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow *TimeWindow) (int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow *TimeWindow, projectIDs []uuid.UUID) (int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return 0, err
@@ -90,10 +90,10 @@ func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWi
 		return 0, err
 	}
 
-	return uc.repo.RunsTotal(ctx, orgUUID, timeWindow)
+	return uc.repo.RunsTotal(ctx, orgUUID, timeWindow, projectIDs)
 }
 
-func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow *TimeWindow) (map[string]int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -103,10 +103,10 @@ func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string
 		return nil, err
 	}
 
-	return uc.repo.RunsByStatusTotal(ctx, orgUUID, timeWindow)
+	return uc.repo.RunsByStatusTotal(ctx, orgUUID, timeWindow, projectIDs)
 }
 
-func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow *TimeWindow) (map[string]int32, error) {
+func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 		return nil, err
 	}
 
-	return uc.repo.RunsByRunnerTypeTotal(ctx, orgUUID, timeWindow)
+	return uc.repo.RunsByRunnerTypeTotal(ctx, orgUUID, timeWindow, projectIDs)
 }
 
 // DailyRunsCount returns the number of runs per day within the provided time window (from now)
