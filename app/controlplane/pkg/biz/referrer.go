@@ -20,10 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -38,11 +40,12 @@ type ReferrerUseCase struct {
 	repo           ReferrerRepo
 	membershipRepo MembershipRepo
 	workflowRepo   WorkflowRepo
+	projectsRepo   ProjectsRepo
 	logger         *log.Helper
 	indexConfig    *conf.ReferrerSharedIndex
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, projectsRepo ProjectsRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -63,6 +66,7 @@ func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo Membership
 		membershipRepo: mRepo,
 		indexConfig:    indexCfg,
 		workflowRepo:   wfRepo,
+		projectsRepo:   projectsRepo,
 		logger:         logger,
 	}, nil
 }
@@ -105,6 +109,8 @@ type GetFromRootFilters struct {
 	RootKind *string
 	// Wether to filter by visibility or not
 	Public *bool
+	// If not nil, it will be used to filter the result by project
+	ProjectIDs []uuid.UUID
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -112,6 +118,12 @@ type GetFromRootFilter func(*GetFromRootFilters)
 func WithKind(kind string) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.RootKind = &kind
+	}
+}
+
+func WithProjectIDs(projectIDs []uuid.UUID) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.ProjectIDs = projectIDs
 	}
 }
 
@@ -160,23 +172,57 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
-	memberships, err := s.membershipRepo.FindByUser(ctx, userUUID)
+	memberships, err := s.membershipRepo.ListAllByUser(ctx, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("finding memberships: %w", err)
 	}
 
 	orgIDs := make([]uuid.UUID, 0, len(memberships))
+	var projectIDs []uuid.UUID
 	for _, m := range memberships {
-		orgIDs = append(orgIDs, m.OrganizationID)
+		if m.ResourceType == authz.ResourceTypeOrganization {
+			orgIDs = append(orgIDs, m.ResourceID)
+			// If the role in the org is member, we must enable RBAC for projects.
+			if m.Role == authz.RoleOrgMember {
+				// get list of projects in org, and match it with the memberships to build a filter
+				orgProjects, err := s.getProjectsWithMembership(ctx, m.ResourceID, memberships)
+				if err != nil {
+					return nil, err
+				}
+				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
+				projectIDs = append(projectIDs, orgProjects...)
+			}
+		}
 	}
 
-	return s.GetFromRoot(ctx, digest, rootKind, orgIDs)
+	return s.GetFromRoot(ctx, digest, rootKind, orgIDs, projectIDs)
 }
 
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID) (*StoredReferrer, error) {
+// getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership
+func (s *ReferrerUseCase) getProjectsWithMembership(ctx context.Context, orgID uuid.UUID, memberships []*Membership) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0)
+	projects, err := s.projectsRepo.ListProjectsByOrgID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("listing projects: %w", err)
+	}
+	for _, p := range projects {
+		if slices.ContainsFunc(memberships, func(m *Membership) bool {
+			return m.ResourceType == authz.ResourceTypeProject && m.ResourceID == p.ID
+		}) {
+			ids = append(ids, p.ID)
+		}
+	}
+
+	return ids, nil
+}
+
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs []uuid.UUID) (*StoredReferrer, error) {
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
+	}
+	if projectIDs != nil {
+		filters = append(filters, WithProjectIDs(projectIDs))
 	}
 
 	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)

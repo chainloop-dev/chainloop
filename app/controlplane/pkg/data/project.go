@@ -66,6 +66,22 @@ func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UU
 	return entProjectToBiz(pro), nil
 }
 
+func (r *ProjectRepo) ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) ([]*biz.Project, error) {
+	prs, err := r.data.DB.Project.Query().Where(
+		project.OrganizationID(orgID),
+		project.DeletedAtIsNil()).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list projects failed: %w", err)
+	}
+
+	res := make([]*biz.Project, 0, len(prs))
+	for _, p := range prs {
+		res = append(res, entProjectToBiz(p))
+	}
+
+	return res, nil
+}
+
 func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) (*biz.Project, error) {
 	pro, err := r.data.DB.Project.Create().SetOrganizationID(orgID).SetName(name).Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {

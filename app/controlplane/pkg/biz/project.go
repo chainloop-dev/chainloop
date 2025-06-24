@@ -30,6 +30,7 @@ type ProjectsRepo interface {
 	FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*Project, error)
 	FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*Project, error)
 	Create(ctx context.Context, orgID uuid.UUID, name string) (*Project, error)
+	ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) ([]*Project, error)
 }
 
 // ProjectUseCase is a use case for projects
