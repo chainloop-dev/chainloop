@@ -219,11 +219,7 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 	}
 
 	// filter by visible projects if RBAC is enabled
-	projectIDs, err := s.visibleProjects(ctx)
-	if err != nil {
-		return nil, err
-	}
-	filters.ProjectIDs = projectIDs
+	filters.ProjectIDs = s.visibleProjects(ctx)
 
 	workflows, count, err := s.useCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {

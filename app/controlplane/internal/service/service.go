@@ -189,10 +189,10 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 }
 
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
-func (s *service) visibleProjects(ctx context.Context) ([]uuid.UUID, error) {
+func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	if !rbacEnabled(ctx) {
 		// returning a NIL slice to denote that RBAC has not been applied, to differentiate from the empty slice case
-		return nil, nil
+		return nil
 	}
 
 	projects := make([]uuid.UUID, 0)
@@ -204,7 +204,7 @@ func (s *service) visibleProjects(ctx context.Context) ([]uuid.UUID, error) {
 		}
 	}
 
-	return projects, nil
+	return projects
 }
 
 func rbacEnabled(ctx context.Context) bool {

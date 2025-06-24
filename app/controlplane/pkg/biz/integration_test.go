@@ -199,7 +199,7 @@ func (s *testSuite) TestAttachWorkflow() {
 		assert.Equal(s.workflow.ID, got.WorkflowID)
 
 		// Make sure it has been stored
-		attachments, err := s.Integration.ListAttachments(ctx, s.org.ID, s.workflow.ID.String())
+		attachments, err := s.Integration.ListAttachments(ctx, s.org.ID, &biz.ListAttachmentsOpts{WorkflowID: &s.workflow.ID})
 		assert.NoError(err)
 		assert.Len(attachments, 1)
 	})
@@ -241,7 +241,7 @@ func (s *testSuite) TestListAttachments() {
 	assert.NoError(err)
 
 	// List the attachments
-	attachments, err := s.Integration.ListAttachments(ctx, s.org.ID, s.workflow.ID.String())
+	attachments, err := s.Integration.ListAttachments(ctx, s.org.ID, &biz.ListAttachmentsOpts{WorkflowID: &s.workflow.ID})
 	assert.NoError(err)
 	assert.Len(attachments, 1)
 	assert.NotNil(attachments[0].Integration)

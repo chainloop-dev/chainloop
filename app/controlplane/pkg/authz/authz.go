@@ -193,6 +193,16 @@ var rolesMap = map[Role][]*Policy{
 		PolicyArtifactUpload,
 
 		PolicyCASBackendList,
+
+		PolicyOrganizationRead,
+
+		// integrations
+		PolicyAvailableIntegrationList,
+		PolicyAvailableIntegrationRead,
+		PolicyRegisteredIntegrationList,
+		// attachments (RBAC will be applied)
+		PolicyAttachedIntegrationList,
+		PolicyAttachedIntegrationAttach,
 	},
 	// RoleProjectAdmin: RBAC will be applied in all these
 	RoleProjectAdmin: {
@@ -210,6 +220,9 @@ var rolesMap = map[Role][]*Policy{
 
 		// workflow runs
 		PolicyWorkflowRunRead,
+
+		// integrations
+		PolicyAttachedIntegrationAttach,
 	},
 }
 

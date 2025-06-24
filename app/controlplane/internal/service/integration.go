@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -129,6 +130,11 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Apply RBAC if needed
+	if err = s.authorizeResource(ctx, authz.PolicyAttachedIntegrationAttach, authz.ResourceTypeProject, wf.ProjectID); err != nil {
+		return nil, err
+	}
+
 	res, err := s.integrationUC.AttachToWorkflow(ctx, &biz.AttachOpts{
 		OrgID: org.ID, IntegrationID: integration.ID.String(), WorkflowID: wf.ID.String(),
 		AttachmentConfig:  req.Config,
@@ -218,7 +224,7 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 	}
 
 	// Translate workflow name to ID
-	var workflowID string
+	opts := &biz.ListAttachmentsOpts{}
 	if req.GetWorkflowName() != "" {
 		wf, err := s.workflowUC.FindByNameInOrg(ctx, org.ID, req.GetProjectName(), req.GetWorkflowName())
 		if err != nil {
@@ -227,10 +233,13 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 			}
 			return nil, handleUseCaseErr(err, s.log)
 		}
-		workflowID = wf.ID.String()
+		opts.WorkflowID = &wf.ID
 	}
 
-	integrations, err := s.integrationUC.ListAttachments(ctx, org.ID, workflowID)
+	// apply RBAC if needed
+	opts.ProjectIDs = s.visibleProjects(ctx)
+
+	integrations, err := s.integrationUC.ListAttachments(ctx, org.ID, opts)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

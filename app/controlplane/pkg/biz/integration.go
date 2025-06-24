@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -77,7 +78,7 @@ type IntegrationRepo interface {
 
 type IntegrationAttachmentRepo interface {
 	Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*IntegrationAttachment, error)
-	List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*IntegrationAndAttachment, error)
+	List(ctx context.Context, orgID uuid.UUID, opts *ListAttachmentsOpts) ([]*IntegrationAndAttachment, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*IntegrationAttachment, error)
 	SoftDelete(ctx context.Context, ID uuid.UUID) error
 }
@@ -313,32 +314,37 @@ func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID s
 	return uc.integrationRepo.SoftDelete(ctx, integrationUUID)
 }
 
+type ListAttachmentsOpts struct {
+	// limit search for a particular workflow
+	WorkflowID *uuid.UUID
+	// limit search in a list of projects. Note that `nil` is no filter
+	ProjectIDs []uuid.UUID
+}
+
 // List attachments returns the list of attachments for a given organization and optionally workflow
-func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID, workflowID string) ([]*IntegrationAndAttachment, error) {
+func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID string, opts *ListAttachmentsOpts) ([]*IntegrationAndAttachment, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	workflowUUID := uuid.Nil
-	if workflowID != "" {
-		var err error
-		workflowUUID, err = uuid.Parse(workflowID)
-		if err != nil {
-			return nil, NewErrInvalidUUID(err)
-		}
-
+	if opts != nil && opts.WorkflowID != nil {
 		// We check that the workflow belongs to the provided organization
 		// This check is mostly informative to the user
-		wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID)
+		wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, *opts.WorkflowID)
 		if err != nil {
 			return nil, err
 		} else if wf == nil {
 			return nil, NewErrNotFound("workflow")
 		}
+		if opts.ProjectIDs != nil {
+			if !slices.Contains(opts.ProjectIDs, wf.ProjectID) {
+				return nil, NewErrNotFound("project")
+			}
+		}
 	}
 
-	return uc.integrationARepo.List(ctx, orgUUID, workflowUUID)
+	return uc.integrationARepo.List(ctx, orgUUID, opts)
 }
 
 // Detach integration from workflow

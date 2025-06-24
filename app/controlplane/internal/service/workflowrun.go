@@ -67,11 +67,8 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	// Configure filters
 	filters := &biz.RunListFilters{}
 
-	projectIDs, err := s.visibleProjects(ctx)
-	if err != nil {
-		return nil, err
-	}
-	filters.ProjectIDs = projectIDs
+	// Apply RBAC if needed
+	filters.ProjectIDs = s.visibleProjects(ctx)
 
 	// by workflow
 	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {
