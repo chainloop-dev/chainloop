@@ -115,13 +115,26 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 	return res, nil
 }
 
+func humanizedRunStatus(in pb.RunStatus) string {
+	mapping := map[pb.RunStatus]string{
+		pb.RunStatus_RUN_STATUS_UNSPECIFIED: "unspecified",
+		pb.RunStatus_RUN_STATUS_INITIALIZED: "in progress",
+		pb.RunStatus_RUN_STATUS_SUCCEEDED:   "success",
+		pb.RunStatus_RUN_STATUS_FAILED:      "failed",
+		pb.RunStatus_RUN_STATUS_CANCELLED:   "canceled",
+		pb.RunStatus_RUN_STATUS_EXPIRED:     "expired",
+	}
+
+	return mapping[in]
+}
+
 func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
 	if in == nil {
 		return nil
 	}
 
 	item := &WorkflowRunItem{
-		ID: in.Id, State: in.State, Reason: in.Reason, CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
+		ID: in.Id, State: humanizedRunStatus(in.GetStatus()), Reason: in.Reason, CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
 		Workflow:               pbWorkflowItemToAction(in.Workflow),
 		RunURL:                 in.GetJobUrl(),
 		RunnerType:             humanizedRunnerType(in.GetRunnerType()),
