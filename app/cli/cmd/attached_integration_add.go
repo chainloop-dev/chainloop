@@ -28,7 +28,11 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 		Use:     "add",
 		Aliases: []string{"attach"},
 		Short:   "Attach an existing registered integration to a workflow",
-		Example: `  chainloop integration attached add --workflow deadbeef --project my-project --integration beefdoingwell --opt projectName=MyProject --opt projectVersion=1.0.0`,
+		Example: `  chainloop integration attached add --workflow deadbeef --project my-project --integration beefdoingwell --opt projectName=MyProject --opt projectVersion=1.0.0
+
+  # Only send SBOMs to dependency track when the annotations in the attestation or material match the filter in an AND operation. 
+  Note: material annotations take precedence over attestation ones.
+  chainloop integration attached add --workflow deadbeef --project my-project --integration dependency-track --opt projectName=MyProject --opt filter="environment=prod,team=security"`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			// Find the integration to extract the kind of integration we care about
 			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationName)

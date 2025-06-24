@@ -49,6 +49,7 @@ type attachmentRequest struct {
 	ProjectName string `json:"projectName,omitempty" jsonschema:"oneof_required=projectName,minLength=1,description=The name of the project to create and send the SBOMs to"`
 
 	ParentID string `json:"parentID,omitempty" jsonschema:"minLength=1,description=ID of parent project to create a new project under"`
+	Filter   string `json:"filter,omitempty" jsonschema:"minLength=1,description=Comma-separated annotation filters where material annotations take precedence over attestation when keys match"`
 }
 
 // Enforces the requirement that parentID requires the presence of projectName
@@ -71,6 +72,7 @@ type attachmentConfig struct {
 	ProjectID   string `json:"projectId"`
 	ProjectName string `json:"projectName"`
 	ParentID    string `json:"parentId"`
+	Filter      string `json:"filter"`
 }
 
 const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
@@ -79,7 +81,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "dependency-track",
-			Version:     "1.6",
+			Version:     "1.7",
 			Description: description,
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -148,10 +150,10 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
-	i.Logger.Infow("msg", "attachment OK", "projectID", request.ProjectID, "projectName", request.ProjectName, "parentID", request.ParentID)
+	i.Logger.Infow("msg", "attachment OK", "projectID", request.ProjectID, "projectName", request.ProjectName, "parentID", request.ParentID, "filter", request.Filter)
 
 	// We want to store the project configuration
-	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.ProjectID, ProjectName: request.ProjectName, ParentID: request.ParentID})
+	rawConfig, err := sdk.ToConfig(&attachmentConfig{ProjectID: request.ProjectID, ProjectName: request.ProjectName, ParentID: request.ParentID, Filter: request.Filter})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
 	}
@@ -195,6 +197,16 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	var attachmentConfig *attachmentConfig
 	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachmentConfig); err != nil {
 		return errors.New("invalid attachment configuration")
+	}
+
+	// Check if upload filter is specified and if it matches annotations
+	if attachmentConfig.Filter != "" {
+		attestationAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
+		materialAnnotations := sbom.Annotations
+		if err := verifyAllFilters(attestationAnnotations, materialAnnotations, attachmentConfig.Filter); err != nil {
+			l.Infow("msg", "filter conditions not met, SKIPPING", "err", err, "materialName", sbom.Name)
+			return nil
+		}
 	}
 
 	// Calculate the project name based on the template
@@ -241,6 +253,38 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 
 	l.Info("execution finished")
 
+	return nil
+}
+
+// verify if all filter conditions are met by either:
+// 1) Material annotations (higher precedence if same key exists in both)
+// 2) Attestation annotations (fallback if key not in material)
+func verifyAllFilters(attestationAnnotations, materialAnnotations map[string]string, filter string) error {
+	if filter == "" {
+		return nil
+	}
+
+	for _, f := range strings.Split(filter, ",") {
+		parts := strings.SplitN(strings.TrimSpace(f), "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid filter segment '%s' - must be 'key=value'", f)
+		}
+
+		key, value := parts[0], parts[1]
+
+		if matVal, exists := materialAnnotations[key]; exists {
+			if matVal != value {
+				return fmt.Errorf("material annotation mismatch: %s=%s (expected %s)", key, matVal, value)
+			}
+			continue
+		}
+
+		if attVal, exists := attestationAnnotations[key]; !exists {
+			return fmt.Errorf("missing required annotation: %s", key)
+		} else if attVal != value {
+			return fmt.Errorf("attestation annotation mismatch: %s=%s (expected %s)", key, attVal, value)
+		}
+	}
 	return nil
 }
 
@@ -332,6 +376,10 @@ func validateAttachmentConfiguration(rc *registrationConfig, ac *attachmentReque
 		return errors.New("project name must be provided to work with parent id")
 	}
 
+	if err := validateFilter(ac.Filter); err != nil {
+		return fmt.Errorf("invalid filter: %w", err)
+	}
+
 	return nil
 }
 
@@ -356,5 +404,19 @@ func validateExecuteOpts(m *sdk.ExecuteMaterial, regConfig *sdk.RegistrationResp
 		return errors.New("missing attachment configuration")
 	}
 
+	return nil
+}
+
+func validateFilter(filter string) error {
+	if filter == "" {
+		return nil
+	}
+
+	for _, f := range strings.Split(filter, ",") {
+		f = strings.TrimSpace(f)
+		if !strings.Contains(f, "=") || strings.HasPrefix(f, "=") || strings.HasSuffix(f, "=") {
+			return fmt.Errorf("invalid filter segment '%s' - must be 'key=value'", f)
+		}
+	}
 	return nil
 }
