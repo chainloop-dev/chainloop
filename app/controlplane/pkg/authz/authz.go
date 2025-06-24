@@ -105,6 +105,7 @@ var (
 	// Attached integrations
 	PolicyAttachedIntegrationList   = &Policy{ResourceAttachedIntegration, ActionList}
 	PolicyAttachedIntegrationAttach = &Policy{ResourceAttachedIntegration, ActionCreate}
+	PolicyAttachedIntegrationDetach = &Policy{ResourceAttachedIntegration, ActionDelete}
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
 	// Robot Account
@@ -203,6 +204,7 @@ var rolesMap = map[Role][]*Policy{
 		// attachments (RBAC will be applied)
 		PolicyAttachedIntegrationList,
 		PolicyAttachedIntegrationAttach,
+		PolicyAttachedIntegrationDetach,
 	},
 	// RoleProjectAdmin: RBAC will be applied in all these
 	RoleProjectAdmin: {
@@ -223,6 +225,7 @@ var rolesMap = map[Role][]*Policy{
 
 		// integrations
 		PolicyAttachedIntegrationAttach,
+		PolicyAttachedIntegrationDetach,
 	},
 }
 

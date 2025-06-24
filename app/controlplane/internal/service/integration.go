@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -260,6 +261,31 @@ func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsSe
 	org, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// find the project it belongs to
+	orgID, err := uuid.Parse(org.ID)
+	if err != nil {
+		return nil, errors.BadRequest("bad request", "invalid organization")
+	}
+	attID, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, errors.BadRequest("bad request", "invalid integration attachment")
+	}
+
+	att, err := s.integrationUC.GetAttachment(ctx, orgID, attID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	wf, err := s.workflowUC.FindByIDInOrg(ctx, org.ID, att.WorkflowID.String())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC
+	if err = s.authorizeResource(ctx, authz.PolicyAttachedIntegrationDetach, authz.ResourceTypeProject, wf.ProjectID); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if err := s.integrationUC.Detach(ctx, org.ID, req.Id); err != nil {

@@ -368,3 +368,14 @@ func (uc *IntegrationUseCase) Detach(ctx context.Context, orgID, attachmentID st
 
 	return uc.integrationARepo.SoftDelete(ctx, attachmentUUID)
 }
+
+func (uc *IntegrationUseCase) GetAttachment(ctx context.Context, orgID, attID uuid.UUID) (*IntegrationAttachment, error) {
+	attachment, err := uc.integrationARepo.FindByIDInOrg(ctx, orgID, attID)
+	if err != nil {
+		return nil, err
+	} else if attachment == nil {
+		return nil, NewErrNotFound("attachment")
+	}
+
+	return attachment, nil
+}
