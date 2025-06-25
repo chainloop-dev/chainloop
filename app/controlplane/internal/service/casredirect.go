@@ -30,6 +30,7 @@ import (
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/google/uuid"
 )
 
 const (
@@ -82,7 +83,11 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	if currentUser != nil {
 		mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
 	} else if currentAPIToken != nil {
-		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []string{currentOrg.ID})
+		orgID, err := uuid.Parse(currentOrg.ID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, nil)
 	}
 
 	if err != nil {

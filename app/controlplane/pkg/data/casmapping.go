@@ -165,5 +165,6 @@ func entCASMappingToBiz(input *ent.CASMapping, public bool) (*biz.CASMapping, er
 		OrgID:         input.OrganizationID,
 		CreatedAt:     toTimePtr(input.CreatedAt),
 		Public:        public,
+		ProjectID:     input.ProjectID,
 	}, nil
 }

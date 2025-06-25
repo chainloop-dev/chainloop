@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -99,7 +100,11 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
 			// otherwise, we'll try to find a mapping for the current API token associated orgs
 		} else if currentAPIToken != nil {
-			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []string{currentOrg.ID})
+			orgID, err := uuid.Parse(currentOrg.ID)
+			if err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
+			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, nil)
 		}
 
 		// If we can't find a mapping, we'll use the default backend

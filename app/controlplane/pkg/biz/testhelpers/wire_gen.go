@@ -116,7 +116,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
 	if err != nil {

@@ -165,7 +165,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
 	v6 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
