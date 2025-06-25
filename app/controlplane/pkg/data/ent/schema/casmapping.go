@@ -41,6 +41,7 @@ func (CASMapping) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.UUID("workflow_run_id", uuid.UUID{}).Immutable().Optional(),
 		field.UUID("organization_id", uuid.UUID{}).Immutable(),
+		field.UUID("project_id", uuid.UUID{}).Immutable().Optional(),
 	}
 }
 
@@ -48,6 +49,7 @@ func (CASMapping) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("cas_backend", CASBackend.Type).Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("organization", Organization.Type).Field("organization_id").Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("project", Project.Type).Unique().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 

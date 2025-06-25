@@ -2440,11 +2440,14 @@ type CASMappingMutation struct {
 	digest              *string
 	created_at          *time.Time
 	workflow_run_id     *uuid.UUID
+	project_id          *uuid.UUID
 	clearedFields       map[string]struct{}
 	cas_backend         *uuid.UUID
 	clearedcas_backend  bool
 	organization        *uuid.UUID
 	clearedorganization bool
+	project             *uuid.UUID
+	clearedproject      bool
 	done                bool
 	oldValue            func(context.Context) (*CASMapping, error)
 	predicates          []predicate.CASMapping
@@ -2711,6 +2714,55 @@ func (m *CASMappingMutation) ResetOrganizationID() {
 	m.organization = nil
 }
 
+// SetProjectID sets the "project_id" field.
+func (m *CASMappingMutation) SetProjectID(u uuid.UUID) {
+	m.project_id = &u
+}
+
+// ProjectID returns the value of the "project_id" field in the mutation.
+func (m *CASMappingMutation) ProjectID() (r uuid.UUID, exists bool) {
+	v := m.project_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectID returns the old "project_id" field's value of the CASMapping entity.
+// If the CASMapping object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASMappingMutation) OldProjectID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectID: %w", err)
+	}
+	return oldValue.ProjectID, nil
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (m *CASMappingMutation) ClearProjectID() {
+	m.project_id = nil
+	m.clearedFields[casmapping.FieldProjectID] = struct{}{}
+}
+
+// ProjectIDCleared returns if the "project_id" field was cleared in this mutation.
+func (m *CASMappingMutation) ProjectIDCleared() bool {
+	_, ok := m.clearedFields[casmapping.FieldProjectID]
+	return ok
+}
+
+// ResetProjectID resets all changes to the "project_id" field.
+func (m *CASMappingMutation) ResetProjectID() {
+	m.project_id = nil
+	delete(m.clearedFields, casmapping.FieldProjectID)
+}
+
 // SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by id.
 func (m *CASMappingMutation) SetCasBackendID(id uuid.UUID) {
 	m.cas_backend = &id
@@ -2777,6 +2829,45 @@ func (m *CASMappingMutation) ResetOrganization() {
 	m.clearedorganization = false
 }
 
+// SetProjectID sets the "project" edge to the Project entity by id.
+func (m *CASMappingMutation) SetProjectID(id uuid.UUID) {
+	m.project = &id
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (m *CASMappingMutation) ClearProject() {
+	m.clearedproject = true
+}
+
+// ProjectCleared reports if the "project" edge to the Project entity was cleared.
+func (m *CASMappingMutation) ProjectCleared() bool {
+	return m.clearedproject
+}
+
+// ProjectID returns the "project" edge ID in the mutation.
+func (m *CASMappingMutation) ProjectID() (id uuid.UUID, exists bool) {
+	if m.project != nil {
+		return *m.project, true
+	}
+	return
+}
+
+// ProjectIDs returns the "project" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProjectID instead. It exists only for internal usage by the builders.
+func (m *CASMappingMutation) ProjectIDs() (ids []uuid.UUID) {
+	if id := m.project; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProject resets all changes to the "project" edge.
+func (m *CASMappingMutation) ResetProject() {
+	m.project = nil
+	m.clearedproject = false
+}
+
 // Where appends a list predicates to the CASMappingMutation builder.
 func (m *CASMappingMutation) Where(ps ...predicate.CASMapping) {
 	m.predicates = append(m.predicates, ps...)
@@ -2811,7 +2902,7 @@ func (m *CASMappingMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASMappingMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.digest != nil {
 		fields = append(fields, casmapping.FieldDigest)
 	}
@@ -2823,6 +2914,9 @@ func (m *CASMappingMutation) Fields() []string {
 	}
 	if m.organization != nil {
 		fields = append(fields, casmapping.FieldOrganizationID)
+	}
+	if m.project_id != nil {
+		fields = append(fields, casmapping.FieldProjectID)
 	}
 	return fields
 }
@@ -2840,6 +2934,8 @@ func (m *CASMappingMutation) Field(name string) (ent.Value, bool) {
 		return m.WorkflowRunID()
 	case casmapping.FieldOrganizationID:
 		return m.OrganizationID()
+	case casmapping.FieldProjectID:
+		return m.ProjectID()
 	}
 	return nil, false
 }
@@ -2857,6 +2953,8 @@ func (m *CASMappingMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldWorkflowRunID(ctx)
 	case casmapping.FieldOrganizationID:
 		return m.OldOrganizationID(ctx)
+	case casmapping.FieldProjectID:
+		return m.OldProjectID(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASMapping field %s", name)
 }
@@ -2894,6 +2992,13 @@ func (m *CASMappingMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetOrganizationID(v)
 		return nil
+	case casmapping.FieldProjectID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CASMapping field %s", name)
 }
@@ -2927,6 +3032,9 @@ func (m *CASMappingMutation) ClearedFields() []string {
 	if m.FieldCleared(casmapping.FieldWorkflowRunID) {
 		fields = append(fields, casmapping.FieldWorkflowRunID)
 	}
+	if m.FieldCleared(casmapping.FieldProjectID) {
+		fields = append(fields, casmapping.FieldProjectID)
+	}
 	return fields
 }
 
@@ -2943,6 +3051,9 @@ func (m *CASMappingMutation) ClearField(name string) error {
 	switch name {
 	case casmapping.FieldWorkflowRunID:
 		m.ClearWorkflowRunID()
+		return nil
+	case casmapping.FieldProjectID:
+		m.ClearProjectID()
 		return nil
 	}
 	return fmt.Errorf("unknown CASMapping nullable field %s", name)
@@ -2964,18 +3075,24 @@ func (m *CASMappingMutation) ResetField(name string) error {
 	case casmapping.FieldOrganizationID:
 		m.ResetOrganizationID()
 		return nil
+	case casmapping.FieldProjectID:
+		m.ResetProjectID()
+		return nil
 	}
 	return fmt.Errorf("unknown CASMapping field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CASMappingMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cas_backend != nil {
 		edges = append(edges, casmapping.EdgeCasBackend)
 	}
 	if m.organization != nil {
 		edges = append(edges, casmapping.EdgeOrganization)
+	}
+	if m.project != nil {
+		edges = append(edges, casmapping.EdgeProject)
 	}
 	return edges
 }
@@ -2992,13 +3109,17 @@ func (m *CASMappingMutation) AddedIDs(name string) []ent.Value {
 		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
+	case casmapping.EdgeProject:
+		if id := m.project; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CASMappingMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -3010,12 +3131,15 @@ func (m *CASMappingMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CASMappingMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedcas_backend {
 		edges = append(edges, casmapping.EdgeCasBackend)
 	}
 	if m.clearedorganization {
 		edges = append(edges, casmapping.EdgeOrganization)
+	}
+	if m.clearedproject {
+		edges = append(edges, casmapping.EdgeProject)
 	}
 	return edges
 }
@@ -3028,6 +3152,8 @@ func (m *CASMappingMutation) EdgeCleared(name string) bool {
 		return m.clearedcas_backend
 	case casmapping.EdgeOrganization:
 		return m.clearedorganization
+	case casmapping.EdgeProject:
+		return m.clearedproject
 	}
 	return false
 }
@@ -3042,6 +3168,9 @@ func (m *CASMappingMutation) ClearEdge(name string) error {
 	case casmapping.EdgeOrganization:
 		m.ClearOrganization()
 		return nil
+	case casmapping.EdgeProject:
+		m.ClearProject()
+		return nil
 	}
 	return fmt.Errorf("unknown CASMapping unique edge %s", name)
 }
@@ -3055,6 +3184,9 @@ func (m *CASMappingMutation) ResetEdge(name string) error {
 		return nil
 	case casmapping.EdgeOrganization:
 		m.ResetOrganization()
+		return nil
+	case casmapping.EdgeProject:
+		m.ResetProject()
 		return nil
 	}
 	return fmt.Errorf("unknown CASMapping edge %s", name)

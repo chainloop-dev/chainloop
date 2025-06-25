@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +29,7 @@ type CASMappingQuery struct {
 	predicates       []predicate.CASMapping
 	withCasBackend   *CASBackendQuery
 	withOrganization *OrganizationQuery
+	withProject      *ProjectQuery
 	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -103,6 +105,28 @@ func (cmq *CASMappingQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.From(casmapping.Table, casmapping.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.OrganizationTable, casmapping.OrganizationColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProject chains the current query on the "project" edge.
+func (cmq *CASMappingQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: cmq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cmq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cmq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casmapping.Table, casmapping.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.ProjectTable, casmapping.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
 		return fromU, nil
@@ -304,6 +328,7 @@ func (cmq *CASMappingQuery) Clone() *CASMappingQuery {
 		predicates:       append([]predicate.CASMapping{}, cmq.predicates...),
 		withCasBackend:   cmq.withCasBackend.Clone(),
 		withOrganization: cmq.withOrganization.Clone(),
+		withProject:      cmq.withProject.Clone(),
 		// clone intermediate query.
 		sql:       cmq.sql.Clone(),
 		path:      cmq.path,
@@ -330,6 +355,17 @@ func (cmq *CASMappingQuery) WithOrganization(opts ...func(*OrganizationQuery)) *
 		opt(query)
 	}
 	cmq.withOrganization = query
+	return cmq
+}
+
+// WithProject tells the query-builder to eager-load the nodes that are connected to
+// the "project" edge. The optional arguments are used to configure the query builder of the edge.
+func (cmq *CASMappingQuery) WithProject(opts ...func(*ProjectQuery)) *CASMappingQuery {
+	query := (&ProjectClient{config: cmq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cmq.withProject = query
 	return cmq
 }
 
@@ -412,12 +448,13 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*CASMapping{}
 		withFKs     = cmq.withFKs
 		_spec       = cmq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			cmq.withCasBackend != nil,
 			cmq.withOrganization != nil,
+			cmq.withProject != nil,
 		}
 	)
-	if cmq.withCasBackend != nil {
+	if cmq.withCasBackend != nil || cmq.withProject != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -453,6 +490,12 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if query := cmq.withOrganization; query != nil {
 		if err := cmq.loadOrganization(ctx, query, nodes, nil,
 			func(n *CASMapping, e *Organization) { n.Edges.Organization = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cmq.withProject; query != nil {
+		if err := cmq.loadProject(ctx, query, nodes, nil,
+			func(n *CASMapping, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -513,6 +556,38 @@ func (cmq *CASMappingQuery) loadOrganization(ctx context.Context, query *Organiz
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "organization_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (cmq *CASMappingQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *Project)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*CASMapping)
+	for i := range nodes {
+		if nodes[i].cas_mapping_project == nil {
+			continue
+		}
+		fk := *nodes[i].cas_mapping_project
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "cas_mapping_project" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
