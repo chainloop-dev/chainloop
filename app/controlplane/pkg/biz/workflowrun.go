@@ -330,6 +330,7 @@ type RunListFilters struct {
 	WorkflowID *uuid.UUID
 	VersionID  *uuid.UUID
 	Status     WorkflowRunStatus
+	ProjectIDs []uuid.UUID
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow

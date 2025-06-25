@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
@@ -77,15 +76,15 @@ func (mu *MembershipUpdate) SetNillableRole(a *authz.Role) *MembershipUpdate {
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (mu *MembershipUpdate) SetMembershipType(bt biz.MembershipType) *MembershipUpdate {
-	mu.mutation.SetMembershipType(bt)
+func (mu *MembershipUpdate) SetMembershipType(at authz.MembershipType) *MembershipUpdate {
+	mu.mutation.SetMembershipType(at)
 	return mu
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableMembershipType(bt *biz.MembershipType) *MembershipUpdate {
-	if bt != nil {
-		mu.SetMembershipType(*bt)
+func (mu *MembershipUpdate) SetNillableMembershipType(at *authz.MembershipType) *MembershipUpdate {
+	if at != nil {
+		mu.SetMembershipType(*at)
 	}
 	return mu
 }
@@ -117,15 +116,15 @@ func (mu *MembershipUpdate) ClearMemberID() *MembershipUpdate {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (mu *MembershipUpdate) SetResourceType(bt biz.ResourceType) *MembershipUpdate {
-	mu.mutation.SetResourceType(bt)
+func (mu *MembershipUpdate) SetResourceType(at authz.ResourceType) *MembershipUpdate {
+	mu.mutation.SetResourceType(at)
 	return mu
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableResourceType(bt *biz.ResourceType) *MembershipUpdate {
-	if bt != nil {
-		mu.SetResourceType(*bt)
+func (mu *MembershipUpdate) SetNillableResourceType(at *authz.ResourceType) *MembershipUpdate {
+	if at != nil {
+		mu.SetResourceType(*at)
 	}
 	return mu
 }
@@ -162,6 +161,14 @@ func (mu *MembershipUpdate) SetOrganizationID(id uuid.UUID) *MembershipUpdate {
 	return mu
 }
 
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (mu *MembershipUpdate) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdate {
+	if id != nil {
+		mu = mu.SetOrganizationID(*id)
+	}
+	return mu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (mu *MembershipUpdate) SetOrganization(o *Organization) *MembershipUpdate {
 	return mu.SetOrganizationID(o.ID)
@@ -170,6 +177,14 @@ func (mu *MembershipUpdate) SetOrganization(o *Organization) *MembershipUpdate {
 // SetUserID sets the "user" edge to the User entity by ID.
 func (mu *MembershipUpdate) SetUserID(id uuid.UUID) *MembershipUpdate {
 	mu.mutation.SetUserID(id)
+	return mu
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (mu *MembershipUpdate) SetNillableUserID(id *uuid.UUID) *MembershipUpdate {
+	if id != nil {
+		mu = mu.SetUserID(*id)
+	}
 	return mu
 }
 
@@ -238,12 +253,6 @@ func (mu *MembershipUpdate) check() error {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
-	}
-	if mu.mutation.OrganizationCleared() && len(mu.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.organization"`)
-	}
-	if mu.mutation.UserCleared() && len(mu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.user"`)
 	}
 	return nil
 }
@@ -422,15 +431,15 @@ func (muo *MembershipUpdateOne) SetNillableRole(a *authz.Role) *MembershipUpdate
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (muo *MembershipUpdateOne) SetMembershipType(bt biz.MembershipType) *MembershipUpdateOne {
-	muo.mutation.SetMembershipType(bt)
+func (muo *MembershipUpdateOne) SetMembershipType(at authz.MembershipType) *MembershipUpdateOne {
+	muo.mutation.SetMembershipType(at)
 	return muo
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableMembershipType(bt *biz.MembershipType) *MembershipUpdateOne {
-	if bt != nil {
-		muo.SetMembershipType(*bt)
+func (muo *MembershipUpdateOne) SetNillableMembershipType(at *authz.MembershipType) *MembershipUpdateOne {
+	if at != nil {
+		muo.SetMembershipType(*at)
 	}
 	return muo
 }
@@ -462,15 +471,15 @@ func (muo *MembershipUpdateOne) ClearMemberID() *MembershipUpdateOne {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (muo *MembershipUpdateOne) SetResourceType(bt biz.ResourceType) *MembershipUpdateOne {
-	muo.mutation.SetResourceType(bt)
+func (muo *MembershipUpdateOne) SetResourceType(at authz.ResourceType) *MembershipUpdateOne {
+	muo.mutation.SetResourceType(at)
 	return muo
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableResourceType(bt *biz.ResourceType) *MembershipUpdateOne {
-	if bt != nil {
-		muo.SetResourceType(*bt)
+func (muo *MembershipUpdateOne) SetNillableResourceType(at *authz.ResourceType) *MembershipUpdateOne {
+	if at != nil {
+		muo.SetResourceType(*at)
 	}
 	return muo
 }
@@ -507,6 +516,14 @@ func (muo *MembershipUpdateOne) SetOrganizationID(id uuid.UUID) *MembershipUpdat
 	return muo
 }
 
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (muo *MembershipUpdateOne) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdateOne {
+	if id != nil {
+		muo = muo.SetOrganizationID(*id)
+	}
+	return muo
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (muo *MembershipUpdateOne) SetOrganization(o *Organization) *MembershipUpdateOne {
 	return muo.SetOrganizationID(o.ID)
@@ -515,6 +532,14 @@ func (muo *MembershipUpdateOne) SetOrganization(o *Organization) *MembershipUpda
 // SetUserID sets the "user" edge to the User entity by ID.
 func (muo *MembershipUpdateOne) SetUserID(id uuid.UUID) *MembershipUpdateOne {
 	muo.mutation.SetUserID(id)
+	return muo
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (muo *MembershipUpdateOne) SetNillableUserID(id *uuid.UUID) *MembershipUpdateOne {
+	if id != nil {
+		muo = muo.SetUserID(*id)
+	}
 	return muo
 }
 
@@ -596,12 +621,6 @@ func (muo *MembershipUpdateOne) check() error {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
-	}
-	if muo.mutation.OrganizationCleared() && len(muo.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.organization"`)
-	}
-	if muo.mutation.UserCleared() && len(muo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Membership.user"`)
 	}
 	return nil
 }

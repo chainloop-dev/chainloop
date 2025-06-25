@@ -32,7 +32,7 @@ import (
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
 
-// Middleware that injects the current user + organization to the context
+// WithCurrentUserMiddleware injects the current user + organization to the context
 func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -85,10 +85,10 @@ func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string
 	return entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, FirstName: u.FirstName, LastName: u.LastName, CreatedAt: u.CreatedAt}), nil
 }
 
-// Middleware that injects the current user + organization to the context during the attestation process
+// WithAttestationContextFromUser injects the current user + organization to the context during the attestation process
 // it leverages the existing middlewares to set the current user and organization
 // but with a skipping behavior since that's the one required by the attMiddleware multi-selector
-func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper) middleware.Middleware {
+func WithAttestationContextFromUser(userUC *biz.UserUseCase, membershipUC *biz.MembershipUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// If the token is not an user token, we don't need to do anything
@@ -114,7 +114,7 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 			// NOTE: we reuse the existing middlewares to set the current user and organization by wrapping the call
 			// Now we can load the organization using the other middleware we have set
 			return WithCurrentUserMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
-				return WithCurrentOrganizationMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
+				return WithCurrentOrganizationMiddleware(userUC, membershipUC, logger)(func(ctx context.Context, req any) (any, error) {
 					org := entities.CurrentOrg(ctx)
 					if org == nil {
 						return nil, errors.New("organization not found")
@@ -128,7 +128,8 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper)
 					// Load the authorization subject from the context which might be related to a currentUser or an APItoken
 					// TODO: move to authz middleware once we add support for all the tokens
 					// for now in that middleware we are not mapping admins nor owners to a specific role
-					if subject != string(authz.RoleAdmin) && subject != string(authz.RoleOwner) {
+					// Admins and Owners can perform any operation. Members will need additional RBAC behaviour at service layer
+					if subject != string(authz.RoleAdmin) && subject != string(authz.RoleOwner) && subject != string(authz.RoleOrgMember) {
 						return nil, fmt.Errorf("your user doesn't have permissions to perform attestations in this organization, role=%s, orgID=%s", subject, org.ID)
 					}
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,26 +17,31 @@ package entities
 
 import (
 	"context"
-	"time"
+
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/google/uuid"
 )
 
-// Utils to get and set information from context
-type User struct {
-	Email, ID, FirstName, LastName string
-	CreatedAt                      *time.Time
+type Membership struct {
+	Resources []*ResourceMembership
 }
 
-func WithCurrentUser(ctx context.Context, user *User) context.Context {
-	return context.WithValue(ctx, currentUserCtxKey{}, user)
+type ResourceMembership struct {
+	Role         authz.Role
+	ResourceType authz.ResourceType
+	ResourceID   uuid.UUID
 }
 
-// CurrentUser retrieves the user from the context
-func CurrentUser(ctx context.Context) *User {
-	res := ctx.Value(currentUserCtxKey{})
+func WithMembership(ctx context.Context, m *Membership) context.Context {
+	return context.WithValue(ctx, membershipCtxKey{}, m)
+}
+
+func CurrentMembership(ctx context.Context) *Membership {
+	res := ctx.Value(membershipCtxKey{})
 	if res == nil {
 		return nil
 	}
-	return res.(*User)
+	return res.(*Membership)
 }
 
-type currentUserCtxKey struct{}
+type membershipCtxKey struct{}

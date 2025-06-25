@@ -152,6 +152,11 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
 	}
 
+	// Filter by allowed projects
+	if opts.ProjectIDs != nil {
+		predicateWF = append(predicateWF, workflow.ProjectIDIn(opts.ProjectIDs...))
+	}
+
 	// optionally attaching its visibility
 	if opts.Public != nil {
 		predicateWF = append(predicateWF, workflow.Public(*opts.Public))

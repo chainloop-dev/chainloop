@@ -8,7 +8,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -204,19 +203,19 @@ func RoleNotIn(vs ...authz.Role) predicate.Membership {
 }
 
 // MembershipTypeEQ applies the EQ predicate on the "membership_type" field.
-func MembershipTypeEQ(v biz.MembershipType) predicate.Membership {
+func MembershipTypeEQ(v authz.MembershipType) predicate.Membership {
 	vc := v
 	return predicate.Membership(sql.FieldEQ(FieldMembershipType, vc))
 }
 
 // MembershipTypeNEQ applies the NEQ predicate on the "membership_type" field.
-func MembershipTypeNEQ(v biz.MembershipType) predicate.Membership {
+func MembershipTypeNEQ(v authz.MembershipType) predicate.Membership {
 	vc := v
 	return predicate.Membership(sql.FieldNEQ(FieldMembershipType, vc))
 }
 
 // MembershipTypeIn applies the In predicate on the "membership_type" field.
-func MembershipTypeIn(vs ...biz.MembershipType) predicate.Membership {
+func MembershipTypeIn(vs ...authz.MembershipType) predicate.Membership {
 	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -225,7 +224,7 @@ func MembershipTypeIn(vs ...biz.MembershipType) predicate.Membership {
 }
 
 // MembershipTypeNotIn applies the NotIn predicate on the "membership_type" field.
-func MembershipTypeNotIn(vs ...biz.MembershipType) predicate.Membership {
+func MembershipTypeNotIn(vs ...authz.MembershipType) predicate.Membership {
 	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -294,19 +293,19 @@ func MemberIDNotNil() predicate.Membership {
 }
 
 // ResourceTypeEQ applies the EQ predicate on the "resource_type" field.
-func ResourceTypeEQ(v biz.ResourceType) predicate.Membership {
+func ResourceTypeEQ(v authz.ResourceType) predicate.Membership {
 	vc := v
 	return predicate.Membership(sql.FieldEQ(FieldResourceType, vc))
 }
 
 // ResourceTypeNEQ applies the NEQ predicate on the "resource_type" field.
-func ResourceTypeNEQ(v biz.ResourceType) predicate.Membership {
+func ResourceTypeNEQ(v authz.ResourceType) predicate.Membership {
 	vc := v
 	return predicate.Membership(sql.FieldNEQ(FieldResourceType, vc))
 }
 
 // ResourceTypeIn applies the In predicate on the "resource_type" field.
-func ResourceTypeIn(vs ...biz.ResourceType) predicate.Membership {
+func ResourceTypeIn(vs ...authz.ResourceType) predicate.Membership {
 	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -315,7 +314,7 @@ func ResourceTypeIn(vs ...biz.ResourceType) predicate.Membership {
 }
 
 // ResourceTypeNotIn applies the NotIn predicate on the "resource_type" field.
-func ResourceTypeNotIn(vs ...biz.ResourceType) predicate.Membership {
+func ResourceTypeNotIn(vs ...authz.ResourceType) predicate.Membership {
 	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]

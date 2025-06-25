@@ -98,8 +98,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v2 := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v2...)
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
+	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	referrerSharedIndex := bootstrap.ReferrerSharedIndex
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, referrerSharedIndex, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, projectsRepo, referrerSharedIndex, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -116,7 +117,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
 	v4 := newPolicyProviderConfig(v3)
@@ -126,9 +126,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
-	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, logger)
+	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
-	v5 := serviceOpts(logger)
+	v5 := serviceOpts(logger, enforcer, projectUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
@@ -190,6 +190,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ReferrerUC:         referrerUseCase,
 		OrgUC:              organizationUseCase,
 		PromUC:             prometheusUseCase,
+		ProjectUC:          projectUseCase,
 		ProjectVersionUC:   projectVersionUseCase,
 		SigningUseCase:     signingUseCase,
 		Opts:               v5,
@@ -242,6 +243,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		APITokenUseCase:     apiTokenUseCase,
 		OrganizationUseCase: organizationUseCase,
 		WorkflowUseCase:     workflowUseCase,
+		MembershipUseCase:   membershipUseCase,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
 		RobotAccountSvc:     robotAccountService,
@@ -326,8 +328,8 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l)}
+func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC)}
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {

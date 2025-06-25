@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -42,10 +43,11 @@ func NewProjectsRepo(data *Data, logger log.Logger) biz.ProjectsRepo {
 // FindProjectByOrgIDAndName gets a project by organization ID and project name
 func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*biz.Project, error) {
 	pro, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).QueryProjects().Where(project.Name(projectName)).Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, err
-	} else if pro == nil {
-		return nil, nil
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("project %s", projectName))
+		}
+		return nil, fmt.Errorf("project query failed: %w", err)
 	}
 
 	return entProjectToBiz(pro), nil
@@ -54,13 +56,30 @@ func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.
 // FindProjectByOrgIDAndID gets a project by organization ID and project ID
 func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*biz.Project, error) {
 	pro, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).QueryProjects().Where(project.ID(projectID)).Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, err
-	} else if pro == nil {
-		return nil, nil
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("project %s", projectID.String()))
+		}
+		return nil, fmt.Errorf("project query failed: %w", err)
 	}
 
 	return entProjectToBiz(pro), nil
+}
+
+func (r *ProjectRepo) ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) ([]*biz.Project, error) {
+	prs, err := r.data.DB.Project.Query().Where(
+		project.OrganizationID(orgID),
+		project.DeletedAtIsNil()).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list projects failed: %w", err)
+	}
+
+	res := make([]*biz.Project, 0, len(prs))
+	for _, p := range prs {
+		res = append(res, entProjectToBiz(p))
+	}
+
+	return res, nil
 }
 
 func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) (*biz.Project, error) {

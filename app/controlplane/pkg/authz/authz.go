@@ -35,6 +35,7 @@ type Role string
 
 const (
 	// Actions
+
 	ActionRead   = "read"
 	ActionList   = "list"
 	ActionCreate = "create"
@@ -42,6 +43,7 @@ const (
 	ActionDelete = "delete"
 
 	// Resources
+
 	ResourceWorkflowContract      = "workflow_contract"
 	ResourceCASArtifact           = "cas_artifact"
 	ResourceCASBackend            = "cas_backend"
@@ -55,6 +57,7 @@ const (
 	ResourceWorkflow              = "workflow"
 	UserMembership                = "membership_user"
 	Organization                  = "organization"
+	ResourceProject               = "project"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -65,6 +68,17 @@ const (
 	RoleOwner  Role = "role:org:owner"
 	RoleAdmin  Role = "role:org:admin"
 	RoleViewer Role = "role:org:viewer"
+
+	// New RBAC roles
+
+	// RoleOrgMember is the role that users get by default when they join an organization.
+	// They cannot see projects until they are invited. However, they are able to create their own projects,
+	// so Casbin rules (role, resource-type, action) are NOT enough to check for permission, since we must check for ownership as well.
+	// That last check will be done at the service level.
+	RoleOrgMember Role = "role:org:member"
+
+	RoleProjectAdmin  Role = "role:project:admin"
+	RoleProjectViewer Role = "role:project:viewer"
 )
 
 // resource, action tuple
@@ -91,6 +105,7 @@ var (
 	// Attached integrations
 	PolicyAttachedIntegrationList   = &Policy{ResourceAttachedIntegration, ActionList}
 	PolicyAttachedIntegrationAttach = &Policy{ResourceAttachedIntegration, ActionCreate}
+	PolicyAttachedIntegrationDetach = &Policy{ResourceAttachedIntegration, ActionDelete}
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
 	// Robot Account
@@ -102,21 +117,26 @@ var (
 	PolicyWorkflowContractUpdate = &Policy{ResourceWorkflowContract, ActionUpdate}
 	PolicyWorkflowContractCreate = &Policy{ResourceWorkflowContract, ActionCreate}
 	// WorkflowRun
-	PolicyWorkflowRunList = &Policy{ResourceWorkflowRun, ActionList}
-	PolicyWorkflowRunRead = &Policy{ResourceWorkflowRun, ActionRead}
+	PolicyWorkflowRunList   = &Policy{ResourceWorkflowRun, ActionList}
+	PolicyWorkflowRunRead   = &Policy{ResourceWorkflowRun, ActionRead}
+	PolicyWorkflowRunCreate = &Policy{ResourceWorkflowRun, ActionCreate}
+	PolicyWorkflowRunUpdate = &Policy{ResourceWorkflowRun, ActionUpdate}
 	// Workflow
 	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
 	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
 	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
-
+	PolicyWorkflowUpdate = &Policy{ResourceWorkflow, ActionUpdate}
+	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
 	// User Membership
-	PolicyOrganizationRead = &Policy{Organization, ActionRead}
+	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
+	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
 )
 
 // List of policies for each role
 // NOTE: roles are hierarchical, this means that the Admin Role can inherit all the policies from the Viewer Role
 // so we do not need to add them as well.
 var rolesMap = map[Role][]*Policy{
+	// RoleViewer is an org-scoped role that provides read-only access to all resources
 	RoleViewer: {
 		// Referrer
 		PolicyReferrerRead,
@@ -147,11 +167,75 @@ var rolesMap = map[Role][]*Policy{
 		// Organization
 		PolicyOrganizationRead,
 	},
+	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
 		// We do a manual check in the artifact upload endpoint
 		// so we need the actual policy in place skipping it is not enough
 		PolicyArtifactUpload,
 		// + all the policies from the viewer role inherited automatically
+	},
+	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at
+	// the organization level will need specific project roles to access their contents
+	RoleOrgMember: {
+		// Allowed endpoints. RBAC will be applied where needed
+		PolicyWorkflowRead,
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+		PolicyWorkflowContractCreate,
+		PolicyWorkflowContractUpdate,
+
+		PolicyWorkflowList,
+		PolicyWorkflowCreate,
+		PolicyWorkflowUpdate,
+		PolicyWorkflowDelete,
+
+		PolicyWorkflowRunList,
+		PolicyWorkflowRunRead,
+
+		PolicyArtifactDownload,
+		PolicyArtifactUpload,
+
+		PolicyCASBackendList,
+
+		PolicyOrganizationRead,
+
+		// integrations
+		PolicyAvailableIntegrationList,
+		PolicyAvailableIntegrationRead,
+		PolicyRegisteredIntegrationList,
+		PolicyRegisteredIntegrationRead,
+		// attachments (RBAC will be applied)
+		PolicyAttachedIntegrationList,
+		PolicyAttachedIntegrationAttach,
+		PolicyAttachedIntegrationDetach,
+
+		PolicyOrgMetricsRead,
+		PolicyReferrerRead,
+	},
+	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
+	// and it's only considered when the org-level role is `RoleOrgMember`
+	RoleProjectAdmin: {
+		// attestations
+
+		PolicyWorkflowRead,
+		PolicyWorkflowCreate,
+		PolicyWorkflowRunCreate,
+		PolicyWorkflowRunUpdate, // to reset attestations
+
+		// workflow operations
+
+		PolicyWorkflowUpdate,
+		PolicyWorkflowDelete,
+
+		// workflow runs
+		PolicyWorkflowRunRead,
+
+		// integrations
+		PolicyAttachedIntegrationAttach,
+		PolicyAttachedIntegrationDetach,
+
+		// metrics
+		PolicyOrgMetricsRead,
 	},
 }
 
@@ -180,6 +264,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Attached integrations
 	"/controlplane.v1.IntegrationsService/ListAttachments": {PolicyAttachedIntegrationList},
 	"/controlplane.v1.IntegrationsService/Attach":          {PolicyAttachedIntegrationAttach},
+	"/controlplane.v1.IntegrationsService/Detach":          {PolicyAttachedIntegrationDetach},
 	// Metrics
 	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
 	// Robot Account
@@ -189,6 +274,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.WorkflowService/List":   {PolicyWorkflowList},
 	"/controlplane.v1.WorkflowService/View":   {PolicyWorkflowRead},
 	"/controlplane.v1.WorkflowService/Create": {PolicyWorkflowCreate},
+	"/controlplane.v1.WorkflowService/Update": {PolicyWorkflowUpdate},
+	"/controlplane.v1.WorkflowService/Delete": {PolicyWorkflowDelete},
 	// WorkflowRun
 	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
 	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
@@ -210,6 +297,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Leave the organization or delete your account
 	"/controlplane.v1.UserService/DeleteMembership": {},
 	"/controlplane.v1.AuthService/DeleteAccount":    {},
+
+	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
 }
 
 type SubjectAPIToken struct {
@@ -425,6 +514,11 @@ func (Role) Values() (roles []string) {
 		RoleOwner,
 		RoleAdmin,
 		RoleViewer,
+
+		// RBAC roles
+		RoleOrgMember,
+		RoleProjectAdmin,
+		RoleProjectViewer,
 	} {
 		roles = append(roles, string(s))
 	}

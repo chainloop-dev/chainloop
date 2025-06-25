@@ -27,6 +27,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
@@ -34,6 +36,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/uuid"
 )
 
 type AttestationService struct {
@@ -54,6 +57,7 @@ type AttestationService struct {
 	orgUseCase              *biz.OrganizationUseCase
 	prometheusUseCase       *biz.PrometheusUseCase
 	projectVersionUseCase   *biz.ProjectVersionUseCase
+	projectUseCase          *biz.ProjectUseCase
 	signingUseCase          *biz.SigningUseCase
 }
 
@@ -71,6 +75,7 @@ type NewAttestationServiceOpts struct {
 	ReferrerUC         *biz.ReferrerUseCase
 	OrgUC              *biz.OrganizationUseCase
 	PromUC             *biz.PrometheusUseCase
+	ProjectUC          *biz.ProjectUseCase
 	ProjectVersionUC   *biz.ProjectVersionUseCase
 	SigningUseCase     *biz.SigningUseCase
 	Opts               []NewOpt
@@ -92,6 +97,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		referrerUseCase:         opts.ReferrerUC,
 		orgUseCase:              opts.OrgUC,
 		prometheusUseCase:       opts.PromUC,
+		projectUseCase:          opts.ProjectUC,
 		projectVersionUseCase:   opts.ProjectVersionUC,
 		signingUseCase:          opts.SigningUseCase,
 	}
@@ -146,6 +152,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, req.GetProjectName(), req.GetWorkflowName(), "")
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC on the project
+	if err = s.userHasPermissionOnProject(ctx, org.ID, req.ProjectName, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
 	}
 
 	// Find contract revision
@@ -219,6 +230,11 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC on the project
+	if err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
 	}
 
 	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
@@ -347,8 +363,14 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	}
 
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
-	if _, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId); err != nil {
+	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
+	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC on the project
+	if err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunUpdate); err != nil {
+		return nil, err
 	}
 
 	var status biz.WorkflowRunStatus
@@ -394,6 +416,11 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		return nil, handleUseCaseErr(err, s.log)
 	} else if wRun == nil {
 		return nil, errors.NotFound("not found", "workflow run not found")
+	}
+
+	// Apply RBAC on the project
+	if err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wRun.Workflow.Project, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
 	}
 
 	if len(wRun.CASBackends) == 0 {
@@ -642,6 +669,14 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
 
+	// try to load project and apply RBAC if needed
+	if err := s.userHasPermissionOnProject(ctx, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); err != nil {
+		// if the project is not found, we ignore the error, since we'll create the project in this call
+		if !errors.IsNotFound(err) {
+			return nil, err
+		}
+	}
+
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
 		if !biz.IsNotFound(err) {
 			return nil, handleUseCaseErr(err, s.log)
@@ -658,10 +693,23 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		ContractName: req.GetContractName(),
 	}
 
+	// set project owner if RBAC is enabled
+	user := entities.CurrentUser(ctx)
+	if user != nil {
+		userID, err := uuid.Parse(user.ID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		createOpts.Owner = &userID
+	}
+
 	wf, err := s.workflowUseCase.Create(ctx, createOpts)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
+
+	// reset RBAC cache, since we might have created a new project
+	usercontext.ResetMembershipsCache()
 
 	return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 }
