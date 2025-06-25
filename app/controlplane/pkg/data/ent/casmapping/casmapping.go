@@ -53,7 +53,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectInverseTable = "projects"
 	// ProjectColumn is the table column denoting the project relation/edge.
-	ProjectColumn = "cas_mapping_project"
+	ProjectColumn = "project_id"
 )
 
 // Columns holds all SQL columns for casmapping fields.
@@ -70,7 +70,6 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"cas_mapping_cas_backend",
-	"cas_mapping_project",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

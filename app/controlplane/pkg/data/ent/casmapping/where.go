@@ -276,26 +276,6 @@ func ProjectIDNotIn(vs ...uuid.UUID) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldNotIn(FieldProjectID, vs...))
 }
 
-// ProjectIDGT applies the GT predicate on the "project_id" field.
-func ProjectIDGT(v uuid.UUID) predicate.CASMapping {
-	return predicate.CASMapping(sql.FieldGT(FieldProjectID, v))
-}
-
-// ProjectIDGTE applies the GTE predicate on the "project_id" field.
-func ProjectIDGTE(v uuid.UUID) predicate.CASMapping {
-	return predicate.CASMapping(sql.FieldGTE(FieldProjectID, v))
-}
-
-// ProjectIDLT applies the LT predicate on the "project_id" field.
-func ProjectIDLT(v uuid.UUID) predicate.CASMapping {
-	return predicate.CASMapping(sql.FieldLT(FieldProjectID, v))
-}
-
-// ProjectIDLTE applies the LTE predicate on the "project_id" field.
-func ProjectIDLTE(v uuid.UUID) predicate.CASMapping {
-	return predicate.CASMapping(sql.FieldLTE(FieldProjectID, v))
-}
-
 // ProjectIDIsNil applies the IsNil predicate on the "project_id" field.
 func ProjectIDIsNil() predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldIsNull(FieldProjectID))

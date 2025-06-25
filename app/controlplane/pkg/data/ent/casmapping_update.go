@@ -92,9 +92,6 @@ func (cmu *CASMappingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if cmu.mutation.WorkflowRunIDCleared() {
 		_spec.ClearField(casmapping.FieldWorkflowRunID, field.TypeUUID)
 	}
-	if cmu.mutation.ProjectIDCleared() {
-		_spec.ClearField(casmapping.FieldProjectID, field.TypeUUID)
-	}
 	_spec.AddModifiers(cmu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, cmu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -210,9 +207,6 @@ func (cmuo *CASMappingUpdateOne) sqlSave(ctx context.Context) (_node *CASMapping
 	}
 	if cmuo.mutation.WorkflowRunIDCleared() {
 		_spec.ClearField(casmapping.FieldWorkflowRunID, field.TypeUUID)
-	}
-	if cmuo.mutation.ProjectIDCleared() {
-		_spec.ClearField(casmapping.FieldProjectID, field.TypeUUID)
 	}
 	_spec.AddModifiers(cmuo.modifiers...)
 	_node = &CASMapping{config: cmuo.config}

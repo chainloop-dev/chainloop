@@ -49,7 +49,7 @@ func (CASMapping) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("cas_backend", CASBackend.Type).Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("organization", Organization.Type).Field("organization_id").Unique().Required().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("project", Project.Type).Unique().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("project", Project.Type).Field("project_id").Unique().Immutable().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 

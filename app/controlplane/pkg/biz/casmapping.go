@@ -39,7 +39,7 @@ type CASMapping struct {
 
 type CASMappingRepo interface {
 	// Create a mapping with an optional workflow run id
-	Create(ctx context.Context, digest string, casBackendID uuid.UUID, workflowRunID *uuid.UUID) (*CASMapping, error)
+	Create(ctx context.Context, digest string, casBackendID uuid.UUID, opts *CASMappingCreateOpts) (*CASMapping, error)
 	// List all the CAS mappings for the given digest
 	FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error)
 }
@@ -54,20 +54,16 @@ func NewCASMappingUseCase(repo CASMappingRepo, mRepo MembershipRepo, logger log.
 	return &CASMappingUseCase{repo, mRepo, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
 }
 
+type CASMappingCreateOpts struct {
+	WorkflowRunID *uuid.UUID
+	ProjectID     *uuid.UUID
+}
+
 // Create a mapping with an optional workflow run id
-func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID string, workflowRunID string) (*CASMapping, error) {
+func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID string, opts *CASMappingCreateOpts) (*CASMapping, error) {
 	casBackendUUID, err := uuid.Parse(casBackendID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
-	}
-
-	var workflowRunUUID *uuid.UUID
-	if workflowRunID != "" {
-		runUUID, err := uuid.Parse(workflowRunID)
-		if err != nil {
-			return nil, NewErrInvalidUUID(err)
-		}
-		workflowRunUUID = &runUUID
 	}
 
 	// parse the digest to make sure is a valid sha256 sum
@@ -75,7 +71,7 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}
 
-	return uc.repo.Create(ctx, digest, casBackendUUID, workflowRunUUID)
+	return uc.repo.Create(ctx, digest, casBackendUUID, opts)
 }
 
 func (uc *CASMappingUseCase) FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error) {

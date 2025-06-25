@@ -318,7 +318,10 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 
 		for _, ref := range references {
 			s.log.Infow("msg", "creating CAS mapping", "name", ref.Name, "digest", ref.Digest, "workflowRun", workflowRunID, "casBackend", casBackend.ID.String())
-			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), workflowRunID); err != nil {
+			if _, err := s.casMappingUseCase.Create(ctx, ref.Digest, casBackend.ID.String(), &biz.CASMappingCreateOpts{
+				WorkflowRunID: &wfRun.ID,
+				ProjectID:     &wf.ProjectID,
+			}); err != nil {
 				return nil, handleUseCaseErr(err, s.log)
 			}
 		}

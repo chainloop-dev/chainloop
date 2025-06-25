@@ -454,7 +454,7 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			cmq.withProject != nil,
 		}
 	)
-	if cmq.withCasBackend != nil || cmq.withProject != nil {
+	if cmq.withCasBackend != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -567,10 +567,7 @@ func (cmq *CASMappingQuery) loadProject(ctx context.Context, query *ProjectQuery
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASMapping)
 	for i := range nodes {
-		if nodes[i].cas_mapping_project == nil {
-			continue
-		}
-		fk := *nodes[i].cas_mapping_project
+		fk := nodes[i].ProjectID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -587,7 +584,7 @@ func (cmq *CASMappingQuery) loadProject(ctx context.Context, query *ProjectQuery
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "cas_mapping_project" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "project_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -626,6 +623,9 @@ func (cmq *CASMappingQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if cmq.withOrganization != nil {
 			_spec.Node.AddColumnOnce(casmapping.FieldOrganizationID)
+		}
+		if cmq.withProject != nil {
+			_spec.Node.AddColumnOnce(casmapping.FieldProjectID)
 		}
 	}
 	if ps := cmq.predicates; len(ps) > 0 {

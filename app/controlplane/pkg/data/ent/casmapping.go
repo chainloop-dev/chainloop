@@ -35,7 +35,6 @@ type CASMapping struct {
 	// The values are being populated by the CASMappingQuery when eager-loading is set.
 	Edges                   CASMappingEdges `json:"edges"`
 	cas_mapping_cas_backend *uuid.UUID
-	cas_mapping_project     *uuid.UUID
 	selectValues            sql.SelectValues
 }
 
@@ -98,8 +97,6 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 			values[i] = new(uuid.UUID)
 		case casmapping.ForeignKeys[0]: // cas_mapping_cas_backend
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case casmapping.ForeignKeys[1]: // cas_mapping_project
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -157,13 +154,6 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				cm.cas_mapping_cas_backend = new(uuid.UUID)
 				*cm.cas_mapping_cas_backend = *value.S.(*uuid.UUID)
-			}
-		case casmapping.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field cas_mapping_project", values[i])
-			} else if value.Valid {
-				cm.cas_mapping_project = new(uuid.UUID)
-				*cm.cas_mapping_project = *value.S.(*uuid.UUID)
 			}
 		default:
 			cm.selectValues.Set(columns[i], values[i])

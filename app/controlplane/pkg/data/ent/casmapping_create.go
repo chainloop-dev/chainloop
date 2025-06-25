@@ -111,20 +111,6 @@ func (cmc *CASMappingCreate) SetOrganization(o *Organization) *CASMappingCreate 
 	return cmc.SetOrganizationID(o.ID)
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (cmc *CASMappingCreate) SetProjectID(id uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetProjectID(id)
-	return cmc
-}
-
-// SetNillableProjectID sets the "project" edge to the Project entity by ID if the given value is not nil.
-func (cmc *CASMappingCreate) SetNillableProjectID(id *uuid.UUID) *CASMappingCreate {
-	if id != nil {
-		cmc = cmc.SetProjectID(*id)
-	}
-	return cmc
-}
-
 // SetProject sets the "project" edge to the Project entity.
 func (cmc *CASMappingCreate) SetProject(p *Project) *CASMappingCreate {
 	return cmc.SetProjectID(p.ID)
@@ -240,10 +226,6 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_spec.SetField(casmapping.FieldWorkflowRunID, field.TypeUUID, value)
 		_node.WorkflowRunID = value
 	}
-	if value, ok := cmc.mutation.ProjectID(); ok {
-		_spec.SetField(casmapping.FieldProjectID, field.TypeUUID, value)
-		_node.ProjectID = value
-	}
 	if nodes := cmc.mutation.CasBackendIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -292,7 +274,7 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.cas_mapping_project = &nodes[0]
+		_node.ProjectID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

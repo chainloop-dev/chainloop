@@ -2440,7 +2440,6 @@ type CASMappingMutation struct {
 	digest              *string
 	created_at          *time.Time
 	workflow_run_id     *uuid.UUID
-	project_id          *uuid.UUID
 	clearedFields       map[string]struct{}
 	cas_backend         *uuid.UUID
 	clearedcas_backend  bool
@@ -2716,12 +2715,12 @@ func (m *CASMappingMutation) ResetOrganizationID() {
 
 // SetProjectID sets the "project_id" field.
 func (m *CASMappingMutation) SetProjectID(u uuid.UUID) {
-	m.project_id = &u
+	m.project = &u
 }
 
 // ProjectID returns the value of the "project_id" field in the mutation.
 func (m *CASMappingMutation) ProjectID() (r uuid.UUID, exists bool) {
-	v := m.project_id
+	v := m.project
 	if v == nil {
 		return
 	}
@@ -2747,7 +2746,7 @@ func (m *CASMappingMutation) OldProjectID(ctx context.Context) (v uuid.UUID, err
 
 // ClearProjectID clears the value of the "project_id" field.
 func (m *CASMappingMutation) ClearProjectID() {
-	m.project_id = nil
+	m.project = nil
 	m.clearedFields[casmapping.FieldProjectID] = struct{}{}
 }
 
@@ -2759,7 +2758,7 @@ func (m *CASMappingMutation) ProjectIDCleared() bool {
 
 // ResetProjectID resets all changes to the "project_id" field.
 func (m *CASMappingMutation) ResetProjectID() {
-	m.project_id = nil
+	m.project = nil
 	delete(m.clearedFields, casmapping.FieldProjectID)
 }
 
@@ -2829,27 +2828,15 @@ func (m *CASMappingMutation) ResetOrganization() {
 	m.clearedorganization = false
 }
 
-// SetProjectID sets the "project" edge to the Project entity by id.
-func (m *CASMappingMutation) SetProjectID(id uuid.UUID) {
-	m.project = &id
-}
-
 // ClearProject clears the "project" edge to the Project entity.
 func (m *CASMappingMutation) ClearProject() {
 	m.clearedproject = true
+	m.clearedFields[casmapping.FieldProjectID] = struct{}{}
 }
 
 // ProjectCleared reports if the "project" edge to the Project entity was cleared.
 func (m *CASMappingMutation) ProjectCleared() bool {
-	return m.clearedproject
-}
-
-// ProjectID returns the "project" edge ID in the mutation.
-func (m *CASMappingMutation) ProjectID() (id uuid.UUID, exists bool) {
-	if m.project != nil {
-		return *m.project, true
-	}
-	return
+	return m.ProjectIDCleared() || m.clearedproject
 }
 
 // ProjectIDs returns the "project" edge IDs in the mutation.
@@ -2915,7 +2902,7 @@ func (m *CASMappingMutation) Fields() []string {
 	if m.organization != nil {
 		fields = append(fields, casmapping.FieldOrganizationID)
 	}
-	if m.project_id != nil {
+	if m.project != nil {
 		fields = append(fields, casmapping.FieldProjectID)
 	}
 	return fields
