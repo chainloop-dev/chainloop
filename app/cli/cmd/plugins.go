@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -55,7 +56,7 @@ func newPluginCmd() *cobra.Command {
 	return cmd
 }
 
-func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandInfo) *cobra.Command {
+func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandInfo) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   cmdInfo.Name,
 		Short: cmdInfo.Description,
@@ -82,11 +83,26 @@ func createPluginCommand(plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandIn
 				}
 			}
 
+			// Collect all persistent flags that were set
+			persistentFlags := make(map[string]plugins.SimpleFlag)
+			rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+				persistentFlags[f.Name] = plugins.SimpleFlag{
+					Name:        f.Name,
+					Shorthand:   f.Shorthand,
+					Usage:       f.Usage,
+					Value:       f.Value.String(),
+					DefValue:    f.DefValue,
+					Changed:     f.Changed,
+					NoOptDefVal: f.NoOptDefVal,
+				}
+			})
+
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginConfig{
-				Command: cmdInfo.Name,
-				Args:    args,
-				Flags:   flags,
+				Command:         cmdInfo.Name,
+				Args:            args,
+				Flags:           flags,
+				PersistentFlags: persistentFlags,
 			}
 
 			// execute plugin command using the action pattern
@@ -281,7 +297,7 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 					cmdInfo.Name, existingPlugin, pluginName)
 			}
 
-			pluginCmd := createPluginCommand(plugin, cmdInfo)
+			pluginCmd := createPluginCommand(rootCmd, plugin, cmdInfo)
 			rootCmd.AddCommand(pluginCmd)
 			registeredCommands[cmdInfo.Name] = pluginName
 		}

@@ -34,6 +34,7 @@ func init() {
 	gob.Register([]FlagInfo{})
 	gob.Register([]string{})
 	gob.Register([]map[string]any{})
+	gob.Register(map[string]SimpleFlag{})
 }
 
 // Handshake is a common handshake that is shared by CLI plugins and the host.

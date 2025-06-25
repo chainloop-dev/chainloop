@@ -71,7 +71,18 @@ type FlagInfo struct {
 
 // PluginConfig is the configuration for a plugin command execution.
 type PluginConfig struct {
-	Command string
-	Args    []string
-	Flags   map[string]any
+	Command         string
+	Args            []string
+	Flags           map[string]any
+	PersistentFlags map[string]SimpleFlag
+}
+
+type SimpleFlag struct {
+	Name        string
+	Shorthand   string
+	Usage       string
+	Value       string
+	DefValue    string
+	Changed     bool
+	NoOptDefVal string
 }
