@@ -212,6 +212,11 @@ var rolesMap = map[Role][]*Policy{
 		PolicyOrgMetricsRead,
 		PolicyReferrerRead,
 	},
+	// RoleProjectViewer: has read-only permissions on a project
+	RoleProjectViewer: {
+		PolicyWorkflowRead,
+		PolicyWorkflowRunRead,
+	},
 	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
 	// and it's only considered when the org-level role is `RoleOrgMember`
 	RoleProjectAdmin: {
@@ -233,9 +238,6 @@ var rolesMap = map[Role][]*Policy{
 		// integrations
 		PolicyAttachedIntegrationAttach,
 		PolicyAttachedIntegrationDetach,
-
-		// metrics
-		PolicyOrgMetricsRead,
 	},
 }
 
