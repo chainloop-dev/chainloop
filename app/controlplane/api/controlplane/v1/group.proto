@@ -57,7 +57,10 @@ message GroupServiceCreateResponse {
 // GroupServiceGetRequest contains the identifier for the group to retrieve
 message GroupServiceGetRequest {
   // UUID of the group to retrieve
-  string group_id = 1 [(buf.validate.field).string.uuid = true, (buf.validate.field).required = true];
+  string group_id = 1 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).required = true
+  ];
 }
 
 // GroupServiceGetResponse contains the requested group information
@@ -89,7 +92,10 @@ message GroupServiceListResponse {
 // GroupServiceUpdateRequest contains the fields that can be updated for a group
 message GroupServiceUpdateRequest {
   // UUID of the group to update
-  string group_id = 1 [(buf.validate.field).string.uuid = true, (buf.validate.field).required = true];
+  string group_id = 1 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).required = true
+  ];
   // New name for the group (if provided)
   optional string name = 2 [(buf.validate.field).ignore_empty = true];
   // New description for the group (if provided)
@@ -121,7 +127,10 @@ message GroupServiceListMembersResponse {
 // GroupServiceListMembersRequest contains the identifier for the group whose members are to be listed
 message GroupServiceListMembersRequest {
   // UUID of the group whose members are to be listed
-  string group_id = 1 [(buf.validate.field).string.uuid = true, (buf.validate.field).required = true];
+  string group_id = 1 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).required = true
+  ];
   // Optional filter to search only by maintainers or not
   optional bool maintainers = 2 [(buf.validate.field).ignore_empty = true];
   // Optional filter to search by member email address
