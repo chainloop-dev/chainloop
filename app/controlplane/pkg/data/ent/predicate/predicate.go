@@ -18,6 +18,12 @@ type CASBackend func(*sql.Selector)
 // CASMapping is the predicate function for casmapping builders.
 type CASMapping func(*sql.Selector)
 
+// Group is the predicate function for group builders.
+type Group func(*sql.Selector)
+
+// GroupMembership is the predicate function for groupmembership builders.
+type GroupMembership func(*sql.Selector)
+
 // Integration is the predicate function for integration builders.
 type Integration func(*sql.Selector)
 

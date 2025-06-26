@@ -1,0 +1,19 @@
+{
+  "$id": "controlplane.v1.GroupServiceCreateRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceCreateRequest contains the information needed to create a new group",
+  "properties": {
+    "description": {
+      "description": "Description providing additional information about the group",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of the group to create",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Group Service Create Request",
+  "type": "object"
+}

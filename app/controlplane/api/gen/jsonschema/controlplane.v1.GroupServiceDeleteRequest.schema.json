@@ -1,0 +1,15 @@
+{
+  "$id": "controlplane.v1.GroupServiceDeleteRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceDeleteRequest contains the identifier for the group to delete",
+  "properties": {
+    "id": {
+      "description": "UUID of the group to delete",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "title": "Group Service Delete Request",
+  "type": "object"
+}
