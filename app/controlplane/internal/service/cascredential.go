@@ -89,12 +89,14 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	// Try to find the proper backend where the artifact is stored
 	if role == casJWT.Downloader {
 		var mapping *biz.CASMapping
+		
 		// If we are logged in as a user, we'll try to find a mapping for that user
 		if currentUser != nil {
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
 			// otherwise, we'll try to find a mapping for the current API token associated orgs
 		} else if currentAPIToken != nil {
-			orgID, err := uuid.Parse(currentOrg.ID)
+			var orgID uuid.UUID
+			orgID, err = uuid.Parse(currentOrg.ID)
 			if err != nil {
 				return nil, handleUseCaseErr(err, s.log)
 			}
