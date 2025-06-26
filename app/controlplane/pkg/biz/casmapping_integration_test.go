@@ -48,15 +48,15 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
 	// 3. Digest: validDigest2, CASBackend: casBackend2, WorkflowRunID: workflowRun
 	// 4. Digest: validDigest3, CASBackend: casBackend3, WorkflowRunID: workflowRun
 	// 4. Digest: validDigestPublic, CASBackend: casBackend3, WorkflowRunID: workflowRunPublic
-	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend2.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest3, s.casBackend3.ID.String(), s.workflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigest3, s.casBackend3.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigestPublic, s.casBackend3.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
 	require.NoError(s.T(), err)
 
 	// Since the userOrg1And2 is member of org1 and org2, she should be able to download
@@ -118,41 +118,41 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
 
 func (s *casMappingIntegrationSuite) TestCASMappingForDownloadByOrg() {
 	ctx := context.Background()
-	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(ctx, validDigestPublic, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
+	_, err = s.CASMapping.Create(ctx, validDigestPublic, s.casBackend3.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(ctx, validDigestWithoutRun, s.casBackend3.ID.String(), "")
+	_, err = s.CASMapping.Create(ctx, validDigestWithoutRun, s.casBackend3.ID.String(), nil)
 	require.NoError(s.T(), err)
 
 	// both validDigest and validDigest2 from two different orgs
 	s.Run("validDigest is in org1", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []string{s.org1.ID})
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("validDigestPublic is available from any org", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestPublic, []string{uuid.NewString()})
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestPublic, []uuid.UUID{uuid.New()}, nil)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
 	})
 
 	s.Run("validDigestWithoutRun is available only to org 3", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestWithoutRun, []string{s.casBackend3.OrganizationID.String()})
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestWithoutRun, []uuid.UUID{s.casBackend3.OrganizationID}, nil)
 		s.NoError(err)
 		s.NotNil(mapping)
 		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
 
-		mapping, err = s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestWithoutRun, []string{s.org1.ID})
+		mapping, err = s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestWithoutRun, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
 		s.Error(err)
 		s.Nil(mapping)
 	})
 
 	s.Run("can't find an invalid digest", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, invalidDigest, []string{s.org1.ID})
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, invalidDigest, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
 		s.Error(err)
 		s.Nil(mapping)
 	})
@@ -163,13 +163,13 @@ func (s *casMappingIntegrationSuite) TestFindByDigest() {
 	// 2. Digest: validDigest2, CASBackend: casBackend1, WorkflowRunID: workflowRun
 	// 3. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
 	// 4. Digest: validDigest, CASBackend: casBackend3, WorkflowRunID: publicWorkflowRun
-	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend1.ID.String(), s.workflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), s.workflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend3.ID.String(), s.publicWorkflowRun.ID.String())
+	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend3.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
 	require.NoError(s.T(), err)
 
 	testcases := []struct {
@@ -320,12 +320,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		}
 
 		s.Run(tc.name, func() {
-			var workflowRunID string
-			if tc.workflowRunID != nil {
-				workflowRunID = tc.workflowRunID.String()
-			}
-
-			got, err := s.CASMapping.Create(context.TODO(), tc.digest, tc.casBackendID.String(), workflowRunID)
+			got, err := s.CASMapping.Create(context.TODO(), tc.digest, tc.casBackendID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: tc.workflowRunID})
 			if tc.wantErr {
 				s.Error(err)
 			} else {

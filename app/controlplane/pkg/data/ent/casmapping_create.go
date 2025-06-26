@@ -15,6 +15,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -66,6 +67,20 @@ func (cmc *CASMappingCreate) SetOrganizationID(u uuid.UUID) *CASMappingCreate {
 	return cmc
 }
 
+// SetProjectID sets the "project_id" field.
+func (cmc *CASMappingCreate) SetProjectID(u uuid.UUID) *CASMappingCreate {
+	cmc.mutation.SetProjectID(u)
+	return cmc
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (cmc *CASMappingCreate) SetNillableProjectID(u *uuid.UUID) *CASMappingCreate {
+	if u != nil {
+		cmc.SetProjectID(*u)
+	}
+	return cmc
+}
+
 // SetID sets the "id" field.
 func (cmc *CASMappingCreate) SetID(u uuid.UUID) *CASMappingCreate {
 	cmc.mutation.SetID(u)
@@ -94,6 +109,11 @@ func (cmc *CASMappingCreate) SetCasBackend(c *CASBackend) *CASMappingCreate {
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (cmc *CASMappingCreate) SetOrganization(o *Organization) *CASMappingCreate {
 	return cmc.SetOrganizationID(o.ID)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (cmc *CASMappingCreate) SetProject(p *Project) *CASMappingCreate {
+	return cmc.SetProjectID(p.ID)
 }
 
 // Mutation returns the CASMappingMutation object of the builder.
@@ -240,6 +260,23 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := cmc.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   casmapping.ProjectTable,
+			Columns: []string{casmapping.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ProjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -320,6 +357,9 @@ func (u *CASMappingUpsertOne) UpdateNewValues() *CASMappingUpsertOne {
 		}
 		if _, exists := u.create.mutation.OrganizationID(); exists {
 			s.SetIgnore(casmapping.FieldOrganizationID)
+		}
+		if _, exists := u.create.mutation.ProjectID(); exists {
+			s.SetIgnore(casmapping.FieldProjectID)
 		}
 	}))
 	return u
@@ -546,6 +586,9 @@ func (u *CASMappingUpsertBulk) UpdateNewValues() *CASMappingUpsertBulk {
 			}
 			if _, exists := b.mutation.OrganizationID(); exists {
 				s.SetIgnore(casmapping.FieldOrganizationID)
+			}
+			if _, exists := b.mutation.ProjectID(); exists {
+				s.SetIgnore(casmapping.FieldProjectID)
 			}
 		}
 	}))

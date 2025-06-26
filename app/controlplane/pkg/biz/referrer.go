@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"sort"
 	"time"
 
@@ -184,8 +183,12 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 			orgIDs = append(orgIDs, m.ResourceID)
 			// If the role in the org is member, we must enable RBAC for projects.
 			if m.Role == authz.RoleOrgMember {
+				// ensure list is initialized
+				if projectIDs == nil {
+					projectIDs = make([]uuid.UUID, 0)
+				}
 				// get list of projects in org, and match it with the memberships to build a filter
-				orgProjects, err := s.getProjectsWithMembership(ctx, m.ResourceID, memberships)
+				orgProjects, err := getProjectsWithMembership(ctx, s.projectsRepo, m.ResourceID, memberships)
 				if err != nil {
 					return nil, err
 				}
@@ -196,24 +199,6 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 	}
 
 	return s.GetFromRoot(ctx, digest, rootKind, orgIDs, projectIDs)
-}
-
-// getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership
-func (s *ReferrerUseCase) getProjectsWithMembership(ctx context.Context, orgID uuid.UUID, memberships []*Membership) ([]uuid.UUID, error) {
-	ids := make([]uuid.UUID, 0)
-	projects, err := s.projectsRepo.ListProjectsByOrgID(ctx, orgID)
-	if err != nil {
-		return nil, fmt.Errorf("listing projects: %w", err)
-	}
-	for _, p := range projects {
-		if slices.ContainsFunc(memberships, func(m *Membership) bool {
-			return m.ResourceType == authz.ResourceTypeProject && m.ResourceID == p.ID
-		}) {
-			ids = append(ids, p.ID)
-		}
-	}
-
-	return ids, nil
 }
 
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs []uuid.UUID) (*StoredReferrer, error) {

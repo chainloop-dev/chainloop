@@ -17,8 +17,11 @@ package biz
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -96,4 +99,22 @@ func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Proj
 	}
 
 	return uc.projectsRepository.Create(ctx, orgUUID, name)
+}
+
+// getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership
+func getProjectsWithMembership(ctx context.Context, projectsRepo ProjectsRepo, orgID uuid.UUID, memberships []*Membership) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0)
+	projects, err := projectsRepo.ListProjectsByOrgID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("listing projects: %w", err)
+	}
+	for _, p := range projects {
+		if slices.ContainsFunc(memberships, func(m *Membership) bool {
+			return m.ResourceType == authz.ResourceTypeProject && m.ResourceID == p.ID
+		}) {
+			ids = append(ids, p.ID)
+		}
+	}
+
+	return ids, nil
 }

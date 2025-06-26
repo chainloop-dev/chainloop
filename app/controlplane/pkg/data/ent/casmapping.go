@@ -12,6 +12,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +29,8 @@ type CASMapping struct {
 	WorkflowRunID uuid.UUID `json:"workflow_run_id,omitempty"`
 	// OrganizationID holds the value of the "organization_id" field.
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
+	// ProjectID holds the value of the "project_id" field.
+	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASMappingQuery when eager-loading is set.
 	Edges                   CASMappingEdges `json:"edges"`
@@ -41,9 +44,11 @@ type CASMappingEdges struct {
 	CasBackend *CASBackend `json:"cas_backend,omitempty"`
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
+	// Project holds the value of the project edge.
+	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // CasBackendOrErr returns the CasBackend value or an error if the edge
@@ -68,6 +73,17 @@ func (e CASMappingEdges) OrganizationOrErr() (*Organization, error) {
 	return nil, &NotLoadedError{edge: "organization"}
 }
 
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CASMappingEdges) ProjectOrErr() (*Project, error) {
+	if e.Project != nil {
+		return e.Project, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: project.Label}
+	}
+	return nil, &NotLoadedError{edge: "project"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*CASMapping) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -77,7 +93,7 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case casmapping.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case casmapping.FieldID, casmapping.FieldWorkflowRunID, casmapping.FieldOrganizationID:
+		case casmapping.FieldID, casmapping.FieldWorkflowRunID, casmapping.FieldOrganizationID, casmapping.FieldProjectID:
 			values[i] = new(uuid.UUID)
 		case casmapping.ForeignKeys[0]: // cas_mapping_cas_backend
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -126,6 +142,12 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				cm.OrganizationID = *value
 			}
+		case casmapping.FieldProjectID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field project_id", values[i])
+			} else if value != nil {
+				cm.ProjectID = *value
+			}
 		case casmapping.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field cas_mapping_cas_backend", values[i])
@@ -154,6 +176,11 @@ func (cm *CASMapping) QueryCasBackend() *CASBackendQuery {
 // QueryOrganization queries the "organization" edge of the CASMapping entity.
 func (cm *CASMapping) QueryOrganization() *OrganizationQuery {
 	return NewCASMappingClient(cm.config).QueryOrganization(cm)
+}
+
+// QueryProject queries the "project" edge of the CASMapping entity.
+func (cm *CASMapping) QueryProject() *ProjectQuery {
+	return NewCASMappingClient(cm.config).QueryProject(cm)
 }
 
 // Update returns a builder for updating this CASMapping.
@@ -190,6 +217,9 @@ func (cm *CASMapping) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
 	builder.WriteString(fmt.Sprintf("%v", cm.OrganizationID))
+	builder.WriteString(", ")
+	builder.WriteString("project_id=")
+	builder.WriteString(fmt.Sprintf("%v", cm.ProjectID))
 	builder.WriteByte(')')
 	return builder.String()
 }

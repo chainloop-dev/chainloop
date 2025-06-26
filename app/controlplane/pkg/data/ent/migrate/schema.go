@@ -128,6 +128,7 @@ var (
 		{Name: "workflow_run_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
 		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// CasMappingsTable holds the schema information for the "cas_mappings" table.
 	CasMappingsTable = &schema.Table{
@@ -145,6 +146,12 @@ var (
 				Symbol:     "cas_mappings_organizations_organization",
 				Columns:    []*schema.Column{CasMappingsColumns[5]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "cas_mappings_projects_project",
+				Columns:    []*schema.Column{CasMappingsColumns[6]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -901,6 +908,7 @@ func init() {
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
 	CasMappingsTable.ForeignKeys[1].RefTable = OrganizationsTable
+	CasMappingsTable.ForeignKeys[2].RefTable = ProjectsTable
 	GroupsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	GroupMembershipsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupMembershipsTable.ForeignKeys[1].RefTable = UsersTable
