@@ -5,11 +5,19 @@
   "patternProperties": {
     "^(includeRevoked)$": {
       "type": "boolean"
+    },
+    "^(projectName)$": {
+      "minLength": 1,
+      "type": "string"
     }
   },
   "properties": {
     "include_revoked": {
       "type": "boolean"
+    },
+    "project_name": {
+      "minLength": 1,
+      "type": "string"
     }
   },
   "title": "Project ServiceAPI Token List Request",

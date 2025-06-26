@@ -24,13 +24,16 @@ export interface ProjectServiceAPITokenCreateResponse_APITokenFull {
 }
 
 export interface ProjectServiceAPITokenRevokeRequest {
+  /** token name */
   name: string;
+  projectName: string;
 }
 
 export interface ProjectServiceAPITokenRevokeResponse {
 }
 
 export interface ProjectServiceAPITokenListRequest {
+  projectName: string;
   includeRevoked: boolean;
 }
 
@@ -291,13 +294,16 @@ export const ProjectServiceAPITokenCreateResponse_APITokenFull = {
 };
 
 function createBaseProjectServiceAPITokenRevokeRequest(): ProjectServiceAPITokenRevokeRequest {
-  return { name: "" };
+  return { name: "", projectName: "" };
 }
 
 export const ProjectServiceAPITokenRevokeRequest = {
   encode(message: ProjectServiceAPITokenRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(18).string(message.projectName);
     }
     return writer;
   },
@@ -316,6 +322,13 @@ export const ProjectServiceAPITokenRevokeRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -326,12 +339,16 @@ export const ProjectServiceAPITokenRevokeRequest = {
   },
 
   fromJSON(object: any): ProjectServiceAPITokenRevokeRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+    };
   },
 
   toJSON(message: ProjectServiceAPITokenRevokeRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     return obj;
   },
 
@@ -346,6 +363,7 @@ export const ProjectServiceAPITokenRevokeRequest = {
   ): ProjectServiceAPITokenRevokeRequest {
     const message = createBaseProjectServiceAPITokenRevokeRequest();
     message.name = object.name ?? "";
+    message.projectName = object.projectName ?? "";
     return message;
   },
 };
@@ -399,13 +417,16 @@ export const ProjectServiceAPITokenRevokeResponse = {
 };
 
 function createBaseProjectServiceAPITokenListRequest(): ProjectServiceAPITokenListRequest {
-  return { includeRevoked: false };
+  return { projectName: "", includeRevoked: false };
 }
 
 export const ProjectServiceAPITokenListRequest = {
   encode(message: ProjectServiceAPITokenListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectName !== "") {
+      writer.uint32(10).string(message.projectName);
+    }
     if (message.includeRevoked === true) {
-      writer.uint32(8).bool(message.includeRevoked);
+      writer.uint32(16).bool(message.includeRevoked);
     }
     return writer;
   },
@@ -418,7 +439,14 @@ export const ProjectServiceAPITokenListRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
             break;
           }
 
@@ -434,11 +462,15 @@ export const ProjectServiceAPITokenListRequest = {
   },
 
   fromJSON(object: any): ProjectServiceAPITokenListRequest {
-    return { includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false };
+    return {
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
+    };
   },
 
   toJSON(message: ProjectServiceAPITokenListRequest): unknown {
     const obj: any = {};
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
     return obj;
   },
@@ -453,6 +485,7 @@ export const ProjectServiceAPITokenListRequest = {
     object: I,
   ): ProjectServiceAPITokenListRequest {
     const message = createBaseProjectServiceAPITokenListRequest();
+    message.projectName = object.projectName ?? "";
     message.includeRevoked = object.includeRevoked ?? false;
     return message;
   },

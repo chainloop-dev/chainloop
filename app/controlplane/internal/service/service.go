@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ var ProviderSet = wire.NewSet(
 	NewSigningService,
 	NewPrometheusService,
 	NewGroupService,
+	NewProjectService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 	wire.Struct(new(NewAttestationStateServiceOpt), "*"),
