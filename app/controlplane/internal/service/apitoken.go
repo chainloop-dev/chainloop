@@ -69,7 +69,8 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		return nil, err
 	}
 
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked)
+	// Only expose system tokens
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenShowOnlySystemTokens(true))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

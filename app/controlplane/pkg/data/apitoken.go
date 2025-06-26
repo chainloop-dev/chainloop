@@ -90,11 +90,21 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
+func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*biz.APIToken, error) {
 	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
 	if orgID != nil {
 		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
+	}
+
+	if showOnlySystemTokens && projectID != nil {
+		return nil, fmt.Errorf("projectID cannot be provided when skipProjectScopedTokens is true")
+	}
+
+	if showOnlySystemTokens {
+		query = query.Where(apitoken.ProjectIDIsNil())
+	} else if projectID != nil {
+		query = query.Where(apitoken.ProjectIDEQ(*projectID))
 	}
 
 	if projectID != nil {
