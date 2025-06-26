@@ -27,12 +27,12 @@ import (
 	"time"
 
 	"github.com/bufbuild/protovalidate-go"
+	token "github.com/chainloop-dev/chainloop/app/cli/pkg"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
-	"github.com/chainloop-dev/chainloop/app/cli/pkg"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v5"
@@ -743,6 +743,6 @@ func extractAuthInfo(authToken string) (*api.Attestation_Auth, error) {
 
 	return &api.Attestation_Auth{
 		Type: parsed.TokenType,
-		Id:   parsed.Id,
+		Id:   parsed.ID,
 	}, nil
 }

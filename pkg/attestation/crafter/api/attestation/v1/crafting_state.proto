@@ -153,7 +153,6 @@ message Attestation {
   // Runner environment in which the attestation was crafted
   RunnerEnvironment runner_environment = 16;
 
-
   // Authentication information used during attestation
   Auth auth = 17;
 

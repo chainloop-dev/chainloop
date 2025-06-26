@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package token
 
 import "github.com/golang-jwt/jwt/v4"
@@ -24,7 +23,7 @@ const (
 )
 
 type ParsedToken struct {
-	Id        string
+	ID        string
 	OrgID     string
 	TokenType string
 }
@@ -82,7 +81,7 @@ func ParseToken(token string) (*ParsedToken, error) {
 	case apiTokenAudience:
 		pToken.TokenType = "api-token"
 		if tokenID, ok := claims["jti"].(string); ok {
-			pToken.Id = tokenID
+			pToken.ID = tokenID
 		}
 		if orgID, ok := claims["org_id"].(string); ok {
 			pToken.OrgID = orgID
@@ -90,7 +89,7 @@ func ParseToken(token string) (*ParsedToken, error) {
 	case userAudience:
 		pToken.TokenType = "user"
 		if userID, ok := claims["user_id"].(string); ok {
-			pToken.Id = userID
+			pToken.ID = userID
 		}
 	default:
 		return nil, nil
