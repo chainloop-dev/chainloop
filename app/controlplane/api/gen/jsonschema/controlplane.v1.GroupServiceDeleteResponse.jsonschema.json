@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.GroupServiceDeleteResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceDeleteResponse is returned upon successful deletion of a group",
+  "properties": {},
+  "title": "Group Service Delete Response",
+  "type": "object"
+}

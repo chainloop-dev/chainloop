@@ -1,0 +1,27 @@
+{
+  "$id": "controlplane.v1.GroupServiceGetRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceGetRequest contains the identifier for the group to retrieve",
+  "patternProperties": {
+    "^(group_id)$": {
+      "description": "UUID of the group to retrieve",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "groupId": {
+      "description": "UUID of the group to retrieve",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id"
+  ],
+  "title": "Group Service Get Request",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "$id": "controlplane.v1.GroupServiceListMembersResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "members": {
+      "description": "List of members in the group",
+      "items": {
+        "$ref": "controlplane.v1.GroupMember.schema.json"
+      },
+      "type": "array"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationResponse.schema.json",
+      "description": "Pagination information for the response"
+    }
+  },
+  "title": "Group Service List Members Response",
+  "type": "object"
+}

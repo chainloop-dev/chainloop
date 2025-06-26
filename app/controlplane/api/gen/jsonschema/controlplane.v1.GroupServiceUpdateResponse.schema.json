@@ -1,0 +1,14 @@
+{
+  "$id": "controlplane.v1.GroupServiceUpdateResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceUpdateResponse contains the updated group information",
+  "properties": {
+    "group": {
+      "$ref": "controlplane.v1.Group.schema.json",
+      "description": "The updated group with all its attributes"
+    }
+  },
+  "title": "Group Service Update Response",
+  "type": "object"
+}

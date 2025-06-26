@@ -58,6 +58,8 @@ const (
 	UserMembership                = "membership_user"
 	Organization                  = "organization"
 	ResourceProject               = "project"
+	ResourceGroup                 = "group"
+	ResourceGroupMembership       = "group_membership"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -130,6 +132,14 @@ var (
 	// User Membership
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
+	// Groups
+	PolicyGroupCreate = &Policy{ResourceGroup, ActionCreate}
+	PolicyGroupUpdate = &Policy{ResourceGroup, ActionUpdate}
+	PolicyGroupDelete = &Policy{ResourceGroup, ActionDelete}
+	PolicyGroupList   = &Policy{ResourceGroup, ActionList}
+	PolicyGroupRead   = &Policy{ResourceGroup, ActionRead}
+	// Group Memberships
+	PolicyGroupListMemberships = &Policy{ResourceGroupMembership, ActionList}
 )
 
 // List of policies for each role
@@ -211,6 +221,13 @@ var rolesMap = map[Role][]*Policy{
 
 		PolicyOrgMetricsRead,
 		PolicyReferrerRead,
+
+		// Groups
+		PolicyGroupList,
+		PolicyGroupRead,
+
+		// Group Memberships
+		PolicyGroupListMemberships,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
@@ -301,6 +318,14 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.AuthService/DeleteAccount":    {},
 
 	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
+	// Groups
+	"/controlplane.v1.GroupService/List":   {PolicyGroupList},
+	"/controlplane.v1.GroupService/Get":    {PolicyGroupRead},
+	"/controlplane.v1.GroupService/Create": {PolicyGroupCreate},
+	"/controlplane.v1.GroupService/Update": {PolicyGroupUpdate},
+	"/controlplane.v1.GroupService/Delete": {PolicyGroupDelete},
+	// Group Memberships
+	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
 }
 
 type SubjectAPIToken struct {

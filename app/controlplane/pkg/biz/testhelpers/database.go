@@ -76,6 +76,7 @@ type TestingUseCases struct {
 	ProjectVersion         *biz.ProjectVersionUseCase
 	Project                *biz.ProjectUseCase
 	OrgMetrics             *biz.OrgMetricsUseCase
+	Group                  *biz.GroupUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }
@@ -87,6 +88,7 @@ type TestingRepos struct {
 	WorkflowRunRepo  biz.WorkflowRunRepo
 	AttestationState biz.AttestationStateRepo
 	OrganizationRepo biz.OrganizationRepo
+	GroupRepo        biz.GroupRepo
 }
 
 type newTestingOpts struct {
