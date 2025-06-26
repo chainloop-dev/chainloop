@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -93,6 +94,20 @@ func (atc *APITokenCreate) SetOrganizationID(u uuid.UUID) *APITokenCreate {
 	return atc
 }
 
+// SetProjectID sets the "project_id" field.
+func (atc *APITokenCreate) SetProjectID(u uuid.UUID) *APITokenCreate {
+	atc.mutation.SetProjectID(u)
+	return atc
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (atc *APITokenCreate) SetNillableProjectID(u *uuid.UUID) *APITokenCreate {
+	if u != nil {
+		atc.SetProjectID(*u)
+	}
+	return atc
+}
+
 // SetID sets the "id" field.
 func (atc *APITokenCreate) SetID(u uuid.UUID) *APITokenCreate {
 	atc.mutation.SetID(u)
@@ -110,6 +125,11 @@ func (atc *APITokenCreate) SetNillableID(u *uuid.UUID) *APITokenCreate {
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (atc *APITokenCreate) SetOrganization(o *Organization) *APITokenCreate {
 	return atc.SetOrganizationID(o.ID)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (atc *APITokenCreate) SetProject(p *Project) *APITokenCreate {
+	return atc.SetProjectID(p.ID)
 }
 
 // Mutation returns the APITokenMutation object of the builder.
@@ -244,6 +264,23 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := atc.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.ProjectTable,
+			Columns: []string{apitoken.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ProjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -359,6 +396,24 @@ func (u *APITokenUpsert) SetOrganizationID(v uuid.UUID) *APITokenUpsert {
 // UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
 func (u *APITokenUpsert) UpdateOrganizationID() *APITokenUpsert {
 	u.SetExcluded(apitoken.FieldOrganizationID)
+	return u
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *APITokenUpsert) SetProjectID(v uuid.UUID) *APITokenUpsert {
+	u.Set(apitoken.FieldProjectID, v)
+	return u
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateProjectID() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldProjectID)
+	return u
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *APITokenUpsert) ClearProjectID() *APITokenUpsert {
+	u.SetNull(apitoken.FieldProjectID)
 	return u
 }
 
@@ -490,6 +545,27 @@ func (u *APITokenUpsertOne) SetOrganizationID(v uuid.UUID) *APITokenUpsertOne {
 func (u *APITokenUpsertOne) UpdateOrganizationID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.UpdateOrganizationID()
+	})
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *APITokenUpsertOne) SetProjectID(v uuid.UUID) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetProjectID(v)
+	})
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateProjectID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateProjectID()
+	})
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *APITokenUpsertOne) ClearProjectID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearProjectID()
 	})
 }
 
@@ -788,6 +864,27 @@ func (u *APITokenUpsertBulk) SetOrganizationID(v uuid.UUID) *APITokenUpsertBulk 
 func (u *APITokenUpsertBulk) UpdateOrganizationID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.UpdateOrganizationID()
+	})
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *APITokenUpsertBulk) SetProjectID(v uuid.UUID) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetProjectID(v)
+	})
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateProjectID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateProjectID()
+	})
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *APITokenUpsertBulk) ClearProjectID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearProjectID()
 	})
 }
 

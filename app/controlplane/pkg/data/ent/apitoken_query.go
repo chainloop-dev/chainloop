@@ -15,6 +15,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -26,6 +27,7 @@ type APITokenQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.APIToken
 	withOrganization *OrganizationQuery
+	withProject      *ProjectQuery
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -78,6 +80,28 @@ func (atq *APITokenQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.From(apitoken.Table, apitoken.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, apitoken.OrganizationTable, apitoken.OrganizationColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(atq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProject chains the current query on the "project" edge.
+func (atq *APITokenQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: atq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := atq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := atq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitoken.Table, apitoken.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.ProjectTable, apitoken.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(atq.driver.Dialect(), step)
 		return fromU, nil
@@ -278,6 +302,7 @@ func (atq *APITokenQuery) Clone() *APITokenQuery {
 		inters:           append([]Interceptor{}, atq.inters...),
 		predicates:       append([]predicate.APIToken{}, atq.predicates...),
 		withOrganization: atq.withOrganization.Clone(),
+		withProject:      atq.withProject.Clone(),
 		// clone intermediate query.
 		sql:       atq.sql.Clone(),
 		path:      atq.path,
@@ -293,6 +318,17 @@ func (atq *APITokenQuery) WithOrganization(opts ...func(*OrganizationQuery)) *AP
 		opt(query)
 	}
 	atq.withOrganization = query
+	return atq
+}
+
+// WithProject tells the query-builder to eager-load the nodes that are connected to
+// the "project" edge. The optional arguments are used to configure the query builder of the edge.
+func (atq *APITokenQuery) WithProject(opts ...func(*ProjectQuery)) *APITokenQuery {
+	query := (&ProjectClient{config: atq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	atq.withProject = query
 	return atq
 }
 
@@ -374,8 +410,9 @@ func (atq *APITokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AP
 	var (
 		nodes       = []*APIToken{}
 		_spec       = atq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			atq.withOrganization != nil,
+			atq.withProject != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -405,6 +442,12 @@ func (atq *APITokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AP
 			return nil, err
 		}
 	}
+	if query := atq.withProject; query != nil {
+		if err := atq.loadProject(ctx, query, nodes, nil,
+			func(n *APIToken, e *Project) { n.Edges.Project = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
@@ -430,6 +473,35 @@ func (atq *APITokenQuery) loadOrganization(ctx context.Context, query *Organizat
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "organization_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (atq *APITokenQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*APIToken, init func(*APIToken), assign func(*APIToken, *Project)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*APIToken)
+	for i := range nodes {
+		fk := nodes[i].ProjectID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "project_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -468,6 +540,9 @@ func (atq *APITokenQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if atq.withOrganization != nil {
 			_spec.Node.AddColumnOnce(apitoken.FieldOrganizationID)
+		}
+		if atq.withProject != nil {
+			_spec.Node.AddColumnOnce(apitoken.FieldProjectID)
 		}
 	}
 	if ps := atq.predicates; len(ps) > 0 {
