@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
@@ -173,7 +174,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 			return nil
 		}
 
-		return errors.Forbidden("forbidden", "operation not allowed")
+		return errors.Forbidden("forbidden", fmt.Errorf("operation not allowed: This auth token is valid only with the project %q", *token.ProjectName).Error())
 	}
 
 	// 2 - We are a user
