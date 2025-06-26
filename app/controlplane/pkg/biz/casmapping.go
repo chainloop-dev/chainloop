@@ -191,7 +191,7 @@ func filterByOrgs(mappings []*CASMapping, orgs []uuid.UUID, projectIDs map[uuid.
 	for _, mapping := range mappings {
 		for _, o := range orgs {
 			if mapping.OrgID == o {
-				if visibleProjects, ok := projectIDs[mapping.ProjectID]; ok {
+				if visibleProjects, ok := projectIDs[mapping.OrgID]; ok {
 					if slices.Contains(visibleProjects, mapping.ProjectID) {
 						result = append(result, mapping)
 					}
