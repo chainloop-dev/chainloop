@@ -346,7 +346,6 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, projectID, use
 }
 
 func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo MembershipRepo, pRepo ProjectsRepo) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
-
 	// Load ALL memberships for the given user
 	memberships, err := mRepo.ListAllByUser(ctx, userID)
 	if err != nil {
