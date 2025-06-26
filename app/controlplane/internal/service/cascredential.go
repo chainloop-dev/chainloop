@@ -84,13 +84,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")
 	}
 
-	// Load the default CAS backend, we'll use it for uploads and as fallback on downloads
-	backend, err := s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
-	if err != nil && !biz.IsNotFound(err) {
-		return nil, handleUseCaseErr(err, s.log)
-	} else if backend == nil {
-		return nil, errors.NotFound("not found", "main CAS backend not found")
-	}
+	var backend *biz.CASBackend
 
 	// Try to find the proper backend where the artifact is stored
 	if role == casJWT.Downloader {
@@ -118,6 +112,21 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 
 		if mapping != nil {
 			backend = mapping.CASBackend
+		}
+	}
+
+	// If the backend was not found, use the default backend for the current org, only if the user is admin and RBAC doesn't apply.
+	if backend == nil {
+		if currentAuthzSubject == string(authz.RoleAdmin) || currentAuthzSubject == string(authz.RoleOwner) {
+			// Load the default CAS backend, we'll use it for uploads and as fallback on downloads
+			backend, err = s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
+			if err != nil && !biz.IsNotFound(err) {
+				return nil, handleUseCaseErr(err, s.log)
+			} else if backend == nil {
+				return nil, errors.NotFound("not found", "main CAS backend not found")
+			}
+		} else {
+			return nil, errors.Forbidden("forbidden", "operation not allowed")
 		}
 	}
 
