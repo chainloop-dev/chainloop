@@ -191,10 +191,6 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	if p == nil {
-		return nil, errors.NotFound("not found", "project not found")
-	}
-
 	// if RBAC is not enabled, we return the project
 	if !rbacEnabled(ctx) {
 		return p, nil
