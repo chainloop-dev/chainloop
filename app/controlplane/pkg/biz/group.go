@@ -120,7 +120,7 @@ type GroupUseCase struct {
 
 func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, auditorUC *AuditorUseCase) *GroupUseCase {
 	return &GroupUseCase{
-		logger:         log.NewHelper(logger),
+		logger:         log.NewHelper(log.With(logger, "component", "biz/group")),
 		groupRepo:      groupRepo,
 		membershipRepo: membershipRepo,
 		auditorUC:      auditorUC,
