@@ -76,7 +76,7 @@ func (s *casMappingSuite) TestCreate() {
 	}
 
 	// Mock successful repo call
-	s.repo.On("Create", mock.Anything, validDigest, validUUID, biz.ToPtr(validUUID)).Return(want, nil).Maybe()
+	s.repo.On("Create", mock.Anything, validDigest, validUUID, mock.Anything).Return(want, nil).Maybe()
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
