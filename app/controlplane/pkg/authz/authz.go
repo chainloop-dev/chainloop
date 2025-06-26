@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ const (
 	ResourceProject               = "project"
 	ResourceGroup                 = "group"
 	ResourceGroupMembership       = "group_membership"
+	ResourceProjectAPIToken       = "project_api_token"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -140,6 +141,10 @@ var (
 	PolicyGroupRead   = &Policy{ResourceGroup, ActionRead}
 	// Group Memberships
 	PolicyGroupListMemberships = &Policy{ResourceGroupMembership, ActionList}
+	// Project API Token
+	PolicyProjectAPITokenList   = &Policy{ResourceProjectAPIToken, ActionList}
+	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
+	PolicyProjectAPITokenRevoke = &Policy{ResourceProjectAPIToken, ActionDelete}
 )
 
 // List of policies for each role
@@ -228,6 +233,11 @@ var rolesMap = map[Role][]*Policy{
 
 		// Group Memberships
 		PolicyGroupListMemberships,
+
+		// Project API Token
+		PolicyProjectAPITokenList,
+		PolicyProjectAPITokenCreate,
+		PolicyProjectAPITokenRevoke,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
@@ -255,6 +265,11 @@ var rolesMap = map[Role][]*Policy{
 		// integrations
 		PolicyAttachedIntegrationAttach,
 		PolicyAttachedIntegrationDetach,
+
+		// Project API Token
+		PolicyProjectAPITokenList,
+		PolicyProjectAPITokenCreate,
+		PolicyProjectAPITokenRevoke,
 	},
 }
 
@@ -326,6 +341,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/Delete": {PolicyGroupDelete},
 	// Group Memberships
 	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
+	// Project API Token
+	"/controlplane.v1.ProjectService/APITokenCreate": {PolicyProjectAPITokenCreate},
+	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},
+	"/controlplane.v1.ProjectService/APITokenRevoke": {PolicyProjectAPITokenRevoke},
 }
 
 type SubjectAPIToken struct {

@@ -41,12 +41,13 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*biz.APIToken, error) {
 	token, err := r.data.DB.APIToken.Create().
 		SetName(name).
 		SetNillableDescription(description).
 		SetNillableExpiresAt(expiresAt).
 		SetOrganizationID(organizationID).
+		SetNillableProjectID(projectID).
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -70,8 +71,14 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.APIToken, error) {
-	token, err := r.data.DB.APIToken.Query().Where(apitoken.NameEQ(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).Only(ctx)
+func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*biz.APIToken, error) {
+	query := r.data.DB.APIToken.Query().Where(apitoken.NameEQ(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil())
+
+	if projectID != nil {
+		query = query.Where(apitoken.ProjectIDEQ(*projectID))
+	}
+
+	token, err := query.Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("API token")
@@ -83,11 +90,15 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
+func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
 	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
 	if orgID != nil {
 		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
+	}
+
+	if projectID != nil {
+		query = query.Where(apitoken.ProjectIDEQ(*projectID))
 	}
 
 	if !includeRevoked {

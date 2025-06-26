@@ -20,6 +20,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 )
 
@@ -43,13 +44,19 @@ func (s *ProjectService) APITokenCreate(ctx context.Context, req *pb.ProjectServ
 		return nil, err
 	}
 
+	// Make sure the provided project exists and the user has permission to create tokens in it
+	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyProjectAPITokenCreate)
+	if err != nil {
+		return nil, err
+	}
+
 	var expiresIn *time.Duration
 	if req.ExpiresIn != nil {
 		expiresIn = new(time.Duration)
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID)
+	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProjectID(project.ID))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -68,7 +75,13 @@ func (s *ProjectService) APITokenList(ctx context.Context, req *pb.ProjectServic
 		return nil, err
 	}
 
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked)
+	// Make sure the provided project exists and the user has permission to create tokens in it
+	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyProjectAPITokenList)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProjectID(project.ID))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -87,7 +100,13 @@ func (s *ProjectService) APITokenRevoke(ctx context.Context, req *pb.ProjectServ
 		return nil, err
 	}
 
-	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	// Make sure the provided project exists and the user has permission to create tokens in it
+	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyProjectAPITokenRevoke)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name, biz.APITokenWithProjectID(project.ID))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
