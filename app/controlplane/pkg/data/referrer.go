@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -27,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 )
 
 type ReferrerRepo struct {
@@ -152,11 +154,6 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
 	}
 
-	// Filter by allowed projects
-	if opts.ProjectIDs != nil {
-		predicateWF = append(predicateWF, workflow.ProjectIDIn(opts.ProjectIDs...))
-	}
-
 	// optionally attaching its visibility
 	if opts.Public != nil {
 		predicateWF = append(predicateWF, workflow.Public(*opts.Public))
@@ -183,8 +180,8 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	}
 
 	// Find the referrer recursively starting from the root
-	res, err := r.doGet(ctx, refs[0], orgIDs, opts.Public, 0)
-	if err != nil {
+	res, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, opts.Public, 0)
+	if err != nil && !biz.IsErrUnauthorized(err) {
 		return nil, fmt.Errorf("failed to get referrer: %w", err)
 	}
 
@@ -196,7 +193,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, public *bool, level int) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID, public *bool, level int) (*biz.StoredReferrer, error) {
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:        root.ID,
@@ -212,6 +209,28 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// add additional information related to the workflows
 	hydrateWorkflowsInfo(root, res)
+
+	// check that, if RBAC is required, the user has visibility on the artifact in at least 1 org/project
+	var found bool
+	for _, oid := range res.OrgIDs {
+		if visibleProjects, ok := projectIDs[oid]; ok {
+			// if entry is present, it means we need to apply RBAC
+			// check if visible projects and referrer projects match
+			// by checking if any project is visible by the user
+			for _, pid := range res.ProjectIDs {
+				if slices.Contains(visibleProjects, pid) {
+					found = true
+				}
+			}
+		} else {
+			// if entry is not found, RBAC is not needed for this org, we have finished
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, biz.NewErrUnauthorizedStr("referrer not allowed")
+	}
 
 	// Next: We'll find the references recursively up to a max of maxTraverseLevels levels
 	if level >= maxTraverseLevels {
@@ -245,12 +264,14 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	for _, reference := range refs {
 		// Call recursively the function
 		// we return all the references
-		ref, err := r.doGet(ctx, reference, allowedOrgs, public, level+1)
-		if err != nil {
+		ref, err := r.doGet(ctx, reference, allowedOrgs, projectIDs, public, level+1)
+		if err != nil && !biz.IsErrUnauthorized(err) {
 			return nil, fmt.Errorf("failed to get referrer: %w", err)
 		}
 
-		res.References = append(res.References, ref)
+		if ref != nil {
+			res.References = append(res.References, ref)
+		}
 	}
 
 	return res, nil
@@ -263,6 +284,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) {
 	isPublic := false
 	workflowIDs := make([]uuid.UUID, 0, len(root.Edges.Workflows))
+	projectIDs := make(map[uuid.UUID]bool, 0)
 	orgIDs := make([]uuid.UUID, 0)
 	orgsMap := make(map[uuid.UUID]struct{}, 0)
 	for _, wf := range root.Edges.Workflows {
@@ -273,9 +295,13 @@ func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) {
 		if _, ok := orgsMap[wf.OrganizationID]; !ok {
 			orgIDs = append(orgIDs, wf.OrganizationID)
 		}
+		if _, ok := projectIDs[wf.ProjectID]; !ok {
+			projectIDs[wf.ProjectID] = true
+		}
 		orgsMap[wf.OrganizationID] = struct{}{}
 	}
 
+	out.ProjectIDs = maps.Keys(projectIDs)
 	out.InPublicWorkflow = isPublic
 	out.WorkflowIDs = workflowIDs
 	out.OrgIDs = orgIDs

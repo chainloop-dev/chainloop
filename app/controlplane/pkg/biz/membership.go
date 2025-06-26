@@ -344,3 +344,33 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, projectID, use
 
 	return nil
 }
+
+func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo MembershipRepo, pRepo ProjectsRepo) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
+
+	// Load ALL memberships for the given user
+	memberships, err := mRepo.ListAllByUser(ctx, userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list memberships: %w", err)
+	}
+
+	userOrgs := make([]uuid.UUID, 0)
+	// This map holds the list of project IDs by org with RBAC active (user is org "member")
+	projectIDs := make(map[uuid.UUID][]uuid.UUID)
+	for _, m := range memberships {
+		if m.ResourceType == authz.ResourceTypeOrganization {
+			userOrgs = append(userOrgs, m.ResourceID)
+			// If the role in the org is member, we must enable RBAC for projects.
+			if m.Role == authz.RoleOrgMember {
+				// get list of projects in org, and match it with the memberships to build a filter
+				orgProjects, err := getProjectsWithMembership(ctx, pRepo, m.ResourceID, memberships)
+				if err != nil {
+					return nil, nil, err
+				}
+				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
+				projectIDs[m.ResourceID] = orgProjects
+			}
+		}
+	}
+
+	return userOrgs, projectIDs, nil
+}
