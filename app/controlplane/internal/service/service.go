@@ -163,18 +163,35 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		return nil
 	}
 
-	// Apply RBAC
+	// 1 - Authorize using API token
+	// For now we only support API tokens to authorize project resourceTypes
+	// NOTE we do not run s.enforcer here because API tokens do not have roles associated with resourceTypes
+	// the authorization has happened at the API level and we do not have attribute-based policies in casbin yet
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		if resourceType == authz.ResourceTypeProject && token.ProjectID != nil && token.ProjectID.String() == resourceID.String() {
+			s.log.Debugw("msg", "authorized using API token", "resource_id", resourceID.String(), "resource_type", resourceType, "token_name", token.Name, "token_id", token.ID)
+			return nil
+		}
+
+		return errors.Forbidden("forbidden", "operation not allowed")
+	}
+
+	// 2 - We are a user
+	// find the resource membership that matches the resource type and ID
+	// for example admin in project1, then apply RBAC enforcement
 	m := entities.CurrentMembership(ctx)
-	// check for specific resource role
 	for _, rm := range m.Resources {
 		if rm.ResourceType == resourceType && rm.ResourceID == resourceID {
 			pass, err := s.enforcer.Enforce(string(rm.Role), op)
 			if err != nil {
 				return handleUseCaseErr(err, s.log)
 			}
+
 			if !pass {
 				return errors.Forbidden("forbidden", "operation not allowed")
 			}
+
+			s.log.Debugw("msg", "authorized using user membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "user_id", m.UserID)
 			return nil
 		}
 	}
@@ -212,6 +229,15 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 
 	projects := make([]uuid.UUID, 0)
 
+	// 1 - Check if we are using an API token
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		if token.ProjectID != nil {
+			projects = append(projects, *token.ProjectID)
+		}
+		return projects
+	}
+
+	// 2 - We are a user
 	m := entities.CurrentMembership(ctx)
 	for _, rm := range m.Resources {
 		if rm.ResourceType == authz.ResourceTypeProject {
@@ -222,8 +248,16 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
-// RBAC feature is enabled if the user has the `Org Member` role.
+// RBAC feature is enabled if we are using a project scoped token or
+// it is a user with org role member
 func rbacEnabled(ctx context.Context) bool {
+	// it's an API token
+	token := entities.CurrentAPIToken(ctx)
+	if token != nil {
+		return token.ProjectID != nil
+	}
+
+	// we have an user
 	currentSubject := usercontext.CurrentAuthzSubject(ctx)
 	return currentSubject == string(authz.RoleOrgMember)
 }

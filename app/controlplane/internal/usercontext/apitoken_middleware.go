@@ -186,7 +186,15 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 
 	// Set the current organization and API-Token in the context
 	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt, Token: token.JWT})
+
+	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
+		ID:          token.ID.String(),
+		Name:        token.Name,
+		CreatedAt:   token.CreatedAt,
+		Token:       token.JWT,
+		ProjectID:   token.ProjectID,
+		ProjectName: token.ProjectName,
+	})
 
 	// Set the authorization subject that will be used to check the policies
 	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}

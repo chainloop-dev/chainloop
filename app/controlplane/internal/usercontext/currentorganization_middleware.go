@@ -105,10 +105,11 @@ func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, members
 				Role:         m.Role,
 				ResourceType: m.ResourceType,
 				ResourceID:   m.ResourceID,
+				MembershipID: m.ID,
 			})
 		}
 
-		membership = &entities.Membership{Resources: resourceMemberships}
+		membership = &entities.Membership{UserID: uuid.MustParse(u.ID), Resources: resourceMemberships}
 		membershipsCache.Add(u.ID, membership)
 	}
 
