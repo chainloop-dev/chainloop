@@ -215,6 +215,19 @@ func TestDoSync(t *testing.T) {
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
 	assert.Len(t, got, 1)
+
+	// add additional policy, only deletes policies for "known" resources
+	// or deleting a whole section
+	policiesM = map[Role][]*Policy{
+		"bar": {
+			PolicyAttachedIntegrationDetach,
+		},
+	}
+	err = doSync(e, policiesM, []Resource{})
+	assert.NoError(t, err)
+	got, err = e.GetPolicy()
+	assert.NoError(t, err)
+	assert.Len(t, got, 2)
 }
 
 func TestClearPolicies(t *testing.T) {
