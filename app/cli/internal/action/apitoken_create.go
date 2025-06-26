@@ -62,10 +62,12 @@ type APITokenItem struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	// JWT is returned only during the creation
-	JWT       string     `json:"jwt,omitempty"`
-	CreatedAt *time.Time `json:"createdAt"`
-	RevokedAt *time.Time `json:"revokedAt,omitempty"`
-	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+	JWT         string     `json:"jwt,omitempty"`
+	CreatedAt   *time.Time `json:"createdAt"`
+	RevokedAt   *time.Time `json:"revokedAt,omitempty"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	ProjectID   string     `json:"projectId,omitempty"`
+	ProjectName string     `json:"projectName,omitempty"`
 }
 
 func pbAPITokenItemToAPITokenItem(p *pb.APITokenItem) *APITokenItem {
@@ -86,6 +88,14 @@ func pbAPITokenItemToAPITokenItem(p *pb.APITokenItem) *APITokenItem {
 
 	if p.ExpiresAt != nil {
 		item.ExpiresAt = toTimePtr(p.ExpiresAt.AsTime())
+	}
+
+	if p.ProjectId != "" {
+		item.ProjectID = p.ProjectId
+	}
+
+	if p.ProjectName != "" {
+		item.ProjectName = p.ProjectName
 	}
 
 	return item

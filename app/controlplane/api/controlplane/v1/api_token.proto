@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "buf/validate/validate.proto";
+import "controlplane/v1/response_messages.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -64,15 +64,4 @@ message APITokenServiceListRequest {
 
 message APITokenServiceListResponse {
   repeated APITokenItem result = 1;
-}
-
-message APITokenItem {
-  string id = 1;
-  string name = 7;
-  string description = 2;
-  string organization_id = 3;
-  string organization_name = 8;
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp revoked_at = 5;
-  google.protobuf.Timestamp expires_at = 6;
 }

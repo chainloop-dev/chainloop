@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ var ProviderSet = wire.NewSet(
 	NewSigningService,
 	NewPrometheusService,
 	NewGroupService,
+	NewProjectService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 	wire.Struct(new(NewAttestationStateServiceOpt), "*"),
@@ -181,19 +182,25 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 }
 
 // userHasPermissionOnProject is a helper method that checks if a policy can be applied to a project. It looks for a project
-// by name and ensures that the user has a role that allows that specific operation in the project.
+// by name in the given organization and ensures that the user has a role that allows that specific operation in the project.
 // check authorizeResource method
-func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, pName string, policy *authz.Policy) error {
-	if !rbacEnabled(ctx) {
-		return nil
-	}
-
+// if it doesn't return an error, it means that the user has the permission and the project is returned
+func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, pName string, policy *authz.Policy) (*biz.Project, error) {
 	p, err := s.projectUseCase.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
 	if err != nil {
-		return handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return s.authorizeResource(ctx, policy, authz.ResourceTypeProject, p.ID)
+	// if RBAC is not enabled, we return the project
+	if !rbacEnabled(ctx) {
+		return p, nil
+	}
+
+	if err = s.authorizeResource(ctx, policy, authz.ResourceTypeProject, p.ID); err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
@@ -217,7 +224,8 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 
 // RBAC feature is enabled if the user has the `Org Member` role.
 func rbacEnabled(ctx context.Context) bool {
-	return usercontext.CurrentAuthzSubject(ctx) == string(authz.RoleOrgMember)
+	currentSubject := usercontext.CurrentAuthzSubject(ctx)
+	return currentSubject == string(authz.RoleOrgMember)
 }
 
 // NOTE: some of these http errors get automatically translated to gRPC status codes

@@ -17,6 +17,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 	}
 	// APITokensTable holds the schema information for the "api_tokens" table.
@@ -26,8 +27,14 @@ var (
 		PrimaryKey: []*schema.Column{APITokensColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "api_tokens_organizations_api_tokens",
+				Symbol:     "api_tokens_projects_project",
 				Columns:    []*schema.Column{APITokensColumns[6]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "api_tokens_organizations_api_tokens",
+				Columns:    []*schema.Column{APITokensColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -36,9 +43,17 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "revoked_at IS NULL AND project_id IS NULL",
+				},
+			},
+			{
+				Name:    "apitoken_name_project_id",
+				Unique:  true,
 				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "revoked_at IS NULL",
+					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},
 			},
 		},
@@ -887,7 +902,8 @@ var (
 )
 
 func init() {
-	APITokensTable.ForeignKeys[0].RefTable = OrganizationsTable
+	APITokensTable.ForeignKeys[0].RefTable = ProjectsTable
+	APITokensTable.ForeignKeys[1].RefTable = OrganizationsTable
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable

@@ -83,6 +83,7 @@ type Opts struct {
 	SigningSvc          *service.SigningService
 	PrometheusSvc       *service.PrometheusService
 	GroupSvc            *service.GroupService
+	ProjectSvc          *service.ProjectService
 	// Utils
 	Logger          log.Logger
 	ServerConfig    *conf.Server
@@ -153,6 +154,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterUserServiceServer(srv, opts.UserSvc)
 	v1.RegisterSigningServiceServer(srv, opts.SigningSvc)
 	v1.RegisterGroupServiceServer(srv, opts.GroupSvc)
+	v1.RegisterProjectServiceServer(srv, opts.ProjectSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)

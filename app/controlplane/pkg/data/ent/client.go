@@ -490,6 +490,22 @@ func (c *APITokenClient) QueryOrganization(at *APIToken) *OrganizationQuery {
 	return query
 }
 
+// QueryProject queries the project edge of a APIToken.
+func (c *APITokenClient) QueryProject(at *APIToken) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := at.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitoken.Table, apitoken.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.ProjectTable, apitoken.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *APITokenClient) Hooks() []Hook {
 	return c.hooks.APIToken

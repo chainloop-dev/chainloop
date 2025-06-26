@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,16 +49,19 @@ type APIToken struct {
 	ExpiresAt *time.Time
 	// When the token was manually revoked
 	RevokedAt *time.Time
+	// If the token is scoped to a project
+	ProjectID   *uuid.UUID
+	ProjectName *string
 }
 
 type APITokenRepo interface {
-	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
+	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*APIToken, error)
 	// List all the tokens optionally filtering it by organization and including revoked tokens
-	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
+	List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
-	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -124,8 +127,32 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 	return uc, nil
 }
 
+type apiTokenOptions struct {
+	projectID            *uuid.UUID
+	showOnlySystemTokens bool
+}
+
+type APITokenUseCaseOpt func(*apiTokenOptions)
+
+func APITokenWithProjectID(projectID uuid.UUID) APITokenUseCaseOpt {
+	return func(o *apiTokenOptions) {
+		o.projectID = &projectID
+	}
+}
+
+func APITokenShowOnlySystemTokens(show bool) APITokenUseCaseOpt {
+	return func(o *apiTokenOptions) {
+		o.showOnlySystemTokens = show
+	}
+}
+
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string, opts ...APITokenUseCaseOpt) (*APIToken, error) {
+	options := &apiTokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -156,7 +183,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID)
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, options.projectID)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -220,13 +247,18 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 	return token, nil
 }
 
-func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool) ([]*APIToken, error) {
+func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool, opts ...APITokenUseCaseOpt) ([]*APIToken, error) {
+	options := &apiTokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.apiTokenRepo.List(ctx, &orgUUID, includeRevoked)
+	return uc.apiTokenRepo.List(ctx, &orgUUID, options.projectID, includeRevoked, options.showOnlySystemTokens)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
@@ -265,13 +297,18 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	return nil
 }
 
-func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*APIToken, error) {
+func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string, opts ...APITokenUseCaseOpt) (*APIToken, error) {
+	options := &apiTokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name)
+	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name, options.projectID)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
 	}
@@ -307,7 +344,7 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 	suc.base.logger.Info("syncing policies for all the API tokens")
 
 	// List all the non-revoked tokens from all the orgs
-	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, false)
+	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, nil, false, false)
 	if err != nil {
 		return fmt.Errorf("listing tokens: %w", err)
 	}

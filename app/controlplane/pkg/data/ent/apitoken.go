@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +32,8 @@ type APIToken struct {
 	RevokedAt time.Time `json:"revoked_at,omitempty"`
 	// OrganizationID holds the value of the "organization_id" field.
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
+	// ProjectID holds the value of the "project_id" field.
+	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the APITokenQuery when eager-loading is set.
 	Edges        APITokenEdges `json:"edges"`
@@ -41,9 +44,11 @@ type APIToken struct {
 type APITokenEdges struct {
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
+	// Project holds the value of the project edge.
+	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -57,6 +62,17 @@ func (e APITokenEdges) OrganizationOrErr() (*Organization, error) {
 	return nil, &NotLoadedError{edge: "organization"}
 }
 
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e APITokenEdges) ProjectOrErr() (*Project, error) {
+	if e.Project != nil {
+		return e.Project, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: project.Label}
+	}
+	return nil, &NotLoadedError{edge: "project"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*APIToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -66,7 +82,7 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt:
 			values[i] = new(sql.NullTime)
-		case apitoken.FieldID, apitoken.FieldOrganizationID:
+		case apitoken.FieldID, apitoken.FieldOrganizationID, apitoken.FieldProjectID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -125,6 +141,12 @@ func (at *APIToken) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				at.OrganizationID = *value
 			}
+		case apitoken.FieldProjectID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field project_id", values[i])
+			} else if value != nil {
+				at.ProjectID = *value
+			}
 		default:
 			at.selectValues.Set(columns[i], values[i])
 		}
@@ -141,6 +163,11 @@ func (at *APIToken) Value(name string) (ent.Value, error) {
 // QueryOrganization queries the "organization" edge of the APIToken entity.
 func (at *APIToken) QueryOrganization() *OrganizationQuery {
 	return NewAPITokenClient(at.config).QueryOrganization(at)
+}
+
+// QueryProject queries the "project" edge of the APIToken entity.
+func (at *APIToken) QueryProject() *ProjectQuery {
+	return NewAPITokenClient(at.config).QueryProject(at)
 }
 
 // Update returns a builder for updating this APIToken.
@@ -183,6 +210,9 @@ func (at *APIToken) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
 	builder.WriteString(fmt.Sprintf("%v", at.OrganizationID))
+	builder.WriteString(", ")
+	builder.WriteString("project_id=")
+	builder.WriteString(fmt.Sprintf("%v", at.ProjectID))
 	builder.WriteByte(')')
 	return builder.String()
 }

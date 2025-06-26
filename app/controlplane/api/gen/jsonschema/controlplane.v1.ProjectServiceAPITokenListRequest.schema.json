@@ -1,0 +1,25 @@
+{
+  "$id": "controlplane.v1.ProjectServiceAPITokenListRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(includeRevoked)$": {
+      "type": "boolean"
+    },
+    "^(projectName)$": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "properties": {
+    "include_revoked": {
+      "type": "boolean"
+    },
+    "project_name": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Project ServiceAPI Token List Request",
+  "type": "object"
+}
