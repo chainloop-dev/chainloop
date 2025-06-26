@@ -78,7 +78,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 			name       string
 			tokenName  string
 			wantErrMsg string
-			projectID  *uuid.UUID
+			project    *biz.Project
 		}{
 			{
 				name:       "name missing",
@@ -107,17 +107,17 @@ func (s *apiTokenTestSuite) TestCreate() {
 			{
 				name:      "tokens in projects can have the same name",
 				tokenName: "my-name",
-				projectID: &s.p1.ID,
+				project:   s.p1,
 			},
 			{
 				name:      "tokens in different projects too",
 				tokenName: "my-name",
-				projectID: &s.p2.ID,
+				project:   s.p2,
 			},
 			{
 				name:       "can't be duplicated in the same project",
 				tokenName:  "my-name",
-				projectID:  &s.p1.ID,
+				project:    s.p1,
 				wantErrMsg: "name already taken",
 			},
 		}
@@ -125,8 +125,8 @@ func (s *apiTokenTestSuite) TestCreate() {
 		for _, tc := range testCases {
 			s.Run(tc.name, func() {
 				var opts []biz.APITokenUseCaseOpt
-				if tc.projectID != nil {
-					opts = append(opts, biz.APITokenWithProject(s.p1))
+				if tc.project != nil {
+					opts = append(opts, biz.APITokenWithProject(tc.project))
 				}
 
 				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, s.org.ID, opts...)
