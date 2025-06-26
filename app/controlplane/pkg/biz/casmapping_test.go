@@ -34,48 +34,34 @@ import (
 
 func (s *casMappingSuite) TestCreate() {
 	validUUID := uuid.New()
-	invalidUUID := "deadbeef"
 	validDigest := "sha256:3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d"
 	invalidDigest := "sha256:deadbeef"
 
 	testCases := []struct {
-		name                        string
-		digest                      string
-		casBackendID, workflowRunID string
-		wantErr                     bool
+		name          string
+		digest        string
+		casBackendID  string
+		workflowRunID *uuid.UUID
+		wantErr       bool
 	}{
 		{
 			name:          "valid",
 			digest:        validDigest,
 			casBackendID:  validUUID.String(),
-			workflowRunID: validUUID.String(),
+			workflowRunID: &validUUID,
 		},
 		{
 			name:          "invalid digest format",
 			digest:        invalidDigest,
 			casBackendID:  validUUID.String(),
-			workflowRunID: validUUID.String(),
+			workflowRunID: &validUUID,
 			wantErr:       true,
 		},
 		{
 			name:          "invalid digest missing prefix",
 			digest:        "3b0f04c276be095e62f3ac03b9991913c37df1fcd44548e75069adce313aba4d",
 			casBackendID:  validUUID.String(),
-			workflowRunID: validUUID.String(),
-			wantErr:       true,
-		},
-		{
-			name:          "invalid CASBackend",
-			digest:        validDigest,
-			casBackendID:  invalidUUID,
-			workflowRunID: validUUID.String(),
-			wantErr:       true,
-		},
-		{
-			name:          "invalid WorkflowRunID",
-			digest:        validDigest,
-			casBackendID:  validUUID.String(),
-			workflowRunID: invalidUUID,
+			workflowRunID: &validUUID,
 			wantErr:       true,
 		},
 	}
@@ -94,7 +80,7 @@ func (s *casMappingSuite) TestCreate() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			got, err := s.useCase.Create(context.TODO(), tc.digest, tc.casBackendID, tc.workflowRunID)
+			got, err := s.useCase.Create(context.TODO(), tc.digest, tc.casBackendID, &biz.CASMappingCreateOpts{WorkflowRunID: tc.workflowRunID})
 			if tc.wantErr {
 				s.Error(err)
 			} else {
@@ -176,7 +162,7 @@ type casMappingSuite struct {
 
 func (s *casMappingSuite) SetupTest() {
 	s.repo = repoM.NewCASMappingRepo(s.T())
-	s.useCase = biz.NewCASMappingUseCase(s.repo, nil, nil)
+	s.useCase = biz.NewCASMappingUseCase(s.repo, nil, nil, nil)
 }
 
 func TestCASMapping(t *testing.T) {
