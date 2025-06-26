@@ -107,7 +107,7 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 	}
 
 	userOrgs := make([]uuid.UUID, 0)
-	// for every org with RBAC active, the list of allowed projects
+	// This map holds the list of project IDs by org with RBAC active (user is org "member")
 	projectIDs := make(map[uuid.UUID][]uuid.UUID)
 	for _, m := range memberships {
 		if m.ResourceType == authz.ResourceTypeOrganization {

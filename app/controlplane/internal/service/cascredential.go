@@ -98,6 +98,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 			if err != nil {
 				return nil, handleUseCaseErr(err, s.log)
 			}
+			// TODO: pass projectIDs when RBAC for API tokens is supported
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, nil)
 		}
 
