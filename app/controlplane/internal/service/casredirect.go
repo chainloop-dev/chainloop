@@ -83,7 +83,8 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	if currentUser != nil {
 		mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
 	} else if currentAPIToken != nil {
-		orgID, err := uuid.Parse(currentOrg.ID)
+		var orgID uuid.UUID
+		orgID, err = uuid.Parse(currentOrg.ID)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
