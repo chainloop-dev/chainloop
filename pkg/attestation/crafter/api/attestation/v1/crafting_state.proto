@@ -128,7 +128,7 @@ message Attestation {
         // The kind of the main component
         string kind = 3;
       }
-    } 
+    }
   }
 
   // List of env variables
