@@ -64,8 +64,13 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newCASServerOptions,
 			newAuthAllowList,
 			newJWTConfig,
+			authzManagedResources,
 		),
 	)
+}
+
+func authzManagedResources() []authz.Resource {
+	return authz.AuthzManagedResources
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {

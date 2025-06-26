@@ -107,7 +107,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
-	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig)
+	v3 := authzManagedResources()
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, v3)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -118,9 +119,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
-	v3 := bootstrap.PolicyProviders
-	v4 := newPolicyProviderConfig(v3)
-	registry, err := policies.NewRegistry(logger, v4...)
+	v4 := bootstrap.PolicyProviders
+	v5 := newPolicyProviderConfig(v4)
+	registry, err := policies.NewRegistry(logger, v5...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -128,8 +129,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
-	v5 := serviceOpts(logger, enforcer, projectUseCase)
-	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
+	v6 := serviceOpts(logger, enforcer, projectUseCase)
+	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v6...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
 	if err != nil {
@@ -137,12 +138,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v6...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v5...)
+	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v6...)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
@@ -159,21 +160,21 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
 		CredsReader:        readerWriter,
-		Opts:               v5,
+		Opts:               v6,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
 	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
-	v6 := bootstrap.PrometheusIntegration
+	v7 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	prometheusUseCase := biz.NewPrometheusUseCase(v6, organizationUseCase, orgMetricsUseCase, logger)
+	prometheusUseCase := biz.NewPrometheusUseCase(v7, organizationUseCase, orgMetricsUseCase, logger)
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
@@ -193,24 +194,24 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ProjectUC:          projectUseCase,
 		ProjectVersionUC:   projectVersionUseCase,
 		SigningUseCase:     signingUseCase,
-		Opts:               v5,
+		Opts:               v6,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
-	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v5...)
-	contextService := service.NewContextService(casBackendUseCase, userUseCase, v5...)
-	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, enforcer, v5...)
-	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v5...)
-	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v5...)
-	organizationService := service.NewOrganizationService(membershipUseCase, organizationUseCase, v5...)
-	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v5...)
-	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v5...)
+	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v6...)
+	contextService := service.NewContextService(casBackendUseCase, userUseCase, v6...)
+	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, enforcer, v6...)
+	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v6...)
+	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v6...)
+	organizationService := service.NewOrganizationService(membershipUseCase, organizationUseCase, v6...)
+	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v6...)
+	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v6...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v5...)
-	referrerService := service.NewReferrerService(referrerUseCase, v5...)
-	apiTokenService := service.NewAPITokenService(apiTokenUseCase, v5...)
+	orgInvitationService := service.NewOrgInvitationService(orgInvitationUseCase, v6...)
+	referrerService := service.NewReferrerService(referrerUseCase, v6...)
+	apiTokenService := service.NewAPITokenService(apiTokenUseCase, v6...)
 	attestationStateRepo := data.NewAttestationStateRepo(dataData, logger)
 	attestationStateUseCase, err := biz.NewAttestationStateUseCase(attestationStateRepo, workflowRunRepo)
 	if err != nil {
@@ -221,15 +222,15 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		AttestationStateUseCase: attestationStateUseCase,
 		WorkflowUseCase:         workflowUseCase,
 		WorkflowRunUseCase:      workflowRunUseCase,
-		Opts:                    v5,
+		Opts:                    v6,
 	}
 	attestationStateService := service.NewAttestationStateService(newAttestationStateServiceOpt)
-	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
-	signingService := service.NewSigningService(signingUseCase, v5...)
-	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
+	userService := service.NewUserService(membershipUseCase, organizationUseCase, v6...)
+	signingService := service.NewSigningService(signingUseCase, v6...)
+	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v6...)
 	groupRepo := data.NewGroupRepo(dataData, logger)
 	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
-	groupService := service.NewGroupService(groupUseCase, v5...)
+	groupService := service.NewGroupService(groupUseCase, v6...)
 	federatedAuthentication := bootstrap.FederatedAuthentication
 	validator, err := newProtoValidator()
 	if err != nil {
@@ -309,6 +310,10 @@ var (
 )
 
 // wire.go:
+
+func authzManagedResources() []authz.Resource {
+	return authz.AuthzManagedResources
+}
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
 	return &biz.APITokenJWTConfig{

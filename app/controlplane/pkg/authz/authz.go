@@ -29,9 +29,11 @@ import (
 	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
 	entadapter "github.com/casbin/ent-adapter"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"golang.org/x/exp/slices"
 )
 
 type Role string
+type Resource string
 
 const (
 	// Actions
@@ -44,22 +46,20 @@ const (
 
 	// Resources
 
-	ResourceWorkflowContract      = "workflow_contract"
-	ResourceCASArtifact           = "cas_artifact"
-	ResourceCASBackend            = "cas_backend"
-	ResourceReferrer              = "referrer"
-	ResourceAvailableIntegration  = "integration_available"
-	ResourceRegisteredIntegration = "integration_registered"
-	ResourceAttachedIntegration   = "integration_attached"
-	ResourceOrgMetric             = "metrics_org"
-	ResourceRobotAccount          = "robot_account"
-	ResourceWorkflowRun           = "workflow_run"
-	ResourceWorkflow              = "workflow"
-	UserMembership                = "membership_user"
-	Organization                  = "organization"
-	ResourceProject               = "project"
-	ResourceGroup                 = "group"
-	ResourceGroupMembership       = "group_membership"
+	ResourceWorkflowContract      Resource = "workflow_contract"
+	ResourceCASArtifact           Resource = "cas_artifact"
+	ResourceCASBackend            Resource = "cas_backend"
+	ResourceReferrer              Resource = "referrer"
+	ResourceAvailableIntegration  Resource = "integration_available"
+	ResourceRegisteredIntegration Resource = "integration_registered"
+	ResourceAttachedIntegration   Resource = "integration_attached"
+	ResourceOrgMetric             Resource = "metrics_org"
+	ResourceRobotAccount          Resource = "robot_account"
+	ResourceWorkflowRun           Resource = "workflow_run"
+	ResourceWorkflow              Resource = "workflow"
+	Organization                  Resource = "organization"
+	ResourceGroup                 Resource = "group"
+	ResourceGroupMembership       Resource = "group_membership"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -83,63 +83,88 @@ const (
 	RoleProjectViewer Role = "role:project:viewer"
 )
 
+// AuthzManagedResources are the resources that are managed by Chainloop, considered during permissions sync
+var AuthzManagedResources = []Resource{
+	ResourceWorkflowContract,
+	ResourceCASArtifact,
+	ResourceCASBackend,
+	ResourceReferrer,
+	ResourceAvailableIntegration,
+	ResourceRegisteredIntegration,
+	ResourceAttachedIntegration,
+	ResourceOrgMetric,
+	ResourceRobotAccount,
+	ResourceWorkflowRun,
+	ResourceWorkflow,
+	Organization,
+	ResourceGroup,
+	ResourceGroupMembership,
+}
+
 // resource, action tuple
 type Policy struct {
 	Resource string
 	Action   string
 }
 
+func NewPolicy(r Resource, action string) *Policy {
+	return &Policy{
+		Resource: string(r),
+		Action:   action,
+	}
+}
+
 var (
 	// Referrer
-	PolicyReferrerRead = &Policy{ResourceReferrer, ActionRead}
+	PolicyReferrerRead = NewPolicy(ResourceReferrer, ActionRead)
 	// Artifact
-	PolicyArtifactDownload = &Policy{ResourceCASArtifact, ActionRead}
-	PolicyArtifactUpload   = &Policy{ResourceCASArtifact, ActionCreate}
+	PolicyArtifactDownload = NewPolicy(ResourceCASArtifact, ActionRead)
+	PolicyArtifactUpload   = NewPolicy(ResourceCASArtifact, ActionCreate)
 	// CAS backend
-	PolicyCASBackendList = &Policy{ResourceCASBackend, ActionList}
+	PolicyCASBackendList = NewPolicy(ResourceCASBackend, ActionList)
 	// Available integrations
-	PolicyAvailableIntegrationList = &Policy{ResourceAvailableIntegration, ActionList}
-	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
+	PolicyAvailableIntegrationList = NewPolicy(ResourceAvailableIntegration, ActionList)
+	PolicyAvailableIntegrationRead = NewPolicy(ResourceAvailableIntegration, ActionRead)
 	// Registered integrations
-	PolicyRegisteredIntegrationList = &Policy{ResourceRegisteredIntegration, ActionList}
-	PolicyRegisteredIntegrationRead = &Policy{ResourceRegisteredIntegration, ActionRead}
-	PolicyRegisteredIntegrationAdd  = &Policy{ResourceRegisteredIntegration, ActionCreate}
+	PolicyRegisteredIntegrationList = NewPolicy(ResourceRegisteredIntegration, ActionList)
+	PolicyRegisteredIntegrationRead = NewPolicy(ResourceRegisteredIntegration, ActionRead)
+	PolicyRegisteredIntegrationAdd  = NewPolicy(ResourceRegisteredIntegration, ActionCreate)
 	// Attached integrations
-	PolicyAttachedIntegrationList   = &Policy{ResourceAttachedIntegration, ActionList}
-	PolicyAttachedIntegrationAttach = &Policy{ResourceAttachedIntegration, ActionCreate}
-	PolicyAttachedIntegrationDetach = &Policy{ResourceAttachedIntegration, ActionDelete}
+	PolicyAttachedIntegrationList   = NewPolicy(ResourceAttachedIntegration, ActionList)
+	PolicyAttachedIntegrationAttach = NewPolicy(ResourceAttachedIntegration, ActionCreate)
+	PolicyAttachedIntegrationDetach = NewPolicy(ResourceAttachedIntegration, ActionDelete)
 	// Org Metrics
-	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
+	PolicyOrgMetricsRead = NewPolicy(ResourceOrgMetric, ActionList)
 	// Robot Account
-	PolicyRobotAccountList   = &Policy{ResourceRobotAccount, ActionList}
-	PolicyRobotAccountCreate = &Policy{ResourceRobotAccount, ActionCreate}
+	PolicyRobotAccountList   = NewPolicy(ResourceRobotAccount, ActionList)
+	PolicyRobotAccountCreate = NewPolicy(ResourceRobotAccount, ActionCreate)
 	// Workflow Contract
-	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
-	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
-	PolicyWorkflowContractUpdate = &Policy{ResourceWorkflowContract, ActionUpdate}
-	PolicyWorkflowContractCreate = &Policy{ResourceWorkflowContract, ActionCreate}
+	PolicyWorkflowContractList   = NewPolicy(ResourceWorkflowContract, ActionList)
+	PolicyWorkflowContractRead   = NewPolicy(ResourceWorkflowContract, ActionRead)
+	PolicyWorkflowContractUpdate = NewPolicy(ResourceWorkflowContract, ActionUpdate)
+	PolicyWorkflowContractCreate = NewPolicy(ResourceWorkflowContract, ActionCreate)
 	// WorkflowRun
-	PolicyWorkflowRunList   = &Policy{ResourceWorkflowRun, ActionList}
-	PolicyWorkflowRunRead   = &Policy{ResourceWorkflowRun, ActionRead}
-	PolicyWorkflowRunCreate = &Policy{ResourceWorkflowRun, ActionCreate}
-	PolicyWorkflowRunUpdate = &Policy{ResourceWorkflowRun, ActionUpdate}
+	PolicyWorkflowRunList   = NewPolicy(ResourceWorkflowRun, ActionList)
+	PolicyWorkflowRunRead   = NewPolicy(ResourceWorkflowRun, ActionRead)
+	PolicyWorkflowRunCreate = NewPolicy(ResourceWorkflowRun, ActionCreate)
+	PolicyWorkflowRunUpdate = NewPolicy(ResourceWorkflowRun, ActionUpdate)
 	// Workflow
-	PolicyWorkflowList   = &Policy{ResourceWorkflow, ActionList}
-	PolicyWorkflowRead   = &Policy{ResourceWorkflow, ActionRead}
-	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
-	PolicyWorkflowUpdate = &Policy{ResourceWorkflow, ActionUpdate}
-	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
+	PolicyWorkflowList   = NewPolicy(ResourceWorkflow, ActionList)
+	PolicyWorkflowRead   = NewPolicy(ResourceWorkflow, ActionRead)
+	PolicyWorkflowCreate = NewPolicy(ResourceWorkflow, ActionCreate)
+	PolicyWorkflowUpdate = NewPolicy(ResourceWorkflow, ActionUpdate)
+	PolicyWorkflowDelete = NewPolicy(ResourceWorkflow, ActionDelete)
 	// User Membership
-	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
-	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
+	PolicyOrganizationRead            = NewPolicy(Organization, ActionRead)
+	PolicyOrganizationListMemberships = NewPolicy(Organization, ActionRead)
 	// Groups
-	PolicyGroupCreate = &Policy{ResourceGroup, ActionCreate}
-	PolicyGroupUpdate = &Policy{ResourceGroup, ActionUpdate}
-	PolicyGroupDelete = &Policy{ResourceGroup, ActionDelete}
-	PolicyGroupList   = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead   = &Policy{ResourceGroup, ActionRead}
+	PolicyGroupCreate = NewPolicy(ResourceGroup, ActionCreate)
+	PolicyGroupUpdate = NewPolicy(ResourceGroup, ActionUpdate)
+	PolicyGroupDelete = NewPolicy(ResourceGroup, ActionDelete)
+	PolicyGroupList   = NewPolicy(ResourceGroup, ActionList)
+	PolicyGroupRead   = NewPolicy(ResourceGroup, ActionRead)
 	// Group Memberships
-	PolicyGroupListMemberships = &Policy{ResourceGroupMembership, ActionList}
+	PolicyGroupListMemberships = NewPolicy(ResourceGroupMembership, ActionList)
 )
 
 // List of policies for each role
@@ -388,14 +413,14 @@ func (e *Enforcer) ClearPolicies(sub *SubjectAPIToken) error {
 
 // NewDatabaseEnforcer creates a new casbin authorization enforcer
 // based on a database backend as policies storage backend
-func NewDatabaseEnforcer(c *config.DatabaseConfig) (*Enforcer, error) {
+func NewDatabaseEnforcer(c *config.DatabaseConfig, managedResources []Resource) (*Enforcer, error) {
 	// policy storage in database
 	a, err := entadapter.NewAdapter(c.Driver, c.Source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create adapter: %w", err)
 	}
 
-	e, err := newEnforcer(a)
+	e, err := newEnforcer(a, managedResources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
@@ -424,10 +449,10 @@ func NewDatabaseEnforcer(c *config.DatabaseConfig) (*Enforcer, error) {
 
 // NewFileAdapter creates a new casbin authorization enforcer
 // based on a CSV file as policies storage backend
-func NewFiletypeEnforcer(path string) (*Enforcer, error) {
+func NewFiletypeEnforcer(path string, managedResources []Resource) (*Enforcer, error) {
 	// policy storage in filesystem
 	a := fileadapter.NewAdapter(path)
-	e, err := newEnforcer(a)
+	e, err := newEnforcer(a, managedResources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
@@ -437,7 +462,7 @@ func NewFiletypeEnforcer(path string) (*Enforcer, error) {
 
 // NewEnforcer creates a new casbin authorization enforcer for the policies stored
 // in the database and the model defined in model.conf
-func newEnforcer(a persist.Adapter) (*Enforcer, error) {
+func newEnforcer(a persist.Adapter, managedResources []Resource) (*Enforcer, error) {
 	// load model defined in model.conf
 	m, err := model.NewModelFromString(string(modelFile))
 	if err != nil {
@@ -451,7 +476,7 @@ func newEnforcer(a persist.Adapter) (*Enforcer, error) {
 	}
 
 	// Initialize the enforcer with the roles map
-	if err := syncRBACRoles(&Enforcer{enforcer}); err != nil {
+	if err := syncRBACRoles(&Enforcer{enforcer}, managedResources); err != nil {
 		return nil, fmt.Errorf("failed to sync roles: %w", err)
 	}
 
@@ -461,11 +486,11 @@ func newEnforcer(a persist.Adapter) (*Enforcer, error) {
 // Load the roles map into the enforcer
 // This is done by adding all the policies defined in the roles map
 // and removing all the policies that are not
-func syncRBACRoles(e *Enforcer) error {
-	return doSync(e, rolesMap)
+func syncRBACRoles(e *Enforcer, managedResources []Resource) error {
+	return doSync(e, rolesMap, managedResources)
 }
 
-func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
+func doSync(e *Enforcer, rolesMap map[Role][]*Policy, managedResources []Resource) error {
 	// Add all the defined policies if they don't exist
 	for role, policies := range rolesMap {
 		for _, p := range policies {
@@ -488,7 +513,14 @@ func doSync(e *Enforcer, rolesMap map[Role][]*Policy) error {
 
 	for _, gotPolicies := range policies {
 		role := gotPolicies[0]
-		policy := &Policy{Resource: gotPolicies[1], Action: gotPolicies[2]}
+		resource := gotPolicies[1]
+		action := gotPolicies[2]
+		policy := &Policy{Resource: resource, Action: action}
+
+		// if it's not a managed resource, skip deletion
+		if !slices.Contains(managedResources, Resource(resource)) {
+			continue
+		}
 
 		wantPolicies, ok := rolesMap[Role(role)]
 		// if the role does not exist in the map, we can delete the policy

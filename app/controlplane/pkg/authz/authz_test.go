@@ -134,7 +134,7 @@ func TestSyncRBACRoles(t *testing.T) {
 	defer closer.Close()
 
 	// load all the roles
-	err := syncRBACRoles(e)
+	err := syncRBACRoles(e, []Resource{})
 	assert.NoError(t, err)
 
 	// Check the inherited roles owner -> admin -> viewer
@@ -181,7 +181,7 @@ func TestDoSync(t *testing.T) {
 	}
 
 	// load custom policies
-	err := doSync(e, policiesM)
+	err := doSync(e, policiesM, []Resource{})
 	assert.NoError(t, err)
 	got, err := e.GetPolicy()
 	assert.NoError(t, err)
@@ -197,7 +197,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, policiesM)
+	err = doSync(e, policiesM, []Resource{ResourceWorkflowContract, ResourceCASArtifact})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -210,7 +210,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, policiesM)
+	err = doSync(e, policiesM, []Resource{ResourceWorkflowContract, ResourceCASArtifact})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -257,7 +257,7 @@ func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
 		require.FailNow(t, err.Error())
 	}
 
-	enforcer, err := NewFiletypeEnforcer(f.Name())
+	enforcer, err := NewFiletypeEnforcer(f.Name(), []Resource{})
 	require.NoError(t, err)
 	return enforcer, f
 }

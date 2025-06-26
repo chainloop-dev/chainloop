@@ -132,7 +132,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
-	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig)
+	v3 := authzManagedResources()
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, v3)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -199,6 +200,10 @@ var (
 )
 
 // wire.go:
+
+func authzManagedResources() []authz.Resource {
+	return authz.AuthzManagedResources
+}
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
 	return &biz.APITokenJWTConfig{

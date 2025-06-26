@@ -61,8 +61,13 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewCASServerOptions,
 			newAuthAllowList,
 			newJWTConfig,
+			authzManagedResources,
 		),
 	)
+}
+
+func authzManagedResources() []authz.Resource {
+	return authz.AuthzManagedResources
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
