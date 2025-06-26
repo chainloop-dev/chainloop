@@ -7,77 +7,88 @@ import { APITokenItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
-export interface APITokenServiceCreateRequest {
+export interface ProjectServiceAPITokenCreateRequest {
   name: string;
+  projectName: string;
   description?: string | undefined;
   expiresIn?: Duration | undefined;
 }
 
-export interface APITokenServiceCreateResponse {
-  result?: APITokenServiceCreateResponse_APITokenFull;
+export interface ProjectServiceAPITokenCreateResponse {
+  result?: ProjectServiceAPITokenCreateResponse_APITokenFull;
 }
 
-export interface APITokenServiceCreateResponse_APITokenFull {
+export interface ProjectServiceAPITokenCreateResponse_APITokenFull {
   item?: APITokenItem;
   jwt: string;
 }
 
-export interface APITokenServiceRevokeRequest {
+export interface ProjectServiceAPITokenRevokeRequest {
   name: string;
 }
 
-export interface APITokenServiceRevokeResponse {
+export interface ProjectServiceAPITokenRevokeResponse {
 }
 
-export interface APITokenServiceListRequest {
+export interface ProjectServiceAPITokenListRequest {
   includeRevoked: boolean;
 }
 
-export interface APITokenServiceListResponse {
+export interface ProjectServiceAPITokenListResponse {
   result: APITokenItem[];
 }
 
-function createBaseAPITokenServiceCreateRequest(): APITokenServiceCreateRequest {
-  return { name: "", description: undefined, expiresIn: undefined };
+function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
+  return { name: "", projectName: "", description: undefined, expiresIn: undefined };
 }
 
-export const APITokenServiceCreateRequest = {
-  encode(message: APITokenServiceCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenCreateRequest = {
+  encode(message: ProjectServiceAPITokenCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
-      writer.uint32(26).string(message.name);
+      writer.uint32(10).string(message.name);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(18).string(message.projectName);
     }
     if (message.description !== undefined) {
-      writer.uint32(10).string(message.description);
+      writer.uint32(26).string(message.description);
     }
     if (message.expiresIn !== undefined) {
-      Duration.encode(message.expiresIn, writer.uint32(18).fork()).ldelim();
+      Duration.encode(message.expiresIn, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceCreateRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenCreateRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceCreateRequest();
+    const message = createBaseProjectServiceAPITokenCreateRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
         case 1:
           if (tag !== 10) {
             break;
           }
 
-          message.description = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -92,30 +103,37 @@ export const APITokenServiceCreateRequest = {
     return message;
   },
 
-  fromJSON(object: any): APITokenServiceCreateRequest {
+  fromJSON(object: any): ProjectServiceAPITokenCreateRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
       description: isSet(object.description) ? String(object.description) : undefined,
       expiresIn: isSet(object.expiresIn) ? Duration.fromJSON(object.expiresIn) : undefined,
     };
   },
 
-  toJSON(message: APITokenServiceCreateRequest): unknown {
+  toJSON(message: ProjectServiceAPITokenCreateRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
     message.description !== undefined && (obj.description = message.description);
     message.expiresIn !== undefined &&
       (obj.expiresIn = message.expiresIn ? Duration.toJSON(message.expiresIn) : undefined);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceCreateRequest>, I>>(base?: I): APITokenServiceCreateRequest {
-    return APITokenServiceCreateRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateRequest>, I>>(
+    base?: I,
+  ): ProjectServiceAPITokenCreateRequest {
+    return ProjectServiceAPITokenCreateRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceCreateRequest>, I>>(object: I): APITokenServiceCreateRequest {
-    const message = createBaseAPITokenServiceCreateRequest();
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateRequest>, I>>(
+    object: I,
+  ): ProjectServiceAPITokenCreateRequest {
+    const message = createBaseProjectServiceAPITokenCreateRequest();
     message.name = object.name ?? "";
+    message.projectName = object.projectName ?? "";
     message.description = object.description ?? undefined;
     message.expiresIn = (object.expiresIn !== undefined && object.expiresIn !== null)
       ? Duration.fromPartial(object.expiresIn)
@@ -124,22 +142,22 @@ export const APITokenServiceCreateRequest = {
   },
 };
 
-function createBaseAPITokenServiceCreateResponse(): APITokenServiceCreateResponse {
+function createBaseProjectServiceAPITokenCreateResponse(): ProjectServiceAPITokenCreateResponse {
   return { result: undefined };
 }
 
-export const APITokenServiceCreateResponse = {
-  encode(message: APITokenServiceCreateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenCreateResponse = {
+  encode(message: ProjectServiceAPITokenCreateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.result !== undefined) {
-      APITokenServiceCreateResponse_APITokenFull.encode(message.result, writer.uint32(10).fork()).ldelim();
+      ProjectServiceAPITokenCreateResponse_APITokenFull.encode(message.result, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceCreateResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenCreateResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceCreateResponse();
+    const message = createBaseProjectServiceAPITokenCreateResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -148,7 +166,7 @@ export const APITokenServiceCreateResponse = {
             break;
           }
 
-          message.result = APITokenServiceCreateResponse_APITokenFull.decode(reader, reader.uint32());
+          message.result = ProjectServiceAPITokenCreateResponse_APITokenFull.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -159,40 +177,48 @@ export const APITokenServiceCreateResponse = {
     return message;
   },
 
-  fromJSON(object: any): APITokenServiceCreateResponse {
+  fromJSON(object: any): ProjectServiceAPITokenCreateResponse {
     return {
-      result: isSet(object.result) ? APITokenServiceCreateResponse_APITokenFull.fromJSON(object.result) : undefined,
+      result: isSet(object.result)
+        ? ProjectServiceAPITokenCreateResponse_APITokenFull.fromJSON(object.result)
+        : undefined,
     };
   },
 
-  toJSON(message: APITokenServiceCreateResponse): unknown {
+  toJSON(message: ProjectServiceAPITokenCreateResponse): unknown {
     const obj: any = {};
-    message.result !== undefined &&
-      (obj.result = message.result ? APITokenServiceCreateResponse_APITokenFull.toJSON(message.result) : undefined);
+    message.result !== undefined && (obj.result = message.result
+      ? ProjectServiceAPITokenCreateResponse_APITokenFull.toJSON(message.result)
+      : undefined);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceCreateResponse>, I>>(base?: I): APITokenServiceCreateResponse {
-    return APITokenServiceCreateResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse>, I>>(
+    base?: I,
+  ): ProjectServiceAPITokenCreateResponse {
+    return ProjectServiceAPITokenCreateResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceCreateResponse>, I>>(
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse>, I>>(
     object: I,
-  ): APITokenServiceCreateResponse {
-    const message = createBaseAPITokenServiceCreateResponse();
+  ): ProjectServiceAPITokenCreateResponse {
+    const message = createBaseProjectServiceAPITokenCreateResponse();
     message.result = (object.result !== undefined && object.result !== null)
-      ? APITokenServiceCreateResponse_APITokenFull.fromPartial(object.result)
+      ? ProjectServiceAPITokenCreateResponse_APITokenFull.fromPartial(object.result)
       : undefined;
     return message;
   },
 };
 
-function createBaseAPITokenServiceCreateResponse_APITokenFull(): APITokenServiceCreateResponse_APITokenFull {
+function createBaseProjectServiceAPITokenCreateResponse_APITokenFull(): ProjectServiceAPITokenCreateResponse_APITokenFull {
   return { item: undefined, jwt: "" };
 }
 
-export const APITokenServiceCreateResponse_APITokenFull = {
-  encode(message: APITokenServiceCreateResponse_APITokenFull, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenCreateResponse_APITokenFull = {
+  encode(
+    message: ProjectServiceAPITokenCreateResponse_APITokenFull,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
     if (message.item !== undefined) {
       APITokenItem.encode(message.item, writer.uint32(10).fork()).ldelim();
     }
@@ -202,10 +228,10 @@ export const APITokenServiceCreateResponse_APITokenFull = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceCreateResponse_APITokenFull {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenCreateResponse_APITokenFull {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceCreateResponse_APITokenFull();
+    const message = createBaseProjectServiceAPITokenCreateResponse_APITokenFull();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -232,30 +258,30 @@ export const APITokenServiceCreateResponse_APITokenFull = {
     return message;
   },
 
-  fromJSON(object: any): APITokenServiceCreateResponse_APITokenFull {
+  fromJSON(object: any): ProjectServiceAPITokenCreateResponse_APITokenFull {
     return {
       item: isSet(object.item) ? APITokenItem.fromJSON(object.item) : undefined,
       jwt: isSet(object.jwt) ? String(object.jwt) : "",
     };
   },
 
-  toJSON(message: APITokenServiceCreateResponse_APITokenFull): unknown {
+  toJSON(message: ProjectServiceAPITokenCreateResponse_APITokenFull): unknown {
     const obj: any = {};
     message.item !== undefined && (obj.item = message.item ? APITokenItem.toJSON(message.item) : undefined);
     message.jwt !== undefined && (obj.jwt = message.jwt);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceCreateResponse_APITokenFull>, I>>(
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse_APITokenFull>, I>>(
     base?: I,
-  ): APITokenServiceCreateResponse_APITokenFull {
-    return APITokenServiceCreateResponse_APITokenFull.fromPartial(base ?? {});
+  ): ProjectServiceAPITokenCreateResponse_APITokenFull {
+    return ProjectServiceAPITokenCreateResponse_APITokenFull.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceCreateResponse_APITokenFull>, I>>(
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse_APITokenFull>, I>>(
     object: I,
-  ): APITokenServiceCreateResponse_APITokenFull {
-    const message = createBaseAPITokenServiceCreateResponse_APITokenFull();
+  ): ProjectServiceAPITokenCreateResponse_APITokenFull {
+    const message = createBaseProjectServiceAPITokenCreateResponse_APITokenFull();
     message.item = (object.item !== undefined && object.item !== null)
       ? APITokenItem.fromPartial(object.item)
       : undefined;
@@ -264,22 +290,22 @@ export const APITokenServiceCreateResponse_APITokenFull = {
   },
 };
 
-function createBaseAPITokenServiceRevokeRequest(): APITokenServiceRevokeRequest {
+function createBaseProjectServiceAPITokenRevokeRequest(): ProjectServiceAPITokenRevokeRequest {
   return { name: "" };
 }
 
-export const APITokenServiceRevokeRequest = {
-  encode(message: APITokenServiceRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenRevokeRequest = {
+  encode(message: ProjectServiceAPITokenRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceRevokeRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenRevokeRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceRevokeRequest();
+    const message = createBaseProjectServiceAPITokenRevokeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -299,40 +325,44 @@ export const APITokenServiceRevokeRequest = {
     return message;
   },
 
-  fromJSON(object: any): APITokenServiceRevokeRequest {
+  fromJSON(object: any): ProjectServiceAPITokenRevokeRequest {
     return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: APITokenServiceRevokeRequest): unknown {
+  toJSON(message: ProjectServiceAPITokenRevokeRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceRevokeRequest>, I>>(base?: I): APITokenServiceRevokeRequest {
-    return APITokenServiceRevokeRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeRequest>, I>>(
+    base?: I,
+  ): ProjectServiceAPITokenRevokeRequest {
+    return ProjectServiceAPITokenRevokeRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceRevokeRequest>, I>>(object: I): APITokenServiceRevokeRequest {
-    const message = createBaseAPITokenServiceRevokeRequest();
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeRequest>, I>>(
+    object: I,
+  ): ProjectServiceAPITokenRevokeRequest {
+    const message = createBaseProjectServiceAPITokenRevokeRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseAPITokenServiceRevokeResponse(): APITokenServiceRevokeResponse {
+function createBaseProjectServiceAPITokenRevokeResponse(): ProjectServiceAPITokenRevokeResponse {
   return {};
 }
 
-export const APITokenServiceRevokeResponse = {
-  encode(_: APITokenServiceRevokeResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenRevokeResponse = {
+  encode(_: ProjectServiceAPITokenRevokeResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceRevokeResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenRevokeResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceRevokeResponse();
+    const message = createBaseProjectServiceAPITokenRevokeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -345,41 +375,45 @@ export const APITokenServiceRevokeResponse = {
     return message;
   },
 
-  fromJSON(_: any): APITokenServiceRevokeResponse {
+  fromJSON(_: any): ProjectServiceAPITokenRevokeResponse {
     return {};
   },
 
-  toJSON(_: APITokenServiceRevokeResponse): unknown {
+  toJSON(_: ProjectServiceAPITokenRevokeResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceRevokeResponse>, I>>(base?: I): APITokenServiceRevokeResponse {
-    return APITokenServiceRevokeResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeResponse>, I>>(
+    base?: I,
+  ): ProjectServiceAPITokenRevokeResponse {
+    return ProjectServiceAPITokenRevokeResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceRevokeResponse>, I>>(_: I): APITokenServiceRevokeResponse {
-    const message = createBaseAPITokenServiceRevokeResponse();
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeResponse>, I>>(
+    _: I,
+  ): ProjectServiceAPITokenRevokeResponse {
+    const message = createBaseProjectServiceAPITokenRevokeResponse();
     return message;
   },
 };
 
-function createBaseAPITokenServiceListRequest(): APITokenServiceListRequest {
+function createBaseProjectServiceAPITokenListRequest(): ProjectServiceAPITokenListRequest {
   return { includeRevoked: false };
 }
 
-export const APITokenServiceListRequest = {
-  encode(message: APITokenServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenListRequest = {
+  encode(message: ProjectServiceAPITokenListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.includeRevoked === true) {
       writer.uint32(8).bool(message.includeRevoked);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceListRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenListRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceListRequest();
+    const message = createBaseProjectServiceAPITokenListRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -399,43 +433,47 @@ export const APITokenServiceListRequest = {
     return message;
   },
 
-  fromJSON(object: any): APITokenServiceListRequest {
+  fromJSON(object: any): ProjectServiceAPITokenListRequest {
     return { includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false };
   },
 
-  toJSON(message: APITokenServiceListRequest): unknown {
+  toJSON(message: ProjectServiceAPITokenListRequest): unknown {
     const obj: any = {};
     message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceListRequest>, I>>(base?: I): APITokenServiceListRequest {
-    return APITokenServiceListRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenListRequest>, I>>(
+    base?: I,
+  ): ProjectServiceAPITokenListRequest {
+    return ProjectServiceAPITokenListRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceListRequest>, I>>(object: I): APITokenServiceListRequest {
-    const message = createBaseAPITokenServiceListRequest();
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenListRequest>, I>>(
+    object: I,
+  ): ProjectServiceAPITokenListRequest {
+    const message = createBaseProjectServiceAPITokenListRequest();
     message.includeRevoked = object.includeRevoked ?? false;
     return message;
   },
 };
 
-function createBaseAPITokenServiceListResponse(): APITokenServiceListResponse {
+function createBaseProjectServiceAPITokenListResponse(): ProjectServiceAPITokenListResponse {
   return { result: [] };
 }
 
-export const APITokenServiceListResponse = {
-  encode(message: APITokenServiceListResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ProjectServiceAPITokenListResponse = {
+  encode(message: ProjectServiceAPITokenListResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.result) {
       APITokenItem.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceListResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenListResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceListResponse();
+    const message = createBaseProjectServiceAPITokenListResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -455,11 +493,11 @@ export const APITokenServiceListResponse = {
     return message;
   },
 
-  fromJSON(object: any): APITokenServiceListResponse {
+  fromJSON(object: any): ProjectServiceAPITokenListResponse {
     return { result: Array.isArray(object?.result) ? object.result.map((e: any) => APITokenItem.fromJSON(e)) : [] };
   },
 
-  toJSON(message: APITokenServiceListResponse): unknown {
+  toJSON(message: ProjectServiceAPITokenListResponse): unknown {
     const obj: any = {};
     if (message.result) {
       obj.result = message.result.map((e) => e ? APITokenItem.toJSON(e) : undefined);
@@ -469,79 +507,96 @@ export const APITokenServiceListResponse = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<APITokenServiceListResponse>, I>>(base?: I): APITokenServiceListResponse {
-    return APITokenServiceListResponse.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ProjectServiceAPITokenListResponse>, I>>(
+    base?: I,
+  ): ProjectServiceAPITokenListResponse {
+    return ProjectServiceAPITokenListResponse.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceListResponse>, I>>(object: I): APITokenServiceListResponse {
-    const message = createBaseAPITokenServiceListResponse();
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenListResponse>, I>>(
+    object: I,
+  ): ProjectServiceAPITokenListResponse {
+    const message = createBaseProjectServiceAPITokenListResponse();
     message.result = object.result?.map((e) => APITokenItem.fromPartial(e)) || [];
     return message;
   },
 };
 
-export interface APITokenService {
-  Create(
-    request: DeepPartial<APITokenServiceCreateRequest>,
+export interface ProjectService {
+  /** Project level API tokens */
+  APITokenCreate(
+    request: DeepPartial<ProjectServiceAPITokenCreateRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceCreateResponse>;
-  List(
-    request: DeepPartial<APITokenServiceListRequest>,
+  ): Promise<ProjectServiceAPITokenCreateResponse>;
+  APITokenList(
+    request: DeepPartial<ProjectServiceAPITokenListRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceListResponse>;
-  Revoke(
-    request: DeepPartial<APITokenServiceRevokeRequest>,
+  ): Promise<ProjectServiceAPITokenListResponse>;
+  APITokenRevoke(
+    request: DeepPartial<ProjectServiceAPITokenRevokeRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceRevokeResponse>;
+  ): Promise<ProjectServiceAPITokenRevokeResponse>;
 }
 
-export class APITokenServiceClientImpl implements APITokenService {
+export class ProjectServiceClientImpl implements ProjectService {
   private readonly rpc: Rpc;
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
-    this.Create = this.Create.bind(this);
-    this.List = this.List.bind(this);
-    this.Revoke = this.Revoke.bind(this);
+    this.APITokenCreate = this.APITokenCreate.bind(this);
+    this.APITokenList = this.APITokenList.bind(this);
+    this.APITokenRevoke = this.APITokenRevoke.bind(this);
   }
 
-  Create(
-    request: DeepPartial<APITokenServiceCreateRequest>,
+  APITokenCreate(
+    request: DeepPartial<ProjectServiceAPITokenCreateRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceCreateResponse> {
-    return this.rpc.unary(APITokenServiceCreateDesc, APITokenServiceCreateRequest.fromPartial(request), metadata);
+  ): Promise<ProjectServiceAPITokenCreateResponse> {
+    return this.rpc.unary(
+      ProjectServiceAPITokenCreateDesc,
+      ProjectServiceAPITokenCreateRequest.fromPartial(request),
+      metadata,
+    );
   }
 
-  List(
-    request: DeepPartial<APITokenServiceListRequest>,
+  APITokenList(
+    request: DeepPartial<ProjectServiceAPITokenListRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceListResponse> {
-    return this.rpc.unary(APITokenServiceListDesc, APITokenServiceListRequest.fromPartial(request), metadata);
+  ): Promise<ProjectServiceAPITokenListResponse> {
+    return this.rpc.unary(
+      ProjectServiceAPITokenListDesc,
+      ProjectServiceAPITokenListRequest.fromPartial(request),
+      metadata,
+    );
   }
 
-  Revoke(
-    request: DeepPartial<APITokenServiceRevokeRequest>,
+  APITokenRevoke(
+    request: DeepPartial<ProjectServiceAPITokenRevokeRequest>,
     metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceRevokeResponse> {
-    return this.rpc.unary(APITokenServiceRevokeDesc, APITokenServiceRevokeRequest.fromPartial(request), metadata);
+  ): Promise<ProjectServiceAPITokenRevokeResponse> {
+    return this.rpc.unary(
+      ProjectServiceAPITokenRevokeDesc,
+      ProjectServiceAPITokenRevokeRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
-export const APITokenServiceDesc = { serviceName: "controlplane.v1.APITokenService" };
+export const ProjectServiceDesc = { serviceName: "controlplane.v1.ProjectService" };
 
-export const APITokenServiceCreateDesc: UnaryMethodDefinitionish = {
-  methodName: "Create",
-  service: APITokenServiceDesc,
+export const ProjectServiceAPITokenCreateDesc: UnaryMethodDefinitionish = {
+  methodName: "APITokenCreate",
+  service: ProjectServiceDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return APITokenServiceCreateRequest.encode(this).finish();
+      return ProjectServiceAPITokenCreateRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = APITokenServiceCreateResponse.decode(data);
+      const value = ProjectServiceAPITokenCreateResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -552,19 +607,19 @@ export const APITokenServiceCreateDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const APITokenServiceListDesc: UnaryMethodDefinitionish = {
-  methodName: "List",
-  service: APITokenServiceDesc,
+export const ProjectServiceAPITokenListDesc: UnaryMethodDefinitionish = {
+  methodName: "APITokenList",
+  service: ProjectServiceDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return APITokenServiceListRequest.encode(this).finish();
+      return ProjectServiceAPITokenListRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = APITokenServiceListResponse.decode(data);
+      const value = ProjectServiceAPITokenListResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -575,19 +630,19 @@ export const APITokenServiceListDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const APITokenServiceRevokeDesc: UnaryMethodDefinitionish = {
-  methodName: "Revoke",
-  service: APITokenServiceDesc,
+export const ProjectServiceAPITokenRevokeDesc: UnaryMethodDefinitionish = {
+  methodName: "APITokenRevoke",
+  service: ProjectServiceDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return APITokenServiceRevokeRequest.encode(this).finish();
+      return ProjectServiceAPITokenRevokeRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = APITokenServiceRevokeResponse.decode(data);
+      const value = ProjectServiceAPITokenRevokeResponse.decode(data);
       return {
         ...value,
         toObject() {

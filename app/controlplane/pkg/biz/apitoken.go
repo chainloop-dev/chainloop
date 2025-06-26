@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,9 @@ type APIToken struct {
 	ExpiresAt *time.Time
 	// When the token was manually revoked
 	RevokedAt *time.Time
+	// If the token is scoped to a project
+	ProjectID   *uuid.UUID
+	ProjectName *string
 }
 
 type APITokenRepo interface {

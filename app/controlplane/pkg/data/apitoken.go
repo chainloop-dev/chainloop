@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,11 +56,11 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 		return nil, fmt.Errorf("saving APIToken: %w", err)
 	}
 
-	return entAPITokenToBiz(token), nil
+	return r.FindByID(ctx, token.ID)
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
-	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id)).WithOrganization().Only(ctx)
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id)).WithOrganization().WithProject().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("getting APIToken: %w", err)
 	} else if token == nil {
@@ -84,7 +84,7 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 }
 
 func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*biz.APIToken, error) {
-	query := r.data.DB.APIToken.Query()
+	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
 	if orgID != nil {
 		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
@@ -146,6 +146,11 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	// Add organization name if present
 	if t.Edges.Organization != nil {
 		result.OrganizationName = t.Edges.Organization.Name
+	}
+
+	if p := t.Edges.Project; p != nil {
+		result.ProjectID = biz.ToPtr(p.ID)
+		result.ProjectName = biz.ToPtr(p.Name)
 	}
 
 	return result

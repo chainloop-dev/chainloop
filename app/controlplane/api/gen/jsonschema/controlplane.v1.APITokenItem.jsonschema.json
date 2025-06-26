@@ -15,6 +15,12 @@
     "^(organization_name)$": {
       "type": "string"
     },
+    "^(project_id)$": {
+      "type": "string"
+    },
+    "^(project_name)$": {
+      "type": "string"
+    },
     "^(revoked_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
@@ -39,6 +45,12 @@
       "type": "string"
     },
     "organizationName": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "projectName": {
       "type": "string"
     },
     "revokedAt": {

@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.ProjectServiceAPITokenCreateResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "controlplane.v1.ProjectServiceAPITokenCreateResponse.APITokenFull.jsonschema.json"
+    }
+  },
+  "title": "Project ServiceAPI Token Create Response",
+  "type": "object"
+}

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,24 +20,24 @@ package controlplane.v1;
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
-service APITokenService {
-  rpc Create(APITokenServiceCreateRequest) returns (APITokenServiceCreateResponse);
-  rpc List(APITokenServiceListRequest) returns (APITokenServiceListResponse);
-  rpc Revoke(APITokenServiceRevokeRequest) returns (APITokenServiceRevokeResponse);
+service ProjectService {
+  // Project level API tokens
+  rpc APITokenCreate(ProjectServiceAPITokenCreateRequest) returns (ProjectServiceAPITokenCreateResponse);
+  rpc APITokenList(ProjectServiceAPITokenListRequest) returns (ProjectServiceAPITokenListResponse);
+  rpc APITokenRevoke(ProjectServiceAPITokenRevokeRequest) returns (ProjectServiceAPITokenRevokeResponse);
 }
 
-message APITokenServiceCreateRequest {
-  string name = 3 [(buf.validate.field).string.min_len = 1];
-
-  optional string description = 1;
-  optional google.protobuf.Duration expires_in = 2;
+message ProjectServiceAPITokenCreateRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string project_name = 2 [(buf.validate.field).string.min_len = 1];
+  optional string description = 3;
+  optional google.protobuf.Duration expires_in = 4;
 }
 
-message APITokenServiceCreateResponse {
+message ProjectServiceAPITokenCreateResponse {
   APITokenFull result = 1;
 
   message APITokenFull {
@@ -46,7 +46,7 @@ message APITokenServiceCreateResponse {
   }
 }
 
-message APITokenServiceRevokeRequest {
+message ProjectServiceAPITokenRevokeRequest {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
     cel: {
@@ -57,12 +57,12 @@ message APITokenServiceRevokeRequest {
   }];
 }
 
-message APITokenServiceRevokeResponse {}
+message ProjectServiceAPITokenRevokeResponse {}
 
-message APITokenServiceListRequest {
+message ProjectServiceAPITokenListRequest {
   bool include_revoked = 1;
 }
 
-message APITokenServiceListResponse {
+message ProjectServiceAPITokenListResponse {
   repeated APITokenItem result = 1;
 }
