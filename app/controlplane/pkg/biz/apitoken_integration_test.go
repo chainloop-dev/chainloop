@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,11 +65,20 @@ func (s *apiTokenTestSuite) TestCreate() {
 		s.Nil(token.RevokedAt)
 	})
 
+	s.Run("happy path with project", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProjectID(s.p1.ID))
+		s.NoError(err)
+		s.Equal(s.org.ID, token.OrganizationID.String())
+		s.Equal(s.p1.ID, *token.ProjectID)
+		s.Equal(s.p1.Name, *token.ProjectName)
+	})
+
 	s.Run("testing name uniqueness", func() {
 		testCases := []struct {
 			name       string
 			tokenName  string
 			wantErrMsg string
+			projectID  *uuid.UUID
 		}{
 			{
 				name:       "name missing",
@@ -95,11 +104,32 @@ func (s *apiTokenTestSuite) TestCreate() {
 				tokenName:  "my-name",
 				wantErrMsg: "name already taken",
 			},
+			{
+				name:      "tokens in projects can have the same name",
+				tokenName: "my-name",
+				projectID: &s.p1.ID,
+			},
+			{
+				name:      "tokens in different projects too",
+				tokenName: "my-name",
+				projectID: &s.p2.ID,
+			},
+			{
+				name:       "can't be duplicated in the same project",
+				tokenName:  "my-name",
+				projectID:  &s.p1.ID,
+				wantErrMsg: "name already taken",
+			},
 		}
 
 		for _, tc := range testCases {
 			s.Run(tc.name, func() {
-				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, s.org.ID)
+				var opts []biz.APITokenUseCaseOpt
+				if tc.projectID != nil {
+					opts = append(opts, biz.APITokenWithProjectID(*tc.projectID))
+				}
+
+				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, s.org.ID, opts...)
 				if tc.wantErrMsg != "" {
 					s.Error(err)
 					s.Contains(err.Error(), tc.wantErrMsg)
@@ -224,11 +254,11 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Len(tokens, 0)
 	})
 
-	s.Run("returns the tokens for that org", func() {
+	s.Run("returns all tokens for that org both system and project scoped", func() {
 		var err error
 		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
 		s.NoError(err)
-		require.Len(s.T(), tokens, 2)
+		require.Len(s.T(), tokens, 4)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.Equal(s.t2.ID, tokens[1].ID)
 		// It has a name set
@@ -241,13 +271,31 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Equal(s.t3.ID, tokens[0].ID)
 	})
 
+	s.Run("can return only for a specific project", func() {
+		var err error
+		tokens, err := s.APIToken.List(ctx, s.org.ID, false, biz.APITokenWithProjectID(s.p1.ID))
+		s.NoError(err)
+		require.Len(s.T(), tokens, 2)
+		s.Equal(s.t4.ID, tokens[0].ID)
+		s.Equal(s.t5.ID, tokens[1].ID)
+	})
+
+	s.Run("or just the system tokens", func() {
+		var err error
+		tokens, err := s.APIToken.List(ctx, s.org.ID, false, biz.APITokenShowOnlySystemTokens(true))
+		s.NoError(err)
+		require.Len(s.T(), tokens, 2)
+		s.Equal(s.t1.ID, tokens[0].ID)
+		s.Equal(s.t2.ID, tokens[1].ID)
+	})
+
 	s.Run("doesn't return revoked by default", func() {
 		// revoke one token
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		require.NoError(s.T(), err)
 		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
 		s.NoError(err)
-		require.Len(s.T(), tokens, 1)
+		require.Len(s.T(), tokens, 3)
 		s.Equal(s.t2.ID, tokens[0].ID)
 	})
 
@@ -255,7 +303,7 @@ func (s *apiTokenTestSuite) TestList() {
 		// revoke one token
 		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
 		s.NoError(err)
-		require.Len(s.T(), tokens, 2)
+		require.Len(s.T(), tokens, 4)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.Equal(s.t2.ID, tokens[1].ID)
 	})
@@ -288,8 +336,9 @@ func TestAPITokenUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type apiTokenTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org, org2  *biz.Organization
-	t1, t2, t3 *biz.APIToken
+	org, org2          *biz.Organization
+	t1, t2, t3, t4, t5 *biz.APIToken
+	p1, p2             *biz.Project
 }
 
 func (s *apiTokenTestSuite) SetupTest() {
@@ -304,6 +353,12 @@ func (s *apiTokenTestSuite) SetupTest() {
 	s.org2, err = s.Organization.CreateWithRandomName(ctx)
 	assert.NoError(err)
 
+	s.p1, err = s.Project.Create(ctx, s.org.ID, "project1")
+	require.NoError(s.T(), err)
+
+	s.p2, err = s.Project.Create(ctx, s.org.ID, "project2")
+	require.NoError(s.T(), err)
+
 	// Create 2 tokens for org 1
 	s.t1, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
 	require.NoError(s.T(), err)
@@ -311,5 +366,11 @@ func (s *apiTokenTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	// and 1 token for org 2
 	s.t3, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org2.ID)
+	require.NoError(s.T(), err)
+
+	// Create 2 tokens for project 1
+	s.t4, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProjectID(s.p1.ID))
+	require.NoError(s.T(), err)
+	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProjectID(s.p1.ID))
 	require.NoError(s.T(), err)
 }
