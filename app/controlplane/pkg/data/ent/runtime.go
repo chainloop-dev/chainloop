@@ -9,6 +9,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
@@ -87,6 +89,50 @@ func init() {
 	casmappingDescID := casmappingFields[0].Descriptor()
 	// casmapping.DefaultID holds the default value on creation for the id field.
 	casmapping.DefaultID = casmappingDescID.Default.(func() uuid.UUID)
+	groupFields := schema.Group{}.Fields()
+	_ = groupFields
+	// groupDescName is the schema descriptor for name field.
+	groupDescName := groupFields[1].Descriptor()
+	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	group.NameValidator = groupDescName.Validators[0].(func(string) error)
+	// groupDescCreatedAt is the schema descriptor for created_at field.
+	groupDescCreatedAt := groupFields[4].Descriptor()
+	// group.DefaultCreatedAt holds the default value on creation for the created_at field.
+	group.DefaultCreatedAt = groupDescCreatedAt.Default.(func() time.Time)
+	// groupDescUpdatedAt is the schema descriptor for updated_at field.
+	groupDescUpdatedAt := groupFields[5].Descriptor()
+	// group.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	group.DefaultUpdatedAt = groupDescUpdatedAt.Default.(func() time.Time)
+	// groupDescID is the schema descriptor for id field.
+	groupDescID := groupFields[0].Descriptor()
+	// group.DefaultID holds the default value on creation for the id field.
+	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
+	groupmembershipFields := schema.GroupMembership{}.Fields()
+	_ = groupmembershipFields
+	// groupmembershipDescGroupID is the schema descriptor for group_id field.
+	groupmembershipDescGroupID := groupmembershipFields[1].Descriptor()
+	// groupmembership.DefaultGroupID holds the default value on creation for the group_id field.
+	groupmembership.DefaultGroupID = groupmembershipDescGroupID.Default.(func() uuid.UUID)
+	// groupmembershipDescUserID is the schema descriptor for user_id field.
+	groupmembershipDescUserID := groupmembershipFields[2].Descriptor()
+	// groupmembership.DefaultUserID holds the default value on creation for the user_id field.
+	groupmembership.DefaultUserID = groupmembershipDescUserID.Default.(func() uuid.UUID)
+	// groupmembershipDescMaintainer is the schema descriptor for maintainer field.
+	groupmembershipDescMaintainer := groupmembershipFields[3].Descriptor()
+	// groupmembership.DefaultMaintainer holds the default value on creation for the maintainer field.
+	groupmembership.DefaultMaintainer = groupmembershipDescMaintainer.Default.(bool)
+	// groupmembershipDescCreatedAt is the schema descriptor for created_at field.
+	groupmembershipDescCreatedAt := groupmembershipFields[4].Descriptor()
+	// groupmembership.DefaultCreatedAt holds the default value on creation for the created_at field.
+	groupmembership.DefaultCreatedAt = groupmembershipDescCreatedAt.Default.(func() time.Time)
+	// groupmembershipDescUpdatedAt is the schema descriptor for updated_at field.
+	groupmembershipDescUpdatedAt := groupmembershipFields[5].Descriptor()
+	// groupmembership.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	groupmembership.DefaultUpdatedAt = groupmembershipDescUpdatedAt.Default.(func() time.Time)
+	// groupmembershipDescID is the schema descriptor for id field.
+	groupmembershipDescID := groupmembershipFields[0].Descriptor()
+	// groupmembership.DefaultID holds the default value on creation for the id field.
+	groupmembership.DefaultID = groupmembershipDescID.Default.(func() uuid.UUID)
 	integrationFields := schema.Integration{}.Fields()
 	_ = integrationFields
 	// integrationDescCreatedAt is the schema descriptor for created_at field.

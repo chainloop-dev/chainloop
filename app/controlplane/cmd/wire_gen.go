@@ -227,6 +227,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
 	signingService := service.NewSigningService(signingUseCase, v5...)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
+	groupService := service.NewGroupService(groupUseCase, v5...)
 	federatedAuthentication := bootstrap.FederatedAuthentication
 	validator, err := newProtoValidator()
 	if err != nil {
@@ -264,6 +267,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		UserSvc:             userService,
 		SigningSvc:          signingService,
 		PrometheusSvc:       prometheusService,
+		GroupSvc:            groupService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,

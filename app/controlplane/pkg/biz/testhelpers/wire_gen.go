@@ -151,6 +151,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
 	testingRepos := &TestingRepos{
 		Membership:       membershipRepo,
 		Referrer:         referrerRepo,
@@ -158,6 +160,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		WorkflowRunRepo:  workflowRunRepo,
 		AttestationState: attestationStateRepo,
 		OrganizationRepo: organizationRepo,
+		GroupRepo:        groupRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
@@ -183,6 +186,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		ProjectVersion:         projectVersionUseCase,
 		Project:                projectUseCase,
 		OrgMetrics:             orgMetricsUseCase,
+		Group:                  groupUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

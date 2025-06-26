@@ -1,0 +1,14 @@
+{
+  "$id": "controlplane.v1.GroupServiceCreateResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceCreateResponse contains the newly created group",
+  "properties": {
+    "group": {
+      "$ref": "controlplane.v1.Group.jsonschema.json",
+      "description": "The created group with all its attributes"
+    }
+  },
+  "title": "Group Service Create Response",
+  "type": "object"
+}

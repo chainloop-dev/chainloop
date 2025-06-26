@@ -1,0 +1,43 @@
+{
+  "$id": "controlplane.v1.GroupServiceListMembersRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceListMembersRequest contains the identifier for the group whose members are to be listed",
+  "patternProperties": {
+    "^(groupId)$": {
+      "description": "UUID of the group whose members are to be listed",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "^(memberEmail)$": {
+      "description": "Optional filter to search by member email address",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "group_id": {
+      "description": "UUID of the group whose members are to be listed",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "maintainers": {
+      "description": "Optional filter to search only by maintainers or not",
+      "type": "boolean"
+    },
+    "member_email": {
+      "description": "Optional filter to search by member email address",
+      "type": "string"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination parameters to limit and offset results"
+    }
+  },
+  "required": [
+    "group_id"
+  ],
+  "title": "Group Service List Members Request",
+  "type": "object"
+}
