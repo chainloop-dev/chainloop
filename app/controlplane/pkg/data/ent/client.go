@@ -969,6 +969,22 @@ func (c *CASMappingClient) QueryOrganization(cm *CASMapping) *OrganizationQuery 
 	return query
 }
 
+// QueryProject queries the project edge of a CASMapping.
+func (c *CASMappingClient) QueryProject(cm *CASMapping) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.ProjectTable, casmapping.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CASMappingClient) Hooks() []Hook {
 	return c.hooks.CASMapping

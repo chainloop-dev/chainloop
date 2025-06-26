@@ -42,7 +42,7 @@ func NewCASMappingRepo(data *Data, cbRepo biz.CASBackendRepo, logger log.Logger)
 	}
 }
 
-func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID uuid.UUID, workflowRunID *uuid.UUID) (*biz.CASMapping, error) {
+func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID uuid.UUID, opts *biz.CASMappingCreateOpts) (*biz.CASMapping, error) {
 	casBackend, err := r.casBackendrepo.FindByID(ctx, casBackendID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas backend: %w", err)
@@ -50,12 +50,16 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 		return nil, fmt.Errorf("cas backend not found")
 	}
 
-	mapping, err := r.data.DB.CASMapping.Create().
+	query := r.data.DB.CASMapping.Create().
 		SetDigest(digest).
 		SetCasBackendID(casBackendID).
-		SetNillableWorkflowRunID(workflowRunID).
-		SetOrganizationID(casBackend.OrganizationID).
-		Save(ctx)
+		SetOrganizationID(casBackend.OrganizationID)
+
+	if opts != nil {
+		query.SetNillableProjectID(opts.ProjectID).SetNillableWorkflowRunID(opts.WorkflowRunID)
+	}
+
+	mapping, err := query.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create casMapping: %w", err)
 	}
@@ -161,5 +165,6 @@ func entCASMappingToBiz(input *ent.CASMapping, public bool) (*biz.CASMapping, er
 		OrgID:         input.OrganizationID,
 		CreatedAt:     toTimePtr(input.CreatedAt),
 		Public:        public,
+		ProjectID:     input.ProjectID,
 	}, nil
 }
