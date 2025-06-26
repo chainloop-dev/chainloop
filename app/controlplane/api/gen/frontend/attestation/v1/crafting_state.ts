@@ -38,6 +38,8 @@ export interface Attestation {
   signingOptions?: Attestation_SigningOptions;
   /** Runner environment in which the attestation was crafted */
   runnerEnvironment?: RunnerEnvironment;
+  /** Authentication information used during attestation */
+  auth?: Attestation_Auth;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -158,6 +160,13 @@ export interface Attestation_Material_SBOMArtifact_MainComponent {
 export interface Attestation_EnvVarsEntry {
   key: string;
   value: string;
+}
+
+export interface Attestation_Auth {
+  /** Type of authentication used (USER, API_TOKEN, FEDERATED_GITLAB_TOKEN) */
+  type: string;
+  /** Identifier of the authentication (user ID, token ID, etc.) */
+  id: string;
 }
 
 export interface Attestation_SigningOptions {
@@ -345,6 +354,7 @@ function createBaseAttestation(): Attestation {
     bypassPolicyCheck: false,
     signingOptions: undefined,
     runnerEnvironment: undefined,
+    auth: undefined,
   };
 }
 
@@ -391,6 +401,9 @@ export const Attestation = {
     }
     if (message.runnerEnvironment !== undefined) {
       RunnerEnvironment.encode(message.runnerEnvironment, writer.uint32(130).fork()).ldelim();
+    }
+    if (message.auth !== undefined) {
+      Attestation_Auth.encode(message.auth, writer.uint32(138).fork()).ldelim();
     }
     return writer;
   },
@@ -509,6 +522,13 @@ export const Attestation = {
 
           message.runnerEnvironment = RunnerEnvironment.decode(reader, reader.uint32());
           continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.auth = Attestation_Auth.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -555,6 +575,7 @@ export const Attestation = {
       runnerEnvironment: isSet(object.runnerEnvironment)
         ? RunnerEnvironment.fromJSON(object.runnerEnvironment)
         : undefined,
+      auth: isSet(object.auth) ? Attestation_Auth.fromJSON(object.auth) : undefined,
     };
   },
 
@@ -598,6 +619,7 @@ export const Attestation = {
     message.runnerEnvironment !== undefined && (obj.runnerEnvironment = message.runnerEnvironment
       ? RunnerEnvironment.toJSON(message.runnerEnvironment)
       : undefined);
+    message.auth !== undefined && (obj.auth = message.auth ? Attestation_Auth.toJSON(message.auth) : undefined);
     return obj;
   },
 
@@ -647,6 +669,9 @@ export const Attestation = {
       : undefined;
     message.runnerEnvironment = (object.runnerEnvironment !== undefined && object.runnerEnvironment !== null)
       ? RunnerEnvironment.fromPartial(object.runnerEnvironment)
+      : undefined;
+    message.auth = (object.auth !== undefined && object.auth !== null)
+      ? Attestation_Auth.fromPartial(object.auth)
       : undefined;
     return message;
   },
@@ -1731,6 +1756,74 @@ export const Attestation_EnvVarsEntry = {
     const message = createBaseAttestation_EnvVarsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestation_Auth(): Attestation_Auth {
+  return { type: "", id: "" };
+}
+
+export const Attestation_Auth = {
+  encode(message: Attestation_Auth, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== "") {
+      writer.uint32(10).string(message.type);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Attestation_Auth {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestation_Auth();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Attestation_Auth {
+    return { type: isSet(object.type) ? String(object.type) : "", id: isSet(object.id) ? String(object.id) : "" };
+  },
+
+  toJSON(message: Attestation_Auth): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = message.type);
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Attestation_Auth>, I>>(base?: I): Attestation_Auth {
+    return Attestation_Auth.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Attestation_Auth>, I>>(object: I): Attestation_Auth {
+    const message = createBaseAttestation_Auth();
+    message.type = object.type ?? "";
+    message.id = object.id ?? "";
     return message;
   },
 };

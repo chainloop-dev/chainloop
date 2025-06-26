@@ -228,6 +228,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,
 		},
+		AuthRawToken: action.AuthTokenRaw,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

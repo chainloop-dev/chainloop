@@ -1,0 +1,19 @@
+{
+  "$id": "attestation.v1.Attestation.Auth.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Identifier of the authentication (user ID, token ID, etc.)",
+      "minLength": 1,
+      "type": "string"
+    },
+    "type": {
+      "description": "Type of authentication used (USER, API_TOKEN, FEDERATED_GITLAB_TOKEN)",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Auth",
+  "type": "object"
+}

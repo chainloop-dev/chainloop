@@ -26,6 +26,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -57,7 +58,9 @@ type ProvenancePredicateV02 struct {
 	// Default keyless signing authority (not necessarily the one used)
 	SigningCA string `json:"signingCA,omitempty"`
 	// Default TSA used for signing (not necessarily the one used)
-	SigningTSA string `json:"signingTSA,omitempty"`
+	SigningTSA string                `json:"signingTSA,omitempty"`
+	// Authentication token
+	Auth       *api.Attestation_Auth `json:"auth,omitempty"`
 }
 
 type PolicyViolationBlockingStrategy string
@@ -233,6 +236,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyAttBlocked:            hasViolations && r.att.GetBlockOnPolicyViolation() && !r.att.GetBypassPolicyCheck(),
 		SigningCA:                   r.att.GetSigningOptions().GetSigningCa(),
 		SigningTSA:                  r.att.GetSigningOptions().GetTimestampAuthorityUrl(),
+		Auth: 						 r.att.GetAuth(),
 	}
 
 	// transform to structpb.Struct in a two steps process

@@ -128,7 +128,7 @@ message Attestation {
         // The kind of the main component
         string kind = 3;
       }
-    }
+    } 
   }
 
   // List of env variables
@@ -152,6 +152,17 @@ message Attestation {
 
   // Runner environment in which the attestation was crafted
   RunnerEnvironment runner_environment = 16;
+
+
+  // Authentication information used during attestation
+  Auth auth = 17;
+
+  message Auth {
+    // Type of authentication used (USER, API_TOKEN, FEDERATED_GITLAB_TOKEN)
+    string type = 1 [(buf.validate.field).string.min_len = 1];
+    // Identifier of the authentication (user ID, token ID, etc.)
+    string id = 2 [(buf.validate.field).string.min_len = 1];
+  }
 
   message SigningOptions {
     // TSA URL
