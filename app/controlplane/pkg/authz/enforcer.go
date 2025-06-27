@@ -90,7 +90,7 @@ func (e *Enforcer) ClearPolicies(sub *SubjectAPIToken) error {
 		return fmt.Errorf("failed to get policies: %w", err)
 	}
 
-	if _, err := e.Enforcer.RemovePolicies(policies); err != nil {
+	if _, err := e.RemovePolicies(policies); err != nil {
 		return fmt.Errorf("failed to remove policies: %w", err)
 	}
 
