@@ -241,6 +241,9 @@ var (
 				Name:    "groupmembership_group_id_user_id",
 				Unique:  true,
 				Columns: []*schema.Column{GroupMembershipsColumns[5], GroupMembershipsColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
 			},
 		},
 	}
@@ -315,10 +318,10 @@ var (
 		{Name: "current", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer"}},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer", "role:group:maintainer"}},
 		{Name: "membership_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"user", "group"}},
 		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project"}},
+		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project", "group"}},
 		{Name: "resource_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_memberships", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_memberships", Type: field.TypeUUID, Nullable: true},
@@ -362,7 +365,7 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer"}},
+		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer", "role:group:maintainer"}},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "sender_id", Type: field.TypeUUID},
 	}

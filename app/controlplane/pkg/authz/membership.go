@@ -27,6 +27,7 @@ const (
 
 	ResourceTypeOrganization ResourceType = "organization"
 	ResourceTypeProject      ResourceType = "project"
+	ResourceTypeGroup        ResourceType = "group"
 )
 
 // Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
@@ -44,6 +45,7 @@ func (ResourceType) Values() (values []string) {
 	values = append(values,
 		string(ResourceTypeOrganization),
 		string(ResourceTypeProject),
+		string(ResourceTypeGroup),
 	)
 
 	return

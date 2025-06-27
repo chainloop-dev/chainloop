@@ -1,0 +1,20 @@
+{
+  "$id": "controlplane.v1.IdentityReference.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "IdentityReference represents a reference to an identity in the system.",
+  "properties": {
+    "id": {
+      "description": "ID is optional, but if provided, it must be a valid UUID.",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name is optional, but if provided, it must be a non-empty string.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Identity Reference",
+  "type": "object"
+}

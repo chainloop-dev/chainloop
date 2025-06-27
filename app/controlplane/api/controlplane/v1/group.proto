@@ -20,6 +20,7 @@ package controlplane.v1;
 import "buf/validate/validate.proto";
 import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
+import "controlplane/v1/shared_message.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -38,6 +39,10 @@ service GroupService {
   rpc Delete(GroupServiceDeleteRequest) returns (GroupServiceDeleteResponse) {}
   // ListMembers retrieves the members of a specific group
   rpc ListMembers(GroupServiceListMembersRequest) returns (GroupServiceListMembersResponse) {}
+  // AddMember adds a user to a group with an optional maintainer role
+  rpc AddMember(GroupServiceAddMemberRequest) returns (GroupServiceAddMemberResponse) {}
+  // RemoveMember removes a user from a group
+  rpc RemoveMember(GroupServiceRemoveMemberRequest) returns (GroupServiceRemoveMemberResponse) {}
 }
 
 // GroupServiceCreateRequest contains the information needed to create a new group
@@ -56,11 +61,8 @@ message GroupServiceCreateResponse {
 
 // GroupServiceGetRequest contains the identifier for the group to retrieve
 message GroupServiceGetRequest {
-  // UUID of the group to retrieve
-  string group_id = 1 [
-    (buf.validate.field).string.uuid = true,
-    (buf.validate.field).required = true
-  ];
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
 }
 
 // GroupServiceGetResponse contains the requested group information
@@ -91,15 +93,13 @@ message GroupServiceListResponse {
 
 // GroupServiceUpdateRequest contains the fields that can be updated for a group
 message GroupServiceUpdateRequest {
-  // UUID of the group to update
-  string group_id = 1 [
-    (buf.validate.field).string.uuid = true,
-    (buf.validate.field).required = true
-  ];
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+
   // New name for the group (if provided)
-  optional string name = 2 [(buf.validate.field).ignore_empty = true];
+  optional string new_name = 3 [(buf.validate.field).ignore_empty = true];
   // New description for the group (if provided)
-  optional string description = 3 [(buf.validate.field).ignore_empty = true];
+  optional string new_description = 4 [(buf.validate.field).ignore_empty = true];
 }
 
 // GroupServiceUpdateResponse contains the updated group information
@@ -110,8 +110,8 @@ message GroupServiceUpdateResponse {
 
 // GroupServiceDeleteRequest contains the identifier for the group to delete
 message GroupServiceDeleteRequest {
-  // UUID of the group to delete
-  string id = 1 [(buf.validate.field).string.uuid = true];
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
 }
 
 // GroupServiceDeleteResponse is returned upon successful deletion of a group
@@ -126,18 +126,39 @@ message GroupServiceListMembersResponse {
 
 // GroupServiceListMembersRequest contains the identifier for the group whose members are to be listed
 message GroupServiceListMembersRequest {
-  // UUID of the group whose members are to be listed
-  string group_id = 1 [
-    (buf.validate.field).string.uuid = true,
-    (buf.validate.field).required = true
-  ];
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
   // Optional filter to search only by maintainers or not
-  optional bool maintainers = 2 [(buf.validate.field).ignore_empty = true];
+  optional bool maintainers = 3 [(buf.validate.field).ignore_empty = true];
   // Optional filter to search by member email address
-  optional string member_email = 3 [(buf.validate.field).ignore_empty = true];
+  optional string member_email = 4 [(buf.validate.field).ignore_empty = true];
   // Pagination parameters to limit and offset results
-  OffsetPaginationRequest pagination = 4;
+  OffsetPaginationRequest pagination = 5;
 }
+
+// GroupServiceAddMemberRequest contains the information needed to add a user to a group
+message GroupServiceAddMemberRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // The user to add to the group
+  string user_email = 3 [(buf.validate.field).string.email = true];
+  // Indicates whether the user should have maintainer (admin) privileges in the group
+  bool is_maintainer = 4;
+}
+
+// GroupServiceAddMemberResponse contains the information about the group member that was added
+message GroupServiceAddMemberResponse {}
+
+// GroupServiceRemoveMemberRequest contains the information needed to remove a user from a group
+message GroupServiceRemoveMemberRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // The user to remove from the group
+  string user_email = 3 [(buf.validate.field).string.email = true];
+}
+
+// GroupServiceRemoveMemberResponse is returned upon successful removal of a user from a group
+message GroupServiceRemoveMemberResponse {}
 
 // Group represents a collection of users with shared access to resources
 message Group {

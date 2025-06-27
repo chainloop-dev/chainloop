@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -109,6 +110,35 @@ func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uui
 
 	return entMembershipToBiz(m), nil
 }
+
+// FindByOrgIDAndUserEmail finds the membership for a given organization and user email.
+func (r *MembershipRepo) FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid.UUID, userEmail string) (*biz.Membership, error) {
+	// Find the user by email
+	u, err := r.data.DB.User.Query().Where(user.Email(userEmail)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("user with email %s not found", userEmail))
+		}
+		return nil, fmt.Errorf("failed to find user by email %s: %w", userEmail, err)
+	}
+
+	// Now find the membership for that user in the organization
+	mem, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(u.ID),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+	).WithOrganization().WithUser().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("membership for user %s in organization %s not found", userEmail, orgID))
+		}
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipToBiz(mem), nil
+}
+
 func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*biz.Membership, error) {
 	org, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).First(ctx)
 	if err != nil {

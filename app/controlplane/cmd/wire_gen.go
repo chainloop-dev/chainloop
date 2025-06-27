@@ -129,7 +129,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
-	v5 := serviceOpts(logger, enforcer, projectUseCase)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
+	v5 := serviceOpts(logger, enforcer, projectUseCase, groupUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
@@ -228,8 +230,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
 	signingService := service.NewSigningService(signingUseCase, v5...)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
-	groupRepo := data.NewGroupRepo(dataData, logger)
-	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
 	groupService := service.NewGroupService(groupUseCase, v5...)
 	projectService := service.NewProjectService(apiTokenUseCase, v5...)
 	federatedAuthentication := bootstrap.FederatedAuthentication
@@ -339,8 +339,8 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC)}
+func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC), service.WithGroupUseCase(gUC)}
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {

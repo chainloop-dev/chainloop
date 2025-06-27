@@ -1,0 +1,33 @@
+{
+  "$id": "controlplane.v1.GroupServiceRemoveMemberRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceRemoveMemberRequest contains the information needed to remove a user from a group",
+  "patternProperties": {
+    "^(groupReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "^(userEmail)$": {
+      "description": "The user to remove from the group",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "group_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "user_email": {
+      "description": "The user to remove from the group",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
+  "title": "Group Service Remove Member Request",
+  "type": "object"
+}

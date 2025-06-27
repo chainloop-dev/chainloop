@@ -36,10 +36,11 @@ func TestGroupEvents(t *testing.T) {
 	require.NoError(t, err)
 	groupUUID, err := uuid.Parse("3089bb36-e27b-428b-8009-d015c8737c56")
 	require.NoError(t, err)
+	memberUUID, err := uuid.Parse("4089bb36-e27b-428b-8009-d015c8737c57")
+	require.NoError(t, err)
 	groupName := "test-group"
 	groupDescription := "test description"
-	oldGroupName := "old-group-name"
-	newGroupName := "new-group-name"
+	userEmail := "test@example.com"
 
 	tests := []struct {
 		name     string
@@ -88,20 +89,6 @@ func TestGroupEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "Group updated with name change by user",
-			event: &events.GroupUpdated{
-				GroupBase: &events.GroupBase{
-					GroupID:   &groupUUID,
-					GroupName: newGroupName,
-				},
-				OldName: &oldGroupName,
-				NewName: &newGroupName,
-			},
-			expected: "testdata/groups/group_renamed.json",
-			actor:    auditor.ActorTypeUser,
-			actorID:  userUUID,
-		},
-		{
 			name: "Group deleted by user",
 			event: &events.GroupDeleted{
 				GroupBase: &events.GroupBase{
@@ -110,6 +97,35 @@ func TestGroupEvents(t *testing.T) {
 				},
 			},
 			expected: "testdata/groups/group_deleted.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "Group member added by user",
+			event: &events.GroupMemberAdded{
+				GroupBase: &events.GroupBase{
+					GroupID:   &groupUUID,
+					GroupName: groupName,
+				},
+				UserID:     &memberUUID,
+				UserEmail:  userEmail,
+				Maintainer: true,
+			},
+			expected: "testdata/groups/group_member_added.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "Group member removed by user",
+			event: &events.GroupMemberRemoved{
+				GroupBase: &events.GroupBase{
+					GroupID:   &groupUUID,
+					GroupName: groupName,
+				},
+				UserID:    &memberUUID,
+				UserEmail: userEmail,
+			},
+			expected: "testdata/groups/group_member_removed.json",
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
 		},
@@ -156,6 +172,8 @@ func TestGroupEvents(t *testing.T) {
 // TestGroupEventsFailed tests the behavior of group events when they are expected to fail
 func TestGroupEventsFailed(t *testing.T) {
 	groupUUID, err := uuid.Parse("3089bb36-e27b-428b-8009-d015c8737c56")
+	require.NoError(t, err)
+	memberUUID, err := uuid.Parse("4089bb36-e27b-428b-8009-d015c8737c57")
 	require.NoError(t, err)
 	groupDescription := "test description"
 
@@ -221,6 +239,75 @@ func TestGroupEventsFailed(t *testing.T) {
 				},
 			},
 			expectedErr: "group id and name are required",
+		},
+		{
+			name: "Group member added with missing GroupID",
+			event: &events.GroupMemberAdded{
+				GroupBase: &events.GroupBase{
+					GroupName: "test-group",
+				},
+				UserID:     &memberUUID,
+				UserEmail:  "test@example.com",
+				Maintainer: true,
+			},
+			expectedErr: "group id and name are required",
+		},
+		{
+			name: "Group member added with missing GroupName",
+			event: &events.GroupMemberAdded{
+				GroupBase: &events.GroupBase{
+					GroupID: &groupUUID,
+				},
+				UserID:     &memberUUID,
+				UserEmail:  "test@example.com",
+				Maintainer: true,
+			},
+			expectedErr: "group id and name are required",
+		},
+		{
+			name: "Group member added with missing UserID",
+			event: &events.GroupMemberAdded{
+				GroupBase: &events.GroupBase{
+					GroupID:   &groupUUID,
+					GroupName: "test-group",
+				},
+				UserEmail:  "test@example.com",
+				Maintainer: true,
+			},
+			expectedErr: "user ID is required",
+		},
+		{
+			name: "Group member removed with missing GroupID",
+			event: &events.GroupMemberRemoved{
+				GroupBase: &events.GroupBase{
+					GroupName: "test-group",
+				},
+				UserID:    &memberUUID,
+				UserEmail: "test@example.com",
+			},
+			expectedErr: "group id and name are required",
+		},
+		{
+			name: "Group member removed with missing GroupName",
+			event: &events.GroupMemberRemoved{
+				GroupBase: &events.GroupBase{
+					GroupID: &groupUUID,
+				},
+				UserID:    &memberUUID,
+				UserEmail: "test@example.com",
+			},
+			expectedErr: "group id and name are required",
+		},
+		{
+			name: "Group member removed with missing UserID",
+			event: &events.GroupMemberRemoved{
+				GroupBase: &events.GroupBase{
+					GroupID:   &groupUUID,
+					GroupName: "test-group",
+				},
+				UserEmail: "test@example.com",
+			},
+			expectedErr: "user ID is required",
 		},
 	}
 

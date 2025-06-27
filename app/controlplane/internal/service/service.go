@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -133,6 +135,7 @@ type service struct {
 	log            *log.Helper
 	enforcer       *authz.Enforcer
 	projectUseCase *biz.ProjectUseCase
+	groupUseCase   *biz.GroupUseCase
 }
 
 type NewOpt func(s *service)
@@ -152,6 +155,12 @@ func WithEnforcer(enforcer *authz.Enforcer) NewOpt {
 func WithProjectUseCase(projectUseCase *biz.ProjectUseCase) NewOpt {
 	return func(s *service) {
 		s.projectUseCase = projectUseCase
+	}
+}
+
+func WithGroupUseCase(groupUseCase *biz.GroupUseCase) NewOpt {
+	return func(s *service) {
+		s.groupUseCase = groupUseCase
 	}
 }
 
@@ -221,6 +230,83 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 	return p, nil
 }
 
+// userHasPermissionToAddGroupMember checks if the user has permission to add members to a group
+func (s *service) userHasPermissionToAddGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupAddMemberships)
+}
+
+// userHasPermissionToRemoveGroupMember checks if the user has permission to remove members from a group
+func (s *service) userHasPermissionToRemoveGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupRemoveMemberships)
+}
+
+// userHasPermissionOnGroupMembershipsWithPolicy is the core implementation that checks if a user has permission on a group
+// with an optional specific policy check. If the policy is nil, it falls back to the basic permission check.
+func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference, policy *authz.Policy) error {
+	groupID, groupName, err := s.parseIdentityReference(groupIdentifier)
+	if err != nil {
+		return handleUseCaseErr(err, s.log)
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Resolve the group identifier to a valid group ID
+	resolvedGroupID, err := s.groupUseCase.ValidateGroupIdentifier(ctx, orgUUID, groupID, groupName)
+	if err != nil {
+		return handleUseCaseErr(err, s.log)
+	}
+
+	// Get the current user from the context
+	user := entities.CurrentUser(ctx)
+	if user == nil {
+		return errors.NotFound("not found", "logged in user not found")
+	}
+
+	userUUID, err := uuid.Parse(user.ID)
+	if err != nil {
+		return errors.BadRequest("invalid", "invalid user ID")
+	}
+
+	// Check if the user is a maintainer of the group
+	isMaintainer, err := s.groupUseCase.IsUserGroupMaintainer(ctx, orgUUID, resolvedGroupID, userUUID)
+	if err != nil {
+		return handleUseCaseErr(err, s.log)
+	}
+
+	// If the user is a maintainer, they can perform any operation on the group
+	if isMaintainer {
+		return nil
+	}
+
+	// Check if the user has admin or owner role in the organization
+	userRole := usercontext.CurrentAuthzSubject(ctx)
+	if userRole == "" {
+		return errors.NotFound("not found", "current membership not found")
+	}
+
+	// Allow if user has admin or owner role
+	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
+		return nil
+	}
+
+	// If a specific policy was provided, check if the user's role allows that policy
+	if policy != nil && s.enforcer != nil {
+		pass, err := s.enforcer.Enforce(userRole, policy)
+		if err != nil {
+			return handleUseCaseErr(err, s.log)
+		}
+		if pass {
+			return nil
+		}
+	}
+
+	// If neither a maintainer nor admin/owner, nor has specific policy permission, forbid the operation
+	return errors.Forbidden("forbidden", "operation not allowed")
+}
+
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
 func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	if !rbacEnabled(ctx) {
@@ -247,6 +333,45 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	}
 
 	return projects
+}
+
+// parseIdentityReference is a helper method to parse an IdentityReference from the protobuf message.
+func (s *service) parseIdentityReference(groupRef *pb.IdentityReference) (*uuid.UUID, *string, error) {
+	if groupRef.GetId() != "" && groupRef.GetName() != "" {
+		return nil, nil, errors.BadRequest("invalid", "cannot provide both ID and name")
+	}
+
+	if groupRef.GetId() != "" {
+		groupUUID, err := uuid.Parse(groupRef.GetId())
+		if err != nil {
+			return nil, nil, errors.BadRequest("invalid", "invalid group ID")
+		}
+		return &groupUUID, nil, nil
+	} else if groupRef.GetName() != "" {
+		groupName := groupRef.GetName()
+		return nil, &groupName, nil
+	}
+	return nil, nil, nil
+}
+
+// initializePaginationOpts initializes the pagination options with the provided request pagination options.
+func initializePaginationOpts(reqPagination *pb.OffsetPaginationRequest) (*pagination.OffsetPaginationOpts, error) {
+	// Initialize the pagination options, with default values
+	paginationOpts := pagination.NewDefaultOffsetPaginationOpts()
+
+	var err error
+	// Override the pagination options if they are provided
+	if reqPagination != nil {
+		paginationOpts, err = pagination.NewOffsetPaginationOpts(
+			int(reqPagination.GetPage()),
+			int(reqPagination.GetPageSize()),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create pagination options: %w", err)
+		}
+	}
+
+	return paginationOpts, nil
 }
 
 // RBAC feature is enabled if we are using a project scoped token or

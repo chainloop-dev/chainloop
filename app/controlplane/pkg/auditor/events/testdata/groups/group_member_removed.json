@@ -1,0 +1,17 @@
+{
+  "ActionType": "GroupMemberRemoved",
+  "TargetType": "Group",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io has removed user test@example.com from the group test-group",
+  "Info": {
+    "group_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "group_name": "test-group",
+    "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
+    "user_email": "test@example.com"
+  },
+  "Digest": "sha256:6ba5c5f01dd8fd312e5cb50ba7e947ba7c478a1663857d234817772be609b256"
+}

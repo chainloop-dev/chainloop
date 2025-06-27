@@ -4,31 +4,35 @@
   "additionalProperties": false,
   "description": "GroupServiceUpdateRequest contains the fields that can be updated for a group",
   "patternProperties": {
-    "^(groupId)$": {
-      "description": "UUID of the group to update",
-      "minLength": 1,
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+    "^(groupReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "^(newDescription)$": {
+      "description": "New description for the group (if provided)",
+      "type": "string"
+    },
+    "^(newName)$": {
+      "description": "New name for the group (if provided)",
       "type": "string"
     }
   },
   "properties": {
-    "description": {
+    "group_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "new_description": {
       "description": "New description for the group (if provided)",
       "type": "string"
     },
-    "group_id": {
-      "description": "UUID of the group to update",
-      "minLength": 1,
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "type": "string"
-    },
-    "name": {
+    "new_name": {
       "description": "New name for the group (if provided)",
       "type": "string"
     }
   },
   "required": [
-    "group_id"
+    "group_reference"
   ],
   "title": "Group Service Update Request",
   "type": "object"

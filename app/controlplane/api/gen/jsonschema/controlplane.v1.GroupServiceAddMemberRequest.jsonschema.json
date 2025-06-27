@@ -1,0 +1,41 @@
+{
+  "$id": "controlplane.v1.GroupServiceAddMemberRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceAddMemberRequest contains the information needed to add a user to a group",
+  "patternProperties": {
+    "^(group_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "^(is_maintainer)$": {
+      "description": "Indicates whether the user should have maintainer (admin) privileges in the group",
+      "type": "boolean"
+    },
+    "^(user_email)$": {
+      "description": "The user to add to the group",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "groupReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "isMaintainer": {
+      "description": "Indicates whether the user should have maintainer (admin) privileges in the group",
+      "type": "boolean"
+    },
+    "userEmail": {
+      "description": "The user to add to the group",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
+  "title": "Group Service Add Member Request",
+  "type": "object"
+}
