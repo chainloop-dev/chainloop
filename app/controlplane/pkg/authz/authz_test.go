@@ -103,6 +103,14 @@ func TestAddPolicies(t *testing.T) {
 	}
 }
 
+func TestSyncMultipleEnforcers(t *testing.T) {
+	e1, c := testEnforcer(t)
+	defer c.Close()
+	e2, c := testEnforcer(t)
+	defer c.Close()
+
+}
+
 func TestAddPoliciesDuplication(t *testing.T) {
 	want := []*Policy{
 		PolicyWorkflowContractList,
