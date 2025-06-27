@@ -110,7 +110,8 @@ type GetFromRootFilters struct {
 	RootKind *string
 	// Wether to filter by visibility or not
 	Public *bool
-	// ProjectIDs stores visible projects by org for the requesting user
+	// ProjectIDs stores visible projects by org for the requesting user.
+	// If an org entry doesn't exist, it means that RBAC is not applied, hence all projects in that org are visible
 	ProjectIDs map[OrgID][]ProjectID
 }
 
