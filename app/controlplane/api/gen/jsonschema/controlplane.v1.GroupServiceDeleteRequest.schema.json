@@ -3,13 +3,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "GroupServiceDeleteRequest contains the identifier for the group to delete",
-  "properties": {
-    "id": {
-      "description": "UUID of the group to delete",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "type": "string"
+  "patternProperties": {
+    "^(groupReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
     }
   },
+  "properties": {
+    "group_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
   "title": "Group Service Delete Request",
   "type": "object"
 }

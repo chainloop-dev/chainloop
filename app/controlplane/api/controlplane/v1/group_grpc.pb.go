@@ -34,12 +34,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	GroupService_Create_FullMethodName      = "/controlplane.v1.GroupService/Create"
-	GroupService_Get_FullMethodName         = "/controlplane.v1.GroupService/Get"
-	GroupService_List_FullMethodName        = "/controlplane.v1.GroupService/List"
-	GroupService_Update_FullMethodName      = "/controlplane.v1.GroupService/Update"
-	GroupService_Delete_FullMethodName      = "/controlplane.v1.GroupService/Delete"
-	GroupService_ListMembers_FullMethodName = "/controlplane.v1.GroupService/ListMembers"
+	GroupService_Create_FullMethodName       = "/controlplane.v1.GroupService/Create"
+	GroupService_Get_FullMethodName          = "/controlplane.v1.GroupService/Get"
+	GroupService_List_FullMethodName         = "/controlplane.v1.GroupService/List"
+	GroupService_Update_FullMethodName       = "/controlplane.v1.GroupService/Update"
+	GroupService_Delete_FullMethodName       = "/controlplane.v1.GroupService/Delete"
+	GroupService_ListMembers_FullMethodName  = "/controlplane.v1.GroupService/ListMembers"
+	GroupService_AddMember_FullMethodName    = "/controlplane.v1.GroupService/AddMember"
+	GroupService_RemoveMember_FullMethodName = "/controlplane.v1.GroupService/RemoveMember"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -58,6 +60,10 @@ type GroupServiceClient interface {
 	Delete(ctx context.Context, in *GroupServiceDeleteRequest, opts ...grpc.CallOption) (*GroupServiceDeleteResponse, error)
 	// ListMembers retrieves the members of a specific group
 	ListMembers(ctx context.Context, in *GroupServiceListMembersRequest, opts ...grpc.CallOption) (*GroupServiceListMembersResponse, error)
+	// AddMember adds a user to a group with an optional maintainer role
+	AddMember(ctx context.Context, in *GroupServiceAddMemberRequest, opts ...grpc.CallOption) (*GroupServiceAddMemberResponse, error)
+	// RemoveMember removes a user from a group
+	RemoveMember(ctx context.Context, in *GroupServiceRemoveMemberRequest, opts ...grpc.CallOption) (*GroupServiceRemoveMemberResponse, error)
 }
 
 type groupServiceClient struct {
@@ -122,6 +128,24 @@ func (c *groupServiceClient) ListMembers(ctx context.Context, in *GroupServiceLi
 	return out, nil
 }
 
+func (c *groupServiceClient) AddMember(ctx context.Context, in *GroupServiceAddMemberRequest, opts ...grpc.CallOption) (*GroupServiceAddMemberResponse, error) {
+	out := new(GroupServiceAddMemberResponse)
+	err := c.cc.Invoke(ctx, GroupService_AddMember_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupServiceClient) RemoveMember(ctx context.Context, in *GroupServiceRemoveMemberRequest, opts ...grpc.CallOption) (*GroupServiceRemoveMemberResponse, error) {
+	out := new(GroupServiceRemoveMemberResponse)
+	err := c.cc.Invoke(ctx, GroupService_RemoveMember_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupServiceServer is the server API for GroupService service.
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility
@@ -138,6 +162,10 @@ type GroupServiceServer interface {
 	Delete(context.Context, *GroupServiceDeleteRequest) (*GroupServiceDeleteResponse, error)
 	// ListMembers retrieves the members of a specific group
 	ListMembers(context.Context, *GroupServiceListMembersRequest) (*GroupServiceListMembersResponse, error)
+	// AddMember adds a user to a group with an optional maintainer role
+	AddMember(context.Context, *GroupServiceAddMemberRequest) (*GroupServiceAddMemberResponse, error)
+	// RemoveMember removes a user from a group
+	RemoveMember(context.Context, *GroupServiceRemoveMemberRequest) (*GroupServiceRemoveMemberResponse, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }
 
@@ -162,6 +190,12 @@ func (UnimplementedGroupServiceServer) Delete(context.Context, *GroupServiceDele
 }
 func (UnimplementedGroupServiceServer) ListMembers(context.Context, *GroupServiceListMembersRequest) (*GroupServiceListMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMembers not implemented")
+}
+func (UnimplementedGroupServiceServer) AddMember(context.Context, *GroupServiceAddMemberRequest) (*GroupServiceAddMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMember not implemented")
+}
+func (UnimplementedGroupServiceServer) RemoveMember(context.Context, *GroupServiceRemoveMemberRequest) (*GroupServiceRemoveMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
 }
 func (UnimplementedGroupServiceServer) mustEmbedUnimplementedGroupServiceServer() {}
 
@@ -284,6 +318,42 @@ func _GroupService_ListMembers_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupService_AddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupServiceAddMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).AddMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_AddMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).AddMember(ctx, req.(*GroupServiceAddMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupService_RemoveMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupServiceRemoveMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).RemoveMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_RemoveMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).RemoveMember(ctx, req.(*GroupServiceRemoveMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupService_ServiceDesc is the grpc.ServiceDesc for GroupService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -314,6 +384,14 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMembers",
 			Handler:    _GroupService_ListMembers_Handler,
+		},
+		{
+			MethodName: "AddMember",
+			Handler:    _GroupService_AddMember_Handler,
+		},
+		{
+			MethodName: "RemoveMember",
+			Handler:    _GroupService_RemoveMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

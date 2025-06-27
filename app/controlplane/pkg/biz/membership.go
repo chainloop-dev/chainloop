@@ -42,6 +42,7 @@ type Membership struct {
 
 type MembershipRepo interface {
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid.UUID, userEmail string) (*Membership, error)
 	FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*Membership, error)
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Membership, error)
