@@ -24,7 +24,6 @@ import (
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -99,17 +98,21 @@ type StoredReferrer struct {
 	ID        uuid.UUID
 	CreatedAt *time.Time
 	// Fully expanded list of 1-level off references
-	References          []*StoredReferrer
-	OrgIDs, WorkflowIDs []uuid.UUID
+	References                      []*StoredReferrer
+	OrgIDs, WorkflowIDs, ProjectIDs []uuid.UUID
 }
+
+type OrgID = uuid.UUID
+type ProjectID = uuid.UUID
 
 type GetFromRootFilters struct {
 	// RootKind is the kind of the root referrer, i.e ATTESTATION
 	RootKind *string
 	// Wether to filter by visibility or not
 	Public *bool
-	// If not nil, it will be used to filter the result by project
-	ProjectIDs []uuid.UUID
+	// ProjectIDs stores visible projects by org for the requesting user.
+	// If an org entry doesn't exist, it means that RBAC is not applied, hence all projects in that org are visible
+	ProjectIDs map[OrgID][]ProjectID
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -120,7 +123,8 @@ func WithKind(kind string) func(*GetFromRootFilters) {
 	}
 }
 
-func WithProjectIDs(projectIDs []uuid.UUID) func(*GetFromRootFilters) {
+// WithVisibleProjectIDs sets visible projects by org for organizations with RBAC enabled for the user (role is OrgMember)
+func WithVisibleProjectIDs(projectIDs map[OrgID][]ProjectID) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.ProjectIDs = projectIDs
 	}
@@ -168,46 +172,24 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	userOrgs, projectIDs, err := getOrgsAndRBACInfoForUser(ctx, userUUID, s.membershipRepo, s.projectsRepo)
+	if err != nil {
+		return nil, err
+	}
+
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
-	memberships, err := s.membershipRepo.ListAllByUser(ctx, userUUID)
-	if err != nil {
-		return nil, fmt.Errorf("finding memberships: %w", err)
-	}
-
-	orgIDs := make([]uuid.UUID, 0, len(memberships))
-	var projectIDs []uuid.UUID
-	for _, m := range memberships {
-		if m.ResourceType == authz.ResourceTypeOrganization {
-			orgIDs = append(orgIDs, m.ResourceID)
-			// If the role in the org is member, we must enable RBAC for projects.
-			if m.Role == authz.RoleOrgMember {
-				// ensure list is initialized
-				if projectIDs == nil {
-					projectIDs = make([]uuid.UUID, 0)
-				}
-				// get list of projects in org, and match it with the memberships to build a filter
-				orgProjects, err := getProjectsWithMembership(ctx, s.projectsRepo, m.ResourceID, memberships)
-				if err != nil {
-					return nil, err
-				}
-				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
-				projectIDs = append(projectIDs, orgProjects...)
-			}
-		}
-	}
-
-	return s.GetFromRoot(ctx, digest, rootKind, orgIDs, projectIDs)
+	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs)
 }
 
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs []uuid.UUID) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID) (*StoredReferrer, error) {
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
 	}
 	if projectIDs != nil {
-		filters = append(filters, WithProjectIDs(projectIDs))
+		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 
 	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)

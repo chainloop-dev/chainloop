@@ -21,7 +21,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -100,29 +99,9 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Load ALL memberships for the given user
-	memberships, err := uc.membershipRepo.ListAllByUser(ctx, userUUID)
+	userOrgs, projectIDs, err := getOrgsAndRBACInfoForUser(ctx, userUUID, uc.membershipRepo, uc.projectsRepo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list memberships: %w", err)
-	}
-
-	userOrgs := make([]uuid.UUID, 0)
-	// This map holds the list of project IDs by org with RBAC active (user is org "member")
-	projectIDs := make(map[uuid.UUID][]uuid.UUID)
-	for _, m := range memberships {
-		if m.ResourceType == authz.ResourceTypeOrganization {
-			userOrgs = append(userOrgs, m.ResourceID)
-			// If the role in the org is member, we must enable RBAC for projects.
-			if m.Role == authz.RoleOrgMember {
-				// get list of projects in org, and match it with the memberships to build a filter
-				orgProjects, err := getProjectsWithMembership(ctx, uc.projectsRepo, m.ResourceID, memberships)
-				if err != nil {
-					return nil, err
-				}
-				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
-				projectIDs[m.ResourceID] = orgProjects
-			}
-		}
+		return nil, err
 	}
 
 	mapping, err := uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs, projectIDs)
