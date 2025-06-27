@@ -107,7 +107,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
-	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig)
+	config := authzConfig()
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -311,6 +312,10 @@ var (
 )
 
 // wire.go:
+
+func authzConfig() *authz.Config {
+	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+}
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
 	return &biz.APITokenJWTConfig{

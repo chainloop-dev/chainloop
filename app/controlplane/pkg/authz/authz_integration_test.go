@@ -33,9 +33,9 @@ func TestMultiReplicaPropagation(t *testing.T) {
 	db := testhelpers.NewTestDatabase(t)
 	defer db.Close(t)
 
-	enforcerA, err := authz.NewDatabaseEnforcer(testhelpers.NewDataConfig(testhelpers.NewConfData(db, t)))
+	enforcerA, err := authz.NewDatabaseEnforcer(testhelpers.NewDataConfig(testhelpers.NewConfData(db, t)), &authz.Config{})
 	require.NoError(t, err)
-	enforcerB, err := authz.NewDatabaseEnforcer(testhelpers.NewDataConfig(testhelpers.NewConfData(db, t)))
+	enforcerB, err := authz.NewDatabaseEnforcer(testhelpers.NewDataConfig(testhelpers.NewConfData(db, t)), &authz.Config{})
 	require.NoError(t, err)
 
 	// Subject and policies to add
