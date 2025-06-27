@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.GroupServiceRemoveMemberResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceRemoveMemberResponse is returned upon successful removal of a user from a group",
+  "properties": {},
+  "title": "Group Service Remove Member Response",
+  "type": "object"
+}

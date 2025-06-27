@@ -4,11 +4,9 @@
   "additionalProperties": false,
   "description": "GroupServiceListMembersRequest contains the identifier for the group whose members are to be listed",
   "patternProperties": {
-    "^(group_id)$": {
-      "description": "UUID of the group whose members are to be listed",
-      "minLength": 1,
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "type": "string"
+    "^(group_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
     },
     "^(member_email)$": {
       "description": "Optional filter to search by member email address",
@@ -16,11 +14,9 @@
     }
   },
   "properties": {
-    "groupId": {
-      "description": "UUID of the group whose members are to be listed",
-      "minLength": 1,
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "type": "string"
+    "groupReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
     },
     "maintainers": {
       "description": "Optional filter to search only by maintainers or not",
@@ -36,7 +32,7 @@
     }
   },
   "required": [
-    "group_id"
+    "group_reference"
   ],
   "title": "Group Service List Members Request",
   "type": "object"

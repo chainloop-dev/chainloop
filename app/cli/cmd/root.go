@@ -250,7 +250,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
 		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
-		newReferrerDiscoverCmd(),
+		newReferrerDiscoverCmd(), newGroupCmd(),
 	)
 
 	return rootCmd

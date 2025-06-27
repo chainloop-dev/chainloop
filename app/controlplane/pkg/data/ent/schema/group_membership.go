@@ -18,6 +18,8 @@ package schema
 import (
 	"time"
 
+	"entgo.io/ent/schema/index"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
@@ -65,5 +67,14 @@ func (GroupMembership) Edges() []ent.Edge {
 			Unique().
 			Field("user_id").
 			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+	}
+}
+
+// Indexes of the GroupMembership.
+func (GroupMembership) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("group_id", "user_id").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }

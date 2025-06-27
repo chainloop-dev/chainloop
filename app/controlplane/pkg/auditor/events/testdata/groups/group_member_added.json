@@ -1,0 +1,18 @@
+{
+  "ActionType": "GroupMemberAdded",
+  "TargetType": "Group",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io has added user test@example.com to the group test-group as a maintainer",
+  "Info": {
+    "group_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "group_name": "test-group",
+    "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
+    "user_email": "test@example.com",
+    "maintainer": true
+  },
+  "Digest": "sha256:49a9a6fc6e737fcce1135c1add8fc6f4ff9d114a199547089b5f1aa61b994b79"
+}
