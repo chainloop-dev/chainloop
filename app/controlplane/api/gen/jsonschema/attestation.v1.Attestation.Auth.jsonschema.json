@@ -1,0 +1,32 @@
+{
+  "$id": "attestation.v1.Attestation.Auth.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Identifier of the authentication (user ID, token ID, etc.)",
+      "minLength": 1,
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "AUTH_TYPE_UNSPECIFIED",
+            "AUTH_TYPE_USER",
+            "AUTH_TYPE_API_TOKEN"
+          ],
+          "title": "Auth Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Auth",
+  "type": "object"
+}
