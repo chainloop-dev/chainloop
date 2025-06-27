@@ -30,7 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
-	token "github.com/chainloop-dev/chainloop/app/cli/pkg"
+	token "github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/rs/zerolog"

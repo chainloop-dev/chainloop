@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/bufbuild/protovalidate-go"
-	token "github.com/chainloop-dev/chainloop/app/cli/pkg"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
@@ -160,7 +159,7 @@ type InitOpts struct {
 	// Signing options
 	SigningOptions *SigningOpts
 	// Authentication token
-	AuthRawToken string
+	Auth *api.Attestation_Auth
 }
 
 type SigningOpts struct {
@@ -373,14 +372,6 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		caName = opts.SigningOptions.SigningCAName
 	}
 
-	var authInfo *api.Attestation_Auth
-	if opts.AuthRawToken != "" {
-		authInfo, err = extractAuthInfo(opts.AuthRawToken)
-		if err != nil {
-			return nil, fmt.Errorf("extracting auth info: %w", err)
-		}
-	}
-
 	// Generate Crafting state
 	return &api.CraftingState{
 		InputSchema: opts.SchemaV1,
@@ -402,7 +393,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 				Type:             opts.Runner.ID(),
 				Url:              opts.Runner.RunURI(),
 			},
-			Auth: authInfo,
+			Auth: opts.Auth,
 		},
 		DryRun: opts.DryRun,
 	}, nil
@@ -725,24 +716,4 @@ func (c *Crafter) requireStateLoaded() error {
 	}
 
 	return nil
-}
-
-func extractAuthInfo(authToken string) (*api.Attestation_Auth, error) {
-	if authToken == "" {
-		return nil, errors.New("empty token")
-	}
-
-	parsed, err := token.Parse(authToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
-	}
-
-	if parsed == nil {
-		return nil, errors.New("could not determine auth type from token")
-	}
-
-	return &api.Attestation_Auth{
-		Type: parsed.TokenType,
-		Id:   parsed.ID,
-	}, nil
 }
