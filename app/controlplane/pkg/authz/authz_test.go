@@ -134,7 +134,7 @@ func TestSyncRBACRoles(t *testing.T) {
 	defer closer.Close()
 
 	// load all the roles
-	err := syncRBACRoles(e, []Resource{})
+	err := syncRBACRoles(e, &Config{RolesMap: RolesMap})
 	assert.NoError(t, err)
 
 	// Check the inherited roles owner -> admin -> viewer
@@ -148,7 +148,7 @@ func TestSyncRBACRoles(t *testing.T) {
 	assert.Equal(t, string(RoleOwner), u[0])
 
 	// Make sure we are adding all the policies for the listed roles
-	for r, policies := range rolesMap {
+	for r, policies := range RolesMap {
 		got, err := e.GetFilteredPolicy(0, string(r))
 		assert.NoError(t, err)
 		assert.Len(t, got, len(policies))
@@ -181,7 +181,7 @@ func TestDoSync(t *testing.T) {
 	}
 
 	// load custom policies
-	err := doSync(e, policiesM, []Resource{})
+	err := doSync(e, &Config{RolesMap: policiesM})
 	assert.NoError(t, err)
 	got, err := e.GetPolicy()
 	assert.NoError(t, err)
@@ -197,7 +197,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, policiesM, []Resource{ResourceWorkflowContract, ResourceCASArtifact})
+	err = doSync(e, &Config{RolesMap: policiesM, ManagedResources: []string{ResourceWorkflowContract, ResourceCASArtifact}})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -210,7 +210,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, policiesM, []Resource{ResourceWorkflowContract, ResourceCASArtifact})
+	err = doSync(e, &Config{RolesMap: policiesM, ManagedResources: []string{ResourceWorkflowContract, ResourceCASArtifact}})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -223,7 +223,7 @@ func TestDoSync(t *testing.T) {
 			PolicyAttachedIntegrationDetach,
 		},
 	}
-	err = doSync(e, policiesM, []Resource{})
+	err = doSync(e, &Config{RolesMap: policiesM})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -270,7 +270,7 @@ func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
 		require.FailNow(t, err.Error())
 	}
 
-	enforcer, err := NewFiletypeEnforcer(f.Name(), []Resource{})
+	enforcer, err := NewFiletypeEnforcer(f.Name(), &Config{})
 	require.NoError(t, err)
 	return enforcer, f
 }
