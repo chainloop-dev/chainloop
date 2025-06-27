@@ -171,7 +171,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 					go func() {
 						// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
 						// Once we have the token type we can send it to the telemetry service by injecting it on the context
-						authToken, err := token.ParseToken(authToken)
+						authToken, err := token.Parse(authToken)
 						if err != nil {
 							logger.Debug().Err(err).Msg("parsing token for telemetry")
 							return

@@ -732,7 +732,7 @@ func extractAuthInfo(authToken string) (*api.Attestation_Auth, error) {
 		return nil, errors.New("empty token")
 	}
 
-	parsed, err := token.ParseToken(authToken)
+	parsed, err := token.Parse(authToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}

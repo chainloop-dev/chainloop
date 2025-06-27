@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseToken(t *testing.T) {
+func TestParse(t *testing.T) {
 	tests := []struct {
 		name  string
 		token string
@@ -59,7 +59,7 @@ func TestParseToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseToken(tt.token)
+			got, err := Parse(tt.token)
 			assert.NoError(t, err)
 			if tt.want == nil {
 				assert.Nil(t, got)

@@ -34,12 +34,12 @@ const (
 	apiTokenAudience = "api-token-auth.chainloop"
 )
 
-// parseToken the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
+// Parse the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
 // 1. User account token
 // 2. API token
 // Each one of them have an associated audience claim that we use to identify the type of token. If the token is not
 // present, nor we cannot match it with one of the expected audience, return nil.
-func ParseToken(token string) (*ParsedToken, error) {
+func Parse(token string) (*ParsedToken, error) {
 	if token == "" {
 		return nil, nil
 	}
