@@ -102,13 +102,16 @@ type StoredReferrer struct {
 	OrgIDs, WorkflowIDs, ProjectIDs []uuid.UUID
 }
 
+type OrgID = uuid.UUID
+type ProjectID = uuid.UUID
+
 type GetFromRootFilters struct {
 	// RootKind is the kind of the root referrer, i.e ATTESTATION
 	RootKind *string
 	// Wether to filter by visibility or not
 	Public *bool
 	// ProjectIDs stores visible projects by org for the requesting user
-	ProjectIDs map[uuid.UUID][]uuid.UUID
+	ProjectIDs map[OrgID][]ProjectID
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -119,7 +122,8 @@ func WithKind(kind string) func(*GetFromRootFilters) {
 	}
 }
 
-func WithProjectIDs(projectIDs map[uuid.UUID][]uuid.UUID) func(*GetFromRootFilters) {
+// WithVisibleProjectIDs sets visible projects by org for organizations with RBAC enabled for the user (role is OrgMember)
+func WithVisibleProjectIDs(projectIDs map[OrgID][]ProjectID) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.ProjectIDs = projectIDs
 	}
@@ -178,13 +182,13 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs)
 }
 
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID) (*StoredReferrer, error) {
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
 	}
 	if projectIDs != nil {
-		filters = append(filters, WithProjectIDs(projectIDs))
+		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 
 	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)

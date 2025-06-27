@@ -193,7 +193,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID, public *bool, level int) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool, level int) (*biz.StoredReferrer, error) {
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:        root.ID,
@@ -211,24 +211,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	hydrateWorkflowsInfo(root, res)
 
 	// check that, if RBAC is required, the user has visibility on the artifact in at least 1 org/project
-	var found bool
-	for _, oid := range res.OrgIDs {
-		if visibleProjects, ok := projectIDs[oid]; ok {
-			// if entry is present, it means we need to apply RBAC
-			// check if visible projects and referrer projects match
-			// by checking if any project is visible by the user
-			for _, pid := range res.ProjectIDs {
-				if slices.Contains(visibleProjects, pid) {
-					found = true
-				}
-			}
-		} else {
-			// if entry is not found, RBAC is not needed for this org, we have finished
-			found = true
-			break
-		}
-	}
-	if !found {
+	if visible := isReferrerVisible(res, allowedOrgs, visibleProjectsMap); !visible {
 		return nil, biz.NewErrUnauthorizedStr("referrer not allowed")
 	}
 
@@ -264,7 +247,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	for _, reference := range refs {
 		// Call recursively the function
 		// we return all the references
-		ref, err := r.doGet(ctx, reference, allowedOrgs, projectIDs, public, level+1)
+		ref, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, public, level+1)
 		if err != nil && !biz.IsErrUnauthorized(err) {
 			return nil, fmt.Errorf("failed to get referrer: %w", err)
 		}
@@ -275,6 +258,30 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	}
 
 	return res, nil
+}
+
+func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) bool {
+	for _, oid := range ref.OrgIDs {
+		if !slices.Contains(allowedOrgs, oid) {
+			// skip check in organizations where the user doesn't have access
+			continue
+		}
+		if visibleProjects, ok := visibleProjectsMap[oid]; ok {
+			// if entry is present, it means we need to apply RBAC
+			// check if visible projects and referrer projects match
+			// by checking if any project is visible by the user
+			for _, pid := range ref.ProjectIDs {
+				if slices.Contains(visibleProjects, pid) {
+					return true
+				}
+			}
+		} else {
+			// if entry is not found in the map, it means that RBAC is not needed for this org, we have finished
+			return true
+		}
+	}
+
+	return false
 }
 
 // hydrate the referrer with the following information:
