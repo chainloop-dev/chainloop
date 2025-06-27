@@ -163,10 +163,48 @@ export interface Attestation_EnvVarsEntry {
 }
 
 export interface Attestation_Auth {
-  /** Type of authentication used (USER, API_TOKEN, FEDERATED_GITLAB_TOKEN) */
-  type: string;
+  type: Attestation_Auth_AuthType;
   /** Identifier of the authentication (user ID, token ID, etc.) */
   id: string;
+}
+
+export enum Attestation_Auth_AuthType {
+  AUTH_TYPE_UNSPECIFIED = 0,
+  AUTH_TYPE_USER = 1,
+  AUTH_TYPE_API_TOKEN = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function attestation_Auth_AuthTypeFromJSON(object: any): Attestation_Auth_AuthType {
+  switch (object) {
+    case 0:
+    case "AUTH_TYPE_UNSPECIFIED":
+      return Attestation_Auth_AuthType.AUTH_TYPE_UNSPECIFIED;
+    case 1:
+    case "AUTH_TYPE_USER":
+      return Attestation_Auth_AuthType.AUTH_TYPE_USER;
+    case 2:
+    case "AUTH_TYPE_API_TOKEN":
+      return Attestation_Auth_AuthType.AUTH_TYPE_API_TOKEN;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Attestation_Auth_AuthType.UNRECOGNIZED;
+  }
+}
+
+export function attestation_Auth_AuthTypeToJSON(object: Attestation_Auth_AuthType): string {
+  switch (object) {
+    case Attestation_Auth_AuthType.AUTH_TYPE_UNSPECIFIED:
+      return "AUTH_TYPE_UNSPECIFIED";
+    case Attestation_Auth_AuthType.AUTH_TYPE_USER:
+      return "AUTH_TYPE_USER";
+    case Attestation_Auth_AuthType.AUTH_TYPE_API_TOKEN:
+      return "AUTH_TYPE_API_TOKEN";
+    case Attestation_Auth_AuthType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface Attestation_SigningOptions {
@@ -1761,13 +1799,13 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBaseAttestation_Auth(): Attestation_Auth {
-  return { type: "", id: "" };
+  return { type: 0, id: "" };
 }
 
 export const Attestation_Auth = {
   encode(message: Attestation_Auth, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== "") {
-      writer.uint32(10).string(message.type);
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
     }
     if (message.id !== "") {
       writer.uint32(18).string(message.id);
@@ -1783,11 +1821,11 @@ export const Attestation_Auth = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.type = reader.string();
+          message.type = reader.int32() as any;
           continue;
         case 2:
           if (tag !== 18) {
@@ -1806,12 +1844,15 @@ export const Attestation_Auth = {
   },
 
   fromJSON(object: any): Attestation_Auth {
-    return { type: isSet(object.type) ? String(object.type) : "", id: isSet(object.id) ? String(object.id) : "" };
+    return {
+      type: isSet(object.type) ? attestation_Auth_AuthTypeFromJSON(object.type) : 0,
+      id: isSet(object.id) ? String(object.id) : "",
+    };
   },
 
   toJSON(message: Attestation_Auth): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = message.type);
+    message.type !== undefined && (obj.type = attestation_Auth_AuthTypeToJSON(message.type));
     message.id !== undefined && (obj.id = message.id);
     return obj;
   },
@@ -1822,7 +1863,7 @@ export const Attestation_Auth = {
 
   fromPartial<I extends Exact<DeepPartial<Attestation_Auth>, I>>(object: I): Attestation_Auth {
     const message = createBaseAttestation_Auth();
-    message.type = object.type ?? "";
+    message.type = object.type ?? 0;
     message.id = object.id ?? "";
     return message;
   },

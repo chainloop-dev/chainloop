@@ -18,6 +18,7 @@ package token
 import (
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func TestParse(t *testing.T) {
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmMwYjIxOTktY2E4NS00MmFiLWE4NTctMDQyZTljMTA5ZDQzIiwiaXNzIjoiY3AuY2hhaW5sb29wIiwiYXVkIjpbInVzZXItYXV0aC5jaGFpbmxvb3AiXSwiZXhwIjoxNzE1OTM1MjUwfQ.ounYshGtagtYQsVIzNeE0ztVYRXrmjFSpdmaTF4QvyY",
 			want: &ParsedToken{
 				ID:        "bc0b2199-ca85-42ab-a857-042e9c109d43",
-				TokenType: "user",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_USER,
 			},
 		},
 		{
@@ -40,7 +41,7 @@ func TestParse(t *testing.T) {
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdfaWQiOiJkZGRiODIwMS1lYWI2LTRlNjEtOTIwMS1mMTJiNDdjMDE4OTIiLCJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6IjRiMGYwZGQ0LTQ1MzgtNDI2OS05MmE5LWFiNWIwZmNlMDI1OCJ9.yMgsoe4CcqYoNp0xtrvvSGj1Y74HeqxoxS5sw8pdnQ8",
 			want: &ParsedToken{
 				ID:        "4b0f0dd4-4538-4269-92a9-ab5b0fce0258",
-				TokenType: "api-token",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_API_TOKEN,
 				OrgID:     "dddb8201-eab6-4e61-9201-f12b47c01892",
 			},
 		},
@@ -49,7 +50,7 @@ func TestParse(t *testing.T) {
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6ImQ0ZTBlZTVlLTk3MTMtNDFkMi05ZmVhLTBiZGIxNDAzMzA4MSJ9.IOd3JIHPwfo9ihU20kvRwLIQJcQtTvp-ajlGqlCD4Es",
 			want: &ParsedToken{
 				ID:        "d4e0ee5e-9713-41d2-9fea-0bdb14033081",
-				TokenType: "api-token",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_API_TOKEN,
 			},
 		},
 		{

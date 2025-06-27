@@ -107,6 +107,7 @@ type ProvenancePredicateCommon struct {
 	RunnerEnvironment      string `json:"runnerEnvironment,omitempty"`
 	RunnerAuthenticated    bool   `json:"runnerAuthenticated,omitempty"`
 	RunnerWorkflowFilePath string `json:"runnerWorkflowFilePath,omitempty"`
+	Auth                   *Auth  `json:"auth,omitempty"`
 }
 
 type Metadata struct {
@@ -130,6 +131,11 @@ type Maintainer struct {
 	Email string `json:"email"`
 }
 
+type Auth struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
 type builderInfo struct {
 	version, digest string
 }
@@ -149,12 +155,20 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		environment      string
 		authenticated    bool
 		workflowFilePath string
+		auth             *Auth
 	)
 
 	if att.RunnerEnvironment != nil {
 		environment = att.RunnerEnvironment.GetEnvironment()
 		authenticated = att.RunnerEnvironment.GetAuthenticated()
 		workflowFilePath = att.RunnerEnvironment.GetWorkflowFilePath()
+	}
+
+	if att.Auth != nil {
+		auth = &Auth{
+			ID:   att.Auth.GetId(),
+			Type: att.Auth.GetType().String(),
+		}
 	}
 
 	return &ProvenancePredicateCommon{
@@ -168,6 +182,7 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		RunnerEnvironment:      environment,
 		RunnerAuthenticated:    authenticated,
 		RunnerWorkflowFilePath: workflowFilePath,
+		Auth:                   auth,
 	}
 }
 

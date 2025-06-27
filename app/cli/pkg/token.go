@@ -15,7 +15,10 @@
 
 package token
 
-import "github.com/golang-jwt/jwt/v4"
+import (
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/golang-jwt/jwt/v4"
+)
 
 const (
 	UserAudience = "user-auth.chainloop"
@@ -25,7 +28,7 @@ const (
 type ParsedToken struct {
 	ID        string
 	OrgID     string
-	TokenType string
+	TokenType v1.Attestation_Auth_AuthType
 }
 
 const (
@@ -79,7 +82,7 @@ func Parse(token string) (*ParsedToken, error) {
 	// Determine the type of token based on the audience.
 	switch aud[0].(string) {
 	case apiTokenAudience:
-		pToken.TokenType = "api-token"
+		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_API_TOKEN
 		if tokenID, ok := claims["jti"].(string); ok {
 			pToken.ID = tokenID
 		}
@@ -87,7 +90,7 @@ func Parse(token string) (*ParsedToken, error) {
 			pToken.OrgID = orgID
 		}
 	case userAudience:
-		pToken.TokenType = "user"
+		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_USER
 		if userID, ok := claims["user_id"].(string); ok {
 			pToken.ID = userID
 		}

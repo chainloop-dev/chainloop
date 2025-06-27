@@ -403,7 +403,7 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 
 	// It tries to extract the token from the context and add it to the tags. If it fails, it will ignore it.
 	if authInfo != nil {
-		tags["token_type"] = authInfo.TokenType
+		tags["token_type"] = authInfo.TokenType.String()
 		tags["user_id"] = authInfo.ID
 		tags["org_id"] = authInfo.OrgID
 	}

@@ -9,9 +9,22 @@
       "type": "string"
     },
     "type": {
-      "description": "Type of authentication used (USER, API_TOKEN, FEDERATED_GITLAB_TOKEN)",
-      "minLength": 1,
-      "type": "string"
+      "anyOf": [
+        {
+          "enum": [
+            "AUTH_TYPE_UNSPECIFIED",
+            "AUTH_TYPE_USER",
+            "AUTH_TYPE_API_TOKEN"
+          ],
+          "title": "Auth Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
     }
   },
   "title": "Auth",
