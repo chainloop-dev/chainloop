@@ -205,11 +205,13 @@ func doSync(e *Enforcer, c *Config) error {
 		return fmt.Errorf("failed to get policies: %w", err)
 	}
 
-	for _, gotPolicies := range policies {
-		role := gotPolicies[0]
-		resource := gotPolicies[1]
-		action := gotPolicies[2]
-		policy := &Policy{Resource: resource, Action: action}
+	// clone policies, as delete operations in CasBin alters the "policies" slice
+	clonedPolicies := slices.Clone(policies)
+
+	for _, p := range clonedPolicies {
+		role := p[0]
+		resource := p[1]
+		action := p[2]
 
 		// if it's not a managed resource, skip deletion
 		if !slices.Contains(conf.ManagedResources, resource) {
@@ -219,7 +221,7 @@ func doSync(e *Enforcer, c *Config) error {
 		wantPolicies, ok := conf.RolesMap[Role(role)]
 		// if the role does not exist in the map, we can delete the policy
 		if !ok {
-			_, err := e.RemovePolicy(role, policy.Resource, policy.Action)
+			_, err := e.RemovePolicy(role, resource, action)
 			if err != nil {
 				return fmt.Errorf("failed to remove policy: %w", err)
 			}
@@ -229,7 +231,7 @@ func doSync(e *Enforcer, c *Config) error {
 		// We have the role in the map, so we now compare the policies
 		found := false
 		for _, p := range wantPolicies {
-			if p.Resource == policy.Resource && p.Action == policy.Action {
+			if p.Resource == resource && p.Action == action {
 				found = true
 				break
 			}
@@ -237,7 +239,7 @@ func doSync(e *Enforcer, c *Config) error {
 
 		// If the policy is not in the map, we remove it
 		if !found {
-			_, err := e.RemovePolicy(gotPolicies)
+			_, err := e.RemovePolicy(p)
 			if err != nil {
 				return fmt.Errorf("failed to remove policy: %w", err)
 			}
