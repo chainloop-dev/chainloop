@@ -65,28 +65,22 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 			ctx := cmd.Context()
 
 			// Collect all flags that were set
-			flags := make(map[string]any)
-			for _, flag := range cmdInfo.Flags {
-				switch flag.Type {
-				case stringFlagType:
-					if val, err := cmd.Flags().GetString(flag.Name); err == nil {
-						flags[flag.Name] = val
-					}
-				case boolFlagType:
-					if val, err := cmd.Flags().GetBool(flag.Name); err == nil {
-						flags[flag.Name] = val
-					}
-				case intFlagType:
-					if val, err := cmd.Flags().GetInt(flag.Name); err == nil {
-						flags[flag.Name] = val
-					}
+			flags := make(map[string]plugins.SimpleFlag)
+			rootCmd.Flags().VisitAll(func(f *pflag.Flag) {
+				flags[f.Name] = plugins.SimpleFlag{
+					Name:        f.Name,
+					Shorthand:   f.Shorthand,
+					Usage:       f.Usage,
+					Value:       f.Value.String(),
+					DefValue:    f.DefValue,
+					Changed:     f.Changed,
+					NoOptDefVal: f.NoOptDefVal,
 				}
-			}
+			})
 
 			// Collect all persistent flags that were set
-			persistentFlags := make(map[string]plugins.SimpleFlag)
 			rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
-				persistentFlags[f.Name] = plugins.SimpleFlag{
+				flags[f.Name] = plugins.SimpleFlag{
 					Name:        f.Name,
 					Shorthand:   f.Shorthand,
 					Usage:       f.Usage,
@@ -99,10 +93,9 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginConfig{
-				Command:         cmdInfo.Name,
-				Args:            args,
-				Flags:           flags,
-				PersistentFlags: persistentFlags,
+				Command: cmdInfo.Name,
+				Args:    args,
+				Flags:   flags,
 			}
 
 			// execute plugin command using the action pattern
