@@ -99,29 +99,26 @@ func (m *Manager) loadPlugin(ctx context.Context, path string) error {
 
 	// Connect via RPC
 	rpcClient, err := client.Client()
+	defer client.Kill()
 	if err != nil {
-		client.Kill()
 		return fmt.Errorf("failed to create RPC client: %w", err)
 	}
 
 	// Request the plugin
 	raw, err := rpcClient.Dispense("chainloop")
 	if err != nil {
-		client.Kill()
 		return fmt.Errorf("failed to dispense plugin: %w", err)
 	}
 
 	// Cast to our interface
 	chainloopPlugin, ok := raw.(Plugin)
 	if !ok {
-		client.Kill()
 		return fmt.Errorf("plugin does not implement Plugin interface")
 	}
 
 	// Get plugin metadata
 	metadata, err := chainloopPlugin.GetMetadata(ctx)
 	if err != nil {
-		client.Kill()
 		return fmt.Errorf("failed to get plugin metadata: %w", err)
 	}
 

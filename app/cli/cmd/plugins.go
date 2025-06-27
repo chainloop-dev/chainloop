@@ -45,8 +45,8 @@ func init() {
 func newPluginCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plugin",
-		Short: "Manage plugins",
-		Long:  "Manage Chainloop CLI plugins",
+		Short: "Manage plugins (preview)",
+		Long:  "Manage Chainloop CLI plugins (preview)",
 	}
 
 	cmd.AddCommand(newPluginListCmd())
