@@ -71,12 +71,15 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID)
+				// Project ID is optional
+				projectID, _ := genericClaims["project_id"].(string)
+
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
 
-				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
+				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "projectID", projectID)
 			}
 
 			return handler(ctx, req)
@@ -120,7 +123,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID)
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
@@ -157,7 +160,7 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 }
 
 // Set the current organization and API-Token in the context
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID string) (context.Context, error) {
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim string) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
@@ -168,6 +171,11 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		return nil, fmt.Errorf("error retrieving the API token: %w", err)
 	} else if token == nil {
 		return nil, errors.New("API token not found")
+	}
+
+	// Make sure that the projectID that comes in the token claim matches the one in the DB
+	if projectIDInClaim != "" && token.ProjectID.String() != projectIDInClaim {
+		return nil, errors.New("API token project mismatch")
 	}
 
 	// Note: Expiration time does not need to be checked because that's done at the JWT
@@ -186,7 +194,15 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 
 	// Set the current organization and API-Token in the context
 	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: token.ID.String(), CreatedAt: token.CreatedAt, Token: token.JWT})
+
+	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
+		ID:          token.ID.String(),
+		Name:        token.Name,
+		CreatedAt:   token.CreatedAt,
+		Token:       token.JWT,
+		ProjectID:   token.ProjectID,
+		ProjectName: token.ProjectName,
+	})
 
 	// Set the authorization subject that will be used to check the policies
 	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}

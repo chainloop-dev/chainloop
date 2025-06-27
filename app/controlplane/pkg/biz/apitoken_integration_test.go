@@ -66,7 +66,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 	})
 
 	s.Run("happy path with project", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProjectID(s.p1.ID))
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
 		s.NoError(err)
 		s.Equal(s.org.ID, token.OrganizationID.String())
 		s.Equal(s.p1.ID, *token.ProjectID)
@@ -78,7 +78,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 			name       string
 			tokenName  string
 			wantErrMsg string
-			projectID  *uuid.UUID
+			project    *biz.Project
 		}{
 			{
 				name:       "name missing",
@@ -107,17 +107,17 @@ func (s *apiTokenTestSuite) TestCreate() {
 			{
 				name:      "tokens in projects can have the same name",
 				tokenName: "my-name",
-				projectID: &s.p1.ID,
+				project:   s.p1,
 			},
 			{
 				name:      "tokens in different projects too",
 				tokenName: "my-name",
-				projectID: &s.p2.ID,
+				project:   s.p2,
 			},
 			{
 				name:       "can't be duplicated in the same project",
 				tokenName:  "my-name",
-				projectID:  &s.p1.ID,
+				project:    s.p1,
 				wantErrMsg: "name already taken",
 			},
 		}
@@ -125,8 +125,8 @@ func (s *apiTokenTestSuite) TestCreate() {
 		for _, tc := range testCases {
 			s.Run(tc.name, func() {
 				var opts []biz.APITokenUseCaseOpt
-				if tc.projectID != nil {
-					opts = append(opts, biz.APITokenWithProjectID(*tc.projectID))
+				if tc.project != nil {
+					opts = append(opts, biz.APITokenWithProject(tc.project))
 				}
 
 				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, s.org.ID, opts...)
@@ -273,7 +273,7 @@ func (s *apiTokenTestSuite) TestList() {
 
 	s.Run("can return only for a specific project", func() {
 		var err error
-		tokens, err := s.APIToken.List(ctx, s.org.ID, false, biz.APITokenWithProjectID(s.p1.ID))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, false, biz.APITokenWithProject(s.p1))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 2)
 		s.Equal(s.t4.ID, tokens[0].ID)
@@ -369,8 +369,8 @@ func (s *apiTokenTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	// Create 2 tokens for project 1
-	s.t4, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProjectID(s.p1.ID))
+	s.t4, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
 	require.NoError(s.T(), err)
-	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProjectID(s.p1.ID))
+	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
 	require.NoError(s.T(), err)
 }

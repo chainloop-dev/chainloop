@@ -23,10 +23,12 @@ import (
 )
 
 type Membership struct {
+	UserID    uuid.UUID
 	Resources []*ResourceMembership
 }
 
 type ResourceMembership struct {
+	MembershipID uuid.UUID
 	Role         authz.Role
 	ResourceType authz.ResourceType
 	ResourceID   uuid.UUID

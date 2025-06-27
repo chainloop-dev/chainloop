@@ -128,15 +128,15 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 }
 
 type apiTokenOptions struct {
-	projectID            *uuid.UUID
+	project              *Project
 	showOnlySystemTokens bool
 }
 
 type APITokenUseCaseOpt func(*apiTokenOptions)
 
-func APITokenWithProjectID(projectID uuid.UUID) APITokenUseCaseOpt {
+func APITokenWithProject(project *Project) APITokenUseCaseOpt {
 	return func(o *apiTokenOptions) {
-		o.projectID = &projectID
+		o.project = project
 	}
 }
 
@@ -181,9 +181,15 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, fmt.Errorf("finding organization: %w", err)
 	}
 
+	// If a project is provided, we store it in the token
+	var projectID *uuid.UUID
+	if options.project != nil {
+		projectID = ToPtr(options.project.ID)
+	}
+
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, options.projectID)
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -191,8 +197,22 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, fmt.Errorf("storing token: %w", err)
 	}
 
+	generationOpts := &apitoken.GenerateJWTOptions{
+		OrgID:     token.OrganizationID,
+		OrgName:   org.Name,
+		KeyID:     token.ID,
+		KeyName:   name,
+		ExpiresAt: expiresAt,
+	}
+
+	if projectID != nil {
+		generationOpts.ProjectID = ToPtr(options.project.ID)
+		generationOpts.ProjectName = ToPtr(options.project.Name)
+	}
+
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(generationOpts)
+
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
@@ -233,8 +253,16 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 		return nil, fmt.Errorf("finding organization: %w", err)
 	}
 
+	generationOpts := &apitoken.GenerateJWTOptions{
+		OrgID:     token.OrganizationID,
+		OrgName:   org.Name,
+		KeyID:     token.ID,
+		KeyName:   token.Name,
+		ExpiresAt: &expiresAt,
+	}
+
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), &expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(generationOpts)
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
@@ -258,7 +286,12 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoke
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.apiTokenRepo.List(ctx, &orgUUID, options.projectID, includeRevoked, options.showOnlySystemTokens)
+	var projectID *uuid.UUID
+	if options.project != nil {
+		projectID = ToPtr(options.project.ID)
+	}
+
+	return uc.apiTokenRepo.List(ctx, &orgUUID, projectID, includeRevoked, options.showOnlySystemTokens)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
@@ -308,7 +341,12 @@ func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name stri
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name, options.projectID)
+	var projectID *uuid.UUID
+	if options.project != nil {
+		projectID = ToPtr(options.project.ID)
+	}
+
+	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
 	}

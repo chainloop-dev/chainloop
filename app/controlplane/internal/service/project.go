@@ -56,7 +56,7 @@ func (s *ProjectService) APITokenCreate(ctx context.Context, req *pb.ProjectServ
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProjectID(project.ID))
+	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -81,7 +81,7 @@ func (s *ProjectService) APITokenList(ctx context.Context, req *pb.ProjectServic
 		return nil, err
 	}
 
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProjectID(project.ID))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -106,7 +106,7 @@ func (s *ProjectService) APITokenRevoke(ctx context.Context, req *pb.ProjectServ
 		return nil, err
 	}
 
-	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name, biz.APITokenWithProjectID(project.ID))
+	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
