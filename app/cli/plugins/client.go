@@ -40,7 +40,7 @@ type RPCClient struct {
 	client *rpc.Client
 }
 
-func (m *RPCClient) Exec(_ context.Context, config PluginConfig) (ExecResult, error) {
+func (m *RPCClient) Exec(_ context.Context, config PluginExecConfig) (ExecResult, error) {
 	var resp ExecResponse
 	err := m.client.Call("Plugin.Exec", config, &resp)
 	if err != nil {
@@ -60,7 +60,7 @@ type RPCServer struct {
 	Impl Plugin
 }
 
-func (m *RPCServer) Exec(config PluginConfig, resp *ExecResponse) error {
+func (m *RPCServer) Exec(config PluginExecConfig, resp *ExecResponse) error {
 	ctx := context.Background()
 
 	result, err := m.Impl.Exec(ctx, config)

@@ -130,7 +130,7 @@ func NewPluginExec(cfg *ActionsOpts, manager *plugins.Manager) *PluginExec {
 }
 
 // Run executes the PluginExec action
-func (action *PluginExec) Run(ctx context.Context, pluginName string, commandName string, config plugins.PluginConfig) (*PluginExecResult, error) {
+func (action *PluginExec) Run(ctx context.Context, pluginName string, commandName string, config plugins.PluginExecConfig) (*PluginExecResult, error) {
 	action.cfg.Logger.Debug().Str("pluginName", pluginName).Str("command", commandName).Msg("Executing plugin command")
 	plugin, ok := action.manager.GetPlugin(pluginName)
 	if !ok {

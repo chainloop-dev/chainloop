@@ -56,7 +56,7 @@ func newPluginCmd() *cobra.Command {
 	return cmd
 }
 
-func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo plugins.CommandInfo) *cobra.Command {
+func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo plugins.PluginCommandInfo) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   cmdInfo.Name,
 		Short: cmdInfo.Description,
@@ -92,7 +92,7 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 			})
 
 			// Create plugin configuration with command, arguments, and flags
-			config := plugins.PluginConfig{
+			config := plugins.PluginExecConfig{
 				Command: cmdInfo.Name,
 				Args:    args,
 				Flags:   flags,
@@ -201,11 +201,11 @@ func newPluginDescribeCmd() *cobra.Command {
 
 			if flagOutputFormat == formatJSON {
 				type pluginDetail struct {
-					Name        string                `json:"name"`
-					Version     string                `json:"version"`
-					Description string                `json:"description"`
-					Path        string                `json:"path"`
-					Commands    []plugins.CommandInfo `json:"commands"`
+					Name        string                      `json:"name"`
+					Version     string                      `json:"version"`
+					Description string                      `json:"description"`
+					Path        string                      `json:"path"`
+					Commands    []plugins.PluginCommandInfo `json:"commands"`
 				}
 
 				detail := pluginDetail{

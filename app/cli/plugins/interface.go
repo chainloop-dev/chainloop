@@ -22,7 +22,7 @@ import (
 // Plugin is the interface that plugins must implement.
 type Plugin interface {
 	// Exec executes a command within the plugin
-	Exec(ctx context.Context, config PluginConfig) (ExecResult, error)
+	Exec(ctx context.Context, config PluginExecConfig) (ExecResult, error)
 
 	// GetMetadata returns plugin metadata including commands it provides
 	GetMetadata(ctx context.Context) (PluginMetadata, error)
@@ -48,11 +48,11 @@ type PluginMetadata struct {
 	Name        string
 	Version     string
 	Description string
-	Commands    []CommandInfo
+	Commands    []PluginCommandInfo
 }
 
-// CommandInfo describes a command provided by the plugin
-type CommandInfo struct {
+// PluginCommandInfo describes a command provided by the plugin
+type PluginCommandInfo struct {
 	Name        string
 	Description string
 	Usage       string
@@ -69,8 +69,8 @@ type FlagInfo struct {
 	Required    bool
 }
 
-// PluginConfig is the configuration for a plugin command execution.
-type PluginConfig struct {
+// PluginExecConfig is the configuration for a plugin command execution.
+type PluginExecConfig struct {
 	Command string
 	Args    []string
 	Flags   map[string]SimpleFlag
