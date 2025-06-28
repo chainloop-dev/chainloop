@@ -23,18 +23,10 @@ import (
 
 func init() {
 	// Register types that will be sent over RPC
-	gob.Register(map[string]any{})
-	gob.Register([]any{})
 	gob.Register(PluginExecConfig{})
 	gob.Register(ExecResponse{})
 	gob.Register(PluginMetadata{})
 	gob.Register(PluginCommandInfo{})
-	gob.Register(FlagInfo{})
-	gob.Register([]PluginCommandInfo{})
-	gob.Register([]FlagInfo{})
-	gob.Register([]string{})
-	gob.Register([]map[string]any{})
-	gob.Register(map[string]SimpleFlag{})
 }
 
 // Handshake is a common handshake that is shared by CLI plugins and the host.
