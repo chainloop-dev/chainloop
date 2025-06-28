@@ -284,7 +284,7 @@ func newPluginInstallCmd() *cobra.Command {
 
 // loadAllPlugins loads all plugins and registers their commands to the root command
 func loadAllPlugins(rootCmd *cobra.Command) error {
-	ctx := context.Background()
+	ctx := rootCmd.Context()
 
 	// Load all plugins from the plugins directory
 	if err := pluginManager.LoadPlugins(ctx); err != nil {
