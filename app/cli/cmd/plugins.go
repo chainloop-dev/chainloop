@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/plugins"
@@ -66,17 +67,31 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 
 			// Collect all flags that were set
 			flags := make(map[string]plugins.SimpleFlag)
-			rootCmd.Flags().VisitAll(func(f *pflag.Flag) {
-				flags[f.Name] = plugins.SimpleFlag{
-					Name:        f.Name,
-					Shorthand:   f.Shorthand,
-					Usage:       f.Usage,
-					Value:       f.Value.String(),
-					DefValue:    f.DefValue,
-					Changed:     f.Changed,
-					NoOptDefVal: f.NoOptDefVal,
+
+			for _, flag := range cmdInfo.Flags {
+				simpleFlag := plugins.SimpleFlag{
+					Name:      flag.Name,
+					Shorthand: flag.Shorthand,
+					Usage:     flag.Description,
 				}
-			})
+
+				switch flag.Type {
+				case stringFlagType:
+					if val, err := cmd.Flags().GetString(flag.Name); err == nil {
+						simpleFlag.Value = val
+					}
+				case boolFlagType:
+					if val, err := cmd.Flags().GetBool(flag.Name); err == nil {
+						simpleFlag.Value = strconv.FormatBool(val)
+					}
+				case intFlagType:
+					if val, err := cmd.Flags().GetInt(flag.Name); err == nil {
+						simpleFlag.Value = strconv.Itoa(val)
+					}
+				}
+				flags[flag.Name] = simpleFlag
+
+			}
 
 			// Collect all persistent flags that were set
 			rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
