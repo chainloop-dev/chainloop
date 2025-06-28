@@ -57,7 +57,7 @@ func newPluginCmd() *cobra.Command {
 	return cmd
 }
 
-func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo plugins.PluginCommandInfo) *cobra.Command {
+func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo *plugins.PluginCommandInfo) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   cmdInfo.Name,
 		Short: cmdInfo.Description,
@@ -66,10 +66,10 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 			ctx := cmd.Context()
 
 			// Collect all flags that were set
-			flags := make(map[string]plugins.SimpleFlag)
+			flags := make(map[string]*plugins.SimpleFlag)
 
 			for _, flag := range cmdInfo.Flags {
-				simpleFlag := plugins.SimpleFlag{
+				simpleFlag := &plugins.SimpleFlag{
 					Name:      flag.Name,
 					Shorthand: flag.Shorthand,
 					Usage:     flag.Description,
@@ -95,7 +95,7 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 
 			// Collect all persistent flags that were set
 			rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
-				flags[f.Name] = plugins.SimpleFlag{
+				flags[f.Name] = &plugins.SimpleFlag{
 					Name:        f.Name,
 					Shorthand:   f.Shorthand,
 					Usage:       f.Usage,
@@ -216,11 +216,11 @@ func newPluginDescribeCmd() *cobra.Command {
 
 			if flagOutputFormat == formatJSON {
 				type pluginDetail struct {
-					Name        string                      `json:"name"`
-					Version     string                      `json:"version"`
-					Description string                      `json:"description"`
-					Path        string                      `json:"path"`
-					Commands    []plugins.PluginCommandInfo `json:"commands"`
+					Name        string                       `json:"name"`
+					Version     string                       `json:"version"`
+					Description string                       `json:"description"`
+					Path        string                       `json:"path"`
+					Commands    []*plugins.PluginCommandInfo `json:"commands"`
 				}
 
 				detail := pluginDetail{

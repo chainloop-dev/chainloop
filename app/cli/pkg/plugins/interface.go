@@ -48,7 +48,7 @@ type PluginMetadata struct {
 	Name        string
 	Version     string
 	Description string
-	Commands    []PluginCommandInfo
+	Commands    []*PluginCommandInfo
 }
 
 // PluginCommandInfo describes a command provided by the plugin
@@ -56,7 +56,7 @@ type PluginCommandInfo struct {
 	Name        string
 	Description string
 	Usage       string
-	Flags       []FlagInfo
+	Flags       []*FlagInfo
 }
 
 // FlagInfo describes a command flag.
@@ -73,7 +73,7 @@ type FlagInfo struct {
 type PluginExecConfig struct {
 	Command string
 	Args    []string
-	Flags   map[string]SimpleFlag
+	Flags   map[string]*SimpleFlag
 }
 
 type SimpleFlag struct {
