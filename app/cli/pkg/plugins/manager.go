@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/chainloop-dev/chainloop/app/cli/common"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
@@ -49,19 +48,13 @@ func NewManager() *Manager {
 
 // LoadPlugins loads all plugins from the plugins directory.
 func (m *Manager) LoadPlugins(ctx context.Context) error {
-	pluginsDir := common.GetPluginsDir()
+	pluginsDir := GetPluginsDir()
 
 	if err := os.MkdirAll(pluginsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create plugins directory: %w", err)
 	}
 
-	// Use appropriate glob pattern based on OS
-	glob := "*"
-	if common.IsWindows() {
-		glob = "*.exe"
-	}
-
-	plugins, err := plugin.Discover(glob, pluginsDir)
+	plugins, err := plugin.Discover("*", pluginsDir)
 	if err != nil {
 		return fmt.Errorf("failed to discover plugins: %w", err)
 	}

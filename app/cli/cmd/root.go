@@ -25,11 +25,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/common"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
-	"github.com/chainloop-dev/chainloop/app/cli/plugins"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/golang-jwt/jwt/v4"
@@ -96,7 +95,7 @@ func Execute(l zerolog.Logger) error {
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:           common.AppName,
+		Use:           "chainloop",
 		Short:         "Chainloop Command Line Interface",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -307,7 +306,7 @@ func initConfigFile() {
 	}
 
 	// If no config file was passed as a flag we use the default one
-	configPath := common.GetConfigDir()
+	configPath := plugins.GetConfigDir()
 	// Create the file if it does not exist
 	if _, err := os.Stat(configPath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(configPath, os.ModePerm)

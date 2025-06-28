@@ -13,29 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package plugins
 
 import (
 	"path/filepath"
-	"runtime"
 
 	"github.com/adrg/xdg"
 )
 
-const (
-	AppName    = "chainloop"
-	pluginsDir = "plugins"
-)
-
 func GetPluginsDir() string {
-	return filepath.Join(xdg.ConfigHome, AppName, pluginsDir)
+	return filepath.Join(xdg.ConfigHome, "chainloop", "plugins")
 }
 
 func GetConfigDir() string {
-	return filepath.Join(xdg.ConfigHome, AppName)
-}
-
-// IsWindows returns true if the current OS is Windows
-func IsWindows() bool {
-	return runtime.GOOS == "windows"
+	return filepath.Join(xdg.ConfigHome, "chainloop")
 }
