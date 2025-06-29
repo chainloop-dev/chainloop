@@ -326,3 +326,35 @@ func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v
 		Optional: gm.Optional,
 	}, nil
 }
+
+// Shows warning if newer contract revision exists
+func (action *AttestationInit) WarnIfOutdatedContract(
+	ctx context.Context,
+	workflowName, projectName string,
+	currentRevision int32,
+) error {
+	if action.dryRun || action.useRemoteState || currentRevision == 0 {
+		return nil
+	}
+	client := pb.NewAttestationServiceClient(action.CPConnection)
+	latestResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
+		ContractRevision: 0,
+		WorkflowName:     workflowName,
+		ProjectName:      projectName,
+	})
+
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			action.Logger.Debug().Err(err).Msg("failed to check for contract version")
+		}
+		return nil
+	}
+
+	latestRev := latestResp.Result.GetContract().GetRevision()
+	if currentRevision < latestRev {
+		action.Logger.Warn().
+			Msgf("Newer contract revision available - latest revision: %d", latestRev)
+	}
+
+	return nil
+}

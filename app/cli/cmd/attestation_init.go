@@ -121,6 +121,18 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
+			if !attestationDryRun && newWorkflowcontract == "" {
+				err := a.WarnIfOutdatedContract(
+					cmd.Context(),
+					workflowName,
+					projectName,
+					int32(contractRevision),
+				)
+				if err != nil {
+					return newGracefulError(err)
+				}
+			}
+
 			if res.DryRun {
 				logger.Info().Msg("The attestation is being crafted in dry-run mode. It will not get stored once rendered")
 			}
