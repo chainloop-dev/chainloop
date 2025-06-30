@@ -81,6 +81,10 @@
       },
       "type": "object"
     },
+    "auth": {
+      "$ref": "attestation.v1.Attestation.Auth.jsonschema.json",
+      "description": "Authentication information used during attestation"
+    },
     "blockOnPolicyViolation": {
       "description": "fail the attestation if policy evaluation fails",
       "type": "boolean"

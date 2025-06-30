@@ -158,6 +158,8 @@ type InitOpts struct {
 	BlockOnPolicyViolation bool
 	// Signing options
 	SigningOptions *SigningOpts
+	// Authentication token
+	Auth *api.Attestation_Auth
 }
 
 type SigningOpts struct {
@@ -391,6 +393,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 				Type:             opts.Runner.ID(),
 				Url:              opts.Runner.RunURI(),
 			},
+			Auth: opts.Auth,
 		},
 		DryRun: opts.DryRun,
 	}, nil
