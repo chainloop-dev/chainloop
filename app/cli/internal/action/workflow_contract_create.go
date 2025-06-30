@@ -37,7 +37,7 @@ func (action *WorkflowContractCreate) Run(name string, description *string, cont
 	}
 
 	if contractPath != "" {
-		rawContract, err := LoadFileOrURL(contractPath)
+		rawContract, err := loadFileOrURL(contractPath)
 		if err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("loading the contract")
 			return nil, err
