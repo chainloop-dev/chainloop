@@ -133,6 +133,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 	workflow := workflowsResp.GetResult()
 
+	// Show warning if newer contract revision exists
+	if opts.ContractRevision > 0 && int32(opts.ContractRevision) < workflow.ContractRevisionLatest {
+		action.Logger.Warn().
+			Msgf("Newer contract revision available: %d, pinned version: %d", workflow.ContractRevisionLatest, opts.ContractRevision)
+	}
+
 	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
 		ContractRevision: int32(opts.ContractRevision),
