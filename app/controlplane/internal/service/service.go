@@ -270,36 +270,17 @@ func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Cont
 		return handleUseCaseErr(err, s.log)
 	}
 
-	// Get the current user from the context
-	user := entities.CurrentUser(ctx)
-	if user == nil {
-		return errors.NotFound("not found", "logged in user not found")
-	}
-
-	userUUID, err := uuid.Parse(user.ID)
-	if err != nil {
-		return errors.BadRequest("invalid", "invalid user ID")
-	}
-
-	// Check if the user is a maintainer of the group
-	isMaintainer, err := s.groupUseCase.IsUserGroupMaintainer(ctx, orgUUID, resolvedGroupID, userUUID)
-	if err != nil {
-		return handleUseCaseErr(err, s.log)
-	}
-
-	// If the user is a maintainer, they can perform any operation on the group
-	if isMaintainer {
-		return nil
-	}
-
-	// If a specific policy was provided, check if the user's role allows that policy
-	if policy != nil && s.enforcer != nil {
-		pass, err := s.enforcer.Enforce(userRole, policy)
-		if err != nil {
-			return handleUseCaseErr(err, s.log)
-		}
-		if pass {
-			return nil
+	// Check the user's membership in the organization
+	m := entities.CurrentMembership(ctx)
+	for _, rm := range m.Resources {
+		if rm.ResourceType == authz.ResourceTypeGroup && rm.ResourceID == resolvedGroupID {
+			pass, err := s.enforcer.Enforce(string(rm.Role), policy)
+			if err != nil {
+				return handleUseCaseErr(err, s.log)
+			}
+			if pass {
+				return nil
+			}
 		}
 	}
 

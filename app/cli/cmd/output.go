@@ -56,7 +56,8 @@ type tabulatedData interface {
 		*action.AttestationStatusMaterial |
 		*action.GroupCreateItem |
 		*action.GroupListResult |
-		*action.GroupMemberListResult
+		*action.GroupMemberListResult |
+		*action.GroupUpdateItem
 }
 
 var ErrOutputFormatNotImplemented = errors.New("format not implemented")

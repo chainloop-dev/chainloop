@@ -27,7 +27,7 @@ func newGroupCmd() *cobra.Command {
 		Hidden:  true,
 	}
 
-	cmd.AddCommand(newGroupCreateCmd(), newGroupDescribeCmd(), newGroupListCmd(), newGroupDeleteCmd(), newGroupMembersCmd())
+	cmd.AddCommand(newGroupCreateCmd(), newGroupDescribeCmd(), newGroupUpdateCmd(), newGroupListCmd(), newGroupDeleteCmd(), newGroupMembersCmd())
 
 	return cmd
 }
