@@ -72,7 +72,6 @@ func (m *RPCServer) Exec(config PluginExecConfig, resp *ExecResponse) error {
 		Output:   result.GetOutput(),
 		Error:    result.GetError(),
 		ExitCode: result.GetExitCode(),
-		Data:     result.GetData(),
 	}
 	return nil
 }
@@ -91,7 +90,6 @@ type ExecResponse struct {
 	Output   string
 	Error    string
 	ExitCode int
-	Data     map[string]any
 }
 
 func (r *ExecResponse) GetOutput() string {
@@ -104,8 +102,4 @@ func (r *ExecResponse) GetError() string {
 
 func (r *ExecResponse) GetExitCode() int {
 	return r.ExitCode
-}
-
-func (r *ExecResponse) GetData() map[string]any {
-	return r.Data
 }

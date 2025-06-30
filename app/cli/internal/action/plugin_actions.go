@@ -151,7 +151,6 @@ func (action *PluginExec) Run(ctx context.Context, pluginName string, commandNam
 		Output:   result.GetOutput(),
 		Error:    result.GetError(),
 		ExitCode: result.GetExitCode(),
-		Data:     result.GetData(),
 	}, nil
 }
 

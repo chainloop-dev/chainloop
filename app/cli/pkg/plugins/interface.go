@@ -38,9 +38,6 @@ type ExecResult interface {
 
 	// GetExitCode returns the exit code
 	GetExitCode() int
-
-	// GetData returns any structured data
-	GetData() map[string]any
 }
 
 // PluginMetadata contains information about the plugin.
