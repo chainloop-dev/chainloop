@@ -243,6 +243,17 @@ func (s *service) userHasPermissionToRemoveGroupMember(ctx context.Context, orgI
 // userHasPermissionOnGroupMembershipsWithPolicy is the core implementation that checks if a user has permission on a group
 // with an optional specific policy check. If the policy is nil, it falls back to the basic permission check.
 func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference, policy *authz.Policy) error {
+	// Check if the user has admin or owner role in the organization
+	userRole := usercontext.CurrentAuthzSubject(ctx)
+	if userRole == "" {
+		return errors.NotFound("not found", "current membership not found")
+	}
+
+	// Allow if user has admin or owner role
+	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
+		return nil
+	}
+
 	groupID, groupName, err := s.parseIdentityReference(groupIdentifier)
 	if err != nil {
 		return handleUseCaseErr(err, s.log)
@@ -278,17 +289,6 @@ func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Cont
 
 	// If the user is a maintainer, they can perform any operation on the group
 	if isMaintainer {
-		return nil
-	}
-
-	// Check if the user has admin or owner role in the organization
-	userRole := usercontext.CurrentAuthzSubject(ctx)
-	if userRole == "" {
-		return errors.NotFound("not found", "current membership not found")
-	}
-
-	// Allow if user has admin or owner role
-	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
 		return nil
 	}
 
