@@ -115,6 +115,33 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 				"chainloop.material.tool.version": "0.101.1",
 			},
 		},
+		{
+			name:                     "1.5 version with legacy tools",
+			filePath:                 "./testdata/sbom.cyclonedx-1.5-legacy-tools.json",
+			wantDigest:               "sha256:7bcc88d02bc19447f3fbe6bb76f12bf0f3788b3796b401716c1d62735f9c8c88",
+			wantFilename:             "sbom.cyclonedx-1.5-legacy-tools.json",
+			wantMainComponent:        "ghcr.io/chainloop-dev/chainloop/control-plane",
+			wantMainComponentKind:    "container",
+			wantMainComponentVersion: "v0.55.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "syft",
+				"chainloop.material.tool.version": "0.73.0",
+			},
+		},
+		{
+			name:                     "1.5 version with vulnerabilities",
+			filePath:                 "./testdata/sbom.cyclonedx-1.5-vulnerabilities.json",
+			wantDigest:               "sha256:16248b84917cee938826bd4de98b84b243715891524bf5e6ebfc33f2c499e60b",
+			wantFilename:             "sbom.cyclonedx-1.5-vulnerabilities.json",
+			wantMainComponent:        "ghcr.io/chainloop-dev/chainloop/control-plane",
+			wantMainComponentKind:    "container",
+			wantMainComponentVersion: "v0.55.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":                   "syft",
+				"chainloop.material.tool.version":                "0.101.1",
+				"chainloop.material.sbom.vulnerabilities_report": "true",
+			},
+		},
 	}
 
 	schema := &contractAPI.CraftingSchema_Material{
