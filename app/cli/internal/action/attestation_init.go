@@ -132,8 +132,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 	workflow := workflowsResp.GetResult()
 
-	if err := action.warnIfOutdatedContract(workflow.ContractRevisionLatest, int32(opts.ContractRevision)); err != nil {
-		return "", err
+	// Show warning if newer contract revision exists
+	if opts.ContractRevision > 0 && int32(opts.ContractRevision) < workflow.ContractRevisionLatest {
+		action.Logger.Warn().
+			Msgf("Newer contract revision available - latest revision: %d", workflow.ContractRevisionLatest)
 	}
 
 	// 2 - Get contract
@@ -329,17 +331,4 @@ func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v
 		Name:     gm.Name,
 		Optional: gm.Optional,
 	}, nil
-}
-
-// Shows warning if newer contract revision exists
-func (action *AttestationInit) warnIfOutdatedContract(latestRevision, providedRevision int32) error {
-	if action.dryRun || action.useRemoteState || providedRevision == 0 {
-		return nil
-	}
-
-	if providedRevision < latestRevision {
-		action.Logger.Warn().
-			Msgf("Newer contract revision available - latest revision: %d", latestRevision)
-	}
-	return nil
 }
