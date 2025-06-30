@@ -26,10 +26,6 @@ certificate_authorities:
       key_path: ${FILE_CA_KEY_PATH:../../devel/devkeys/ca.pem}
       key_pass: chainloop
 
-onboarding:
-  - name: auto-onboard-org
-    role: MEMBERSHIP_ROLE_ORG_OWNER
-
 #  - ejbca_ca:
 #      server_url: "https://localhost/ejbca"
 #      key_path: "../../devel/devkeys/superadmin.key"
