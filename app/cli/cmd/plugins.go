@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -93,18 +94,47 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 
 			}
 
-			// Collect all persistent flags that were set
+			// Helper function to get the appropriate string representation of a flag value
+			getFlagValue := func(f *pflag.Flag) (string, error) {
+				switch v := f.Value.(type) {
+				case pflag.SliceValue:
+					return "", fmt.Errorf("slice value for plugin flags is not supported")
+				case pflag.Value:
+					strVal := v.String()
+					// If the string representation is empty but the flag was set,
+					// it might be a boolean flag that was set without a value
+					if strVal == "" && f.Changed && f.Value.Type() == "bool" {
+						return "true", nil
+					}
+					return strVal, nil
+				default:
+					return f.Value.String(), nil
+				}
+			}
+
+			// Collect all persistent flags that were set and check for errors during flags processing
+			var flagErrors []error
 			rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+				value, err := getFlagValue(f)
+				if err != nil {
+					flagErrors = append(flagErrors, fmt.Errorf("invalid flag %s: %w", f.Name, err))
+					return
+				}
+
 				flags[f.Name] = &plugins.SimpleFlag{
 					Name:        f.Name,
 					Shorthand:   f.Shorthand,
 					Usage:       f.Usage,
-					Value:       f.Value.String(),
+					Value:       value,
 					DefValue:    f.DefValue,
 					Changed:     f.Changed,
 					NoOptDefVal: f.NoOptDefVal,
 				}
 			})
+
+			if len(flagErrors) > 0 {
+				return fmt.Errorf("failed to process flags: %v", errors.Join(flagErrors...))
+			}
 
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginExecConfig{
