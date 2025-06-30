@@ -142,6 +142,20 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 				"chainloop.material.sbom.vulnerabilities_report": "true",
 			},
 		},
+		{
+			name:                     "1.5 version with vulnerability with null cwes",
+			filePath:                 "./testdata/sbom.cyclonedx-1.5-null-cwes.json",
+			wantDigest:               "sha256:0b3aef5f26a3c28da82cbc510cee7633cd5b2cb264d3fa25eebbc10795546ffb",
+			wantFilename:             "sbom.cyclonedx-1.5-null-cwes.json",
+			wantMainComponent:        "ghcr.io/chainloop-dev/chainloop/control-plane",
+			wantMainComponentKind:    "container",
+			wantMainComponentVersion: "v0.55.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":                   "syft",
+				"chainloop.material.tool.version":                "0.101.1",
+				"chainloop.material.sbom.vulnerabilities_report": "true",
+			},
+		},
 	}
 
 	schema := &contractAPI.CraftingSchema_Material{
