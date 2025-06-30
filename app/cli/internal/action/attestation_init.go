@@ -135,7 +135,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// Show warning if newer contract revision exists
 	if opts.ContractRevision > 0 && int32(opts.ContractRevision) < workflow.ContractRevisionLatest {
 		action.Logger.Warn().
-			Msgf("Newer contract revision available - latest revision: %d", workflow.ContractRevisionLatest)
+			Msgf("Newer contract revision available: %d, pinned version: %d", workflow.ContractRevisionLatest, opts.ContractRevision)
 	}
 
 	// 2 - Get contract
