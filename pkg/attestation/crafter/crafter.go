@@ -579,7 +579,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 
 		// NOTE: we do not allow overriding values that come from the contract
 		if existingVal, existsInContract := mt.Annotations[kr]; existsInContract && existingVal != "" {
-			c.Logger.Info().Str("key", m.Name).Str("annotation", kr).Msg("annotation can't be changed, skipping")
+			c.Logger.Info().Str("key", vr).Str("annotation", kr).Msg("annotation value is set in the contract, can not be overridden, skipping")
 			continue
 		}
 
