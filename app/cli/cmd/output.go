@@ -53,7 +53,11 @@ type tabulatedData interface {
 		[]*action.OrgInvitationItem |
 		*action.APITokenItem |
 		[]*action.APITokenItem |
-		*action.AttestationStatusMaterial
+		*action.AttestationStatusMaterial |
+		*action.GroupCreateItem |
+		*action.GroupListResult |
+		*action.GroupMemberListResult |
+		*action.GroupUpdateItem
 }
 
 var ErrOutputFormatNotImplemented = errors.New("format not implemented")

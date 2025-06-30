@@ -23,7 +23,6 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -62,13 +61,10 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membership
 				}
 			}
 
-			orgRole := CurrentAuthzSubject(ctx)
-			if orgRole == string(authz.RoleOrgMember) {
-				// Org member enables the new RBAC behavior. Let's store all memberships in the context.
-				ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC)
-				if err != nil {
-					return nil, fmt.Errorf("error setting current org membership: %w", err)
-				}
+			// Let's store all memberships in the context.
+			ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC)
+			if err != nil {
+				return nil, fmt.Errorf("error setting current org membership: %w", err)
 			}
 
 			org := entities.CurrentOrg(ctx)

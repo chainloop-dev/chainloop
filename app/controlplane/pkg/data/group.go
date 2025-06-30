@@ -20,10 +20,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -160,7 +163,7 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 			Save(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {
-				return biz.NewErrAlreadyExists(err)
+				return biz.NewErrAlreadyExistsStr("group with the same name already exists")
 			}
 			return err
 		}
@@ -177,6 +180,20 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 				return biz.NewErrNotFound("group user")
 			}
 			return grUerr
+		}
+
+		// Update the user membership with the role of maintainer
+		_, err = tx.Membership.Create().
+			SetUserID(opts.UserID).
+			SetOrganizationID(orgID).
+			SetRole(authz.RoleGroupMaintainer).
+			SetMembershipType(authz.MembershipTypeUser).
+			SetMemberID(opts.UserID).
+			SetResourceType(authz.ResourceTypeGroup).
+			SetResourceID(gr.ID).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create membership for user %s in group %s: %w", opts.UserID, gr.ID, err)
 		}
 
 		entGroup = *gr
@@ -206,6 +223,27 @@ func (g GroupRepo) FindByOrgAndID(ctx context.Context, orgID uuid.UUID, groupID 
 	return entGroupToBiz(entGroup), nil
 }
 
+// FindGroupMembershipByGroupAndID retrieves a group membership for a specific user in a group.
+func (g GroupRepo) FindGroupMembershipByGroupAndID(ctx context.Context, groupID uuid.UUID, userID uuid.UUID) (*biz.GroupMembership, error) {
+	// Query the group user membership for the specified user in the group
+	groupUser, err := g.data.DB.GroupMembership.Query().
+		Where(
+			groupmembership.GroupIDEQ(groupID),
+			groupmembership.UserIDEQ(userID),
+			groupmembership.DeletedAtIsNil(),
+		).
+		WithUser().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("group membership")
+		}
+		return nil, err
+	}
+
+	return entGroupMembershipToBiz(groupUser), nil
+}
+
 // Update updates an existing group in the specified organization.
 func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, opts *biz.UpdateGroupOpts) (*biz.Group, error) {
 	if opts == nil {
@@ -214,8 +252,8 @@ func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUI
 
 	// Update the group with the provided options
 	entGroup, err := g.data.DB.Group.UpdateOneID(groupID).
-		SetNillableName(opts.Name).
-		SetNillableDescription(opts.Description).
+		SetNillableName(opts.NewName).
+		SetNillableDescription(opts.NewDescription).
 		Where(group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
 		Save(ctx)
 	if err != nil {
@@ -223,7 +261,7 @@ func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUI
 			return nil, biz.NewErrNotFound("group")
 		}
 		if ent.IsConstraintError(err) {
-			return nil, biz.NewErrAlreadyExists(err)
+			return nil, biz.NewErrAlreadyExistsStr("group with the same name already exists")
 		}
 
 		return nil, err
@@ -243,6 +281,105 @@ func (g GroupRepo) SoftDelete(ctx context.Context, orgID uuid.UUID, groupID uuid
 		if ent.IsNotFound(err) {
 			return biz.NewErrNotFound("group")
 		}
+		return err
+	}
+
+	return nil
+}
+
+// AddMemberToGroup adds a user to a group, creating a new membership if they are not already a member.
+func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, maintainer bool) (*biz.GroupMembership, error) {
+	if err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
+		// Check if the user is already a member of this group
+		existingMember, err := tx.GroupMembership.Query().
+			Where(groupmembership.UserIDEQ(userID), groupmembership.GroupIDEQ(groupID), groupmembership.DeletedAtIsNil()).
+			Exist(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("failed to check existing group membership: %w", err)
+		}
+
+		// If the user is already a member, return an error
+		if existingMember {
+			return biz.NewErrAlreadyExistsStr("user is already a member of this group")
+		}
+
+		// Create a new group-user relationship
+		if _, err := tx.GroupMembership.Create().
+			SetGroupID(groupID).
+			SetUserID(userID).
+			SetMaintainer(maintainer).
+			Save(ctx); err != nil {
+			return fmt.Errorf("failed to add user to group: %w", err)
+		}
+
+		// Update the user membership with the role of maintainer
+		if maintainer {
+			_, err = tx.Membership.Create().
+				SetUserID(userID).
+				SetOrganizationID(orgID).
+				SetRole(authz.RoleGroupMaintainer).
+				SetMembershipType(authz.MembershipTypeUser).
+				SetMemberID(userID).
+				SetResourceType(authz.ResourceTypeGroup).
+				SetResourceID(groupID).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to create membership for user %s in group %s: %w", userID, groupID, err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("failed to add member to group: %w", err)
+	}
+
+	// Return the newly created membership
+	return g.FindGroupMembershipByGroupAndID(ctx, groupID, userID)
+}
+
+// RemoveMemberFromGroup removes a user from a group.
+func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID) error {
+	err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
+		// Check if the user is a member of this group
+		existingMembership, err := tx.GroupMembership.Query().
+			Where(groupmembership.UserIDEQ(userID), groupmembership.GroupIDEQ(groupID), groupmembership.DeletedAtIsNil()).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound("group membership")
+			}
+			return fmt.Errorf("failed to check existing group membership: %w", err)
+		}
+
+		now := time.Now()
+
+		// Mark the membership as deleted
+		_, err = tx.GroupMembership.UpdateOne(existingMembership).
+			SetDeletedAt(now).
+			SetUpdatedAt(now).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to remove user from group: %w", err)
+		}
+
+		if existingMembership.Maintainer {
+			// Also remove the user membership if it exists
+			if _, err := tx.Membership.Delete().Where(
+				membership.MemberID(userID),
+				membership.ResourceID(groupID),
+				membership.ResourceTypeEQ(authz.ResourceTypeGroup),
+				membership.HasOrganizationWith(
+					organization.ID(orgID),
+				),
+			).Exec(ctx); err != nil {
+				return fmt.Errorf("failed to remove user from group: %w", err)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return err
 	}
 

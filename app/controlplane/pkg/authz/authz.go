@@ -71,6 +71,9 @@ const (
 
 	RoleProjectAdmin  Role = "role:project:admin"
 	RoleProjectViewer Role = "role:project:viewer"
+
+	// RoleGroupMaintainer is a role that can manage groups in an organization.
+	RoleGroupMaintainer Role = "role:group:maintainer"
 )
 
 // ManagedResources are the resources that are managed by Chainloop, considered during permissions sync
@@ -141,7 +144,9 @@ var (
 	PolicyGroupList   = &Policy{ResourceGroup, ActionList}
 	PolicyGroupRead   = &Policy{ResourceGroup, ActionRead}
 	// Group Memberships
-	PolicyGroupListMemberships = &Policy{ResourceGroupMembership, ActionList}
+	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
+	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
+	PolicyGroupRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
 	// Project API Token
 	PolicyProjectAPITokenList   = &Policy{ResourceProjectAPIToken, ActionList}
 	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
@@ -182,6 +187,11 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
+		// Groups
+		PolicyGroupList,
+		PolicyGroupRead,
+		// Group Memberships
+		PolicyGroupListMemberships,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
@@ -271,6 +281,11 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectAPITokenCreate,
 		PolicyProjectAPITokenRevoke,
 	},
+	// RoleGroupMaintainer: represents a group maintainer role.
+	RoleGroupMaintainer: {
+		PolicyGroupAddMemberships,
+		PolicyGroupRemoveMemberships,
+	},
 }
 
 // ServerOperationsMap is a map of server operations to the ResourceAction tuples that are
@@ -334,13 +349,13 @@ var ServerOperationsMap = map[string][]*Policy{
 
 	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
 	// Groups
-	"/controlplane.v1.GroupService/List":   {PolicyGroupList},
-	"/controlplane.v1.GroupService/Get":    {PolicyGroupRead},
-	"/controlplane.v1.GroupService/Create": {PolicyGroupCreate},
-	"/controlplane.v1.GroupService/Update": {PolicyGroupUpdate},
-	"/controlplane.v1.GroupService/Delete": {PolicyGroupDelete},
+	"/controlplane.v1.GroupService/List": {PolicyGroupList},
 	// Group Memberships
 	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
+	// For the following endpoints, we rely on the service layer to check the permissions
+	// That's why we let everyone access them (empty policies)
+	"/controlplane.v1.GroupService/AddMember":    {},
+	"/controlplane.v1.GroupService/RemoveMember": {},
 	// Project API Token
 	"/controlplane.v1.ProjectService/APITokenCreate": {PolicyProjectAPITokenCreate},
 	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},
@@ -359,6 +374,7 @@ func (Role) Values() (roles []string) {
 		RoleOrgMember,
 		RoleProjectAdmin,
 		RoleProjectViewer,
+		RoleGroupMaintainer,
 	} {
 		roles = append(roles, string(s))
 	}
