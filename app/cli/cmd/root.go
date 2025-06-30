@@ -55,6 +55,7 @@ const (
 	useAPIToken = "withAPITokenAuth"
 	// Ask for confirmation when user token is used and API token is preferred
 	confirmWhenUserToken = "confirmWhenUserToken"
+	appName              = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	userAudience    = "user-auth.chainloop"
@@ -95,7 +96,7 @@ func Execute(l zerolog.Logger) error {
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:           "chainloop",
+		Use:           appName,
 		Short:         "Chainloop Command Line Interface",
 		SilenceErrors: true,
 		SilenceUsage:  true,
