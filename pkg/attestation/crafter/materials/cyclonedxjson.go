@@ -34,7 +34,8 @@ const (
 	// containerComponentKind is the kind of the main component when it's a container
 	containerComponentKind = "container"
 	// aquaTrivyRepoDigestPropertyKey is the key used by Aqua Trivy to store the repo digest
-	aquaTrivyRepoDigestPropertyKey = "aquasecurity:trivy:RepoDigest"
+	aquaTrivyRepoDigestPropertyKey   = "aquasecurity:trivy:RepoDigest"
+	annotationSBOMHasVulnerabilities = "chainloop.material.sbom.vulnerabilities_report"
 )
 
 type CyclonedxJSONCrafter struct {
@@ -44,8 +45,9 @@ type CyclonedxJSONCrafter struct {
 
 // cyclonedxDoc internal struct to unmarshall the incoming CycloneDX JSON
 type cyclonedxDoc struct {
-	SpecVersion string          `json:"specVersion"`
-	Metadata    json.RawMessage `json:"metadata"`
+	SpecVersion     string          `json:"specVersion"`
+	Metadata        json.RawMessage `json:"metadata"`
+	Vulnerabilities json.RawMessage `json:"vulnerabilities"`
 }
 
 type cyclonedxMetadataV14 struct {
@@ -124,28 +126,39 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 		i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
 	}
 
-	switch doc.SpecVersion {
-	case "1.4":
+	// Try with metadata tools format > v1.5
+	var metaV15 cyclonedxMetadataV15
+	if err = json.Unmarshal(doc.Metadata, &metaV15); err != nil {
+		// try with v1.4
 		var metaV14 cyclonedxMetadataV14
 		if err = json.Unmarshal(doc.Metadata, &metaV14); err != nil {
 			i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
 		} else {
 			i.extractMetadata(m, &metaV14)
 		}
-	default: // 1.5 onwards
-		var metaV15 cyclonedxMetadataV15
-		if err = json.Unmarshal(doc.Metadata, &metaV15); err != nil {
-			i.logger.Debug().Err(err).Msg("error decoding file to extract main information, skipping ...")
-		} else {
-			i.extractMetadata(m, &metaV15)
-		}
+	} else {
+		i.extractMetadata(m, &metaV15)
 	}
+
+	i.injectAnnotations(m, &doc)
 
 	return res, nil
 }
 
+func (i *CyclonedxJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *cyclonedxDoc) {
+	// store whether the SBOM has a vulnerabilities report
+	if doc.Vulnerabilities != nil {
+		if m.Annotations == nil {
+			m.Annotations = make(map[string]string)
+		}
+		m.Annotations[annotationSBOMHasVulnerabilities] = "true"
+	}
+}
+
 func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, metadata any) {
-	m.Annotations = make(map[string]string)
+	if m.Annotations == nil {
+		m.Annotations = make(map[string]string)
+	}
 
 	switch meta := metadata.(type) {
 	case *cyclonedxMetadataV14:
