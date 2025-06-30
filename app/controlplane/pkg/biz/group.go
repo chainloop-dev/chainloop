@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -367,6 +368,34 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 		return nil, NewErrNotFound("group")
 	}
 
+	// Check if the requester is part of the organization
+	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
+	if err != nil && !IsNotFound(err) {
+		return nil, NewErrValidationStr("failed to check existing membership")
+	}
+
+	if requesterMembership == nil {
+		return nil, NewErrValidationStr("requester is not a member of the organization")
+	}
+
+	// Check if the requester has sufficient permissions
+	// Allow if the requester is an org owner or admin
+	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+
+	// If not an admin/owner, check if the requester is a maintainer of this group
+	if !isAdminOrOwner {
+		// Check if the requester is a maintainer of this group
+		requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+		if err != nil && !IsNotFound(err) {
+			return nil, fmt.Errorf("failed to check requester's group membership: %w", err)
+		}
+
+		// If not a maintainer of this group, deny access
+		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
+			return nil, NewErrValidationStr("requester does not have permission to add members to this group")
+		}
+	}
+
 	// Find the user by email in the organization
 	userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
 	if err != nil && !IsNotFound(err) {
@@ -432,6 +461,34 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 		return NewErrNotFound("group")
 	}
 
+	// Check if the requester is part of the organization
+	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
+	if err != nil && !IsNotFound(err) {
+		return NewErrValidationStr("failed to check existing membership")
+	}
+
+	if requesterMembership == nil {
+		return NewErrValidationStr("requester is not a member of the organization")
+	}
+
+	// Check if the requester has sufficient permissions
+	// Allow if the requester is an org owner or admin
+	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+
+	// If not an admin/owner, check if the requester is a maintainer of this group
+	if !isAdminOrOwner {
+		// Check if the requester is a maintainer of this group
+		requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+		if err != nil && !IsNotFound(err) {
+			return fmt.Errorf("failed to check requester's group membership: %w", err)
+		}
+
+		// If not a maintainer of this group, deny access
+		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
+			return NewErrValidationStr("requester does not have permission to add members to this group")
+		}
+	}
+
 	// Find the user by email in the organization
 	userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
 	if err != nil && !IsNotFound(err) {
@@ -439,16 +496,6 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 	}
 	if userMembership == nil {
 		return NewErrValidationStr("user with the provided email is not a member of the organization")
-	}
-
-	// Check if the requester is part of the organization
-	membership, err := uc.groupRepo.FindGroupMembershipByGroupAndID(ctx, resolvedGroupID, opts.RequesterID)
-	if err != nil && !IsNotFound(err) {
-		return NewErrValidationStr("failed to check existing membership")
-	}
-
-	if membership == nil {
-		return NewErrValidationStr("requester is not a member of the group")
 	}
 
 	userUUID := uuid.MustParse(userMembership.User.ID)
@@ -476,24 +523,6 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 	}, &orgID)
 
 	return nil
-}
-
-// IsUserGroupMaintainer checks if a user is a maintainer of a group.
-func (uc *GroupUseCase) IsUserGroupMaintainer(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID) (bool, error) {
-	if orgID == uuid.Nil || groupID == uuid.Nil || userID == uuid.Nil {
-		return false, NewErrValidationStr("organization ID, group ID, and user ID cannot be empty")
-	}
-
-	membership, err := uc.groupRepo.FindGroupMembershipByGroupAndID(ctx, groupID, userID)
-	if err != nil && !IsNotFound(err) {
-		return false, fmt.Errorf("failed to check group membership: %w", err)
-	}
-
-	if membership == nil {
-		return false, nil // User is not a member of the group
-	}
-
-	return membership.Maintainer, nil
 }
 
 // ValidateGroupIdentifier validates and resolves the group ID or name to a group ID.

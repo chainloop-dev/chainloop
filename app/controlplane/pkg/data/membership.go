@@ -290,6 +290,22 @@ func (r *MembershipRepo) AddResourceRole(ctx context.Context, resourceType authz
 	return nil
 }
 
+// FindByUserAndResourceID finds a membership by user ID and resource ID.
+func (r *MembershipRepo) FindByUserAndResourceID(ctx context.Context, userID, resourceID uuid.UUID) (*biz.Membership, error) {
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MemberID(userID),
+		membership.ResourceID(resourceID),
+	).WithUser().WithOrganization().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("membership for user %s and resource %s not found", userID, resourceID))
+		}
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipToBiz(m), nil
+}
+
 func entMembershipsToBiz(memberships []*ent.Membership) []*biz.Membership {
 	result := make([]*biz.Membership, 0, len(memberships))
 	for _, m := range memberships {

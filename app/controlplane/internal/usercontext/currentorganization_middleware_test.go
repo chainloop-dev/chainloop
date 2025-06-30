@@ -25,9 +25,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestWithCurrentOrganizationMiddleware(t *testing.T) {
@@ -69,16 +71,15 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 			ctx := context.Background()
 			if tc.loggedIn {
 				ctx = entities.WithCurrentUser(ctx, &entities.User{ID: wantUser.ID})
-			}
-
-			if tc.loggedIn {
 				usecase.On("FindByID", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
 			if tc.orgExist {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Return(wantMembership, nil)
+				msMock.On("ListAllMembershipsForUser", mock.Anything, mock.Anything).Return([]*biz.Membership{wantMembership}, nil)
 			} else if tc.loggedIn {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
+				msMock.On("ListAllMembershipsForUser", mock.Anything, mock.Anything).Return([]*biz.Membership{}, nil)
 			}
 
 			m := WithCurrentOrganizationMiddleware(usecase, msMock, logger)

@@ -1013,7 +1013,6 @@ func (s *groupMembersIntegrationTestSuite) TestRemoveMemberFromGroup() {
 		// Create a user who is not in any organization
 		externalUser, err := s.User.UpsertByEmail(ctx, "external-user@example.com", nil)
 		require.NoError(s.T(), err)
-		// Intentionally not adding to organization
 
 		// Try to remove a member with an external user as requester
 		removeOpts := &biz.RemoveMemberFromGroupOpts{
@@ -1026,8 +1025,7 @@ func (s *groupMembersIntegrationTestSuite) TestRemoveMemberFromGroup() {
 
 		err = s.Group.RemoveMemberFromGroup(ctx, uuid.MustParse(s.org.ID), removeOpts)
 		s.Error(err)
-		// The error message has changed with the new permissions logic
-		s.Contains(err.Error(), "requester is not a member of the group")
+		s.Contains(err.Error(), "requester is not a member of the organization")
 	})
 
 	s.Run("non-existent user email", func() {
