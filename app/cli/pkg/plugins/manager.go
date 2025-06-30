@@ -48,7 +48,7 @@ func NewManager() *Manager {
 
 // LoadPlugins loads all plugins from the plugins directory.
 func (m *Manager) LoadPlugins(ctx context.Context) error {
-	pluginsDir := GetPluginsDir()
+	pluginsDir := GetPluginsDir("chainloop")
 
 	if err := os.MkdirAll(pluginsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create plugins directory: %w", err)

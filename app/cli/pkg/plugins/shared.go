@@ -17,7 +17,9 @@ package plugins
 
 import (
 	"encoding/gob"
+	"path/filepath"
 
+	"github.com/adrg/xdg"
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -39,4 +41,8 @@ var Handshake = plugin.HandshakeConfig{
 // PluginMap is the map of plugins.
 var PluginMap = map[string]plugin.Plugin{
 	"chainloop": &ChainloopCliPlugin{},
+}
+
+func GetPluginsDir(appName string) string {
+	return filepath.Join(xdg.ConfigHome, appName, "plugins")
 }

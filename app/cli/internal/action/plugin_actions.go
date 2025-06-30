@@ -165,7 +165,7 @@ func (action *PluginInstall) Run(ctx context.Context, opts *PluginInstallOptions
 	action.cfg.Logger.Debug().Str("file", opts.File).Msg("Downloading plugin")
 
 	// create plugins directory if it doesn't exist
-	pluginsDir := plugins.GetPluginsDir()
+	pluginsDir := plugins.GetPluginsDir("chainloop")
 	if err := os.MkdirAll(pluginsDir, 0755); err != nil {
 		action.cfg.Logger.Error().Err(err).Str("directory", pluginsDir).Msg("Failed to create plugins directory")
 		return nil, fmt.Errorf("failed to create plugins directory: %w", err)

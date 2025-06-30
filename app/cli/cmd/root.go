@@ -21,10 +21,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
@@ -307,7 +309,7 @@ func initConfigFile() {
 	}
 
 	// If no config file was passed as a flag we use the default one
-	configPath := plugins.GetConfigDir()
+	configPath := getConfigDir(appName)
 	// Create the file if it does not exist
 	if _, err := os.Stat(configPath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(configPath, os.ModePerm)
@@ -534,4 +536,8 @@ func shouldAskForConfirmation(cmd *cobra.Command) bool {
 
 func isAPITokenPreferred(cmd *cobra.Command) bool {
 	return cmd.Annotations[useAPIToken] == trueString
+}
+
+func getConfigDir(appName string) string {
+	return filepath.Join(xdg.ConfigHome, appName)
 }
