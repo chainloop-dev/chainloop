@@ -46,6 +46,14 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			name:  "federated token",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRldi1rZXkifQ.eyJpc3MiOiJodHRwczovL2NoYWlubG9vcC5naXRsYWIuY29tIiwic3ViIjoicHJvamVjdF9wYXRoOmNoYWlubG9vcC9wcm9qZWN0OnJlZl90eXBlOmJyYW5jaDpyZWY6bWFpbiIsImF1ZCI6ImNoYWlubG9vcCIsImV4cCI6MTczMDAwMDAwMCwibmJmIjoxNzI5OTk2NDAwLCJpYXQiOjE3Mjk5OTY0MDAsImp0aSI6ImpvYi05ODc2IiwicmVmIjoibWFpbiIsInJlZl90eXBlIjoiYnJhbmNoIiwicHJvamVjdF9pZCI6IjQyNDIiLCJwcm9qZWN0X3BhdGgiOiJjaGFpbmxvb3AvcHJvamVjdCIsIm5hbWVzcGFjZV9pZCI6IjQyNDMiLCJuYW1lc3BhY2VfcGF0aCI6ImNoYWlubG9vcCIsInVzZXJfbG9naW4iOiJnaXRsYWItY2ktdG9rZW4iLCJwaXBlbGluZV9pZCI6IjEwMSIsImpvYl9pZCI6IjIwMiJ9.LkNvVGVzdFNpZ25hdHVyZUNoYWluTG9vcA",
+			want: &ParsedToken{
+				ID:        "https://chainloop.gitlab.com",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+			},
+		},
+		{
 			name:  "old api token (without orgID)",
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6ImQ0ZTBlZTVlLTk3MTMtNDFkMi05ZmVhLTBiZGIxNDAzMzA4MSJ9.IOd3JIHPwfo9ihU20kvRwLIQJcQtTvp-ajlGqlCD4Es",
 			want: &ParsedToken{

@@ -34,12 +34,14 @@ type ParsedToken struct {
 const (
 	userAudience = "user-auth.chainloop"
 	//nolint:gosec
-	apiTokenAudience = "api-token-auth.chainloop"
+	apiTokenAudience       = "api-token-auth.chainloop"
+	federatedTokenAudience = "chainloop"
 )
 
 // Parse the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
 // 1. User account token
 // 2. API token
+// 3. Federated token
 // Each one of them have an associated audience claim that we use to identify the type of token. If the token is not
 // present, nor we cannot match it with one of the expected audience, return nil.
 func Parse(token string) (*ParsedToken, error) {
@@ -63,24 +65,26 @@ func Parse(token string) (*ParsedToken, error) {
 		return nil, nil
 	}
 
-	// Get the audience claim
-	val, ok := claims["aud"]
-	if !ok || val == nil {
+	// Handle both string and array audience formats
+	var audience string
+	switch aud := claims["aud"].(type) {
+	case string:
+		audience = aud
+	case []interface{}:
+		if len(aud) > 0 {
+			audience, _ = aud[0].(string)
+		}
+	default:
 		return nil, nil
 	}
 
-	// Ensure audience is an array of interfaces
-	// Chainloop only has one audience per token
-	aud, ok := val.([]interface{})
-	if !ok || len(aud) == 0 {
+	if audience == "" {
 		return nil, nil
 	}
 
-	// Initialize parsedToken
 	pToken := &ParsedToken{}
 
-	// Determine the type of token based on the audience.
-	switch aud[0].(string) {
+	switch audience {
 	case apiTokenAudience:
 		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_API_TOKEN
 		if tokenID, ok := claims["jti"].(string); ok {
@@ -93,6 +97,11 @@ func Parse(token string) (*ParsedToken, error) {
 		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_USER
 		if userID, ok := claims["user_id"].(string); ok {
 			pToken.ID = userID
+		}
+	case federatedTokenAudience:
+		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_FEDERATED
+		if issuer, ok := claims["iss"].(string); ok {
+			pToken.ID = issuer
 		}
 	default:
 		return nil, nil
