@@ -79,7 +79,6 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 				msMock.On("ListAllMembershipsForUser", mock.Anything, mock.Anything).Return([]*biz.Membership{wantMembership}, nil)
 			} else if tc.loggedIn {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
-				msMock.On("ListAllMembershipsForUser", mock.Anything, mock.Anything).Return([]*biz.Membership{}, nil)
 			}
 
 			m := WithCurrentOrganizationMiddleware(usecase, msMock, logger)
