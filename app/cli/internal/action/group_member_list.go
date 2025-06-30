@@ -123,7 +123,6 @@ func pbGroupMemberToAction(member *pb.GroupMember) *GroupMemberItem {
 func getRoleName(maintainer bool) string {
 	if maintainer {
 		return "Maintainer"
-	} else {
-		return "Member"
 	}
+	return "Member"
 }
