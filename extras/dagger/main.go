@@ -26,6 +26,7 @@ type Chainloop struct {
 // https://docs.chainloop.dev/how-does-it-work/#contract-based-attestation
 type Attestation struct {
 	AttestationID string
+	OrgName       string
 
 	repository *dagger.Directory
 
@@ -130,12 +131,16 @@ func (m *Chainloop) Init(
 
 	var resp struct {
 		AttestationID string
+		WorkflowMeta  struct {
+			Organization string
+		}
 	}
 	if err := json.Unmarshal([]byte(info), &resp); err != nil {
 		return nil, fmt.Errorf("unmarshal attestation init response: %w", err)
 	}
 
 	att.AttestationID = resp.AttestationID
+	att.OrgName = resp.WorkflowMeta.Organization
 
 	return att, nil
 }
