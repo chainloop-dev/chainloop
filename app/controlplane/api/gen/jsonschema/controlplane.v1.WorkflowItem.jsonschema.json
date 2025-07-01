@@ -18,6 +18,10 @@
     "^(last_run)$": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
     },
+    "^(project_id)$": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
     "^(runs_count)$": {
       "maximum": 2147483647,
       "minimum": -2147483648,
@@ -50,6 +54,10 @@
       "type": "string"
     },
     "project": {
+      "type": "string"
+    },
+    "projectId": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     },
     "public": {
