@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.ProjectServiceRemoveMemberResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceRemoveMemberResponse is returned upon successful removal of a user from a project",
+  "properties": {},
+  "title": "Project Service Remove Member Response",
+  "type": "object"
+}

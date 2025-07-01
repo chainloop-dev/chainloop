@@ -212,8 +212,15 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 // by name in the given organization and ensures that the user has a role that allows that specific operation in the project.
 // check authorizeResource method
 // if it doesn't return an error, it means that the user has the permission and the project is returned
-func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, pName string, policy *authz.Policy) (*biz.Project, error) {
-	p, err := s.projectUseCase.FindProjectByReference(ctx, orgID, &biz.EntityRef{Name: pName})
+func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, ref *pb.IdentityReference, policy *authz.Policy) (*biz.Project, error) {
+	// Parse entity ID and entity Name from the request
+	entityID, entityName, err := ref.Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Find the project by its reference
+	p, err := s.projectUseCase.FindProjectByReference(ctx, orgID, &biz.IdentityReference{ID: entityID, Name: entityName})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -254,9 +261,9 @@ func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Cont
 		return nil
 	}
 
-	groupID, groupName, err := s.parseIdentityReference(groupIdentifier)
+	groupID, groupName, err := groupIdentifier.Parse()
 	if err != nil {
-		return handleUseCaseErr(err, s.log)
+		return errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -314,25 +321,6 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	}
 
 	return projects
-}
-
-// parseIdentityReference is a helper method to parse an IdentityReference from the protobuf message.
-func (s *service) parseIdentityReference(groupRef *pb.IdentityReference) (*uuid.UUID, *string, error) {
-	if groupRef.GetId() != "" && groupRef.GetName() != "" {
-		return nil, nil, errors.BadRequest("invalid", "cannot provide both ID and name")
-	}
-
-	if groupRef.GetId() != "" {
-		groupUUID, err := uuid.Parse(groupRef.GetId())
-		if err != nil {
-			return nil, nil, errors.BadRequest("invalid", "invalid group ID")
-		}
-		return &groupUUID, nil, nil
-	} else if groupRef.GetName() != "" {
-		groupName := groupRef.GetName()
-		return nil, &groupName, nil
-	}
-	return nil, nil, nil
 }
 
 // initializePaginationOpts initializes the pagination options with the provided request pagination options.

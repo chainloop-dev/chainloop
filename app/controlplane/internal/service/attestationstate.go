@@ -69,7 +69,7 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunCreate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunCreate); err != nil {
 		return nil, err
 	}
 
@@ -96,7 +96,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunCreate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunCreate); err != nil {
 		return nil, err
 	}
 
@@ -129,7 +129,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunRead); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunRead); err != nil {
 		return nil, err
 	}
 
@@ -163,7 +163,7 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunUpdate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunUpdate); err != nil {
 		return nil, err
 	}
 

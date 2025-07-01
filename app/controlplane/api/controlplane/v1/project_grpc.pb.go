@@ -37,6 +37,9 @@ const (
 	ProjectService_APITokenCreate_FullMethodName = "/controlplane.v1.ProjectService/APITokenCreate"
 	ProjectService_APITokenList_FullMethodName   = "/controlplane.v1.ProjectService/APITokenList"
 	ProjectService_APITokenRevoke_FullMethodName = "/controlplane.v1.ProjectService/APITokenRevoke"
+	ProjectService_ListMembers_FullMethodName    = "/controlplane.v1.ProjectService/ListMembers"
+	ProjectService_AddMember_FullMethodName      = "/controlplane.v1.ProjectService/AddMember"
+	ProjectService_RemoveMember_FullMethodName   = "/controlplane.v1.ProjectService/RemoveMember"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -47,6 +50,10 @@ type ProjectServiceClient interface {
 	APITokenCreate(ctx context.Context, in *ProjectServiceAPITokenCreateRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenCreateResponse, error)
 	APITokenList(ctx context.Context, in *ProjectServiceAPITokenListRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenListResponse, error)
 	APITokenRevoke(ctx context.Context, in *ProjectServiceAPITokenRevokeRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenRevokeResponse, error)
+	// Project membership management
+	ListMembers(ctx context.Context, in *ProjectServiceListMembersRequest, opts ...grpc.CallOption) (*ProjectServiceListMembersResponse, error)
+	AddMember(ctx context.Context, in *ProjectServiceAddMemberRequest, opts ...grpc.CallOption) (*ProjectServiceAddMemberResponse, error)
+	RemoveMember(ctx context.Context, in *ProjectServiceRemoveMemberRequest, opts ...grpc.CallOption) (*ProjectServiceRemoveMemberResponse, error)
 }
 
 type projectServiceClient struct {
@@ -84,6 +91,33 @@ func (c *projectServiceClient) APITokenRevoke(ctx context.Context, in *ProjectSe
 	return out, nil
 }
 
+func (c *projectServiceClient) ListMembers(ctx context.Context, in *ProjectServiceListMembersRequest, opts ...grpc.CallOption) (*ProjectServiceListMembersResponse, error) {
+	out := new(ProjectServiceListMembersResponse)
+	err := c.cc.Invoke(ctx, ProjectService_ListMembers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) AddMember(ctx context.Context, in *ProjectServiceAddMemberRequest, opts ...grpc.CallOption) (*ProjectServiceAddMemberResponse, error) {
+	out := new(ProjectServiceAddMemberResponse)
+	err := c.cc.Invoke(ctx, ProjectService_AddMember_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) RemoveMember(ctx context.Context, in *ProjectServiceRemoveMemberRequest, opts ...grpc.CallOption) (*ProjectServiceRemoveMemberResponse, error) {
+	out := new(ProjectServiceRemoveMemberResponse)
+	err := c.cc.Invoke(ctx, ProjectService_RemoveMember_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -92,6 +126,10 @@ type ProjectServiceServer interface {
 	APITokenCreate(context.Context, *ProjectServiceAPITokenCreateRequest) (*ProjectServiceAPITokenCreateResponse, error)
 	APITokenList(context.Context, *ProjectServiceAPITokenListRequest) (*ProjectServiceAPITokenListResponse, error)
 	APITokenRevoke(context.Context, *ProjectServiceAPITokenRevokeRequest) (*ProjectServiceAPITokenRevokeResponse, error)
+	// Project membership management
+	ListMembers(context.Context, *ProjectServiceListMembersRequest) (*ProjectServiceListMembersResponse, error)
+	AddMember(context.Context, *ProjectServiceAddMemberRequest) (*ProjectServiceAddMemberResponse, error)
+	RemoveMember(context.Context, *ProjectServiceRemoveMemberRequest) (*ProjectServiceRemoveMemberResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -107,6 +145,15 @@ func (UnimplementedProjectServiceServer) APITokenList(context.Context, *ProjectS
 }
 func (UnimplementedProjectServiceServer) APITokenRevoke(context.Context, *ProjectServiceAPITokenRevokeRequest) (*ProjectServiceAPITokenRevokeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method APITokenRevoke not implemented")
+}
+func (UnimplementedProjectServiceServer) ListMembers(context.Context, *ProjectServiceListMembersRequest) (*ProjectServiceListMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMembers not implemented")
+}
+func (UnimplementedProjectServiceServer) AddMember(context.Context, *ProjectServiceAddMemberRequest) (*ProjectServiceAddMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMember not implemented")
+}
+func (UnimplementedProjectServiceServer) RemoveMember(context.Context, *ProjectServiceRemoveMemberRequest) (*ProjectServiceRemoveMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -175,6 +222,60 @@ func _ProjectService_APITokenRevoke_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_ListMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectServiceListMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).ListMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_ListMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).ListMembers(ctx, req.(*ProjectServiceListMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_AddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectServiceAddMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AddMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AddMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AddMember(ctx, req.(*ProjectServiceAddMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_RemoveMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectServiceRemoveMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).RemoveMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_RemoveMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).RemoveMember(ctx, req.(*ProjectServiceRemoveMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -193,6 +294,18 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "APITokenRevoke",
 			Handler:    _ProjectService_APITokenRevoke_Handler,
+		},
+		{
+			MethodName: "ListMembers",
+			Handler:    _ProjectService_ListMembers_Handler,
+		},
+		{
+			MethodName: "AddMember",
+			Handler:    _ProjectService_AddMember_Handler,
+		},
+		{
+			MethodName: "RemoveMember",
+			Handler:    _ProjectService_RemoveMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

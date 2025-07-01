@@ -2,23 +2,27 @@
   "$id": "controlplane.v1.ProjectServiceAPITokenRevokeRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "ProjectServiceAPITokenRevokeRequest contains the information needed to revoke an API token for a project",
   "patternProperties": {
-    "^(project_name)$": {
-      "minLength": 1,
-      "type": "string"
+    "^(project_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
     }
   },
   "properties": {
     "name": {
-      "description": "token name",
+      "description": "The name of the API token to revoke",
       "minLength": 1,
       "type": "string"
     },
-    "projectName": {
-      "minLength": 1,
-      "type": "string"
+    "projectReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
     }
   },
+  "required": [
+    "project_reference"
+  ],
   "title": "Project ServiceAPI Token Revoke Request",
   "type": "object"
 }

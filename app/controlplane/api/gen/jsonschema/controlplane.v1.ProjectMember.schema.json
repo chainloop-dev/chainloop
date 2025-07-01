@@ -1,0 +1,55 @@
+{
+  "$id": "controlplane.v1.ProjectMember.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectMember represents an user or group who is a member of a project",
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project membership was created"
+    },
+    "^(updatedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project membership was last modified"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project membership was created"
+    },
+    "group": {
+      "$ref": "controlplane.v1.Group.schema.json",
+      "description": "The group who is a member of the project"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+            "PROJECT_MEMBER_ROLE_ADMIN",
+            "PROJECT_MEMBER_ROLE_VIEWER"
+          ],
+          "title": "Project Member Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The role of the user in the project"
+    },
+    "updated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project membership was last modified"
+    },
+    "user": {
+      "$ref": "controlplane.v1.User.schema.json",
+      "description": "The user who is a member of the project"
+    }
+  },
+  "title": "Project Member",
+  "type": "object"
+}

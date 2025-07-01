@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.ProjectServiceAddMemberResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceAddMemberResponse contains the result of adding a user to a project",
+  "properties": {},
+  "title": "Project Service Add Member Response",
+  "type": "object"
+}

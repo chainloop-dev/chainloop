@@ -1,12 +1,11 @@
 {
-  "$id": "controlplane.v1.ProjectServiceAPITokenListRequest.jsonschema.json",
+  "$id": "controlplane.v1.ProjectServiceRemoveMemberRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project",
   "patternProperties": {
-    "^(include_revoked)$": {
-      "description": "Flag to include revoked tokens in the list",
-      "type": "boolean"
+    "^(member_reference)$": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.jsonschema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
     },
     "^(project_reference)$": {
       "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
@@ -14,9 +13,9 @@
     }
   },
   "properties": {
-    "includeRevoked": {
-      "description": "Flag to include revoked tokens in the list",
-      "type": "boolean"
+    "memberReference": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.jsonschema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
     },
     "projectReference": {
       "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
@@ -24,8 +23,9 @@
     }
   },
   "required": [
-    "project_reference"
+    "project_reference",
+    "member_reference"
   ],
-  "title": "Project ServiceAPI Token List Request",
+  "title": "Project Service Remove Member Request",
   "type": "object"
 }
