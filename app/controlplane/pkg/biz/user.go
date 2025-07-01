@@ -131,59 +131,48 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 	}
 	// emails are case-insensitive
 	email = strings.ToLower(email)
-
 	u, err := uc.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
-	} else if u != nil {
-		uuid, err := uuid.Parse(u.ID)
+	}
+
+	// Signup case
+	if u == nil {
+		u, err = uc.userRepo.CreateByEmail(ctx, email, opts.FirstName, opts.LastName)
 		if err != nil {
-			return nil, NewErrInvalidUUID(err)
+			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 
 		// set the context user so it can be used in the auditor
 		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
+		uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
+			UserBase: &events.UserBase{
+				UserID: ToPtr(uuid.MustParse(u.ID)),
+				Email:  u.Email,
+			},
+		}, nil)
+	} else {
+		// Login case
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 		uc.auditorUC.Dispatch(ctx, &events.UserLoggedIn{
 			UserBase: &events.UserBase{
-				UserID: &uuid,
+				UserID: ToPtr(uuid.MustParse(u.ID)),
 				Email:  u.Email,
 			},
 			LoggedIn: time.Now(),
 		}, nil)
+	}
 
-		if (opts.FirstName != nil && u.FirstName != *opts.FirstName) ||
-			(opts.LastName != nil && u.LastName != *opts.LastName) {
-			// Update the user's first and last name if they differ from the provided options
-			u, err = uc.userRepo.UpdateNameAndLastName(ctx, uuid, opts.FirstName, opts.LastName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to update user name: %w", err)
-			}
+	// Update the user's first and last name if they differ from the provided options
+	if (opts.FirstName != nil && u.FirstName != *opts.FirstName) || (opts.LastName != nil && u.LastName != *opts.LastName) {
+		u, err = uc.userRepo.UpdateNameAndLastName(ctx, uuid.MustParse(u.ID), opts.FirstName, opts.LastName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update user name: %w", err)
 		}
-
-		return u, nil
 	}
 
-	u, err = uc.userRepo.CreateByEmail(ctx, email, opts.FirstName, opts.LastName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	// set the context user so it can be used in the auditor
-	ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
-	uuid, err := uuid.Parse(u.ID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
-		UserBase: &events.UserBase{
-			UserID: &uuid,
-			Email:  u.Email,
-		},
-	}, nil)
-
-	// Check if we should auto-onboard the user
-	if opts.DisableAutoOnboarding == nil || (opts.DisableAutoOnboarding != nil && !*opts.DisableAutoOnboarding) {
+	// Auto-onboard the user to the organizations defined in the configuration
+	if opts.DisableAutoOnboarding == nil || !*opts.DisableAutoOnboarding {
 		if err := uc.organizationUseCase.AutoOnboardOrganizations(ctx, u.ID); err != nil {
 			return nil, fmt.Errorf("failed to auto-onboard user: %w", err)
 		}
