@@ -50,7 +50,12 @@ func newAttestationResetCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			logger.Info().Msg("Attestation canceled")
+			msg := "Attestation canceled"
+			if trigger == triggerFailed {
+				msg = "Attestation marked as failed"
+			}
+
+			logger.Info().Msg(msg)
 
 			return nil
 		},

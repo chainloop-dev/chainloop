@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/google/uuid"
 )
 
@@ -51,6 +52,26 @@ func (atu *APITokenUpdate) ClearDescription() *APITokenUpdate {
 	return atu
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (atu *APITokenUpdate) SetExpiresAt(t time.Time) *APITokenUpdate {
+	atu.mutation.SetExpiresAt(t)
+	return atu
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (atu *APITokenUpdate) SetNillableExpiresAt(t *time.Time) *APITokenUpdate {
+	if t != nil {
+		atu.SetExpiresAt(*t)
+	}
+	return atu
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (atu *APITokenUpdate) ClearExpiresAt() *APITokenUpdate {
+	atu.mutation.ClearExpiresAt()
+	return atu
+}
+
 // SetRevokedAt sets the "revoked_at" field.
 func (atu *APITokenUpdate) SetRevokedAt(t time.Time) *APITokenUpdate {
 	atu.mutation.SetRevokedAt(t)
@@ -85,9 +106,34 @@ func (atu *APITokenUpdate) SetNillableOrganizationID(u *uuid.UUID) *APITokenUpda
 	return atu
 }
 
+// SetProjectID sets the "project_id" field.
+func (atu *APITokenUpdate) SetProjectID(u uuid.UUID) *APITokenUpdate {
+	atu.mutation.SetProjectID(u)
+	return atu
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (atu *APITokenUpdate) SetNillableProjectID(u *uuid.UUID) *APITokenUpdate {
+	if u != nil {
+		atu.SetProjectID(*u)
+	}
+	return atu
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (atu *APITokenUpdate) ClearProjectID() *APITokenUpdate {
+	atu.mutation.ClearProjectID()
+	return atu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (atu *APITokenUpdate) SetOrganization(o *Organization) *APITokenUpdate {
 	return atu.SetOrganizationID(o.ID)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (atu *APITokenUpdate) SetProject(p *Project) *APITokenUpdate {
+	return atu.SetProjectID(p.ID)
 }
 
 // Mutation returns the APITokenMutation object of the builder.
@@ -98,6 +144,12 @@ func (atu *APITokenUpdate) Mutation() *APITokenMutation {
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (atu *APITokenUpdate) ClearOrganization() *APITokenUpdate {
 	atu.mutation.ClearOrganization()
+	return atu
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (atu *APITokenUpdate) ClearProject() *APITokenUpdate {
+	atu.mutation.ClearProject()
 	return atu
 }
 
@@ -160,6 +212,9 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if atu.mutation.DescriptionCleared() {
 		_spec.ClearField(apitoken.FieldDescription, field.TypeString)
 	}
+	if value, ok := atu.mutation.ExpiresAt(); ok {
+		_spec.SetField(apitoken.FieldExpiresAt, field.TypeTime, value)
+	}
 	if atu.mutation.ExpiresAtCleared() {
 		_spec.ClearField(apitoken.FieldExpiresAt, field.TypeTime)
 	}
@@ -191,6 +246,35 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if atu.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.ProjectTable,
+			Columns: []string{apitoken.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := atu.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.ProjectTable,
+			Columns: []string{apitoken.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -240,6 +324,26 @@ func (atuo *APITokenUpdateOne) ClearDescription() *APITokenUpdateOne {
 	return atuo
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (atuo *APITokenUpdateOne) SetExpiresAt(t time.Time) *APITokenUpdateOne {
+	atuo.mutation.SetExpiresAt(t)
+	return atuo
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (atuo *APITokenUpdateOne) SetNillableExpiresAt(t *time.Time) *APITokenUpdateOne {
+	if t != nil {
+		atuo.SetExpiresAt(*t)
+	}
+	return atuo
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (atuo *APITokenUpdateOne) ClearExpiresAt() *APITokenUpdateOne {
+	atuo.mutation.ClearExpiresAt()
+	return atuo
+}
+
 // SetRevokedAt sets the "revoked_at" field.
 func (atuo *APITokenUpdateOne) SetRevokedAt(t time.Time) *APITokenUpdateOne {
 	atuo.mutation.SetRevokedAt(t)
@@ -274,9 +378,34 @@ func (atuo *APITokenUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *APIToken
 	return atuo
 }
 
+// SetProjectID sets the "project_id" field.
+func (atuo *APITokenUpdateOne) SetProjectID(u uuid.UUID) *APITokenUpdateOne {
+	atuo.mutation.SetProjectID(u)
+	return atuo
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (atuo *APITokenUpdateOne) SetNillableProjectID(u *uuid.UUID) *APITokenUpdateOne {
+	if u != nil {
+		atuo.SetProjectID(*u)
+	}
+	return atuo
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (atuo *APITokenUpdateOne) ClearProjectID() *APITokenUpdateOne {
+	atuo.mutation.ClearProjectID()
+	return atuo
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (atuo *APITokenUpdateOne) SetOrganization(o *Organization) *APITokenUpdateOne {
 	return atuo.SetOrganizationID(o.ID)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (atuo *APITokenUpdateOne) SetProject(p *Project) *APITokenUpdateOne {
+	return atuo.SetProjectID(p.ID)
 }
 
 // Mutation returns the APITokenMutation object of the builder.
@@ -287,6 +416,12 @@ func (atuo *APITokenUpdateOne) Mutation() *APITokenMutation {
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (atuo *APITokenUpdateOne) ClearOrganization() *APITokenUpdateOne {
 	atuo.mutation.ClearOrganization()
+	return atuo
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (atuo *APITokenUpdateOne) ClearProject() *APITokenUpdateOne {
+	atuo.mutation.ClearProject()
 	return atuo
 }
 
@@ -379,6 +514,9 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 	if atuo.mutation.DescriptionCleared() {
 		_spec.ClearField(apitoken.FieldDescription, field.TypeString)
 	}
+	if value, ok := atuo.mutation.ExpiresAt(); ok {
+		_spec.SetField(apitoken.FieldExpiresAt, field.TypeTime, value)
+	}
 	if atuo.mutation.ExpiresAtCleared() {
 		_spec.ClearField(apitoken.FieldExpiresAt, field.TypeTime)
 	}
@@ -410,6 +548,35 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if atuo.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.ProjectTable,
+			Columns: []string{apitoken.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := atuo.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.ProjectTable,
+			Columns: []string{apitoken.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

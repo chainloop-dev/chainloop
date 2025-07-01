@@ -18,6 +18,7 @@ package controlplane.config.v1;
 
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1;v1";
 
@@ -46,4 +47,12 @@ message AllowList {
   // if false, the allowList rules will be used as source of truth
   // if true, the allowList rules will be used as a starting point to populate the property in the DB
   bool allow_db_overrides = 4;
+}
+
+message DatabaseConfig {
+  string driver = 1;
+  string source = 2;
+  int32 min_open_conns = 3;
+  int32 max_open_conns = 4;
+  google.protobuf.Duration max_conn_idle_time = 5;
 }

@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.GroupServiceAddMemberResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceAddMemberResponse contains the information about the group member that was added",
+  "properties": {},
+  "title": "Group Service Add Member Response",
+  "type": "object"
+}

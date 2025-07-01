@@ -4,18 +4,20 @@ VERSION=$(shell git describe --tags --always)
 # init env
 init: init-api-tools
 	go install github.com/google/wire/cmd/wire@latest
-	go install github.com/vektra/mockery/v2@v2.43.2
+	go install github.com/vektra/mockery/v3@v3.5.0
 	# using binary release for atlas, since ent schema handler is not included
 	# in the community version anymore https://github.com/ariga/atlas/issues/2388#issuecomment-1864287189
-	curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.32.0 sh -s -- -y
+	curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.35.0 sh -s -- -y
 
 # initialize API tooling
 .PHONY: init-api-tools
 init-api-tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-	go install github.com/bufbuild/buf/cmd/buf@v1.40.1
+	go install github.com/bufbuild/buf/cmd/buf@v1.49.0
 	go install github.com/envoyproxy/protoc-gen-validate@v1.0.1
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.26.3
+	go install github.com/mikefarah/yq/v4@v4.45.1
 	# Tools fixed to a specific version via its commit since they are not released standalone
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@v2.0.0-20231102162905-3fc8fb7a0a0b
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20231102162905-3fc8fb7a0a0b

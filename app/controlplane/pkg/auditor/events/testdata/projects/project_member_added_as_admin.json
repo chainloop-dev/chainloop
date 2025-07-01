@@ -1,0 +1,18 @@
+{
+  "ActionType": "ProjectMemberAdded",
+  "TargetType": "Project",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io has added user test@example.com to the project test-project with role 'admin'",
+  "Info": {
+    "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "project_name": "test-project",
+    "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
+    "user_email": "test@example.com",
+    "role": "role:project:admin"
+  },
+  "Digest": "sha256:2416ffd8c62ba3727a704e0aec3444e64623625909eba745249b73425bfbd70a"
+}

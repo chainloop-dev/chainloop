@@ -1,0 +1,39 @@
+{
+  "$id": "controlplane.v1.GroupServiceListMembersRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceListMembersRequest contains the identifier for the group whose members are to be listed",
+  "patternProperties": {
+    "^(groupReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "^(memberEmail)$": {
+      "description": "Optional filter to search by member email address",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "group_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "maintainers": {
+      "description": "Optional filter to search only by maintainers or not",
+      "type": "boolean"
+    },
+    "member_email": {
+      "description": "Optional filter to search by member email address",
+      "type": "string"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination parameters to limit and offset results"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
+  "title": "Group Service List Members Request",
+  "type": "object"
+}

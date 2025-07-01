@@ -305,16 +305,18 @@ func TestValidateExecuteOpts(t *testing.T) {
 
 func TestValidateAttachmentConfiguration(t *testing.T) {
 	testCases := []struct {
-		allowAutoCreate                  bool
-		projectID, projectName, parentID string
-		errMsg                           string
+		allowAutoCreate                          bool
+		projectID, projectName, parentID, filter string
+		errMsg                                   string
 	}{
-		{false, "project-id", "", "", ""},
-		{true, "", "project-name", "", ""},
-		{true, "", "project-name", "parent-id", ""},
-		{false, "", "project-name", "", "auto creation of projects is not supported in this integration"},
-		{false, "", "", "", "project id or name must be provided"},
-		{false, "project-id", "", "parent-id", "project name must be provided to work with parent id"},
+		{false, "project-id", "", "", "", ""},
+		{true, "", "project-name", "", "", ""},
+		{true, "", "project-name", "parent-id", "", ""},
+		{false, "", "project-name", "", "", "auto creation of projects is not supported in this integration"},
+		{false, "", "", "", "", "project id or name must be provided"},
+		{false, "project-id", "", "parent-id", "", "project name must be provided to work with parent id"},
+		{true, "", "project-name", "", "environment=prod", ""},
+		{true, "", "project-name", "", "filter", "invalid filter: invalid filter segment 'filter' - must be 'key=value'"},
 	}
 
 	for _, tc := range testCases {
@@ -326,6 +328,7 @@ func TestValidateAttachmentConfiguration(t *testing.T) {
 			ProjectID:   tc.projectID,
 			ProjectName: tc.projectName,
 			ParentID:    tc.parentID,
+			Filter:      tc.filter,
 		}
 		err := validateAttachmentConfiguration(rc, ac)
 		if tc.errMsg != "" {
@@ -333,5 +336,78 @@ func TestValidateAttachmentConfiguration(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 		}
+	}
+}
+
+func TestVerifyAllFilters(t *testing.T) {
+	attestationAnnotations := map[string]string{
+		"environment": "prod",
+		"team":        "security",
+	}
+
+	materialAnnotations := map[string]string{
+		"environment": "staging",
+		"critical":    "true",
+	}
+
+	testCases := []struct {
+		name   string
+		filter string
+		errMsg string
+	}{
+		{
+			name:   "material annotation exact match",
+			filter: "critical=true",
+		},
+		{
+			name:   "material precedence over attestation for same key",
+			filter: "environment=staging",
+		},
+		{
+			name:   "material value mismatch fails",
+			filter: "environment=prod",
+			errMsg: "material annotation mismatch",
+		},
+		{
+			name:   "attestation annotation fallback match",
+			filter: "team=security",
+		},
+		{
+			name:   "attestation value mismatch fails",
+			filter: "team=infra",
+			errMsg: "attestation annotation mismatch",
+		},
+		{
+			name:   "missing annotation fails",
+			filter: "nonexistent=value",
+			errMsg: "missing required annotation",
+		},
+		{
+			name:   "multiple conditions all match",
+			filter: "environment=staging,team=security",
+		},
+		{
+			name:   "one mismatched condition fails entire filter",
+			filter: "environment=staging,team=infra",
+			errMsg: "attestation annotation mismatch",
+		},
+		{
+			name:   "invalid filter format",
+			filter: "environment",
+			errMsg: "invalid filter segment",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := verifyAllFilters(attestationAnnotations, materialAnnotations, tc.filter)
+
+			if tc.errMsg != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }

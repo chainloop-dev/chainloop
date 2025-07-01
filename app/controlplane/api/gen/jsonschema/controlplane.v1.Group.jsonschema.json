@@ -1,0 +1,48 @@
+{
+  "$id": "controlplane.v1.Group.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Group represents a collection of users with shared access to resources",
+  "patternProperties": {
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the group was created"
+    },
+    "^(organization_id)$": {
+      "description": "UUID of the organization that this group belongs to",
+      "type": "string"
+    },
+    "^(updated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the group was last modified"
+    }
+  },
+  "properties": {
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the group was created"
+    },
+    "description": {
+      "description": "Additional details about the group's purpose",
+      "type": "string"
+    },
+    "id": {
+      "description": "Unique identifier for the group",
+      "type": "string"
+    },
+    "name": {
+      "description": "Human-readable name of the group",
+      "type": "string"
+    },
+    "organizationId": {
+      "description": "UUID of the organization that this group belongs to",
+      "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the group was last modified"
+    }
+  },
+  "title": "Group",
+  "type": "object"
+}

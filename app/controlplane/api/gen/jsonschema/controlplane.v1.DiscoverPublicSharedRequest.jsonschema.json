@@ -2,13 +2,15 @@
   "$id": "controlplane.v1.DiscoverPublicSharedRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method",
   "properties": {
     "digest": {
+      "description": "Digest is the unique identifier of the referrer to discover",
       "minLength": 1,
       "type": "string"
     },
     "kind": {
-      "description": "Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\n Used to filter and resolve ambiguities",
+      "description": "Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\n Used to filter and resolve ambiguities",
       "type": "string"
     }
   },

@@ -187,7 +187,8 @@ OIDC settings, will fallback to development settings if needed
 {{- define "controlplane.oidc_settings" -}}
   {{- if .Values.development }}
     {{- with .Values.controlplane.auth }}
-    domain: "{{ coalesce .oidc.url "http://chainloop-dex:5556/dex" }}"
+    {{- $dexContext := dict "Values" $.Values.dex "Chart" $.Chart "Release" $.Release "Capabilities" $.Capabilities "Template" $.Template }}
+    domain: "{{ coalesce .oidc.url (include "chainloop.dex.external_url" $dexContext ) }}"
     client_id: "{{ coalesce .oidc.clientID "chainloop-dev" }}"
     client_secret: "{{ coalesce .oidc.clientSecret "ZXhhbXBsZS1hcHAtc2VjcmV0" }}"
     {{- if .oidc.loginURLOverride }}
@@ -452,3 +453,4 @@ Return the Nats connection string
 {{- $port := required "nats server port not set" .Values.controlplane.nats.port }}
 {{- printf "nats://%s:%d" $host ($port | int) }}
 {{- end -}}
+

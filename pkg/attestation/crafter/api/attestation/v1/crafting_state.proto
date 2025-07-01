@@ -153,6 +153,23 @@ message Attestation {
   // Runner environment in which the attestation was crafted
   RunnerEnvironment runner_environment = 16;
 
+  // Authentication information used during attestation
+  Auth auth = 17;
+
+  message Auth {
+    AuthType type = 1 [(buf.validate.field).enum = {
+      not_in: [0]
+    }];
+    // Identifier of the authentication (user ID, token ID, etc.)
+    string id = 2 [(buf.validate.field).string = {min_len: 1}];
+
+    enum AuthType {
+      AUTH_TYPE_UNSPECIFIED = 0;
+      AUTH_TYPE_USER = 1;
+      AUTH_TYPE_API_TOKEN = 2;
+    }
+  }
+
   message SigningOptions {
     // TSA URL
     string timestamp_authority_url = 1;
@@ -163,7 +180,7 @@ message Attestation {
 
 // The runner environment in which the attestation was crafted
 message RunnerEnvironment {
-     // Workflow file path that was used during build 
+  // Workflow file path that was used during build
   string workflow_file_path = 1;
 
   // Runner environment name, i.e. github-hosted

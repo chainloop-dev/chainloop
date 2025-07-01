@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
@@ -31,7 +30,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// API Token is used for unattended access to the control plane API.
+type APITokenJWTConfig struct {
+	SymmetricHmacKey string
+}
+
+// APIToken is used for unattended access to the control plane API.
 type APIToken struct {
 	ID          uuid.UUID
 	Name        string
@@ -46,15 +49,19 @@ type APIToken struct {
 	ExpiresAt *time.Time
 	// When the token was manually revoked
 	RevokedAt *time.Time
+	// If the token is scoped to a project
+	ProjectID   *uuid.UUID
+	ProjectName *string
 }
 
 type APITokenRepo interface {
-	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)
+	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*APIToken, error)
 	// List all the tokens optionally filtering it by organization and including revoked tokens
-	List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)
+	List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
+	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
-	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -72,7 +79,7 @@ type APITokenSyncerUseCase struct {
 	base *APITokenUseCase
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
 		orgUseCase:   orgUseCase,
@@ -82,8 +89,8 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 		DefaultAuthzPolicies: []*authz.Policy{
 			// Add permissions to workflow run
 			authz.PolicyWorkflowRunList, authz.PolicyWorkflowRunRead,
-			// To read and create workflows
-			authz.PolicyWorkflowRead, authz.PolicyWorkflowCreate,
+			// To read, list and create workflows
+			authz.PolicyWorkflowRead, authz.PolicyWorkflowList, authz.PolicyWorkflowCreate,
 			// Add permissions to workflow contract management
 			authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate, authz.PolicyWorkflowContractCreate,
 			// to download artifacts and list referrers
@@ -100,13 +107,16 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 			authz.PolicyRegisteredIntegrationAdd,
 			authz.PolicyAttachedIntegrationList,
 			authz.PolicyAttachedIntegrationAttach,
+
+			// to upload CAS artifacts
+			authz.PolicyArtifactUpload,
 		},
 	}
 
 	// Create the JWT builder for the API token
 	b, err := apitoken.NewBuilder(
 		apitoken.WithIssuer(jwt.DefaultIssuer),
-		apitoken.WithKeySecret(conf.GeneratedJwsHmacSecret),
+		apitoken.WithKeySecret(jwtConfig.SymmetricHmacKey),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating jwt builder: %w", err)
@@ -117,8 +127,32 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, conf *conf.Auth, authzE *auth
 	return uc, nil
 }
 
+type apiTokenOptions struct {
+	project              *Project
+	showOnlySystemTokens bool
+}
+
+type APITokenUseCaseOpt func(*apiTokenOptions)
+
+func APITokenWithProject(project *Project) APITokenUseCaseOpt {
+	return func(o *apiTokenOptions) {
+		o.project = project
+	}
+}
+
+func APITokenShowOnlySystemTokens(show bool) APITokenUseCaseOpt {
+	return func(o *apiTokenOptions) {
+		o.showOnlySystemTokens = show
+	}
+}
+
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string, opts ...APITokenUseCaseOpt) (*APIToken, error) {
+	options := &apiTokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -147,9 +181,15 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, fmt.Errorf("finding organization: %w", err)
 	}
 
+	// If a project is provided, we store it in the token
+	var projectID *uuid.UUID
+	if options.project != nil {
+		projectID = ToPtr(options.project.ID)
+	}
+
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID)
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -157,8 +197,22 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, fmt.Errorf("storing token: %w", err)
 	}
 
+	generationOpts := &apitoken.GenerateJWTOptions{
+		OrgID:     token.OrganizationID,
+		OrgName:   org.Name,
+		KeyID:     token.ID,
+		KeyName:   name,
+		ExpiresAt: expiresAt,
+	}
+
+	if projectID != nil {
+		generationOpts.ProjectID = ToPtr(options.project.ID)
+		generationOpts.ProjectName = ToPtr(options.project.Name)
+	}
+
 	// generate the JWT
-	token.JWT, err = uc.jwtBuilder.GenerateJWT(token.OrganizationID.String(), org.Name, token.ID.String(), expiresAt)
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(generationOpts)
+
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
@@ -181,13 +235,63 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	return token, nil
 }
 
-func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool) ([]*APIToken, error) {
+// RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
+func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresIn time.Duration) (*APIToken, error) {
+	if expiresIn == 0 {
+		return nil, fmt.Errorf("expiresAt is mandatory")
+	}
+
+	expiresAt := time.Now().Add(expiresIn)
+
+	token, err := uc.apiTokenRepo.FindByID(ctx, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("finding token: %w", err)
+	}
+
+	org, err := uc.orgUseCase.FindByID(ctx, token.OrganizationID.String())
+	if err != nil {
+		return nil, fmt.Errorf("finding organization: %w", err)
+	}
+
+	generationOpts := &apitoken.GenerateJWTOptions{
+		OrgID:     token.OrganizationID,
+		OrgName:   org.Name,
+		KeyID:     token.ID,
+		KeyName:   token.Name,
+		ExpiresAt: &expiresAt,
+	}
+
+	// generate the JWT
+	token.JWT, err = uc.jwtBuilder.GenerateJWT(generationOpts)
+	if err != nil {
+		return nil, fmt.Errorf("generating jwt: %w", err)
+	}
+
+	// update the token expiration in db
+	if err = uc.apiTokenRepo.UpdateExpiration(ctx, tokenID, expiresAt); err != nil {
+		return nil, fmt.Errorf("updating expiration for token: %w", err)
+	}
+
+	return token, nil
+}
+
+func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool, opts ...APITokenUseCaseOpt) ([]*APIToken, error) {
+	options := &apiTokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.apiTokenRepo.List(ctx, &orgUUID, includeRevoked)
+	var projectID *uuid.UUID
+	if options.project != nil {
+		projectID = ToPtr(options.project.ID)
+	}
+
+	return uc.apiTokenRepo.List(ctx, &orgUUID, projectID, includeRevoked, options.showOnlySystemTokens)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
@@ -226,13 +330,23 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	return nil
 }
 
-func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*APIToken, error) {
+func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string, opts ...APITokenUseCaseOpt) (*APIToken, error) {
+	options := &apiTokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name)
+	var projectID *uuid.UUID
+	if options.project != nil {
+		projectID = ToPtr(options.project.ID)
+	}
+
+	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
 	}
@@ -268,7 +382,7 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 	suc.base.logger.Info("syncing policies for all the API tokens")
 
 	// List all the non-revoked tokens from all the orgs
-	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, false)
+	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, nil, false, false)
 	if err != nil {
 		return fmt.Errorf("listing tokens: %w", err)
 	}

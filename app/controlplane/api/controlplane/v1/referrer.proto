@@ -20,6 +20,7 @@ package controlplane.v1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -27,47 +28,109 @@ service ReferrerService {
   // DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
   rpc DiscoverPrivate(ReferrerServiceDiscoverPrivateRequest) returns (ReferrerServiceDiscoverPrivateResponse) {
     option (google.api.http) = {get: "/discover/{digest}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Discover private referrer"
+      description: "Returns the referrer item for a given digest in the organizations of the logged-in user"
+      produces: ["application/json"]
+    };
   }
   // DiscoverPublicShared returns the referrer item for a given digest in the public shared index
   rpc DiscoverPublicShared(DiscoverPublicSharedRequest) returns (DiscoverPublicSharedResponse) {
     option (google.api.http) = {get: "/discover/shared/{digest}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Discover public shared referrer"
+      description: "Returns the referrer item for a given digest in the public shared index"
+      produces: ["application/json"]
+    };
   }
+
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "ReferrerService"
+    description: "Referrer service for discovering referred content by digest"
+  };
 }
 
+// ReferrerServiceDiscoverPrivateRequest is the request for the DiscoverPrivate method
 message ReferrerServiceDiscoverPrivateRequest {
+  // Digest is the unique identifier of the referrer to discover
   string digest = 1 [(buf.validate.field).string = {min_len: 1}];
-  // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+  // Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
+
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "ReferrerServiceDiscoverPrivateRequest"
+      description: "Request to discover a private referrer"
+    }
+  };
 }
 
+// DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
 message DiscoverPublicSharedRequest {
+  // Digest is the unique identifier of the referrer to discover
   string digest = 1 [(buf.validate.field).string = {min_len: 1}];
-  // Optional kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
+  // Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
+
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "DiscoverPublicSharedRequest"
+      description: "Request to discover a public shared referrer"
+    }
+  };
 }
 
+// DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method
 message DiscoverPublicSharedResponse {
+  // Result is the discovered referrer item
   ReferrerItem result = 1;
+
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "DiscoverPublicSharedResponse"
+      description: "Response for the DiscoverPublicShared method"
+    }
+  };
 }
 
+// ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method
 message ReferrerServiceDiscoverPrivateResponse {
+  // Result is the discovered referrer item
   ReferrerItem result = 1;
+
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "ReferrerServiceDiscoverPrivateResponse"
+      description: "Response for the DiscoverPrivate method"
+    }
+  };
 }
 
+// ReferrerItem represents a referrer object in the system
 message ReferrerItem {
   // Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead
   string digest = 1;
   // Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   string kind = 2;
-  // Whether the referrer is downloadable or not from CAS
+  // Downloadable indicates whether the referrer is downloadable or not from CAS
   bool downloadable = 3;
-  // Whether the referrer is public since it belongs to a public workflow
+  // Public indicates whether the referrer is public since it belongs to a public workflow
   bool public = 6;
+  // References contains the list of related referrer items
   repeated ReferrerItem references = 4;
+  // CreatedAt is the timestamp when the referrer was created
   google.protobuf.Timestamp created_at = 5;
-
+  // Metadata contains additional descriptive information about the referrer
   map<string, string> metadata = 7;
+  // Annotations are key-value pairs associated with the referrer
   map<string, string> annotations = 8;
+
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "ReferrerItem"
+      description: "It represents a referrer object in the system"
+    }
+  };
 }

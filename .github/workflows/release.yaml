@@ -78,7 +78,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.24.2"
+          go-version: "1.24.4"
 
       # install qemu binaries for multiarch builds (needed by goreleaser/buildx)
       - name: Setup qemu
@@ -186,7 +186,7 @@ jobs:
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
     outputs:
-      attestation_hash: ${{ steps.attestation_push.attestation_sha }}
+      attestation_hash: ${{ steps.attestation_push.outputs.attestation_sha }}
     steps:
       - name: Install Chainloop
         run: |

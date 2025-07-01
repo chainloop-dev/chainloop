@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
@@ -182,6 +183,21 @@ func (oc *OrganizationCreate) AddProjects(p ...*Project) *OrganizationCreate {
 		ids[i] = p[i].ID
 	}
 	return oc.AddProjectIDs(ids...)
+}
+
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (oc *OrganizationCreate) AddGroupIDs(ids ...uuid.UUID) *OrganizationCreate {
+	oc.mutation.AddGroupIDs(ids...)
+	return oc
+}
+
+// AddGroups adds the "groups" edges to the Group entity.
+func (oc *OrganizationCreate) AddGroups(g ...*Group) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return oc.AddGroupIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -397,6 +413,22 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := oc.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

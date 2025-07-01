@@ -20,6 +20,10 @@ type Tx struct {
 	CASBackend *CASBackendClient
 	// CASMapping is the client for interacting with the CASMapping builders.
 	CASMapping *CASMappingClient
+	// Group is the client for interacting with the Group builders.
+	Group *GroupClient
+	// GroupMembership is the client for interacting with the GroupMembership builders.
+	GroupMembership *GroupMembershipClient
 	// Integration is the client for interacting with the Integration builders.
 	Integration *IntegrationClient
 	// IntegrationAttachment is the client for interacting with the IntegrationAttachment builders.
@@ -183,6 +187,8 @@ func (tx *Tx) init() {
 	tx.Attestation = NewAttestationClient(tx.config)
 	tx.CASBackend = NewCASBackendClient(tx.config)
 	tx.CASMapping = NewCASMappingClient(tx.config)
+	tx.Group = NewGroupClient(tx.config)
+	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.Integration = NewIntegrationClient(tx.config)
 	tx.IntegrationAttachment = NewIntegrationAttachmentClient(tx.config)
 	tx.Membership = NewMembershipClient(tx.config)

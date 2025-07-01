@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -34,12 +35,18 @@ type CASMapping struct {
 	Digest                   string
 	CreatedAt                *time.Time
 	// A public mapping means that the material/attestation can be downloaded by anyone
-	Public bool
+	Public    bool
+	ProjectID uuid.UUID
+}
+
+type CASMappingFindOptions struct {
+	Orgs       []uuid.UUID
+	ProjectIDs []uuid.UUID
 }
 
 type CASMappingRepo interface {
 	// Create a mapping with an optional workflow run id
-	Create(ctx context.Context, digest string, casBackendID uuid.UUID, workflowRunID *uuid.UUID) (*CASMapping, error)
+	Create(ctx context.Context, digest string, casBackendID uuid.UUID, opts *CASMappingCreateOpts) (*CASMapping, error)
 	// List all the CAS mappings for the given digest
 	FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error)
 }
@@ -47,27 +54,24 @@ type CASMappingRepo interface {
 type CASMappingUseCase struct {
 	repo           CASMappingRepo
 	membershipRepo MembershipRepo
+	projectsRepo   ProjectsRepo
 	logger         *log.Helper
 }
 
-func NewCASMappingUseCase(repo CASMappingRepo, mRepo MembershipRepo, logger log.Logger) *CASMappingUseCase {
-	return &CASMappingUseCase{repo, mRepo, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
+func NewCASMappingUseCase(repo CASMappingRepo, mRepo MembershipRepo, pRepo ProjectsRepo, logger log.Logger) *CASMappingUseCase {
+	return &CASMappingUseCase{repo, mRepo, pRepo, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
+}
+
+type CASMappingCreateOpts struct {
+	WorkflowRunID *uuid.UUID
+	ProjectID     *uuid.UUID
 }
 
 // Create a mapping with an optional workflow run id
-func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID string, workflowRunID string) (*CASMapping, error) {
+func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID string, opts *CASMappingCreateOpts) (*CASMapping, error) {
 	casBackendUUID, err := uuid.Parse(casBackendID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
-	}
-
-	var workflowRunUUID *uuid.UUID
-	if workflowRunID != "" {
-		runUUID, err := uuid.Parse(workflowRunID)
-		if err != nil {
-			return nil, NewErrInvalidUUID(err)
-		}
-		workflowRunUUID = &runUUID
 	}
 
 	// parse the digest to make sure is a valid sha256 sum
@@ -75,18 +79,18 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}
 
-	return uc.repo.Create(ctx, digest, casBackendUUID, workflowRunUUID)
+	return uc.repo.Create(ctx, digest, casBackendUUID, opts)
 }
 
 func (uc *CASMappingUseCase) FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error) {
 	return uc.repo.FindByDigest(ctx, digest)
 }
 
-// FindCASMappingForDownloadByUser returns the CASMapping appropriate for the given digest and user
-// This means, in order
-// 1 - Any mapping that points to an organization which the user is member of
-// 1.1 If there are multiple mappings, it will pick the default one or the first one
-// 2 - Any mapping that is public
+// FindCASMappingForDownloadByUser returns the CASMapping appropriate for the given digest and user.
+// This means, in order:
+// 1 - Any mapping that points to an organization which the user is member of.
+// 1.1 If there are multiple mappings, it will pick the default one or the first one.
+// 2 - Any mapping that is public.
 func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context, digest string, userID string) (*CASMapping, error) {
 	uc.logger.Infow("msg", "finding cas mapping for download", "digest", digest, "user", userID)
 
@@ -95,18 +99,12 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Load organizations for the given user
-	memberships, err := uc.membershipRepo.FindByUser(ctx, userUUID)
+	userOrgs, projectIDs, err := getOrgsAndRBACInfoForUser(ctx, userUUID, uc.membershipRepo, uc.projectsRepo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list memberships: %w", err)
+		return nil, err
 	}
 
-	userOrgs := make([]string, 0, len(memberships))
-	for _, m := range memberships {
-		userOrgs = append(userOrgs, m.OrganizationID.String())
-	}
-
-	mapping, err := uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs)
+	mapping, err := uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs, projectIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas mapping for download: %w", err)
 	}
@@ -114,7 +112,9 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 	return mapping, nil
 }
 
-func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []string) (result *CASMapping, err error) {
+// FindCASMappingForDownloadByOrg looks for the CAS mapping to download the referenced artifact in one of the passed organizations.
+// The result will get filtered out if RBAC is enabled (projectIDs is not Nil)
+func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (result *CASMapping, err error) {
 	if _, err := cr_v1.NewHash(digest); err != nil {
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}
@@ -143,8 +143,8 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
-	// 2 - CAS mappings associated with the given list of orgs
-	orgMappings, err := filterByOrgs(mappings, orgs)
+	// 2 - CAS mappings associated with the given list of orgs and project IDs
+	orgMappings, err := filterByOrgs(mappings, orgs, projectIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load mappings associated to an user: %w", err)
 	} else if len(orgMappings) > 0 {
@@ -163,14 +163,20 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 	return defaultOrFirst(publicMappings), nil
 }
 
-// Extract only the mappings associated with a list of orgs
-func filterByOrgs(mappings []*CASMapping, orgs []string) ([]*CASMapping, error) {
+// Extract only the mappings associated with a list of orgs and optionally a list of projects
+func filterByOrgs(mappings []*CASMapping, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) ([]*CASMapping, error) {
 	result := make([]*CASMapping, 0)
 
 	for _, mapping := range mappings {
 		for _, o := range orgs {
-			if mapping.OrgID.String() == o {
-				result = append(result, mapping)
+			if mapping.OrgID == o {
+				if visibleProjects, ok := projectIDs[mapping.OrgID]; ok {
+					if slices.Contains(visibleProjects, mapping.ProjectID) {
+						result = append(result, mapping)
+					}
+				} else {
+					result = append(result, mapping)
+				}
 			}
 		}
 	}

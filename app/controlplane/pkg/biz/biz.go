@@ -22,6 +22,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/google/wire"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -54,10 +56,19 @@ var ProviderSet = wire.NewSet(
 	NewProjectsUseCase,
 	NewAuditorUseCase,
 	NewUserAccessSyncerUseCase,
+	NewGroupUseCase,
 	wire.Bind(new(PromObservable), new(*PrometheusUseCase)),
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )
+
+// IdentityReference represents a reference to an identity, which can be any entity in the system.
+type IdentityReference struct {
+	// ID is the unique identifier of the identity
+	ID *uuid.UUID
+	// Name is the name of the identity
+	Name *string
+}
 
 // generate a DNS1123-valid random name using moby's namesgenerator
 // plus an additional random number
@@ -105,14 +116,6 @@ func ValidateVersion(version string) error {
 	}
 
 	return nil
-}
-
-// EntityRef is a reference to an entity
-type EntityRef struct {
-	// ID is the unique identifier of the entity
-	ID string
-	// Name is the name of the entity
-	Name string
 }
 
 func ToPtr[T any](v T) *T {

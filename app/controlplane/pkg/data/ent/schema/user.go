@@ -50,6 +50,8 @@ func (User) Fields() []ent.Field {
 				Default: "CURRENT_TIMESTAMP",
 			}),
 		field.Bool("has_restricted_access").Optional().Nillable(),
+		field.String("first_name").Optional(),
+		field.String("last_name").Optional(),
 	}
 }
 
@@ -57,6 +59,7 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("memberships", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.From("group", Group.Type).Ref("members").Through("group_users", GroupMembership.Type),
 	}
 }
 

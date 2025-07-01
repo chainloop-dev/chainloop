@@ -3,7 +3,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../../google/protobuf/duration";
-import { Timestamp } from "../../google/protobuf/timestamp";
+import { APITokenItem } from "./response_messages";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -35,17 +35,6 @@ export interface APITokenServiceListRequest {
 
 export interface APITokenServiceListResponse {
   result: APITokenItem[];
-}
-
-export interface APITokenItem {
-  id: string;
-  name: string;
-  description: string;
-  organizationId: string;
-  organizationName: string;
-  createdAt?: Date;
-  revokedAt?: Date;
-  expiresAt?: Date;
 }
 
 function createBaseAPITokenServiceCreateRequest(): APITokenServiceCreateRequest {
@@ -491,164 +480,6 @@ export const APITokenServiceListResponse = {
   },
 };
 
-function createBaseAPITokenItem(): APITokenItem {
-  return {
-    id: "",
-    name: "",
-    description: "",
-    organizationId: "",
-    organizationName: "",
-    createdAt: undefined,
-    revokedAt: undefined,
-    expiresAt: undefined,
-  };
-}
-
-export const APITokenItem = {
-  encode(message: APITokenItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.name !== "") {
-      writer.uint32(58).string(message.name);
-    }
-    if (message.description !== "") {
-      writer.uint32(18).string(message.description);
-    }
-    if (message.organizationId !== "") {
-      writer.uint32(26).string(message.organizationId);
-    }
-    if (message.organizationName !== "") {
-      writer.uint32(66).string(message.organizationName);
-    }
-    if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
-    }
-    if (message.revokedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.revokedAt), writer.uint32(42).fork()).ldelim();
-    }
-    if (message.expiresAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.expiresAt), writer.uint32(50).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenItem {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenItem();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.organizationId = reader.string();
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.organizationName = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.revokedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): APITokenItem {
-    return {
-      id: isSet(object.id) ? String(object.id) : "",
-      name: isSet(object.name) ? String(object.name) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
-      organizationName: isSet(object.organizationName) ? String(object.organizationName) : "",
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      revokedAt: isSet(object.revokedAt) ? fromJsonTimestamp(object.revokedAt) : undefined,
-      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
-    };
-  },
-
-  toJSON(message: APITokenItem): unknown {
-    const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.name !== undefined && (obj.name = message.name);
-    message.description !== undefined && (obj.description = message.description);
-    message.organizationId !== undefined && (obj.organizationId = message.organizationId);
-    message.organizationName !== undefined && (obj.organizationName = message.organizationName);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.revokedAt !== undefined && (obj.revokedAt = message.revokedAt.toISOString());
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<APITokenItem>, I>>(base?: I): APITokenItem {
-    return APITokenItem.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<APITokenItem>, I>>(object: I): APITokenItem {
-    const message = createBaseAPITokenItem();
-    message.id = object.id ?? "";
-    message.name = object.name ?? "";
-    message.description = object.description ?? "";
-    message.organizationId = object.organizationId ?? "";
-    message.organizationName = object.organizationName ?? "";
-    message.createdAt = object.createdAt ?? undefined;
-    message.revokedAt = object.revokedAt ?? undefined;
-    message.expiresAt = object.expiresAt ?? undefined;
-    return message;
-  },
-};
-
 export interface APITokenService {
   Create(
     request: DeepPartial<APITokenServiceCreateRequest>,
@@ -864,28 +695,6 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
-
-function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

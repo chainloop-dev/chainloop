@@ -1,0 +1,39 @@
+{
+  "$id": "controlplane.v1.GroupServiceUpdateRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceUpdateRequest contains the fields that can be updated for a group",
+  "patternProperties": {
+    "^(group_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "^(new_description)$": {
+      "description": "New description for the group (if provided)",
+      "type": "string"
+    },
+    "^(new_name)$": {
+      "description": "New name for the group (if provided)",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "groupReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "newDescription": {
+      "description": "New description for the group (if provided)",
+      "type": "string"
+    },
+    "newName": {
+      "description": "New name for the group (if provided)",
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
+  "title": "Group Service Update Request",
+  "type": "object"
+}

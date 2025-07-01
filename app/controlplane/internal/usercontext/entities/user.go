@@ -22,16 +22,15 @@ import (
 
 // Utils to get and set information from context
 type User struct {
-	Email, ID string
-	CreatedAt *time.Time
+	Email, ID, FirstName, LastName string
+	CreatedAt                      *time.Time
 }
 
 func WithCurrentUser(ctx context.Context, user *User) context.Context {
 	return context.WithValue(ctx, currentUserCtxKey{}, user)
 }
 
-// RequestID tries to retrieve requestID from the given context.
-// If it doesn't exist, an empty string is returned.
+// CurrentUser retrieves the user from the context
 func CurrentUser(ctx context.Context) *User {
 	res := ctx.Value(currentUserCtxKey{})
 	if res == nil {

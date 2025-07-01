@@ -34,18 +34,21 @@ import (
 
 type User struct {
 	ID                  string
+	FirstName           string
+	LastName            string
 	Email               string
 	CreatedAt           *time.Time
 	HasRestrictedAccess *bool
 }
 
 type UserRepo interface {
-	CreateByEmail(ctx context.Context, email string) (*User, error)
+	CreateByEmail(ctx context.Context, email string, firstName, lastName *string) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, userID uuid.UUID) (*User, error)
 	Delete(ctx context.Context, userID uuid.UUID) error
 	FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*User, int, error)
 	UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*User, error)
+	UpdateNameAndLastName(ctx context.Context, userID uuid.UUID, firstName, lastName *string) (*User, error)
 	HasUsersWithAccessPropertyNotSet(ctx context.Context) (bool, error)
 	FindUsersWithAccessPropertyNotSet(ctx context.Context) ([]*User, error)
 }
@@ -112,48 +115,64 @@ func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 	return uc.userRepo.Delete(ctx, userUUID)
 }
 
-// FindOrCreateByEmail finds or creates a user by email. By default, it will auto-onboard the user
+type UpsertByEmailOpts struct {
+	// DisableAutoOnboarding, if set to true, will skip the auto-onboarding process
+	DisableAutoOnboarding *bool
+	FirstName             *string
+	LastName              *string
+}
+
+// UpsertByEmail finds or creates a user by email. By default, it will auto-onboard the user
 // to the organizations defined in the configuration. If disableAutoOnboarding is set to true, it will
 // skip the auto-onboarding process.
-func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, disableAutoOnboarding ...bool) (*User, error) {
+func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *UpsertByEmailOpts) (*User, error) {
+	if opts == nil {
+		opts = &UpsertByEmailOpts{}
+	}
 	// emails are case-insensitive
 	email = strings.ToLower(email)
-
 	u, err := uc.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
-	} else if u != nil {
-		uuid, _ := uuid.Parse(u.ID)
+	}
+
+	// Signup case
+	if u == nil {
+		u, err = uc.userRepo.CreateByEmail(ctx, email, opts.FirstName, opts.LastName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user: %w", err)
+		}
+
 		// set the context user so it can be used in the auditor
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
+		uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
+			UserBase: &events.UserBase{
+				UserID: ToPtr(uuid.MustParse(u.ID)),
+				Email:  u.Email,
+			},
+		}, nil)
+	} else {
+		// Login case
 		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 		uc.auditorUC.Dispatch(ctx, &events.UserLoggedIn{
 			UserBase: &events.UserBase{
-				UserID: &uuid,
+				UserID: ToPtr(uuid.MustParse(u.ID)),
 				Email:  u.Email,
 			},
 			LoggedIn: time.Now(),
 		}, nil)
-
-		return u, nil
 	}
 
-	u, err = uc.userRepo.CreateByEmail(ctx, email)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+	// Update the user's first and last name if they differ from the provided options
+	if (opts.FirstName != nil && u.FirstName != *opts.FirstName) || (opts.LastName != nil && u.LastName != *opts.LastName) {
+		u, err = uc.userRepo.UpdateNameAndLastName(ctx, uuid.MustParse(u.ID), opts.FirstName, opts.LastName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update user name: %w", err)
+		}
 	}
 
-	// set the context user so it can be used in the auditor
-	ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
-	uuid, _ := uuid.Parse(u.ID)
-	uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
-		UserBase: &events.UserBase{
-			UserID: &uuid,
-			Email:  u.Email,
-		},
-	}, nil)
-
-	// Check if we should auto-onboard the user
-	if disableAutoOnboarding == nil || (len(disableAutoOnboarding) > 0 && !disableAutoOnboarding[0]) {
+	// Auto-onboard the user to the organizations defined in the configuration
+	if opts.DisableAutoOnboarding == nil || !*opts.DisableAutoOnboarding {
 		if err := uc.organizationUseCase.AutoOnboardOrganizations(ctx, u.ID); err != nil {
 			return nil, fmt.Errorf("failed to auto-onboard user: %w", err)
 		}
@@ -165,7 +184,7 @@ func (uc *UserUseCase) FindOrCreateByEmail(ctx context.Context, email string, di
 		return nil, fmt.Errorf("failed to update user access: %w", err)
 	}
 
-	return u, err
+	return u, nil
 }
 
 func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, error) {
@@ -224,6 +243,8 @@ func PbRoleToBiz(r pb.MembershipRole) authz.Role {
 		return authz.RoleAdmin
 	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER:
 		return authz.RoleViewer
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_MEMBER:
+		return authz.RoleOrgMember
 	default:
 		return ""
 	}

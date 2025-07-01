@@ -24,6 +24,10 @@ type User struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// HasRestrictedAccess holds the value of the "has_restricted_access" field.
 	HasRestrictedAccess *bool `json:"has_restricted_access,omitempty"`
+	// FirstName holds the value of the "first_name" field.
+	FirstName string `json:"first_name,omitempty"`
+	// LastName holds the value of the "last_name" field.
+	LastName string `json:"last_name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -34,9 +38,13 @@ type User struct {
 type UserEdges struct {
 	// Memberships holds the value of the memberships edge.
 	Memberships []*Membership `json:"memberships,omitempty"`
+	// Group holds the value of the group edge.
+	Group []*Group `json:"group,omitempty"`
+	// GroupUsers holds the value of the group_users edge.
+	GroupUsers []*GroupMembership `json:"group_users,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [3]bool
 }
 
 // MembershipsOrErr returns the Memberships value or an error if the edge
@@ -48,6 +56,24 @@ func (e UserEdges) MembershipsOrErr() ([]*Membership, error) {
 	return nil, &NotLoadedError{edge: "memberships"}
 }
 
+// GroupOrErr returns the Group value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroupOrErr() ([]*Group, error) {
+	if e.loadedTypes[1] {
+		return e.Group, nil
+	}
+	return nil, &NotLoadedError{edge: "group"}
+}
+
+// GroupUsersOrErr returns the GroupUsers value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroupUsersOrErr() ([]*GroupMembership, error) {
+	if e.loadedTypes[2] {
+		return e.GroupUsers, nil
+	}
+	return nil, &NotLoadedError{edge: "group_users"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -55,7 +81,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldHasRestrictedAccess:
 			values[i] = new(sql.NullBool)
-		case user.FieldEmail:
+		case user.FieldEmail, user.FieldFirstName, user.FieldLastName:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -101,6 +127,18 @@ func (u *User) assignValues(columns []string, values []any) error {
 				u.HasRestrictedAccess = new(bool)
 				*u.HasRestrictedAccess = value.Bool
 			}
+		case user.FieldFirstName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field first_name", values[i])
+			} else if value.Valid {
+				u.FirstName = value.String
+			}
+		case user.FieldLastName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field last_name", values[i])
+			} else if value.Valid {
+				u.LastName = value.String
+			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
 		}
@@ -117,6 +155,16 @@ func (u *User) Value(name string) (ent.Value, error) {
 // QueryMemberships queries the "memberships" edge of the User entity.
 func (u *User) QueryMemberships() *MembershipQuery {
 	return NewUserClient(u.config).QueryMemberships(u)
+}
+
+// QueryGroup queries the "group" edge of the User entity.
+func (u *User) QueryGroup() *GroupQuery {
+	return NewUserClient(u.config).QueryGroup(u)
+}
+
+// QueryGroupUsers queries the "group_users" edge of the User entity.
+func (u *User) QueryGroupUsers() *GroupMembershipQuery {
+	return NewUserClient(u.config).QueryGroupUsers(u)
 }
 
 // Update returns a builder for updating this User.
@@ -152,6 +200,12 @@ func (u *User) String() string {
 		builder.WriteString("has_restricted_access=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("first_name=")
+	builder.WriteString(u.FirstName)
+	builder.WriteString(", ")
+	builder.WriteString("last_name=")
+	builder.WriteString(u.LastName)
 	builder.WriteByte(')')
 	return builder.String()
 }

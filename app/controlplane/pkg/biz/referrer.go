@@ -38,11 +38,12 @@ type ReferrerUseCase struct {
 	repo           ReferrerRepo
 	membershipRepo MembershipRepo
 	workflowRepo   WorkflowRepo
+	projectsRepo   ProjectsRepo
 	logger         *log.Helper
 	indexConfig    *conf.ReferrerSharedIndex
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, projectsRepo ProjectsRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -63,6 +64,7 @@ func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo Membership
 		membershipRepo: mRepo,
 		indexConfig:    indexCfg,
 		workflowRepo:   wfRepo,
+		projectsRepo:   projectsRepo,
 		logger:         logger,
 	}, nil
 }
@@ -96,15 +98,21 @@ type StoredReferrer struct {
 	ID        uuid.UUID
 	CreatedAt *time.Time
 	// Fully expanded list of 1-level off references
-	References          []*StoredReferrer
-	OrgIDs, WorkflowIDs []uuid.UUID
+	References                      []*StoredReferrer
+	OrgIDs, WorkflowIDs, ProjectIDs []uuid.UUID
 }
+
+type OrgID = uuid.UUID
+type ProjectID = uuid.UUID
 
 type GetFromRootFilters struct {
 	// RootKind is the kind of the root referrer, i.e ATTESTATION
 	RootKind *string
 	// Wether to filter by visibility or not
 	Public *bool
+	// ProjectIDs stores visible projects by org for the requesting user.
+	// If an org entry doesn't exist, it means that RBAC is not applied, hence all projects in that org are visible
+	ProjectIDs map[OrgID][]ProjectID
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -112,6 +120,13 @@ type GetFromRootFilter func(*GetFromRootFilters)
 func WithKind(kind string) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.RootKind = &kind
+	}
+}
+
+// WithVisibleProjectIDs sets visible projects by org for organizations with RBAC enabled for the user (role is OrgMember)
+func WithVisibleProjectIDs(projectIDs map[OrgID][]ProjectID) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.ProjectIDs = projectIDs
 	}
 }
 
@@ -157,26 +172,24 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	userOrgs, projectIDs, err := getOrgsAndRBACInfoForUser(ctx, userUUID, s.membershipRepo, s.projectsRepo)
+	if err != nil {
+		return nil, err
+	}
+
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
-	memberships, err := s.membershipRepo.FindByUser(ctx, userUUID)
-	if err != nil {
-		return nil, fmt.Errorf("finding memberships: %w", err)
-	}
-
-	orgIDs := make([]uuid.UUID, 0, len(memberships))
-	for _, m := range memberships {
-		orgIDs = append(orgIDs, m.OrganizationID)
-	}
-
-	return s.GetFromRoot(ctx, digest, rootKind, orgIDs)
+	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs)
 }
 
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID) (*StoredReferrer, error) {
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
+	}
+	if projectIDs != nil {
+		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 
 	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)

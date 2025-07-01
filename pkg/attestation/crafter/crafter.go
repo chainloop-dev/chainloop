@@ -158,6 +158,8 @@ type InitOpts struct {
 	BlockOnPolicyViolation bool
 	// Signing options
 	SigningOptions *SigningOpts
+	// Authentication token
+	Auth *api.Attestation_Auth
 }
 
 type SigningOpts struct {
@@ -391,6 +393,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 				Type:             opts.Runner.ID(),
 				Url:              opts.Runner.RunURI(),
 			},
+			Auth: opts.Auth,
 		},
 		DryRun: opts.DryRun,
 	}, nil
@@ -571,18 +574,19 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 
 	// 4 - Populate annotations from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
-	// b) we do not allow adding annotations that are not defined in the contract
+	// b) we allow adding annotations that are not defined in the contract
 	for kr, vr := range runtimeAnnotations {
-		// If the annotation is not defined in the material we fail
-		if v, found := mt.Annotations[kr]; !found {
-			return nil, fmt.Errorf("annotation %q not found in material %q", kr, m.Name)
-		} else if v == "" {
-			// Set it only if it's not set
-			mt.Annotations[kr] = vr
-		} else {
-			// NOTE: we do not allow overriding values that come from the contract
-			c.Logger.Info().Str("key", m.Name).Str("annotation", kr).Msg("annotation can't be changed, skipping")
+		if mt.Annotations == nil {
+			mt.Annotations = make(map[string]string)
 		}
+
+		// NOTE: we do not allow overriding values that come from the contract
+		if existingVal, existsInContract := mt.Annotations[kr]; existsInContract && existingVal != "" {
+			c.Logger.Info().Str("key", vr).Str("annotation", kr).Msg("annotation value is set in the contract, can not be overridden, skipping")
+			continue
+		}
+
+		mt.Annotations[kr] = vr
 	}
 
 	// Make sure all the annotation values are now set

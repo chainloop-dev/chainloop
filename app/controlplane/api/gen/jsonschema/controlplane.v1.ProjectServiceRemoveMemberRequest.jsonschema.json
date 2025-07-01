@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.ProjectServiceRemoveMemberRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(member_reference)$": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.jsonschema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
+    },
+    "^(project_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "properties": {
+    "memberReference": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.jsonschema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
+    },
+    "projectReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "required": [
+    "project_reference",
+    "member_reference"
+  ],
+  "title": "Project Service Remove Member Request",
+  "type": "object"
+}

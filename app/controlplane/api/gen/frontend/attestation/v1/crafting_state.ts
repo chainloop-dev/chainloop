@@ -38,6 +38,8 @@ export interface Attestation {
   signingOptions?: Attestation_SigningOptions;
   /** Runner environment in which the attestation was crafted */
   runnerEnvironment?: RunnerEnvironment;
+  /** Authentication information used during attestation */
+  auth?: Attestation_Auth;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -158,6 +160,51 @@ export interface Attestation_Material_SBOMArtifact_MainComponent {
 export interface Attestation_EnvVarsEntry {
   key: string;
   value: string;
+}
+
+export interface Attestation_Auth {
+  type: Attestation_Auth_AuthType;
+  /** Identifier of the authentication (user ID, token ID, etc.) */
+  id: string;
+}
+
+export enum Attestation_Auth_AuthType {
+  AUTH_TYPE_UNSPECIFIED = 0,
+  AUTH_TYPE_USER = 1,
+  AUTH_TYPE_API_TOKEN = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function attestation_Auth_AuthTypeFromJSON(object: any): Attestation_Auth_AuthType {
+  switch (object) {
+    case 0:
+    case "AUTH_TYPE_UNSPECIFIED":
+      return Attestation_Auth_AuthType.AUTH_TYPE_UNSPECIFIED;
+    case 1:
+    case "AUTH_TYPE_USER":
+      return Attestation_Auth_AuthType.AUTH_TYPE_USER;
+    case 2:
+    case "AUTH_TYPE_API_TOKEN":
+      return Attestation_Auth_AuthType.AUTH_TYPE_API_TOKEN;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Attestation_Auth_AuthType.UNRECOGNIZED;
+  }
+}
+
+export function attestation_Auth_AuthTypeToJSON(object: Attestation_Auth_AuthType): string {
+  switch (object) {
+    case Attestation_Auth_AuthType.AUTH_TYPE_UNSPECIFIED:
+      return "AUTH_TYPE_UNSPECIFIED";
+    case Attestation_Auth_AuthType.AUTH_TYPE_USER:
+      return "AUTH_TYPE_USER";
+    case Attestation_Auth_AuthType.AUTH_TYPE_API_TOKEN:
+      return "AUTH_TYPE_API_TOKEN";
+    case Attestation_Auth_AuthType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface Attestation_SigningOptions {
@@ -345,6 +392,7 @@ function createBaseAttestation(): Attestation {
     bypassPolicyCheck: false,
     signingOptions: undefined,
     runnerEnvironment: undefined,
+    auth: undefined,
   };
 }
 
@@ -391,6 +439,9 @@ export const Attestation = {
     }
     if (message.runnerEnvironment !== undefined) {
       RunnerEnvironment.encode(message.runnerEnvironment, writer.uint32(130).fork()).ldelim();
+    }
+    if (message.auth !== undefined) {
+      Attestation_Auth.encode(message.auth, writer.uint32(138).fork()).ldelim();
     }
     return writer;
   },
@@ -509,6 +560,13 @@ export const Attestation = {
 
           message.runnerEnvironment = RunnerEnvironment.decode(reader, reader.uint32());
           continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.auth = Attestation_Auth.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -555,6 +613,7 @@ export const Attestation = {
       runnerEnvironment: isSet(object.runnerEnvironment)
         ? RunnerEnvironment.fromJSON(object.runnerEnvironment)
         : undefined,
+      auth: isSet(object.auth) ? Attestation_Auth.fromJSON(object.auth) : undefined,
     };
   },
 
@@ -598,6 +657,7 @@ export const Attestation = {
     message.runnerEnvironment !== undefined && (obj.runnerEnvironment = message.runnerEnvironment
       ? RunnerEnvironment.toJSON(message.runnerEnvironment)
       : undefined);
+    message.auth !== undefined && (obj.auth = message.auth ? Attestation_Auth.toJSON(message.auth) : undefined);
     return obj;
   },
 
@@ -647,6 +707,9 @@ export const Attestation = {
       : undefined;
     message.runnerEnvironment = (object.runnerEnvironment !== undefined && object.runnerEnvironment !== null)
       ? RunnerEnvironment.fromPartial(object.runnerEnvironment)
+      : undefined;
+    message.auth = (object.auth !== undefined && object.auth !== null)
+      ? Attestation_Auth.fromPartial(object.auth)
       : undefined;
     return message;
   },
@@ -1731,6 +1794,77 @@ export const Attestation_EnvVarsEntry = {
     const message = createBaseAttestation_EnvVarsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestation_Auth(): Attestation_Auth {
+  return { type: 0, id: "" };
+}
+
+export const Attestation_Auth = {
+  encode(message: Attestation_Auth, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Attestation_Auth {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestation_Auth();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Attestation_Auth {
+    return {
+      type: isSet(object.type) ? attestation_Auth_AuthTypeFromJSON(object.type) : 0,
+      id: isSet(object.id) ? String(object.id) : "",
+    };
+  },
+
+  toJSON(message: Attestation_Auth): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = attestation_Auth_AuthTypeToJSON(message.type));
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Attestation_Auth>, I>>(base?: I): Attestation_Auth {
+    return Attestation_Auth.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Attestation_Auth>, I>>(object: I): Attestation_Auth {
+    const message = createBaseAttestation_Auth();
+    message.type = object.type ?? 0;
+    message.id = object.id ?? "";
     return message;
   },
 };

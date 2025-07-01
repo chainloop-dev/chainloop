@@ -17,6 +17,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 	}
 	// APITokensTable holds the schema information for the "api_tokens" table.
@@ -26,8 +27,14 @@ var (
 		PrimaryKey: []*schema.Column{APITokensColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "api_tokens_organizations_api_tokens",
+				Symbol:     "api_tokens_projects_project",
 				Columns:    []*schema.Column{APITokensColumns[6]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "api_tokens_organizations_api_tokens",
+				Columns:    []*schema.Column{APITokensColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -36,9 +43,17 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "revoked_at IS NULL AND project_id IS NULL",
+				},
+			},
+			{
+				Name:    "apitoken_name_project_id",
+				Unique:  true,
 				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "revoked_at IS NULL",
+					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},
 			},
 		},
@@ -113,6 +128,7 @@ var (
 		{Name: "workflow_run_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
 		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// CasMappingsTable holds the schema information for the "cas_mappings" table.
 	CasMappingsTable = &schema.Table{
@@ -132,6 +148,12 @@ var (
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
+			{
+				Symbol:     "cas_mappings_projects_project",
+				Columns:    []*schema.Column{CasMappingsColumns[6]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
 		},
 		Indexes: []*schema.Index{
 			{
@@ -148,6 +170,80 @@ var (
 				Name:    "casmapping_organization_id",
 				Unique:  false,
 				Columns: []*schema.Column{CasMappingsColumns[5]},
+			},
+		},
+	}
+	// GroupsColumns holds the columns for the "groups" table.
+	GroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
+	}
+	// GroupsTable holds the schema information for the "groups" table.
+	GroupsTable = &schema.Table{
+		Name:       "groups",
+		Columns:    GroupsColumns,
+		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "groups_organizations_groups",
+				Columns:    []*schema.Column{GroupsColumns[6]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "group_name_organization_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupsColumns[1], GroupsColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
+		},
+	}
+	// GroupMembershipsColumns holds the columns for the "group_memberships" table.
+	GroupMembershipsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "maintainer", Type: field.TypeBool, Default: false},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "group_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// GroupMembershipsTable holds the schema information for the "group_memberships" table.
+	GroupMembershipsTable = &schema.Table{
+		Name:       "group_memberships",
+		Columns:    GroupMembershipsColumns,
+		PrimaryKey: []*schema.Column{GroupMembershipsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_memberships_groups_group",
+				Columns:    []*schema.Column{GroupMembershipsColumns[5]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "group_memberships_users_user",
+				Columns:    []*schema.Column{GroupMembershipsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupmembership_group_id_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupMembershipsColumns[5], GroupMembershipsColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
 			},
 		},
 	}
@@ -222,9 +318,13 @@ var (
 		{Name: "current", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer"}},
-		{Name: "organization_memberships", Type: field.TypeUUID},
-		{Name: "user_memberships", Type: field.TypeUUID},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer", "role:group:maintainer"}},
+		{Name: "membership_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"user", "group"}},
+		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project", "group"}},
+		{Name: "resource_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "organization_memberships", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_memberships", Type: field.TypeUUID, Nullable: true},
 	}
 	// MembershipsTable holds the schema information for the "memberships" table.
 	MembershipsTable = &schema.Table{
@@ -234,13 +334,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "memberships_organizations_memberships",
-				Columns:    []*schema.Column{MembershipsColumns[5]},
+				Columns:    []*schema.Column{MembershipsColumns[9]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "memberships_users_memberships",
-				Columns:    []*schema.Column{MembershipsColumns[6]},
+				Columns:    []*schema.Column{MembershipsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -248,8 +348,13 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "membership_organization_memberships_user_memberships",
+				Unique:  false,
+				Columns: []*schema.Column{MembershipsColumns[9], MembershipsColumns[10]},
+			},
+			{
+				Name:    "membership_membership_type_member_id_resource_type_resource_id",
 				Unique:  true,
-				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6]},
+				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8]},
 			},
 		},
 	}
@@ -260,7 +365,7 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer"}},
+		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer", "role:group:maintainer"}},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "sender_id", Type: field.TypeUUID},
 	}
@@ -426,6 +531,8 @@ var (
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "has_restricted_access", Type: field.TypeBool, Nullable: true},
+		{Name: "first_name", Type: field.TypeString, Nullable: true},
+		{Name: "last_name", Type: field.TypeString, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -775,6 +882,8 @@ var (
 		AttestationsTable,
 		CasBackendsTable,
 		CasMappingsTable,
+		GroupsTable,
+		GroupMembershipsTable,
 		IntegrationsTable,
 		IntegrationAttachmentsTable,
 		MembershipsTable,
@@ -796,11 +905,16 @@ var (
 )
 
 func init() {
-	APITokensTable.ForeignKeys[0].RefTable = OrganizationsTable
+	APITokensTable.ForeignKeys[0].RefTable = ProjectsTable
+	APITokensTable.ForeignKeys[1].RefTable = OrganizationsTable
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable
 	CasMappingsTable.ForeignKeys[1].RefTable = OrganizationsTable
+	CasMappingsTable.ForeignKeys[2].RefTable = ProjectsTable
+	GroupsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	GroupMembershipsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupMembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable

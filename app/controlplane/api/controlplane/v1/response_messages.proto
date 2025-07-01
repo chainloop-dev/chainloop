@@ -28,6 +28,7 @@ message WorkflowItem {
   string id = 1;
   string name = 2;
   string project = 3;
+  string project_id = 12 [(buf.validate.field).string.uuid = true];
   string team = 4;
   google.protobuf.Timestamp created_at = 5;
   int32 runs_count = 6;
@@ -222,6 +223,8 @@ message User {
   string id = 1;
   string email = 2;
   google.protobuf.Timestamp created_at = 3;
+  string first_name = 4;
+  string last_name = 5;
 }
 
 message OrgMembershipItem {
@@ -239,6 +242,7 @@ enum MembershipRole {
   MEMBERSHIP_ROLE_ORG_VIEWER = 1;
   MEMBERSHIP_ROLE_ORG_ADMIN = 2;
   MEMBERSHIP_ROLE_ORG_OWNER = 3;
+  MEMBERSHIP_ROLE_ORG_MEMBER = 4;
 }
 
 message OrgItem {
@@ -309,17 +313,15 @@ enum UserNotMemberOfOrgError {
   USER_NOT_MEMBER_OF_ORG_ERROR_NOT_IN_ORG = 1 [(errors.code) = 403];
 }
 
-// EntityRef is a reference to an entity in the system that can be either by name or ID
-message EntityRef {
-  oneof ref {
-    string entity_id = 1 [(buf.validate.field).string.uuid = true];
-    string entity_name = 2 [(buf.validate.field) = {
-      // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
-      cel: {
-        message: "must contain only lowercase letters, numbers, and hyphens."
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
-        id: "dns-1123"
-      }
-    }];
-  }
+message APITokenItem {
+  string id = 1;
+  string name = 7;
+  string description = 2;
+  string organization_id = 3;
+  string organization_name = 8;
+  string project_id = 9;
+  string project_name = 10;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp revoked_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
 }

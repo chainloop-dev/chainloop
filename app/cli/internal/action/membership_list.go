@@ -117,6 +117,7 @@ const (
 	RoleAdmin  Role = "admin"
 	RoleOwner  Role = "owner"
 	RoleViewer Role = "viewer"
+	RoleMember Role = "member"
 )
 
 type Roles []Role
@@ -125,6 +126,7 @@ var AvailableRoles = Roles{
 	RoleAdmin,
 	RoleOwner,
 	RoleViewer,
+	RoleMember,
 }
 
 func (roles Roles) String() string {
@@ -143,6 +145,8 @@ func pbRoleToString(role pb.MembershipRole) Role {
 		return RoleViewer
 	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER:
 		return RoleOwner
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_MEMBER:
+		return RoleMember
 	}
 	return ""
 }
@@ -155,6 +159,8 @@ func stringToPbRole(role Role) pb.MembershipRole {
 		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_VIEWER
 	case RoleOwner:
 		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER
+	case RoleMember:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_MEMBER
 	}
 	return pb.MembershipRole_MEMBERSHIP_ROLE_UNSPECIFIED
 }

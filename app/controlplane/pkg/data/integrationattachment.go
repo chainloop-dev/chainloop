@@ -58,10 +58,14 @@ func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, w
 	return res.IntegrationAttachment, nil
 }
 
-func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID, workflowID uuid.UUID) ([]*biz.IntegrationAndAttachment, error) {
+func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID uuid.UUID, opts *biz.ListAttachmentsOpts) ([]*biz.IntegrationAndAttachment, error) {
 	wfQuery := orgScopedQuery(r.data.DB, orgID).QueryWorkflows()
-	if workflowID != uuid.Nil {
-		wfQuery = wfQuery.Where(workflow.ID(workflowID))
+	if opts != nil && opts.WorkflowID != nil {
+		wfQuery = wfQuery.Where(workflow.ID(*opts.WorkflowID))
+	}
+
+	if opts != nil && opts.ProjectIDs != nil {
+		wfQuery = wfQuery.Where(workflow.ProjectIDIn(opts.ProjectIDs...))
 	}
 
 	res, err := wfQuery.QueryIntegrationAttachments().WithIntegration().WithWorkflow().

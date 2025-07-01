@@ -1,0 +1,32 @@
+{
+  "$id": "controlplane.v1.ProjectServiceAPITokenCreateRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(expires_in)$": {
+      "$ref": "google.protobuf.Duration.jsonschema.json"
+    },
+    "^(project_name)$": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "expiresIn": {
+      "$ref": "google.protobuf.Duration.jsonschema.json"
+    },
+    "name": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "projectName": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Project ServiceAPI Token Create Request",
+  "type": "object"
+}

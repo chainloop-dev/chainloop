@@ -1,0 +1,32 @@
+{
+  "$id": "controlplane.v1.GroupServiceListRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceListsRequest contains parameters for filtering and paginating group results",
+  "patternProperties": {
+    "^(member_email)$": {
+      "description": "Optional filter to search by member email address",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "description": {
+      "description": "Optional filter to search by group description",
+      "type": "string"
+    },
+    "memberEmail": {
+      "description": "Optional filter to search by member email address",
+      "type": "string"
+    },
+    "name": {
+      "description": "Optional filter to search by group name",
+      "type": "string"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.jsonschema.json",
+      "description": "Pagination parameters to limit and offset results"
+    }
+  },
+  "title": "Group Service List Request",
+  "type": "object"
+}

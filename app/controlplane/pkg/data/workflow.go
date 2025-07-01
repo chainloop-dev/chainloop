@@ -212,6 +212,10 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 			wfQuery = wfQuery.Where(workflow.Public(*opts.WorkflowPublic))
 		}
 
+		if opts.ProjectIDs != nil {
+			wfQuery = wfQuery.Where(workflow.ProjectIDIn(opts.ProjectIDs...))
+		}
+
 		// Updated at on Workflows is only updated when a new workflow run is referenced meaning
 		// a workflow run is started
 		if opts.WorkflowActiveWindow != nil {

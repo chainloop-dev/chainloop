@@ -32,8 +32,8 @@ import (
 // wireTestData init testing data
 func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*v1.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
-	newConfig := NewDataConfig(confData)
-	dataData, cleanup, err := data.NewData(newConfig, logger)
+	databaseConfig := NewDataConfig(confData)
+	dataData, cleanup, err := data.NewData(databaseConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,7 +80,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	projectsRepo := data.NewProjectsRepo(dataData, logger)
-	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, logger)
+	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
@@ -116,7 +116,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
 	if err != nil {
@@ -125,19 +125,20 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
 	referrerSharedIndex := _wireReferrerSharedIndexValue
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, referrerSharedIndex, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, projectsRepo, referrerSharedIndex, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	data_Database := confData.Database
-	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
+	apiTokenJWTConfig := newJWTConfig(auth)
+	config := authzConfig()
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, organizationUseCase, auditorUseCase, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -150,7 +151,9 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
-	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
+	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
 	testingRepos := &TestingRepos{
 		Membership:       membershipRepo,
 		Referrer:         referrerRepo,
@@ -158,6 +161,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		WorkflowRunRepo:  workflowRunRepo,
 		AttestationState: attestationStateRepo,
 		OrganizationRepo: organizationRepo,
+		GroupRepo:        groupRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
@@ -183,6 +187,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		ProjectVersion:         projectVersionUseCase,
 		Project:                projectUseCase,
 		OrgMetrics:             orgMetricsUseCase,
+		Group:                  groupUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {
@@ -195,6 +200,16 @@ var (
 )
 
 // wire.go:
+
+func authzConfig() *authz.Config {
+	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+}
+
+func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf2.GeneratedJwsHmacSecret,
+	}
+}
 
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {

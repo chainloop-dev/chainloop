@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -132,6 +133,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 	workflow := workflowsResp.GetResult()
 
+	// Show warning if newer contract revision exists
+	if opts.ContractRevision > 0 && int32(opts.ContractRevision) < workflow.ContractRevisionLatest {
+		action.Logger.Warn().
+			Msgf("Newer contract revision available: %d, pinned version: %d", workflow.ContractRevisionLatest, opts.ContractRevision)
+	}
+
 	// 2 - Get contract
 	contractResp, err := client.GetContract(ctx, &pb.AttestationServiceGetContractRequest{
 		ContractRevision: int32(opts.ContractRevision),
@@ -214,6 +221,15 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		attestationID = workflowRun.GetId()
 	}
 
+	var authInfo *clientAPI.Attestation_Auth
+	if action.AuthTokenRaw != "" {
+		authInfo, err = extractAuthInfo(action.AuthTokenRaw)
+		if err != nil {
+			// Do not fail since we might be using federated auth for which we do can't extract info yet
+			action.Logger.Warn().Msgf("can't extract info for the auth token: %v", err)
+		}
+	}
+
 	// Initialize the local attestation crafter
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
@@ -228,6 +244,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,
 		},
+		Auth: authInfo,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {
@@ -324,5 +341,25 @@ func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v
 		Type:     gm.Type,
 		Name:     gm.Name,
 		Optional: gm.Optional,
+	}, nil
+}
+
+func extractAuthInfo(authToken string) (*clientAPI.Attestation_Auth, error) {
+	if authToken == "" {
+		return nil, errors.New("empty token")
+	}
+
+	parsed, err := token.Parse(authToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	if parsed == nil {
+		return nil, errors.New("could not determine auth type from token")
+	}
+
+	return &clientAPI.Attestation_Auth{
+		Type: parsed.TokenType,
+		Id:   parsed.ID,
 	}, nil
 }

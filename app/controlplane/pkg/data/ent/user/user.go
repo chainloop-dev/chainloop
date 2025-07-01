@@ -21,8 +21,16 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldHasRestrictedAccess holds the string denoting the has_restricted_access field in the database.
 	FieldHasRestrictedAccess = "has_restricted_access"
+	// FieldFirstName holds the string denoting the first_name field in the database.
+	FieldFirstName = "first_name"
+	// FieldLastName holds the string denoting the last_name field in the database.
+	FieldLastName = "last_name"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
+	// EdgeGroup holds the string denoting the group edge name in mutations.
+	EdgeGroup = "group"
+	// EdgeGroupUsers holds the string denoting the group_users edge name in mutations.
+	EdgeGroupUsers = "group_users"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// MembershipsTable is the table that holds the memberships relation/edge.
@@ -32,6 +40,18 @@ const (
 	MembershipsInverseTable = "memberships"
 	// MembershipsColumn is the table column denoting the memberships relation/edge.
 	MembershipsColumn = "user_memberships"
+	// GroupTable is the table that holds the group relation/edge. The primary key declared below.
+	GroupTable = "group_memberships"
+	// GroupInverseTable is the table name for the Group entity.
+	// It exists in this package in order to avoid circular dependency with the "group" package.
+	GroupInverseTable = "groups"
+	// GroupUsersTable is the table that holds the group_users relation/edge.
+	GroupUsersTable = "group_memberships"
+	// GroupUsersInverseTable is the table name for the GroupMembership entity.
+	// It exists in this package in order to avoid circular dependency with the "groupmembership" package.
+	GroupUsersInverseTable = "group_memberships"
+	// GroupUsersColumn is the table column denoting the group_users relation/edge.
+	GroupUsersColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -40,7 +60,15 @@ var Columns = []string{
 	FieldEmail,
 	FieldCreatedAt,
 	FieldHasRestrictedAccess,
+	FieldFirstName,
+	FieldLastName,
 }
+
+var (
+	// GroupPrimaryKey and GroupColumn2 are the table columns denoting the
+	// primary key for the group relation (M2M).
+	GroupPrimaryKey = []string{"group_id", "user_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -84,6 +112,16 @@ func ByHasRestrictedAccess(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHasRestrictedAccess, opts...).ToFunc()
 }
 
+// ByFirstName orders the results by the first_name field.
+func ByFirstName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFirstName, opts...).ToFunc()
+}
+
+// ByLastName orders the results by the last_name field.
+func ByLastName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastName, opts...).ToFunc()
+}
+
 // ByMembershipsCount orders the results by memberships count.
 func ByMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -97,10 +135,52 @@ func ByMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByGroupCount orders the results by group count.
+func ByGroupCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupStep(), opts...)
+	}
+}
+
+// ByGroup orders the results by group terms.
+func ByGroup(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupUsersCount orders the results by group_users count.
+func ByGroupUsersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupUsersStep(), opts...)
+	}
+}
+
+// ByGroupUsers orders the results by group_users terms.
+func ByGroupUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newMembershipsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MembershipsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MembershipsTable, MembershipsColumn),
+	)
+}
+func newGroupStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, GroupTable, GroupPrimaryKey...),
+	)
+}
+func newGroupUsersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupUsersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, GroupUsersTable, GroupUsersColumn),
 	)
 }

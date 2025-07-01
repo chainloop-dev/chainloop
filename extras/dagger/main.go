@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	chainloopVersion = "v1.4.5"
+	chainloopVersion = "v1.13.0"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -235,6 +235,10 @@ func (att *Attestation) AddRawEvidence(
 	name string,
 	// The contents of the blob
 	value string,
+	// the material type of the evidence https://docs.chainloop.dev/concepts/material-types#material-types
+	// if not provided it will either be loaded from the contract or inferred automatically
+	// +optional
+	kind string,
 ) (*Attestation, error) {
 	args := []string{
 		"attestation", "add",
@@ -245,6 +249,12 @@ func (att *Attestation) AddRawEvidence(
 	if name != "" {
 		args = append(args,
 			"--name", name,
+		)
+	}
+
+	if kind != "" {
+		args = append(args,
+			"--kind", kind,
 		)
 	}
 
@@ -265,6 +275,10 @@ func (att *Attestation) AddFileEvidence(
 	name string,
 	// The file to add
 	path *dagger.File,
+	// the material type of the evidence https://docs.chainloop.dev/concepts/material-types#material-types
+	// if not provided it will either be loaded from the contract or inferred automatically
+	// +optional
+	kind string,
 ) (*Attestation, error) {
 	filename, err := path.Name(ctx)
 	if err != nil {
@@ -277,6 +291,12 @@ func (att *Attestation) AddFileEvidence(
 		"attestation", "add",
 		"--attestation-id", att.AttestationID,
 		"--value", mountPath,
+	}
+
+	if kind != "" {
+		args = append(args,
+			"--kind", kind,
+		)
 	}
 
 	if name != "" {

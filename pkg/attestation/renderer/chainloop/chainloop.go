@@ -107,6 +107,7 @@ type ProvenancePredicateCommon struct {
 	RunnerEnvironment      string `json:"runnerEnvironment,omitempty"`
 	RunnerAuthenticated    bool   `json:"runnerAuthenticated,omitempty"`
 	RunnerWorkflowFilePath string `json:"runnerWorkflowFilePath,omitempty"`
+	Auth                   *Auth  `json:"auth,omitempty"`
 }
 
 type Metadata struct {
@@ -119,6 +120,7 @@ type Metadata struct {
 	FinishedAt               *time.Time `json:"finishedAt"`
 	WorkflowRunID            string     `json:"workflowRunID"`
 	WorkflowID               string     `json:"workflowID"`
+	WorkflowName             string     `json:"workflowName"`
 	Organization             string     `json:"organization"`
 	ContractName             string     `json:"contractName"`
 	ContractVersion          string     `json:"contractVersion"`
@@ -127,6 +129,11 @@ type Metadata struct {
 type Maintainer struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type Auth struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 type builderInfo struct {
@@ -148,12 +155,20 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		environment      string
 		authenticated    bool
 		workflowFilePath string
+		auth             *Auth
 	)
 
 	if att.RunnerEnvironment != nil {
 		environment = att.RunnerEnvironment.GetEnvironment()
 		authenticated = att.RunnerEnvironment.GetAuthenticated()
 		workflowFilePath = att.RunnerEnvironment.GetWorkflowFilePath()
+	}
+
+	if att.Auth != nil {
+		auth = &Auth{
+			ID:   att.Auth.GetId(),
+			Type: att.Auth.GetType().String(),
+		}
 	}
 
 	return &ProvenancePredicateCommon{
@@ -167,6 +182,7 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		RunnerEnvironment:      environment,
 		RunnerAuthenticated:    authenticated,
 		RunnerWorkflowFilePath: workflowFilePath,
+		Auth:                   auth,
 	}
 }
 
@@ -183,6 +199,7 @@ func getChainloopMeta(att *v1.Attestation) *Metadata {
 		Project:                  wfMeta.GetProject(),
 		WorkflowRunID:            wfMeta.GetWorkflowRunId(),
 		WorkflowID:               wfMeta.GetWorkflowId(),
+		WorkflowName:             wfMeta.GetName(),
 		Organization:             wfMeta.GetOrganization(),
 		ContractName:             wfMeta.GetContractName(),
 		ContractVersion:          wfMeta.GetSchemaRevision(),

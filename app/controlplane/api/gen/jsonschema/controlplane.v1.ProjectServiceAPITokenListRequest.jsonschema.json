@@ -1,0 +1,31 @@
+{
+  "$id": "controlplane.v1.ProjectServiceAPITokenListRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project",
+  "patternProperties": {
+    "^(include_revoked)$": {
+      "description": "Flag to include revoked tokens in the list",
+      "type": "boolean"
+    },
+    "^(project_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "properties": {
+    "includeRevoked": {
+      "description": "Flag to include revoked tokens in the list",
+      "type": "boolean"
+    },
+    "projectReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "required": [
+    "project_reference"
+  ],
+  "title": "Project ServiceAPI Token List Request",
+  "type": "object"
+}

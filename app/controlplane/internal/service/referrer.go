@@ -62,7 +62,7 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 			return nil, fmt.Errorf("invalid org UUID: %w", err)
 		}
 
-		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID})
+		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, nil)
 	}
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

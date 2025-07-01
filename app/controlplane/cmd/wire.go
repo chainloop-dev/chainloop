@@ -63,14 +63,26 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			auditor.NewAuditLogPublisher,
 			newCASServerOptions,
 			newAuthAllowList,
+			newJWTConfig,
+			authzConfig,
 		),
 	)
 }
 
-func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
+func authzConfig() *authz.Config {
+	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+}
+
+func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf.GeneratedJwsHmacSecret,
+	}
+}
+
+func newDataConf(in *conf.Data_Database) *pkgConf.DatabaseConfig {
+	c := &pkgConf.DatabaseConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
 	if in.MaxConnIdleTime != nil {
-		c.MaxConnIdleTime = in.MaxConnIdleTime.AsDuration()
+		c.MaxConnIdleTime = in.MaxConnIdleTime
 	}
 	return c
 }
@@ -83,9 +95,12 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger) []service.NewOpt {
+func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
 	return []service.NewOpt{
 		service.WithLogger(l),
+		service.WithEnforcer(enforcer),
+		service.WithProjectUseCase(pUC),
+		service.WithGroupUseCase(gUC),
 	}
 }
 

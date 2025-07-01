@@ -60,6 +60,7 @@ type Opts struct {
 	APITokenUseCase     *biz.APITokenUseCase
 	OrganizationUseCase *biz.OrganizationUseCase
 	WorkflowUseCase     *biz.WorkflowUseCase
+	MembershipUseCase   *biz.MembershipUseCase
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -81,6 +82,8 @@ type Opts struct {
 	UserSvc             *service.UserService
 	SigningSvc          *service.SigningService
 	PrometheusSvc       *service.PrometheusService
+	GroupSvc            *service.GroupService
+	ProjectSvc          *service.ProjectService
 	// Utils
 	Logger          log.Logger
 	ServerConfig    *conf.Server
@@ -150,6 +153,8 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	v1.RegisterAttestationStateServiceServer(srv, opts.AttestationStateSvc)
 	v1.RegisterUserServiceServer(srv, opts.UserSvc)
 	v1.RegisterSigningServiceServer(srv, opts.SigningSvc)
+	v1.RegisterGroupServiceServer(srv, opts.GroupSvc)
+	v1.RegisterProjectServiceServer(srv, opts.ProjectSvc)
 
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
@@ -188,7 +193,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
 			selector.Server(
 				// 2.c - Set its organization
-				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, logHelper),
+				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.MembershipUseCase, logHelper),
 				// 3 - Check user/token authorization
 				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
 			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
@@ -223,7 +228,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.b - Set its API token and Robot Account as alternative to the user
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.c - Set Attestation context from user token
-			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
+			usercontext.WithAttestationContextFromUser(opts.UserUseCase, opts.MembershipUseCase, logHelper),
 			// 2.d - Set its robot account from federated delegation
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),

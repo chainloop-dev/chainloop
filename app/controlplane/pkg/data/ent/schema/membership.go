@@ -49,18 +49,28 @@ func (Membership) Fields() []ent.Field {
 			}),
 		// rbac role in the organization
 		field.Enum("role").GoType(authz.Role("")),
+
+		// polymorphic membership for RBAC
+		field.Enum("membership_type").GoType(authz.MembershipType("")).Optional(),
+		field.UUID("member_id", uuid.UUID{}).Optional(),
+
+		field.Enum("resource_type").GoType(authz.ResourceType("")).Optional(),
+		field.UUID("resource_id", uuid.UUID{}).Optional(),
 	}
 }
 
 func (Membership) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).Ref("memberships").Unique().Required(),
-		edge.From("user", User.Type).Ref("memberships").Unique().Required(),
+		// Deprecated: use polymorphic membership instead
+		edge.From("organization", Organization.Type).Ref("memberships").Unique(),
+		// Deprecated: use polymorphic membership instead
+		edge.From("user", User.Type).Ref("memberships").Unique(),
 	}
 }
 
 func (Membership) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Edges("organization", "user").Unique(),
+		index.Edges("organization", "user"),
+		index.Fields("membership_type", "member_id", "resource_type", "resource_id").Unique(),
 	}
 }

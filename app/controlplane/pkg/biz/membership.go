@@ -33,10 +33,17 @@ type Membership struct {
 	Org                  *Organization
 	User                 *User
 	Role                 authz.Role
+	// polymorphic membership
+	MembershipType authz.MembershipType
+	MemberID       uuid.UUID
+	ResourceType   authz.ResourceType
+	ResourceID     uuid.UUID
 }
 
 type MembershipRepo interface {
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid.UUID, userEmail string) (*Membership, error)
+	FindByUserAndResourceID(ctx context.Context, userID, resourceID uuid.UUID) (*Membership, error)
 	FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*Membership, error)
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Membership, error)
@@ -46,6 +53,16 @@ type MembershipRepo interface {
 	SetRole(ctx context.Context, ID uuid.UUID, role authz.Role) (*Membership, error)
 	Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*Membership, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
+
+	// RBAC methods
+
+	ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*Membership, error)
+	AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error
+}
+
+type MembershipsRBAC interface {
+	ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 }
 
 type MembershipUseCase struct {
@@ -56,7 +73,7 @@ type MembershipUseCase struct {
 }
 
 func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, logger log.Logger) *MembershipUseCase {
-	return &MembershipUseCase{repo, orgUC, log.NewHelper(logger), auditor}
+	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), auditor: auditor}
 }
 
 // LeaveAndDeleteOrg deletes a membership (and the org i) from the database associated with the current user
@@ -300,4 +317,61 @@ func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, 
 	}
 
 	return m, nil
+}
+
+// RBAC methods
+
+// ListAllMembershipsForUser retrieves all membership records by resource type
+func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error) {
+	return uc.repo.ListAllByUser(ctx, userID)
+}
+
+// SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
+func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, projectID, userID uuid.UUID) error {
+	mm, err := uc.repo.ListAllByResource(ctx, authz.ResourceTypeProject, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to find membership: %w", err)
+	}
+
+	for _, m := range mm {
+		if m.Role == authz.RoleProjectAdmin {
+			// Found one already
+			return nil
+		}
+	}
+
+	if err = uc.repo.AddResourceRole(ctx, authz.ResourceTypeProject, projectID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin); err != nil {
+		return fmt.Errorf("failed to set project owner: %w", err)
+	}
+
+	return nil
+}
+
+func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo MembershipRepo, pRepo ProjectsRepo) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
+	// Load ALL memberships for the given user
+	memberships, err := mRepo.ListAllByUser(ctx, userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list memberships: %w", err)
+	}
+
+	userOrgs := make([]uuid.UUID, 0)
+	// This map holds the list of project IDs by org with RBAC active (user is org "member")
+	projectIDs := make(map[uuid.UUID][]uuid.UUID)
+	for _, m := range memberships {
+		if m.ResourceType == authz.ResourceTypeOrganization {
+			userOrgs = append(userOrgs, m.ResourceID)
+			// If the role in the org is member, we must enable RBAC for projects.
+			if m.Role == authz.RoleOrgMember {
+				// get list of projects in org, and match it with the memberships to build a filter
+				orgProjects, err := getProjectsWithMembership(ctx, pRepo, m.ResourceID, memberships)
+				if err != nil {
+					return nil, nil, err
+				}
+				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
+				projectIDs[m.ResourceID] = orgProjects
+			}
+		}
+	}
+
+	return userOrgs, projectIDs, nil
 }

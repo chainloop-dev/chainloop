@@ -1,0 +1,27 @@
+{
+  "$id": "controlplane.v1.ProjectServiceListMembersRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceListMembersRequest contains the information needed to list members of a project",
+  "patternProperties": {
+    "^(projectReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination parameters to limit and offset results"
+    },
+    "project_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "required": [
+    "project_reference"
+  ],
+  "title": "Project Service List Members Request",
+  "type": "object"
+}

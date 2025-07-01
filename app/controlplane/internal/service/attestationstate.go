@@ -25,6 +25,7 @@ import (
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -67,6 +68,11 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Apply RBAC on the project
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
+	}
+
 	initialized, err := s.attestationStateUseCase.Initialized(ctx, wf.ID.String(), req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -87,6 +93,11 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC on the project
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunCreate); err != nil {
+		return nil, err
 	}
 
 	encryptionPassphrase, err := encryptionPassphrase(ctx)
@@ -117,6 +128,11 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Apply RBAC on the project
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunRead); err != nil {
+		return nil, err
+	}
+
 	encryptionPassphrase, err := encryptionPassphrase(ctx)
 	if err != nil {
 		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
@@ -144,6 +160,11 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Apply RBAC on the project
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunUpdate); err != nil {
+		return nil, err
 	}
 
 	if err := s.attestationStateUseCase.Reset(ctx, wf.ID.String(), req.WorkflowRunId); err != nil {

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -69,30 +70,127 @@ func TestNewBuilder(t *testing.T) {
 
 func TestGenerateJWT(t *testing.T) {
 	const hmacSecret = "my-secret"
+	testCases := []struct {
+		name    string
+		opts    *GenerateJWTOptions
+		wantErr bool
+	}{
+		{
+			name: "no project",
+			opts: &GenerateJWTOptions{
+				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				OrgName:   "org-name",
+				KeyName:   "key-name",
+				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			},
+		},
+		{
+			name: "no expiration",
+			opts: &GenerateJWTOptions{
+				OrgID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				OrgName: "org-name",
+				KeyName: "key-name",
+				KeyID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			},
+		},
+		{
+			name: "with project",
+			opts: &GenerateJWTOptions{
+				OrgID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				OrgName:     "org-name",
+				KeyName:     "key-name",
+				KeyID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ProjectID:   toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				ProjectName: toPtr("project-name"),
+				ExpiresAt:   toPtr(time.Now().Add(1 * time.Hour)),
+			},
+		},
+		{
+			name: "missing orgID",
+			opts: &GenerateJWTOptions{
+				OrgName:   "org-name",
+				KeyName:   "key-name",
+				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing orgName",
+			opts: &GenerateJWTOptions{
+				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				KeyName:   "key-name",
+				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing keyID",
+			opts: &GenerateJWTOptions{
+				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				OrgName:   "org-name",
+				KeyName:   "key-name",
+				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing keyName",
+			opts: &GenerateJWTOptions{
+				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				OrgName:   "org-name",
+				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			},
+			wantErr: true,
+		},
+	}
 
-	b, err := NewBuilder(WithIssuer("my-issuer"), WithKeySecret(hmacSecret))
-	require.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := NewBuilder(WithIssuer("my-issuer"), WithKeySecret(hmacSecret))
+			require.NoError(t, err)
 
-	token, err := b.GenerateJWT("org-id", "org-name", "key-id", toPtrTime(time.Now().Add(1*time.Hour)))
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
+			token, err := b.GenerateJWT(tc.opts)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
 
-	// Verify signature and check claims
-	claims := &CustomClaims{}
-	tokenInfo, err := jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
-		return []byte(hmacSecret), nil
-	})
+			require.NoError(t, err)
+			assert.NotEmpty(t, token)
 
-	require.NoError(t, err)
-	assert.True(t, tokenInfo.Valid)
-	assert.Equal(t, "org-id", claims.OrgID)
-	assert.Equal(t, "org-name", claims.OrgName)
-	assert.Equal(t, "key-id", claims.ID)
-	assert.Equal(t, "my-issuer", claims.Issuer)
-	assert.Contains(t, claims.Audience, Audience)
-	assert.NotNil(t, claims.ExpiresAt)
+			claims := &CustomClaims{}
+			tokenInfo, err := jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
+				return []byte(hmacSecret), nil
+			})
+
+			require.NoError(t, err)
+			assert.True(t, tokenInfo.Valid)
+			assert.Equal(t, tc.opts.OrgID.String(), claims.OrgID)
+			assert.Equal(t, tc.opts.OrgName, claims.OrgName)
+			assert.Equal(t, tc.opts.KeyID.String(), claims.ID)
+			assert.Equal(t, tc.opts.KeyName, claims.KeyName)
+
+			if tc.opts.ProjectID != nil {
+				assert.Equal(t, tc.opts.ProjectID.String(), claims.ProjectID)
+				assert.Equal(t, *tc.opts.ProjectName, claims.ProjectName)
+			} else {
+				assert.Empty(t, claims.ProjectID)
+				assert.Empty(t, claims.ProjectName)
+			}
+
+			if tc.opts.ExpiresAt != nil {
+				assert.True(t, claims.ExpiresAt.After(time.Now()))
+			} else {
+				assert.Nil(t, claims.ExpiresAt)
+			}
+		})
+	}
 }
 
-func toPtrTime(t time.Time) *time.Time {
+func toPtr[T any](t T) *T {
 	return &t
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 )
 
 var SigningMethod = jwt.SigningMethodHS256
@@ -66,22 +67,58 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
+type GenerateJWTOptions struct {
+	OrgID       uuid.UUID
+	OrgName     string
+	KeyID       uuid.UUID
+	KeyName     string
+	ProjectID   *uuid.UUID
+	ProjectName *string
+	ExpiresAt   *time.Time
+}
+
 // GenerateJWT creates a new JWT token for the given organization and keyID
-func (ra *Builder) GenerateJWT(orgID, orgName, keyID string, expiresAt *time.Time) (string, error) {
+func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
+	if opts == nil {
+		return "", errors.New("options are required")
+	}
+
+	if opts.OrgID == uuid.Nil {
+		return "", errors.New("orgID is required")
+	}
+
+	if opts.OrgName == "" {
+		return "", errors.New("orgName is required")
+	}
+
+	if opts.KeyID == uuid.Nil {
+		return "", errors.New("keyID is required")
+	}
+
+	if opts.KeyName == "" {
+		return "", errors.New("keyName is required")
+	}
+
 	claims := CustomClaims{
-		orgID,
-		orgName,
-		jwt.RegisteredClaims{
+		OrgID:   opts.OrgID.String(),
+		OrgName: opts.OrgName,
+		KeyName: opts.KeyName,
+		RegisteredClaims: jwt.RegisteredClaims{
 			// Key identifier so we can check its revocation status
-			ID:       keyID,
+			ID:       opts.KeyID.String(),
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{Audience},
 		},
 	}
 
+	if opts.ProjectID != nil {
+		claims.ProjectID = opts.ProjectID.String()
+		claims.ProjectName = *opts.ProjectName
+	}
+
 	// optional expiration value, i.e 30 days
-	if expiresAt != nil {
-		claims.ExpiresAt = jwt.NewNumericDate(*expiresAt)
+	if opts.ExpiresAt != nil {
+		claims.ExpiresAt = jwt.NewNumericDate(*opts.ExpiresAt)
 	}
 
 	resultToken := jwt.NewWithClaims(SigningMethod, claims)
@@ -89,7 +126,10 @@ func (ra *Builder) GenerateJWT(orgID, orgName, keyID string, expiresAt *time.Tim
 }
 
 type CustomClaims struct {
-	OrgID   string `json:"org_id"`
-	OrgName string `json:"org_name"`
+	OrgID       string `json:"org_id"`
+	OrgName     string `json:"org_name"`
+	KeyName     string `json:"token_name"`
+	ProjectID   string `json:"project_id,omitempty"`
+	ProjectName string `json:"project_name,omitempty"`
 	jwt.RegisteredClaims
 }

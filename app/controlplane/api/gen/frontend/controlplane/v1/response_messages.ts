@@ -73,6 +73,7 @@ export enum MembershipRole {
   MEMBERSHIP_ROLE_ORG_VIEWER = 1,
   MEMBERSHIP_ROLE_ORG_ADMIN = 2,
   MEMBERSHIP_ROLE_ORG_OWNER = 3,
+  MEMBERSHIP_ROLE_ORG_MEMBER = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -90,6 +91,9 @@ export function membershipRoleFromJSON(object: any): MembershipRole {
     case 3:
     case "MEMBERSHIP_ROLE_ORG_OWNER":
       return MembershipRole.MEMBERSHIP_ROLE_ORG_OWNER;
+    case 4:
+    case "MEMBERSHIP_ROLE_ORG_MEMBER":
+      return MembershipRole.MEMBERSHIP_ROLE_ORG_MEMBER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -107,6 +111,8 @@ export function membershipRoleToJSON(object: MembershipRole): string {
       return "MEMBERSHIP_ROLE_ORG_ADMIN";
     case MembershipRole.MEMBERSHIP_ROLE_ORG_OWNER:
       return "MEMBERSHIP_ROLE_ORG_OWNER";
+    case MembershipRole.MEMBERSHIP_ROLE_ORG_MEMBER:
+      return "MEMBERSHIP_ROLE_ORG_MEMBER";
     case MembershipRole.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -249,6 +255,7 @@ export interface WorkflowItem {
   id: string;
   name: string;
   project: string;
+  projectId: string;
   team: string;
   createdAt?: Date;
   runsCount: number;
@@ -511,6 +518,8 @@ export interface User {
   id: string;
   email: string;
   createdAt?: Date;
+  firstName: string;
+  lastName: string;
 }
 
 export interface OrgMembershipItem {
@@ -635,10 +644,17 @@ export interface CASBackendItem_Limits {
   maxBytes: number;
 }
 
-/** EntityRef is a reference to an entity in the system that can be either by name or ID */
-export interface EntityRef {
-  entityId?: string | undefined;
-  entityName?: string | undefined;
+export interface APITokenItem {
+  id: string;
+  name: string;
+  description: string;
+  organizationId: string;
+  organizationName: string;
+  projectId: string;
+  projectName: string;
+  createdAt?: Date;
+  revokedAt?: Date;
+  expiresAt?: Date;
 }
 
 function createBaseWorkflowItem(): WorkflowItem {
@@ -646,6 +662,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     id: "",
     name: "",
     project: "",
+    projectId: "",
     team: "",
     createdAt: undefined,
     runsCount: 0,
@@ -667,6 +684,9 @@ export const WorkflowItem = {
     }
     if (message.project !== "") {
       writer.uint32(26).string(message.project);
+    }
+    if (message.projectId !== "") {
+      writer.uint32(98).string(message.projectId);
     }
     if (message.team !== "") {
       writer.uint32(34).string(message.team);
@@ -722,6 +742,13 @@ export const WorkflowItem = {
           }
 
           message.project = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.projectId = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -793,6 +820,7 @@ export const WorkflowItem = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
+      projectId: isSet(object.projectId) ? String(object.projectId) : "",
       team: isSet(object.team) ? String(object.team) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       runsCount: isSet(object.runsCount) ? Number(object.runsCount) : 0,
@@ -809,6 +837,7 @@ export const WorkflowItem = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
+    message.projectId !== undefined && (obj.projectId = message.projectId);
     message.team !== undefined && (obj.team = message.team);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.runsCount !== undefined && (obj.runsCount = Math.round(message.runsCount));
@@ -831,6 +860,7 @@ export const WorkflowItem = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.project = object.project ?? "";
+    message.projectId = object.projectId ?? "";
     message.team = object.team ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.runsCount = object.runsCount ?? 0;
@@ -3226,7 +3256,7 @@ export const WorkflowContractVersionItem_RawBody = {
 };
 
 function createBaseUser(): User {
-  return { id: "", email: "", createdAt: undefined };
+  return { id: "", email: "", createdAt: undefined, firstName: "", lastName: "" };
 }
 
 export const User = {
@@ -3239,6 +3269,12 @@ export const User = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.firstName !== "") {
+      writer.uint32(34).string(message.firstName);
+    }
+    if (message.lastName !== "") {
+      writer.uint32(42).string(message.lastName);
     }
     return writer;
   },
@@ -3271,6 +3307,20 @@ export const User = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.firstName = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.lastName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3285,6 +3335,8 @@ export const User = {
       id: isSet(object.id) ? String(object.id) : "",
       email: isSet(object.email) ? String(object.email) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      firstName: isSet(object.firstName) ? String(object.firstName) : "",
+      lastName: isSet(object.lastName) ? String(object.lastName) : "",
     };
   },
 
@@ -3293,6 +3345,8 @@ export const User = {
     message.id !== undefined && (obj.id = message.id);
     message.email !== undefined && (obj.email = message.email);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.firstName !== undefined && (obj.firstName = message.firstName);
+    message.lastName !== undefined && (obj.lastName = message.lastName);
     return obj;
   },
 
@@ -3305,6 +3359,8 @@ export const User = {
     message.id = object.id ?? "";
     message.email = object.email ?? "";
     message.createdAt = object.createdAt ?? undefined;
+    message.firstName = object.firstName ?? "";
+    message.lastName = object.lastName ?? "";
     return message;
   },
 };
@@ -3817,25 +3873,60 @@ export const CASBackendItem_Limits = {
   },
 };
 
-function createBaseEntityRef(): EntityRef {
-  return { entityId: undefined, entityName: undefined };
+function createBaseAPITokenItem(): APITokenItem {
+  return {
+    id: "",
+    name: "",
+    description: "",
+    organizationId: "",
+    organizationName: "",
+    projectId: "",
+    projectName: "",
+    createdAt: undefined,
+    revokedAt: undefined,
+    expiresAt: undefined,
+  };
 }
 
-export const EntityRef = {
-  encode(message: EntityRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.entityId !== undefined) {
-      writer.uint32(10).string(message.entityId);
+export const APITokenItem = {
+  encode(message: APITokenItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
-    if (message.entityName !== undefined) {
-      writer.uint32(18).string(message.entityName);
+    if (message.name !== "") {
+      writer.uint32(58).string(message.name);
+    }
+    if (message.description !== "") {
+      writer.uint32(18).string(message.description);
+    }
+    if (message.organizationId !== "") {
+      writer.uint32(26).string(message.organizationId);
+    }
+    if (message.organizationName !== "") {
+      writer.uint32(66).string(message.organizationName);
+    }
+    if (message.projectId !== "") {
+      writer.uint32(74).string(message.projectId);
+    }
+    if (message.projectName !== "") {
+      writer.uint32(82).string(message.projectName);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.revokedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.revokedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.expiresAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.expiresAt), writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): EntityRef {
+  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenItem {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEntityRef();
+    const message = createBaseAPITokenItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3844,14 +3935,70 @@ export const EntityRef = {
             break;
           }
 
-          message.entityId = reader.string();
+          message.id = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.entityName = reader.string();
+          message.description = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.organizationId = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.organizationName = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.projectId = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.revokedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3862,28 +4009,52 @@ export const EntityRef = {
     return message;
   },
 
-  fromJSON(object: any): EntityRef {
+  fromJSON(object: any): APITokenItem {
     return {
-      entityId: isSet(object.entityId) ? String(object.entityId) : undefined,
-      entityName: isSet(object.entityName) ? String(object.entityName) : undefined,
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
+      organizationName: isSet(object.organizationName) ? String(object.organizationName) : "",
+      projectId: isSet(object.projectId) ? String(object.projectId) : "",
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      revokedAt: isSet(object.revokedAt) ? fromJsonTimestamp(object.revokedAt) : undefined,
+      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
     };
   },
 
-  toJSON(message: EntityRef): unknown {
+  toJSON(message: APITokenItem): unknown {
     const obj: any = {};
-    message.entityId !== undefined && (obj.entityId = message.entityId);
-    message.entityName !== undefined && (obj.entityName = message.entityName);
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
+    message.organizationId !== undefined && (obj.organizationId = message.organizationId);
+    message.organizationName !== undefined && (obj.organizationName = message.organizationName);
+    message.projectId !== undefined && (obj.projectId = message.projectId);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.revokedAt !== undefined && (obj.revokedAt = message.revokedAt.toISOString());
+    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EntityRef>, I>>(base?: I): EntityRef {
-    return EntityRef.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<APITokenItem>, I>>(base?: I): APITokenItem {
+    return APITokenItem.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<EntityRef>, I>>(object: I): EntityRef {
-    const message = createBaseEntityRef();
-    message.entityId = object.entityId ?? undefined;
-    message.entityName = object.entityName ?? undefined;
+  fromPartial<I extends Exact<DeepPartial<APITokenItem>, I>>(object: I): APITokenItem {
+    const message = createBaseAPITokenItem();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    message.organizationId = object.organizationId ?? "";
+    message.organizationName = object.organizationName ?? "";
+    message.projectId = object.projectId ?? "";
+    message.projectName = object.projectName ?? "";
+    message.createdAt = object.createdAt ?? undefined;
+    message.revokedAt = object.revokedAt ?? undefined;
+    message.expiresAt = object.expiresAt ?? undefined;
     return message;
   },
 };

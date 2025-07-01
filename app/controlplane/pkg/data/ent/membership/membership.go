@@ -25,6 +25,14 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
+	// FieldMembershipType holds the string denoting the membership_type field in the database.
+	FieldMembershipType = "membership_type"
+	// FieldMemberID holds the string denoting the member_id field in the database.
+	FieldMemberID = "member_id"
+	// FieldResourceType holds the string denoting the resource_type field in the database.
+	FieldResourceType = "resource_type"
+	// FieldResourceID holds the string denoting the resource_id field in the database.
+	FieldResourceID = "resource_id"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -54,6 +62,10 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldRole,
+	FieldMembershipType,
+	FieldMemberID,
+	FieldResourceType,
+	FieldResourceID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "memberships"
@@ -92,10 +104,30 @@ var (
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r authz.Role) error {
 	switch r {
-	case "role:org:owner", "role:org:admin", "role:org:viewer":
+	case "role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:project:admin", "role:project:viewer", "role:group:maintainer":
 		return nil
 	default:
 		return fmt.Errorf("membership: invalid enum value for role field: %q", r)
+	}
+}
+
+// MembershipTypeValidator is a validator for the "membership_type" field enum values. It is called by the builders before save.
+func MembershipTypeValidator(mt authz.MembershipType) error {
+	switch mt {
+	case "user", "group":
+		return nil
+	default:
+		return fmt.Errorf("membership: invalid enum value for membership_type field: %q", mt)
+	}
+}
+
+// ResourceTypeValidator is a validator for the "resource_type" field enum values. It is called by the builders before save.
+func ResourceTypeValidator(rt authz.ResourceType) error {
+	switch rt {
+	case "organization", "project", "group":
+		return nil
+	default:
+		return fmt.Errorf("membership: invalid enum value for resource_type field: %q", rt)
 	}
 }
 
@@ -125,6 +157,26 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByRole orders the results by the role field.
 func ByRole(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRole, opts...).ToFunc()
+}
+
+// ByMembershipType orders the results by the membership_type field.
+func ByMembershipType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMembershipType, opts...).ToFunc()
+}
+
+// ByMemberID orders the results by the member_id field.
+func ByMemberID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMemberID, opts...).ToFunc()
+}
+
+// ByResourceType orders the results by the resource_type field.
+func ByResourceType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResourceType, opts...).ToFunc()
+}
+
+// ByResourceID orders the results by the resource_id field.
+func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

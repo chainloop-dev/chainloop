@@ -52,7 +52,7 @@ func orgMembershipsTableOutput(items []*action.MembershipItem) error {
 	t.AppendHeader(table.Row{"ID", "Email", "Role", "Joined At"})
 
 	for _, i := range items {
-		t.AppendRow(table.Row{i.ID, i.User.Email, i.Role, i.CreatedAt.Format(time.RFC822)})
+		t.AppendRow(table.Row{i.ID, i.User.PrintUserProfileWithEmail(), i.Role, i.CreatedAt.Format(time.RFC822)})
 		t.AppendSeparator()
 	}
 

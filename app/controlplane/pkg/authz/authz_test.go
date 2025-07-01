@@ -103,6 +103,122 @@ func TestAddPolicies(t *testing.T) {
 	}
 }
 
+// simulate 2 enforcers on the same database (by acting on the same file enforcer)
+func TestSyncMultipleEnforcers(t *testing.T) {
+	testCases := []struct {
+		name              string
+		newEnforcerConfig *Config
+		expectErr         bool
+		numPolicies       int
+		numSubjects       int
+		numAdminActions   int
+	}{
+		{
+			name:              "empty config",
+			newEnforcerConfig: &Config{},
+			expectErr:         false,
+			numPolicies:       3,
+			numSubjects:       2,
+			numAdminActions:   2,
+		},
+		{
+			name: "new actions on different resources for same roles",
+			newEnforcerConfig: &Config{
+				ManagedResources: []string{ResourceGroup},
+				RolesMap: map[Role][]*Policy{
+					RoleAdmin: {{
+						Resource: ResourceGroup,
+						Action:   ActionCreate,
+					}},
+				},
+			},
+			expectErr:       false,
+			numPolicies:     4,
+			numSubjects:     2,
+			numAdminActions: 3,
+		},
+		{
+			name: "new actions on different resources for new roles",
+			newEnforcerConfig: &Config{
+				ManagedResources: []string{ResourceGroup},
+				RolesMap: map[Role][]*Policy{
+					RoleProjectAdmin: {{
+						Resource: ResourceGroup,
+						Action:   ActionCreate,
+					}},
+				},
+			},
+			expectErr:       false,
+			numSubjects:     3,
+			numPolicies:     4,
+			numAdminActions: 2,
+		},
+		{
+			name: "reset admin actions on same resource, collision",
+			newEnforcerConfig: &Config{
+				ManagedResources: []string{ResourceWorkflow},
+				RolesMap: map[Role][]*Policy{
+					RoleAdmin: {}, // this should remove all admin actions from enforcer
+				},
+			},
+			expectErr:       false,
+			numSubjects:     1,
+			numPolicies:     1,
+			numAdminActions: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, c := testEnforcer(t)
+			defer c.Close()
+
+			// initial import
+			err := syncRBACRoles(e, &Config{
+				ManagedResources: []string{ResourceWorkflow, ResourceWorkflowRun},
+				RolesMap: map[Role][]*Policy{
+					RoleAdmin: {{
+						Resource: ResourceWorkflow,
+						Action:   ActionCreate,
+					}, {
+						Resource: ResourceWorkflow,
+						Action:   ActionDelete,
+					}},
+					RoleOrgMember: {{
+						Resource: ResourceWorkflowRun,
+						Action:   ActionList,
+					}},
+				},
+			})
+			require.NoError(t, err)
+
+			// sync with test case config
+			err = syncRBACRoles(e, tc.newEnforcerConfig)
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+
+			policies, err := e.GetPolicy()
+			assert.NoError(t, err)
+			assert.Len(t, policies, tc.numPolicies)
+
+			adminCount := 0
+			for _, r := range policies {
+				if r[0] == string(RoleAdmin) {
+					adminCount++
+				}
+			}
+			assert.Equal(t, tc.numAdminActions, adminCount)
+
+			subs, err := e.GetAllSubjects()
+			assert.NoError(t, err)
+			assert.Len(t, subs, tc.numSubjects) // We need to count the Viewer role
+		})
+	}
+}
+
 func TestAddPoliciesDuplication(t *testing.T) {
 	want := []*Policy{
 		PolicyWorkflowContractList,
@@ -134,7 +250,7 @@ func TestSyncRBACRoles(t *testing.T) {
 	defer closer.Close()
 
 	// load all the roles
-	err := syncRBACRoles(e)
+	err := syncRBACRoles(e, &Config{RolesMap: RolesMap})
 	assert.NoError(t, err)
 
 	// Check the inherited roles owner -> admin -> viewer
@@ -148,7 +264,7 @@ func TestSyncRBACRoles(t *testing.T) {
 	assert.Equal(t, string(RoleOwner), u[0])
 
 	// Make sure we are adding all the policies for the listed roles
-	for r, policies := range rolesMap {
+	for r, policies := range RolesMap {
 		got, err := e.GetFilteredPolicy(0, string(r))
 		assert.NoError(t, err)
 		assert.Len(t, got, len(policies))
@@ -181,7 +297,7 @@ func TestDoSync(t *testing.T) {
 	}
 
 	// load custom policies
-	err := doSync(e, policiesM)
+	err := doSync(e, &Config{RolesMap: policiesM})
 	assert.NoError(t, err)
 	got, err := e.GetPolicy()
 	assert.NoError(t, err)
@@ -197,7 +313,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, policiesM)
+	err = doSync(e, &Config{RolesMap: policiesM, ManagedResources: []string{ResourceWorkflowContract, ResourceCASArtifact}})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -210,11 +326,24 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, policiesM)
+	err = doSync(e, &Config{RolesMap: policiesM, ManagedResources: []string{ResourceWorkflowContract, ResourceCASArtifact}})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
 	assert.Len(t, got, 1)
+
+	// add additional policy, only deletes policies for "known" resources
+	// or deleting a whole section
+	policiesM = map[Role][]*Policy{
+		"bar": {
+			PolicyAttachedIntegrationDetach,
+		},
+	}
+	err = doSync(e, &Config{RolesMap: policiesM})
+	assert.NoError(t, err)
+	got, err = e.GetPolicy()
+	assert.NoError(t, err)
+	assert.Len(t, got, 2)
 }
 
 func TestClearPolicies(t *testing.T) {
@@ -257,7 +386,7 @@ func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
 		require.FailNow(t, err.Error())
 	}
 
-	enforcer, err := NewFiletypeEnforcer(f.Name())
+	enforcer, err := NewFiletypeEnforcer(f.Name(), &Config{})
 	require.NoError(t, err)
 	return enforcer, f
 }

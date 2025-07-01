@@ -1,0 +1,52 @@
+{
+  "$id": "controlplane.v1.ProjectServiceAddMemberRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceAddMemberRequest contains the information needed to add a user to a project",
+  "patternProperties": {
+    "^(member_reference)$": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.jsonschema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
+    },
+    "^(project_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "properties": {
+    "memberReference": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.jsonschema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
+    },
+    "projectReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+            "PROJECT_MEMBER_ROLE_ADMIN",
+            "PROJECT_MEMBER_ROLE_VIEWER"
+          ],
+          "title": "Project Member Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Indicates if the user should be added as an admin"
+    }
+  },
+  "required": [
+    "project_reference",
+    "member_reference",
+    "role"
+  ],
+  "title": "Project Service Add Member Request",
+  "type": "object"
+}

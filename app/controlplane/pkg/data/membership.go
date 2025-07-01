@@ -47,6 +47,10 @@ func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, cu
 		SetOrganizationID(orgID).
 		SetCurrent(current).
 		SetRole(role).
+		SetMembershipType(authz.MembershipTypeUser).
+		SetMemberID(userID).
+		SetResourceType(authz.ResourceTypeOrganization).
+		SetResourceID(orgID).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -66,52 +70,90 @@ func (r *MembershipRepo) loadMembership(ctx context.Context, id uuid.UUID) (*ent
 }
 
 func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := r.data.DB.User.Query().Where(user.ID(userID)).QueryMemberships().
-		WithOrganization().All(ctx)
+	memberships, err := r.data.DB.Membership.Query().Where(
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(userID),
+	).WithOrganization().All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*biz.Membership, 0, len(memberships))
-	for _, m := range memberships {
-		result = append(result, entMembershipToBiz(m))
-	}
-
-	return result, nil
+	return entMembershipsToBiz(memberships), nil
 }
 
 // FindByOrg finds all memberships for a given organization
 func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := orgScopedQuery(r.data.DB, orgID).
-		QueryMemberships().WithUser().
-		WithOrganization().All(ctx)
+	memberships, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+	).WithUser().WithOrganization().All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*biz.Membership, 0, len(memberships))
-	for _, m := range memberships {
-		result = append(result, entMembershipToBiz(m))
-	}
-
-	return result, nil
+	return entMembershipsToBiz(memberships), nil
 }
 
 // FindByOrgAndUser finds the membership for a given organization and user
 func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
-	m, err := orgScopedQuery(r.data.DB, orgID).
-		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
-		WithOrganization().WithUser().Only(ctx)
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+	).WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
 
 	return entMembershipToBiz(m), nil
 }
+
+// FindByOrgIDAndUserEmail finds the membership for a given organization and user email.
+func (r *MembershipRepo) FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid.UUID, userEmail string) (*biz.Membership, error) {
+	// Find the user by email
+	u, err := r.data.DB.User.Query().Where(user.Email(userEmail)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("user with email %s not found", userEmail))
+		}
+		return nil, fmt.Errorf("failed to find user by email %s: %w", userEmail, err)
+	}
+
+	// Now find the membership for that user in the organization
+	mem, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(u.ID),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+	).WithOrganization().WithUser().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("membership for user %s in organization %s not found", userEmail, orgID))
+		}
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipToBiz(mem), nil
+}
+
 func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).
-		QueryMemberships().Where(membership.HasUserWith(user.ID(userID))).
-		WithOrganization().WithUser().Only(ctx)
+	org, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("organization %s not found", orgName))
+		}
+		return nil, fmt.Errorf("organization %s not found", orgName)
+	}
+
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ResourceID(org.ID),
+	).WithOrganization().WithUser().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -120,11 +162,12 @@ func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName strin
 }
 
 func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.User.Query().Where(user.ID(userID)).
-		QueryMemberships().
-		Where(membership.ID(membershipID)).
-		WithUser().
-		WithOrganization().Only(ctx)
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(userID),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ID(membershipID),
+	).WithUser().WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -133,11 +176,12 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 }
 
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
-	m, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).
-		QueryMemberships().
-		Where(membership.ID(membershipID)).
-		WithUser().
-		WithOrganization().Only(ctx)
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+		membership.ResourceIDEQ(orgID),
+		membership.ID(membershipID),
+	).WithUser().WithOrganization().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -154,7 +198,10 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// 1 - Set all the memberships to current=false
-		if err = tx.Membership.Update().Where(membership.HasUserWith(user.ID(m.Edges.User.ID))).
+		if err = tx.Membership.Update().Where(
+			membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
+			membership.MembershipTypeEQ(authz.MembershipTypeUser),
+			membership.MemberID(m.MemberID)).
 			SetCurrent(false).Exec(ctx); err != nil {
 			return err
 		}
@@ -195,6 +242,79 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.Membership.DeleteOneID(id).Exec(ctx)
 }
 
+// RBAC methods
+
+func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	mm, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeUser),
+		membership.MemberID(userID),
+	).All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipsToBiz(mm), nil
+}
+
+func (r *MembershipRepo) ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*biz.Membership, error) {
+	mm, err := r.data.DB.Membership.Query().Where(
+		membership.ResourceTypeEQ(rt),
+		membership.ResourceID(id),
+	).All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipsToBiz(mm), nil
+}
+
+func (r *MembershipRepo) AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error {
+	err := r.data.DB.Membership.Create().
+		SetMembershipType(mType).
+		SetMemberID(memberID).
+		SetResourceType(resourceType).
+		SetResourceID(resID).
+		SetRole(role).Exec(ctx)
+
+	if err != nil {
+		if !ent.IsConstraintError(err) {
+			return fmt.Errorf("failed to add resource role: %w", err)
+		}
+
+		// combination already existed, ignore error
+		return nil
+	}
+
+	return nil
+}
+
+// FindByUserAndResourceID finds a membership by user ID and resource ID.
+func (r *MembershipRepo) FindByUserAndResourceID(ctx context.Context, userID, resourceID uuid.UUID) (*biz.Membership, error) {
+	m, err := r.data.DB.Membership.Query().Where(
+		membership.MemberID(userID),
+		membership.ResourceID(resourceID),
+	).WithUser().WithOrganization().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("membership for user %s and resource %s not found", userID, resourceID))
+		}
+		return nil, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	return entMembershipToBiz(m), nil
+}
+
+func entMembershipsToBiz(memberships []*ent.Membership) []*biz.Membership {
+	result := make([]*biz.Membership, 0, len(memberships))
+	for _, m := range memberships {
+		result = append(result, entMembershipToBiz(m))
+	}
+
+	return result
+}
+
 func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 	if m == nil {
 		return nil
@@ -213,6 +333,11 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 	if m.Edges.User != nil {
 		res.User = entUserToBizUser(m.Edges.User)
 	}
+
+	res.MembershipType = m.MembershipType
+	res.MemberID = m.MemberID
+	res.ResourceType = m.ResourceType
+	res.ResourceID = m.ResourceID
 
 	return res
 }

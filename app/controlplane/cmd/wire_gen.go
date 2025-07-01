@@ -32,8 +32,8 @@ import (
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
 	confData := bootstrap.Data
 	data_Database := confData.Database
-	newConfig := newDataConf(data_Database)
-	dataData, cleanup, err := data.NewData(newConfig, logger)
+	databaseConfig := newDataConf(data_Database)
+	dataData, cleanup, err := data.NewData(databaseConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,24 +98,26 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v2 := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v2...)
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
+	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	referrerSharedIndex := bootstrap.ReferrerSharedIndex
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, referrerSharedIndex, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, projectsRepo, referrerSharedIndex, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	enforcer, err := authz.NewDatabaseEnforcer(data_Database)
+	apiTokenJWTConfig := newJWTConfig(auth)
+	config := authzConfig()
+	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, auth, enforcer, organizationUseCase, auditorUseCase, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
 	v4 := newPolicyProviderConfig(v3)
@@ -125,9 +127,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
-	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, logger)
-	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo)
-	v5 := serviceOpts(logger)
+	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
+	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
+	v5 := serviceOpts(logger, enforcer, projectUseCase, groupUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
@@ -164,7 +168,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
 	v6 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
@@ -189,6 +193,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ReferrerUC:         referrerUseCase,
 		OrgUC:              organizationUseCase,
 		PromUC:             prometheusUseCase,
+		ProjectUC:          projectUseCase,
 		ProjectVersionUC:   projectVersionUseCase,
 		SigningUseCase:     signingUseCase,
 		Opts:               v5,
@@ -225,6 +230,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	userService := service.NewUserService(membershipUseCase, organizationUseCase, v5...)
 	signingService := service.NewSigningService(signingUseCase, v5...)
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
+	groupService := service.NewGroupService(groupUseCase, v5...)
+	projectService := service.NewProjectService(apiTokenUseCase, v5...)
 	federatedAuthentication := bootstrap.FederatedAuthentication
 	validator, err := newProtoValidator()
 	if err != nil {
@@ -241,6 +248,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		APITokenUseCase:     apiTokenUseCase,
 		OrganizationUseCase: organizationUseCase,
 		WorkflowUseCase:     workflowUseCase,
+		MembershipUseCase:   membershipUseCase,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
 		RobotAccountSvc:     robotAccountService,
@@ -261,6 +269,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		UserSvc:             userService,
 		SigningSvc:          signingService,
 		PrometheusSvc:       prometheusService,
+		GroupSvc:            groupService,
+		ProjectSvc:          projectService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
@@ -303,10 +313,20 @@ var (
 
 // wire.go:
 
-func newDataConf(in *conf.Data_Database) *data.NewConfig {
-	c := &data.NewConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
+func authzConfig() *authz.Config {
+	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+}
+
+func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
+	return &biz.APITokenJWTConfig{
+		SymmetricHmacKey: conf2.GeneratedJwsHmacSecret,
+	}
+}
+
+func newDataConf(in *conf.Data_Database) *v1.DatabaseConfig {
+	c := &v1.DatabaseConfig{Driver: in.Driver, Source: in.Source, MinOpenConns: in.MinOpenConns, MaxOpenConns: in.MaxOpenConns}
 	if in.MaxConnIdleTime != nil {
-		c.MaxConnIdleTime = in.MaxConnIdleTime.AsDuration()
+		c.MaxConnIdleTime = in.MaxConnIdleTime
 	}
 	return c
 }
@@ -319,8 +339,8 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l)}
+func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC), service.WithGroupUseCase(gUC)}
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {

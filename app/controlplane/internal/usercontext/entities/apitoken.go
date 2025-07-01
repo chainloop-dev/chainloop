@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,18 @@ package entities
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type APIToken struct {
-	ID        string
-	CreatedAt *time.Time
-	Token     string
+	ID string
+	// Token Name
+	Name        string
+	CreatedAt   *time.Time
+	Token       string
+	ProjectID   *uuid.UUID
+	ProjectName *string
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {

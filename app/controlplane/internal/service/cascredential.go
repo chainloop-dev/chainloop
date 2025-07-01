@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -83,23 +84,24 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")
 	}
 
-	// Load the default CAS backend, we'll use it for uploads and as fallback on downloads
-	backend, err := s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
-	if err != nil && !biz.IsNotFound(err) {
-		return nil, handleUseCaseErr(err, s.log)
-	} else if backend == nil {
-		return nil, errors.NotFound("not found", "main CAS backend not found")
-	}
+	var backend *biz.CASBackend
 
 	// Try to find the proper backend where the artifact is stored
 	if role == casJWT.Downloader {
 		var mapping *biz.CASMapping
+
 		// If we are logged in as a user, we'll try to find a mapping for that user
 		if currentUser != nil {
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
 			// otherwise, we'll try to find a mapping for the current API token associated orgs
 		} else if currentAPIToken != nil {
-			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []string{currentOrg.ID})
+			var orgID uuid.UUID
+			orgID, err = uuid.Parse(currentOrg.ID)
+			if err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
+			// TODO: pass projectIDs when RBAC for API tokens is supported
+			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, nil)
 		}
 
 		// If we can't find a mapping, we'll use the default backend
@@ -113,6 +115,21 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 
 		if mapping != nil {
 			backend = mapping.CASBackend
+		}
+	}
+
+	// If the backend was not found, use the default backend for the current org, only if the user is admin and RBAC doesn't apply.
+	if backend == nil {
+		if currentAuthzSubject == string(authz.RoleAdmin) || currentAuthzSubject == string(authz.RoleOwner) {
+			// Load the default CAS backend, we'll use it for uploads and as fallback on downloads
+			backend, err = s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
+			if err != nil && !biz.IsNotFound(err) {
+				return nil, handleUseCaseErr(err, s.log)
+			} else if backend == nil {
+				return nil, errors.NotFound("not found", "main CAS backend not found")
+			}
+		} else {
+			return nil, errors.Forbidden("forbidden", "operation not allowed")
 		}
 	}
 

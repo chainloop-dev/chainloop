@@ -24,6 +24,7 @@ import (
 	"time"
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/uuid"
 
 	"github.com/cenkalti/backoff/v4"
 
@@ -146,7 +147,12 @@ func (d *FanOutDispatcher) initDispatchQueue(ctx context.Context, orgID, workflo
 	queue := dispatchQueue{}
 
 	// List enabled integrations with this workflow
-	attachments, err := d.integrationUC.ListAttachments(ctx, orgID, workflowID)
+	wfUUID, err := uuid.Parse(workflowID)
+	if err != nil {
+		return nil, fmt.Errorf("parsing workflow ID: %w", err)
+	}
+
+	attachments, err := d.integrationUC.ListAttachments(ctx, orgID, &biz.ListAttachmentsOpts{WorkflowID: &wfUUID})
 	if err != nil {
 		return nil, fmt.Errorf("listing attachments: %w", err)
 	}

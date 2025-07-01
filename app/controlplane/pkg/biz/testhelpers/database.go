@@ -76,6 +76,7 @@ type TestingUseCases struct {
 	ProjectVersion         *biz.ProjectVersionUseCase
 	Project                *biz.ProjectUseCase
 	OrgMetrics             *biz.OrgMetricsUseCase
+	Group                  *biz.GroupUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }
@@ -87,6 +88,7 @@ type TestingRepos struct {
 	WorkflowRunRepo  biz.WorkflowRunRepo
 	AttestationState biz.AttestationStateRepo
 	OrganizationRepo biz.OrganizationRepo
+	GroupRepo        biz.GroupRepo
 }
 
 type newTestingOpts struct {
@@ -217,8 +219,8 @@ func NewPromSpec() []*conf.PrometheusIntegrationSpec {
 	return []*conf.PrometheusIntegrationSpec{}
 }
 
-func NewDataConfig(in *conf.Data) *data.NewConfig {
-	return &data.NewConfig{
+func NewDataConfig(in *conf.Data) *config.DatabaseConfig {
+	return &config.DatabaseConfig{
 		Driver: in.Database.Driver,
 		Source: in.Database.Source,
 	}

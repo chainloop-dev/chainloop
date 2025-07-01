@@ -1,0 +1,23 @@
+{
+  "$id": "controlplane.v1.GroupServiceDeleteRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceDeleteRequest contains the identifier for the group to delete",
+  "patternProperties": {
+    "^(group_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    }
+  },
+  "properties": {
+    "groupReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
+  "title": "Group Service Delete Request",
+  "type": "object"
+}

@@ -1,0 +1,189 @@
+//
+// Copyright 2025 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package controlplane.v1;
+
+import "buf/validate/validate.proto";
+import "controlplane/v1/pagination.proto";
+import "controlplane/v1/response_messages.proto";
+import "controlplane/v1/shared_message.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
+
+// GroupService provides operations for managing groups within the system
+service GroupService {
+  // Create creates a new group with the specified name and description
+  rpc Create(GroupServiceCreateRequest) returns (GroupServiceCreateResponse) {}
+  // Get retrieves a specific group by its ID
+  rpc Get(GroupServiceGetRequest) returns (GroupServiceGetResponse) {}
+  // List retrieves a paginated list of groups, with optional filtering
+  rpc List(GroupServiceListRequest) returns (GroupServiceListResponse) {}
+  // Update modifies an existing group's attributes
+  rpc Update(GroupServiceUpdateRequest) returns (GroupServiceUpdateResponse) {}
+  // Delete removes a group from the system
+  rpc Delete(GroupServiceDeleteRequest) returns (GroupServiceDeleteResponse) {}
+  // ListMembers retrieves the members of a specific group
+  rpc ListMembers(GroupServiceListMembersRequest) returns (GroupServiceListMembersResponse) {}
+  // AddMember adds a user to a group with an optional maintainer role
+  rpc AddMember(GroupServiceAddMemberRequest) returns (GroupServiceAddMemberResponse) {}
+  // RemoveMember removes a user from a group
+  rpc RemoveMember(GroupServiceRemoveMemberRequest) returns (GroupServiceRemoveMemberResponse) {}
+}
+
+// GroupServiceCreateRequest contains the information needed to create a new group
+message GroupServiceCreateRequest {
+  // Name of the group to create
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  // Description providing additional information about the group
+  string description = 2;
+}
+
+// GroupServiceCreateResponse contains the newly created group
+message GroupServiceCreateResponse {
+  // The created group with all its attributes
+  Group group = 1;
+}
+
+// GroupServiceGetRequest contains the identifier for the group to retrieve
+message GroupServiceGetRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+}
+
+// GroupServiceGetResponse contains the requested group information
+message GroupServiceGetResponse {
+  // The requested group with all its attributes
+  Group group = 1;
+}
+
+// GroupServiceListsRequest contains parameters for filtering and paginating group results
+message GroupServiceListRequest {
+  // Optional filter to search by group name
+  optional string name = 1;
+  // Optional filter to search by group description
+  optional string description = 2;
+  // Optional filter to search by member email address
+  optional string member_email = 3;
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 4;
+}
+
+// GroupServiceListsResponse contains a paginated list of groups
+message GroupServiceListResponse {
+  // List of groups matching the request criteria
+  repeated Group groups = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+}
+
+// GroupServiceUpdateRequest contains the fields that can be updated for a group
+message GroupServiceUpdateRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+
+  // New name for the group (if provided)
+  optional string new_name = 3 [(buf.validate.field).ignore_empty = true];
+  // New description for the group (if provided)
+  optional string new_description = 4 [(buf.validate.field).ignore_empty = true];
+}
+
+// GroupServiceUpdateResponse contains the updated group information
+message GroupServiceUpdateResponse {
+  // The updated group with all its attributes
+  Group group = 1;
+}
+
+// GroupServiceDeleteRequest contains the identifier for the group to delete
+message GroupServiceDeleteRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+}
+
+// GroupServiceDeleteResponse is returned upon successful deletion of a group
+message GroupServiceDeleteResponse {}
+
+message GroupServiceListMembersResponse {
+  // List of members in the group
+  repeated GroupMember members = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+}
+
+// GroupServiceListMembersRequest contains the identifier for the group whose members are to be listed
+message GroupServiceListMembersRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // Optional filter to search only by maintainers or not
+  optional bool maintainers = 3 [(buf.validate.field).ignore_empty = true];
+  // Optional filter to search by member email address
+  optional string member_email = 4 [(buf.validate.field).ignore_empty = true];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 5;
+}
+
+// GroupServiceAddMemberRequest contains the information needed to add a user to a group
+message GroupServiceAddMemberRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // The user to add to the group
+  string user_email = 3 [(buf.validate.field).string.email = true];
+  // Indicates whether the user should have maintainer (admin) privileges in the group
+  bool is_maintainer = 4;
+}
+
+// GroupServiceAddMemberResponse contains the information about the group member that was added
+message GroupServiceAddMemberResponse {}
+
+// GroupServiceRemoveMemberRequest contains the information needed to remove a user from a group
+message GroupServiceRemoveMemberRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // The user to remove from the group
+  string user_email = 3 [(buf.validate.field).string.email = true];
+}
+
+// GroupServiceRemoveMemberResponse is returned upon successful removal of a user from a group
+message GroupServiceRemoveMemberResponse {}
+
+// Group represents a collection of users with shared access to resources
+message Group {
+  // Unique identifier for the group
+  string id = 1;
+  // Human-readable name of the group
+  string name = 2;
+  // Additional details about the group's purpose
+  string description = 3;
+  // UUID of the organization that this group belongs to
+  string organization_id = 4;
+  // Timestamp when the group was created
+  google.protobuf.Timestamp created_at = 5;
+  // Timestamp when the group was last modified
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// GroupMember represents a user's membership within a group with their role information
+message GroupMember {
+  // The user who is a member of the group
+  User user = 1;
+  // Indicates whether the user has maintainer (admin) privileges in the group
+  bool is_maintainer = 2;
+  // Timestamp when the group membership was created
+  google.protobuf.Timestamp created_at = 3;
+  // Timestamp when the group membership was last modified
+  google.protobuf.Timestamp updated_at = 4;
+}

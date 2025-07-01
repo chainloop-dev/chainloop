@@ -13,19 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 syntax = "proto3";
 
 package controlplane.v1;
 
-option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
-
 import "buf/validate/validate.proto";
+
+option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service SigningService {
   // GenerateSigningCert takes a certificate request and generates a new certificate for attestation signing
-  rpc GenerateSigningCert (GenerateSigningCertRequest) returns (GenerateSigningCertResponse);
-  rpc GetTrustedRoot (GetTrustedRootRequest) returns (GetTrustedRootResponse);
+  rpc GenerateSigningCert(GenerateSigningCertRequest) returns (GenerateSigningCertResponse);
+  rpc GetTrustedRoot(GetTrustedRootRequest) returns (GetTrustedRootResponse);
 }
 
 message GenerateSigningCertRequest {
