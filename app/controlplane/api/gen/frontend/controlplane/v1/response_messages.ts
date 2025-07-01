@@ -255,6 +255,7 @@ export interface WorkflowItem {
   id: string;
   name: string;
   project: string;
+  projectId: string;
   team: string;
   createdAt?: Date;
   runsCount: number;
@@ -661,6 +662,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     id: "",
     name: "",
     project: "",
+    projectId: "",
     team: "",
     createdAt: undefined,
     runsCount: 0,
@@ -682,6 +684,9 @@ export const WorkflowItem = {
     }
     if (message.project !== "") {
       writer.uint32(26).string(message.project);
+    }
+    if (message.projectId !== "") {
+      writer.uint32(98).string(message.projectId);
     }
     if (message.team !== "") {
       writer.uint32(34).string(message.team);
@@ -737,6 +742,13 @@ export const WorkflowItem = {
           }
 
           message.project = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.projectId = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -808,6 +820,7 @@ export const WorkflowItem = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       project: isSet(object.project) ? String(object.project) : "",
+      projectId: isSet(object.projectId) ? String(object.projectId) : "",
       team: isSet(object.team) ? String(object.team) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       runsCount: isSet(object.runsCount) ? Number(object.runsCount) : 0,
@@ -824,6 +837,7 @@ export const WorkflowItem = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.project !== undefined && (obj.project = message.project);
+    message.projectId !== undefined && (obj.projectId = message.projectId);
     message.team !== undefined && (obj.team = message.team);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.runsCount !== undefined && (obj.runsCount = Math.round(message.runsCount));
@@ -846,6 +860,7 @@ export const WorkflowItem = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.project = object.project ?? "";
+    message.projectId = object.projectId ?? "";
     message.team = object.team ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.runsCount = object.runsCount ?? 0;

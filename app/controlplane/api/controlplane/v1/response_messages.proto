@@ -28,6 +28,7 @@ message WorkflowItem {
   string id = 1;
   string name = 2;
   string project = 3;
+  string project_id = 12 [(buf.validate.field).string.uuid = true];
   string team = 4;
   google.protobuf.Timestamp created_at = 5;
   int32 runs_count = 6;
