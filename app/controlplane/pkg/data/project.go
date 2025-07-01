@@ -45,7 +45,13 @@ func NewProjectsRepo(data *Data, logger log.Logger) biz.ProjectsRepo {
 
 // FindProjectByOrgIDAndName gets a project by organization ID and project name
 func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*biz.Project, error) {
-	pro, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).QueryProjects().Where(project.Name(projectName)).Only(ctx)
+	pro, err := r.data.DB.Organization.Query().Where(
+		organization.ID(orgID),
+	).QueryProjects().Where(
+		project.Name(projectName),
+		project.DeletedAtIsNil(),
+	).Only(ctx)
+
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound(fmt.Sprintf("project %s", projectName))
@@ -58,7 +64,13 @@ func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.
 
 // FindProjectByOrgIDAndID gets a project by organization ID and project ID
 func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*biz.Project, error) {
-	pro, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).QueryProjects().Where(project.ID(projectID)).Only(ctx)
+	pro, err := r.data.DB.Organization.Query().Where(
+		organization.ID(orgID),
+	).QueryProjects().Where(
+		project.ID(projectID),
+		project.DeletedAtIsNil(),
+	).Only(ctx)
+
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound(fmt.Sprintf("project %s", projectID.String()))
