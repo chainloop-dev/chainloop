@@ -160,7 +160,7 @@ func NewPluginInstall(cfg *ActionsOpts, manager *plugins.Manager) *PluginInstall
 }
 
 // Run executes the PluginInstall action
-func (action *PluginInstall) Run(ctx context.Context, opts *PluginInstallOptions) (*PluginInstallResult, error) {
+func (action *PluginInstall) Run(_ context.Context, opts *PluginInstallOptions) (*PluginInstallResult, error) {
 	action.cfg.Logger.Debug().Str("file", opts.File).Msg("Downloading plugin")
 
 	// create plugins directory if it doesn't exist

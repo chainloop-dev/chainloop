@@ -90,7 +90,6 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 					}
 				}
 				flags[flag.Name] = simpleFlag
-
 			}
 
 			// instead of processing the persistent flags, we try to get them directly from viper
@@ -253,7 +252,7 @@ func newPluginInstallCmd() *cobra.Command {
 		Use:   "install",
 		Short: "Install a plugin",
 		Long:  "Install a plugin to the plugins directory from a specified URL or local file.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
 			opts := &action.PluginInstallOptions{
