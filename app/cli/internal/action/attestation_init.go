@@ -225,7 +225,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	if action.AuthTokenRaw != "" {
 		authInfo, err = extractAuthInfo(action.AuthTokenRaw)
 		if err != nil {
-			return "", err
+			// Do not fail since we might be using federated auth for which we do can't extract info yet
+			action.Logger.Warn().Msgf("can't extract info for the auth token: %v", err)
 		}
 	}
 
