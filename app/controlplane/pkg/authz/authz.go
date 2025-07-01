@@ -50,6 +50,7 @@ const (
 	ResourceGroup                 = "group"
 	ResourceGroupMembership       = "group_membership"
 	ResourceProjectAPIToken       = "project_api_token"
+	ResourceProjectMembership     = "project_membership"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -149,9 +150,9 @@ var (
 	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
 	PolicyProjectAPITokenRevoke = &Policy{ResourceProjectAPIToken, ActionDelete}
 	// Project Memberships
-	PolicyProjectListMemberships   = &Policy{ResourceGroupMembership, ActionList}
-	PolicyProjectAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
-	PolicyProjectRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
+	PolicyProjectListMemberships   = &Policy{ResourceProjectMembership, ActionList}
+	PolicyProjectAddMemberships    = &Policy{ResourceProjectMembership, ActionCreate}
+	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
 )
 
 // RolesMap The default list of policies for each role
