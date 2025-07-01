@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"main/internal/dagger"
@@ -23,9 +24,10 @@ type Chainloop struct {
 }
 
 // A Chainloop attestation
-// https://docs.chainloop.dev/how-does-it-work/#contract-based-attestation
+// https://docs.chainloop.dev/concepts/attestations
 type Attestation struct {
 	AttestationID string
+	OrgName       string
 
 	repository *dagger.Directory
 
@@ -130,12 +132,16 @@ func (m *Chainloop) Init(
 
 	var resp struct {
 		AttestationID string
+		WorkflowMeta  struct {
+			Organization string
+		}
 	}
 	if err := json.Unmarshal([]byte(info), &resp); err != nil {
 		return nil, fmt.Errorf("unmarshal attestation init response: %w", err)
 	}
 
 	att.AttestationID = resp.AttestationID
+	att.OrgName = resp.WorkflowMeta.Organization
 
 	return att, nil
 }
@@ -505,4 +511,68 @@ func (m *Chainloop) WorkflowCreate(
 			"--skip-if-exists", fmt.Sprintf("%t", skipIfExists),
 		}, execOpts).
 		Stdout(ctx)
+}
+
+type AttestationResult struct {
+	AttestationID       string
+	Digest              string
+	Statement           string
+	Bundle              string
+	HasPolicyViolations bool
+}
+
+func (m *Chainloop) AttestationResult(
+	ctx context.Context,
+	// Chainloop API token
+	token *dagger.Secret,
+	// Attestation ID
+	id string,
+) (*AttestationResult, error) {
+	var err error
+	info, err := cliContainer(0, token, m.Instance).
+		WithExec([]string{
+			"workflow", "run", "describe",
+			"--id", id,
+			"--output", "json",
+		}, execOpts).
+		Stdout(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Attestation struct {
+			Digest   string
+			Envelope struct {
+				Payload string
+			}
+			Bundle                 string
+			PolicyEvaluationStatus struct {
+				HasViolations bool
+			}
+		}
+	}
+
+	if err := json.Unmarshal([]byte(info), &resp); err != nil {
+		return nil, err
+	}
+
+	attestation := resp.Attestation
+	statement, err := base64.StdEncoding.DecodeString(attestation.Envelope.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	bundle, err := base64.StdEncoding.DecodeString(attestation.Bundle)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AttestationResult{
+		AttestationID:       id,
+		Digest:              attestation.Digest,
+		Statement:           string(statement),
+		Bundle:              string(bundle),
+		HasPolicyViolations: attestation.PolicyEvaluationStatus.HasViolations,
+	}, nil
 }
