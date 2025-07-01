@@ -143,6 +143,8 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 
+		// set the context user so it can be used in the auditor
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 		uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
 			UserBase: &events.UserBase{
 				UserID: ToPtr(uuid.MustParse(u.ID)),
@@ -151,6 +153,7 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 		}, nil)
 	} else {
 		// Login case
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 		uc.auditorUC.Dispatch(ctx, &events.UserLoggedIn{
 			UserBase: &events.UserBase{
 				UserID: ToPtr(uuid.MustParse(u.ID)),
@@ -180,9 +183,6 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user access: %w", err)
 	}
-
-	// set the context user so it can be used in the auditor
-	ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 
 	return u, nil
 }
