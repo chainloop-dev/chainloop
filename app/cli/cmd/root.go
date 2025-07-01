@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
 	token "github.com/chainloop-dev/chainloop/app/cli/internal/token"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/rs/zerolog"
@@ -244,6 +245,14 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		newReferrerDiscoverCmd(),
 	)
 
+	// Load plugins if we are not running a subcommand
+	if len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help" {
+		pluginManager = plugins.NewManager()
+		if err := loadAllPlugins(rootCmd); err != nil {
+			logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
+		}
+	}
+
 	return rootCmd
 }
 
@@ -291,7 +300,7 @@ func initConfigFile() {
 	}
 
 	// If no config file was passed as a flag we use the default one
-	configPath := filepath.Join(xdg.ConfigHome, appName)
+	configPath := getConfigDir(appName)
 	// Create the file if it does not exist
 	if _, err := os.Stat(configPath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(configPath, os.ModePerm)
@@ -328,6 +337,7 @@ func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *
 }
 
 func cleanup(conn *grpc.ClientConn) error {
+	cleanupPlugins()
 	if conn != nil {
 		if err := conn.Close(); err != nil {
 			return err
@@ -453,4 +463,8 @@ func shouldAskForConfirmation(cmd *cobra.Command) bool {
 
 func isAPITokenPreferred(cmd *cobra.Command) bool {
 	return cmd.Annotations[useAPIToken] == trueString
+}
+
+func getConfigDir(appName string) string {
+	return filepath.Join(xdg.ConfigHome, appName)
 }

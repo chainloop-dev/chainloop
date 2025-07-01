@@ -17,12 +17,6 @@ package action
 
 import (
 	"context"
-	"errors"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
@@ -58,27 +52,4 @@ func (action *WorkflowContractCreate) Run(name string, description *string, cont
 	}
 
 	return pbWorkflowContractItemToAction(resp.Result), nil
-}
-
-func loadFileOrURL(fileRef string) ([]byte, error) {
-	parts := strings.SplitAfterN(fileRef, "://", 2)
-	if len(parts) == 2 {
-		scheme := parts[0]
-		switch scheme {
-		case "http://":
-			fallthrough
-		case "https://":
-			// #nosec G107
-			resp, err := http.Get(fileRef)
-			if err != nil {
-				return nil, err
-			}
-			defer resp.Body.Close()
-			return io.ReadAll(resp.Body)
-		default:
-			return nil, errors.New("invalid file scheme")
-		}
-	}
-
-	return os.ReadFile(filepath.Clean(fileRef))
 }
