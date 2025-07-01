@@ -65,7 +65,8 @@ func Parse(token string) (*ParsedToken, error) {
 		return nil, nil
 	}
 
-	// Handle both string and array audience formats
+	// Supports both string and array formats per JWT RFC 7519
+	// Takes first array element when multiple audiences exist
 	var audience string
 	switch aud := claims["aud"].(type) {
 	case string:
@@ -84,6 +85,17 @@ func Parse(token string) (*ParsedToken, error) {
 
 	pToken := &ParsedToken{}
 
+	// Determines token type and id based on audience:
+	// 1. API Tokens:
+	//    - Type: AUTH_TYPE_API_TOKEN
+	//    - ID: 'jti' claim (JWT ID)
+	//    - OrgID: 'org_id' claim
+	// 2. User Tokens:
+	//    - Type: AUTH_TYPE_USER
+	//    - ID: 'user_id' claim
+	// 3. Federated Tokens:
+	//    - Type: AUTH_TYPE_FEDERATED
+	//    - ID: 'iss' claim (issuer URL)
 	switch audience {
 	case apiTokenAudience:
 		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_API_TOKEN
