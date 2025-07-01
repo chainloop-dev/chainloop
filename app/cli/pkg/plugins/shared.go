@@ -26,7 +26,7 @@ import (
 func init() {
 	// Register types that will be sent over RPC
 	gob.Register(PluginExecConfig{})
-	gob.Register(ExecResponse{})
+	gob.Register(PluginExecResult{})
 	gob.Register(PluginMetadata{})
 	gob.Register(PluginCommandInfo{})
 }

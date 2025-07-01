@@ -40,8 +40,8 @@ type RPCClient struct {
 	client *rpc.Client
 }
 
-func (m *RPCClient) Exec(_ context.Context, config PluginExecConfig) (ExecResult, error) {
-	var resp ExecResponse
+func (m *RPCClient) Exec(_ context.Context, config PluginExecConfig) (*PluginExecResult, error) {
+	var resp PluginExecResult
 	err := m.client.Call("Plugin.Exec", config, &resp)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ type RPCServer struct {
 	Impl Plugin
 }
 
-func (m *RPCServer) Exec(config PluginExecConfig, resp *ExecResponse) error {
+func (m *RPCServer) Exec(config PluginExecConfig, resp *PluginExecResult) error {
 	ctx := context.Background()
 
 	result, err := m.Impl.Exec(ctx, config)
@@ -68,10 +68,10 @@ func (m *RPCServer) Exec(config PluginExecConfig, resp *ExecResponse) error {
 		return err
 	}
 
-	*resp = ExecResponse{
-		Output:   result.GetOutput(),
-		Error:    result.GetError(),
-		ExitCode: result.GetExitCode(),
+	*resp = PluginExecResult{
+		Output:   result.Output,
+		Error:    result.Error,
+		ExitCode: result.ExitCode,
 	}
 	return nil
 }
@@ -83,23 +83,4 @@ func (m *RPCServer) GetMetadata(_ any, resp *PluginMetadata) error {
 	}
 	*resp = metadata
 	return nil
-}
-
-// ExecResponse is a concrete implementation of ExecResult for RPC.
-type ExecResponse struct {
-	Output   string
-	Error    string
-	ExitCode int
-}
-
-func (r *ExecResponse) GetOutput() string {
-	return r.Output
-}
-
-func (r *ExecResponse) GetError() string {
-	return r.Error
-}
-
-func (r *ExecResponse) GetExitCode() int {
-	return r.ExitCode
 }

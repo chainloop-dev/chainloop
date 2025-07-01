@@ -22,22 +22,16 @@ import (
 // Plugin is the interface that plugins must implement.
 type Plugin interface {
 	// Exec executes a command within the plugin
-	Exec(ctx context.Context, config PluginExecConfig) (ExecResult, error)
+	Exec(ctx context.Context, config PluginExecConfig) (*PluginExecResult, error)
 
 	// GetMetadata returns plugin metadata including commands it provides
 	GetMetadata(ctx context.Context) (PluginMetadata, error)
 }
 
-// ExecResult represents the result of executing a plugin command
-type ExecResult interface {
-	// GetOutput returns the command output
-	GetOutput() string
-
-	// GetError returns any error message
-	GetError() string
-
-	// GetExitCode returns the exit code
-	GetExitCode() int
+type PluginExecResult struct {
+	Output   string
+	Error    string
+	ExitCode int
 }
 
 // PluginMetadata contains information about the plugin.

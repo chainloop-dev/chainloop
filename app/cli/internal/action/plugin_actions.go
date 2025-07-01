@@ -142,15 +142,15 @@ func (action *PluginExec) Run(ctx context.Context, pluginName string, commandNam
 		return nil, fmt.Errorf("plugin execution failed: %w", err)
 	}
 
-	if result.GetError() != "" {
-		action.cfg.Logger.Error().Str("pluginName", pluginName).Str("command", commandName).Str("error", result.GetError()).Msg("Plugin returned error")
+	if result.Error != "" {
+		action.cfg.Logger.Error().Str("pluginName", pluginName).Str("command", commandName).Str("error", result.Error).Msg("Plugin returned error")
 	}
 
-	action.cfg.Logger.Debug().Str("pluginName", pluginName).Str("command", commandName).Int("exitCode", result.GetExitCode()).Msg("Plugin command executed")
+	action.cfg.Logger.Debug().Str("pluginName", pluginName).Str("command", commandName).Int("exitCode", result.ExitCode).Msg("Plugin command executed")
 	return &PluginExecResult{
-		Output:   result.GetOutput(),
-		Error:    result.GetError(),
-		ExitCode: result.GetExitCode(),
+		Output:   result.Output,
+		Error:    result.Error,
+		ExitCode: result.ExitCode,
 	}, nil
 }
 
