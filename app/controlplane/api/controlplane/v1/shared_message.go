@@ -13,21 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package v1
 
 import (
-	"github.com/spf13/cobra"
+	"fmt"
+
+	"github.com/google/uuid"
 )
 
-func newGroupCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "group",
-		Aliases: []string{"groups", "grp", "g"},
-		Short:   "Group management",
-		Hidden:  true,
+// Parse is a helper method to parse an IdentityReference from the protobuf message.
+func (i *IdentityReference) Parse() (*uuid.UUID, *string, error) {
+	if i.GetId() != "" && i.GetName() != "" {
+		return nil, nil, fmt.Errorf("cannot provide both ID and name")
 	}
 
-	cmd.AddCommand(newGroupCreateCmd(), newGroupDescribeCmd(), newGroupUpdateCmd(), newGroupListCmd(), newGroupDeleteCmd(), newGroupMembersCmd())
+	if i.GetId() != "" {
+		identityUUID, err := uuid.Parse(i.GetId())
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid identity ID")
+		}
+		return &identityUUID, nil, nil
+	} else if i.GetName() != "" {
+		identityName := i.GetName()
+		return nil, &identityName, nil
+	}
 
-	return cmd
+	return nil, nil, nil
 }

@@ -50,6 +50,7 @@ const (
 	ResourceGroup                 = "group"
 	ResourceGroupMembership       = "group_membership"
 	ResourceProjectAPIToken       = "project_api_token"
+	ResourceProjectMembership     = "project_membership"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -138,11 +139,8 @@ var (
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
 	// Groups
-	PolicyGroupCreate = &Policy{ResourceGroup, ActionCreate}
-	PolicyGroupUpdate = &Policy{ResourceGroup, ActionUpdate}
-	PolicyGroupDelete = &Policy{ResourceGroup, ActionDelete}
-	PolicyGroupList   = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead   = &Policy{ResourceGroup, ActionRead}
+	PolicyGroupList = &Policy{ResourceGroup, ActionList}
+	PolicyGroupRead = &Policy{ResourceGroup, ActionRead}
 	// Group Memberships
 	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
 	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
@@ -151,6 +149,10 @@ var (
 	PolicyProjectAPITokenList   = &Policy{ResourceProjectAPIToken, ActionList}
 	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
 	PolicyProjectAPITokenRevoke = &Policy{ResourceProjectAPIToken, ActionDelete}
+	// Project Memberships
+	PolicyProjectListMemberships   = &Policy{ResourceProjectMembership, ActionList}
+	PolicyProjectAddMemberships    = &Policy{ResourceProjectMembership, ActionCreate}
+	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
 )
 
 // RolesMap The default list of policies for each role
@@ -248,6 +250,11 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectAPITokenList,
 		PolicyProjectAPITokenCreate,
 		PolicyProjectAPITokenRevoke,
+
+		// Project Memberships
+		PolicyProjectListMemberships,
+		PolicyProjectAddMemberships,
+		PolicyProjectRemoveMemberships,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
@@ -280,6 +287,11 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectAPITokenList,
 		PolicyProjectAPITokenCreate,
 		PolicyProjectAPITokenRevoke,
+
+		// Project Memberships
+		PolicyProjectListMemberships,
+		PolicyProjectAddMemberships,
+		PolicyProjectRemoveMemberships,
 	},
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
@@ -360,6 +372,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ProjectService/APITokenCreate": {PolicyProjectAPITokenCreate},
 	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},
 	"/controlplane.v1.ProjectService/APITokenRevoke": {PolicyProjectAPITokenRevoke},
+	// Project Memberships
+	"/controlplane.v1.ProjectService/ListMembers":  {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/AddMember":    {PolicyProjectAddMemberships},
+	"/controlplane.v1.ProjectService/RemoveMember": {PolicyProjectRemoveMemberships},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

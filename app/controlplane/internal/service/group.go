@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -88,9 +89,9 @@ func (g *GroupService) Get(ctx context.Context, req *pb.GroupServiceGetRequest) 
 	}
 
 	// Parse groupID and groupName from the request
-	id, name, err := g.parseIdentityReference(req.GetGroupReference())
+	id, name, err := req.GetGroupReference().Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
 	}
 
 	// Initialize the options for getting the group
@@ -173,9 +174,9 @@ func (g *GroupService) Update(ctx context.Context, req *pb.GroupServiceUpdateReq
 	}
 
 	// Parse groupID and groupName from the request
-	id, name, err := g.parseIdentityReference(req.GetGroupReference())
+	id, name, err := req.GetGroupReference().Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
 	// Update the group with the provided options
@@ -212,9 +213,9 @@ func (g *GroupService) Delete(ctx context.Context, req *pb.GroupServiceDeleteReq
 	idReference := &biz.IdentityReference{}
 
 	// Parse groupID and groupName from the request
-	idReference.ID, idReference.Name, err = g.parseIdentityReference(req.GetGroupReference())
+	idReference.ID, idReference.Name, err = req.GetGroupReference().Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
 	err = g.groupUseCase.Delete(ctx, orgUUID, idReference)
@@ -246,9 +247,9 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 	}
 
 	// Parse groupID and groupName from the request
-	opts.ID, opts.Name, err = g.parseIdentityReference(req.GetGroupReference())
+	opts.ID, opts.Name, err = req.GetGroupReference().Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
 	// Initialize the pagination options, with default values
@@ -309,9 +310,9 @@ func (g *GroupService) AddMember(ctx context.Context, req *pb.GroupServiceAddMem
 	}
 
 	// Parse groupID and groupName from the request
-	addOpts.ID, addOpts.Name, err = g.parseIdentityReference(req.GetGroupReference())
+	addOpts.ID, addOpts.Name, err = req.GetGroupReference().Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
 	// Call the business logic to add the member
@@ -359,9 +360,9 @@ func (g *GroupService) RemoveMember(ctx context.Context, req *pb.GroupServiceRem
 	}
 
 	// Parse groupID and groupName from the request
-	removeOpts.ID, removeOpts.Name, err = g.parseIdentityReference(req.GetGroupReference())
+	removeOpts.ID, removeOpts.Name, err = req.GetGroupReference().Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
 	// Call the business logic to remove the member

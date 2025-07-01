@@ -1,0 +1,22 @@
+{
+  "$id": "controlplane.v1.ProjectMembershipReference.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectMembershipReference is used to reference a user or group in the context of project membership",
+  "patternProperties": {
+    "^(userEmail)$": {
+      "description": "The user to add to the project",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "user_email": {
+      "description": "The user to add to the project",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "title": "Project Membership Reference",
+  "type": "object"
+}

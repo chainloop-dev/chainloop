@@ -155,7 +155,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, org.ID, req.ProjectName, authz.PolicyWorkflowRunCreate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, org.ID, &cpAPI.IdentityReference{Name: &req.ProjectName}, authz.PolicyWorkflowRunCreate); err != nil {
 		return nil, err
 	}
 
@@ -233,7 +233,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunCreate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunCreate); err != nil {
 		return nil, err
 	}
 
@@ -372,7 +372,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wf.Project, authz.PolicyWorkflowRunUpdate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wf.Project}, authz.PolicyWorkflowRunUpdate); err != nil {
 		return nil, err
 	}
 
@@ -422,7 +422,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	}
 
 	// Apply RBAC on the project
-	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, wRun.Workflow.Project, authz.PolicyWorkflowRunCreate); err != nil {
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &wRun.Workflow.Project}, authz.PolicyWorkflowRunCreate); err != nil {
 		return nil, err
 	}
 
@@ -673,7 +673,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// try to load project and apply RBAC if needed
-	if _, err := s.userHasPermissionOnProject(ctx, apiToken.OrgID, req.ProjectName, authz.PolicyWorkflowCreate); err != nil {
+	if _, err := s.userHasPermissionOnProject(ctx, apiToken.OrgID, &cpAPI.IdentityReference{Name: &req.ProjectName}, authz.PolicyWorkflowCreate); err != nil {
 		// if the project is not found, we ignore the error, since we'll create the project in this call
 		if !errors.IsNotFound(err) {
 			return nil, err

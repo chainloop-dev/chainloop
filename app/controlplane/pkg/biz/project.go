@@ -21,7 +21,9 @@ import (
 	"slices"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -34,13 +36,24 @@ type ProjectsRepo interface {
 	FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*Project, error)
 	Create(ctx context.Context, orgID uuid.UUID, name string) (*Project, error)
 	ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) ([]*Project, error)
+	// ListMembers retrieves a list of members in a project, optionally filtered by admin status.
+	ListMembers(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*ProjectMembership, int, error)
+	// AddMemberToProject adds a user to a project, optionally specifying if they are an admin.
+	AddMemberToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, userID uuid.UUID, role authz.Role) (*ProjectMembership, error)
+	// RemoveMemberFromProject removes a user from a project.
+	RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, userID uuid.UUID) error
+	// FindProjectMembershipByProjectAndID finds a project membership by project ID and user ID.
+	FindProjectMembershipByProjectAndID(ctx context.Context, projectID uuid.UUID, userID uuid.UUID) (*ProjectMembership, error)
 }
 
 // ProjectUseCase is a use case for projects
 type ProjectUseCase struct {
 	logger *log.Helper
+	// Use Cases
+	auditorUC *AuditorUseCase
 	// Repositories
-	projectsRepository ProjectsRepo
+	projectsRepository   ProjectsRepo
+	membershipRepository MembershipRepo
 }
 
 // Project is a project in the organization
@@ -57,15 +70,51 @@ type Project struct {
 	UpdatedAt *time.Time
 }
 
-func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo) *ProjectUseCase {
+// ProjectMembership represents a membership of a user in a project.
+type ProjectMembership struct {
+	// User is the user who is a member of the project.
+	User *User
+	// Role represents the role of the user in the project (admin or viewer).
+	Role authz.Role
+	// CreatedAt is the timestamp when the user was added to the project.
+	CreatedAt *time.Time
+	// UpdatedAt is the timestamp when the membership was last updated.
+	UpdatedAt *time.Time
+}
+
+// AddMemberToProjectOpts defines options for adding a member to a project.
+type AddMemberToProjectOpts struct {
+	// ProjectReference is the reference to the project.
+	ProjectReference *IdentityReference
+	// UserEmail is the email of the user to add to the project.
+	UserEmail string
+	// RequesterID is the ID of the user who is requesting to add the member.
+	RequesterID uuid.UUID
+	// Role represents the role to assign to the user in the project.
+	Role authz.Role
+}
+
+// RemoveMemberFromProjectOpts defines options for removing a member from a project.
+type RemoveMemberFromProjectOpts struct {
+	// ProjectReference is the reference to the project.
+	ProjectReference *IdentityReference
+	// UserEmail is the email of the user to remove from the project.
+	UserEmail string
+	// RequesterID is the ID of the user who is requesting to remove the member.
+	RequesterID uuid.UUID
+}
+
+func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase) *ProjectUseCase {
 	return &ProjectUseCase{
-		logger:             servicelogger.ScopedHelper(logger, "biz/project"),
-		projectsRepository: projectsRepository,
+		logger:               servicelogger.ScopedHelper(logger, "biz/project"),
+		projectsRepository:   projectsRepository,
+		membershipRepository: membershipRepository,
+		auditorUC:            auditorUC,
 	}
 }
 
 // FindProjectByReference finds a project by reference, which can be either a project name or a project ID.
-func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID string, reference *EntityRef) (*Project, error) {
+func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID string, reference *IdentityReference) (*Project, error) {
 	if reference == nil || orgID == "" {
 		return nil, NewErrValidationStr("orgID or project reference are empty")
 	}
@@ -75,14 +124,10 @@ func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID stri
 	}
 
 	switch {
-	case reference.Name != "":
-		return uc.projectsRepository.FindProjectByOrgIDAndName(ctx, orgUUID, reference.Name)
-	case reference.ID != "":
-		projectUUID, err := uuid.Parse(reference.ID)
-		if err != nil {
-			return nil, NewErrInvalidUUID(err)
-		}
-		return uc.projectsRepository.FindProjectByOrgIDAndID(ctx, orgUUID, projectUUID)
+	case reference.Name != nil && *reference.Name != "":
+		return uc.projectsRepository.FindProjectByOrgIDAndName(ctx, orgUUID, *reference.Name)
+	case reference.ID != nil && *reference.ID != uuid.Nil:
+		return uc.projectsRepository.FindProjectByOrgIDAndID(ctx, orgUUID, *reference.ID)
 	default:
 		return nil, NewErrValidationStr("project reference is empty")
 	}
@@ -99,6 +144,246 @@ func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Proj
 	}
 
 	return uc.projectsRepository.Create(ctx, orgUUID, name)
+}
+
+// ListMembers lists the members of a project with pagination.
+func (uc *ProjectUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, projectRef *IdentityReference, paginationOpts *pagination.OffsetPaginationOpts) ([]*ProjectMembership, int, error) {
+	if projectRef == nil {
+		return nil, 0, NewErrValidationStr("project reference cannot be nil")
+	}
+
+	if orgID == uuid.Nil {
+		return nil, 0, NewErrValidationStr("organization ID cannot be empty")
+	}
+
+	// Validate and resolve the project reference to a project ID
+	resolvedProjectID, err := uc.ValidateProjectIdentifier(ctx, orgID, projectRef)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Check the project exists
+	existingProject, err := uc.projectsRepository.FindProjectByOrgIDAndID(ctx, orgID, resolvedProjectID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to find project: %w", err)
+	}
+
+	if existingProject == nil {
+		return nil, 0, NewErrNotFound("project")
+	}
+
+	// Use default pagination options if none provided
+	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
+	if paginationOpts != nil {
+		pgOpts = paginationOpts
+	}
+
+	return uc.projectsRepository.ListMembers(ctx, orgID, resolvedProjectID, pgOpts)
+}
+
+// AddMemberToProject adds a user to a project.
+func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUID, opts *AddMemberToProjectOpts) (*ProjectMembership, error) {
+	if opts == nil {
+		return nil, NewErrValidationStr("options cannot be nil")
+	}
+
+	if orgID == uuid.Nil || opts.UserEmail == "" || opts.RequesterID == uuid.Nil {
+		return nil, NewErrValidationStr("organization ID, user email, and requester ID cannot be empty")
+	}
+
+	// Validate the role
+	if opts.Role != authz.RoleProjectAdmin && opts.Role != authz.RoleProjectViewer {
+		return nil, NewErrValidationStr("role must be either 'admin' or 'viewer'")
+	}
+
+	// Validate and resolve the project reference to a project ID
+	resolvedProjectID, err := uc.ValidateProjectIdentifier(ctx, orgID, opts.ProjectReference)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the project exists
+	existingProject, err := uc.projectsRepository.FindProjectByOrgIDAndID(ctx, orgID, resolvedProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find project: %w", err)
+	}
+
+	if existingProject == nil {
+		return nil, NewErrNotFound("project")
+	}
+
+	// Verify the requester has permissions to add members to the project
+	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+		return nil, fmt.Errorf("requester does not have permission to add members to this project: %w", err)
+	}
+
+	// Find the user by email in the organization
+	userMembership, err := uc.membershipRepository.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
+	if err != nil && !IsNotFound(err) {
+		return nil, fmt.Errorf("failed to find user by email: %w", err)
+	}
+	if userMembership == nil {
+		return nil, NewErrValidationStr("user with the provided email is not a member of the organization")
+	}
+
+	userUUID := uuid.MustParse(userMembership.User.ID)
+
+	// Check if the user is already a member of the project
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, resolvedProjectID, userUUID)
+	if err != nil && !IsNotFound(err) {
+		return nil, fmt.Errorf("failed to check existing membership: %w", err)
+	}
+	if existingMembership != nil {
+		return nil, NewErrAlreadyExistsStr("user is already a member of this project")
+	}
+
+	// Add the user to the project
+	membership, err := uc.projectsRepository.AddMemberToProject(ctx, orgID, resolvedProjectID, userUUID, opts.Role)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add member to project: %w", err)
+	}
+
+	// Dispatch event to the audit log for project membership addition
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMemberAdded{
+		ProjectBase: &events.ProjectBase{
+			ProjectID:   &resolvedProjectID,
+			ProjectName: existingProject.Name,
+		},
+		UserID:    &userUUID,
+		UserEmail: opts.UserEmail,
+		Role:      string(opts.Role),
+	}, &orgID)
+
+	return membership, nil
+}
+
+// RemoveMemberFromProject removes a user from a project.
+func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, opts *RemoveMemberFromProjectOpts) error {
+	if opts == nil {
+		return NewErrValidationStr("options cannot be nil")
+	}
+
+	if orgID == uuid.Nil || opts.UserEmail == "" || opts.RequesterID == uuid.Nil {
+		return NewErrValidationStr("organization ID, user email, and requester ID cannot be empty")
+	}
+
+	// Validate and resolve the project reference to a project ID
+	resolvedProjectID, err := uc.ValidateProjectIdentifier(ctx, orgID, opts.ProjectReference)
+	if err != nil {
+		return err
+	}
+
+	// Check the project exists
+	existingProject, err := uc.projectsRepository.FindProjectByOrgIDAndID(ctx, orgID, resolvedProjectID)
+	if err != nil {
+		return fmt.Errorf("failed to find project: %w", err)
+	}
+
+	if existingProject == nil {
+		return NewErrNotFound("project")
+	}
+
+	// Verify the requester has permissions to remove members from the project
+	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+		return fmt.Errorf("requester does not have permission to remove members from this project: %w", err)
+	}
+
+	// Find the user by email in the organization
+	userMembership, err := uc.membershipRepository.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
+	if err != nil && !IsNotFound(err) {
+		return fmt.Errorf("failed to find user by email: %w", err)
+	}
+	if userMembership == nil {
+		return NewErrValidationStr("user with the provided email is not a member of the organization")
+	}
+
+	userUUID := uuid.MustParse(userMembership.User.ID)
+
+	// Check if the user is a member of the project
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, resolvedProjectID, userUUID)
+	if err != nil && !IsNotFound(err) {
+		return fmt.Errorf("failed to check existing membership: %w", err)
+	}
+	if existingMembership == nil {
+		return NewErrValidationStr("user is not a member of this project")
+	}
+
+	// Remove the user from the project
+	if err := uc.projectsRepository.RemoveMemberFromProject(ctx, orgID, resolvedProjectID, userUUID); err != nil {
+		return fmt.Errorf("failed to remove member from project: %w", err)
+	}
+
+	// Dispatch event to the audit log for project membership removal
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMemberRemoved{
+		ProjectBase: &events.ProjectBase{
+			ProjectID:   &resolvedProjectID,
+			ProjectName: existingProject.Name,
+		},
+		UserID:    &userUUID,
+		UserEmail: opts.UserEmail,
+	}, &orgID)
+
+	return nil
+}
+
+// ValidateProjectIdentifier validates and resolves the project reference to a project ID.
+func (uc *ProjectUseCase) ValidateProjectIdentifier(ctx context.Context, orgID uuid.UUID, projectRef *IdentityReference) (uuid.UUID, error) {
+	if projectRef == nil {
+		return uuid.Nil, NewErrValidationStr("project reference cannot be nil")
+	}
+
+	if projectRef.ID == nil && projectRef.Name == nil {
+		return uuid.Nil, NewErrValidationStr("either project ID or project name must be provided")
+	}
+
+	if projectRef.ID != nil {
+		return *projectRef.ID, nil
+	}
+
+	// If project ID is not provided, try to find the project by name
+	project, err := uc.projectsRepository.FindProjectByOrgIDAndName(ctx, orgID, *projectRef.Name)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to find project by name: %w", err)
+	}
+	if project == nil {
+		return uuid.Nil, NewErrNotFound("project")
+	}
+
+	return project.ID, nil
+}
+
+// verifyRequesterHasPermissions checks if the requester has the required permissions to perform an action on a project.
+func (uc *ProjectUseCase) verifyRequesterHasPermissions(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, requesterID uuid.UUID) error {
+	// Check if the requester is part of the organization
+	requesterMembership, err := uc.membershipRepository.FindByOrgAndUser(ctx, orgID, requesterID)
+	if err != nil && !IsNotFound(err) {
+		return NewErrValidationStr("failed to check existing membership")
+	}
+
+	if requesterMembership == nil {
+		return NewErrValidationStr("requester is not a member of the organization")
+	}
+
+	// Check if the requester has sufficient permissions
+	// Allow if the requester is an org owner or admin
+	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+
+	// If not an admin/owner, check if the requester is a maintainer of this project
+	if !isAdminOrOwner {
+		// Check if the requester is a maintainer of this project
+		requesterGroupMembership, err := uc.membershipRepository.FindByUserAndResourceID(ctx, requesterID, projectID)
+		if err != nil && !IsNotFound(err) {
+			return fmt.Errorf("failed to check requester's project membership: %w", err)
+		}
+
+		// If not a maintainer of this project, deny access
+		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleProjectAdmin {
+			return NewErrValidationStr("requester does not have permission to operate on this project")
+		}
+	}
+
+	// If the requester is an admin/owner or a maintainer of this project, allow the action
+	return nil
 }
 
 // getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership

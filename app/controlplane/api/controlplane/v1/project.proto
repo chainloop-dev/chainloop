@@ -18,8 +18,12 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "buf/validate/validate.proto";
+import "controlplane/v1/group.proto";
+import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
+import "controlplane/v1/shared_message.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -28,6 +32,10 @@ service ProjectService {
   rpc APITokenCreate(ProjectServiceAPITokenCreateRequest) returns (ProjectServiceAPITokenCreateResponse);
   rpc APITokenList(ProjectServiceAPITokenListRequest) returns (ProjectServiceAPITokenListResponse);
   rpc APITokenRevoke(ProjectServiceAPITokenRevokeRequest) returns (ProjectServiceAPITokenRevokeResponse);
+  // Project membership management
+  rpc ListMembers(ProjectServiceListMembersRequest) returns (ProjectServiceListMembersResponse);
+  rpc AddMember(ProjectServiceAddMemberRequest) returns (ProjectServiceAddMemberResponse);
+  rpc RemoveMember(ProjectServiceRemoveMemberRequest) returns (ProjectServiceRemoveMemberResponse);
 }
 
 message ProjectServiceAPITokenCreateRequest {
@@ -46,19 +54,106 @@ message ProjectServiceAPITokenCreateResponse {
   }
 }
 
+// ProjectServiceAPITokenRevokeRequest contains the information needed to revoke an API token for a project
 message ProjectServiceAPITokenRevokeRequest {
-  // token name
+  // The name of the API token to revoke
   string name = 1 [(buf.validate.field).string.min_len = 1];
-  string project_name = 2 [(buf.validate.field).string.min_len = 1];
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 2 [(buf.validate.field).required = true];
 }
 
+// ProjectServiceAPITokenRevokeResponse is returned upon successful revocation of an API token
 message ProjectServiceAPITokenRevokeResponse {}
 
+// ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project
 message ProjectServiceAPITokenListRequest {
-  string project_name = 1 [(buf.validate.field).string.min_len = 1];
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
+  // Flag to include revoked tokens in the list
   bool include_revoked = 2;
 }
 
 message ProjectServiceAPITokenListResponse {
   repeated APITokenItem result = 1;
+}
+
+// ProjectServiceListMembersRequest contains the information needed to list members of a project
+message ProjectServiceListMembersRequest {
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 2;
+}
+
+// ProjectServiceListMembersResponse contains the list of members in a project
+message ProjectServiceListMembersResponse {
+  // The list of members in the project
+  repeated ProjectMember members = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+}
+
+// ProjectMember represents an user or group who is a member of a project
+message ProjectMember {
+  // Subject can be either a user or a group
+  oneof subject {
+    // The user who is a member of the project
+    User user = 1;
+    // The group who is a member of the project
+    Group group = 2;
+  }
+  // The role of the user in the project
+  ProjectMemberRole role = 3;
+  // Timestamp when the project membership was created
+  google.protobuf.Timestamp created_at = 4;
+  // Timestamp when the project membership was last modified
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// ProjectServiceAddMemberRequest contains the information needed to add a user to a project
+message ProjectServiceAddMemberRequest {
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
+  // The membership reference can be a user email or groups references in the future
+  ProjectMembershipReference member_reference = 2 [(buf.validate.field).required = true];
+  // Indicates if the user should be added as an admin
+  ProjectMemberRole role = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}
+
+// ProjectServiceAddMemberResponse contains the result of adding a user to a project
+message ProjectServiceAddMemberResponse {}
+
+message ProjectServiceRemoveMemberRequest {
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
+  // The membership reference can be a user email or groups references in the future
+  ProjectMembershipReference member_reference = 2 [(buf.validate.field).required = true];
+}
+
+// ProjectServiceRemoveMemberResponse is returned upon successful removal of a user from a project
+message ProjectServiceRemoveMemberResponse {}
+
+// ProjectMembershipReference is used to reference a user or group in the context of project membership
+message ProjectMembershipReference {
+  // The membership reference can be a user email or groups references in the future
+  oneof membership_reference {
+    // The user to add to the project
+    string user_email = 3 [(buf.validate.field).string.email = true];
+  }
+}
+
+// ProjectMemberRole defines the roles a member can have in a project
+enum ProjectMemberRole {
+  // Default role for a project member
+  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0;
+  // Admin role for a project member
+  PROJECT_MEMBER_ROLE_ADMIN = 1;
+  // Viewer role for a project member
+  PROJECT_MEMBER_ROLE_VIEWER = 2;
 }

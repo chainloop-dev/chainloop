@@ -2,6 +2,7 @@
   "$id": "controlplane.v1.ProjectServiceAPITokenRevokeResponse.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "description": "ProjectServiceAPITokenRevokeResponse is returned upon successful revocation of an API token",
   "properties": {},
   "title": "Project ServiceAPI Token Revoke Response",
   "type": "object"

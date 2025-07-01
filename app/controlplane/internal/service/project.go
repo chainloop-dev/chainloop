@@ -17,24 +17,30 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+
+	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ProjectService struct {
 	pb.UnimplementedProjectServiceServer
 	*service
 
-	APITokenUseCase *biz.APITokenUseCase
+	// Use Cases
+	apiTokenUseCase *biz.APITokenUseCase
 }
 
-func NewProjectService(uc *biz.APITokenUseCase, opts ...NewOpt) *ProjectService {
+func NewProjectService(apiTokenUseCase *biz.APITokenUseCase, opts ...NewOpt) *ProjectService {
 	return &ProjectService{
 		service:         newService(opts...),
-		APITokenUseCase: uc,
+		apiTokenUseCase: apiTokenUseCase,
 	}
 }
 
@@ -45,7 +51,7 @@ func (s *ProjectService) APITokenCreate(ctx context.Context, req *pb.ProjectServ
 	}
 
 	// Make sure the provided project exists and the user has permission to create tokens in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyProjectAPITokenCreate)
+	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, &pb.IdentityReference{Name: &req.ProjectName}, authz.PolicyProjectAPITokenCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +62,7 @@ func (s *ProjectService) APITokenCreate(ctx context.Context, req *pb.ProjectServ
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProject(project))
+	token, err := s.apiTokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -76,12 +82,12 @@ func (s *ProjectService) APITokenList(ctx context.Context, req *pb.ProjectServic
 	}
 
 	// Make sure the provided project exists and the user has permission to create tokens in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyProjectAPITokenList)
+	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAPITokenList)
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProject(project))
+	tokens, err := s.apiTokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -101,19 +107,254 @@ func (s *ProjectService) APITokenRevoke(ctx context.Context, req *pb.ProjectServ
 	}
 
 	// Make sure the provided project exists and the user has permission to create tokens in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectName, authz.PolicyProjectAPITokenRevoke)
+	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAPITokenRevoke)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name, biz.APITokenWithProject(project))
+	t, err := s.apiTokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {
+	if err := s.apiTokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.ProjectServiceAPITokenRevokeResponse{}, nil
+}
+
+// ListMembers lists the members of a project.
+func (s *ProjectService) ListMembers(ctx context.Context, req *pb.ProjectServiceListMembersRequest) (*pb.ProjectServiceListMembersResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure the user has permission to list members of the project
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectReference, authz.PolicyProjectListMemberships)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert organization ID from string to UUID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Create the identity reference for the project
+	identityRef := &biz.IdentityReference{}
+
+	// Parse projectID and projectName from the request
+	identityRef.ID, identityRef.Name, err = req.GetProjectReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Call the business logic to list members
+	members, total, err := s.projectUseCase.ListMembers(ctx, orgUUID, identityRef, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Convert the project members to protobuf messages
+	result := make([]*pb.ProjectMember, 0, len(members))
+	for _, mem := range members {
+		result = append(result, bizProjectMembershipToPb(mem))
+	}
+
+	return &pb.ProjectServiceListMembersResponse{
+		Members:    result,
+		Pagination: paginationToPb(total, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
+}
+
+// AddMember adds a member to a project.
+func (s *ProjectService) AddMember(ctx context.Context, req *pb.ProjectServiceAddMemberRequest) (*pb.ProjectServiceAddMemberResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure the user has permission to add members to the project
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectReference, authz.PolicyProjectAddMemberships)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get current user ID from context
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	requesterUUID, err := uuid.Parse(currentUser.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Create the identity reference for the project
+	identityRef := &biz.IdentityReference{}
+
+	// Parse projectID and projectName from the request
+	identityRef.ID, identityRef.Name, err = req.GetProjectReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Extract the user email from the oneof MembershipReference field
+	userEmail, err := s.extractUserEmailFromMembershipReference(req.GetMemberReference())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Convert from protobuf role to internal authorization role
+	role := mapProjectMemberRoleToAuthzRole(req.Role)
+
+	// Prepare options for adding a member
+	opts := &biz.AddMemberToProjectOpts{
+		ProjectReference: identityRef,
+		UserEmail:        userEmail,
+		RequesterID:      requesterUUID,
+		Role:             role,
+	}
+
+	// Call the business logic to add the member
+	_, err = s.projectUseCase.AddMemberToProject(ctx, orgUUID, opts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.ProjectServiceAddMemberResponse{}, nil
+}
+
+// RemoveMember removes a member from a project.
+func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServiceRemoveMemberRequest) (*pb.ProjectServiceRemoveMemberResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure the user has permission to remove members from the project
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectReference, authz.PolicyProjectRemoveMemberships)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get current user ID from context
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	requesterUUID, err := uuid.Parse(currentUser.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Create the identity reference for the project
+	identityRef := &biz.IdentityReference{}
+
+	// Parse projectID and projectName from the request
+	identityRef.ID, identityRef.Name, err = req.GetProjectReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Extract the user email from the oneof MembershipReference field
+	userEmail, err := s.extractUserEmailFromMembershipReference(req.GetMemberReference())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Prepare options for removing a member
+	opts := &biz.RemoveMemberFromProjectOpts{
+		ProjectReference: identityRef,
+		UserEmail:        userEmail,
+		RequesterID:      requesterUUID,
+	}
+
+	// Call the business logic to remove the member
+	err = s.projectUseCase.RemoveMemberFromProject(ctx, orgUUID, opts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.ProjectServiceRemoveMemberResponse{}, nil
+}
+
+// extractUserEmailFromMembershipReference extracts the user email from a membership reference
+// Returns the user email and an error if the email is not provided or the membership reference is nil
+func (s *ProjectService) extractUserEmailFromMembershipReference(membershipRef *pb.ProjectMembershipReference) (string, error) {
+	if membershipRef == nil {
+		return "", biz.NewErrValidationStr("membership reference is required")
+	}
+
+	userEmail := membershipRef.GetUserEmail()
+	if userEmail == "" {
+		return "", biz.NewErrValidationStr("user email is required")
+	}
+
+	return userEmail, nil
+}
+
+// MapProjectMemberRoleToAuthzRole maps a ProjectMemberRole from protobuf to an authz.Role
+func mapProjectMemberRoleToAuthzRole(role pb.ProjectMemberRole) authz.Role {
+	switch role {
+	case pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_ADMIN:
+		return authz.RoleProjectAdmin
+	case pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_VIEWER:
+		return authz.RoleProjectViewer
+	default:
+		// Default to viewer role for safety
+		return authz.RoleProjectViewer
+	}
+}
+
+// bizProjectMembershipToPb converts a biz.ProjectMembership to a pb.ProjectMember
+func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
+	var role pb.ProjectMemberRole
+
+	// Map the role string back to a protobuf enum
+	switch m.Role {
+	case authz.RoleProjectAdmin:
+		role = pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_ADMIN
+	case authz.RoleProjectViewer:
+		role = pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_VIEWER
+	default:
+		role = pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_UNSPECIFIED
+	}
+
+	pbMember := &pb.ProjectMember{
+		Subject: &pb.ProjectMember_User{
+			User: bizUserToPb(m.User),
+		},
+		Role: role,
+	}
+
+	if m.CreatedAt != nil {
+		pbMember.CreatedAt = timestamppb.New(*m.CreatedAt)
+	}
+	if m.UpdatedAt != nil {
+		pbMember.UpdatedAt = timestamppb.New(*m.UpdatedAt)
+	}
+
+	return pbMember
 }

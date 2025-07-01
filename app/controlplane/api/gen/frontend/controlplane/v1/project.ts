@@ -3,9 +3,56 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../../google/protobuf/duration";
-import { APITokenItem } from "./response_messages";
+import { Timestamp } from "../../google/protobuf/timestamp";
+import { Group } from "./group";
+import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
+import { APITokenItem, User } from "./response_messages";
+import { IdentityReference } from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
+
+/** ProjectMemberRole defines the roles a member can have in a project */
+export enum ProjectMemberRole {
+  /** PROJECT_MEMBER_ROLE_UNSPECIFIED - Default role for a project member */
+  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0,
+  /** PROJECT_MEMBER_ROLE_ADMIN - Admin role for a project member */
+  PROJECT_MEMBER_ROLE_ADMIN = 1,
+  /** PROJECT_MEMBER_ROLE_VIEWER - Viewer role for a project member */
+  PROJECT_MEMBER_ROLE_VIEWER = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function projectMemberRoleFromJSON(object: any): ProjectMemberRole {
+  switch (object) {
+    case 0:
+    case "PROJECT_MEMBER_ROLE_UNSPECIFIED":
+      return ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED;
+    case 1:
+    case "PROJECT_MEMBER_ROLE_ADMIN":
+      return ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN;
+    case 2:
+    case "PROJECT_MEMBER_ROLE_VIEWER":
+      return ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ProjectMemberRole.UNRECOGNIZED;
+  }
+}
+
+export function projectMemberRoleToJSON(object: ProjectMemberRole): string {
+  switch (object) {
+    case ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED:
+      return "PROJECT_MEMBER_ROLE_UNSPECIFIED";
+    case ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN:
+      return "PROJECT_MEMBER_ROLE_ADMIN";
+    case ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER:
+      return "PROJECT_MEMBER_ROLE_VIEWER";
+    case ProjectMemberRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
 export interface ProjectServiceAPITokenCreateRequest {
   name: string;
@@ -23,22 +70,93 @@ export interface ProjectServiceAPITokenCreateResponse_APITokenFull {
   jwt: string;
 }
 
+/** ProjectServiceAPITokenRevokeRequest contains the information needed to revoke an API token for a project */
 export interface ProjectServiceAPITokenRevokeRequest {
-  /** token name */
+  /** The name of the API token to revoke */
   name: string;
-  projectName: string;
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
 }
 
+/** ProjectServiceAPITokenRevokeResponse is returned upon successful revocation of an API token */
 export interface ProjectServiceAPITokenRevokeResponse {
 }
 
+/** ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project */
 export interface ProjectServiceAPITokenListRequest {
-  projectName: string;
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
+  /** Flag to include revoked tokens in the list */
   includeRevoked: boolean;
 }
 
 export interface ProjectServiceAPITokenListResponse {
   result: APITokenItem[];
+}
+
+/** ProjectServiceListMembersRequest contains the information needed to list members of a project */
+export interface ProjectServiceListMembersRequest {
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
+  /** Pagination parameters to limit and offset results */
+  pagination?: OffsetPaginationRequest;
+}
+
+/** ProjectServiceListMembersResponse contains the list of members in a project */
+export interface ProjectServiceListMembersResponse {
+  /** The list of members in the project */
+  members: ProjectMember[];
+  /** Pagination information for the response */
+  pagination?: OffsetPaginationResponse;
+}
+
+/** ProjectMember represents an user or group who is a member of a project */
+export interface ProjectMember {
+  /** The user who is a member of the project */
+  user?:
+    | User
+    | undefined;
+  /** The group who is a member of the project */
+  group?:
+    | Group
+    | undefined;
+  /** The role of the user in the project */
+  role: ProjectMemberRole;
+  /** Timestamp when the project membership was created */
+  createdAt?: Date;
+  /** Timestamp when the project membership was last modified */
+  updatedAt?: Date;
+}
+
+/** ProjectServiceAddMemberRequest contains the information needed to add a user to a project */
+export interface ProjectServiceAddMemberRequest {
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
+  /** The membership reference can be a user email or groups references in the future */
+  memberReference?: ProjectMembershipReference;
+  /** Indicates if the user should be added as an admin */
+  role: ProjectMemberRole;
+}
+
+/** ProjectServiceAddMemberResponse contains the result of adding a user to a project */
+export interface ProjectServiceAddMemberResponse {
+}
+
+export interface ProjectServiceRemoveMemberRequest {
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
+  /** The membership reference can be a user email or groups references in the future */
+  memberReference?: ProjectMembershipReference;
+}
+
+/** ProjectServiceRemoveMemberResponse is returned upon successful removal of a user from a project */
+export interface ProjectServiceRemoveMemberResponse {
+}
+
+/** ProjectMembershipReference is used to reference a user or group in the context of project membership */
+export interface ProjectMembershipReference {
+  /** The user to add to the project */
+  userEmail?: string | undefined;
 }
 
 function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
@@ -294,7 +412,7 @@ export const ProjectServiceAPITokenCreateResponse_APITokenFull = {
 };
 
 function createBaseProjectServiceAPITokenRevokeRequest(): ProjectServiceAPITokenRevokeRequest {
-  return { name: "", projectName: "" };
+  return { name: "", projectReference: undefined };
 }
 
 export const ProjectServiceAPITokenRevokeRequest = {
@@ -302,8 +420,8 @@ export const ProjectServiceAPITokenRevokeRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.projectName !== "") {
-      writer.uint32(18).string(message.projectName);
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -327,7 +445,7 @@ export const ProjectServiceAPITokenRevokeRequest = {
             break;
           }
 
-          message.projectName = reader.string();
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -341,14 +459,19 @@ export const ProjectServiceAPITokenRevokeRequest = {
   fromJSON(object: any): ProjectServiceAPITokenRevokeRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
     };
   },
 
   toJSON(message: ProjectServiceAPITokenRevokeRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
     return obj;
   },
 
@@ -363,7 +486,9 @@ export const ProjectServiceAPITokenRevokeRequest = {
   ): ProjectServiceAPITokenRevokeRequest {
     const message = createBaseProjectServiceAPITokenRevokeRequest();
     message.name = object.name ?? "";
-    message.projectName = object.projectName ?? "";
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
     return message;
   },
 };
@@ -417,13 +542,13 @@ export const ProjectServiceAPITokenRevokeResponse = {
 };
 
 function createBaseProjectServiceAPITokenListRequest(): ProjectServiceAPITokenListRequest {
-  return { projectName: "", includeRevoked: false };
+  return { projectReference: undefined, includeRevoked: false };
 }
 
 export const ProjectServiceAPITokenListRequest = {
   encode(message: ProjectServiceAPITokenListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.projectName !== "") {
-      writer.uint32(10).string(message.projectName);
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
     }
     if (message.includeRevoked === true) {
       writer.uint32(16).bool(message.includeRevoked);
@@ -443,7 +568,7 @@ export const ProjectServiceAPITokenListRequest = {
             break;
           }
 
-          message.projectName = reader.string();
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 16) {
@@ -463,14 +588,19 @@ export const ProjectServiceAPITokenListRequest = {
 
   fromJSON(object: any): ProjectServiceAPITokenListRequest {
     return {
-      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
       includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
     };
   },
 
   toJSON(message: ProjectServiceAPITokenListRequest): unknown {
     const obj: any = {};
-    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
     message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
     return obj;
   },
@@ -485,7 +615,9 @@ export const ProjectServiceAPITokenListRequest = {
     object: I,
   ): ProjectServiceAPITokenListRequest {
     const message = createBaseProjectServiceAPITokenListRequest();
-    message.projectName = object.projectName ?? "";
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
     message.includeRevoked = object.includeRevoked ?? false;
     return message;
   },
@@ -555,6 +687,618 @@ export const ProjectServiceAPITokenListResponse = {
   },
 };
 
+function createBaseProjectServiceListMembersRequest(): ProjectServiceListMembersRequest {
+  return { projectReference: undefined, pagination: undefined };
+}
+
+export const ProjectServiceListMembersRequest = {
+  encode(message: ProjectServiceListMembersRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListMembersRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListMembersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListMembersRequest {
+    return {
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectServiceListMembersRequest): unknown {
+    const obj: any = {};
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListMembersRequest>, I>>(
+    base?: I,
+  ): ProjectServiceListMembersRequest {
+    return ProjectServiceListMembersRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListMembersRequest>, I>>(
+    object: I,
+  ): ProjectServiceListMembersRequest {
+    const message = createBaseProjectServiceListMembersRequest();
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectServiceListMembersResponse(): ProjectServiceListMembersResponse {
+  return { members: [], pagination: undefined };
+}
+
+export const ProjectServiceListMembersResponse = {
+  encode(message: ProjectServiceListMembersResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.members) {
+      ProjectMember.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListMembersResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListMembersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.members.push(ProjectMember.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListMembersResponse {
+    return {
+      members: Array.isArray(object?.members) ? object.members.map((e: any) => ProjectMember.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectServiceListMembersResponse): unknown {
+    const obj: any = {};
+    if (message.members) {
+      obj.members = message.members.map((e) => e ? ProjectMember.toJSON(e) : undefined);
+    } else {
+      obj.members = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListMembersResponse>, I>>(
+    base?: I,
+  ): ProjectServiceListMembersResponse {
+    return ProjectServiceListMembersResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListMembersResponse>, I>>(
+    object: I,
+  ): ProjectServiceListMembersResponse {
+    const message = createBaseProjectServiceListMembersResponse();
+    message.members = object.members?.map((e) => ProjectMember.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectMember(): ProjectMember {
+  return { user: undefined, group: undefined, role: 0, createdAt: undefined, updatedAt: undefined };
+}
+
+export const ProjectMember = {
+  encode(message: ProjectMember, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.group !== undefined) {
+      Group.encode(message.group, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.role !== 0) {
+      writer.uint32(24).int32(message.role);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectMember {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectMember();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.user = User.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.group = Group.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectMember {
+    return {
+      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
+      group: isSet(object.group) ? Group.fromJSON(object.group) : undefined,
+      role: isSet(object.role) ? projectMemberRoleFromJSON(object.role) : 0,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectMember): unknown {
+    const obj: any = {};
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    message.group !== undefined && (obj.group = message.group ? Group.toJSON(message.group) : undefined);
+    message.role !== undefined && (obj.role = projectMemberRoleToJSON(message.role));
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectMember>, I>>(base?: I): ProjectMember {
+    return ProjectMember.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectMember>, I>>(object: I): ProjectMember {
+    const message = createBaseProjectMember();
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
+    message.group = (object.group !== undefined && object.group !== null) ? Group.fromPartial(object.group) : undefined;
+    message.role = object.role ?? 0;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseProjectServiceAddMemberRequest(): ProjectServiceAddMemberRequest {
+  return { projectReference: undefined, memberReference: undefined, role: 0 };
+}
+
+export const ProjectServiceAddMemberRequest = {
+  encode(message: ProjectServiceAddMemberRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.memberReference !== undefined) {
+      ProjectMembershipReference.encode(message.memberReference, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.role !== 0) {
+      writer.uint32(24).int32(message.role);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAddMemberRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceAddMemberRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.memberReference = ProjectMembershipReference.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceAddMemberRequest {
+    return {
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
+      memberReference: isSet(object.memberReference)
+        ? ProjectMembershipReference.fromJSON(object.memberReference)
+        : undefined,
+      role: isSet(object.role) ? projectMemberRoleFromJSON(object.role) : 0,
+    };
+  },
+
+  toJSON(message: ProjectServiceAddMemberRequest): unknown {
+    const obj: any = {};
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
+    message.memberReference !== undefined && (obj.memberReference = message.memberReference
+      ? ProjectMembershipReference.toJSON(message.memberReference)
+      : undefined);
+    message.role !== undefined && (obj.role = projectMemberRoleToJSON(message.role));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceAddMemberRequest>, I>>(base?: I): ProjectServiceAddMemberRequest {
+    return ProjectServiceAddMemberRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAddMemberRequest>, I>>(
+    object: I,
+  ): ProjectServiceAddMemberRequest {
+    const message = createBaseProjectServiceAddMemberRequest();
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
+    message.memberReference = (object.memberReference !== undefined && object.memberReference !== null)
+      ? ProjectMembershipReference.fromPartial(object.memberReference)
+      : undefined;
+    message.role = object.role ?? 0;
+    return message;
+  },
+};
+
+function createBaseProjectServiceAddMemberResponse(): ProjectServiceAddMemberResponse {
+  return {};
+}
+
+export const ProjectServiceAddMemberResponse = {
+  encode(_: ProjectServiceAddMemberResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAddMemberResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceAddMemberResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ProjectServiceAddMemberResponse {
+    return {};
+  },
+
+  toJSON(_: ProjectServiceAddMemberResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceAddMemberResponse>, I>>(base?: I): ProjectServiceAddMemberResponse {
+    return ProjectServiceAddMemberResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceAddMemberResponse>, I>>(_: I): ProjectServiceAddMemberResponse {
+    const message = createBaseProjectServiceAddMemberResponse();
+    return message;
+  },
+};
+
+function createBaseProjectServiceRemoveMemberRequest(): ProjectServiceRemoveMemberRequest {
+  return { projectReference: undefined, memberReference: undefined };
+}
+
+export const ProjectServiceRemoveMemberRequest = {
+  encode(message: ProjectServiceRemoveMemberRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.memberReference !== undefined) {
+      ProjectMembershipReference.encode(message.memberReference, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceRemoveMemberRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceRemoveMemberRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.memberReference = ProjectMembershipReference.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceRemoveMemberRequest {
+    return {
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
+      memberReference: isSet(object.memberReference)
+        ? ProjectMembershipReference.fromJSON(object.memberReference)
+        : undefined,
+    };
+  },
+
+  toJSON(message: ProjectServiceRemoveMemberRequest): unknown {
+    const obj: any = {};
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
+    message.memberReference !== undefined && (obj.memberReference = message.memberReference
+      ? ProjectMembershipReference.toJSON(message.memberReference)
+      : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceRemoveMemberRequest>, I>>(
+    base?: I,
+  ): ProjectServiceRemoveMemberRequest {
+    return ProjectServiceRemoveMemberRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceRemoveMemberRequest>, I>>(
+    object: I,
+  ): ProjectServiceRemoveMemberRequest {
+    const message = createBaseProjectServiceRemoveMemberRequest();
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
+    message.memberReference = (object.memberReference !== undefined && object.memberReference !== null)
+      ? ProjectMembershipReference.fromPartial(object.memberReference)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectServiceRemoveMemberResponse(): ProjectServiceRemoveMemberResponse {
+  return {};
+}
+
+export const ProjectServiceRemoveMemberResponse = {
+  encode(_: ProjectServiceRemoveMemberResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceRemoveMemberResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceRemoveMemberResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ProjectServiceRemoveMemberResponse {
+    return {};
+  },
+
+  toJSON(_: ProjectServiceRemoveMemberResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceRemoveMemberResponse>, I>>(
+    base?: I,
+  ): ProjectServiceRemoveMemberResponse {
+    return ProjectServiceRemoveMemberResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceRemoveMemberResponse>, I>>(
+    _: I,
+  ): ProjectServiceRemoveMemberResponse {
+    const message = createBaseProjectServiceRemoveMemberResponse();
+    return message;
+  },
+};
+
+function createBaseProjectMembershipReference(): ProjectMembershipReference {
+  return { userEmail: undefined };
+}
+
+export const ProjectMembershipReference = {
+  encode(message: ProjectMembershipReference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.userEmail !== undefined) {
+      writer.uint32(26).string(message.userEmail);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectMembershipReference {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectMembershipReference();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.userEmail = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectMembershipReference {
+    return { userEmail: isSet(object.userEmail) ? String(object.userEmail) : undefined };
+  },
+
+  toJSON(message: ProjectMembershipReference): unknown {
+    const obj: any = {};
+    message.userEmail !== undefined && (obj.userEmail = message.userEmail);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectMembershipReference>, I>>(base?: I): ProjectMembershipReference {
+    return ProjectMembershipReference.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectMembershipReference>, I>>(object: I): ProjectMembershipReference {
+    const message = createBaseProjectMembershipReference();
+    message.userEmail = object.userEmail ?? undefined;
+    return message;
+  },
+};
+
 export interface ProjectService {
   /** Project level API tokens */
   APITokenCreate(
@@ -569,6 +1313,19 @@ export interface ProjectService {
     request: DeepPartial<ProjectServiceAPITokenRevokeRequest>,
     metadata?: grpc.Metadata,
   ): Promise<ProjectServiceAPITokenRevokeResponse>;
+  /** Project membership management */
+  ListMembers(
+    request: DeepPartial<ProjectServiceListMembersRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceListMembersResponse>;
+  AddMember(
+    request: DeepPartial<ProjectServiceAddMemberRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceAddMemberResponse>;
+  RemoveMember(
+    request: DeepPartial<ProjectServiceRemoveMemberRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceRemoveMemberResponse>;
 }
 
 export class ProjectServiceClientImpl implements ProjectService {
@@ -579,6 +1336,9 @@ export class ProjectServiceClientImpl implements ProjectService {
     this.APITokenCreate = this.APITokenCreate.bind(this);
     this.APITokenList = this.APITokenList.bind(this);
     this.APITokenRevoke = this.APITokenRevoke.bind(this);
+    this.ListMembers = this.ListMembers.bind(this);
+    this.AddMember = this.AddMember.bind(this);
+    this.RemoveMember = this.RemoveMember.bind(this);
   }
 
   APITokenCreate(
@@ -610,6 +1370,35 @@ export class ProjectServiceClientImpl implements ProjectService {
     return this.rpc.unary(
       ProjectServiceAPITokenRevokeDesc,
       ProjectServiceAPITokenRevokeRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  ListMembers(
+    request: DeepPartial<ProjectServiceListMembersRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceListMembersResponse> {
+    return this.rpc.unary(
+      ProjectServiceListMembersDesc,
+      ProjectServiceListMembersRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  AddMember(
+    request: DeepPartial<ProjectServiceAddMemberRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceAddMemberResponse> {
+    return this.rpc.unary(ProjectServiceAddMemberDesc, ProjectServiceAddMemberRequest.fromPartial(request), metadata);
+  }
+
+  RemoveMember(
+    request: DeepPartial<ProjectServiceRemoveMemberRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceRemoveMemberResponse> {
+    return this.rpc.unary(
+      ProjectServiceRemoveMemberDesc,
+      ProjectServiceRemoveMemberRequest.fromPartial(request),
       metadata,
     );
   }
@@ -676,6 +1465,75 @@ export const ProjectServiceAPITokenRevokeDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = ProjectServiceAPITokenRevokeResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ProjectServiceListMembersDesc: UnaryMethodDefinitionish = {
+  methodName: "ListMembers",
+  service: ProjectServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ProjectServiceListMembersRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ProjectServiceListMembersResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ProjectServiceAddMemberDesc: UnaryMethodDefinitionish = {
+  methodName: "AddMember",
+  service: ProjectServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ProjectServiceAddMemberRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ProjectServiceAddMemberResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ProjectServiceRemoveMemberDesc: UnaryMethodDefinitionish = {
+  methodName: "RemoveMember",
+  service: ProjectServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ProjectServiceRemoveMemberRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ProjectServiceRemoveMemberResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -783,6 +1641,28 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

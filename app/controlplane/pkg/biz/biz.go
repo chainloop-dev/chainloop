@@ -118,14 +118,6 @@ func ValidateVersion(version string) error {
 	return nil
 }
 
-// EntityRef is a reference to an entity
-type EntityRef struct {
-	// ID is the unique identifier of the entity
-	ID string
-	// Name is the name of the entity
-	Name string
-}
-
 func ToPtr[T any](v T) *T {
 	return &v
 }

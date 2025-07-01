@@ -1,0 +1,17 @@
+{
+  "ActionType": "ProjectMemberRemoved",
+  "TargetType": "Project",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "API_TOKEN",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "API Token 1089bb36-e27b-428b-8009-d015c8737c54 has removed user test@example.com from the project test-project",
+  "Info": {
+    "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "project_name": "test-project",
+    "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
+    "user_email": "test@example.com"
+  },
+  "Digest": "sha256:a558a075d42485114110e15e9f0bfd5effd80b7ba03b691501f709ee032f027a"
+}
