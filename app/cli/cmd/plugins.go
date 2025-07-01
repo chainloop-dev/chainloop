@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -26,7 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -58,7 +57,7 @@ func newPluginCmd() *cobra.Command {
 	return cmd
 }
 
-func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo *plugins.PluginCommandInfo) *cobra.Command {
+func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo *plugins.PluginCommandInfo) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   cmdInfo.Name,
 		Short: cmdInfo.Description,
@@ -94,53 +93,22 @@ func createPluginCommand(rootCmd *cobra.Command, plugin *plugins.LoadedPlugin, c
 
 			}
 
-			// Helper function to get the appropriate string representation of a flag value
-			getFlagValue := func(f *pflag.Flag) (string, error) {
-				switch v := f.Value.(type) {
-				case pflag.SliceValue:
-					return "", fmt.Errorf("slice value for plugin flags is not supported")
-				case pflag.Value:
-					strVal := v.String()
-					// If the string representation is empty but the flag was set,
-					// it might be a boolean flag that was set without a value
-					if strVal == "" && f.Changed && f.Value.Type() == "bool" {
-						return "true", nil
-					}
-					return strVal, nil
-				default:
-					return f.Value.String(), nil
-				}
-			}
-
-			// Collect all persistent flags that were set and check for errors during flags processing
-			var flagErrors []error
-			rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
-				value, err := getFlagValue(f)
-				if err != nil {
-					flagErrors = append(flagErrors, fmt.Errorf("invalid flag %s: %w", f.Name, err))
-					return
-				}
-
-				flags[f.Name] = &plugins.SimpleFlag{
-					Name:        f.Name,
-					Shorthand:   f.Shorthand,
-					Usage:       f.Usage,
-					Value:       value,
-					DefValue:    f.DefValue,
-					Changed:     f.Changed,
-					NoOptDefVal: f.NoOptDefVal,
-				}
-			})
-
-			if len(flagErrors) > 0 {
-				return fmt.Errorf("failed to process flags: %v", errors.Join(flagErrors...))
+			// instead of processing the persistent flags, we try to get them directly from viper
+			cliConfig := plugins.ChainloopConfig{
+				ControlPlaneAPI: viper.GetString(confOptions.controlplaneAPI.viperKey),
+				ControlPlaneCA:  viper.GetString(confOptions.controlplaneCA.viperKey),
+				CASAPI:          viper.GetString(confOptions.CASAPI.viperKey),
+				CASCA:           viper.GetString(confOptions.CASCA.viperKey),
+				Organization:    viper.GetString(confOptions.organization.viperKey),
+				Token:           viper.GetString(confOptions.authToken.viperKey),
 			}
 
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginExecConfig{
-				Command: cmdInfo.Name,
-				Args:    args,
-				Flags:   flags,
+				Command:         cmdInfo.Name,
+				Args:            args,
+				Flags:           flags,
+				ChainloopConfig: cliConfig,
 			}
 
 			// execute plugin command using the action pattern

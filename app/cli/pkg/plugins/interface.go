@@ -62,9 +62,10 @@ type FlagInfo struct {
 
 // PluginExecConfig is the configuration for a plugin command execution.
 type PluginExecConfig struct {
-	Command string
-	Args    []string
-	Flags   map[string]*SimpleFlag
+	Command         string
+	Args            []string
+	Flags           map[string]*SimpleFlag
+	ChainloopConfig ChainloopConfig
 }
 
 type SimpleFlag struct {
@@ -75,4 +76,13 @@ type SimpleFlag struct {
 	DefValue    string
 	Changed     bool
 	NoOptDefVal string
+}
+
+type ChainloopConfig struct {
+	ControlPlaneAPI string
+	ControlPlaneCA  string
+	CASAPI          string
+	CASCA           string
+	Organization    string
+	Token           string
 }
