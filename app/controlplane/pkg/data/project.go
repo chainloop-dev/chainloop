@@ -142,8 +142,7 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 			u, uErr := r.data.DB.User.Get(ctx, m.MemberID)
 			if uErr != nil {
 				if ent.IsNotFound(uErr) {
-					r.log.Warnf("user not found for membership: %s", m.MemberID)
-					continue
+					return nil, 0, biz.NewErrNotFound("user")
 				}
 				return nil, 0, fmt.Errorf("failed to find user: %w", uErr)
 			}
@@ -153,8 +152,7 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 			g, gErr := r.data.DB.Group.Get(ctx, m.MemberID)
 			if gErr != nil {
 				if ent.IsNotFound(gErr) {
-					r.log.Warnf("group not found for membership: %s", m.MemberID)
-					continue
+					return nil, 0, biz.NewErrNotFound("group")
 				}
 				return nil, 0, fmt.Errorf("failed to find group: %w", gErr)
 			}
