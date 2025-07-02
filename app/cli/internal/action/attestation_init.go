@@ -113,10 +113,17 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
 			// TODO: validate locally before doing the query
 			if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
+				// Check if it is a valid file or URL before trying to create it
+				_, err := loadFileOrURL(contractRef)
+				if err != nil {
+					return "", fmt.Errorf("the contract with name %q was not found in the service", contractRef)
+				}
+
 				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
 				if err != nil {
 					return "", err
 				}
+
 				contractRef = createResp.Name
 			}
 		}
