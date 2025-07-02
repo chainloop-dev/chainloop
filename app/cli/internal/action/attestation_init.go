@@ -116,7 +116,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 				// Check if it is a valid file or URL before trying to create it
 				_, err := loadFileOrURL(contractRef)
 				if err != nil {
-					return "", fmt.Errorf("the contract with name %q was not found in the service", contractRef)
+					return "", fmt.Errorf("%q is not an existing contract name nor references a valid contract file or URL", contractRef)
 				}
 
 				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
