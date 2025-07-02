@@ -336,9 +336,9 @@ func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uui
 	// Process based on whether we're removing a user or a group
 	if opts.UserEmail != "" {
 		return uc.removeUserFromProject(ctx, orgID, resolvedProjectID, existingProject, opts)
-	} else {
-		return uc.removeGroupFromProject(ctx, orgID, resolvedProjectID, existingProject, opts)
 	}
+
+	return uc.removeGroupFromProject(ctx, orgID, resolvedProjectID, existingProject, opts)
 }
 
 // removeUserFromProject removes a user from a project and logs the action.

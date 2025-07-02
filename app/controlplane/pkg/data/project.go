@@ -248,7 +248,8 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, p
 		UpdatedAt:      &m.UpdatedAt,
 	}
 
-	if membershipType == authz.MembershipTypeUser {
+	switch membershipType {
+	case authz.MembershipTypeUser:
 		// Fetch the user details for user memberships
 		u, err := r.data.DB.User.Get(ctx, memberID)
 		if err != nil {
@@ -258,7 +259,7 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, p
 			return nil, fmt.Errorf("failed to find user: %w", err)
 		}
 		projectMembership.User = entUserToBizUser(u)
-	} else if membershipType == authz.MembershipTypeGroup {
+	case authz.MembershipTypeGroup:
 		// Fetch the group details for group memberships
 		g, err := r.data.DB.Group.Get(ctx, memberID)
 		if err != nil {
