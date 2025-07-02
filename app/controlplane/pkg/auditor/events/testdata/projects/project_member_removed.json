@@ -6,7 +6,7 @@
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "john@cyberdyne.io",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "john@cyberdyne.io has removed user test@example.com from the project test-project",
+  "Description": "john@cyberdyne.io has removed user 'test@example.com' from the project 'test-project'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",
