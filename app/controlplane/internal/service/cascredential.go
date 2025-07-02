@@ -128,11 +128,9 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 
 		if mapping != nil {
 			backend = mapping.CASBackend
-		} else {
+		} else if currentAuthzSubject == string(authz.RoleAdmin) || currentAuthzSubject == string(authz.RoleOwner) {
 			// fallback to default mapping for admins
-			if currentAuthzSubject == string(authz.RoleAdmin) || currentAuthzSubject == string(authz.RoleOwner) {
-				backend = defaultBackend
-			}
+			backend = defaultBackend
 		}
 	case casJWT.Uploader:
 		backend = defaultBackend
