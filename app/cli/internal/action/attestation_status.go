@@ -59,6 +59,8 @@ type AttestationStatusResult struct {
 	TimestampAuthority          string                          `json:"timestamp_authority"`
 	// This might only be set if the attestation is pushed
 	Digest string `json:"digest"`
+	// This is the human readable output of the attestation status
+	TerminalOutput []byte `json:"terminal_output"`
 }
 
 type AttestationResultRunnerContext struct {

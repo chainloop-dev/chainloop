@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,8 +101,12 @@ func encodeJSONToWriter(v interface{}, w io.Writer) error {
 }
 
 func newTableWriter() table.Writer {
+	return newTableWriterWithWriter(os.Stdout)
+}
+
+func newTableWriterWithWriter(w io.Writer) table.Writer {
 	tw := table.NewWriter()
 	tw.SetStyle(table.StyleLight)
-	tw.SetOutputMirror(os.Stdout)
+	tw.SetOutputMirror(w)
 	return tw
 }
