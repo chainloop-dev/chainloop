@@ -221,6 +221,7 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowRunRead,
 
 		PolicyArtifactDownload,
+		PolicyArtifactUpload,
 
 		PolicyCASBackendList,
 
