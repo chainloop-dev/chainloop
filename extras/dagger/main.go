@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"main/internal/dagger"
@@ -511,68 +510,4 @@ func (m *Chainloop) WorkflowCreate(
 			"--skip-if-exists", fmt.Sprintf("%t", skipIfExists),
 		}, execOpts).
 		Stdout(ctx)
-}
-
-type AttestationResult struct {
-	AttestationID       string
-	Digest              string
-	Statement           string
-	Bundle              string
-	HasPolicyViolations bool
-}
-
-func (m *Chainloop) AttestationResult(
-	ctx context.Context,
-	// Chainloop API token
-	token *dagger.Secret,
-	// Attestation ID
-	id string,
-) (*AttestationResult, error) {
-	var err error
-	info, err := cliContainer(0, token, m.Instance).
-		WithExec([]string{
-			"workflow", "run", "describe",
-			"--id", id,
-			"--output", "json",
-		}, execOpts).
-		Stdout(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp struct {
-		Attestation struct {
-			Digest   string
-			Envelope struct {
-				Payload string
-			}
-			Bundle                 string
-			PolicyEvaluationStatus struct {
-				HasViolations bool
-			}
-		}
-	}
-
-	if err := json.Unmarshal([]byte(info), &resp); err != nil {
-		return nil, err
-	}
-
-	attestation := resp.Attestation
-	statement, err := base64.StdEncoding.DecodeString(attestation.Envelope.Payload)
-	if err != nil {
-		return nil, err
-	}
-
-	bundle, err := base64.StdEncoding.DecodeString(attestation.Bundle)
-	if err != nil {
-		return nil, err
-	}
-
-	return &AttestationResult{
-		AttestationID:       id,
-		Digest:              attestation.Digest,
-		Statement:           string(statement),
-		Bundle:              string(bundle),
-		HasPolicyViolations: attestation.PolicyEvaluationStatus.HasViolations,
-	}, nil
 }
