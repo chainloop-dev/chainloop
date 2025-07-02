@@ -390,6 +390,13 @@ func (att *Attestation) Container(
 	return ctr
 }
 
+type OutputFormat string
+
+const (
+	OutputFormatTable OutputFormat = "table"
+	OutputFormatJSON  OutputFormat = "json"
+)
+
 // Generate, sign and push the attestation to the chainloop control plane
 func (att *Attestation) Push(
 	ctx context.Context,
@@ -402,11 +409,15 @@ func (att *Attestation) Push(
 	// Whether not fail if the policy check fails
 	// +optional
 	exceptionBypassPolicyCheck *bool,
+	// Output format
+	// +default="table"
+	format OutputFormat,
 ) (string, error) {
 	container := att.Container(0)
 	args := []string{
 		"attestation", "push",
 		"--attestation-id", att.AttestationID,
+		"--output", string(format),
 	}
 
 	if key != nil {
