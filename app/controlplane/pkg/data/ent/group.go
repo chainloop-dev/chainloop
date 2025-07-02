@@ -31,6 +31,8 @@ type Group struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// MemberCount holds the value of the "member_count" field.
+	MemberCount int `json:"member_count,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -84,6 +86,8 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case group.FieldMemberCount:
+			values[i] = new(sql.NullInt64)
 		case group.FieldName, group.FieldDescription:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt, group.FieldDeletedAt:
@@ -146,6 +150,12 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
 				gr.DeletedAt = value.Time
+			}
+		case group.FieldMemberCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field member_count", values[i])
+			} else if value.Valid {
+				gr.MemberCount = int(value.Int64)
 			}
 		default:
 			gr.selectValues.Set(columns[i], values[i])
@@ -215,6 +225,9 @@ func (gr *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(gr.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("member_count=")
+	builder.WriteString(fmt.Sprintf("%v", gr.MemberCount))
 	builder.WriteByte(')')
 	return builder.String()
 }

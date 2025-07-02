@@ -380,6 +380,7 @@ func bizGroupToPb(gr *biz.Group) *pb.Group {
 		Id:          gr.ID.String(),
 		Name:        gr.Name,
 		Description: gr.Description,
+		MemberCount: int32(gr.MemberCount),
 		CreatedAt:   timestamppb.New(*gr.CreatedAt),
 		UpdatedAt:   timestamppb.New(*gr.UpdatedAt),
 	}

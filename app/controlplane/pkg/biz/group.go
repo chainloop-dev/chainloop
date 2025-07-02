@@ -72,6 +72,8 @@ type Group struct {
 	Description string
 	// Members is a list of group memberships, which includes the users who are members of the group.
 	Members []*GroupMembership
+	// MemberCount is the total number of members in the group.
+	MemberCount int
 	// Organization is the organization to which the group belongs.
 	Organization *Organization
 	// CreatedAt is the timestamp when the group was created.

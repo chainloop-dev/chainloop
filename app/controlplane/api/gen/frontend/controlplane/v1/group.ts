@@ -148,6 +148,8 @@ export interface Group {
   description: string;
   /** UUID of the organization that this group belongs to */
   organizationId: string;
+  /** Count of members in the group */
+  memberCount: number;
   /** Timestamp when the group was created */
   createdAt?: Date;
   /** Timestamp when the group was last modified */
@@ -1277,7 +1279,15 @@ export const GroupServiceRemoveMemberResponse = {
 };
 
 function createBaseGroup(): Group {
-  return { id: "", name: "", description: "", organizationId: "", createdAt: undefined, updatedAt: undefined };
+  return {
+    id: "",
+    name: "",
+    description: "",
+    organizationId: "",
+    memberCount: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
 }
 
 export const Group = {
@@ -1294,11 +1304,14 @@ export const Group = {
     if (message.organizationId !== "") {
       writer.uint32(34).string(message.organizationId);
     }
+    if (message.memberCount !== 0) {
+      writer.uint32(40).int32(message.memberCount);
+    }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(50).fork()).ldelim();
     }
     if (message.updatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -1339,14 +1352,21 @@ export const Group = {
           message.organizationId = reader.string();
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.memberCount = reader.int32();
+          continue;
+        case 6:
+          if (tag !== 50) {
             break;
           }
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
-        case 6:
-          if (tag !== 50) {
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -1367,6 +1387,7 @@ export const Group = {
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
+      memberCount: isSet(object.memberCount) ? Number(object.memberCount) : 0,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
     };
@@ -1378,6 +1399,7 @@ export const Group = {
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.organizationId !== undefined && (obj.organizationId = message.organizationId);
+    message.memberCount !== undefined && (obj.memberCount = Math.round(message.memberCount));
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     return obj;
@@ -1393,6 +1415,7 @@ export const Group = {
     message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.organizationId = object.organizationId ?? "";
+    message.memberCount = object.memberCount ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;

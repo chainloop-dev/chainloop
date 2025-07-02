@@ -27,6 +27,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldMemberCount holds the string denoting the member_count field in the database.
+	FieldMemberCount = "member_count"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -65,6 +67,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldDeletedAt,
+	FieldMemberCount,
 }
 
 var (
@@ -90,6 +93,8 @@ var (
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
+	// DefaultMemberCount holds the default value on creation for the "member_count" field.
+	DefaultMemberCount int
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -130,6 +135,11 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByMemberCount orders the results by the member_count field.
+func ByMemberCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMemberCount, opts...).ToFunc()
 }
 
 // ByMembersCount orders the results by members count.
