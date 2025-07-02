@@ -181,6 +181,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "member_count", Type: field.TypeInt, Default: 0},
 		{Name: "organization_id", Type: field.TypeUUID},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
@@ -191,7 +192,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "groups_organizations_groups",
-				Columns:    []*schema.Column{GroupsColumns[6]},
+				Columns:    []*schema.Column{GroupsColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -200,7 +201,7 @@ var (
 			{
 				Name:    "group_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{GroupsColumns[1], GroupsColumns[6]},
+				Columns: []*schema.Column{GroupsColumns[1], GroupsColumns[7]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

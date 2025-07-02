@@ -103,6 +103,10 @@ func init() {
 	groupDescUpdatedAt := groupFields[5].Descriptor()
 	// group.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	group.DefaultUpdatedAt = groupDescUpdatedAt.Default.(func() time.Time)
+	// groupDescMemberCount is the schema descriptor for member_count field.
+	groupDescMemberCount := groupFields[7].Descriptor()
+	// group.DefaultMemberCount holds the default value on creation for the member_count field.
+	group.DefaultMemberCount = groupDescMemberCount.Default.(int)
 	// groupDescID is the schema descriptor for id field.
 	groupDescID := groupFields[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.

@@ -95,6 +95,20 @@ func (gc *GroupCreate) SetNillableDeletedAt(t *time.Time) *GroupCreate {
 	return gc
 }
 
+// SetMemberCount sets the "member_count" field.
+func (gc *GroupCreate) SetMemberCount(i int) *GroupCreate {
+	gc.mutation.SetMemberCount(i)
+	return gc
+}
+
+// SetNillableMemberCount sets the "member_count" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableMemberCount(i *int) *GroupCreate {
+	if i != nil {
+		gc.SetMemberCount(*i)
+	}
+	return gc
+}
+
 // SetID sets the "id" field.
 func (gc *GroupCreate) SetID(u uuid.UUID) *GroupCreate {
 	gc.mutation.SetID(u)
@@ -187,6 +201,10 @@ func (gc *GroupCreate) defaults() {
 		v := group.DefaultUpdatedAt()
 		gc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := gc.mutation.MemberCount(); !ok {
+		v := group.DefaultMemberCount
+		gc.mutation.SetMemberCount(v)
+	}
 	if _, ok := gc.mutation.ID(); !ok {
 		v := group.DefaultID()
 		gc.mutation.SetID(v)
@@ -211,6 +229,9 @@ func (gc *GroupCreate) check() error {
 	}
 	if _, ok := gc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Group.updated_at"`)}
+	}
+	if _, ok := gc.mutation.MemberCount(); !ok {
+		return &ValidationError{Name: "member_count", err: errors.New(`ent: missing required field "Group.member_count"`)}
 	}
 	if len(gc.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Group.organization"`)}
@@ -270,6 +291,10 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := gc.mutation.DeletedAt(); ok {
 		_spec.SetField(group.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
+	}
+	if value, ok := gc.mutation.MemberCount(); ok {
+		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
+		_node.MemberCount = value
 	}
 	if nodes := gc.mutation.MembersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -451,6 +476,24 @@ func (u *GroupUpsert) ClearDeletedAt() *GroupUpsert {
 	return u
 }
 
+// SetMemberCount sets the "member_count" field.
+func (u *GroupUpsert) SetMemberCount(v int) *GroupUpsert {
+	u.Set(group.FieldMemberCount, v)
+	return u
+}
+
+// UpdateMemberCount sets the "member_count" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateMemberCount() *GroupUpsert {
+	u.SetExcluded(group.FieldMemberCount)
+	return u
+}
+
+// AddMemberCount adds v to the "member_count" field.
+func (u *GroupUpsert) AddMemberCount(v int) *GroupUpsert {
+	u.Add(group.FieldMemberCount, v)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -583,6 +626,27 @@ func (u *GroupUpsertOne) UpdateDeletedAt() *GroupUpsertOne {
 func (u *GroupUpsertOne) ClearDeletedAt() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.ClearDeletedAt()
+	})
+}
+
+// SetMemberCount sets the "member_count" field.
+func (u *GroupUpsertOne) SetMemberCount(v int) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetMemberCount(v)
+	})
+}
+
+// AddMemberCount adds v to the "member_count" field.
+func (u *GroupUpsertOne) AddMemberCount(v int) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddMemberCount(v)
+	})
+}
+
+// UpdateMemberCount sets the "member_count" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateMemberCount() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateMemberCount()
 	})
 }
 
@@ -885,6 +949,27 @@ func (u *GroupUpsertBulk) UpdateDeletedAt() *GroupUpsertBulk {
 func (u *GroupUpsertBulk) ClearDeletedAt() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.ClearDeletedAt()
+	})
+}
+
+// SetMemberCount sets the "member_count" field.
+func (u *GroupUpsertBulk) SetMemberCount(v int) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetMemberCount(v)
+	})
+}
+
+// AddMemberCount adds v to the "member_count" field.
+func (u *GroupUpsertBulk) AddMemberCount(v int) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddMemberCount(v)
+	})
+}
+
+// UpdateMemberCount sets the "member_count" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateMemberCount() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateMemberCount()
 	})
 }
 

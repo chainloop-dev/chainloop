@@ -170,10 +170,12 @@ message Group {
   string description = 3;
   // UUID of the organization that this group belongs to
   string organization_id = 4;
+  // Count of members in the group
+  int32 member_count = 5;
   // Timestamp when the group was created
-  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp created_at = 6;
   // Timestamp when the group was last modified
-  google.protobuf.Timestamp updated_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 // GroupMember represents a user's membership within a group with their role information

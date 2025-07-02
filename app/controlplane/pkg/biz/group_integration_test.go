@@ -1043,3 +1043,106 @@ func (s *groupMembersIntegrationTestSuite) TestRemoveMemberFromGroup() {
 		s.Contains(err.Error(), "not a member of the organization")
 	})
 }
+
+// Test checking group member count
+func (s *groupMembersIntegrationTestSuite) TestGroupMemberCount() {
+	ctx := context.Background()
+
+	// Create additional users
+	user2, err := s.User.UpsertByEmail(ctx, "count-user2@example.com", nil)
+	require.NoError(s.T(), err)
+
+	user3, err := s.User.UpsertByEmail(ctx, "count-user3@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add users to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	require.NoError(s.T(), err)
+
+	// Check initial member count
+	initialGroup, err := s.Group.Get(ctx, uuid.MustParse(s.org.ID), &biz.IdentityReference{ID: &s.group.ID})
+	s.NoError(err)
+	s.NotNil(initialGroup)
+	// Initial count should be 1 (just the creator)
+	s.Equal(1, initialGroup.MemberCount, "Initial group should have 1 member (creator)")
+
+	// Add a member and check count increases
+	s.Run("member count increases when adding members", func() {
+		// Add user2 as a regular member
+		opts := &biz.AddMemberToGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   "count-user2@example.com",
+			RequesterID: uuid.MustParse(s.user.ID),
+			Maintainer:  false,
+		}
+
+		membership, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(membership)
+
+		// Check member count after adding one user
+		groupAfterAdd1, err := s.Group.Get(ctx, uuid.MustParse(s.org.ID), &biz.IdentityReference{ID: &s.group.ID})
+		s.NoError(err)
+		s.Equal(2, groupAfterAdd1.MemberCount, "Group should have 2 members after adding one")
+
+		// Add user3 as a maintainer
+		opts = &biz.AddMemberToGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   "count-user3@example.com",
+			RequesterID: uuid.MustParse(s.user.ID),
+			Maintainer:  true,
+		}
+
+		membership, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(membership)
+
+		// Check member count after adding another user
+		groupAfterAdd2, err := s.Group.Get(ctx, uuid.MustParse(s.org.ID), &biz.IdentityReference{ID: &s.group.ID})
+		s.NoError(err)
+		s.Equal(3, groupAfterAdd2.MemberCount, "Group should have 3 members after adding two")
+	})
+
+	// Remove a member and check count decreases
+	s.Run("member count decreases when removing members", func() {
+		// Remove user2
+		removeOpts := &biz.RemoveMemberFromGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   "count-user2@example.com",
+			RequesterID: uuid.MustParse(s.user.ID),
+		}
+
+		err := s.Group.RemoveMemberFromGroup(ctx, uuid.MustParse(s.org.ID), removeOpts)
+		s.NoError(err)
+
+		// Check member count after removing one user
+		groupAfterRemove1, err := s.Group.Get(ctx, uuid.MustParse(s.org.ID), &biz.IdentityReference{ID: &s.group.ID})
+		s.NoError(err)
+		s.Equal(2, groupAfterRemove1.MemberCount, "Group should have 2 members after removing one")
+
+		// Remove user3
+		removeOpts = &biz.RemoveMemberFromGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   "count-user3@example.com",
+			RequesterID: uuid.MustParse(s.user.ID),
+		}
+
+		err = s.Group.RemoveMemberFromGroup(ctx, uuid.MustParse(s.org.ID), removeOpts)
+		s.NoError(err)
+
+		// Check member count after removing another user
+		groupAfterRemove2, err := s.Group.Get(ctx, uuid.MustParse(s.org.ID), &biz.IdentityReference{ID: &s.group.ID})
+		s.NoError(err)
+		s.Equal(1, groupAfterRemove2.MemberCount, "Group should have 1 member after removing two")
+	})
+}
