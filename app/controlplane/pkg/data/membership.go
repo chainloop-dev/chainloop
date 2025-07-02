@@ -22,9 +22,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -257,6 +259,44 @@ func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([
 	return entMembershipsToBiz(mm), nil
 }
 
+// ListGroupMembershipsByUser returns all memberships of the users inherited from groups
+func (r *MembershipRepo) ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	// First query all group memberships for the user directly
+	groupMemberships, err := r.data.DB.GroupMembership.Query().Where(
+		groupmembership.UserID(userID),
+		groupmembership.DeletedAtIsNil(),
+	).All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user's group memberships: %w", err)
+	}
+
+	// Extract group IDs
+	groupIDs := make([]uuid.UUID, 0, len(groupMemberships))
+	for _, gm := range groupMemberships {
+		groupIDs = append(groupIDs, gm.GroupID)
+	}
+
+	var res []*ent.Membership
+
+	// If user belongs to groups, query those group memberships
+	if len(groupIDs) > 0 {
+		groupRoleMemberships, err := r.data.DB.Membership.Query().Where(
+			membership.MembershipTypeEQ(authz.MembershipTypeGroup),
+			membership.MemberIDIn(groupIDs...),
+		).All(ctx)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to query group role memberships: %w", err)
+		}
+
+		// Append group role memberships to the result
+		res = append(res, groupRoleMemberships...)
+	}
+
+	return entMembershipsToBiz(res), nil
+}
+
 func (r *MembershipRepo) ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*biz.Membership, error) {
 	mm, err := r.data.DB.Membership.Query().Where(
 		membership.ResourceTypeEQ(rt),
@@ -325,9 +365,15 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 		Role: m.Role,
 	}
 
+	// Deprecated branch, remove when no longer needed
 	if m.Edges.Organization != nil {
 		res.OrganizationID = m.Edges.Organization.ID
 		res.Org = entOrgToBizOrg(m.Edges.Organization)
+	}
+
+	// New branch to populate organization ID
+	if m.ResourceType == authz.ResourceTypeOrganization {
+		res.OrganizationID = m.ResourceID
 	}
 
 	if m.Edges.User != nil {

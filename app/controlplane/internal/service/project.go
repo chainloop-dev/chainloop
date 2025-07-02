@@ -214,8 +214,8 @@ func (s *ProjectService) AddMember(ctx context.Context, req *pb.ProjectServiceAd
 		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
-	// Extract the user email from the oneof MembershipReference field
-	userEmail, err := s.extractUserEmailFromMembershipReference(req.GetMemberReference())
+	// Extract the user email and group reference from the membership reference field
+	userEmail, groupReference, err := s.extractMembershipReference(req.GetMemberReference())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -227,6 +227,7 @@ func (s *ProjectService) AddMember(ctx context.Context, req *pb.ProjectServiceAd
 	opts := &biz.AddMemberToProjectOpts{
 		ProjectReference: identityRef,
 		UserEmail:        userEmail,
+		GroupReference:   groupReference,
 		RequesterID:      requesterUUID,
 		Role:             role,
 	}
@@ -278,8 +279,8 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
 	}
 
-	// Extract the user email from the oneof MembershipReference field
-	userEmail, err := s.extractUserEmailFromMembershipReference(req.GetMemberReference())
+	// Extract the user email and group reference from the membership reference field
+	userEmail, groupReference, err := s.extractMembershipReference(req.GetMemberReference())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -288,6 +289,7 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 	opts := &biz.RemoveMemberFromProjectOpts{
 		ProjectReference: identityRef,
 		UserEmail:        userEmail,
+		GroupReference:   groupReference,
 		RequesterID:      requesterUUID,
 	}
 
@@ -300,19 +302,41 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 	return &pb.ProjectServiceRemoveMemberResponse{}, nil
 }
 
-// extractUserEmailFromMembershipReference extracts the user email from a membership reference
-// Returns the user email and an error if the email is not provided or the membership reference is nil
-func (s *ProjectService) extractUserEmailFromMembershipReference(membershipRef *pb.ProjectMembershipReference) (string, error) {
+// extractMembershipReference extracts either a user email or a group reference from a membership reference
+// If both or neither are provided, returns an error
+func (s *ProjectService) extractMembershipReference(membershipRef *pb.ProjectMembershipReference) (string, *biz.IdentityReference, error) {
 	if membershipRef == nil {
-		return "", biz.NewErrValidationStr("membership reference is required")
+		return "", nil, biz.NewErrValidationStr("membership reference is required")
 	}
 
+	// Check if the membershipRef has a user email
 	userEmail := membershipRef.GetUserEmail()
-	if userEmail == "" {
-		return "", biz.NewErrValidationStr("user email is required")
+	groupRef := membershipRef.GetGroupReference()
+
+	// Validate that exactly one of user email or group reference is provided
+	if (userEmail == "" && groupRef == nil) || (userEmail != "" && groupRef != nil) {
+		return "", nil, biz.NewErrValidationStr("exactly one of user email or group reference must be provided")
 	}
 
-	return userEmail, nil
+	// If we have a user email, return it and nil for group reference
+	if userEmail != "" {
+		return userEmail, nil, nil
+	}
+
+	// Otherwise, create a new IdentityReference from the group reference
+	identityRef := &biz.IdentityReference{}
+	var err error
+
+	identityRef.ID, identityRef.Name, err = groupRef.Parse()
+	if err != nil {
+		return "", nil, errors.BadRequest("invalid_group_reference", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	if identityRef.ID == nil && identityRef.Name == nil {
+		return "", nil, biz.NewErrValidationStr("either group ID or name must be provided")
+	}
+
+	return "", identityRef, nil
 }
 
 // MapProjectMemberRoleToAuthzRole maps a ProjectMemberRole from protobuf to an authz.Role
@@ -343,10 +367,19 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 	}
 
 	pbMember := &pb.ProjectMember{
-		Subject: &pb.ProjectMember_User{
-			User: bizUserToPb(m.User),
-		},
 		Role: role,
+	}
+
+	if m.User != nil {
+		pbMember.Subject = &pb.ProjectMember_User{
+			User: bizUserToPb(m.User),
+		}
+	}
+
+	if m.Group != nil {
+		pbMember.Subject = &pb.ProjectMember_Group{
+			Group: bizGroupToPb(m.Group),
+		}
 	}
 
 	if m.CreatedAt != nil {

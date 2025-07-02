@@ -156,7 +156,11 @@ export interface ProjectServiceRemoveMemberResponse {
 /** ProjectMembershipReference is used to reference a user or group in the context of project membership */
 export interface ProjectMembershipReference {
   /** The user to add to the project */
-  userEmail?: string | undefined;
+  userEmail?:
+    | string
+    | undefined;
+  /** The group to add to the project */
+  groupReference?: IdentityReference | undefined;
 }
 
 function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
@@ -1244,13 +1248,16 @@ export const ProjectServiceRemoveMemberResponse = {
 };
 
 function createBaseProjectMembershipReference(): ProjectMembershipReference {
-  return { userEmail: undefined };
+  return { userEmail: undefined, groupReference: undefined };
 }
 
 export const ProjectMembershipReference = {
   encode(message: ProjectMembershipReference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.userEmail !== undefined) {
-      writer.uint32(26).string(message.userEmail);
+      writer.uint32(10).string(message.userEmail);
+    }
+    if (message.groupReference !== undefined) {
+      IdentityReference.encode(message.groupReference, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1262,12 +1269,19 @@ export const ProjectMembershipReference = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 3:
-          if (tag !== 26) {
+        case 1:
+          if (tag !== 10) {
             break;
           }
 
           message.userEmail = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.groupReference = IdentityReference.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1279,12 +1293,17 @@ export const ProjectMembershipReference = {
   },
 
   fromJSON(object: any): ProjectMembershipReference {
-    return { userEmail: isSet(object.userEmail) ? String(object.userEmail) : undefined };
+    return {
+      userEmail: isSet(object.userEmail) ? String(object.userEmail) : undefined,
+      groupReference: isSet(object.groupReference) ? IdentityReference.fromJSON(object.groupReference) : undefined,
+    };
   },
 
   toJSON(message: ProjectMembershipReference): unknown {
     const obj: any = {};
     message.userEmail !== undefined && (obj.userEmail = message.userEmail);
+    message.groupReference !== undefined &&
+      (obj.groupReference = message.groupReference ? IdentityReference.toJSON(message.groupReference) : undefined);
     return obj;
   },
 
@@ -1295,6 +1314,9 @@ export const ProjectMembershipReference = {
   fromPartial<I extends Exact<DeepPartial<ProjectMembershipReference>, I>>(object: I): ProjectMembershipReference {
     const message = createBaseProjectMembershipReference();
     message.userEmail = object.userEmail ?? undefined;
+    message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
+      ? IdentityReference.fromPartial(object.groupReference)
+      : undefined;
     return message;
   },
 };

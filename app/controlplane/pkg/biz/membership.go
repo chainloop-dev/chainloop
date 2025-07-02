@@ -57,6 +57,8 @@ type MembershipRepo interface {
 	// RBAC methods
 
 	ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	// ListGroupMembershipsByUser returns all memberships of the users inherited from groups
+	ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*Membership, error)
 	AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error
 }
@@ -321,9 +323,21 @@ func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, 
 
 // RBAC methods
 
-// ListAllMembershipsForUser retrieves all membership records by resource type
+// ListAllMembershipsForUser retrieves all memberships for a user, including both direct memberships and those inherited from groups
 func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error) {
-	return uc.repo.ListAllByUser(ctx, userID)
+	// First retrieve all memberships directly associated with the user
+	userMemberships, err := uc.repo.ListAllByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list memberships for user: %w", err)
+	}
+
+	// Then retrieve all group memberships for the user
+	groupMemberships, err := uc.repo.ListGroupMembershipsByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list group memberships for user: %w", err)
+	}
+
+	return append(userMemberships, groupMemberships...), nil
 }
 
 // SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
