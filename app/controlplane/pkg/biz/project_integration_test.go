@@ -34,6 +34,7 @@ import (
 // Run the tests
 func TestProjectUseCase(t *testing.T) {
 	suite.Run(t, new(projectMembersIntegrationTestSuite))
+	suite.Run(t, new(projectGroupMembersIntegrationTestSuite))
 	suite.Run(t, new(projectAdminPermissionsTestSuite))
 	suite.Run(t, new(projectPermissionsTestSuite))
 }
@@ -60,7 +61,7 @@ func (s *projectMembersIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add user to organization as an admin
-	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin))
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
 	assert.NoError(err)
 
 	// Create a project for membership tests
@@ -551,7 +552,7 @@ func (s *projectAdminPermissionsTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add user to organization as an admin
-	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin))
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
 	assert.NoError(err)
 
 	// Create a project for admin tests
@@ -574,7 +575,7 @@ func (s *projectAdminPermissionsTestSuite) TestAdminPermissions() {
 	require.NoError(s.T(), err)
 
 	// Add the user to the organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithCurrentMembership())
 	require.NoError(s.T(), err)
 
 	// Grant project admin role to the user
@@ -687,7 +688,7 @@ func (s *projectPermissionsTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add admin user to organization as an admin
-	_, err = s.Membership.Create(ctx, s.org.ID, s.adminUser.ID, biz.WithMembershipRole(authz.RoleAdmin))
+	_, err = s.Membership.Create(ctx, s.org.ID, s.adminUser.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
 	assert.NoError(err)
 
 	// Create a project admin user
@@ -695,7 +696,7 @@ func (s *projectPermissionsTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add project admin user to organization as a regular member
-	_, err = s.Membership.Create(ctx, s.org.ID, s.projectAdminUser.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, s.projectAdminUser.ID, biz.WithCurrentMembership())
 	assert.NoError(err)
 
 	// Create a regular user
@@ -998,5 +999,252 @@ func (s *projectPermissionsTestSuite) TestOrgAdminPermissions() {
 		s.NoError(err)
 		s.Equal(0, count)
 		s.Empty(members)
+	})
+}
+
+// Utility struct for project group members tests
+type projectGroupMembersIntegrationTestSuite struct {
+	testhelpers.UseCasesEachTestSuite
+	org     *biz.Organization
+	user    *biz.User
+	project *biz.Project
+	group   *biz.Group
+}
+
+func (s *projectGroupMembersIntegrationTestSuite) SetupTest() {
+	var err error
+	assert := assert.New(s.T())
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
+
+	ctx := context.Background()
+	s.org, err = s.Organization.CreateWithRandomName(ctx)
+	assert.NoError(err)
+
+	// Create a user for tests - this user will be an org admin by default
+	s.user, err = s.User.UpsertByEmail(ctx, fmt.Sprintf("group-test-user-%s@example.com", uuid.New().String()), nil)
+	assert.NoError(err)
+
+	// Add user to organization as an admin
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
+	assert.NoError(err)
+
+	// Create a project for group membership tests
+	s.project, err = s.Project.Create(ctx, s.org.ID, "test-group-members-project")
+	assert.NoError(err)
+
+	// Create a group for membership tests
+	s.group, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-group", "A test group for project membership", uuid.MustParse(s.user.ID))
+	assert.NoError(err)
+}
+
+// TearDownTest cleans up resources after each test has completed
+func (s *projectGroupMembersIntegrationTestSuite) TearDownTest() {
+	ctx := context.Background()
+	// Clean up database tables to avoid test interference
+	_, _ = s.Data.DB.Membership.Delete().Exec(ctx)
+	_, _ = s.Data.DB.Project.Delete().Exec(ctx)
+	_, _ = s.Data.DB.Group.Delete().Exec(ctx)
+	_, _ = s.Data.DB.GroupMembership.Delete().Exec(ctx)
+}
+
+// Test adding groups to projects
+func (s *projectGroupMembersIntegrationTestSuite) TestAddGroupToProject() {
+	ctx := context.Background()
+
+	// Create additional users
+	user2, err := s.User.UpsertByEmail(ctx, "group-user2@example.com", nil)
+	require.NoError(s.T(), err)
+
+	user3, err := s.User.UpsertByEmail(ctx, "group-user3@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add users to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	require.NoError(s.T(), err)
+
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{
+		ID: &projectID,
+	}
+
+	s.Run("add group to project", func() {
+		// Add the group as a member to the project
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			Role:             authz.RoleProjectViewer,
+		}
+
+		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(membership)
+		s.Equal(s.group.ID, membership.Group.ID)
+		s.Equal(authz.RoleProjectViewer, membership.Role)
+
+		// Verify the group was added by listing project members
+		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+		s.Equal(1, len(members))
+		s.Equal(1, count)
+	})
+
+	s.Run("add multiple groups to project", func() {
+		// Create and add another group
+		group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-group-2", "Another test group", uuid.MustParse(s.user.ID))
+		require.NoError(s.T(), err)
+
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &group2.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			Role:             authz.RoleProjectAdmin,
+		}
+
+		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(membership)
+		s.Equal(group2.ID, membership.Group.ID)
+		s.Equal(authz.RoleProjectAdmin, membership.Role)
+
+		// Verify both groups are members of the project
+		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+		s.Equal(2, len(members))
+		s.Equal(2, count)
+	})
+
+	s.Run("add group to project in wrong organization", func() {
+		// Create a new organization
+		org2, err := s.Organization.CreateWithRandomName(ctx)
+		require.NoError(s.T(), err)
+
+		// Attempt to add the group to a project in the wrong organization
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			Role:             authz.RoleProjectViewer,
+		}
+
+		_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(org2.ID), opts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("add group to non-existent project", func() {
+		nonExistentProjectID := uuid.New()
+		invalidRef := &biz.IdentityReference{
+			ID: &nonExistentProjectID,
+		}
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: invalidRef,
+			GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			Role:             authz.RoleProjectViewer,
+		}
+
+		_, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+}
+
+// Test removing groups from projects
+func (s *projectGroupMembersIntegrationTestSuite) TestRemoveGroupFromProject() {
+	ctx := context.Background()
+
+	// Create additional users
+	user2, err := s.User.UpsertByEmail(ctx, "remove-group-user2@example.com", nil)
+	require.NoError(s.T(), err)
+
+	user3, err := s.User.UpsertByEmail(ctx, "remove-group-user3@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add users to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	require.NoError(s.T(), err)
+
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{
+		ID: &projectID,
+	}
+
+	// Add the group to the project first
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+		RequesterID:      uuid.MustParse(s.user.ID),
+		Role:             authz.RoleProjectViewer,
+	})
+	require.NoError(s.T(), err)
+
+	s.Run("remove group from project", func() {
+		// Remove the group from the project
+		removeOpts := &biz.RemoveMemberFromProjectOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+		}
+
+		err = s.Project.RemoveMemberFromProject(ctx, uuid.MustParse(s.org.ID), removeOpts)
+		s.NoError(err)
+
+		// Verify the group was removed
+		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+		s.Equal(0, count)
+		s.Empty(members)
+	})
+
+	s.Run("try to remove non-existent group", func() {
+		// Try to remove a group that was already removed
+		randomGroupID := uuid.New()
+		removeOpts := &biz.RemoveMemberFromProjectOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &randomGroupID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+		}
+
+		err := s.Project.RemoveMemberFromProject(ctx, uuid.MustParse(s.org.ID), removeOpts)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+	})
+
+	s.Run("remove group from wrong organization", func() {
+		// Create a new organization
+		org2, err := s.Organization.CreateWithRandomName(ctx)
+		require.NoError(s.T(), err)
+
+		// Try to remove the group using the wrong org ID
+		removeOpts := &biz.RemoveMemberFromProjectOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+		}
+
+		err = s.Project.RemoveMemberFromProject(ctx, uuid.MustParse(org2.ID), removeOpts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("remove group from non-existent project", func() {
+		nonExistentProjectID := uuid.New()
+		invalidRef := &biz.IdentityReference{
+			ID: &nonExistentProjectID,
+		}
+		removeOpts := &biz.RemoveMemberFromProjectOpts{
+			ProjectReference: invalidRef,
+			GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+		}
+
+		err = s.Project.RemoveMemberFromProject(ctx, uuid.MustParse(s.org.ID), removeOpts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
 	})
 }

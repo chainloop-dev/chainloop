@@ -94,7 +94,7 @@ func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) 
 	return entProjectToBiz(pro), nil
 }
 
-// ListMembers lists all members of a project
+// ListMembers lists all members of a project (both users and groups)
 func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.ProjectMembership, int, error) {
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
@@ -105,12 +105,11 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 		return nil, 0, biz.NewErrNotFound("project")
 	}
 
-	// Build the query with base conditions
+	// Build the query with base conditions for all membership types
 	query := r.data.DB.Membership.Query().
 		Where(
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
 			membership.ResourceID(projectID),
-			membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		)
 
 	// Get total count before applying pagination
@@ -136,22 +135,42 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 	// Convert to biz.ProjectMembership objects
 	result := make([]*biz.ProjectMembership, 0, len(memberships))
 	for _, m := range memberships {
-		u, uErr := r.data.DB.User.Get(ctx, m.MemberID)
-		if uErr != nil {
-			if ent.IsNotFound(uErr) {
-				return nil, 0, biz.NewErrNotFound("user")
+		var mems *biz.ProjectMembership
+
+		if m.MembershipType == authz.MembershipTypeUser {
+			// Fetch the user details for user memberships
+			u, uErr := r.data.DB.User.Get(ctx, m.MemberID)
+			if uErr != nil {
+				if ent.IsNotFound(uErr) {
+					r.log.Warnf("user not found for membership: %s", m.MemberID)
+					continue
+				}
+				return nil, 0, fmt.Errorf("failed to find user: %w", uErr)
 			}
-			return nil, 0, fmt.Errorf("failed to find user: %w", uErr)
+			mems = entProjectMembershipToBiz(m, u, nil)
+		} else if m.MembershipType == authz.MembershipTypeGroup {
+			// Fetch the group details for group memberships
+			g, gErr := r.data.DB.Group.Get(ctx, m.MemberID)
+			if gErr != nil {
+				if ent.IsNotFound(gErr) {
+					r.log.Warnf("group not found for membership: %s", m.MemberID)
+					continue
+				}
+				return nil, 0, fmt.Errorf("failed to find group: %w", gErr)
+			}
+			mems = entProjectMembershipToBiz(m, nil, g)
 		}
 
-		result = append(result, entProjectMembershipToBiz(m, u))
+		if mems != nil {
+			result = append(result, mems)
+		}
 	}
 
 	return result, totalCount, nil
 }
 
-// AddMemberToProject adds a user to a project with a specific role
-func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, userID uuid.UUID, role authz.Role) (*biz.ProjectMembership, error) {
+// AddMemberToProject adds a user or group to a project with a specific role
+func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, role authz.Role) (*biz.ProjectMembership, error) {
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
 	if err != nil {
@@ -167,8 +186,8 @@ func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, p
 
 	// Create the membership
 	if _, err := r.data.DB.Membership.Create().
-		SetMembershipType(authz.MembershipTypeUser).
-		SetMemberID(userID).
+		SetMembershipType(membershipType).
+		SetMemberID(memberID).
 		SetResourceType(authz.ResourceTypeProject).
 		SetResourceID(projectID).
 		SetRole(role).
@@ -177,11 +196,11 @@ func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, p
 	}
 
 	// Return the created membership
-	return r.FindProjectMembershipByProjectAndID(ctx, projectID, userID)
+	return r.FindProjectMembershipByProjectAndID(ctx, projectID, memberID, membershipType)
 }
 
-// RemoveMemberFromProject removes a user from a project
-func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, userID uuid.UUID) error {
+// RemoveMemberFromProject removes a user or group from a project
+func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) error {
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
 	if err != nil {
@@ -192,13 +211,7 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 	}
 
 	// Find the membership to delete
-	m, err := r.data.DB.Membership.Query().
-		Where(
-			membership.MembershipTypeEQ(authz.MembershipTypeUser),
-			membership.MemberID(userID),
-			membership.ResourceTypeEQ(authz.ResourceTypeProject),
-			membership.ResourceID(projectID),
-		).Only(ctx)
+	m, err := r.queryMembership(projectID, memberID, membershipType).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -215,17 +228,10 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 	return nil
 }
 
-// FindProjectMembershipByProjectAndID finds a project membership by project ID and user ID
-func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, projectID uuid.UUID, userID uuid.UUID) (*biz.ProjectMembership, error) {
+// FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group)
+func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*biz.ProjectMembership, error) {
 	// Find the membership
-	m, err := r.data.DB.Membership.Query().
-		Where(
-			membership.MembershipTypeEQ(authz.MembershipTypeUser),
-			membership.MemberID(userID),
-			membership.ResourceTypeEQ(authz.ResourceTypeProject),
-			membership.ResourceID(projectID),
-		).
-		Only(ctx)
+	m, err := r.queryMembership(projectID, memberID, membershipType).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -234,15 +240,48 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, p
 		return nil, fmt.Errorf("failed to find membership: %w", err)
 	}
 
-	u, err := r.data.DB.User.Get(ctx, userID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, biz.NewErrNotFound("user")
-		}
-		return nil, fmt.Errorf("failed to find user: %w", err)
+	// Build the membership response based on the membership type
+	projectMembership := &biz.ProjectMembership{
+		MembershipType: m.MembershipType,
+		Role:           m.Role,
+		CreatedAt:      &m.CreatedAt,
+		UpdatedAt:      &m.UpdatedAt,
 	}
 
-	return entProjectMembershipToBiz(m, u), nil
+	if membershipType == authz.MembershipTypeUser {
+		// Fetch the user details for user memberships
+		u, err := r.data.DB.User.Get(ctx, memberID)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, biz.NewErrNotFound("user")
+			}
+			return nil, fmt.Errorf("failed to find user: %w", err)
+		}
+		projectMembership.User = entUserToBizUser(u)
+	} else if membershipType == authz.MembershipTypeGroup {
+		// Fetch the group details for group memberships
+		g, err := r.data.DB.Group.Get(ctx, memberID)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, biz.NewErrNotFound("group")
+			}
+			return nil, fmt.Errorf("failed to find group: %w", err)
+		}
+		projectMembership.Group = entGroupToBiz(g)
+	}
+
+	return projectMembership, nil
+}
+
+// queryMembership is a helper function to build a common membership query
+func (r *ProjectRepo) queryMembership(projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) *ent.MembershipQuery {
+	return r.data.DB.Membership.Query().
+		Where(
+			membership.MembershipTypeEQ(membershipType),
+			membership.MemberID(memberID),
+			membership.ResourceTypeEQ(authz.ResourceTypeProject),
+			membership.ResourceID(projectID),
+		)
 }
 
 // entProjectToBiz converts an ent.Project to a biz.Project
@@ -257,11 +296,22 @@ func entProjectToBiz(pro *ent.Project) *biz.Project {
 }
 
 // entProjectMembershipToBiz converts an ent.Membership to a biz.ProjectMembership
-func entProjectMembershipToBiz(m *ent.Membership, u *ent.User) *biz.ProjectMembership {
-	return &biz.ProjectMembership{
-		User:      entUserToBizUser(u),
-		Role:      m.Role,
-		CreatedAt: &m.CreatedAt,
-		UpdatedAt: &m.UpdatedAt,
+// and includes user or group details if available
+func entProjectMembershipToBiz(m *ent.Membership, u *ent.User, g *ent.Group) *biz.ProjectMembership {
+	mem := &biz.ProjectMembership{
+		MembershipType: m.MembershipType,
+		Role:           m.Role,
+		CreatedAt:      &m.CreatedAt,
+		UpdatedAt:      &m.UpdatedAt,
 	}
+
+	if u != nil {
+		mem.User = entUserToBizUser(u)
+	}
+
+	if g != nil {
+		mem.Group = entGroupToBiz(g)
+	}
+
+	return mem
 }

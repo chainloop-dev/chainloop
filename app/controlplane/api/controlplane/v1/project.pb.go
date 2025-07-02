@@ -853,6 +853,7 @@ type ProjectMembershipReference struct {
 	// Types that are assignable to MembershipReference:
 	//
 	//	*ProjectMembershipReference_UserEmail
+	//	*ProjectMembershipReference_GroupReference
 	MembershipReference isProjectMembershipReference_MembershipReference `protobuf_oneof:"membership_reference"`
 }
 
@@ -902,16 +903,31 @@ func (x *ProjectMembershipReference) GetUserEmail() string {
 	return ""
 }
 
+func (x *ProjectMembershipReference) GetGroupReference() *IdentityReference {
+	if x, ok := x.GetMembershipReference().(*ProjectMembershipReference_GroupReference); ok {
+		return x.GroupReference
+	}
+	return nil
+}
+
 type isProjectMembershipReference_MembershipReference interface {
 	isProjectMembershipReference_MembershipReference()
 }
 
 type ProjectMembershipReference_UserEmail struct {
 	// The user to add to the project
-	UserEmail string `protobuf:"bytes,3,opt,name=user_email,json=userEmail,proto3,oneof"`
+	UserEmail string `protobuf:"bytes,1,opt,name=user_email,json=userEmail,proto3,oneof"`
+}
+
+type ProjectMembershipReference_GroupReference struct {
+	// The group to add to the project
+	GroupReference *IdentityReference `protobuf:"bytes,2,opt,name=group_reference,json=groupReference,proto3,oneof"`
 }
 
 func (*ProjectMembershipReference_UserEmail) isProjectMembershipReference_MembershipReference() {}
+
+func (*ProjectMembershipReference_GroupReference) isProjectMembershipReference_MembershipReference() {
+}
 
 type ProjectServiceAPITokenCreateResponse_APITokenFull struct {
 	state         protoimpl.MessageState
@@ -1124,12 +1140,17 @@ var file_controlplane_v1_project_proto_rawDesc = []byte{
 	0x06, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x0f, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52,
 	0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x22, 0x24, 0x0a, 0x22, 0x50, 0x72, 0x6f, 0x6a,
 	0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65,
-	0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5e,
-	0x0a, 0x1a, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73,
-	0x68, 0x69, 0x70, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x28, 0x0a, 0x0a,
-	0x75, 0x73, 0x65, 0x72, 0x5f, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
-	0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x60, 0x01, 0x48, 0x00, 0x52, 0x09, 0x75, 0x73, 0x65,
-	0x72, 0x45, 0x6d, 0x61, 0x69, 0x6c, 0x42, 0x16, 0x0a, 0x14, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72,
+	0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xad,
+	0x01, 0x0a, 0x1a, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72,
+	0x73, 0x68, 0x69, 0x70, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x28, 0x0a,
+	0x0a, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x60, 0x01, 0x48, 0x00, 0x52, 0x09, 0x75, 0x73,
+	0x65, 0x72, 0x45, 0x6d, 0x61, 0x69, 0x6c, 0x12, 0x4d, 0x0a, 0x0f, 0x67, 0x72, 0x6f, 0x75, 0x70,
+	0x5f, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x22, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x52, 0x65, 0x66, 0x65, 0x72,
+	0x65, 0x6e, 0x63, 0x65, 0x48, 0x00, 0x52, 0x0e, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x66,
+	0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x42, 0x16, 0x0a, 0x14, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72,
 	0x73, 0x68, 0x69, 0x70, 0x5f, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x2a, 0x77,
 	0x0a, 0x11, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52,
 	0x6f, 0x6c, 0x65, 0x12, 0x23, 0x0a, 0x1f, 0x50, 0x52, 0x4f, 0x4a, 0x45, 0x43, 0x54, 0x5f, 0x4d,
@@ -1253,24 +1274,25 @@ var file_controlplane_v1_project_proto_depIdxs = []int32{
 	0,  // 16: controlplane.v1.ProjectServiceAddMemberRequest.role:type_name -> controlplane.v1.ProjectMemberRole
 	17, // 17: controlplane.v1.ProjectServiceRemoveMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
 	14, // 18: controlplane.v1.ProjectServiceRemoveMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	18, // 19: controlplane.v1.ProjectServiceAPITokenCreateResponse.APITokenFull.item:type_name -> controlplane.v1.APITokenItem
-	1,  // 20: controlplane.v1.ProjectService.APITokenCreate:input_type -> controlplane.v1.ProjectServiceAPITokenCreateRequest
-	5,  // 21: controlplane.v1.ProjectService.APITokenList:input_type -> controlplane.v1.ProjectServiceAPITokenListRequest
-	3,  // 22: controlplane.v1.ProjectService.APITokenRevoke:input_type -> controlplane.v1.ProjectServiceAPITokenRevokeRequest
-	7,  // 23: controlplane.v1.ProjectService.ListMembers:input_type -> controlplane.v1.ProjectServiceListMembersRequest
-	10, // 24: controlplane.v1.ProjectService.AddMember:input_type -> controlplane.v1.ProjectServiceAddMemberRequest
-	12, // 25: controlplane.v1.ProjectService.RemoveMember:input_type -> controlplane.v1.ProjectServiceRemoveMemberRequest
-	2,  // 26: controlplane.v1.ProjectService.APITokenCreate:output_type -> controlplane.v1.ProjectServiceAPITokenCreateResponse
-	6,  // 27: controlplane.v1.ProjectService.APITokenList:output_type -> controlplane.v1.ProjectServiceAPITokenListResponse
-	4,  // 28: controlplane.v1.ProjectService.APITokenRevoke:output_type -> controlplane.v1.ProjectServiceAPITokenRevokeResponse
-	8,  // 29: controlplane.v1.ProjectService.ListMembers:output_type -> controlplane.v1.ProjectServiceListMembersResponse
-	11, // 30: controlplane.v1.ProjectService.AddMember:output_type -> controlplane.v1.ProjectServiceAddMemberResponse
-	13, // 31: controlplane.v1.ProjectService.RemoveMember:output_type -> controlplane.v1.ProjectServiceRemoveMemberResponse
-	26, // [26:32] is the sub-list for method output_type
-	20, // [20:26] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	17, // 19: controlplane.v1.ProjectMembershipReference.group_reference:type_name -> controlplane.v1.IdentityReference
+	18, // 20: controlplane.v1.ProjectServiceAPITokenCreateResponse.APITokenFull.item:type_name -> controlplane.v1.APITokenItem
+	1,  // 21: controlplane.v1.ProjectService.APITokenCreate:input_type -> controlplane.v1.ProjectServiceAPITokenCreateRequest
+	5,  // 22: controlplane.v1.ProjectService.APITokenList:input_type -> controlplane.v1.ProjectServiceAPITokenListRequest
+	3,  // 23: controlplane.v1.ProjectService.APITokenRevoke:input_type -> controlplane.v1.ProjectServiceAPITokenRevokeRequest
+	7,  // 24: controlplane.v1.ProjectService.ListMembers:input_type -> controlplane.v1.ProjectServiceListMembersRequest
+	10, // 25: controlplane.v1.ProjectService.AddMember:input_type -> controlplane.v1.ProjectServiceAddMemberRequest
+	12, // 26: controlplane.v1.ProjectService.RemoveMember:input_type -> controlplane.v1.ProjectServiceRemoveMemberRequest
+	2,  // 27: controlplane.v1.ProjectService.APITokenCreate:output_type -> controlplane.v1.ProjectServiceAPITokenCreateResponse
+	6,  // 28: controlplane.v1.ProjectService.APITokenList:output_type -> controlplane.v1.ProjectServiceAPITokenListResponse
+	4,  // 29: controlplane.v1.ProjectService.APITokenRevoke:output_type -> controlplane.v1.ProjectServiceAPITokenRevokeResponse
+	8,  // 30: controlplane.v1.ProjectService.ListMembers:output_type -> controlplane.v1.ProjectServiceListMembersResponse
+	11, // 31: controlplane.v1.ProjectService.AddMember:output_type -> controlplane.v1.ProjectServiceAddMemberResponse
+	13, // 32: controlplane.v1.ProjectService.RemoveMember:output_type -> controlplane.v1.ProjectServiceRemoveMemberResponse
+	27, // [27:33] is the sub-list for method output_type
+	21, // [21:27] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_project_proto_init() }
@@ -1471,6 +1493,7 @@ func file_controlplane_v1_project_proto_init() {
 	}
 	file_controlplane_v1_project_proto_msgTypes[13].OneofWrappers = []interface{}{
 		(*ProjectMembershipReference_UserEmail)(nil),
+		(*ProjectMembershipReference_GroupReference)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
