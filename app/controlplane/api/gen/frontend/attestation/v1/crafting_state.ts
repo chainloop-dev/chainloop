@@ -172,6 +172,7 @@ export enum Attestation_Auth_AuthType {
   AUTH_TYPE_UNSPECIFIED = 0,
   AUTH_TYPE_USER = 1,
   AUTH_TYPE_API_TOKEN = 2,
+  AUTH_TYPE_FEDERATED = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -186,6 +187,9 @@ export function attestation_Auth_AuthTypeFromJSON(object: any): Attestation_Auth
     case 2:
     case "AUTH_TYPE_API_TOKEN":
       return Attestation_Auth_AuthType.AUTH_TYPE_API_TOKEN;
+    case 3:
+    case "AUTH_TYPE_FEDERATED":
+      return Attestation_Auth_AuthType.AUTH_TYPE_FEDERATED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -201,6 +205,8 @@ export function attestation_Auth_AuthTypeToJSON(object: Attestation_Auth_AuthTyp
       return "AUTH_TYPE_USER";
     case Attestation_Auth_AuthType.AUTH_TYPE_API_TOKEN:
       return "AUTH_TYPE_API_TOKEN";
+    case Attestation_Auth_AuthType.AUTH_TYPE_FEDERATED:
+      return "AUTH_TYPE_FEDERATED";
     case Attestation_Auth_AuthType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

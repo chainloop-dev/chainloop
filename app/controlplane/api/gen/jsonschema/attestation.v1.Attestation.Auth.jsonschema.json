@@ -14,7 +14,8 @@
           "enum": [
             "AUTH_TYPE_UNSPECIFIED",
             "AUTH_TYPE_USER",
-            "AUTH_TYPE_API_TOKEN"
+            "AUTH_TYPE_API_TOKEN",
+            "AUTH_TYPE_FEDERATED"
           ],
           "title": "Auth Type",
           "type": "string"
