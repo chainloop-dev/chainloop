@@ -250,7 +250,7 @@ func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([
 	mm, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
-	).All(ctx)
+	).WithOrganization().All(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query memberships: %w", err)
