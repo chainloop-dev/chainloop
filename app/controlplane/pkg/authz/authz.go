@@ -255,6 +255,9 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectListMemberships,
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
+
+		// CAS uploads
+		PolicyArtifactUpload,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
