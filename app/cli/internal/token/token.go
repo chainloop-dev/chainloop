@@ -111,13 +111,64 @@ func Parse(token string) (*ParsedToken, error) {
 			pToken.ID = userID
 		}
 	case federatedTokenAudience:
-		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_FEDERATED
-		if issuer, ok := claims["iss"].(string); ok {
-			pToken.ID = issuer
+		if isGitLabFederatedToken(claims) {
+			pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_FEDERATED
+			if issuer, ok := claims["iss"].(string); ok {
+				pToken.ID = issuer
+			}
 		}
 	default:
 		return nil, nil
 	}
 
 	return pToken, nil
+}
+
+// Checks if the claims contain at least 10 custom GitLab ID token claims.
+// Reference: https://docs.gitlab.com/ci/secrets/id_token_authentication/
+func isGitLabFederatedToken(claims jwt.MapClaims) bool {
+	gitlabClaims := []string{
+		"namespace_id",
+		"namespace_path",
+		"project_id",
+		"project_path",
+		"user_id",
+		"user_login",
+		"user_email",
+		"user_access_level",
+		"user_identities",
+		"pipeline_id",
+		"pipeline_source",
+		"job_id",
+		"ref",
+		"ref_type",
+		"ref_path",
+		"ref_protected",
+		"groups_direct",
+		"environment",
+		"environment_protected",
+		"deployment_tier",
+		"deployment_action",
+		"runner_id",
+		"runner_environment",
+		"sha",
+		"ci_config_ref_uri",
+		"ci_config_sha",
+		"project_visibility",
+	}
+
+	requiredClaims := 10
+
+	// Count how many GitLab-specific claims are present
+	found := 0
+	for _, claim := range gitlabClaims {
+		if _, exists := claims[claim]; exists {
+			found++
+			if found >= requiredClaims {
+				return true
+			}
+		}
+	}
+
+	return found >= requiredClaims
 }
