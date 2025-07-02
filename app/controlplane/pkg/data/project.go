@@ -137,7 +137,8 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 	for _, m := range memberships {
 		var mems *biz.ProjectMembership
 
-		if m.MembershipType == authz.MembershipTypeUser {
+		switch m.MembershipType {
+		case authz.MembershipTypeUser:
 			// Fetch the user details for user memberships
 			u, uErr := r.data.DB.User.Get(ctx, m.MemberID)
 			if uErr != nil {
@@ -147,7 +148,7 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 				return nil, 0, fmt.Errorf("failed to find user: %w", uErr)
 			}
 			mems = entProjectMembershipToBiz(m, u, nil)
-		} else if m.MembershipType == authz.MembershipTypeGroup {
+		case authz.MembershipTypeGroup:
 			// Fetch the group details for group memberships
 			g, gErr := r.data.DB.Group.Get(ctx, m.MemberID)
 			if gErr != nil {
