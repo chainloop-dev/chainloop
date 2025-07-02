@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -72,16 +74,20 @@ func newAttestationStatusCmd() *cobra.Command {
 }
 
 func simpleStatusTable(status *action.AttestationStatusResult) error {
-	return attestationStatusTableOutput(status, false)
+	return attestationStatusTableOutput(status, os.Stdout, false)
 }
 
 func fullStatusTable(status *action.AttestationStatusResult) error {
-	return attestationStatusTableOutput(status, true)
+	return attestationStatusTableOutput(status, os.Stdout, true)
 }
 
-func attestationStatusTableOutput(status *action.AttestationStatusResult, full bool) error {
+func fullStatusTableWithWriter(status *action.AttestationStatusResult, w io.Writer) error {
+	return attestationStatusTableOutput(status, w, true)
+}
+
+func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.Writer, full bool) error {
 	// General info table
-	gt := newTableWriter()
+	gt := newTableWriterWithWriter(w)
 	gt.AppendRow(table.Row{"Initialized At", status.InitializedAt.Format(time.RFC822)})
 	gt.AppendSeparator()
 	meta := status.WorkflowMeta
@@ -134,21 +140,21 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, full b
 	}
 	gt.Render()
 
-	if err := materialsTable(status, full); err != nil {
+	if err := materialsTable(status, w, full); err != nil {
 		return err
 	}
 
-	return envVarsTable(status, full)
+	return envVarsTable(status, w, full)
 }
 
-func envVarsTable(status *action.AttestationStatusResult, full bool) error {
+func envVarsTable(status *action.AttestationStatusResult, w io.Writer, full bool) error {
 	if len(status.EnvVars) == 0 && len(status.RunnerContext.EnvVars) == 0 {
 		return nil
 	}
 
 	if len(status.EnvVars) > 0 {
 		// Env Variables table
-		evt := newTableWriter()
+		evt := newTableWriterWithWriter(w)
 		evt.SetTitle("Env Variables")
 		for k, v := range status.EnvVars {
 			if v == "" {
@@ -161,7 +167,7 @@ func envVarsTable(status *action.AttestationStatusResult, full bool) error {
 
 	runnerVars := status.RunnerContext.EnvVars
 	if len(runnerVars) > 0 && full {
-		evt := newTableWriter()
+		evt := newTableWriterWithWriter(w)
 		evt.SetTitle("Runner context")
 		for k, v := range runnerVars {
 			if v == "" {
@@ -174,7 +180,7 @@ func envVarsTable(status *action.AttestationStatusResult, full bool) error {
 
 	return nil
 }
-func materialsTable(status *action.AttestationStatusResult, full bool) error {
+func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bool) error {
 	if len(status.Materials) == 0 {
 		return nil
 	}
@@ -184,7 +190,7 @@ func materialsTable(status *action.AttestationStatusResult, full bool) error {
 		return strings.Compare(a.Name, b.Name)
 	})
 
-	mt := newTableWriter()
+	mt := newTableWriterWithWriter(w)
 	mt.SetTitle("Materials")
 
 	for _, m := range status.Materials {

@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -103,6 +104,17 @@ func newAttestationPushCmd() *cobra.Command {
 			}
 
 			res.Status.Digest = res.Digest
+
+			// If we are returning the json format, we also want to render the attestation table as one property so it can also be consumed
+			if flagOutputFormat == formatJSON {
+				// Render the attestation status to a string
+				buf := &bytes.Buffer{}
+				if err := fullStatusTableWithWriter(res.Status, buf); err != nil {
+					return fmt.Errorf("failed to render output: %w", err)
+				}
+
+				res.Status.TerminalOutput = buf.Bytes()
+			}
 
 			// In TABLE format, we render the attestation status
 			if err := encodeOutput(res.Status, fullStatusTable); err != nil {
