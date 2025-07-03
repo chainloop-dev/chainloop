@@ -37,14 +37,6 @@ export interface APITokenServiceListResponse {
   result: APITokenItem[];
 }
 
-export interface APITokenServiceUpdateLastUsedRequest {
-  id: string;
-}
-
-export interface APITokenServiceUpdateLastUsedResponse {
-  item?: APITokenItem;
-}
-
 function createBaseAPITokenServiceCreateRequest(): APITokenServiceCreateRequest {
   return { name: "", description: undefined, expiresIn: undefined };
 }
@@ -488,128 +480,6 @@ export const APITokenServiceListResponse = {
   },
 };
 
-function createBaseAPITokenServiceUpdateLastUsedRequest(): APITokenServiceUpdateLastUsedRequest {
-  return { id: "" };
-}
-
-export const APITokenServiceUpdateLastUsedRequest = {
-  encode(message: APITokenServiceUpdateLastUsedRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceUpdateLastUsedRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceUpdateLastUsedRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): APITokenServiceUpdateLastUsedRequest {
-    return { id: isSet(object.id) ? String(object.id) : "" };
-  },
-
-  toJSON(message: APITokenServiceUpdateLastUsedRequest): unknown {
-    const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<APITokenServiceUpdateLastUsedRequest>, I>>(
-    base?: I,
-  ): APITokenServiceUpdateLastUsedRequest {
-    return APITokenServiceUpdateLastUsedRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceUpdateLastUsedRequest>, I>>(
-    object: I,
-  ): APITokenServiceUpdateLastUsedRequest {
-    const message = createBaseAPITokenServiceUpdateLastUsedRequest();
-    message.id = object.id ?? "";
-    return message;
-  },
-};
-
-function createBaseAPITokenServiceUpdateLastUsedResponse(): APITokenServiceUpdateLastUsedResponse {
-  return { item: undefined };
-}
-
-export const APITokenServiceUpdateLastUsedResponse = {
-  encode(message: APITokenServiceUpdateLastUsedResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.item !== undefined) {
-      APITokenItem.encode(message.item, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): APITokenServiceUpdateLastUsedResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPITokenServiceUpdateLastUsedResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.item = APITokenItem.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): APITokenServiceUpdateLastUsedResponse {
-    return { item: isSet(object.item) ? APITokenItem.fromJSON(object.item) : undefined };
-  },
-
-  toJSON(message: APITokenServiceUpdateLastUsedResponse): unknown {
-    const obj: any = {};
-    message.item !== undefined && (obj.item = message.item ? APITokenItem.toJSON(message.item) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<APITokenServiceUpdateLastUsedResponse>, I>>(
-    base?: I,
-  ): APITokenServiceUpdateLastUsedResponse {
-    return APITokenServiceUpdateLastUsedResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<APITokenServiceUpdateLastUsedResponse>, I>>(
-    object: I,
-  ): APITokenServiceUpdateLastUsedResponse {
-    const message = createBaseAPITokenServiceUpdateLastUsedResponse();
-    message.item = (object.item !== undefined && object.item !== null)
-      ? APITokenItem.fromPartial(object.item)
-      : undefined;
-    return message;
-  },
-};
-
 export interface APITokenService {
   Create(
     request: DeepPartial<APITokenServiceCreateRequest>,
@@ -623,10 +493,6 @@ export interface APITokenService {
     request: DeepPartial<APITokenServiceRevokeRequest>,
     metadata?: grpc.Metadata,
   ): Promise<APITokenServiceRevokeResponse>;
-  UpdateLastUsed(
-    request: DeepPartial<APITokenServiceUpdateLastUsedRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceUpdateLastUsedResponse>;
 }
 
 export class APITokenServiceClientImpl implements APITokenService {
@@ -637,7 +503,6 @@ export class APITokenServiceClientImpl implements APITokenService {
     this.Create = this.Create.bind(this);
     this.List = this.List.bind(this);
     this.Revoke = this.Revoke.bind(this);
-    this.UpdateLastUsed = this.UpdateLastUsed.bind(this);
   }
 
   Create(
@@ -659,17 +524,6 @@ export class APITokenServiceClientImpl implements APITokenService {
     metadata?: grpc.Metadata,
   ): Promise<APITokenServiceRevokeResponse> {
     return this.rpc.unary(APITokenServiceRevokeDesc, APITokenServiceRevokeRequest.fromPartial(request), metadata);
-  }
-
-  UpdateLastUsed(
-    request: DeepPartial<APITokenServiceUpdateLastUsedRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<APITokenServiceUpdateLastUsedResponse> {
-    return this.rpc.unary(
-      APITokenServiceUpdateLastUsedDesc,
-      APITokenServiceUpdateLastUsedRequest.fromPartial(request),
-      metadata,
-    );
   }
 }
 
@@ -734,29 +588,6 @@ export const APITokenServiceRevokeDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = APITokenServiceRevokeResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const APITokenServiceUpdateLastUsedDesc: UnaryMethodDefinitionish = {
-  methodName: "UpdateLastUsed",
-  service: APITokenServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return APITokenServiceUpdateLastUsedRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = APITokenServiceUpdateLastUsedResponse.decode(data);
       return {
         ...value,
         toObject() {

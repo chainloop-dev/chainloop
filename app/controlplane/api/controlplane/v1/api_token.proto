@@ -27,7 +27,6 @@ service APITokenService {
   rpc Create(APITokenServiceCreateRequest) returns (APITokenServiceCreateResponse);
   rpc List(APITokenServiceListRequest) returns (APITokenServiceListResponse);
   rpc Revoke(APITokenServiceRevokeRequest) returns (APITokenServiceRevokeResponse);
-  rpc UpdateLastUsed(APITokenServiceUpdateLastUsedRequest) returns (APITokenServiceUpdateLastUsedResponse);
 }
 
 message APITokenServiceCreateRequest {
@@ -65,12 +64,4 @@ message APITokenServiceListRequest {
 
 message APITokenServiceListResponse {
   repeated APITokenItem result = 1;
-}
-
-message APITokenServiceUpdateLastUsedRequest {
-  string id = 1 [(buf.validate.field).string.uuid = true];
-}
-
-message APITokenServiceUpdateLastUsedResponse {
-  APITokenItem item = 1;
 }
