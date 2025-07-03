@@ -400,14 +400,14 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 }
 
 func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string) error {
-    id, err := uuid.Parse(tokenID)
-    if err != nil {
-        return NewErrInvalidUUID(err)
-    }
+	id, err := uuid.Parse(tokenID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
 
-    if err := uc.apiTokenRepo.UpdateLastUsedAt(ctx, id, time.Now()); err != nil {
-        return fmt.Errorf("updating last used at: %w", err)
-    }
+	if err := uc.apiTokenRepo.UpdateLastUsedAt(ctx, id, time.Now()); err != nil {
+		return fmt.Errorf("updating last used at: %w", err)
+	}
 
-    return nil
+	return nil
 }
