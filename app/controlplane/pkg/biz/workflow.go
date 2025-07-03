@@ -159,7 +159,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 			return nil, NewErrAlreadyExistsStr(fmt.Sprintf("workflow %q in project %q already exists", opts.Name, opts.Project))
 		}
 
-		return nil, fmt.Errorf("failed to create workflow: %w", err)
+		return nil, fmt.Errorf("can't create the workflow: %w", err)
 	}
 
 	// Set project admin if a new project has been created

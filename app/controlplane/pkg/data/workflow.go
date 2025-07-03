@@ -75,7 +75,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		existingContract, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &opts.ContractName)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return nil, biz.NewErrNotFound("contract")
+				return nil, biz.NewErrNotFound(fmt.Sprintf("contract %q", opts.ContractName))
 			}
 
 			return nil, err

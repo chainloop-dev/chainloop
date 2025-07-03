@@ -722,7 +722,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 
 	wf, err := s.workflowUseCase.Create(ctx, createOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(fmt.Errorf("failed to initialize the attestation: %w", err), s.log)
 	}
 
 	// reset RBAC cache, since we might have created a new project
