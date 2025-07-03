@@ -40,8 +40,8 @@ func (_m *MockAPITokenRepo) EXPECT() *MockAPITokenRepo_Expecter {
 }
 
 // Create provides a mock function for the type MockAPITokenRepo
-func (_mock *MockAPITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error) {
-	ret := _mock.Called(ctx, name, description, expiresAt, organizationID)
+func (_mock *MockAPITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*APIToken, error) {
+	ret := _mock.Called(ctx, name, description, expiresAt, organizationID, projectID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -49,18 +49,18 @@ func (_mock *MockAPITokenRepo) Create(ctx context.Context, name string, descript
 
 	var r0 *APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, uuid.UUID) (*APIToken, error)); ok {
-		return returnFunc(ctx, name, description, expiresAt, organizationID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, uuid.UUID, *uuid.UUID) (*APIToken, error)); ok {
+		return returnFunc(ctx, name, description, expiresAt, organizationID, projectID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, uuid.UUID) *APIToken); ok {
-		r0 = returnFunc(ctx, name, description, expiresAt, organizationID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, uuid.UUID, *uuid.UUID) *APIToken); ok {
+		r0 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, name, description, expiresAt, organizationID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time, uuid.UUID, *uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -78,11 +78,12 @@ type MockAPITokenRepo_Create_Call struct {
 //   - description *string
 //   - expiresAt *time.Time
 //   - organizationID uuid.UUID
-func (_e *MockAPITokenRepo_Expecter) Create(ctx interface{}, name interface{}, description interface{}, expiresAt interface{}, organizationID interface{}) *MockAPITokenRepo_Create_Call {
-	return &MockAPITokenRepo_Create_Call{Call: _e.mock.On("Create", ctx, name, description, expiresAt, organizationID)}
+//   - projectID *uuid.UUID
+func (_e *MockAPITokenRepo_Expecter) Create(ctx interface{}, name interface{}, description interface{}, expiresAt interface{}, organizationID interface{}, projectID interface{}) *MockAPITokenRepo_Create_Call {
+	return &MockAPITokenRepo_Create_Call{Call: _e.mock.On("Create", ctx, name, description, expiresAt, organizationID, projectID)}
 }
 
-func (_c *MockAPITokenRepo_Create_Call) Run(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID)) *MockAPITokenRepo_Create_Call {
+func (_c *MockAPITokenRepo_Create_Call) Run(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID)) *MockAPITokenRepo_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -104,12 +105,17 @@ func (_c *MockAPITokenRepo_Create_Call) Run(run func(ctx context.Context, name s
 		if args[4] != nil {
 			arg4 = args[4].(uuid.UUID)
 		}
+		var arg5 *uuid.UUID
+		if args[5] != nil {
+			arg5 = args[5].(*uuid.UUID)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
 			arg4,
+			arg5,
 		)
 	})
 	return _c
@@ -120,7 +126,7 @@ func (_c *MockAPITokenRepo_Create_Call) Return(aPIToken *APIToken, err error) *M
 	return _c
 }
 
-func (_c *MockAPITokenRepo_Create_Call) RunAndReturn(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID) (*APIToken, error)) *MockAPITokenRepo_Create_Call {
+func (_c *MockAPITokenRepo_Create_Call) RunAndReturn(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*APIToken, error)) *MockAPITokenRepo_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -194,8 +200,8 @@ func (_c *MockAPITokenRepo_FindByID_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // FindByNameInOrg provides a mock function for the type MockAPITokenRepo
-func (_mock *MockAPITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error) {
-	ret := _mock.Called(ctx, orgID, name)
+func (_mock *MockAPITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error) {
+	ret := _mock.Called(ctx, orgID, name, projectID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByNameInOrg")
@@ -203,18 +209,18 @@ func (_mock *MockAPITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 
 	var r0 *APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*APIToken, error)); ok {
-		return returnFunc(ctx, orgID, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, *uuid.UUID) (*APIToken, error)); ok {
+		return returnFunc(ctx, orgID, name, projectID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *APIToken); ok {
-		r0 = returnFunc(ctx, orgID, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, *uuid.UUID) *APIToken); ok {
+		r0 = returnFunc(ctx, orgID, name, projectID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
-		r1 = returnFunc(ctx, orgID, name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, *uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, orgID, name, projectID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -230,11 +236,12 @@ type MockAPITokenRepo_FindByNameInOrg_Call struct {
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - name string
-func (_e *MockAPITokenRepo_Expecter) FindByNameInOrg(ctx interface{}, orgID interface{}, name interface{}) *MockAPITokenRepo_FindByNameInOrg_Call {
-	return &MockAPITokenRepo_FindByNameInOrg_Call{Call: _e.mock.On("FindByNameInOrg", ctx, orgID, name)}
+//   - projectID *uuid.UUID
+func (_e *MockAPITokenRepo_Expecter) FindByNameInOrg(ctx interface{}, orgID interface{}, name interface{}, projectID interface{}) *MockAPITokenRepo_FindByNameInOrg_Call {
+	return &MockAPITokenRepo_FindByNameInOrg_Call{Call: _e.mock.On("FindByNameInOrg", ctx, orgID, name, projectID)}
 }
 
-func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Run(run func(ctx context.Context, orgID uuid.UUID, name string)) *MockAPITokenRepo_FindByNameInOrg_Call {
+func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Run(run func(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID)) *MockAPITokenRepo_FindByNameInOrg_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -248,10 +255,15 @@ func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Run(run func(ctx context.Contex
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
+		var arg3 *uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(*uuid.UUID)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -262,14 +274,14 @@ func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Return(aPIToken *APIToken, err 
 	return _c
 }
 
-func (_c *MockAPITokenRepo_FindByNameInOrg_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)) *MockAPITokenRepo_FindByNameInOrg_Call {
+func (_c *MockAPITokenRepo_FindByNameInOrg_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)) *MockAPITokenRepo_FindByNameInOrg_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // List provides a mock function for the type MockAPITokenRepo
-func (_mock *MockAPITokenRepo) List(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error) {
-	ret := _mock.Called(ctx, orgID, includeRevoked)
+func (_mock *MockAPITokenRepo) List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error) {
+	ret := _mock.Called(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
 
 	if len(ret) == 0 {
 		panic("no return value specified for List")
@@ -277,18 +289,18 @@ func (_mock *MockAPITokenRepo) List(ctx context.Context, orgID *uuid.UUID, inclu
 
 	var r0 []*APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, bool) ([]*APIToken, error)); ok {
-		return returnFunc(ctx, orgID, includeRevoked)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *uuid.UUID, bool, bool) ([]*APIToken, error)); ok {
+		return returnFunc(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, bool) []*APIToken); ok {
-		r0 = returnFunc(ctx, orgID, includeRevoked)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *uuid.UUID, bool, bool) []*APIToken); ok {
+		r0 = returnFunc(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *uuid.UUID, bool) error); ok {
-		r1 = returnFunc(ctx, orgID, includeRevoked)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *uuid.UUID, *uuid.UUID, bool, bool) error); ok {
+		r1 = returnFunc(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -303,12 +315,14 @@ type MockAPITokenRepo_List_Call struct {
 // List is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID *uuid.UUID
+//   - projectID *uuid.UUID
 //   - includeRevoked bool
-func (_e *MockAPITokenRepo_Expecter) List(ctx interface{}, orgID interface{}, includeRevoked interface{}) *MockAPITokenRepo_List_Call {
-	return &MockAPITokenRepo_List_Call{Call: _e.mock.On("List", ctx, orgID, includeRevoked)}
+//   - showOnlySystemTokens bool
+func (_e *MockAPITokenRepo_Expecter) List(ctx interface{}, orgID interface{}, projectID interface{}, includeRevoked interface{}, showOnlySystemTokens interface{}) *MockAPITokenRepo_List_Call {
+	return &MockAPITokenRepo_List_Call{Call: _e.mock.On("List", ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)}
 }
 
-func (_c *MockAPITokenRepo_List_Call) Run(run func(ctx context.Context, orgID *uuid.UUID, includeRevoked bool)) *MockAPITokenRepo_List_Call {
+func (_c *MockAPITokenRepo_List_Call) Run(run func(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool)) *MockAPITokenRepo_List_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -318,14 +332,24 @@ func (_c *MockAPITokenRepo_List_Call) Run(run func(ctx context.Context, orgID *u
 		if args[1] != nil {
 			arg1 = args[1].(*uuid.UUID)
 		}
-		var arg2 bool
+		var arg2 *uuid.UUID
 		if args[2] != nil {
-			arg2 = args[2].(bool)
+			arg2 = args[2].(*uuid.UUID)
+		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
+		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -336,7 +360,7 @@ func (_c *MockAPITokenRepo_List_Call) Return(aPITokens []*APIToken, err error) *
 	return _c
 }
 
-func (_c *MockAPITokenRepo_List_Call) RunAndReturn(run func(ctx context.Context, orgID *uuid.UUID, includeRevoked bool) ([]*APIToken, error)) *MockAPITokenRepo_List_Call {
+func (_c *MockAPITokenRepo_List_Call) RunAndReturn(run func(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error)) *MockAPITokenRepo_List_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -463,6 +487,69 @@ func (_c *MockAPITokenRepo_UpdateExpiration_Call) Return(err error) *MockAPIToke
 }
 
 func (_c *MockAPITokenRepo_UpdateExpiration_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error) *MockAPITokenRepo_UpdateExpiration_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateLastUsed provides a mock function for the type MockAPITokenRepo
+func (_mock *MockAPITokenRepo) UpdateLastUsed(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error {
+	ret := _mock.Called(ctx, ID, lastUsedAt)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLastUsed")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, time.Time) error); ok {
+		r0 = returnFunc(ctx, ID, lastUsedAt)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAPITokenRepo_UpdateLastUsed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLastUsed'
+type MockAPITokenRepo_UpdateLastUsed_Call struct {
+	*mock.Call
+}
+
+// UpdateLastUsed is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID uuid.UUID
+//   - lastUsedAt time.Time
+func (_e *MockAPITokenRepo_Expecter) UpdateLastUsed(ctx interface{}, ID interface{}, lastUsedAt interface{}) *MockAPITokenRepo_UpdateLastUsed_Call {
+	return &MockAPITokenRepo_UpdateLastUsed_Call{Call: _e.mock.On("UpdateLastUsed", ctx, ID, lastUsedAt)}
+}
+
+func (_c *MockAPITokenRepo_UpdateLastUsed_Call) Run(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time)) *MockAPITokenRepo_UpdateLastUsed_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 time.Time
+		if args[2] != nil {
+			arg2 = args[2].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPITokenRepo_UpdateLastUsed_Call) Return(err error) *MockAPITokenRepo_UpdateLastUsed_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAPITokenRepo_UpdateLastUsed_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error) *MockAPITokenRepo_UpdateLastUsed_Call {
 	_c.Call.Return(run)
 	return _c
 }

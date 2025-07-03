@@ -34,9 +34,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	APITokenService_Create_FullMethodName = "/controlplane.v1.APITokenService/Create"
-	APITokenService_List_FullMethodName   = "/controlplane.v1.APITokenService/List"
-	APITokenService_Revoke_FullMethodName = "/controlplane.v1.APITokenService/Revoke"
+	APITokenService_Create_FullMethodName         = "/controlplane.v1.APITokenService/Create"
+	APITokenService_List_FullMethodName           = "/controlplane.v1.APITokenService/List"
+	APITokenService_Revoke_FullMethodName         = "/controlplane.v1.APITokenService/Revoke"
+	APITokenService_UpdateLastUsed_FullMethodName = "/controlplane.v1.APITokenService/UpdateLastUsed"
 )
 
 // APITokenServiceClient is the client API for APITokenService service.
@@ -46,6 +47,7 @@ type APITokenServiceClient interface {
 	Create(ctx context.Context, in *APITokenServiceCreateRequest, opts ...grpc.CallOption) (*APITokenServiceCreateResponse, error)
 	List(ctx context.Context, in *APITokenServiceListRequest, opts ...grpc.CallOption) (*APITokenServiceListResponse, error)
 	Revoke(ctx context.Context, in *APITokenServiceRevokeRequest, opts ...grpc.CallOption) (*APITokenServiceRevokeResponse, error)
+	UpdateLastUsed(ctx context.Context, in *APITokenServiceUpdateLastUsedRequest, opts ...grpc.CallOption) (*APITokenServiceUpdateLastUsedResponse, error)
 }
 
 type aPITokenServiceClient struct {
@@ -83,6 +85,15 @@ func (c *aPITokenServiceClient) Revoke(ctx context.Context, in *APITokenServiceR
 	return out, nil
 }
 
+func (c *aPITokenServiceClient) UpdateLastUsed(ctx context.Context, in *APITokenServiceUpdateLastUsedRequest, opts ...grpc.CallOption) (*APITokenServiceUpdateLastUsedResponse, error) {
+	out := new(APITokenServiceUpdateLastUsedResponse)
+	err := c.cc.Invoke(ctx, APITokenService_UpdateLastUsed_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // APITokenServiceServer is the server API for APITokenService service.
 // All implementations must embed UnimplementedAPITokenServiceServer
 // for forward compatibility
@@ -90,6 +101,7 @@ type APITokenServiceServer interface {
 	Create(context.Context, *APITokenServiceCreateRequest) (*APITokenServiceCreateResponse, error)
 	List(context.Context, *APITokenServiceListRequest) (*APITokenServiceListResponse, error)
 	Revoke(context.Context, *APITokenServiceRevokeRequest) (*APITokenServiceRevokeResponse, error)
+	UpdateLastUsed(context.Context, *APITokenServiceUpdateLastUsedRequest) (*APITokenServiceUpdateLastUsedResponse, error)
 	mustEmbedUnimplementedAPITokenServiceServer()
 }
 
@@ -105,6 +117,9 @@ func (UnimplementedAPITokenServiceServer) List(context.Context, *APITokenService
 }
 func (UnimplementedAPITokenServiceServer) Revoke(context.Context, *APITokenServiceRevokeRequest) (*APITokenServiceRevokeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Revoke not implemented")
+}
+func (UnimplementedAPITokenServiceServer) UpdateLastUsed(context.Context, *APITokenServiceUpdateLastUsedRequest) (*APITokenServiceUpdateLastUsedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateLastUsed not implemented")
 }
 func (UnimplementedAPITokenServiceServer) mustEmbedUnimplementedAPITokenServiceServer() {}
 
@@ -173,6 +188,24 @@ func _APITokenService_Revoke_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _APITokenService_UpdateLastUsed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(APITokenServiceUpdateLastUsedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APITokenServiceServer).UpdateLastUsed(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: APITokenService_UpdateLastUsed_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APITokenServiceServer).UpdateLastUsed(ctx, req.(*APITokenServiceUpdateLastUsedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // APITokenService_ServiceDesc is the grpc.ServiceDesc for APITokenService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,6 +224,10 @@ var APITokenService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Revoke",
 			Handler:    _APITokenService_Revoke_Handler,
+		},
+		{
+			MethodName: "UpdateLastUsed",
+			Handler:    _APITokenService_UpdateLastUsed_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

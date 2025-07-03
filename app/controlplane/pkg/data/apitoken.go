@@ -153,6 +153,15 @@ func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expir
 	return nil
 }
 
+func (r *APITokenRepo) UpdateLastUsed(ctx context.Context, id uuid.UUID, lastUsedAt time.Time) error {
+	err := r.data.DB.APIToken.UpdateOneID(id).SetLastUsedAt(lastUsedAt).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("updating API Token: %w", err)
+	}
+
+	return nil
+}
+
 func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	result := &biz.APIToken{
 		ID:             t.ID,
@@ -161,6 +170,7 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		CreatedAt:      toTimePtr(t.CreatedAt),
 		ExpiresAt:      toTimePtr(t.ExpiresAt),
 		RevokedAt:      toTimePtr(t.RevokedAt),
+		LastUsedAt:     toTimePtr(t.LastUsedAt),
 		OrganizationID: t.OrganizationID,
 	}
 

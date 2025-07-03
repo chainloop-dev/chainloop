@@ -42,6 +42,7 @@ func (APIToken) Fields() []ent.Field {
 		field.Time("expires_at").Optional(),
 		// the token can be manually revoked
 		field.Time("revoked_at").Optional(),
+		field.Time("last_used_at").Optional(),
 		field.UUID("organization_id", uuid.UUID{}),
 		// Tokens can be associated with a project
 		// if this value is not set, the token is an organization level token

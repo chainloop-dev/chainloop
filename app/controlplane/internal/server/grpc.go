@@ -231,6 +231,8 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromUser(opts.UserUseCase, opts.MembershipUseCase, logHelper),
 			// 2.d - Set its robot account from federated delegation
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
+			// 3 - Update API Token last usage
+			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
 

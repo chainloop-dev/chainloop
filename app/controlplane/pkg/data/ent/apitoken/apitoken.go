@@ -25,6 +25,8 @@ const (
 	FieldExpiresAt = "expires_at"
 	// FieldRevokedAt holds the string denoting the revoked_at field in the database.
 	FieldRevokedAt = "revoked_at"
+	// FieldLastUsedAt holds the string denoting the last_used_at field in the database.
+	FieldLastUsedAt = "last_used_at"
 	// FieldOrganizationID holds the string denoting the organization_id field in the database.
 	FieldOrganizationID = "organization_id"
 	// FieldProjectID holds the string denoting the project_id field in the database.
@@ -59,6 +61,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldExpiresAt,
 	FieldRevokedAt,
+	FieldLastUsedAt,
 	FieldOrganizationID,
 	FieldProjectID,
 }
@@ -111,6 +114,11 @@ func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 // ByRevokedAt orders the results by the revoked_at field.
 func ByRevokedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRevokedAt, opts...).ToFunc()
+}
+
+// ByLastUsedAt orders the results by the last_used_at field.
+func ByLastUsedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastUsedAt, opts...).ToFunc()
 }
 
 // ByOrganizationID orders the results by the organization_id field.

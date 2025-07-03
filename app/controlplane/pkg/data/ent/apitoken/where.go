@@ -81,6 +81,11 @@ func RevokedAt(v time.Time) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldRevokedAt, v))
 }
 
+// LastUsedAt applies equality check predicate on the "last_used_at" field. It's identical to LastUsedAtEQ.
+func LastUsedAt(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldLastUsedAt, v))
+}
+
 // OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
 func OrganizationID(v uuid.UUID) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldOrganizationID, v))
@@ -369,6 +374,56 @@ func RevokedAtIsNil() predicate.APIToken {
 // RevokedAtNotNil applies the NotNil predicate on the "revoked_at" field.
 func RevokedAtNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldRevokedAt))
+}
+
+// LastUsedAtEQ applies the EQ predicate on the "last_used_at" field.
+func LastUsedAtEQ(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldLastUsedAt, v))
+}
+
+// LastUsedAtNEQ applies the NEQ predicate on the "last_used_at" field.
+func LastUsedAtNEQ(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNEQ(FieldLastUsedAt, v))
+}
+
+// LastUsedAtIn applies the In predicate on the "last_used_at" field.
+func LastUsedAtIn(vs ...time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldIn(FieldLastUsedAt, vs...))
+}
+
+// LastUsedAtNotIn applies the NotIn predicate on the "last_used_at" field.
+func LastUsedAtNotIn(vs ...time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotIn(FieldLastUsedAt, vs...))
+}
+
+// LastUsedAtGT applies the GT predicate on the "last_used_at" field.
+func LastUsedAtGT(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldGT(FieldLastUsedAt, v))
+}
+
+// LastUsedAtGTE applies the GTE predicate on the "last_used_at" field.
+func LastUsedAtGTE(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldGTE(FieldLastUsedAt, v))
+}
+
+// LastUsedAtLT applies the LT predicate on the "last_used_at" field.
+func LastUsedAtLT(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldLT(FieldLastUsedAt, v))
+}
+
+// LastUsedAtLTE applies the LTE predicate on the "last_used_at" field.
+func LastUsedAtLTE(v time.Time) predicate.APIToken {
+	return predicate.APIToken(sql.FieldLTE(FieldLastUsedAt, v))
+}
+
+// LastUsedAtIsNil applies the IsNil predicate on the "last_used_at" field.
+func LastUsedAtIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldLastUsedAt))
+}
+
+// LastUsedAtNotNil applies the NotNil predicate on the "last_used_at" field.
+func LastUsedAtNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldLastUsedAt))
 }
 
 // OrganizationIDEQ applies the EQ predicate on the "organization_id" field.

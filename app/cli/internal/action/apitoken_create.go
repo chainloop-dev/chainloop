@@ -66,6 +66,7 @@ type APITokenItem struct {
 	CreatedAt   *time.Time `json:"createdAt"`
 	RevokedAt   *time.Time `json:"revokedAt,omitempty"`
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	LastUsedAt  *time.Time `json:"lastUsedAt,omitempty"`
 	ProjectID   string     `json:"projectId,omitempty"`
 	ProjectName string     `json:"projectName,omitempty"`
 }
@@ -88,6 +89,10 @@ func pbAPITokenItemToAPITokenItem(p *pb.APITokenItem) *APITokenItem {
 
 	if p.ExpiresAt != nil {
 		item.ExpiresAt = toTimePtr(p.ExpiresAt.AsTime())
+	}
+
+	if p.LastUsedAt != nil {
+		item.LastUsedAt = toTimePtr(p.LastUsedAt.AsTime())
 	}
 
 	if p.ProjectId != "" {

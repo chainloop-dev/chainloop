@@ -119,6 +119,10 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		res.RevokedAt = timestamppb.New(*in.RevokedAt)
 	}
 
+	if in.LastUsedAt != nil {
+		res.LastUsedAt = timestamppb.New(*in.LastUsedAt)
+	}
+
 	if in.ProjectID != nil {
 		res.ProjectId = in.ProjectID.String()
 	}
@@ -128,4 +132,19 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 	}
 
 	return res
+}
+
+func (s *APITokenService) UpdateLastUsed(ctx context.Context, req *pb.APITokenServiceUpdateLastUsedRequest) (*pb.APITokenServiceUpdateLastUsedResponse, error) {
+	if err := s.APITokenUseCase.UpdateLastUsed(ctx, req.GetId()); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	updatedToken, err := s.APITokenUseCase.FindByID(ctx, req.GetId())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.APITokenServiceUpdateLastUsedResponse{
+		Item: apiTokenBizToPb(updatedToken),
+	}, nil
 }

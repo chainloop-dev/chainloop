@@ -324,4 +324,5 @@ message APITokenItem {
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp revoked_at = 5;
   google.protobuf.Timestamp expires_at = 6;
+  google.protobuf.Timestamp last_used_at = 11;
 }

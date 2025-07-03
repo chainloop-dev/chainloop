@@ -77,7 +77,7 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"Name", "Description", "Created At", "Expires At", "Revoked At"})
+	t.AppendHeader(table.Row{"Name", "Description", "Created At", "Expires At", "Revoked At", "Last used at"})
 	for _, p := range tokens {
 		r := table.Row{p.Name, p.Description, p.CreatedAt.Format(time.RFC822)}
 		if p.ExpiresAt != nil {
@@ -89,6 +89,13 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 		if p.RevokedAt != nil {
 			fmt.Println("revoked at", p.RevokedAt.Format(time.RFC822))
 			r = append(r, p.RevokedAt.Format(time.RFC822))
+		} else {
+			r = append(r, "")
+		}
+
+		if p.LastUsedAt != nil {
+			fmt.Println("last used at", p.LastUsedAt.Format(time.RFC822))
+			r = append(r, p.LastUsedAt.Format(time.RFC822))
 		}
 
 		t.AppendRow(r)

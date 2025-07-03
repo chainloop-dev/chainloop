@@ -1,0 +1,13 @@
+{
+  "$id": "controlplane.v1.APITokenServiceUpdateLastUsedRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "title": "API Token Service Update Last Used Request",
+  "type": "object"
+}
