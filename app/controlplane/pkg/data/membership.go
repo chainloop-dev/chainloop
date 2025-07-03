@@ -310,8 +310,9 @@ func (r *MembershipRepo) ListAllByResource(ctx context.Context, rt authz.Resourc
 	return entMembershipsToBiz(mm), nil
 }
 
-func (r *MembershipRepo) AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error {
+func (r *MembershipRepo) AddResourceRole(ctx context.Context, orgID uuid.UUID, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error {
 	err := r.data.DB.Membership.Create().
+		SetOrganizationID(orgID).
 		SetMembershipType(mType).
 		SetMemberID(memberID).
 		SetResourceType(resourceType).

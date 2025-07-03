@@ -60,7 +60,7 @@ type MembershipRepo interface {
 	// ListGroupMembershipsByUser returns all memberships of the users inherited from groups
 	ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*Membership, error)
-	AddResourceRole(ctx context.Context, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error
+	AddResourceRole(ctx context.Context, orgID uuid.UUID, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error
 }
 
 type MembershipsRBAC interface {
@@ -341,7 +341,7 @@ func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, user
 }
 
 // SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
-func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, projectID, userID uuid.UUID) error {
+func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, projectID, userID uuid.UUID) error {
 	mm, err := uc.repo.ListAllByResource(ctx, authz.ResourceTypeProject, projectID)
 	if err != nil {
 		return fmt.Errorf("failed to find membership: %w", err)
@@ -354,7 +354,7 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, projectID, use
 		}
 	}
 
-	if err = uc.repo.AddResourceRole(ctx, authz.ResourceTypeProject, projectID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin); err != nil {
+	if err = uc.repo.AddResourceRole(ctx, orgID, authz.ResourceTypeProject, projectID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin); err != nil {
 		return fmt.Errorf("failed to set project owner: %w", err)
 	}
 

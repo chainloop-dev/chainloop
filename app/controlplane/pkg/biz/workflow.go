@@ -160,7 +160,11 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 
 	// Set project admin if a new project has been created
 	if opts.Owner != nil {
-		if err = uc.membershipUC.SetProjectOwner(ctx, wf.ProjectID, *opts.Owner); err != nil {
+		orgUUID, err := uuid.Parse(opts.OrgID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse org ID %q: %w", opts.OrgID, err)
+		}
+		if err = uc.membershipUC.SetProjectOwner(ctx, orgUUID, wf.ProjectID, *opts.Owner); err != nil {
 			return nil, fmt.Errorf("failed to set project owner: %w", err)
 		}
 	}
