@@ -87,14 +87,12 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 		}
 
 		if p.RevokedAt != nil {
-			fmt.Println("revoked at", p.RevokedAt.Format(time.RFC822))
 			r = append(r, p.RevokedAt.Format(time.RFC822))
 		} else {
 			r = append(r, "")
 		}
 
 		if p.LastUsedAt != nil {
-			fmt.Println("last used at", p.LastUsedAt.Format(time.RFC822))
 			r = append(r, p.LastUsedAt.Format(time.RFC822))
 		}
 
