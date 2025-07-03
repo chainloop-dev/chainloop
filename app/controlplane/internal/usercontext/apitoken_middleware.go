@@ -215,7 +215,7 @@ func WithAPITokenUsageUpdater(apiTokenUC *biz.APITokenUseCase, logger *log.Helpe
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			if token := entities.CurrentAPIToken(ctx); token != nil {
-				if err := apiTokenUC.UpdateLastUsed(ctx, token.ID); err != nil {
+				if err := apiTokenUC.UpdateLastUsedAt(ctx, token.ID); err != nil {
 					logger.Warnw("msg", "failed to record API token usage", "error", err)
 				}
 			}

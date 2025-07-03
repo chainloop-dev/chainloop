@@ -61,7 +61,7 @@ type APITokenRepo interface {
 	List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
-	UpdateLastUsed(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error
+	UpdateLastUsedAt(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)
 }
@@ -399,24 +399,15 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 	return nil
 }
 
-func (uc *APITokenUseCase) UpdateLastUsed(ctx context.Context, tokenID string) error {
-	id, err := uuid.Parse(tokenID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
+func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string) error {
+    id, err := uuid.Parse(tokenID)
+    if err != nil {
+        return NewErrInvalidUUID(err)
+    }
 
-	token, err := uc.apiTokenRepo.FindByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("finding token: %w", err)
-	}
+    if err := uc.apiTokenRepo.UpdateLastUsedAt(ctx, id, time.Now()); err != nil {
+        return fmt.Errorf("updating last used at: %w", err)
+    }
 
-	if token.RevokedAt != nil {
-		return fmt.Errorf("revoked token: %w", err)
-	}
-
-	if err := uc.apiTokenRepo.UpdateLastUsed(ctx, id, time.Now()); err != nil {
-		return fmt.Errorf("updating last used: %w", err)
-	}
-
-	return nil
+    return nil
 }

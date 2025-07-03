@@ -189,10 +189,12 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			),
 			// 2.a - Set its API token and organization as alternative to the user
 			usercontext.WithCurrentAPITokenAndOrgMiddleware(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
-			// 2.b - Set its user
+			// 2.b - Update API Token last usage
+			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),
+			// 2.c - Set its user
 			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
 			selector.Server(
-				// 2.c - Set its organization
+				// 2.d- Set its organization
 				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.MembershipUseCase, logHelper),
 				// 3 - Check user/token authorization
 				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),

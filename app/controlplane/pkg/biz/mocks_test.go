@@ -491,12 +491,12 @@ func (_c *MockAPITokenRepo_UpdateExpiration_Call) RunAndReturn(run func(ctx cont
 	return _c
 }
 
-// UpdateLastUsed provides a mock function for the type MockAPITokenRepo
-func (_mock *MockAPITokenRepo) UpdateLastUsed(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error {
+// UpdateLastUsedAt provides a mock function for the type MockAPITokenRepo
+func (_mock *MockAPITokenRepo) UpdateLastUsedAt(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error {
 	ret := _mock.Called(ctx, ID, lastUsedAt)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateLastUsed")
+		panic("no return value specified for UpdateLastUsedAt")
 	}
 
 	var r0 error
@@ -508,20 +508,20 @@ func (_mock *MockAPITokenRepo) UpdateLastUsed(ctx context.Context, ID uuid.UUID,
 	return r0
 }
 
-// MockAPITokenRepo_UpdateLastUsed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLastUsed'
-type MockAPITokenRepo_UpdateLastUsed_Call struct {
+// MockAPITokenRepo_UpdateLastUsedAt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLastUsedAt'
+type MockAPITokenRepo_UpdateLastUsedAt_Call struct {
 	*mock.Call
 }
 
-// UpdateLastUsed is a helper method to define mock.On call
+// UpdateLastUsedAt is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ID uuid.UUID
 //   - lastUsedAt time.Time
-func (_e *MockAPITokenRepo_Expecter) UpdateLastUsed(ctx interface{}, ID interface{}, lastUsedAt interface{}) *MockAPITokenRepo_UpdateLastUsed_Call {
-	return &MockAPITokenRepo_UpdateLastUsed_Call{Call: _e.mock.On("UpdateLastUsed", ctx, ID, lastUsedAt)}
+func (_e *MockAPITokenRepo_Expecter) UpdateLastUsedAt(ctx interface{}, ID interface{}, lastUsedAt interface{}) *MockAPITokenRepo_UpdateLastUsedAt_Call {
+	return &MockAPITokenRepo_UpdateLastUsedAt_Call{Call: _e.mock.On("UpdateLastUsedAt", ctx, ID, lastUsedAt)}
 }
 
-func (_c *MockAPITokenRepo_UpdateLastUsed_Call) Run(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time)) *MockAPITokenRepo_UpdateLastUsed_Call {
+func (_c *MockAPITokenRepo_UpdateLastUsedAt_Call) Run(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time)) *MockAPITokenRepo_UpdateLastUsedAt_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -544,12 +544,12 @@ func (_c *MockAPITokenRepo_UpdateLastUsed_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockAPITokenRepo_UpdateLastUsed_Call) Return(err error) *MockAPITokenRepo_UpdateLastUsed_Call {
+func (_c *MockAPITokenRepo_UpdateLastUsedAt_Call) Return(err error) *MockAPITokenRepo_UpdateLastUsedAt_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockAPITokenRepo_UpdateLastUsed_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error) *MockAPITokenRepo_UpdateLastUsed_Call {
+func (_c *MockAPITokenRepo_UpdateLastUsedAt_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error) *MockAPITokenRepo_UpdateLastUsedAt_Call {
 	_c.Call.Return(run)
 	return _c
 }

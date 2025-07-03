@@ -374,3 +374,45 @@ func (s *apiTokenTestSuite) SetupTest() {
 	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
 	require.NoError(s.T(), err)
 }
+
+func (s *apiTokenTestSuite) TestUpdateLastUsedAt() {
+	ctx := context.Background()
+
+	s.Run("update last used at", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+		require.NoError(s.T(), err)
+		assert.Nil(s.T(), token.LastUsedAt)
+
+		err = s.APIToken.UpdateLastUsedAt(ctx, token.ID.String())
+		require.NoError(s.T(), err)
+
+		updatedToken, err := s.APIToken.FindByID(ctx, token.ID.String())
+		require.NoError(s.T(), err)
+		require.NotNil(s.T(), updatedToken.LastUsedAt)
+		assert.WithinDuration(s.T(), time.Now(), *updatedToken.LastUsedAt, time.Second)
+	})
+
+	s.Run("invalid token ID", func() {
+		err := s.APIToken.UpdateLastUsedAt(ctx, "invalid-uuid")
+		assert.Error(s.T(), err)
+		assert.True(s.T(), biz.IsErrInvalidUUID(err))
+	})
+
+	s.Run("token not found", func() {
+		err := s.APIToken.UpdateLastUsedAt(ctx, uuid.NewString())
+		assert.Error(s.T(), err)
+		assert.True(s.T(), biz.IsNotFound(err))
+	})
+
+	s.Run("token is revoked", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+		require.NoError(s.T(), err)
+		err = s.APIToken.Revoke(ctx, s.org.ID, token.ID.String())
+		require.NoError(s.T(), err)
+
+		err = s.APIToken.UpdateLastUsedAt(ctx, token.ID.String())
+
+		assert.Error(s.T(), err)
+		assert.True(s.T(), biz.IsNotFound(err))
+	})
+}
