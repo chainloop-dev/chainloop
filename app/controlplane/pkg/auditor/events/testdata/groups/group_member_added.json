@@ -1,5 +1,5 @@
 {
-  "ActionType": "GroupMemberAdded",
+  "ActionType": "GroupMembershipAdded",
   "TargetType": "Group",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
   "ActorType": "USER",
@@ -14,5 +14,5 @@
     "user_email": "test@example.com",
     "maintainer": true
   },
-  "Digest": "sha256:49a9a6fc6e737fcce1135c1add8fc6f4ff9d114a199547089b5f1aa61b994b79"
+  "Digest": "sha256:983114c838c67c2f943082b2e8c5a4c0474ca9965c84d9879eeb2f3a54591c1d"
 }

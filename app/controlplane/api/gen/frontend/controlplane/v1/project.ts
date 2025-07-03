@@ -163,6 +163,20 @@ export interface ProjectMembershipReference {
   groupReference?: IdentityReference | undefined;
 }
 
+/** ProjectServiceUpdateMemberRoleRequest contains the information needed to update a member's role in a project */
+export interface ProjectServiceUpdateMemberRoleRequest {
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
+  /** The membership reference can be a user email or groups references in the future */
+  memberReference?: ProjectMembershipReference;
+  /** The new role for the member in the project */
+  newRole: ProjectMemberRole;
+}
+
+/** ProjectServiceUpdateMemberRoleResponse is returned upon successful update of a member's role in a project */
+export interface ProjectServiceUpdateMemberRoleResponse {
+}
+
 function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
   return { name: "", projectName: "", description: undefined, expiresIn: undefined };
 }
@@ -1321,6 +1335,155 @@ export const ProjectMembershipReference = {
   },
 };
 
+function createBaseProjectServiceUpdateMemberRoleRequest(): ProjectServiceUpdateMemberRoleRequest {
+  return { projectReference: undefined, memberReference: undefined, newRole: 0 };
+}
+
+export const ProjectServiceUpdateMemberRoleRequest = {
+  encode(message: ProjectServiceUpdateMemberRoleRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.memberReference !== undefined) {
+      ProjectMembershipReference.encode(message.memberReference, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.newRole !== 0) {
+      writer.uint32(24).int32(message.newRole);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceUpdateMemberRoleRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceUpdateMemberRoleRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.memberReference = ProjectMembershipReference.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.newRole = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceUpdateMemberRoleRequest {
+    return {
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
+      memberReference: isSet(object.memberReference)
+        ? ProjectMembershipReference.fromJSON(object.memberReference)
+        : undefined,
+      newRole: isSet(object.newRole) ? projectMemberRoleFromJSON(object.newRole) : 0,
+    };
+  },
+
+  toJSON(message: ProjectServiceUpdateMemberRoleRequest): unknown {
+    const obj: any = {};
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
+    message.memberReference !== undefined && (obj.memberReference = message.memberReference
+      ? ProjectMembershipReference.toJSON(message.memberReference)
+      : undefined);
+    message.newRole !== undefined && (obj.newRole = projectMemberRoleToJSON(message.newRole));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceUpdateMemberRoleRequest>, I>>(
+    base?: I,
+  ): ProjectServiceUpdateMemberRoleRequest {
+    return ProjectServiceUpdateMemberRoleRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceUpdateMemberRoleRequest>, I>>(
+    object: I,
+  ): ProjectServiceUpdateMemberRoleRequest {
+    const message = createBaseProjectServiceUpdateMemberRoleRequest();
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
+    message.memberReference = (object.memberReference !== undefined && object.memberReference !== null)
+      ? ProjectMembershipReference.fromPartial(object.memberReference)
+      : undefined;
+    message.newRole = object.newRole ?? 0;
+    return message;
+  },
+};
+
+function createBaseProjectServiceUpdateMemberRoleResponse(): ProjectServiceUpdateMemberRoleResponse {
+  return {};
+}
+
+export const ProjectServiceUpdateMemberRoleResponse = {
+  encode(_: ProjectServiceUpdateMemberRoleResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceUpdateMemberRoleResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceUpdateMemberRoleResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ProjectServiceUpdateMemberRoleResponse {
+    return {};
+  },
+
+  toJSON(_: ProjectServiceUpdateMemberRoleResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceUpdateMemberRoleResponse>, I>>(
+    base?: I,
+  ): ProjectServiceUpdateMemberRoleResponse {
+    return ProjectServiceUpdateMemberRoleResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceUpdateMemberRoleResponse>, I>>(
+    _: I,
+  ): ProjectServiceUpdateMemberRoleResponse {
+    const message = createBaseProjectServiceUpdateMemberRoleResponse();
+    return message;
+  },
+};
+
 export interface ProjectService {
   /** Project level API tokens */
   APITokenCreate(
@@ -1348,6 +1511,10 @@ export interface ProjectService {
     request: DeepPartial<ProjectServiceRemoveMemberRequest>,
     metadata?: grpc.Metadata,
   ): Promise<ProjectServiceRemoveMemberResponse>;
+  UpdateMemberRole(
+    request: DeepPartial<ProjectServiceUpdateMemberRoleRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceUpdateMemberRoleResponse>;
 }
 
 export class ProjectServiceClientImpl implements ProjectService {
@@ -1361,6 +1528,7 @@ export class ProjectServiceClientImpl implements ProjectService {
     this.ListMembers = this.ListMembers.bind(this);
     this.AddMember = this.AddMember.bind(this);
     this.RemoveMember = this.RemoveMember.bind(this);
+    this.UpdateMemberRole = this.UpdateMemberRole.bind(this);
   }
 
   APITokenCreate(
@@ -1421,6 +1589,17 @@ export class ProjectServiceClientImpl implements ProjectService {
     return this.rpc.unary(
       ProjectServiceRemoveMemberDesc,
       ProjectServiceRemoveMemberRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  UpdateMemberRole(
+    request: DeepPartial<ProjectServiceUpdateMemberRoleRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceUpdateMemberRoleResponse> {
+    return this.rpc.unary(
+      ProjectServiceUpdateMemberRoleDesc,
+      ProjectServiceUpdateMemberRoleRequest.fromPartial(request),
       metadata,
     );
   }
@@ -1556,6 +1735,29 @@ export const ProjectServiceRemoveMemberDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = ProjectServiceRemoveMemberResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ProjectServiceUpdateMemberRoleDesc: UnaryMethodDefinitionish = {
+  methodName: "UpdateMemberRole",
+  service: ProjectServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ProjectServiceUpdateMemberRoleRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ProjectServiceUpdateMemberRoleResponse.decode(data);
       return {
         ...value,
         toObject() {

@@ -1,5 +1,5 @@
 {
-  "ActionType": "GroupMemberRemoved",
+  "ActionType": "GroupMembershipRemoved",
   "TargetType": "Group",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
   "ActorType": "USER",
@@ -13,5 +13,5 @@
     "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
     "user_email": "test@example.com"
   },
-  "Digest": "sha256:6ba5c5f01dd8fd312e5cb50ba7e947ba7c478a1663857d234817772be609b256"
+  "Digest": "sha256:1374d718f6851976803be9f0b0c2b9fef5bc67abdb8418e82c815da8d8b3dbbc"
 }

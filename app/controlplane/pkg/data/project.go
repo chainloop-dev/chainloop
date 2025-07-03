@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -283,6 +284,40 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, p
 	}
 
 	return projectMembership, nil
+}
+
+// UpdateMemberRoleInProject updates the role of a member in a project
+func (r *ProjectRepo) UpdateMemberRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, newRole authz.Role) (*biz.ProjectMembership, error) {
+	// Check if the project exists and belongs to the organization
+	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find project: %w", err)
+	}
+	if existingProject == nil {
+		return nil, biz.NewErrNotFound("project")
+	}
+
+	if newRole != authz.RoleProjectAdmin && newRole != authz.RoleProjectViewer {
+		return nil, biz.NewErrValidationStr("invalid role, must be either 'admin' or 'viewer'")
+	}
+
+	// Find the membership to update
+	m, err := r.queryMembership(projectID, memberID, membershipType).Only(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("membership")
+		}
+		return nil, fmt.Errorf("failed to find membership: %w", err)
+	}
+
+	// Update the role
+	m, err = m.Update().SetUpdatedAt(time.Now()).SetRole(newRole).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update membership role: %w", err)
+	}
+
+	return entProjectMembershipToBiz(m, nil, nil), nil
 }
 
 // queryMembership is a helper function to build a common membership query

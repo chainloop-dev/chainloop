@@ -51,8 +51,8 @@ func TestProjectEvents(t *testing.T) {
 		actorID  uuid.UUID
 	}{
 		{
-			name: "ProjectMemberAdded",
-			event: &events.ProjectMemberAdded{
+			name: "ProjectMembershipAdded",
+			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: projectName,
@@ -66,8 +66,8 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMemberAdded as admin",
-			event: &events.ProjectMemberAdded{
+			name: "ProjectMembershipAdded as admin",
+			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: projectName,
@@ -81,8 +81,8 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMemberAdded with API Token",
-			event: &events.ProjectMemberAdded{
+			name: "ProjectMembershipAdded with API Token",
+			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: projectName,
@@ -96,8 +96,40 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMemberRemoved",
-			event: &events.ProjectMemberRemoved{
+			name: "ProjectMemberRoleUpdated",
+			event: &events.ProjectMemberRoleUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+				UserID:    &memberUUID,
+				UserEmail: userEmail,
+				OldRole:   string(authz.RoleProjectViewer),
+				NewRole:   "role:project:admin",
+			},
+			expected: "testdata/projects/project_member_role_updated.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "ProjectMemberRoleUpdated with API Token",
+			event: &events.ProjectMemberRoleUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+				UserID:    &memberUUID,
+				UserEmail: userEmail,
+				OldRole:   string(authz.RoleProjectViewer),
+				NewRole:   "role:project:admin",
+			},
+			expected: "testdata/projects/project_member_role_updated_with_api_token.json",
+			actor:    auditor.ActorTypeAPIToken,
+			actorID:  userUUID,
+		},
+		{
+			name: "ProjectMembershipRemoved",
+			event: &events.ProjectMembershipRemoved{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: projectName,
@@ -110,8 +142,8 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMemberRemoved with API Token",
-			event: &events.ProjectMemberRemoved{
+			name: "ProjectMembershipRemoved with API Token",
+			event: &events.ProjectMembershipRemoved{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: projectName,
@@ -176,8 +208,8 @@ func TestProjectEventsFailed(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "Project member added with missing ProjectID",
-			event: &events.ProjectMemberAdded{
+			name: "Project membership added with missing ProjectID",
+			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectName: "test-project",
 				},
@@ -188,8 +220,8 @@ func TestProjectEventsFailed(t *testing.T) {
 			expectedErr: "project id and name are required",
 		},
 		{
-			name: "Project member added with missing ProjectName",
-			event: &events.ProjectMemberAdded{
+			name: "Project membership added with missing ProjectName",
+			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectID: &projectUUID,
 				},
@@ -200,8 +232,8 @@ func TestProjectEventsFailed(t *testing.T) {
 			expectedErr: "project id and name are required",
 		},
 		{
-			name: "Project member added with missing UserID",
-			event: &events.ProjectMemberAdded{
+			name: "Project membership added with missing UserID and GroupID",
+			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: "test-project",
@@ -209,11 +241,50 @@ func TestProjectEventsFailed(t *testing.T) {
 				UserEmail: "test@example.com",
 				Role:      "admin",
 			},
-			expectedErr: "user ID is required",
+			expectedErr: "either user ID or group ID is required",
 		},
 		{
-			name: "Project member removed with missing ProjectID",
-			event: &events.ProjectMemberRemoved{
+			name: "Project member role updated with missing ProjectID",
+			event: &events.ProjectMemberRoleUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectName: "test-project",
+				},
+				UserID:    &memberUUID,
+				UserEmail: "test@example.com",
+				OldRole:   "role:project:viewer",
+				NewRole:   "role:project:admin",
+			},
+			expectedErr: "project id and name are required",
+		},
+		{
+			name: "Project member role updated with missing ProjectName",
+			event: &events.ProjectMemberRoleUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID: &projectUUID,
+				},
+				UserID:    &memberUUID,
+				UserEmail: "test@example.com",
+				OldRole:   "role:project:viewer",
+				NewRole:   "role:project:admin",
+			},
+			expectedErr: "project id and name are required",
+		},
+		{
+			name: "Project member role updated with missing UserID and GroupID",
+			event: &events.ProjectMemberRoleUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: "test-project",
+				},
+				UserEmail: "test@example.com",
+				OldRole:   "role:project:viewer",
+				NewRole:   "role:project:admin",
+			},
+			expectedErr: "either user ID or group ID is required",
+		},
+		{
+			name: "Project membership removed with missing ProjectID",
+			event: &events.ProjectMembershipRemoved{
 				ProjectBase: &events.ProjectBase{
 					ProjectName: "test-project",
 				},
@@ -223,8 +294,8 @@ func TestProjectEventsFailed(t *testing.T) {
 			expectedErr: "project id and name are required",
 		},
 		{
-			name: "Project member removed with missing ProjectName",
-			event: &events.ProjectMemberRemoved{
+			name: "Project membership removed with missing ProjectName",
+			event: &events.ProjectMembershipRemoved{
 				ProjectBase: &events.ProjectBase{
 					ProjectID: &projectUUID,
 				},
@@ -234,15 +305,15 @@ func TestProjectEventsFailed(t *testing.T) {
 			expectedErr: "project id and name are required",
 		},
 		{
-			name: "Project member removed with missing UserID",
-			event: &events.ProjectMemberRemoved{
+			name: "Project membership removed with missing UserID and GroupID",
+			event: &events.ProjectMembershipRemoved{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
 					ProjectName: "test-project",
 				},
 				UserEmail: "test@example.com",
 			},
-			expectedErr: "user ID is required",
+			expectedErr: "either user ID or group ID is required",
 		},
 	}
 

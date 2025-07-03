@@ -33,12 +33,12 @@ var (
 )
 
 const (
-	GroupType                    auditor.TargetType = "Group"
-	GroupCreatedActionType       string             = "GroupCreated"
-	GroupUpdatedActionType       string             = "GroupUpdated"
-	GroupDeletedActionType       string             = "GroupDeleted"
-	GroupMemberAddedActionType   string             = "GroupMemberAdded"
-	GroupMemberRemovedActionType string             = "GroupMemberRemoved"
+	GroupType                        auditor.TargetType = "Group"
+	GroupCreatedActionType           string             = "GroupCreated"
+	GroupUpdatedActionType           string             = "GroupUpdated"
+	GroupDeletedActionType           string             = "GroupDeleted"
+	GroupMembershipAddedActionType   string             = "GroupMembershipAdded"
+	GroupMembershipRemovedActionType string             = "GroupMembershipRemoved"
 )
 
 // GroupBase is the base struct for group events
@@ -146,7 +146,7 @@ type GroupMemberAdded struct {
 }
 
 func (g *GroupMemberAdded) ActionType() string {
-	return GroupMemberAddedActionType
+	return GroupMembershipAddedActionType
 }
 
 func (g *GroupMemberAdded) ActionInfo() (json.RawMessage, error) {
@@ -179,7 +179,7 @@ type GroupMemberRemoved struct {
 }
 
 func (g *GroupMemberRemoved) ActionType() string {
-	return GroupMemberRemovedActionType
+	return GroupMembershipRemovedActionType
 }
 
 func (g *GroupMemberRemoved) ActionInfo() (json.RawMessage, error) {

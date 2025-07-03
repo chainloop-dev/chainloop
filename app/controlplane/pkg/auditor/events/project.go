@@ -27,18 +27,16 @@ import (
 )
 
 var (
-	_ auditor.LogEntry = (*ProjectMemberAdded)(nil)
-	_ auditor.LogEntry = (*ProjectMemberRemoved)(nil)
-	_ auditor.LogEntry = (*ProjectGroupAdded)(nil)
-	_ auditor.LogEntry = (*ProjectGroupRemoved)(nil)
+	_ auditor.LogEntry = (*ProjectMembershipAdded)(nil)
+	_ auditor.LogEntry = (*ProjectMembershipRemoved)(nil)
+	_ auditor.LogEntry = (*ProjectMemberRoleUpdated)(nil)
 )
 
 const (
-	ProjectType                    auditor.TargetType = "Project"
-	ProjectMemberAddedActionType   string             = "ProjectMemberAdded"
-	ProjectMemberRemovedActionType string             = "ProjectMemberRemoved"
-	ProjectGroupAddedActionType    string             = "ProjectGroupAdded"
-	ProjectGroupRemovedActionType  string             = "ProjectGroupRemoved"
+	ProjectType                        auditor.TargetType = "Project"
+	ProjectMembershipAddedActionType   string             = "ProjectMembershipAdded"
+	ProjectMembershipRemovedActionType string             = "ProjectMembershipRemoved"
+	ProjectMemberRoleUpdatedType       string             = "ProjectMemberRoleUpdated"
 )
 
 // ProjectBase is the base struct for project events
@@ -77,127 +75,132 @@ func prettyRole(role string) string {
 	return prettyRole
 }
 
-// ProjectMemberAdded represents the addition of a member to a project
-type ProjectMemberAdded struct {
+// ProjectMemberRoleUpdated represents the update of a member's (user or group) role in a project
+type ProjectMemberRoleUpdated struct {
 	*ProjectBase
+	// User-specific fields
 	UserID    *uuid.UUID `json:"user_id,omitempty"`
 	UserEmail string     `json:"user_email,omitempty"`
-	Role      string     `json:"role,omitempty"`
-}
-
-func (p *ProjectMemberAdded) ActionType() string {
-	return ProjectMemberAddedActionType
-}
-
-func (p *ProjectMemberAdded) ActionInfo() (json.RawMessage, error) {
-	if _, err := p.ProjectBase.ActionInfo(); err != nil {
-		return nil, err
-	}
-
-	if p.UserID == nil {
-		return nil, fmt.Errorf("user ID is required")
-	}
-
-	return json.Marshal(&p)
-}
-
-func (p *ProjectMemberAdded) Description() string {
-	roleDesc := ""
-	if p.Role != "" {
-		roleDesc = fmt.Sprintf(" with role '%s'", prettyRole(p.Role))
-	}
-
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has added user '%s' to the project '%s'%s",
-		p.UserEmail, p.ProjectName, roleDesc)
-}
-
-// ProjectMemberRemoved represents the removal of a member from a project
-type ProjectMemberRemoved struct {
-	*ProjectBase
-	UserID    *uuid.UUID `json:"user_id,omitempty"`
-	UserEmail string     `json:"user_email,omitempty"`
-}
-
-func (p *ProjectMemberRemoved) ActionType() string {
-	return ProjectMemberRemovedActionType
-}
-
-func (p *ProjectMemberRemoved) ActionInfo() (json.RawMessage, error) {
-	if _, err := p.ProjectBase.ActionInfo(); err != nil {
-		return nil, err
-	}
-
-	if p.UserID == nil {
-		return nil, fmt.Errorf("user ID is required")
-	}
-
-	return json.Marshal(&p)
-}
-
-func (p *ProjectMemberRemoved) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has removed user '%s' from the project '%s'",
-		p.UserEmail, p.ProjectName)
-}
-
-// ProjectGroupAdded represents the addition of a group to a project
-type ProjectGroupAdded struct {
-	*ProjectBase
+	// Group-specific fields
 	GroupID   *uuid.UUID `json:"group_id,omitempty"`
 	GroupName string     `json:"group_name,omitempty"`
-	Role      string     `json:"role,omitempty"`
+	// Common fields
+	OldRole string `json:"old_role,omitempty"`
+	NewRole string `json:"new_role,omitempty"`
 }
 
-func (p *ProjectGroupAdded) ActionType() string {
-	return ProjectGroupAddedActionType
+func (p *ProjectMemberRoleUpdated) ActionType() string {
+	return ProjectMemberRoleUpdatedType
 }
 
-func (p *ProjectGroupAdded) ActionInfo() (json.RawMessage, error) {
+func (p *ProjectMemberRoleUpdated) ActionInfo() (json.RawMessage, error) {
 	if _, err := p.ProjectBase.ActionInfo(); err != nil {
 		return nil, err
 	}
 
-	if p.GroupID == nil {
-		return nil, fmt.Errorf("group ID is required")
+	// Validate that either user or group info is provided
+	if p.UserID == nil && p.GroupID == nil {
+		return nil, fmt.Errorf("either user ID or group ID is required")
 	}
 
 	return json.Marshal(&p)
 }
 
-func (p *ProjectGroupAdded) Description() string {
-	// Create a prettier role description
+func (p *ProjectMemberRoleUpdated) Description() string {
+	if p.UserID != nil {
+		// User role update
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated user '%s' role in project '%s' from '%s' to '%s'",
+			p.UserEmail, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
+	}
+
+	// Group role update
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated group '%s' role in project '%s' from '%s' to '%s'",
+		p.GroupName, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
+}
+
+// ProjectMembershipAdded represents the addition of a member (user or group) to a project
+type ProjectMembershipAdded struct {
+	*ProjectBase
+	// User-specific fields
+	UserID    *uuid.UUID `json:"user_id,omitempty"`
+	UserEmail string     `json:"user_email,omitempty"`
+	// Group-specific fields
+	GroupID   *uuid.UUID `json:"group_id,omitempty"`
+	GroupName string     `json:"group_name,omitempty"`
+	// Common fields
+	Role string `json:"role,omitempty"`
+}
+
+func (p *ProjectMembershipAdded) ActionType() string {
+	return ProjectMembershipAddedActionType
+}
+
+func (p *ProjectMembershipAdded) ActionInfo() (json.RawMessage, error) {
+	if _, err := p.ProjectBase.ActionInfo(); err != nil {
+		return nil, err
+	}
+
+	// Validate that either user or group info is provided
+	if p.UserID == nil && p.GroupID == nil {
+		return nil, fmt.Errorf("either user ID or group ID is required")
+	}
+
+	return json.Marshal(&p)
+}
+
+func (p *ProjectMembershipAdded) Description() string {
 	roleDesc := ""
 	if p.Role != "" {
 		roleDesc = fmt.Sprintf(" with role '%s'", prettyRole(p.Role))
 	}
 
+	if p.UserID != nil {
+		// User addition
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has added user '%s' to the project '%s'%s",
+			p.UserEmail, p.ProjectName, roleDesc)
+	}
+
+	// Group addition
 	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has added group '%s' to the project '%s'%s",
 		p.GroupName, p.ProjectName, roleDesc)
 }
 
-// ProjectGroupRemoved represents the removal of a group from a project
-type ProjectGroupRemoved struct {
+// ProjectMembershipRemoved represents the removal of a member (user or group) from a project
+type ProjectMembershipRemoved struct {
 	*ProjectBase
+	// User-specific fields
+	UserID    *uuid.UUID `json:"user_id,omitempty"`
+	UserEmail string     `json:"user_email,omitempty"`
+	// Group-specific fields
 	GroupID   *uuid.UUID `json:"group_id,omitempty"`
 	GroupName string     `json:"group_name,omitempty"`
 }
 
-func (p *ProjectGroupRemoved) ActionType() string {
-	return ProjectGroupRemovedActionType
+func (p *ProjectMembershipRemoved) ActionType() string {
+	return ProjectMembershipRemovedActionType
 }
 
-func (p *ProjectGroupRemoved) ActionInfo() (json.RawMessage, error) {
+func (p *ProjectMembershipRemoved) ActionInfo() (json.RawMessage, error) {
 	if _, err := p.ProjectBase.ActionInfo(); err != nil {
 		return nil, err
 	}
 
-	if p.GroupID == nil {
-		return nil, fmt.Errorf("group ID is required")
+	// Validate that either user or group info is provided
+	if p.UserID == nil && p.GroupID == nil {
+		return nil, fmt.Errorf("either user ID or group ID is required")
 	}
 
 	return json.Marshal(&p)
 }
 
-func (p *ProjectGroupRemoved) Description() string {
+func (p *ProjectMembershipRemoved) Description() string {
+	if p.UserID != nil {
+		// User removal
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has removed user '%s' from the project '%s'",
+			p.UserEmail, p.ProjectName)
+	}
+
+	// Group removal
 	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has removed group '%s' from the project '%s'",
 		p.GroupName, p.ProjectName)
 }
