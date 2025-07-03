@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.ProjectServiceUpdateMemberRoleResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceUpdateMemberRoleResponse is returned upon successful update of a member's role in a project",
+  "properties": {},
+  "title": "Project Service Update Member Role Response",
+  "type": "object"
+}

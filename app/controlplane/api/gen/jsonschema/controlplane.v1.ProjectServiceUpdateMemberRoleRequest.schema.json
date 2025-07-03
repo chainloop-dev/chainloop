@@ -1,0 +1,71 @@
+{
+  "$id": "controlplane.v1.ProjectServiceUpdateMemberRoleRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceUpdateMemberRoleRequest contains the information needed to update a member's role in a project",
+  "patternProperties": {
+    "^(memberReference)$": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.schema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
+    },
+    "^(newRole)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+            "PROJECT_MEMBER_ROLE_ADMIN",
+            "PROJECT_MEMBER_ROLE_VIEWER"
+          ],
+          "title": "Project Member Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The new role for the member in the project"
+    },
+    "^(projectReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "properties": {
+    "member_reference": {
+      "$ref": "controlplane.v1.ProjectMembershipReference.schema.json",
+      "description": "The membership reference can be a user email or groups references in the future"
+    },
+    "new_role": {
+      "anyOf": [
+        {
+          "enum": [
+            "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+            "PROJECT_MEMBER_ROLE_ADMIN",
+            "PROJECT_MEMBER_ROLE_VIEWER"
+          ],
+          "title": "Project Member Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "The new role for the member in the project"
+    },
+    "project_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "required": [
+    "project_reference",
+    "member_reference",
+    "new_role"
+  ],
+  "title": "Project Service Update Member Role Request",
+  "type": "object"
+}

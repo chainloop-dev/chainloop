@@ -42,6 +42,8 @@ type ProjectsRepo interface {
 	AddMemberToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, role authz.Role) (*ProjectMembership, error)
 	// RemoveMemberFromProject removes a user or group from a project.
 	RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) error
+	// UpdateMemberRoleInProject updates the role of a user or group in a project.
+	UpdateMemberRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, newRole authz.Role) (*ProjectMembership, error)
 	// FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group).
 	FindProjectMembershipByProjectAndID(ctx context.Context, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*ProjectMembership, error)
 }
@@ -112,6 +114,20 @@ type RemoveMemberFromProjectOpts struct {
 	GroupReference *IdentityReference
 	// RequesterID is the ID of the user who is requesting to remove the member.
 	RequesterID uuid.UUID
+}
+
+// UpdateMemberRoleOpts defines options for updating a member's role in a project.
+type UpdateMemberRoleOpts struct {
+	// ProjectReference is the reference to the project.
+	ProjectReference *IdentityReference
+	// UserEmail is the email of the user whose role to update.
+	UserEmail string
+	// GroupReference is the reference to the group whose role to update.
+	GroupReference *IdentityReference
+	// RequesterID is the ID of the user who is requesting to update the role.
+	RequesterID uuid.UUID
+	// NewRole represents the new role to assign to the member in the project.
+	NewRole authz.Role
 }
 
 func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase) *ProjectUseCase {
@@ -250,8 +266,8 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 		return nil, fmt.Errorf("failed to add member to project: %w", err)
 	}
 
-	// Dispatch event to the audit log for project membership addition
-	uc.auditorUC.Dispatch(ctx, &events.ProjectMemberAdded{
+	// Dispatch event to the audit log for project membership addition using the unified event
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMembershipAdded{
 		ProjectBase: &events.ProjectBase{
 			ProjectID:   &projectID,
 			ProjectName: project.Name,
@@ -294,7 +310,7 @@ func (uc *ProjectUseCase) addGroupToProject(ctx context.Context, orgID uuid.UUID
 	}
 
 	// Dispatch event to the audit log for group membership addition
-	uc.auditorUC.Dispatch(ctx, &events.ProjectGroupAdded{
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMembershipAdded{
 		ProjectBase: &events.ProjectBase{
 			ProjectID:   &projectID,
 			ProjectName: project.Name,
@@ -369,7 +385,7 @@ func (uc *ProjectUseCase) removeUserFromProject(ctx context.Context, orgID uuid.
 	}
 
 	// Dispatch event to the audit log for project membership removal
-	uc.auditorUC.Dispatch(ctx, &events.ProjectMemberRemoved{
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMembershipRemoved{
 		ProjectBase: &events.ProjectBase{
 			ProjectID:   &projectID,
 			ProjectName: project.Name,
@@ -410,7 +426,7 @@ func (uc *ProjectUseCase) removeGroupFromProject(ctx context.Context, orgID uuid
 	}
 
 	// Dispatch event to the audit log for group membership removal
-	uc.auditorUC.Dispatch(ctx, &events.ProjectGroupRemoved{
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMembershipRemoved{
 		ProjectBase: &events.ProjectBase{
 			ProjectID:   &projectID,
 			ProjectName: project.Name,
@@ -539,4 +555,138 @@ func getProjectsWithMembership(ctx context.Context, projectsRepo ProjectsRepo, o
 	}
 
 	return ids, nil
+}
+
+// UpdateMemberRole updates the role of a user or group in a project.
+func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID, opts *UpdateMemberRoleOpts) error {
+	if opts == nil {
+		return NewErrValidationStr("options cannot be nil")
+	}
+
+	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
+		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	}
+
+	// Ensure only one of UserEmail or GroupReference is provided
+	if (opts.UserEmail != "" && opts.GroupReference != nil) || (opts.UserEmail == "" && opts.GroupReference == nil) {
+		return NewErrValidationStr("exactly one of user email or group reference must be provided")
+	}
+
+	// Validate the role
+	if opts.NewRole != authz.RoleProjectAdmin && opts.NewRole != authz.RoleProjectViewer {
+		return NewErrValidationStr("role must be either 'admin' or 'viewer'")
+	}
+
+	// Validate and resolve the project reference
+	resolvedProjectID, existingProject, err := uc.validateAndResolveProject(ctx, orgID, opts.ProjectReference)
+	if err != nil {
+		return err
+	}
+
+	// Verify the requester has permissions to update member roles in the project
+	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+		return fmt.Errorf("requester does not have permission to update member roles in this project: %w", err)
+	}
+
+	// Process based on whether we're updating a user or a group
+	if opts.UserEmail != "" {
+		return uc.updateUserRoleInProject(ctx, orgID, resolvedProjectID, existingProject, opts)
+	}
+
+	return uc.updateGroupRoleInProject(ctx, orgID, resolvedProjectID, existingProject, opts)
+}
+
+// updateUserRoleInProject updates the role of a user in a project and logs the action.
+func (uc *ProjectUseCase) updateUserRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, project *Project, opts *UpdateMemberRoleOpts) error {
+	// Find the user by email in the organization
+	userMembership, err := uc.membershipRepository.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
+	if err != nil && !IsNotFound(err) {
+		return fmt.Errorf("failed to find user by email: %w", err)
+	}
+	if userMembership == nil {
+		return NewErrValidationStr("user with the provided email is not a member of the organization")
+	}
+
+	userUUID := uuid.MustParse(userMembership.User.ID)
+
+	// Check if the user is a member of the project
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, userUUID, authz.MembershipTypeUser)
+	if err != nil && !IsNotFound(err) {
+		return fmt.Errorf("failed to check existing membership: %w", err)
+	}
+	if existingMembership == nil {
+		return NewErrValidationStr("user is not a member of this project")
+	}
+
+	// If the role is already the requested role, no need to update
+	if existingMembership.Role == opts.NewRole {
+		return nil
+	}
+
+	// Update the membership role
+	if _, upErr := uc.projectsRepository.UpdateMemberRoleInProject(ctx, orgID, projectID, userUUID, authz.MembershipTypeUser, opts.NewRole); upErr != nil {
+		return fmt.Errorf("failed to update membership with new role: %w", upErr)
+	}
+
+	// Dispatch event to the audit log for role update
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMemberRoleUpdated{
+		ProjectBase: &events.ProjectBase{
+			ProjectID:   &projectID,
+			ProjectName: project.Name,
+		},
+		UserID:    &userUUID,
+		UserEmail: opts.UserEmail,
+		NewRole:   string(opts.NewRole),
+		OldRole:   string(existingMembership.Role),
+	}, &orgID)
+
+	return nil
+}
+
+// updateGroupRoleInProject updates the role of a group in a project and logs the action.
+func (uc *ProjectUseCase) updateGroupRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, project *Project, opts *UpdateMemberRoleOpts) error {
+	// Validate and resolve the group reference
+	resolvedGroupID, err := uc.groupUC.ValidateGroupIdentifier(ctx, orgID, opts.GroupReference.ID, opts.GroupReference.Name)
+	if err != nil {
+		return fmt.Errorf("failed to validate group reference: %w", err)
+	}
+
+	// Check if the group has membership in the project
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, resolvedGroupID, authz.MembershipTypeGroup)
+	if err != nil && !IsNotFound(err) {
+		return fmt.Errorf("failed to check existing group membership: %w", err)
+	}
+	if existingMembership == nil {
+		return NewErrValidationStr("group is not a member of this project")
+	}
+
+	// If the role is already the requested role, no need to update
+	if existingMembership.Role == opts.NewRole {
+		return nil
+	}
+
+	// Update the membership role
+	if _, upErr := uc.projectsRepository.UpdateMemberRoleInProject(ctx, orgID, projectID, resolvedGroupID, authz.MembershipTypeGroup, opts.NewRole); upErr != nil {
+		return fmt.Errorf("failed to update membership with new role: %w", upErr)
+	}
+
+	// Get group info for the audit log
+	group, err := uc.groupUC.Get(ctx, orgID, &IdentityReference{ID: &resolvedGroupID})
+	if err != nil {
+		uc.logger.Warnf("failed to get group info for audit log: %v", err)
+	}
+
+	// Dispatch event to the audit log for role update using the unified event
+	uc.auditorUC.Dispatch(ctx, &events.ProjectMemberRoleUpdated{
+		ProjectBase: &events.ProjectBase{
+			ProjectID:   &projectID,
+			ProjectName: project.Name,
+		},
+		GroupID:   &resolvedGroupID,
+		GroupName: group.Name,
+		NewRole:   string(opts.NewRole),
+		OldRole:   string(existingMembership.Role),
+	}, &orgID)
+
+	return nil
 }

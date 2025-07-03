@@ -302,6 +302,67 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 	return &pb.ProjectServiceRemoveMemberResponse{}, nil
 }
 
+// UpdateMemberRole updates the role of a user or group in a project.
+func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *pb.ProjectServiceUpdateMemberRoleRequest) (*pb.ProjectServiceUpdateMemberRoleResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure the provided project exists and the user has permission to update member roles in it
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAddMemberships)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get current user ID from context
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	requesterUUID, err := uuid.Parse(currentUser.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Extract the user email and group reference from the membership reference field
+	userEmail, groupReference, err := s.extractMembershipReference(req.GetMemberReference())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Convert from protobuf role to internal authorization role
+	newRole := mapProjectMemberRoleToAuthzRole(req.NewRole)
+
+	// Prepare options for updating a member's role
+	opts := &biz.UpdateMemberRoleOpts{
+		ProjectReference: &biz.IdentityReference{},
+		UserEmail:        userEmail,
+		GroupReference:   groupReference,
+		RequesterID:      requesterUUID,
+		NewRole:          newRole,
+	}
+
+	// Parse projectID and projectName from the request
+	opts.ProjectReference.ID, opts.ProjectReference.Name, err = req.GetProjectReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Call the business logic to update the member's role
+	if err := s.projectUseCase.UpdateMemberRole(ctx, orgUUID, opts); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.ProjectServiceUpdateMemberRoleResponse{}, nil
+}
+
 // extractMembershipReference extracts either a user email or a group reference from a membership reference
 // If both or neither are provided, returns an error
 func (s *ProjectService) extractMembershipReference(membershipRef *pb.ProjectMembershipReference) (string, *biz.IdentityReference, error) {

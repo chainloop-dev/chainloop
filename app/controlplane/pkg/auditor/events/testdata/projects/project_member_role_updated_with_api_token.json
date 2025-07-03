@@ -1,18 +1,19 @@
 {
-  "ActionType": "ProjectMembershipAdded",
+  "ActionType": "ProjectMemberRoleUpdated",
   "TargetType": "Project",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
   "ActorType": "API_TOKEN",
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "API Token 1089bb36-e27b-428b-8009-d015c8737c54 has added user 'test@example.com' to the project 'test-project' with role 'viewer'",
+  "Description": "API Token 1089bb36-e27b-428b-8009-d015c8737c54 has updated user 'test@example.com' role in project 'test-project' from 'viewer' to 'admin'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",
     "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
     "user_email": "test@example.com",
-    "role": "role:project:viewer"
+    "old_role": "role:project:viewer",
+    "new_role": "role:project:admin"
   },
-  "Digest": "sha256:e166950b0f58a8d79a22f50c05e87cbcd6792017e8082c2a25be3371a3b323db"
+  "Digest": "sha256:5ab471ec21db79fcad5a0634c6a767f8532cf840047c906984361b0a9153d6b8"
 }

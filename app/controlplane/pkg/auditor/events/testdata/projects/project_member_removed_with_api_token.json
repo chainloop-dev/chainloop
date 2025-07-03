@@ -1,5 +1,5 @@
 {
-  "ActionType": "ProjectMemberRemoved",
+  "ActionType": "ProjectMembershipRemoved",
   "TargetType": "Project",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
   "ActorType": "API_TOKEN",
@@ -13,5 +13,5 @@
     "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
     "user_email": "test@example.com"
   },
-  "Digest": "sha256:a558a075d42485114110e15e9f0bfd5effd80b7ba03b691501f709ee032f027a"
+  "Digest": "sha256:15800e73f6bc26f866647be23c37d3448195b316f4d07f82280a1acd75821de2"
 }

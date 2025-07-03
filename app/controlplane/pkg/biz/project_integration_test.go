@@ -1248,3 +1248,437 @@ func (s *projectGroupMembersIntegrationTestSuite) TestRemoveGroupFromProject() {
 		s.True(biz.IsNotFound(err))
 	})
 }
+
+// Test updating a user's role in a project
+func (s *projectMembersIntegrationTestSuite) TestUpdateUserRoleInProject() {
+	ctx := context.Background()
+
+	// Create additional users
+	user1, err := s.User.UpsertByEmail(ctx, "update-role-user1@example.com", nil)
+	require.NoError(s.T(), err)
+
+	user2, err := s.User.UpsertByEmail(ctx, "update-role-user2@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add users to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, user1.ID)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	require.NoError(s.T(), err)
+
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{
+		ID: &projectID,
+	}
+
+	// Add users to the project with initial roles
+	opts1 := &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		UserEmail:        "update-role-user1@example.com",
+		RequesterID:      uuid.MustParse(s.user.ID),
+		Role:             authz.RoleProjectViewer,
+	}
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts1)
+	require.NoError(s.T(), err)
+
+	opts2 := &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		UserEmail:        "update-role-user2@example.com",
+		RequesterID:      uuid.MustParse(s.user.ID),
+		Role:             authz.RoleProjectAdmin,
+	}
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts2)
+	require.NoError(s.T(), err)
+
+	s.Run("update user role from viewer to admin", func() {
+		// Update user1's role from viewer to admin
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			UserEmail:        "update-role-user1@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify the role was updated by listing members
+		members, _, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+
+		// Find user1 in the members list and check their role
+		var user1Member *biz.ProjectMembership
+		for _, member := range members {
+			if member.User.ID == user1.ID {
+				user1Member = member
+				break
+			}
+		}
+
+		s.NotNil(user1Member, "User1 membership should exist")
+		s.Equal(authz.RoleProjectAdmin, user1Member.Role)
+	})
+
+	s.Run("update user role from admin to viewer", func() {
+		// Update user2's role from admin to viewer
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			UserEmail:        "update-role-user2@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectViewer,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify the role was updated
+		members, _, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+
+		// Find user2 in the members list and check their role
+		var user2Member *biz.ProjectMembership
+		for _, member := range members {
+			if member.User.ID == user2.ID {
+				user2Member = member
+				break
+			}
+		}
+
+		s.NotNil(user2Member, "User2 membership should exist")
+		s.Equal(authz.RoleProjectViewer, user2Member.Role)
+	})
+
+	s.Run("update role with project name reference", func() {
+		// Use project name instead of ID
+		projectName := s.project.Name
+		nameRef := &biz.IdentityReference{
+			Name: &projectName,
+		}
+
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: nameRef,
+			UserEmail:        "update-role-user1@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectViewer, // Back to viewer
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify the role was updated
+		members, _, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+
+		// Find user1 in the members list and check their role
+		var user1Member *biz.ProjectMembership
+		for _, member := range members {
+			if member.User.ID == user1.ID {
+				user1Member = member
+				break
+			}
+		}
+
+		s.NotNil(user1Member, "User1 membership should exist")
+		s.Equal(authz.RoleProjectViewer, user1Member.Role)
+	})
+
+	s.Run("no-op if role is already the requested role", func() {
+		// Try to update to the same role
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			UserEmail:        "update-role-user1@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectViewer, // Already a viewer from previous test
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err) // Should succeed but do nothing
+	})
+
+	s.Run("try to update role for non-existent user", func() {
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			UserEmail:        "non-existent@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "not a member of the organization")
+	})
+
+	s.Run("try to update role for user not in project", func() {
+		// Create a user in the organization but not in the project
+		nonMemberUser, err := s.User.UpsertByEmail(ctx, "non-project-member@example.com", nil)
+		require.NoError(s.T(), err)
+		_, err = s.Membership.Create(ctx, s.org.ID, nonMemberUser.ID)
+		require.NoError(s.T(), err)
+
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			UserEmail:        "non-project-member@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err = s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "user is not a member of this project")
+	})
+
+	s.Run("try to update role with invalid role", func() {
+		// This test is tricky since we're constrained by the type system,
+		// but in a real API this would be a possible error case
+		// We'll use a non-project role
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			UserEmail:        "update-role-user1@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.Role("invalid-role"),
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "role must be either")
+	})
+
+	s.Run("try to update role in non-existent project", func() {
+		nonExistentProjectID := uuid.New()
+		invalidRef := &biz.IdentityReference{
+			ID: &nonExistentProjectID,
+		}
+
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: invalidRef,
+			UserEmail:        "update-role-user1@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+}
+
+// Test updating a group's role in a project
+func (s *projectGroupMembersIntegrationTestSuite) TestUpdateGroupRoleInProject() {
+	ctx := context.Background()
+
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{
+		ID: &projectID,
+	}
+
+	// Create additional groups
+	group1, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-role-group1", "Group 1 for role updates", uuid.MustParse(s.user.ID))
+	require.NoError(s.T(), err)
+
+	group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-role-group2", "Group 2 for role updates", uuid.MustParse(s.user.ID))
+	require.NoError(s.T(), err)
+
+	// Add groups to the project with initial roles
+	opts1 := &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+		RequesterID:      uuid.MustParse(s.user.ID),
+		Role:             authz.RoleProjectViewer,
+	}
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts1)
+	require.NoError(s.T(), err)
+
+	opts2 := &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		GroupReference:   &biz.IdentityReference{ID: &group2.ID},
+		RequesterID:      uuid.MustParse(s.user.ID),
+		Role:             authz.RoleProjectAdmin,
+	}
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts2)
+	require.NoError(s.T(), err)
+
+	s.Run("update group role from viewer to admin", func() {
+		// Update group1's role from viewer to admin
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify the role was updated by listing members
+		members, _, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+
+		// Find group1 in the members list and check its role
+		var group1Member *biz.ProjectMembership
+		for _, member := range members {
+			if member.Group != nil && member.Group.ID == group1.ID {
+				group1Member = member
+				break
+			}
+		}
+
+		s.NotNil(group1Member, "Group1 membership should exist")
+		s.Equal(authz.RoleProjectAdmin, group1Member.Role)
+	})
+
+	s.Run("update group role from admin to viewer", func() {
+		// Update group2's role from admin to viewer
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &group2.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectViewer,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify the role was updated by listing members
+		members, _, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+
+		// Find group2 in the members list and check its role
+		var group2Member *biz.ProjectMembership
+		for _, member := range members {
+			if member.Group != nil && member.Group.ID == group2.ID {
+				group2Member = member
+				break
+			}
+		}
+
+		s.NotNil(group2Member, "Group2 membership should exist")
+		s.Equal(authz.RoleProjectViewer, group2Member.Role)
+	})
+
+	s.Run("update role with group name reference", func() {
+		// Use group name instead of ID for the reference
+		groupNameRef := &biz.IdentityReference{
+			Name: &group1.Name,
+		}
+
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   groupNameRef,
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectViewer, // Back to viewer
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify the role was updated
+		members, _, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+
+		// Find group1 in the members list and check its role
+		var group1Member *biz.ProjectMembership
+		for _, member := range members {
+			if member.Group != nil && member.Group.ID == group1.ID {
+				group1Member = member
+				break
+			}
+		}
+
+		s.NotNil(group1Member, "Group1 membership should exist")
+		s.Equal(authz.RoleProjectViewer, group1Member.Role)
+	})
+
+	s.Run("no-op if role is already the requested role", func() {
+		// Try to update to the same role
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectViewer, // Already a viewer from previous test
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err) // Should succeed but do nothing
+	})
+
+	s.Run("try to update role for non-existent group", func() {
+		nonExistentGroupID := uuid.New()
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &nonExistentGroupID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "group is not a member of this project")
+	})
+
+	s.Run("try to update role for group not in project", func() {
+		// Create a group in the organization but don't add it to the project
+		nonMemberGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "non-project-group", "Group not in project", uuid.MustParse(s.user.ID))
+		require.NoError(s.T(), err)
+
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &nonMemberGroup.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err = s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "group is not a member of this project")
+	})
+
+	s.Run("try to update role with invalid role", func() {
+		// This test uses a non-project role
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.Role("invalid-role"),
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "role must be either")
+	})
+
+	s.Run("try to update role in non-existent project", func() {
+		nonExistentProjectID := uuid.New()
+		invalidRef := &biz.IdentityReference{
+			ID: &nonExistentProjectID,
+		}
+
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: invalidRef,
+			GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+			RequesterID:      uuid.MustParse(s.user.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err := s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("requester not part of organization", func() {
+		// Create a user who is not in any organization
+		externalUser, err := s.User.UpsertByEmail(ctx, "external-group-update@example.com", nil)
+		require.NoError(s.T(), err)
+
+		// Try to update a group's role with an external user as requester
+		updateOpts := &biz.UpdateMemberRoleOpts{
+			ProjectReference: projectRef,
+			GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+			RequesterID:      uuid.MustParse(externalUser.ID),
+			NewRole:          authz.RoleProjectAdmin,
+		}
+
+		err = s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "requester is not a member of the organization")
+	})
+}

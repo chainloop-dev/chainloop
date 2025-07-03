@@ -1,5 +1,5 @@
 {
-  "ActionType": "ProjectMemberAdded",
+  "ActionType": "ProjectMembershipAdded",
   "TargetType": "Project",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
   "ActorType": "USER",
@@ -14,5 +14,5 @@
     "user_email": "test@example.com",
     "role": "role:project:admin"
   },
-  "Digest": "sha256:2416ffd8c62ba3727a704e0aec3444e64623625909eba745249b73425bfbd70a"
+  "Digest": "sha256:9c1ec01f9d0f2a385439bf42fd0468c610af4907e3a57989702d12c9f496d2e8"
 }

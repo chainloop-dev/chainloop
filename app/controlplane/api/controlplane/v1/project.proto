@@ -36,6 +36,7 @@ service ProjectService {
   rpc ListMembers(ProjectServiceListMembersRequest) returns (ProjectServiceListMembersResponse);
   rpc AddMember(ProjectServiceAddMemberRequest) returns (ProjectServiceAddMemberResponse);
   rpc RemoveMember(ProjectServiceRemoveMemberRequest) returns (ProjectServiceRemoveMemberResponse);
+  rpc UpdateMemberRole(ProjectServiceUpdateMemberRoleRequest) returns (ProjectServiceUpdateMemberRoleResponse);
 }
 
 message ProjectServiceAPITokenCreateRequest {
@@ -159,3 +160,16 @@ enum ProjectMemberRole {
   // Viewer role for a project member
   PROJECT_MEMBER_ROLE_VIEWER = 2;
 }
+
+// ProjectServiceUpdateMemberRoleRequest contains the information needed to update a member's role in a project
+message ProjectServiceUpdateMemberRoleRequest {
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
+  // The membership reference can be a user email or groups references in the future
+  ProjectMembershipReference member_reference = 2 [(buf.validate.field).required = true];
+  // The new role for the member in the project
+  ProjectMemberRole new_role = 3 [(buf.validate.field).required = true];
+}
+
+// ProjectServiceUpdateMemberRoleResponse is returned upon successful update of a member's role in a project
+message ProjectServiceUpdateMemberRoleResponse {}
