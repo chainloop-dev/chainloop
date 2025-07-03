@@ -69,7 +69,6 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			return nil, err
 		}
 	}
-
 	// If we are expecting a specific contract we check it
 	if opts.ContractName != "" {
 		existingContract, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &opts.ContractName)
@@ -98,18 +97,28 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			return fmt.Errorf("creating project: %w", err)
 		}
 
-		// We do not have an existing contract, let's create a new one
-		// with the default content or the provided one
+		// We do not have an explicit contract
+		// 1 - try to find it with the default name
+		// 2 - if not found, create it with the default name
 		if contractUUID == uuid.Nil {
-			// Create a new contract associated with the workflow
-			// TODO: associate it with the project soon
-			contract, _, err := r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
-				OrgID:    orgUUID,
-				Name:     fmt.Sprintf("%s-%s", opts.Project, opts.Name),
-				Contract: opts.DetectedContract,
-			})
+			defaultContractName := fmt.Sprintf("%s-%s", opts.Project, opts.Name)
+			// Try to find the one with the default name or create it
+			contract, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &defaultContractName)
 			if err != nil {
-				return fmt.Errorf("creating contract: %w", err)
+				if ent.IsNotFound(err) {
+					// Create a new contract associated with the workflow
+					// TODO: associate it with the project soon
+					contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
+						OrgID:    orgUUID,
+						Name:     defaultContractName,
+						Contract: opts.DetectedContract,
+					})
+					if err != nil {
+						return fmt.Errorf("creating contract: %w", err)
+					}
+				} else {
+					return fmt.Errorf("failed to find contract: %w", err)
+				}
 			}
 
 			contractUUID = contract.ID
