@@ -189,13 +189,6 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
-		// Groups
-		PolicyGroupList,
-		PolicyGroupRead,
-		// Group Memberships
-		PolicyGroupListMemberships,
-		// Project Memberships
-		PolicyProjectListMemberships,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
