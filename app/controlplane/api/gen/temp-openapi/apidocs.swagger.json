@@ -1,0 +1,236 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Chainloop Controlplane API",
+    "termsOfService": "https://chainloop.dev/terms",
+    "version": "1.0",
+    "contact": {
+      "name": "Chainloop Support",
+      "url": "https://chainloop.dev",
+      "email": "support@chainloop.dev"
+    }
+  },
+  "tags": [
+    {
+      "name": "ReferrerService",
+      "description": "Referrer service for discovering referred content by digest"
+    }
+  ],
+  "host": "cp.chainloop.dev",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/discover/shared/{digest}": {
+      "get": {
+        "summary": "Discover public shared referrer",
+        "description": "Returns the referrer item for a given digest in the public shared index",
+        "operationId": "ReferrerService_DiscoverPublicShared",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DiscoverPublicSharedResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "digest",
+            "description": "Digest is the unique identifier of the referrer to discover",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "kind",
+            "description": "Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\nUsed to filter and resolve ambiguities",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ReferrerService"
+        ],
+        "produces": [
+          "application/json"
+        ]
+      }
+    },
+    "/discover/{digest}": {
+      "get": {
+        "summary": "Discover private referrer",
+        "description": "Returns the referrer item for a given digest in the organizations of the logged-in user",
+        "operationId": "ReferrerService_DiscoverPrivate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReferrerServiceDiscoverPrivateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "digest",
+            "description": "Digest is the unique identifier of the referrer to discover",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "kind",
+            "description": "Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\nUsed to filter and resolve ambiguities",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ReferrerService"
+        ],
+        "produces": [
+          "application/json"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1DiscoverPublicSharedResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1ReferrerItem",
+          "title": "Result is the discovered referrer item"
+        }
+      },
+      "description": "Response for the DiscoverPublicShared method",
+      "title": "DiscoverPublicSharedResponse"
+    },
+    "v1ReferrerItem": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ..."
+        },
+        "downloadable": {
+          "type": "boolean",
+          "title": "Downloadable indicates whether the referrer is downloadable or not from CAS"
+        },
+        "public": {
+          "type": "boolean",
+          "title": "Public indicates whether the referrer is public since it belongs to a public workflow"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ReferrerItem"
+          },
+          "title": "References contains the list of related referrer items"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "CreatedAt is the timestamp when the referrer was created"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata contains additional descriptive information about the referrer"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations are key-value pairs associated with the referrer"
+        }
+      },
+      "description": "It represents a referrer object in the system",
+      "title": "ReferrerItem"
+    },
+    "v1ReferrerServiceDiscoverPrivateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1ReferrerItem",
+          "title": "Result is the discovered referrer item"
+        }
+      },
+      "description": "Response for the DiscoverPrivate method",
+      "title": "ReferrerServiceDiscoverPrivateResponse"
+    }
+  },
+  "securityDefinitions": {
+    "bearerToken": {
+      "type": "apiKey",
+      "description": "Bearer token for authentication",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "bearerToken": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Chainloop Official Documentation",
+    "url": "https://docs.chainloop.dev"
+  }
+}

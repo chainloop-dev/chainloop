@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -73,6 +74,26 @@ func (wcu *WorkflowContractUpdate) ClearDescription() *WorkflowContractUpdate {
 	return wcu
 }
 
+// SetProjectID sets the "project_id" field.
+func (wcu *WorkflowContractUpdate) SetProjectID(u uuid.UUID) *WorkflowContractUpdate {
+	wcu.mutation.SetProjectID(u)
+	return wcu
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableProjectID(u *uuid.UUID) *WorkflowContractUpdate {
+	if u != nil {
+		wcu.SetProjectID(*u)
+	}
+	return wcu
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (wcu *WorkflowContractUpdate) ClearProjectID() *WorkflowContractUpdate {
+	wcu.mutation.ClearProjectID()
+	return wcu
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
 func (wcu *WorkflowContractUpdate) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractUpdate {
 	wcu.mutation.AddVersionIDs(ids...)
@@ -120,6 +141,11 @@ func (wcu *WorkflowContractUpdate) AddWorkflows(w ...*Workflow) *WorkflowContrac
 		ids[i] = w[i].ID
 	}
 	return wcu.AddWorkflowIDs(ids...)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (wcu *WorkflowContractUpdate) SetProject(p *Project) *WorkflowContractUpdate {
+	return wcu.SetProjectID(p.ID)
 }
 
 // Mutation returns the WorkflowContractMutation object of the builder.
@@ -173,6 +199,12 @@ func (wcu *WorkflowContractUpdate) RemoveWorkflows(w ...*Workflow) *WorkflowCont
 		ids[i] = w[i].ID
 	}
 	return wcu.RemoveWorkflowIDs(ids...)
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (wcu *WorkflowContractUpdate) ClearProject() *WorkflowContractUpdate {
+	wcu.mutation.ClearProject()
+	return wcu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -348,6 +380,35 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if wcu.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflowcontract.ProjectTable,
+			Columns: []string{workflowcontract.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wcu.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflowcontract.ProjectTable,
+			Columns: []string{workflowcontract.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(wcu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, wcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -410,6 +471,26 @@ func (wcuo *WorkflowContractUpdateOne) ClearDescription() *WorkflowContractUpdat
 	return wcuo
 }
 
+// SetProjectID sets the "project_id" field.
+func (wcuo *WorkflowContractUpdateOne) SetProjectID(u uuid.UUID) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetProjectID(u)
+	return wcuo
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableProjectID(u *uuid.UUID) *WorkflowContractUpdateOne {
+	if u != nil {
+		wcuo.SetProjectID(*u)
+	}
+	return wcuo
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (wcuo *WorkflowContractUpdateOne) ClearProjectID() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearProjectID()
+	return wcuo
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
 func (wcuo *WorkflowContractUpdateOne) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractUpdateOne {
 	wcuo.mutation.AddVersionIDs(ids...)
@@ -457,6 +538,11 @@ func (wcuo *WorkflowContractUpdateOne) AddWorkflows(w ...*Workflow) *WorkflowCon
 		ids[i] = w[i].ID
 	}
 	return wcuo.AddWorkflowIDs(ids...)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (wcuo *WorkflowContractUpdateOne) SetProject(p *Project) *WorkflowContractUpdateOne {
+	return wcuo.SetProjectID(p.ID)
 }
 
 // Mutation returns the WorkflowContractMutation object of the builder.
@@ -510,6 +596,12 @@ func (wcuo *WorkflowContractUpdateOne) RemoveWorkflows(w ...*Workflow) *Workflow
 		ids[i] = w[i].ID
 	}
 	return wcuo.RemoveWorkflowIDs(ids...)
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (wcuo *WorkflowContractUpdateOne) ClearProject() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearProject()
+	return wcuo
 }
 
 // Where appends a list predicates to the WorkflowContractUpdate builder.
@@ -708,6 +800,35 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wcuo.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflowcontract.ProjectTable,
+			Columns: []string{workflowcontract.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wcuo.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflowcontract.ProjectTable,
+			Columns: []string{workflowcontract.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

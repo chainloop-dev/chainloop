@@ -594,21 +594,3 @@ func SchemaToRawContract(contract *schemav1.CraftingSchema) (*Contract, error) {
 
 	return &Contract{Raw: r, Format: unmarshal.RawFormatJSON, Schema: contract}, nil
 }
-
-// ContractScope represents a polymorphic relationship between a contract and a project or organization
-type ContractScope string
-
-const (
-	ContractScopeProject ContractScope = "project"
-	ContractScopeOrg     ContractScope = "org"
-)
-
-// Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
-func (ContractScope) Values() (values []string) {
-	values = append(values,
-		string(ContractScopeProject),
-		string(ContractScopeOrg),
-	)
-
-	return
-}

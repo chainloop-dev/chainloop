@@ -76,6 +76,11 @@ func Description(v string) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldEQ(FieldDescription, v))
 }
 
+// ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
+func ProjectID(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldEQ(FieldProjectID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldEQ(FieldName, v))
@@ -306,6 +311,36 @@ func DescriptionContainsFold(v string) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// ProjectIDEQ applies the EQ predicate on the "project_id" field.
+func ProjectIDEQ(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldEQ(FieldProjectID, v))
+}
+
+// ProjectIDNEQ applies the NEQ predicate on the "project_id" field.
+func ProjectIDNEQ(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNEQ(FieldProjectID, v))
+}
+
+// ProjectIDIn applies the In predicate on the "project_id" field.
+func ProjectIDIn(vs ...uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldIn(FieldProjectID, vs...))
+}
+
+// ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
+func ProjectIDNotIn(vs ...uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
+// ProjectIDIsNil applies the IsNil predicate on the "project_id" field.
+func ProjectIDIsNil() predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldIsNull(FieldProjectID))
+}
+
+// ProjectIDNotNil applies the NotNil predicate on the "project_id" field.
+func ProjectIDNotNil() predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNotNull(FieldProjectID))
+}
+
 // HasVersions applies the HasEdge predicate on the "versions" edge.
 func HasVersions() predicate.WorkflowContract {
 	return predicate.WorkflowContract(func(s *sql.Selector) {
@@ -367,6 +402,29 @@ func HasWorkflows() predicate.WorkflowContract {
 func HasWorkflowsWith(preds ...predicate.Workflow) predicate.WorkflowContract {
 	return predicate.WorkflowContract(func(s *sql.Selector) {
 		step := newWorkflowsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProject applies the HasEdge predicate on the "project" edge.
+func HasProject() predicate.WorkflowContract {
+	return predicate.WorkflowContract(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProjectWith applies the HasEdge predicate on the "project" edge with a given conditions (other predicates).
+func HasProjectWith(preds ...predicate.Project) predicate.WorkflowContract {
+	return predicate.WorkflowContract(func(s *sql.Selector) {
+		step := newProjectStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

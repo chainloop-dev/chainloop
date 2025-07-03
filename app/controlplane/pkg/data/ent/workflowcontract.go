@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/google/uuid"
 )
@@ -27,6 +28,8 @@ type WorkflowContract struct {
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// ProjectID holds the value of the "project_id" field.
+	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowContractQuery when eager-loading is set.
 	Edges                           WorkflowContractEdges `json:"edges"`
@@ -42,9 +45,11 @@ type WorkflowContractEdges struct {
 	Organization *Organization `json:"organization,omitempty"`
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
+	// Project holds the value of the project edge.
+	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // VersionsOrErr returns the Versions value or an error if the edge
@@ -76,6 +81,17 @@ func (e WorkflowContractEdges) WorkflowsOrErr() ([]*Workflow, error) {
 	return nil, &NotLoadedError{edge: "workflows"}
 }
 
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowContractEdges) ProjectOrErr() (*Project, error) {
+	if e.Project != nil {
+		return e.Project, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: project.Label}
+	}
+	return nil, &NotLoadedError{edge: "project"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -85,7 +101,7 @@ func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case workflowcontract.FieldCreatedAt, workflowcontract.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case workflowcontract.FieldID:
+		case workflowcontract.FieldID, workflowcontract.FieldProjectID:
 			values[i] = new(uuid.UUID)
 		case workflowcontract.ForeignKeys[0]: // organization_workflow_contracts
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -134,6 +150,12 @@ func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				wc.Description = value.String
 			}
+		case workflowcontract.FieldProjectID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field project_id", values[i])
+			} else if value != nil {
+				wc.ProjectID = *value
+			}
 		case workflowcontract.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_workflow_contracts", values[i])
@@ -167,6 +189,11 @@ func (wc *WorkflowContract) QueryOrganization() *OrganizationQuery {
 // QueryWorkflows queries the "workflows" edge of the WorkflowContract entity.
 func (wc *WorkflowContract) QueryWorkflows() *WorkflowQuery {
 	return NewWorkflowContractClient(wc.config).QueryWorkflows(wc)
+}
+
+// QueryProject queries the "project" edge of the WorkflowContract entity.
+func (wc *WorkflowContract) QueryProject() *ProjectQuery {
+	return NewWorkflowContractClient(wc.config).QueryProject(wc)
 }
 
 // Update returns a builder for updating this WorkflowContract.
@@ -203,6 +230,9 @@ func (wc *WorkflowContract) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(wc.Description)
+	builder.WriteString(", ")
+	builder.WriteString("project_id=")
+	builder.WriteString(fmt.Sprintf("%v", wc.ProjectID))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -3567,6 +3567,22 @@ func (c *WorkflowContractClient) QueryWorkflows(wc *WorkflowContract) *WorkflowQ
 	return query
 }
 
+// QueryProject queries the project edge of a WorkflowContract.
+func (c *WorkflowContractClient) QueryProject(wc *WorkflowContract) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := wc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, workflowcontract.ProjectTable, workflowcontract.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(wc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *WorkflowContractClient) Hooks() []Hook {
 	return c.hooks.WorkflowContract

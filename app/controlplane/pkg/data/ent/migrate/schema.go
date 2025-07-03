@@ -642,6 +642,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "organization_workflow_contracts", Type: field.TypeUUID, Nullable: true},
+		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// WorkflowContractsTable holds the schema information for the "workflow_contracts" table.
 	WorkflowContractsTable = &schema.Table{
@@ -655,6 +656,12 @@ var (
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
+			{
+				Symbol:     "workflow_contracts_projects_project",
+				Columns:    []*schema.Column{WorkflowContractsColumns[6]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
 		},
 		Indexes: []*schema.Index{
 			{
@@ -662,7 +669,15 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "deleted_at IS NULL",
+					Where: "deleted_at IS NULL AND project_id IS NULL",
+				},
+			},
+			{
+				Name:    "workflowcontract_name_project_id",
+				Unique:  true,
+				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL AND project_id IS NOT NULL",
 				},
 			},
 		},
@@ -933,6 +948,7 @@ func init() {
 	WorkflowsTable.ForeignKeys[2].RefTable = WorkflowContractsTable
 	WorkflowsTable.ForeignKeys[3].RefTable = WorkflowRunsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	WorkflowContractsTable.ForeignKeys[1].RefTable = ProjectsTable
 	WorkflowContractVersionsTable.ForeignKeys[0].RefTable = WorkflowContractsTable
 	WorkflowRunsTable.ForeignKeys[0].RefTable = ProjectVersionsTable
 	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowsTable

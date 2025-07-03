@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -71,6 +72,20 @@ func (wcc *WorkflowContractCreate) SetDescription(s string) *WorkflowContractCre
 func (wcc *WorkflowContractCreate) SetNillableDescription(s *string) *WorkflowContractCreate {
 	if s != nil {
 		wcc.SetDescription(*s)
+	}
+	return wcc
+}
+
+// SetProjectID sets the "project_id" field.
+func (wcc *WorkflowContractCreate) SetProjectID(u uuid.UUID) *WorkflowContractCreate {
+	wcc.mutation.SetProjectID(u)
+	return wcc
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (wcc *WorkflowContractCreate) SetNillableProjectID(u *uuid.UUID) *WorkflowContractCreate {
+	if u != nil {
+		wcc.SetProjectID(*u)
 	}
 	return wcc
 }
@@ -136,6 +151,11 @@ func (wcc *WorkflowContractCreate) AddWorkflows(w ...*Workflow) *WorkflowContrac
 		ids[i] = w[i].ID
 	}
 	return wcc.AddWorkflowIDs(ids...)
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (wcc *WorkflowContractCreate) SetProject(p *Project) *WorkflowContractCreate {
+	return wcc.SetProjectID(p.ID)
 }
 
 // Mutation returns the WorkflowContractMutation object of the builder.
@@ -292,6 +312,23 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := wcc.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   workflowcontract.ProjectTable,
+			Columns: []string{workflowcontract.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ProjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -377,6 +414,24 @@ func (u *WorkflowContractUpsert) UpdateDescription() *WorkflowContractUpsert {
 // ClearDescription clears the value of the "description" field.
 func (u *WorkflowContractUpsert) ClearDescription() *WorkflowContractUpsert {
 	u.SetNull(workflowcontract.FieldDescription)
+	return u
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *WorkflowContractUpsert) SetProjectID(v uuid.UUID) *WorkflowContractUpsert {
+	u.Set(workflowcontract.FieldProjectID, v)
+	return u
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *WorkflowContractUpsert) UpdateProjectID() *WorkflowContractUpsert {
+	u.SetExcluded(workflowcontract.FieldProjectID)
+	return u
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *WorkflowContractUpsert) ClearProjectID() *WorkflowContractUpsert {
+	u.SetNull(workflowcontract.FieldProjectID)
 	return u
 }
 
@@ -473,6 +528,27 @@ func (u *WorkflowContractUpsertOne) UpdateDescription() *WorkflowContractUpsertO
 func (u *WorkflowContractUpsertOne) ClearDescription() *WorkflowContractUpsertOne {
 	return u.Update(func(s *WorkflowContractUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *WorkflowContractUpsertOne) SetProjectID(v uuid.UUID) *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetProjectID(v)
+	})
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *WorkflowContractUpsertOne) UpdateProjectID() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateProjectID()
+	})
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *WorkflowContractUpsertOne) ClearProjectID() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.ClearProjectID()
 	})
 }
 
@@ -736,6 +812,27 @@ func (u *WorkflowContractUpsertBulk) UpdateDescription() *WorkflowContractUpsert
 func (u *WorkflowContractUpsertBulk) ClearDescription() *WorkflowContractUpsertBulk {
 	return u.Update(func(s *WorkflowContractUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *WorkflowContractUpsertBulk) SetProjectID(v uuid.UUID) *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetProjectID(v)
+	})
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *WorkflowContractUpsertBulk) UpdateProjectID() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateProjectID()
+	})
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *WorkflowContractUpsertBulk) ClearProjectID() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.ClearProjectID()
 	})
 }
 

@@ -23,7 +23,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -45,9 +44,8 @@ func (WorkflowContract) Fields() []ent.Field {
 			}),
 		field.Time("deleted_at").Optional(),
 		field.String("description").Optional(),
-		// If this value is set, the contract is scoped to a project or organization
-		field.Enum("scoped_resource_type").GoType(biz.ContractScope("")).Optional(),
-		field.UUID("scoped_resource_id", uuid.UUID{}).Optional(),
+		// if this value is not set, the contract is an organization level contract
+		field.UUID("project_id", uuid.UUID{}).Optional(),
 	}
 }
 
@@ -60,6 +58,7 @@ func (WorkflowContract) Edges() []ent.Edge {
 			Unique(),
 		// A contract can be associated to multiple workflows
 		edge.From("workflows", Workflow.Type).Ref("contract"),
+		edge.To("project", Project.Type).Field("project_id").Unique(),
 	}
 }
 
@@ -67,7 +66,12 @@ func (WorkflowContract) Indexes() []ent.Index {
 	return []ent.Index{
 		// names are unique within a organization and affects only to non-deleted items
 		index.Fields("name").Edges("organization").Unique().Annotations(
-			entsql.IndexWhere("deleted_at IS NULL"),
+			entsql.IndexWhere("deleted_at IS NULL AND project_id IS NULL"),
+		),
+
+		// for project level contracts, we scope the uniqueness to the project
+		index.Fields("name").Edges("project").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL AND project_id IS NOT NULL"),
 		),
 	}
 }

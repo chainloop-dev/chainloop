@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -31,6 +32,7 @@ type WorkflowContractQuery struct {
 	withVersions     *WorkflowContractVersionQuery
 	withOrganization *OrganizationQuery
 	withWorkflows    *WorkflowQuery
+	withProject      *ProjectQuery
 	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -128,6 +130,28 @@ func (wcq *WorkflowContractQuery) QueryWorkflows() *WorkflowQuery {
 			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, selector),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, workflowcontract.WorkflowsTable, workflowcontract.WorkflowsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProject chains the current query on the "project" edge.
+func (wcq *WorkflowContractQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: wcq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, workflowcontract.ProjectTable, workflowcontract.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wcq.driver.Dialect(), step)
 		return fromU, nil
@@ -330,6 +354,7 @@ func (wcq *WorkflowContractQuery) Clone() *WorkflowContractQuery {
 		withVersions:     wcq.withVersions.Clone(),
 		withOrganization: wcq.withOrganization.Clone(),
 		withWorkflows:    wcq.withWorkflows.Clone(),
+		withProject:      wcq.withProject.Clone(),
 		// clone intermediate query.
 		sql:       wcq.sql.Clone(),
 		path:      wcq.path,
@@ -367,6 +392,17 @@ func (wcq *WorkflowContractQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *W
 		opt(query)
 	}
 	wcq.withWorkflows = query
+	return wcq
+}
+
+// WithProject tells the query-builder to eager-load the nodes that are connected to
+// the "project" edge. The optional arguments are used to configure the query builder of the edge.
+func (wcq *WorkflowContractQuery) WithProject(opts ...func(*ProjectQuery)) *WorkflowContractQuery {
+	query := (&ProjectClient{config: wcq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wcq.withProject = query
 	return wcq
 }
 
@@ -449,10 +485,11 @@ func (wcq *WorkflowContractQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		nodes       = []*WorkflowContract{}
 		withFKs     = wcq.withFKs
 		_spec       = wcq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			wcq.withVersions != nil,
 			wcq.withOrganization != nil,
 			wcq.withWorkflows != nil,
+			wcq.withProject != nil,
 		}
 	)
 	if wcq.withOrganization != nil {
@@ -499,6 +536,12 @@ func (wcq *WorkflowContractQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		if err := wcq.loadWorkflows(ctx, query, nodes,
 			func(n *WorkflowContract) { n.Edges.Workflows = []*Workflow{} },
 			func(n *WorkflowContract, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wcq.withProject; query != nil {
+		if err := wcq.loadProject(ctx, query, nodes, nil,
+			func(n *WorkflowContract, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -599,6 +642,35 @@ func (wcq *WorkflowContractQuery) loadWorkflows(ctx context.Context, query *Work
 	}
 	return nil
 }
+func (wcq *WorkflowContractQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*WorkflowContract, init func(*WorkflowContract), assign func(*WorkflowContract, *Project)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*WorkflowContract)
+	for i := range nodes {
+		fk := nodes[i].ProjectID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "project_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (wcq *WorkflowContractQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := wcq.querySpec()
@@ -627,6 +699,9 @@ func (wcq *WorkflowContractQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != workflowcontract.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if wcq.withProject != nil {
+			_spec.Node.AddColumnOnce(workflowcontract.FieldProjectID)
 		}
 	}
 	if ps := wcq.predicates; len(ps) > 0 {
