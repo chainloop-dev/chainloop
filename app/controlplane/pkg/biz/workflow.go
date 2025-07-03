@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -129,6 +129,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, errors.New("workflow name is required")
 	} else if opts.Project == "" {
 		return nil, errors.New("project name is required")
+	} else if opts.OrgID == "" {
+		return nil, errors.New("organization ID is required")
 	}
 
 	// Set the empty contract by default

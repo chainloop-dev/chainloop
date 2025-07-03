@@ -108,7 +108,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// contractRef can be either the name of an existing contract or a file or URL of a contract to be created or updated
 	// we'll try to figure out which one of those cases we are dealing with
 	if opts.NewWorkflowContractRef != "" {
-		raw, err := loadFileOrURL(opts.NewWorkflowContractRef)
+		raw, err := LoadFileOrURL(opts.NewWorkflowContractRef)
 		if err != nil {
 			req.ContractName = opts.NewWorkflowContractRef
 		} else {

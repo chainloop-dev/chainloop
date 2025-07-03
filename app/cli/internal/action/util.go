@@ -24,8 +24,8 @@ import (
 	"strings"
 )
 
-// loadFileOrURL loads a file from a local path or a URL
-func loadFileOrURL(fileRef string) ([]byte, error) {
+// LoadFileOrURL loads a file from a local path or a URL
+func LoadFileOrURL(fileRef string) ([]byte, error) {
 	parts := strings.SplitAfterN(fileRef, "://", 2)
 	if len(parts) == 2 {
 		scheme := parts[0]

@@ -191,7 +191,7 @@ func (action *PluginInstall) Run(_ context.Context, opts *PluginInstallOptions) 
 	}
 	defer tempFile.Close()
 
-	rawFileContents, err := loadFileOrURL(opts.File)
+	rawFileContents, err := LoadFileOrURL(opts.File)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load file from a given URL: %w", err)
 	}

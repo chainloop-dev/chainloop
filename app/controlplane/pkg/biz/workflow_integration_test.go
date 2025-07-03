@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -156,17 +156,25 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 		},
 		{
 			name: "non-existing contract will create it",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", ContractName: uuid.NewString(), Project: project},
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", Project: project},
+		},
+		{
+			name: "it can connect to existing contract by providing its name",
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, ContractName: "contract-1"},
 		},
 		{
 			name: "can create it with just the name, the project and the org",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project},
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name3", Project: project},
 		},
 		{
 			name: "with all items",
 			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "another-name", Project: "project", Team: "team", Description: "description"},
 		},
 	}
+
+	// Create one contract for testing
+	_, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{Name: "contract-1", OrgID: s.org.ID})
+	s.Require().NoError(err)
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
