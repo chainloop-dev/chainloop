@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,8 +37,9 @@ import (
 )
 
 type WorkflowRepo struct {
-	data *Data
-	log  *log.Helper
+	data         *Data
+	log          *log.Helper
+	contractRepo *WorkflowContractRepo
 }
 
 var _ biz.WorkflowRepo = (*WorkflowRepo)(nil)
@@ -56,9 +57,31 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, err
 	}
 
-	contractUUID, err := uuid.Parse(opts.ContractID)
-	if err != nil {
-		return nil, err
+	// You can only provide one of the two
+	if opts.ContractName != "" && opts.ContractID != "" {
+		return nil, fmt.Errorf("contract name and ID cannot be provided at the same time")
+	}
+
+	var contractUUID uuid.UUID
+	if opts.ContractID != "" {
+		contractUUID, err = uuid.Parse(opts.ContractID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// If we are expecting a specific contract we check it
+	if opts.ContractName != "" {
+		existingContract, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &opts.ContractName)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, biz.NewErrNotFound("contract")
+			}
+
+			return nil, err
+		}
+
+		contractUUID = existingContract.ID
 	}
 
 	var entwf *ent.Workflow
@@ -73,6 +96,23 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			).Ignore().ID(ctx)
 		if err != nil {
 			return fmt.Errorf("creating project: %w", err)
+		}
+
+		// We do not have an existing contract, let's create a new one
+		// with the default content or the provided one
+		if contractUUID == uuid.Nil {
+			// Create a new contract associated with the workflow
+			// TODO: associate it with the project soon
+			contract, _, err := r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
+				OrgID:    orgUUID,
+				Name:     fmt.Sprintf("%s-%s", opts.Project, opts.Name),
+				Contract: opts.DetectedContract,
+			})
+			if err != nil {
+				return fmt.Errorf("creating contract: %w", err)
+			}
+
+			contractUUID = contract.ID
 		}
 
 		entwf, err = tx.Workflow.Create().

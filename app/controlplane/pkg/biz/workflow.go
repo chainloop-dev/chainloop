@@ -69,6 +69,10 @@ type WorkflowRepo interface {
 type WorkflowCreateOpts struct {
 	Name, OrgID, Project, Team, ContractName, Description string
 	ContractID                                            string
+	// ContractBytes is the raw contract bytes that can be used to create or update the contract
+	ContractBytes []byte
+	// DetectedContract is the detected contract from the contract bytes
+	DetectedContract *Contract
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	Public bool
@@ -127,6 +131,19 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, errors.New("project name is required")
 	}
 
+	// Set the empty contract by default
+	opts.DetectedContract = EmptyDefaultContract
+
+	// Take the raw contract bytes and identify the format and validate it
+	if opts.ContractBytes != nil {
+		detectedContract, err := identifyUnMarshalAndValidateRawContract(opts.ContractBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load contract: %w", err)
+		}
+
+		opts.DetectedContract = detectedContract
+	}
+
 	// validate format of the name and the project
 	if err := ValidateIsDNS1123(opts.Name); err != nil {
 		return nil, NewErrValidation(err)
@@ -136,19 +153,6 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, NewErrValidation(err)
 	}
 
-	// If the name is not provided for the contract we come up with one based on the workflow info
-	if opts.ContractName == "" {
-		opts.ContractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
-	}
-
-	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractName)
-	if err != nil {
-		return nil, err
-	} else if contract == nil {
-		return nil, NewErrNotFound("contract")
-	}
-
-	opts.ContractID = contract.ID.String()
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
@@ -180,8 +184,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 				WorkflowName: wf.Name,
 				ProjectName:  opts.Project,
 			},
-			WorkflowContractID:   &contract.ID,
-			WorkflowContractName: contract.Name,
+			WorkflowContractID:   &wf.ContractID,
+			WorkflowContractName: wf.ContractName,
 			WorkflowDescription:  &opts.Description,
 			Team:                 &opts.Team,
 			Public:               opts.Public,
@@ -190,8 +194,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		// Dispatch events to the audit log regarding the contract
 		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractAttached{
 			WorkflowContractBase: &events.WorkflowContractBase{
-				WorkflowContractID:   &contract.ID,
-				WorkflowContractName: contract.Name,
+				WorkflowContractID:   &wf.ContractID,
+				WorkflowContractName: wf.ContractName,
 			},
 			WorkflowID:   &wf.ID,
 			WorkflowName: wf.Name,

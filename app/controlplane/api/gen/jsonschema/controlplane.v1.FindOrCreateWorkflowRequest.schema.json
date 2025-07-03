@@ -3,8 +3,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(contractBytes)$": {
+      "description": "raw contract bytes that can be used to create or update the contract",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "^(contractName)$": {
-      "description": "name of an existing contract, if not set, a new contract will be created",
+      "description": "name of an existing contract",
       "type": "string"
     },
     "^(projectName)$": {
@@ -17,8 +22,13 @@
     }
   },
   "properties": {
+    "contract_bytes": {
+      "description": "raw contract bytes that can be used to create or update the contract",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "contract_name": {
-      "description": "name of an existing contract, if not set, a new contract will be created",
+      "description": "name of an existing contract",
       "type": "string"
     },
     "project_name": {

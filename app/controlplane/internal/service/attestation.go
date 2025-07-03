@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -680,20 +680,34 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		}
 	}
 
+	// Check if the workflow already exists, if it does we might just need to update the contract
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
 		if !biz.IsNotFound(err) {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-	} else if wf != nil { // It exists, return it
+	} else if wf != nil {
+		// We might need to update the contract
+		if req.GetContractBytes() != nil {
+			if _, err := s.workflowContractUseCase.Update(ctx, apiToken.OrgID, wf.ContractName, &biz.WorkflowContractUpdateOpts{
+				RawSchema: req.GetContractBytes(),
+			}); err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
+			// Check if the contract name the user wants to use is the same as the one in the workflow
+		} else if req.GetContractName() != wf.ContractName {
+			return nil, errors.BadRequest("bad request", "you can't change to another contract during the attestation process, please update the workflow")
+		}
+
 		return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 	}
 
-	// It doesn't exist, let's create it
+	// the workflow does not exist, let's create it alongside its project and contract
 	createOpts := &biz.WorkflowCreateOpts{
-		OrgID:        apiToken.OrgID,
-		Name:         req.GetWorkflowName(),
-		Project:      req.GetProjectName(),
-		ContractName: req.GetContractName(),
+		OrgID:         apiToken.OrgID,
+		Name:          req.GetWorkflowName(),
+		Project:       req.GetProjectName(),
+		ContractName:  req.GetContractName(),
+		ContractBytes: req.GetContractBytes(),
 	}
 
 	// set project owner if RBAC is enabled

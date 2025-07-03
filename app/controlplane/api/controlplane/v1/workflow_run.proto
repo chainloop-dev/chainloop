@@ -49,8 +49,10 @@ service WorkflowRunService {
 message FindOrCreateWorkflowRequest {
   string workflow_name = 4 [(buf.validate.field).string.min_len = 1];
   string project_name = 5 [(buf.validate.field).string.min_len = 1];
-  // name of an existing contract, if not set, a new contract will be created
+  // name of an existing contract
   string contract_name = 6;
+  // raw contract bytes that can be used to create or update the contract
+  bytes contract_bytes = 7;
 }
 
 message FindOrCreateWorkflowResponse {
