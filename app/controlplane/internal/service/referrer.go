@@ -62,7 +62,14 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 			return nil, fmt.Errorf("invalid org UUID: %w", err)
 		}
 
-		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, nil)
+		// Apply RBAC visibility for api tokens (only for the current organization)
+		orgsProjectsMap := make(map[uuid.UUID][]uuid.UUID)
+		visibleProjects := s.visibleProjects(ctx)
+		if visibleProjects != nil {
+			orgsProjectsMap[orgUUID] = visibleProjects
+		}
+
+		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap)
 	}
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
