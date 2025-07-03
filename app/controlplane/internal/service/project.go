@@ -310,7 +310,7 @@ func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *pb.ProjectSe
 	}
 
 	// Make sure the provided project exists and the user has permission to update member roles in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAddMemberships)
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAddMemberships)
 	if err != nil {
 		return nil, err
 	}
