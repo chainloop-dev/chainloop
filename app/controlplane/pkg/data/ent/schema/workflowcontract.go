@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -44,6 +45,9 @@ func (WorkflowContract) Fields() []ent.Field {
 			}),
 		field.Time("deleted_at").Optional(),
 		field.String("description").Optional(),
+		// If this value is set, the contract is scoped to a project or organization
+		field.Enum("scoped_resource_type").GoType(biz.ContractScope("")).Optional(),
+		field.UUID("scoped_resource_id", uuid.UUID{}).Optional(),
 	}
 }
 
