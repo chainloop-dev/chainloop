@@ -45,7 +45,7 @@ type ProjectsRepo interface {
 	// UpdateMemberRoleInProject updates the role of a user or group in a project.
 	UpdateMemberRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, newRole authz.Role) (*ProjectMembership, error)
 	// FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group).
-	FindProjectMembershipByProjectAndID(ctx context.Context, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*ProjectMembership, error)
+	FindProjectMembershipByProjectAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*ProjectMembership, error)
 }
 
 // ProjectUseCase is a use case for projects
@@ -252,7 +252,7 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 	userUUID := uuid.MustParse(userMembership.User.ID)
 
 	// Check if the user is already a member of the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, userUUID, authz.MembershipTypeUser)
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, userUUID, authz.MembershipTypeUser)
 	if err != nil && !IsNotFound(err) {
 		return nil, fmt.Errorf("failed to check existing membership: %w", err)
 	}
@@ -289,7 +289,7 @@ func (uc *ProjectUseCase) addGroupToProject(ctx context.Context, orgID uuid.UUID
 	}
 
 	// Check if the group already has membership in the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, resolvedGroupID, authz.MembershipTypeGroup)
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, resolvedGroupID, authz.MembershipTypeGroup)
 	if err != nil && !IsNotFound(err) {
 		return nil, fmt.Errorf("failed to check existing group membership: %w", err)
 	}
@@ -371,7 +371,7 @@ func (uc *ProjectUseCase) removeUserFromProject(ctx context.Context, orgID uuid.
 	userUUID := uuid.MustParse(userMembership.User.ID)
 
 	// Check if the user is a member of the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, userUUID, authz.MembershipTypeUser)
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, userUUID, authz.MembershipTypeUser)
 	if err != nil && !IsNotFound(err) {
 		return fmt.Errorf("failed to check existing membership: %w", err)
 	}
@@ -406,7 +406,7 @@ func (uc *ProjectUseCase) removeGroupFromProject(ctx context.Context, orgID uuid
 	}
 
 	// Check if the group has membership in the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, resolvedGroupID, authz.MembershipTypeGroup)
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, resolvedGroupID, authz.MembershipTypeGroup)
 	if err != nil && !IsNotFound(err) {
 		return fmt.Errorf("failed to check existing group membership: %w", err)
 	}
@@ -526,7 +526,8 @@ func (uc *ProjectUseCase) verifyRequesterHasPermissions(ctx context.Context, org
 	for _, m := range requesterMemberships {
 		if m.ResourceType == authz.ResourceTypeProject &&
 			m.ResourceID == projectID &&
-			m.Role == authz.RoleProjectAdmin {
+			m.Role == authz.RoleProjectAdmin &&
+			m.OrganizationID == orgID {
 			hasProjectAdminRole = true
 			break
 		}
@@ -610,7 +611,7 @@ func (uc *ProjectUseCase) updateUserRoleInProject(ctx context.Context, orgID uui
 	userUUID := uuid.MustParse(userMembership.User.ID)
 
 	// Check if the user is a member of the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, userUUID, authz.MembershipTypeUser)
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, userUUID, authz.MembershipTypeUser)
 	if err != nil && !IsNotFound(err) {
 		return fmt.Errorf("failed to check existing membership: %w", err)
 	}
@@ -652,7 +653,7 @@ func (uc *ProjectUseCase) updateGroupRoleInProject(ctx context.Context, orgID uu
 	}
 
 	// Check if the group has membership in the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, projectID, resolvedGroupID, authz.MembershipTypeGroup)
+	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, resolvedGroupID, authz.MembershipTypeGroup)
 	if err != nil && !IsNotFound(err) {
 		return fmt.Errorf("failed to check existing group membership: %w", err)
 	}

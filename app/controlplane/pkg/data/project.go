@@ -198,6 +198,7 @@ func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, p
 
 	// Create the membership
 	if _, err := r.data.DB.Membership.Create().
+		SetOrganizationID(orgID).
 		SetMembershipType(membershipType).
 		SetMemberID(memberID).
 		SetResourceType(authz.ResourceTypeProject).
@@ -208,7 +209,7 @@ func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, p
 	}
 
 	// Return the created membership
-	return r.FindProjectMembershipByProjectAndID(ctx, projectID, memberID, membershipType)
+	return r.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, memberID, membershipType)
 }
 
 // RemoveMemberFromProject removes a user or group from a project
@@ -223,7 +224,7 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 	}
 
 	// Find the membership to delete
-	m, err := r.queryMembership(projectID, memberID, membershipType).Only(ctx)
+	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -241,9 +242,9 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 }
 
 // FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group)
-func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*biz.ProjectMembership, error) {
+func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*biz.ProjectMembership, error) {
 	// Find the membership
-	m, err := r.queryMembership(projectID, memberID, membershipType).Only(ctx)
+	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -302,7 +303,7 @@ func (r *ProjectRepo) UpdateMemberRoleInProject(ctx context.Context, orgID uuid.
 	}
 
 	// Find the membership to update
-	m, err := r.queryMembership(projectID, memberID, membershipType).Only(ctx)
+	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -321,9 +322,12 @@ func (r *ProjectRepo) UpdateMemberRoleInProject(ctx context.Context, orgID uuid.
 }
 
 // queryMembership is a helper function to build a common membership query
-func (r *ProjectRepo) queryMembership(projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) *ent.MembershipQuery {
+func (r *ProjectRepo) queryMembership(orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) *ent.MembershipQuery {
 	return r.data.DB.Membership.Query().
 		Where(
+			membership.HasOrganizationWith(
+				organization.ID(orgID),
+			),
 			membership.MembershipTypeEQ(membershipType),
 			membership.MemberID(memberID),
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
