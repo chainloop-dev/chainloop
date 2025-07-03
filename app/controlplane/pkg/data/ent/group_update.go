@@ -115,6 +115,27 @@ func (gu *GroupUpdate) ClearDeletedAt() *GroupUpdate {
 	return gu
 }
 
+// SetMemberCount sets the "member_count" field.
+func (gu *GroupUpdate) SetMemberCount(i int) *GroupUpdate {
+	gu.mutation.ResetMemberCount()
+	gu.mutation.SetMemberCount(i)
+	return gu
+}
+
+// SetNillableMemberCount sets the "member_count" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableMemberCount(i *int) *GroupUpdate {
+	if i != nil {
+		gu.SetMemberCount(*i)
+	}
+	return gu
+}
+
+// AddMemberCount adds i to the "member_count" field.
+func (gu *GroupUpdate) AddMemberCount(i int) *GroupUpdate {
+	gu.mutation.AddMemberCount(i)
+	return gu
+}
+
 // AddMemberIDs adds the "members" edge to the User entity by IDs.
 func (gu *GroupUpdate) AddMemberIDs(ids ...uuid.UUID) *GroupUpdate {
 	gu.mutation.AddMemberIDs(ids...)
@@ -278,6 +299,12 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if gu.mutation.DeletedAtCleared() {
 		_spec.ClearField(group.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := gu.mutation.MemberCount(); ok {
+		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
+	}
+	if value, ok := gu.mutation.AddedMemberCount(); ok {
+		_spec.AddField(group.FieldMemberCount, field.TypeInt, value)
 	}
 	if gu.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -523,6 +550,27 @@ func (guo *GroupUpdateOne) ClearDeletedAt() *GroupUpdateOne {
 	return guo
 }
 
+// SetMemberCount sets the "member_count" field.
+func (guo *GroupUpdateOne) SetMemberCount(i int) *GroupUpdateOne {
+	guo.mutation.ResetMemberCount()
+	guo.mutation.SetMemberCount(i)
+	return guo
+}
+
+// SetNillableMemberCount sets the "member_count" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableMemberCount(i *int) *GroupUpdateOne {
+	if i != nil {
+		guo.SetMemberCount(*i)
+	}
+	return guo
+}
+
+// AddMemberCount adds i to the "member_count" field.
+func (guo *GroupUpdateOne) AddMemberCount(i int) *GroupUpdateOne {
+	guo.mutation.AddMemberCount(i)
+	return guo
+}
+
 // AddMemberIDs adds the "members" edge to the User entity by IDs.
 func (guo *GroupUpdateOne) AddMemberIDs(ids ...uuid.UUID) *GroupUpdateOne {
 	guo.mutation.AddMemberIDs(ids...)
@@ -716,6 +764,12 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	}
 	if guo.mutation.DeletedAtCleared() {
 		_spec.ClearField(group.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := guo.mutation.MemberCount(); ok {
+		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
+	}
+	if value, ok := guo.mutation.AddedMemberCount(); ok {
+		_spec.AddField(group.FieldMemberCount, field.TypeInt, value)
 	}
 	if guo.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{

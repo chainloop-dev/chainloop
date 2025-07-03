@@ -86,6 +86,11 @@ func DeletedAt(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldDeletedAt, v))
 }
 
+// MemberCount applies equality check predicate on the "member_count" field. It's identical to MemberCountEQ.
+func MemberCount(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldMemberCount, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldName, v))
@@ -374,6 +379,46 @@ func DeletedAtIsNil() predicate.Group {
 // DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
 func DeletedAtNotNil() predicate.Group {
 	return predicate.Group(sql.FieldNotNull(FieldDeletedAt))
+}
+
+// MemberCountEQ applies the EQ predicate on the "member_count" field.
+func MemberCountEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldMemberCount, v))
+}
+
+// MemberCountNEQ applies the NEQ predicate on the "member_count" field.
+func MemberCountNEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldMemberCount, v))
+}
+
+// MemberCountIn applies the In predicate on the "member_count" field.
+func MemberCountIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldMemberCount, vs...))
+}
+
+// MemberCountNotIn applies the NotIn predicate on the "member_count" field.
+func MemberCountNotIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldMemberCount, vs...))
+}
+
+// MemberCountGT applies the GT predicate on the "member_count" field.
+func MemberCountGT(v int) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldMemberCount, v))
+}
+
+// MemberCountGTE applies the GTE predicate on the "member_count" field.
+func MemberCountGTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldMemberCount, v))
+}
+
+// MemberCountLT applies the LT predicate on the "member_count" field.
+func MemberCountLT(v int) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldMemberCount, v))
+}
+
+// MemberCountLTE applies the LTE predicate on the "member_count" field.
+func MemberCountLTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldMemberCount, v))
 }
 
 // HasMembers applies the HasEdge predicate on the "members" edge.

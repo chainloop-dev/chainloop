@@ -144,7 +144,9 @@ message ProjectMembershipReference {
   // The membership reference can be a user email or groups references in the future
   oneof membership_reference {
     // The user to add to the project
-    string user_email = 3 [(buf.validate.field).string.email = true];
+    string user_email = 1 [(buf.validate.field).string.email = true];
+    // The group to add to the project
+    IdentityReference group_reference = 2;
   }
 }
 

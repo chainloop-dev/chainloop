@@ -8,6 +8,12 @@
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the group was created"
     },
+    "^(member_count)$": {
+      "description": "Count of members in the group",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
     "^(organization_id)$": {
       "description": "UUID of the organization that this group belongs to",
       "type": "string"
@@ -29,6 +35,12 @@
     "id": {
       "description": "Unique identifier for the group",
       "type": "string"
+    },
+    "memberCount": {
+      "description": "Count of members in the group",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
     },
     "name": {
       "description": "Human-readable name of the group",

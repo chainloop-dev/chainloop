@@ -160,6 +160,7 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 			SetDescription(opts.Description).
 			AddMemberIDs(opts.UserID).
 			SetOrganizationID(orgID).
+			SetMemberCount(1).
 			Save(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {
@@ -328,6 +329,11 @@ func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupI
 			}
 		}
 
+		// Increment the member count of the group
+		if err := tx.Group.UpdateOneID(groupID).AddMemberCount(1).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to increment group member count: %w", err)
+		}
+
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("failed to add member to group: %w", err)
@@ -376,6 +382,11 @@ func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, g
 			}
 		}
 
+		// Decrement the member count of the group
+		if err := tx.Group.UpdateOneID(groupID).AddMemberCount(-1).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to increment group member count: %w", err)
+		}
+
 		return nil
 	})
 
@@ -392,6 +403,7 @@ func entGroupToBiz(gr *ent.Group) *biz.Group {
 		ID:          gr.ID,
 		Name:        gr.Name,
 		Description: gr.Description,
+		MemberCount: gr.MemberCount,
 		CreatedAt:   toTimePtr(gr.CreatedAt),
 		UpdatedAt:   toTimePtr(gr.UpdatedAt),
 		DeletedAt:   toTimePtr(gr.DeletedAt),

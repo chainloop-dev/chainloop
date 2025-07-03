@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "ProjectMembershipReference is used to reference a user or group in the context of project membership",
   "patternProperties": {
+    "^(group_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "The group to add to the project"
+    },
     "^(user_email)$": {
       "description": "The user to add to the project",
       "format": "email",
@@ -11,6 +15,10 @@
     }
   },
   "properties": {
+    "groupReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "The group to add to the project"
+    },
     "userEmail": {
       "description": "The user to add to the project",
       "format": "email",

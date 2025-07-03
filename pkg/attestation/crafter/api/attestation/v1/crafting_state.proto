@@ -167,6 +167,7 @@ message Attestation {
       AUTH_TYPE_UNSPECIFIED = 0;
       AUTH_TYPE_USER = 1;
       AUTH_TYPE_API_TOKEN = 2;
+      AUTH_TYPE_FEDERATED = 3;
     }
   }
 

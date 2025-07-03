@@ -45,6 +45,7 @@ func (Group) Fields() []ent.Field {
 			Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Time("deleted_at").Optional(),
+		field.Int("member_count").Default(0),
 	}
 }
 
