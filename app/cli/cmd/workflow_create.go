@@ -51,6 +51,11 @@ func newWorkflowCreateCmd() *cobra.Command {
 				// Try to find it by name
 				c, err := action.NewWorkflowContractDescribe(actionOpts).Run(contractRef, 0)
 				if err != nil || c == nil {
+					_, err := action.LoadFileOrURL(contractRef)
+					if err != nil {
+						return fmt.Errorf("%q is not an existing contract name nor references a valid contract file or URL", contractRef)
+					}
+
 					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s-%s", project, workflowName), nil, contractRef)
 					if err != nil {
 						return err

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,6 +69,10 @@ type WorkflowRepo interface {
 type WorkflowCreateOpts struct {
 	Name, OrgID, Project, Team, ContractName, Description string
 	ContractID                                            string
+	// ContractBytes is the raw contract bytes that can be used to create or update the contract
+	ContractBytes []byte
+	// DetectedContract is the detected contract from the contract bytes
+	DetectedContract *Contract
 	// Public means that the associated workflow runs, attestations and materials
 	// are reachable by other users, regardless of their organization
 	Public bool
@@ -125,6 +129,21 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, errors.New("workflow name is required")
 	} else if opts.Project == "" {
 		return nil, errors.New("project name is required")
+	} else if opts.OrgID == "" {
+		return nil, errors.New("organization ID is required")
+	}
+
+	// Set the empty contract by default
+	opts.DetectedContract = EmptyDefaultContract
+
+	// Take the raw contract bytes and identify the format and validate it
+	if opts.ContractBytes != nil {
+		detectedContract, err := identifyUnMarshalAndValidateRawContract(opts.ContractBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load contract: %w", err)
+		}
+
+		opts.DetectedContract = detectedContract
 	}
 
 	// validate format of the name and the project
@@ -136,26 +155,13 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, NewErrValidation(err)
 	}
 
-	// If the name is not provided for the contract we come up with one based on the workflow info
-	if opts.ContractName == "" {
-		opts.ContractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
-	}
-
-	contract, err := uc.findOrCreateContract(ctx, opts.OrgID, opts.ContractName)
-	if err != nil {
-		return nil, err
-	} else if contract == nil {
-		return nil, NewErrNotFound("contract")
-	}
-
-	opts.ContractID = contract.ID.String()
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr(fmt.Sprintf("workflow %q in project %q already exists", opts.Name, opts.Project))
 		}
 
-		return nil, fmt.Errorf("failed to create workflow: %w", err)
+		return nil, fmt.Errorf("can't create the workflow: %w", err)
 	}
 
 	// Set project admin if a new project has been created
@@ -180,8 +186,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 				WorkflowName: wf.Name,
 				ProjectName:  opts.Project,
 			},
-			WorkflowContractID:   &contract.ID,
-			WorkflowContractName: contract.Name,
+			WorkflowContractID:   &wf.ContractID,
+			WorkflowContractName: wf.ContractName,
 			WorkflowDescription:  &opts.Description,
 			Team:                 &opts.Team,
 			Public:               opts.Public,
@@ -190,8 +196,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		// Dispatch events to the audit log regarding the contract
 		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractAttached{
 			WorkflowContractBase: &events.WorkflowContractBase{
-				WorkflowContractID:   &contract.ID,
-				WorkflowContractName: contract.Name,
+				WorkflowContractID:   &wf.ContractID,
+				WorkflowContractName: wf.ContractName,
 			},
 			WorkflowID:   &wf.ID,
 			WorkflowName: wf.Name,

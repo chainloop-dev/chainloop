@@ -28,8 +28,6 @@ import (
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type AttestationInitOpts struct {
@@ -102,39 +100,24 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	action.Logger.Debug().Msg("Retrieving attestation definition")
 	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
 
-	// 0 - find or create the contract if we are creating the workflow (if any)
-	contractRef := opts.NewWorkflowContractRef
-	_, err := NewWorkflowDescribe(action.ActionsOpts).Run(ctx, opts.WorkflowName, opts.ProjectName)
-	if err != nil && status.Code(err) == codes.NotFound {
-		// Not found, let's see if we need to create the contract
-		if contractRef != "" {
-			// Try to find it by name
-			_, err := NewWorkflowContractDescribe(action.ActionsOpts).Run(contractRef, 0)
-			// An invalid argument might be raised if we use a file or URL in the "name" field, which must be DNS-1123
-			// TODO: validate locally before doing the query
-			if err != nil && (status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument) {
-				// Check if it is a valid file or URL before trying to create it
-				_, err := loadFileOrURL(contractRef)
-				if err != nil {
-					return "", fmt.Errorf("%q is not an existing contract name nor references a valid contract file or URL", contractRef)
-				}
+	req := &pb.FindOrCreateWorkflowRequest{
+		ProjectName:  opts.ProjectName,
+		WorkflowName: opts.WorkflowName,
+	}
 
-				createResp, err := NewWorkflowContractCreate(action.ActionsOpts).Run(fmt.Sprintf("%s-%s", opts.ProjectName, opts.WorkflowName), nil, contractRef)
-				if err != nil {
-					return "", err
-				}
-
-				contractRef = createResp.Name
-			}
+	// contractRef can be either the name of an existing contract or a file or URL of a contract to be created or updated
+	// we'll try to figure out which one of those cases we are dealing with
+	if opts.NewWorkflowContractRef != "" {
+		raw, err := LoadFileOrURL(opts.NewWorkflowContractRef)
+		if err != nil {
+			req.ContractName = opts.NewWorkflowContractRef
+		} else {
+			req.ContractBytes = raw
 		}
 	}
 
 	// 1 - Find or create the workflow
-	workflowsResp, err := client.FindOrCreateWorkflow(ctx, &pb.FindOrCreateWorkflowRequest{
-		ProjectName:  opts.ProjectName,
-		WorkflowName: opts.WorkflowName,
-		ContractName: contractRef,
-	})
+	workflowsResp, err := client.FindOrCreateWorkflow(ctx, req)
 	if err != nil {
 		return "", err
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,22 +87,11 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 	)
 
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		contract, err = tx.WorkflowContract.Create().
-			SetName(opts.Name).SetOrganizationID(opts.OrgID).
-			SetNillableDescription(opts.Description).
-			Save(ctx)
+		contract, version, err = r.addCreateToTx(ctx, tx, opts)
 		if err != nil {
 			return handleError(err)
 		}
 
-		// Add version
-		version, err = tx.WorkflowContractVersion.Create().
-			SetRawBody(opts.Contract.Raw).
-			SetRawBodyFormat(opts.Contract.Format).
-			SetContract(contract).Save(ctx)
-		if err != nil {
-			return handleError(err)
-		}
 		return nil
 	}); err != nil {
 		return nil, err
@@ -110,6 +99,27 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 
 	res := entContractToBizContract(contract, version, nil)
 	return res, nil
+}
+
+func (r *WorkflowContractRepo) addCreateToTx(ctx context.Context, tx *ent.Tx, opts *biz.ContractCreateOpts) (*ent.WorkflowContract, *ent.WorkflowContractVersion, error) {
+	contract, err := tx.WorkflowContract.Create().
+		SetName(opts.Name).SetOrganizationID(opts.OrgID).
+		SetNillableDescription(opts.Description).
+		Save(ctx)
+
+	if err != nil {
+		return nil, nil, handleError(err)
+	}
+
+	version, err := tx.WorkflowContractVersion.Create().
+		SetRawBody(opts.Contract.Raw).
+		SetRawBodyFormat(opts.Contract.Format).
+		SetContract(contract).Save(ctx)
+	if err != nil {
+		return nil, nil, handleError(err)
+	}
+
+	return contract, version, nil
 }
 
 func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractWithVersion, error) {

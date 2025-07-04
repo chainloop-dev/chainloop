@@ -26,8 +26,10 @@ export const protobufPackage = "controlplane.v1";
 export interface FindOrCreateWorkflowRequest {
   workflowName: string;
   projectName: string;
-  /** name of an existing contract, if not set, a new contract will be created */
+  /** name of an existing contract */
   contractName: string;
+  /** raw contract bytes that can be used to create or update the contract */
+  contractBytes: Uint8Array;
 }
 
 export interface FindOrCreateWorkflowResponse {
@@ -258,7 +260,7 @@ export interface AttestationServiceGetUploadCredsResponse_Result {
 }
 
 function createBaseFindOrCreateWorkflowRequest(): FindOrCreateWorkflowRequest {
-  return { workflowName: "", projectName: "", contractName: "" };
+  return { workflowName: "", projectName: "", contractName: "", contractBytes: new Uint8Array(0) };
 }
 
 export const FindOrCreateWorkflowRequest = {
@@ -271,6 +273,9 @@ export const FindOrCreateWorkflowRequest = {
     }
     if (message.contractName !== "") {
       writer.uint32(50).string(message.contractName);
+    }
+    if (message.contractBytes.length !== 0) {
+      writer.uint32(58).bytes(message.contractBytes);
     }
     return writer;
   },
@@ -303,6 +308,13 @@ export const FindOrCreateWorkflowRequest = {
 
           message.contractName = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.contractBytes = reader.bytes();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -317,6 +329,7 @@ export const FindOrCreateWorkflowRequest = {
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       contractName: isSet(object.contractName) ? String(object.contractName) : "",
+      contractBytes: isSet(object.contractBytes) ? bytesFromBase64(object.contractBytes) : new Uint8Array(0),
     };
   },
 
@@ -325,6 +338,10 @@ export const FindOrCreateWorkflowRequest = {
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.contractName !== undefined && (obj.contractName = message.contractName);
+    message.contractBytes !== undefined &&
+      (obj.contractBytes = base64FromBytes(
+        message.contractBytes !== undefined ? message.contractBytes : new Uint8Array(0),
+      ));
     return obj;
   },
 
@@ -337,6 +354,7 @@ export const FindOrCreateWorkflowRequest = {
     message.workflowName = object.workflowName ?? "";
     message.projectName = object.projectName ?? "";
     message.contractName = object.contractName ?? "";
+    message.contractBytes = object.contractBytes ?? new Uint8Array(0);
     return message;
   },
 };
