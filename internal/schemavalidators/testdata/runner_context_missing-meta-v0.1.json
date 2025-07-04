@@ -1,0 +1,92 @@
+{
+    "data": {
+        "tool": "platform@8a9b6198",
+        "provider": "github",
+        "repos": [
+            {
+                "owner": "solrpl",
+                "repository": "explain",
+                "branches": [
+                    {
+                        "name": "master",
+                        "active_rules": [
+                            {
+                                "name": "required_status_checks",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "strict",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "enforce_admins",
+                                "enabled": "true"
+                            },
+                            {
+                                "name": "required_pull_request_reviews",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "dismiss_stale_reviews",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "require_code_owner_reviews",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "required_approving_review_count",
+                                        "value": "1",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "require_last_push_approval",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "required_linear_history",
+                                "enabled": "true"
+                            },
+                            {
+                                "name": "allow_force_pushes",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "allow_deletions",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "block_creations",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "required_conversation_resolution",
+                                "enabled": "true"
+                            },
+                            {
+                                "name": "required_signatures",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "lock_branch",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "allow_fork_syncing",
+                                "enabled": "false"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

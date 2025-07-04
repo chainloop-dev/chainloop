@@ -34,7 +34,12 @@ type CycloneDXVersion string
 // CSAFVersion represents the version of CSAF schema.
 type CSAFVersion string
 
+// RunnerContextVersion represents the version of Runner Context schema.
+type RunnerContextVersion string
+
 const (
+	// RunnerContextVersion0_1 represents Runner Context version 0.1 schema.
+	RunnerContextVersion0_1 RunnerContextVersion = "0.1"
 	// CycloneDXVersion1_5 represents CycloneDX version 1.5 schema.
 	CycloneDXVersion1_5 CycloneDXVersion = "1.5"
 	// CycloneDXVersion1_6 represents CycloneDX version 1.6 schema.
@@ -69,6 +74,10 @@ var (
 	cvssSpecVersion3_1 string
 	//go:embed external_schemas/csaf/cvss-v4.0.json
 	cvssSpecVersion4_0 string
+
+	// Runner Context schemas
+	//go:embed external_schemas/runnercontext/runner-context-0.1.schema.json
+	runnerContextSpecVersion0_1 string
 )
 
 // schemaURLMapping maps the schema URL to the schema content. This is used to compile the schema validators
@@ -86,10 +95,12 @@ var schemaURLMapping = map[string]string{
 	"https://www.first.org/cvss/cvss-v3.0.json":                        cvssSpecVersion3_0,
 	"https://www.first.org/cvss/cvss-v3.1.json":                        cvssSpecVersion3_1,
 	"https://www.first.org/cvss/cvss-v4.0.json":                        cvssSpecVersion4_0,
+	"https://chainloop.dev/schemas/runner-context.json":                runnerContextSpecVersion0_1,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
 var compiledCSAFSchemas map[CSAFVersion]*jsonschema.Schema
+var compiledRunnerContextSchemas map[RunnerContextVersion]*jsonschema.Schema
 
 func init() {
 	compiler := jsonschema.NewCompiler()
@@ -104,6 +115,9 @@ func init() {
 	compiledCSAFSchemas = make(map[CSAFVersion]*jsonschema.Schema)
 	compiledCSAFSchemas[CSAFVersion2_0] = compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json")
 	compiledCSAFSchemas[CSAFVersion2_1] = compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json")
+
+	compiledRunnerContextSchemas = make(map[RunnerContextVersion]*jsonschema.Schema)
+	compiledRunnerContextSchemas[RunnerContextVersion0_1] = compiler.MustCompile("https://chainloop.dev/schemas/runner-context.json")
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
@@ -162,6 +176,29 @@ func ValidateCSAF(data interface{}) error {
 			return errs
 		}
 		return multierror.Append(errs, err)
+	}
+
+	return nil
+}
+
+// ValidateChainloopRunnerContext validates the runner context schema.
+// The schema version is determined by the "id" field in the object.
+func ValidateChainloopRunnerContext(data interface{}, version RunnerContextVersion) error {
+	if version == "" {
+		version = RunnerContextVersion0_1
+	}
+
+	schema, ok := compiledRunnerContextSchemas[version]
+	if !ok {
+		return errors.New("invalid runner context schema version")
+	}
+
+	if err := schema.Validate(data); err != nil {
+		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
+		if errors.As(err, &invalidJSONTypeError) {
+			return ErrInvalidJSONPayload
+		}
+		return err
 	}
 
 	return nil

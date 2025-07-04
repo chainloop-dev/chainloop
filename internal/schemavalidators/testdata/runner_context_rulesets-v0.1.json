@@ -1,0 +1,458 @@
+{
+    "meta": {
+        "id": "chainloop.dev/runner-context/v0.1"
+    },
+    "data": {
+        "tool": "platform@8a9b6198",
+        "provider": "github",
+        "repos": [
+            {
+                "owner": "solrpl",
+                "repository": "zerotohero",
+                "branches": [
+                    {
+                        "name": "master",
+                        "active_rules": [
+                            {
+                                "name": "deletion",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "non_fast_forward",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "required_linear_history",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "required_signatures",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pull_request",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "dismiss_stale_reviews_on_push",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "require_code_owner_review",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "require_last_push_approval",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "required_approving_review_count",
+                                        "value": "1",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "required_review_thread_resolution",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "automatic_copilot_code_review_enabled",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "allowed_merge_methods",
+                                        "value": "merge,squash,rebase",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "creation",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "update",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "code_scanning",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "code_scanning_tool",
+                                        "value": "CodeQL",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "alerts_threshold",
+                                        "value": "errors",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "security_alerts_threshold",
+                                        "value": "high_or_higher",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "deletion",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "non_fast_forward",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "required_linear_history",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "required_signatures",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pull_request",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "dismiss_stale_reviews_on_push",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "require_code_owner_review",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "require_last_push_approval",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "required_approving_review_count",
+                                        "value": "1",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "required_review_thread_resolution",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "automatic_copilot_code_review_enabled",
+                                        "value": "true",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "allowed_merge_methods",
+                                        "value": "merge,squash,rebase",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "creation",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "update",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "code_scanning",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "Main",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "5733287",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "code_scanning_tool",
+                                        "value": "CodeQL",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "alerts_threshold",
+                                        "value": "errors",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "security_alerts_threshold",
+                                        "value": "high_or_higher",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

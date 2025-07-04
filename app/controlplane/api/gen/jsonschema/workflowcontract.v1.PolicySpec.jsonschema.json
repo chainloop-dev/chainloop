@@ -52,7 +52,8 @@
             "GHAS_SECRET_SCAN",
             "GHAS_DEPENDENCY_SCAN",
             "JACOCO_XML",
-            "SLSA_PROVENANCE"
+            "SLSA_PROVENANCE",
+            "CHAINLOOP_RUNNER_CONTEXT"
           ],
           "title": "Material Type",
           "type": "string"

@@ -162,6 +162,8 @@ export enum CraftingSchema_Material_MaterialType {
    * https://docs.sigstore.dev/about/bundle/
    */
   SLSA_PROVENANCE = 24,
+  /** CHAINLOOP_RUNNER_CONTEXT - The Chainloop CLI plugin for runner context */
+  CHAINLOOP_RUNNER_CONTEXT = 25,
   UNRECOGNIZED = -1,
 }
 
@@ -242,6 +244,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 24:
     case "SLSA_PROVENANCE":
       return CraftingSchema_Material_MaterialType.SLSA_PROVENANCE;
+    case 25:
+    case "CHAINLOOP_RUNNER_CONTEXT":
+      return CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -301,6 +306,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "JACOCO_XML";
     case CraftingSchema_Material_MaterialType.SLSA_PROVENANCE:
       return "SLSA_PROVENANCE";
+    case CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT:
+      return "CHAINLOOP_RUNNER_CONTEXT";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
