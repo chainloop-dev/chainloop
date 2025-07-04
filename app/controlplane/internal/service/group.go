@@ -387,6 +387,10 @@ func (g *GroupService) ListPendingInvitations(ctx context.Context, req *pb.Group
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
 	}
 
+	if err := g.userHasPermissionToListPendingGroupInvitations(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
+		return nil, err
+	}
+
 	// Parse groupID and groupName from the request
 	groupID, groupName, err := req.GetGroupReference().Parse()
 	if err != nil {
