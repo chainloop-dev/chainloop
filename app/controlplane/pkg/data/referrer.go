@@ -261,6 +261,10 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 }
 
 func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) bool {
+	if ref.InPublicWorkflow {
+		return true
+	}
+
 	for _, oid := range ref.OrgIDs {
 		if !slices.Contains(allowedOrgs, oid) {
 			// skip check in organizations where the user doesn't have access
