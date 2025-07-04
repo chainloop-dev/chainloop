@@ -707,7 +707,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 				return nil, handleUseCaseErr(err, s.log)
 			}
 			// Check if the contract name the user wants to use is the same as the one in the workflow
-		} else if req.GetContractName() != wf.ContractName {
+		} else if req.GetContractName() != "" && req.GetContractName() != wf.ContractName {
 			return nil, errors.BadRequest("bad request", "you can't change to another contract during the attestation process, please update the workflow")
 		}
 
