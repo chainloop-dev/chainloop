@@ -179,3 +179,48 @@ func TestValidateCSAF_2_0(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRunnerContext(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "0.1 GitHub branch protection",
+			filePath: "./testdata/runner_context_branches-v0.1.json",
+		},
+		{
+			name:     "0.1 GitHub rulesets",
+			filePath: "./testdata/runner_context_rulesets-v0.1.json",
+		},
+		{
+			name:     "invalid Chainloop runner context - missing meta",
+			filePath: "./testdata/runner_context_missing-meta-v0.1.json",
+			wantErr:  "missing properties: 'meta'",
+		},
+		{
+			name:     "invalid Chainloop runner context - missing data",
+			filePath: "./testdata/runner_context_missing-data-v0.1.json",
+			wantErr:  "missing properties: 'data'",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.ReadFile(tc.filePath)
+			require.NoError(t, err)
+
+			var v interface{}
+			require.NoError(t, json.Unmarshal(f, &v))
+
+			err = schemavalidators.ValidateChainloopRunnerContext(v, "")
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}

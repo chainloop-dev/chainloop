@@ -128,6 +128,8 @@ message CraftingSchema {
       // https://slsa.dev/spec/v1.0/provenance
       // https://docs.sigstore.dev/about/bundle/
       SLSA_PROVENANCE = 24;
+      // The Chainloop CLI plugin for runner context
+      CHAINLOOP_RUNNER_CONTEXT = 25;
     }
   }
 }

@@ -47,6 +47,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_TWISTCLI_SCAN_JSON,
 	CraftingSchema_Material_ZAP_DAST_ZIP,
 	CraftingSchema_Material_SLSA_PROVENANCE,
+	CraftingSchema_Material_CHAINLOOP_RUNNER_CONTEXT,
 	CraftingSchema_Material_ATTESTATION,
 	CraftingSchema_Material_CONTAINER_IMAGE,
 	CraftingSchema_Material_ARTIFACT,
