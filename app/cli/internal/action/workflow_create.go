@@ -32,14 +32,16 @@ func NewWorkflowCreate(cfg *ActionsOpts) *WorkflowCreate {
 type NewWorkflowCreateOpts struct {
 	Name, Description, Project, Team, ContractName string
 	Public                                         bool
+	ContractBytes                                  []byte
 }
 
 func (action *WorkflowCreate) Run(opts *NewWorkflowCreateOpts) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
 	resp, err := client.Create(context.Background(), &pb.WorkflowServiceCreateRequest{
 		Name: opts.Name, ProjectName: opts.Project, Team: opts.Team, ContractName: opts.ContractName,
-		Description: opts.Description,
-		Public:      opts.Public,
+		Description:   opts.Description,
+		Public:        opts.Public,
+		ContractBytes: opts.ContractBytes,
 	})
 	if err != nil {
 		return nil, err

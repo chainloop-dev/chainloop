@@ -64,6 +64,8 @@ export interface WorkflowServiceCreateRequest {
   projectName: string;
   /** The name of the workflow contract */
   contractName: string;
+  /** content of the contract, if not provided an empty contract will be created if needed */
+  contractBytes: Uint8Array;
   team: string;
   description: string;
   public: boolean;
@@ -138,7 +140,15 @@ export interface WorkflowServiceViewResponse {
 }
 
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
-  return { name: "", projectName: "", contractName: "", team: "", description: "", public: false };
+  return {
+    name: "",
+    projectName: "",
+    contractName: "",
+    contractBytes: new Uint8Array(0),
+    team: "",
+    description: "",
+    public: false,
+  };
 }
 
 export const WorkflowServiceCreateRequest = {
@@ -152,14 +162,17 @@ export const WorkflowServiceCreateRequest = {
     if (message.contractName !== "") {
       writer.uint32(26).string(message.contractName);
     }
+    if (message.contractBytes.length !== 0) {
+      writer.uint32(34).bytes(message.contractBytes);
+    }
     if (message.team !== "") {
-      writer.uint32(34).string(message.team);
+      writer.uint32(42).string(message.team);
     }
     if (message.description !== "") {
-      writer.uint32(42).string(message.description);
+      writer.uint32(50).string(message.description);
     }
     if (message.public === true) {
-      writer.uint32(48).bool(message.public);
+      writer.uint32(56).bool(message.public);
     }
     return writer;
   },
@@ -197,17 +210,24 @@ export const WorkflowServiceCreateRequest = {
             break;
           }
 
-          message.team = reader.string();
+          message.contractBytes = reader.bytes();
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.description = reader.string();
+          message.team = reader.string();
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
             break;
           }
 
@@ -227,6 +247,7 @@ export const WorkflowServiceCreateRequest = {
       name: isSet(object.name) ? String(object.name) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       contractName: isSet(object.contractName) ? String(object.contractName) : "",
+      contractBytes: isSet(object.contractBytes) ? bytesFromBase64(object.contractBytes) : new Uint8Array(0),
       team: isSet(object.team) ? String(object.team) : "",
       description: isSet(object.description) ? String(object.description) : "",
       public: isSet(object.public) ? Boolean(object.public) : false,
@@ -238,6 +259,10 @@ export const WorkflowServiceCreateRequest = {
     message.name !== undefined && (obj.name = message.name);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.contractName !== undefined && (obj.contractName = message.contractName);
+    message.contractBytes !== undefined &&
+      (obj.contractBytes = base64FromBytes(
+        message.contractBytes !== undefined ? message.contractBytes : new Uint8Array(0),
+      ));
     message.team !== undefined && (obj.team = message.team);
     message.description !== undefined && (obj.description = message.description);
     message.public !== undefined && (obj.public = message.public);
@@ -253,6 +278,7 @@ export const WorkflowServiceCreateRequest = {
     message.name = object.name ?? "";
     message.projectName = object.projectName ?? "";
     message.contractName = object.contractName ?? "";
+    message.contractBytes = object.contractBytes ?? new Uint8Array(0);
     message.team = object.team ?? "";
     message.description = object.description ?? "";
     message.public = object.public ?? false;
@@ -1310,6 +1336,31 @@ var tsProtoGlobalThis: any = (() => {
   }
   throw "Unable to locate global object";
 })();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
