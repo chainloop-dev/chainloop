@@ -154,11 +154,7 @@ func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expir
 }
 
 func (r *APITokenRepo) UpdateLastUsedAt(ctx context.Context, id uuid.UUID, lastUsedAt time.Time) error {
-	err := r.data.DB.APIToken.UpdateOneID(id).
-		Where(apitoken.RevokedAtIsNil()).
-		SetLastUsedAt(lastUsedAt).
-		Exec(ctx)
-
+	err := r.data.DB.APIToken.UpdateOneID(id).Where(apitoken.RevokedAtIsNil()).SetLastUsedAt(lastUsedAt).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return biz.NewErrNotFound("API token")
