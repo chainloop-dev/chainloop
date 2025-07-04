@@ -1,8 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 h1:pewT4SIwZxo6E95TRjOvYvsO2AvVZDBRPljhvi6yN3c=
 =======
 h1:Nqn7kGmL5Hba+3tAbxdDjH6+KvSmunyHZuDIthoGQiU=
 >>>>>>> 9b3f353d (feat: add columns)
+=======
+h1:oR9RWah9qFLH+GgYn2+C1UpTH2Z82Zj36QLGWRG5X+4=
+>>>>>>> 7a8275ef (fix tests)
 20230706165452_init-schema.sql h1:VvqbNFEQnCvUVyj2iDYVQQxDM0+sSXqocpt/5H64k8M=
 20230710111950-cas-backend.sql h1:A8iBuSzZIEbdsv9ipBtscZQuaBp3V5/VMw7eZH6GX+g=
 20230712094107-cas-backends-workflow-runs.sql h1:a5rzxpVGyd56nLRSsKrmCFc9sebg65RWzLghKHh5xvI=
@@ -102,4 +106,8 @@ h1:Nqn7kGmL5Hba+3tAbxdDjH6+KvSmunyHZuDIthoGQiU=
 20250704090359.sql h1:a0ksfjy2dtzviJL16HbC4eT1xBxy2qFH5mNFOpYlUrA=
 =======
 20250703212753.sql h1:Hr4sKsM+tlPRp0I9qRLnnkVUNpZ4xTH/XOQJ5nDdbek=
+<<<<<<< HEAD
 >>>>>>> 9b3f353d (feat: add columns)
+=======
+20250704090525.sql h1:VO/Kf+I0GJDfL2FaHk36YZ7f6uY9VrHjrP3EuQAidHM=
+>>>>>>> 7a8275ef (fix tests)

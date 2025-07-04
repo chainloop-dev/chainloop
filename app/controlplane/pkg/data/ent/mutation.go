@@ -15246,27 +15246,25 @@ func (m *WorkflowMutation) ResetEdge(name string) error {
 // WorkflowContractMutation represents an operation that mutates the WorkflowContract nodes in the graph.
 type WorkflowContractMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	name                *string
-	created_at          *time.Time
-	deleted_at          *time.Time
-	description         *string
-	clearedFields       map[string]struct{}
-	versions            map[uuid.UUID]struct{}
-	removedversions     map[uuid.UUID]struct{}
-	clearedversions     bool
-	organization        *uuid.UUID
-	clearedorganization bool
-	workflows           map[uuid.UUID]struct{}
-	removedworkflows    map[uuid.UUID]struct{}
-	clearedworkflows    bool
-	project             *uuid.UUID
-	clearedproject      bool
-	done                bool
-	oldValue            func(context.Context) (*WorkflowContract, error)
-	predicates          []predicate.WorkflowContract
+	op                   Op
+	typ                  string
+	id                   *uuid.UUID
+	name                 *string
+	created_at           *time.Time
+	deleted_at           *time.Time
+	description          *string
+	scoped_resource_type *biz.ContractScope
+	scoped_resource_id   *uuid.UUID
+	clearedFields        map[string]struct{}
+	versions             map[uuid.UUID]struct{}
+	removedversions      map[uuid.UUID]struct{}
+	clearedversions      bool
+	workflows            map[uuid.UUID]struct{}
+	removedworkflows     map[uuid.UUID]struct{}
+	clearedworkflows     bool
+	done                 bool
+	oldValue             func(context.Context) (*WorkflowContract, error)
+	predicates           []predicate.WorkflowContract
 }
 
 var _ ent.Mutation = (*WorkflowContractMutation)(nil)
@@ -15543,53 +15541,102 @@ func (m *WorkflowContractMutation) ResetDescription() {
 	delete(m.clearedFields, workflowcontract.FieldDescription)
 }
 
-// SetProjectID sets the "project_id" field.
-func (m *WorkflowContractMutation) SetProjectID(u uuid.UUID) {
-	m.project = &u
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (m *WorkflowContractMutation) SetScopedResourceType(bs biz.ContractScope) {
+	m.scoped_resource_type = &bs
 }
 
-// ProjectID returns the value of the "project_id" field in the mutation.
-func (m *WorkflowContractMutation) ProjectID() (r uuid.UUID, exists bool) {
-	v := m.project
+// ScopedResourceType returns the value of the "scoped_resource_type" field in the mutation.
+func (m *WorkflowContractMutation) ScopedResourceType() (r biz.ContractScope, exists bool) {
+	v := m.scoped_resource_type
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldProjectID returns the old "project_id" field's value of the WorkflowContract entity.
+// OldScopedResourceType returns the old "scoped_resource_type" field's value of the WorkflowContract entity.
 // If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkflowContractMutation) OldProjectID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *WorkflowContractMutation) OldScopedResourceType(ctx context.Context) (v biz.ContractScope, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProjectID is only allowed on UpdateOne operations")
+		return v, errors.New("OldScopedResourceType is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProjectID requires an ID field in the mutation")
+		return v, errors.New("OldScopedResourceType requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProjectID: %w", err)
+		return v, fmt.Errorf("querying old value for OldScopedResourceType: %w", err)
 	}
-	return oldValue.ProjectID, nil
+	return oldValue.ScopedResourceType, nil
 }
 
-// ClearProjectID clears the value of the "project_id" field.
-func (m *WorkflowContractMutation) ClearProjectID() {
-	m.project = nil
-	m.clearedFields[workflowcontract.FieldProjectID] = struct{}{}
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (m *WorkflowContractMutation) ClearScopedResourceType() {
+	m.scoped_resource_type = nil
+	m.clearedFields[workflowcontract.FieldScopedResourceType] = struct{}{}
 }
 
-// ProjectIDCleared returns if the "project_id" field was cleared in this mutation.
-func (m *WorkflowContractMutation) ProjectIDCleared() bool {
-	_, ok := m.clearedFields[workflowcontract.FieldProjectID]
+// ScopedResourceTypeCleared returns if the "scoped_resource_type" field was cleared in this mutation.
+func (m *WorkflowContractMutation) ScopedResourceTypeCleared() bool {
+	_, ok := m.clearedFields[workflowcontract.FieldScopedResourceType]
 	return ok
 }
 
-// ResetProjectID resets all changes to the "project_id" field.
-func (m *WorkflowContractMutation) ResetProjectID() {
-	m.project = nil
-	delete(m.clearedFields, workflowcontract.FieldProjectID)
+// ResetScopedResourceType resets all changes to the "scoped_resource_type" field.
+func (m *WorkflowContractMutation) ResetScopedResourceType() {
+	m.scoped_resource_type = nil
+	delete(m.clearedFields, workflowcontract.FieldScopedResourceType)
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (m *WorkflowContractMutation) SetScopedResourceID(u uuid.UUID) {
+	m.scoped_resource_id = &u
+}
+
+// ScopedResourceID returns the value of the "scoped_resource_id" field in the mutation.
+func (m *WorkflowContractMutation) ScopedResourceID() (r uuid.UUID, exists bool) {
+	v := m.scoped_resource_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopedResourceID returns the old "scoped_resource_id" field's value of the WorkflowContract entity.
+// If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractMutation) OldScopedResourceID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopedResourceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopedResourceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopedResourceID: %w", err)
+	}
+	return oldValue.ScopedResourceID, nil
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (m *WorkflowContractMutation) ClearScopedResourceID() {
+	m.scoped_resource_id = nil
+	m.clearedFields[workflowcontract.FieldScopedResourceID] = struct{}{}
+}
+
+// ScopedResourceIDCleared returns if the "scoped_resource_id" field was cleared in this mutation.
+func (m *WorkflowContractMutation) ScopedResourceIDCleared() bool {
+	_, ok := m.clearedFields[workflowcontract.FieldScopedResourceID]
+	return ok
+}
+
+// ResetScopedResourceID resets all changes to the "scoped_resource_id" field.
+func (m *WorkflowContractMutation) ResetScopedResourceID() {
+	m.scoped_resource_id = nil
+	delete(m.clearedFields, workflowcontract.FieldScopedResourceID)
 }
 
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by ids.
@@ -15646,45 +15693,6 @@ func (m *WorkflowContractMutation) ResetVersions() {
 	m.removedversions = nil
 }
 
-// SetOrganizationID sets the "organization" edge to the Organization entity by id.
-func (m *WorkflowContractMutation) SetOrganizationID(id uuid.UUID) {
-	m.organization = &id
-}
-
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (m *WorkflowContractMutation) ClearOrganization() {
-	m.clearedorganization = true
-}
-
-// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
-func (m *WorkflowContractMutation) OrganizationCleared() bool {
-	return m.clearedorganization
-}
-
-// OrganizationID returns the "organization" edge ID in the mutation.
-func (m *WorkflowContractMutation) OrganizationID() (id uuid.UUID, exists bool) {
-	if m.organization != nil {
-		return *m.organization, true
-	}
-	return
-}
-
-// OrganizationIDs returns the "organization" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OrganizationID instead. It exists only for internal usage by the builders.
-func (m *WorkflowContractMutation) OrganizationIDs() (ids []uuid.UUID) {
-	if id := m.organization; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOrganization resets all changes to the "organization" edge.
-func (m *WorkflowContractMutation) ResetOrganization() {
-	m.organization = nil
-	m.clearedorganization = false
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by ids.
 func (m *WorkflowContractMutation) AddWorkflowIDs(ids ...uuid.UUID) {
 	if m.workflows == nil {
@@ -15739,33 +15747,6 @@ func (m *WorkflowContractMutation) ResetWorkflows() {
 	m.removedworkflows = nil
 }
 
-// ClearProject clears the "project" edge to the Project entity.
-func (m *WorkflowContractMutation) ClearProject() {
-	m.clearedproject = true
-	m.clearedFields[workflowcontract.FieldProjectID] = struct{}{}
-}
-
-// ProjectCleared reports if the "project" edge to the Project entity was cleared.
-func (m *WorkflowContractMutation) ProjectCleared() bool {
-	return m.ProjectIDCleared() || m.clearedproject
-}
-
-// ProjectIDs returns the "project" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ProjectID instead. It exists only for internal usage by the builders.
-func (m *WorkflowContractMutation) ProjectIDs() (ids []uuid.UUID) {
-	if id := m.project; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetProject resets all changes to the "project" edge.
-func (m *WorkflowContractMutation) ResetProject() {
-	m.project = nil
-	m.clearedproject = false
-}
-
 // Where appends a list predicates to the WorkflowContractMutation builder.
 func (m *WorkflowContractMutation) Where(ps ...predicate.WorkflowContract) {
 	m.predicates = append(m.predicates, ps...)
@@ -15800,7 +15781,7 @@ func (m *WorkflowContractMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, workflowcontract.FieldName)
 	}
@@ -15813,8 +15794,11 @@ func (m *WorkflowContractMutation) Fields() []string {
 	if m.description != nil {
 		fields = append(fields, workflowcontract.FieldDescription)
 	}
-	if m.project != nil {
-		fields = append(fields, workflowcontract.FieldProjectID)
+	if m.scoped_resource_type != nil {
+		fields = append(fields, workflowcontract.FieldScopedResourceType)
+	}
+	if m.scoped_resource_id != nil {
+		fields = append(fields, workflowcontract.FieldScopedResourceID)
 	}
 	return fields
 }
@@ -15832,8 +15816,10 @@ func (m *WorkflowContractMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case workflowcontract.FieldDescription:
 		return m.Description()
-	case workflowcontract.FieldProjectID:
-		return m.ProjectID()
+	case workflowcontract.FieldScopedResourceType:
+		return m.ScopedResourceType()
+	case workflowcontract.FieldScopedResourceID:
+		return m.ScopedResourceID()
 	}
 	return nil, false
 }
@@ -15851,8 +15837,10 @@ func (m *WorkflowContractMutation) OldField(ctx context.Context, name string) (e
 		return m.OldDeletedAt(ctx)
 	case workflowcontract.FieldDescription:
 		return m.OldDescription(ctx)
-	case workflowcontract.FieldProjectID:
-		return m.OldProjectID(ctx)
+	case workflowcontract.FieldScopedResourceType:
+		return m.OldScopedResourceType(ctx)
+	case workflowcontract.FieldScopedResourceID:
+		return m.OldScopedResourceID(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowContract field %s", name)
 }
@@ -15890,12 +15878,19 @@ func (m *WorkflowContractMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetDescription(v)
 		return nil
-	case workflowcontract.FieldProjectID:
+	case workflowcontract.FieldScopedResourceType:
+		v, ok := value.(biz.ContractScope)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopedResourceType(v)
+		return nil
+	case workflowcontract.FieldScopedResourceID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetProjectID(v)
+		m.SetScopedResourceID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)
@@ -15933,8 +15928,11 @@ func (m *WorkflowContractMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowcontract.FieldDescription) {
 		fields = append(fields, workflowcontract.FieldDescription)
 	}
-	if m.FieldCleared(workflowcontract.FieldProjectID) {
-		fields = append(fields, workflowcontract.FieldProjectID)
+	if m.FieldCleared(workflowcontract.FieldScopedResourceType) {
+		fields = append(fields, workflowcontract.FieldScopedResourceType)
+	}
+	if m.FieldCleared(workflowcontract.FieldScopedResourceID) {
+		fields = append(fields, workflowcontract.FieldScopedResourceID)
 	}
 	return fields
 }
@@ -15956,8 +15954,11 @@ func (m *WorkflowContractMutation) ClearField(name string) error {
 	case workflowcontract.FieldDescription:
 		m.ClearDescription()
 		return nil
-	case workflowcontract.FieldProjectID:
-		m.ClearProjectID()
+	case workflowcontract.FieldScopedResourceType:
+		m.ClearScopedResourceType()
+		return nil
+	case workflowcontract.FieldScopedResourceID:
+		m.ClearScopedResourceID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract nullable field %s", name)
@@ -15979,8 +15980,11 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 	case workflowcontract.FieldDescription:
 		m.ResetDescription()
 		return nil
-	case workflowcontract.FieldProjectID:
-		m.ResetProjectID()
+	case workflowcontract.FieldScopedResourceType:
+		m.ResetScopedResourceType()
+		return nil
+	case workflowcontract.FieldScopedResourceID:
+		m.ResetScopedResourceID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)
@@ -15988,18 +15992,12 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowContractMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.versions != nil {
 		edges = append(edges, workflowcontract.EdgeVersions)
 	}
-	if m.organization != nil {
-		edges = append(edges, workflowcontract.EdgeOrganization)
-	}
 	if m.workflows != nil {
 		edges = append(edges, workflowcontract.EdgeWorkflows)
-	}
-	if m.project != nil {
-		edges = append(edges, workflowcontract.EdgeProject)
 	}
 	return edges
 }
@@ -16014,27 +16012,19 @@ func (m *WorkflowContractMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case workflowcontract.EdgeOrganization:
-		if id := m.organization; id != nil {
-			return []ent.Value{*id}
-		}
 	case workflowcontract.EdgeWorkflows:
 		ids := make([]ent.Value, 0, len(m.workflows))
 		for id := range m.workflows {
 			ids = append(ids, id)
 		}
 		return ids
-	case workflowcontract.EdgeProject:
-		if id := m.project; id != nil {
-			return []ent.Value{*id}
-		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowContractMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.removedversions != nil {
 		edges = append(edges, workflowcontract.EdgeVersions)
 	}
@@ -16066,18 +16056,12 @@ func (m *WorkflowContractMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowContractMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.clearedversions {
 		edges = append(edges, workflowcontract.EdgeVersions)
 	}
-	if m.clearedorganization {
-		edges = append(edges, workflowcontract.EdgeOrganization)
-	}
 	if m.clearedworkflows {
 		edges = append(edges, workflowcontract.EdgeWorkflows)
-	}
-	if m.clearedproject {
-		edges = append(edges, workflowcontract.EdgeProject)
 	}
 	return edges
 }
@@ -16088,12 +16072,8 @@ func (m *WorkflowContractMutation) EdgeCleared(name string) bool {
 	switch name {
 	case workflowcontract.EdgeVersions:
 		return m.clearedversions
-	case workflowcontract.EdgeOrganization:
-		return m.clearedorganization
 	case workflowcontract.EdgeWorkflows:
 		return m.clearedworkflows
-	case workflowcontract.EdgeProject:
-		return m.clearedproject
 	}
 	return false
 }
@@ -16102,12 +16082,6 @@ func (m *WorkflowContractMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *WorkflowContractMutation) ClearEdge(name string) error {
 	switch name {
-	case workflowcontract.EdgeOrganization:
-		m.ClearOrganization()
-		return nil
-	case workflowcontract.EdgeProject:
-		m.ClearProject()
-		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract unique edge %s", name)
 }
@@ -16119,14 +16093,8 @@ func (m *WorkflowContractMutation) ResetEdge(name string) error {
 	case workflowcontract.EdgeVersions:
 		m.ResetVersions()
 		return nil
-	case workflowcontract.EdgeOrganization:
-		m.ResetOrganization()
-		return nil
 	case workflowcontract.EdgeWorkflows:
 		m.ResetWorkflows()
-		return nil
-	case workflowcontract.EdgeProject:
-		m.ResetProject()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract edge %s", name)

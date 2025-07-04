@@ -641,8 +641,9 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "scoped_resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"project", "org"}},
+		{Name: "scoped_resource_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_workflow_contracts", Type: field.TypeUUID, Nullable: true},
-		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// WorkflowContractsTable holds the schema information for the "workflow_contracts" table.
 	WorkflowContractsTable = &schema.Table{
@@ -652,32 +653,18 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_contracts_organizations_workflow_contracts",
-				Columns:    []*schema.Column{WorkflowContractsColumns[5]},
+				Columns:    []*schema.Column{WorkflowContractsColumns[7]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "workflow_contracts_projects_project",
-				Columns:    []*schema.Column{WorkflowContractsColumns[6]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "workflowcontract_name_organization_workflow_contracts",
+				Name:    "workflowcontract_name_scoped_resource_type_scoped_resource_id",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[5]},
+				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[5], WorkflowContractsColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "deleted_at IS NULL AND project_id IS NULL",
-				},
-			},
-			{
-				Name:    "workflowcontract_name_project_id",
-				Unique:  true,
-				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[6]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "deleted_at IS NULL AND project_id IS NOT NULL",
+					Where: "deleted_at IS NULL",
 				},
 			},
 		},
@@ -948,7 +935,6 @@ func init() {
 	WorkflowsTable.ForeignKeys[2].RefTable = WorkflowContractsTable
 	WorkflowsTable.ForeignKeys[3].RefTable = WorkflowRunsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable
-	WorkflowContractsTable.ForeignKeys[1].RefTable = ProjectsTable
 	WorkflowContractVersionsTable.ForeignKeys[0].RefTable = WorkflowContractsTable
 	WorkflowRunsTable.ForeignKeys[0].RefTable = ProjectVersionsTable
 	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowsTable

@@ -3,10 +3,12 @@
 package workflowcontract
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -23,16 +25,14 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// FieldProjectID holds the string denoting the project_id field in the database.
-	FieldProjectID = "project_id"
+	// FieldScopedResourceType holds the string denoting the scoped_resource_type field in the database.
+	FieldScopedResourceType = "scoped_resource_type"
+	// FieldScopedResourceID holds the string denoting the scoped_resource_id field in the database.
+	FieldScopedResourceID = "scoped_resource_id"
 	// EdgeVersions holds the string denoting the versions edge name in mutations.
 	EdgeVersions = "versions"
-	// EdgeOrganization holds the string denoting the organization edge name in mutations.
-	EdgeOrganization = "organization"
 	// EdgeWorkflows holds the string denoting the workflows edge name in mutations.
 	EdgeWorkflows = "workflows"
-	// EdgeProject holds the string denoting the project edge name in mutations.
-	EdgeProject = "project"
 	// Table holds the table name of the workflowcontract in the database.
 	Table = "workflow_contracts"
 	// VersionsTable is the table that holds the versions relation/edge.
@@ -42,13 +42,6 @@ const (
 	VersionsInverseTable = "workflow_contract_versions"
 	// VersionsColumn is the table column denoting the versions relation/edge.
 	VersionsColumn = "workflow_contract_versions"
-	// OrganizationTable is the table that holds the organization relation/edge.
-	OrganizationTable = "workflow_contracts"
-	// OrganizationInverseTable is the table name for the Organization entity.
-	// It exists in this package in order to avoid circular dependency with the "organization" package.
-	OrganizationInverseTable = "organizations"
-	// OrganizationColumn is the table column denoting the organization relation/edge.
-	OrganizationColumn = "organization_workflow_contracts"
 	// WorkflowsTable is the table that holds the workflows relation/edge.
 	WorkflowsTable = "workflows"
 	// WorkflowsInverseTable is the table name for the Workflow entity.
@@ -56,13 +49,6 @@ const (
 	WorkflowsInverseTable = "workflows"
 	// WorkflowsColumn is the table column denoting the workflows relation/edge.
 	WorkflowsColumn = "workflow_contract"
-	// ProjectTable is the table that holds the project relation/edge.
-	ProjectTable = "workflow_contracts"
-	// ProjectInverseTable is the table name for the Project entity.
-	// It exists in this package in order to avoid circular dependency with the "project" package.
-	ProjectInverseTable = "projects"
-	// ProjectColumn is the table column denoting the project relation/edge.
-	ProjectColumn = "project_id"
 )
 
 // Columns holds all SQL columns for workflowcontract fields.
@@ -72,7 +58,8 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldDeletedAt,
 	FieldDescription,
-	FieldProjectID,
+	FieldScopedResourceType,
+	FieldScopedResourceID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_contracts"
@@ -103,6 +90,16 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// ScopedResourceTypeValidator is a validator for the "scoped_resource_type" field enum values. It is called by the builders before save.
+func ScopedResourceTypeValidator(srt biz.ContractScope) error {
+	switch srt {
+	case "project", "org":
+		return nil
+	default:
+		return fmt.Errorf("workflowcontract: invalid enum value for scoped_resource_type field: %q", srt)
+	}
+}
+
 // OrderOption defines the ordering options for the WorkflowContract queries.
 type OrderOption func(*sql.Selector)
 
@@ -131,9 +128,14 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
-// ByProjectID orders the results by the project_id field.
-func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
+// ByScopedResourceType orders the results by the scoped_resource_type field.
+func ByScopedResourceType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopedResourceType, opts...).ToFunc()
+}
+
+// ByScopedResourceID orders the results by the scoped_resource_id field.
+func ByScopedResourceID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopedResourceID, opts...).ToFunc()
 }
 
 // ByVersionsCount orders the results by versions count.
@@ -150,13 +152,6 @@ func ByVersions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByOrganizationField orders the results by organization field.
-func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByWorkflowsCount orders the results by workflows count.
 func ByWorkflowsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -170,13 +165,6 @@ func ByWorkflows(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newWorkflowsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByProjectField orders the results by project field.
-func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
-	}
-}
 func newVersionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -184,24 +172,10 @@ func newVersionsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
 	)
 }
-func newOrganizationStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OrganizationInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
-	)
-}
 func newWorkflowsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, WorkflowsTable, WorkflowsColumn),
-	)
-}
-func newProjectStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ProjectInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
 	)
 }

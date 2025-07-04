@@ -11,9 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -74,23 +73,43 @@ func (wcu *WorkflowContractUpdate) ClearDescription() *WorkflowContractUpdate {
 	return wcu
 }
 
-// SetProjectID sets the "project_id" field.
-func (wcu *WorkflowContractUpdate) SetProjectID(u uuid.UUID) *WorkflowContractUpdate {
-	wcu.mutation.SetProjectID(u)
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (wcu *WorkflowContractUpdate) SetScopedResourceType(bs biz.ContractScope) *WorkflowContractUpdate {
+	wcu.mutation.SetScopedResourceType(bs)
 	return wcu
 }
 
-// SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (wcu *WorkflowContractUpdate) SetNillableProjectID(u *uuid.UUID) *WorkflowContractUpdate {
-	if u != nil {
-		wcu.SetProjectID(*u)
+// SetNillableScopedResourceType sets the "scoped_resource_type" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableScopedResourceType(bs *biz.ContractScope) *WorkflowContractUpdate {
+	if bs != nil {
+		wcu.SetScopedResourceType(*bs)
 	}
 	return wcu
 }
 
-// ClearProjectID clears the value of the "project_id" field.
-func (wcu *WorkflowContractUpdate) ClearProjectID() *WorkflowContractUpdate {
-	wcu.mutation.ClearProjectID()
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (wcu *WorkflowContractUpdate) ClearScopedResourceType() *WorkflowContractUpdate {
+	wcu.mutation.ClearScopedResourceType()
+	return wcu
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (wcu *WorkflowContractUpdate) SetScopedResourceID(u uuid.UUID) *WorkflowContractUpdate {
+	wcu.mutation.SetScopedResourceID(u)
+	return wcu
+}
+
+// SetNillableScopedResourceID sets the "scoped_resource_id" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableScopedResourceID(u *uuid.UUID) *WorkflowContractUpdate {
+	if u != nil {
+		wcu.SetScopedResourceID(*u)
+	}
+	return wcu
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (wcu *WorkflowContractUpdate) ClearScopedResourceID() *WorkflowContractUpdate {
+	wcu.mutation.ClearScopedResourceID()
 	return wcu
 }
 
@@ -109,25 +128,6 @@ func (wcu *WorkflowContractUpdate) AddVersions(w ...*WorkflowContractVersion) *W
 	return wcu.AddVersionIDs(ids...)
 }
 
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (wcu *WorkflowContractUpdate) SetOrganizationID(id uuid.UUID) *WorkflowContractUpdate {
-	wcu.mutation.SetOrganizationID(id)
-	return wcu
-}
-
-// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (wcu *WorkflowContractUpdate) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractUpdate {
-	if id != nil {
-		wcu = wcu.SetOrganizationID(*id)
-	}
-	return wcu
-}
-
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (wcu *WorkflowContractUpdate) SetOrganization(o *Organization) *WorkflowContractUpdate {
-	return wcu.SetOrganizationID(o.ID)
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (wcu *WorkflowContractUpdate) AddWorkflowIDs(ids ...uuid.UUID) *WorkflowContractUpdate {
 	wcu.mutation.AddWorkflowIDs(ids...)
@@ -141,11 +141,6 @@ func (wcu *WorkflowContractUpdate) AddWorkflows(w ...*Workflow) *WorkflowContrac
 		ids[i] = w[i].ID
 	}
 	return wcu.AddWorkflowIDs(ids...)
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (wcu *WorkflowContractUpdate) SetProject(p *Project) *WorkflowContractUpdate {
-	return wcu.SetProjectID(p.ID)
 }
 
 // Mutation returns the WorkflowContractMutation object of the builder.
@@ -174,12 +169,6 @@ func (wcu *WorkflowContractUpdate) RemoveVersions(w ...*WorkflowContractVersion)
 	return wcu.RemoveVersionIDs(ids...)
 }
 
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (wcu *WorkflowContractUpdate) ClearOrganization() *WorkflowContractUpdate {
-	wcu.mutation.ClearOrganization()
-	return wcu
-}
-
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
 func (wcu *WorkflowContractUpdate) ClearWorkflows() *WorkflowContractUpdate {
 	wcu.mutation.ClearWorkflows()
@@ -199,12 +188,6 @@ func (wcu *WorkflowContractUpdate) RemoveWorkflows(w ...*Workflow) *WorkflowCont
 		ids[i] = w[i].ID
 	}
 	return wcu.RemoveWorkflowIDs(ids...)
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (wcu *WorkflowContractUpdate) ClearProject() *WorkflowContractUpdate {
-	wcu.mutation.ClearProject()
-	return wcu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -234,6 +217,16 @@ func (wcu *WorkflowContractUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (wcu *WorkflowContractUpdate) check() error {
+	if v, ok := wcu.mutation.ScopedResourceType(); ok {
+		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (wcu *WorkflowContractUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractUpdate {
 	wcu.modifiers = append(wcu.modifiers, modifiers...)
@@ -241,6 +234,9 @@ func (wcu *WorkflowContractUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder
 }
 
 func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := wcu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontract.Table, workflowcontract.Columns, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	if ps := wcu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -260,6 +256,18 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if wcu.mutation.DescriptionCleared() {
 		_spec.ClearField(workflowcontract.FieldDescription, field.TypeString)
+	}
+	if value, ok := wcu.mutation.ScopedResourceType(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceType, field.TypeEnum, value)
+	}
+	if wcu.mutation.ScopedResourceTypeCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceType, field.TypeEnum)
+	}
+	if value, ok := wcu.mutation.ScopedResourceID(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
+	}
+	if wcu.mutation.ScopedResourceIDCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceID, field.TypeUUID)
 	}
 	if wcu.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -306,35 +314,6 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wcu.mutation.OrganizationCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowcontract.OrganizationTable,
-			Columns: []string{workflowcontract.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wcu.mutation.OrganizationIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowcontract.OrganizationTable,
-			Columns: []string{workflowcontract.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if wcu.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -373,35 +352,6 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if wcu.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   workflowcontract.ProjectTable,
-			Columns: []string{workflowcontract.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wcu.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   workflowcontract.ProjectTable,
-			Columns: []string{workflowcontract.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -471,23 +421,43 @@ func (wcuo *WorkflowContractUpdateOne) ClearDescription() *WorkflowContractUpdat
 	return wcuo
 }
 
-// SetProjectID sets the "project_id" field.
-func (wcuo *WorkflowContractUpdateOne) SetProjectID(u uuid.UUID) *WorkflowContractUpdateOne {
-	wcuo.mutation.SetProjectID(u)
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (wcuo *WorkflowContractUpdateOne) SetScopedResourceType(bs biz.ContractScope) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetScopedResourceType(bs)
 	return wcuo
 }
 
-// SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (wcuo *WorkflowContractUpdateOne) SetNillableProjectID(u *uuid.UUID) *WorkflowContractUpdateOne {
-	if u != nil {
-		wcuo.SetProjectID(*u)
+// SetNillableScopedResourceType sets the "scoped_resource_type" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableScopedResourceType(bs *biz.ContractScope) *WorkflowContractUpdateOne {
+	if bs != nil {
+		wcuo.SetScopedResourceType(*bs)
 	}
 	return wcuo
 }
 
-// ClearProjectID clears the value of the "project_id" field.
-func (wcuo *WorkflowContractUpdateOne) ClearProjectID() *WorkflowContractUpdateOne {
-	wcuo.mutation.ClearProjectID()
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (wcuo *WorkflowContractUpdateOne) ClearScopedResourceType() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearScopedResourceType()
+	return wcuo
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (wcuo *WorkflowContractUpdateOne) SetScopedResourceID(u uuid.UUID) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetScopedResourceID(u)
+	return wcuo
+}
+
+// SetNillableScopedResourceID sets the "scoped_resource_id" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableScopedResourceID(u *uuid.UUID) *WorkflowContractUpdateOne {
+	if u != nil {
+		wcuo.SetScopedResourceID(*u)
+	}
+	return wcuo
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (wcuo *WorkflowContractUpdateOne) ClearScopedResourceID() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearScopedResourceID()
 	return wcuo
 }
 
@@ -506,25 +476,6 @@ func (wcuo *WorkflowContractUpdateOne) AddVersions(w ...*WorkflowContractVersion
 	return wcuo.AddVersionIDs(ids...)
 }
 
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (wcuo *WorkflowContractUpdateOne) SetOrganizationID(id uuid.UUID) *WorkflowContractUpdateOne {
-	wcuo.mutation.SetOrganizationID(id)
-	return wcuo
-}
-
-// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (wcuo *WorkflowContractUpdateOne) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractUpdateOne {
-	if id != nil {
-		wcuo = wcuo.SetOrganizationID(*id)
-	}
-	return wcuo
-}
-
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (wcuo *WorkflowContractUpdateOne) SetOrganization(o *Organization) *WorkflowContractUpdateOne {
-	return wcuo.SetOrganizationID(o.ID)
-}
-
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (wcuo *WorkflowContractUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *WorkflowContractUpdateOne {
 	wcuo.mutation.AddWorkflowIDs(ids...)
@@ -538,11 +489,6 @@ func (wcuo *WorkflowContractUpdateOne) AddWorkflows(w ...*Workflow) *WorkflowCon
 		ids[i] = w[i].ID
 	}
 	return wcuo.AddWorkflowIDs(ids...)
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (wcuo *WorkflowContractUpdateOne) SetProject(p *Project) *WorkflowContractUpdateOne {
-	return wcuo.SetProjectID(p.ID)
 }
 
 // Mutation returns the WorkflowContractMutation object of the builder.
@@ -571,12 +517,6 @@ func (wcuo *WorkflowContractUpdateOne) RemoveVersions(w ...*WorkflowContractVers
 	return wcuo.RemoveVersionIDs(ids...)
 }
 
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (wcuo *WorkflowContractUpdateOne) ClearOrganization() *WorkflowContractUpdateOne {
-	wcuo.mutation.ClearOrganization()
-	return wcuo
-}
-
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
 func (wcuo *WorkflowContractUpdateOne) ClearWorkflows() *WorkflowContractUpdateOne {
 	wcuo.mutation.ClearWorkflows()
@@ -596,12 +536,6 @@ func (wcuo *WorkflowContractUpdateOne) RemoveWorkflows(w ...*Workflow) *Workflow
 		ids[i] = w[i].ID
 	}
 	return wcuo.RemoveWorkflowIDs(ids...)
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (wcuo *WorkflowContractUpdateOne) ClearProject() *WorkflowContractUpdateOne {
-	wcuo.mutation.ClearProject()
-	return wcuo
 }
 
 // Where appends a list predicates to the WorkflowContractUpdate builder.
@@ -644,6 +578,16 @@ func (wcuo *WorkflowContractUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (wcuo *WorkflowContractUpdateOne) check() error {
+	if v, ok := wcuo.mutation.ScopedResourceType(); ok {
+		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (wcuo *WorkflowContractUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractUpdateOne {
 	wcuo.modifiers = append(wcuo.modifiers, modifiers...)
@@ -651,6 +595,9 @@ func (wcuo *WorkflowContractUpdateOne) Modify(modifiers ...func(u *sql.UpdateBui
 }
 
 func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContract, err error) {
+	if err := wcuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontract.Table, workflowcontract.Columns, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	id, ok := wcuo.mutation.ID()
 	if !ok {
@@ -687,6 +634,18 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 	}
 	if wcuo.mutation.DescriptionCleared() {
 		_spec.ClearField(workflowcontract.FieldDescription, field.TypeString)
+	}
+	if value, ok := wcuo.mutation.ScopedResourceType(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceType, field.TypeEnum, value)
+	}
+	if wcuo.mutation.ScopedResourceTypeCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceType, field.TypeEnum)
+	}
+	if value, ok := wcuo.mutation.ScopedResourceID(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
+	}
+	if wcuo.mutation.ScopedResourceIDCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceID, field.TypeUUID)
 	}
 	if wcuo.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -733,35 +692,6 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wcuo.mutation.OrganizationCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowcontract.OrganizationTable,
-			Columns: []string{workflowcontract.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wcuo.mutation.OrganizationIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workflowcontract.OrganizationTable,
-			Columns: []string{workflowcontract.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if wcuo.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -800,35 +730,6 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if wcuo.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   workflowcontract.ProjectTable,
-			Columns: []string{workflowcontract.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := wcuo.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   workflowcontract.ProjectTable,
-			Columns: []string{workflowcontract.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
