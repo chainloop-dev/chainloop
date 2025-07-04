@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,29 +44,19 @@ func newWorkflowCreateCmd() *cobra.Command {
   chainloop workflow create --name release --project skynet --contract https://skynet.org/contract.yaml
   `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If contract flag is provided we want to either
-			// 1 - make sure it exists and attach it
-			// 2 - Create a new contract from a file or URL
-			if contractRef != "" {
-				// Try to find it by name
-				c, err := action.NewWorkflowContractDescribe(actionOpts).Run(contractRef, 0)
-				if err != nil || c == nil {
-					_, err := action.LoadFileOrURL(contractRef)
-					if err != nil {
-						return fmt.Errorf("%q is not an existing contract name nor references a valid contract file or URL", contractRef)
-					}
-
-					createResp, err := action.NewWorkflowContractCreate(actionOpts).Run(fmt.Sprintf("%s-%s", project, workflowName), nil, contractRef)
-					if err != nil {
-						return err
-					}
-					contractRef = createResp.Name
-				}
+			opts := &action.NewWorkflowCreateOpts{
+				Name: workflowName, Team: team, Project: project, Description: description,
+				Public: public,
 			}
 
-			opts := &action.NewWorkflowCreateOpts{
-				Name: workflowName, Team: team, Project: project, ContractName: contractRef, Description: description,
-				Public: public,
+			// Try to load it if it's a file or URL otherwise assume it's an existing contract name
+			if contractRef != "" {
+				raw, err := action.LoadFileOrURL(contractRef)
+				if err != nil {
+					opts.ContractName = contractRef
+				} else {
+					opts.ContractBytes = raw
+				}
 			}
 
 			wf, err := action.NewWorkflowCreate(actionOpts).Run(opts)

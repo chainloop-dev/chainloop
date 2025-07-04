@@ -67,13 +67,14 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	}
 
 	createOpts := &biz.WorkflowCreateOpts{
-		OrgID:        currentOrg.ID,
-		Name:         req.GetName(),
-		Project:      req.GetProjectName(),
-		Team:         req.GetTeam(),
-		ContractName: req.GetContractName(),
-		Description:  req.GetDescription(),
-		Public:       req.GetPublic(),
+		OrgID:         currentOrg.ID,
+		Name:          req.GetName(),
+		Project:       req.GetProjectName(),
+		Team:          req.GetTeam(),
+		ContractName:  req.GetContractName(),
+		ContractBytes: req.GetContractBytes(),
+		Description:   req.GetDescription(),
+		Public:        req.GetPublic(),
 	}
 
 	// add current user as the owner of the project in case it needs to be created
