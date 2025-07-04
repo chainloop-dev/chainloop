@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql/sqljson"
+
+	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -27,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -143,6 +147,61 @@ func (g GroupRepo) ListMembers(ctx context.Context, orgID uuid.UUID, groupID uui
 	}
 
 	return bizMembers, count, nil
+}
+
+// ListPendingInvitationsByGroup retrieves pending invitations for a specific group in an organization.
+func (g GroupRepo) ListPendingInvitationsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.OrgInvitation, int, error) {
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	// Check the group exists in the organization
+	_, err := g.data.DB.Group.Query().
+		Where(group.ID(groupID), group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, 0, biz.NewErrNotFound("group")
+		}
+		return nil, 0, err
+	}
+
+	// Build the query for pending invitations related to the group
+	query := g.data.DB.OrgInvitation.Query().
+		Where(
+			orginvitation.OrganizationIDEQ(orgID),
+			orginvitation.DeletedAtIsNil(),
+			orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
+			func(_ *sql.Selector) {
+				sqljson.ValueEQ(orginvitation.FieldContext, groupID.String(), sqljson.DotPath("group_id_to_join"))
+			},
+		).
+		WithOrganization().
+		WithSender()
+
+	// Get the count of all filtered rows without the limit and offset
+	count, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count pending invitations: %w", err)
+	}
+
+	// Apply pagination options and execute the query
+	invitations, err := query.
+		Order(ent.Desc(orginvitation.FieldCreatedAt)).
+		Limit(paginationOpts.Limit()).
+		Offset(paginationOpts.Offset()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Convert ent.OrgInvitation entities to biz.OrgInvitation
+	result := make([]*biz.OrgInvitation, 0, len(invitations))
+	for _, inv := range invitations {
+		result = append(result, entInviteToBiz(inv))
+	}
+
+	return result, count, nil
 }
 
 // Create creates a new group in the specified organization.

@@ -262,6 +262,11 @@ func (s *service) userHasPermissionToRemoveGroupMember(ctx context.Context, orgI
 	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupRemoveMemberships)
 }
 
+// userHasPermissionToListPendingGroupInvitations checks if the user has permission to list pending group invitations
+func (s *service) userHasPermissionToListPendingGroupInvitations(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupListPendingInvitations)
+}
+
 // userHasPermissionOnGroupMembershipsWithPolicy is the core implementation that checks if a user has permission on a group
 // with an optional specific policy check. If the policy is nil, it falls back to the basic permission check.
 func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference, policy *authz.Policy) error {

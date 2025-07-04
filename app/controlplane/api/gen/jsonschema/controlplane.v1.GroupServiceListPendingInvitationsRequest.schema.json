@@ -1,0 +1,26 @@
+{
+  "$id": "controlplane.v1.GroupServiceListPendingInvitationsRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(groupReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    }
+  },
+  "properties": {
+    "group_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination parameters to limit and offset results"
+    }
+  },
+  "required": [
+    "group_reference"
+  ],
+  "title": "Group Service List Pending Invitations Request",
+  "type": "object"
+}

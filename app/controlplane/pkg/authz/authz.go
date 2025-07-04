@@ -140,8 +140,9 @@ var (
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
 	// Groups
-	PolicyGroupList = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead = &Policy{ResourceGroup, ActionRead}
+	PolicyGroupList                   = &Policy{ResourceGroup, ActionList}
+	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
+	PolicyGroupRead                   = &Policy{ResourceGroup, ActionRead}
 	// Group Memberships
 	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
 	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
@@ -293,6 +294,7 @@ var RolesMap = map[Role][]*Policy{
 	},
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
+		PolicyGroupListPendingInvitations,
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
 	},
@@ -365,8 +367,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
 	// For the following endpoints, we rely on the service layer to check the permissions
 	// That's why we let everyone access them (empty policies)
-	"/controlplane.v1.GroupService/AddMember":    {},
-	"/controlplane.v1.GroupService/RemoveMember": {},
+	"/controlplane.v1.GroupService/AddMember":              {},
+	"/controlplane.v1.GroupService/RemoveMember":           {},
+	"/controlplane.v1.GroupService/ListPendingInvitations": {},
 	// Project API Token
 	"/controlplane.v1.ProjectService/APITokenCreate": {PolicyProjectAPITokenCreate},
 	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},

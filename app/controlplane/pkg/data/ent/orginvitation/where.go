@@ -348,6 +348,16 @@ func RoleNotNil() predicate.OrgInvitation {
 	return predicate.OrgInvitation(sql.FieldNotNull(FieldRole))
 }
 
+// ContextIsNil applies the IsNil predicate on the "context" field.
+func ContextIsNil() predicate.OrgInvitation {
+	return predicate.OrgInvitation(sql.FieldIsNull(FieldContext))
+}
+
+// ContextNotNil applies the NotNil predicate on the "context" field.
+func ContextNotNil() predicate.OrgInvitation {
+	return predicate.OrgInvitation(sql.FieldNotNull(FieldContext))
+}
+
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
 func HasOrganization() predicate.OrgInvitation {
 	return predicate.OrgInvitation(func(s *sql.Selector) {

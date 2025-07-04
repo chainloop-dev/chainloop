@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -677,8 +678,8 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 		membership, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(user2.ID, membership.User.ID)
-		s.False(membership.Maintainer)
+		s.Equal(user2.ID, membership.Membership.User.ID)
+		s.False(membership.Membership.Maintainer)
 
 		// Verify the member was added by listing members
 		members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
@@ -706,8 +707,8 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 		membership, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(user3.ID, membership.User.ID)
-		s.True(membership.Maintainer)
+		s.Equal(user3.ID, membership.Membership.User.ID)
+		s.True(membership.Membership.Maintainer)
 
 		// Verify the member was added by listing members
 		members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
@@ -771,9 +772,91 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 			Maintainer:  false,
 		}
 
-		_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+		result, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(result)
+		s.True(result.InvitationSent, "Expected an invitation to be sent")
+		s.Nil(result.Membership, "No membership should be created")
+
+		// Verify that an invitation was created with the proper context
+		invitations, err := s.OrgInvitation.ListByOrg(ctx, s.org.ID)
+		s.NoError(err)
+		s.GreaterOrEqual(len(invitations), 1, "Expected at least one invitation")
+
+		// Find the invitation for our user
+		var found bool
+		for _, inv := range invitations {
+			if inv.ReceiverEmail == "not-in-org@example.com" {
+				found = true
+				s.Equal(biz.OrgInvitationStatusPending, inv.Status)
+				s.Equal(string(authz.RoleViewer), string(inv.Role))
+
+				// Verify the invitation context
+				s.NotNil(inv.Context, "Invitation context should not be nil")
+				s.Equal(s.group.ID.String(), inv.Context.GroupIDToJoin.String(), "Group ID should match")
+				s.Equal(opts.Maintainer, inv.Context.GroupMaintainer, "Maintainer status should match")
+				break
+			}
+		}
+		s.True(found, "Expected to find invitation for not-in-org@example.com")
+	})
+
+	s.Run("add member who is already invited", func() {
+		// Create a user that will only be invited but not added to the organization
+		userEmail := "already-invited@example.com"
+		_, err := s.User.UpsertByEmail(ctx, userEmail, nil)
+		require.NoError(s.T(), err)
+		// Note: not adding this user to the organization
+
+		// First invitation
+		opts := &biz.AddMemberToGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   userEmail,
+			RequesterID: uuid.MustParse(s.user.ID),
+			Maintainer:  false,
+		}
+
+		// First invitation should succeed
+		result, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(result)
+		s.True(result.InvitationSent, "Expected an invitation to be sent")
+		s.Nil(result.Membership, "No membership should be created")
+
+		// Get initial invitation count
+		invitations, err := s.OrgInvitation.ListByOrg(ctx, s.org.ID)
+		s.NoError(err)
+		initialInvitationCount := len(invitations)
+
+		// Count invitations for this specific email
+		emailInvitationCount := 0
+		for _, inv := range invitations {
+			if inv.ReceiverEmail == userEmail {
+				emailInvitationCount++
+			}
+		}
+		s.Equal(1, emailInvitationCount, "Should have exactly one invitation for the user initially")
+
+		// Attempt to invite the same user again
+		result2, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
 		s.Error(err)
-		s.ErrorContains(err, "user with the provided email is not a member of the organization")
+		s.Nil(result2)
+
+		// Verify that no additional invitation was created
+		invitationsAfter, err := s.OrgInvitation.ListByOrg(ctx, s.org.ID)
+		s.NoError(err)
+		s.Equal(initialInvitationCount, len(invitationsAfter), "Should not create another invitation")
+
+		// Verify that we still only have one invitation for this email
+		emailInvitationCountAfter := 0
+		for _, inv := range invitationsAfter {
+			if inv.ReceiverEmail == userEmail {
+				emailInvitationCountAfter++
+			}
+		}
+		s.Equal(1, emailInvitationCountAfter, "Should still have exactly one invitation for the user")
 	})
 
 	s.Run("add member who is already in the group", func() {

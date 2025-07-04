@@ -118,7 +118,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
-	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, logger)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -151,8 +152,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
-	groupRepo := data.NewGroupRepo(dataData, logger)
-	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, auditorUseCase)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase)
 	testingRepos := &TestingRepos{
 		Membership:       membershipRepo,

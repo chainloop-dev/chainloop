@@ -138,6 +138,33 @@ export interface GroupServiceRemoveMemberRequest {
 export interface GroupServiceRemoveMemberResponse {
 }
 
+export interface GroupServiceListPendingInvitationsRequest {
+  /** IdentityReference is used to specify the group by either its ID or name */
+  groupReference?: IdentityReference;
+  /** Pagination parameters to limit and offset results */
+  pagination?: OffsetPaginationRequest;
+}
+
+/** GroupServiceListPendingInvitationsResponse contains a list of pending invitations for a group */
+export interface GroupServiceListPendingInvitationsResponse {
+  /** List of pending invitations for the group */
+  invitations: PendingGroupInvitation[];
+  /** Pagination information for the response */
+  pagination?: OffsetPaginationResponse;
+}
+
+/** PendingInvitation represents an invitation to join a group that has not yet been accepted */
+export interface PendingGroupInvitation {
+  /** The email address of the user invited to the group */
+  userEmail: string;
+  /** The user who sent the invitation */
+  invitedBy?:
+    | User
+    | undefined;
+  /** Timestamp when the invitation was created */
+  createdAt?: Date;
+}
+
 /** Group represents a collection of users with shared access to resources */
 export interface Group {
   /** Unique identifier for the group */
@@ -1278,6 +1305,257 @@ export const GroupServiceRemoveMemberResponse = {
   },
 };
 
+function createBaseGroupServiceListPendingInvitationsRequest(): GroupServiceListPendingInvitationsRequest {
+  return { groupReference: undefined, pagination: undefined };
+}
+
+export const GroupServiceListPendingInvitationsRequest = {
+  encode(message: GroupServiceListPendingInvitationsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupReference !== undefined) {
+      IdentityReference.encode(message.groupReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceListPendingInvitationsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupServiceListPendingInvitationsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.groupReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GroupServiceListPendingInvitationsRequest {
+    return {
+      groupReference: isSet(object.groupReference) ? IdentityReference.fromJSON(object.groupReference) : undefined,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: GroupServiceListPendingInvitationsRequest): unknown {
+    const obj: any = {};
+    message.groupReference !== undefined &&
+      (obj.groupReference = message.groupReference ? IdentityReference.toJSON(message.groupReference) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupServiceListPendingInvitationsRequest>, I>>(
+    base?: I,
+  ): GroupServiceListPendingInvitationsRequest {
+    return GroupServiceListPendingInvitationsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupServiceListPendingInvitationsRequest>, I>>(
+    object: I,
+  ): GroupServiceListPendingInvitationsRequest {
+    const message = createBaseGroupServiceListPendingInvitationsRequest();
+    message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
+      ? IdentityReference.fromPartial(object.groupReference)
+      : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGroupServiceListPendingInvitationsResponse(): GroupServiceListPendingInvitationsResponse {
+  return { invitations: [], pagination: undefined };
+}
+
+export const GroupServiceListPendingInvitationsResponse = {
+  encode(message: GroupServiceListPendingInvitationsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.invitations) {
+      PendingGroupInvitation.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceListPendingInvitationsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupServiceListPendingInvitationsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.invitations.push(PendingGroupInvitation.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GroupServiceListPendingInvitationsResponse {
+    return {
+      invitations: Array.isArray(object?.invitations)
+        ? object.invitations.map((e: any) => PendingGroupInvitation.fromJSON(e))
+        : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: GroupServiceListPendingInvitationsResponse): unknown {
+    const obj: any = {};
+    if (message.invitations) {
+      obj.invitations = message.invitations.map((e) => e ? PendingGroupInvitation.toJSON(e) : undefined);
+    } else {
+      obj.invitations = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupServiceListPendingInvitationsResponse>, I>>(
+    base?: I,
+  ): GroupServiceListPendingInvitationsResponse {
+    return GroupServiceListPendingInvitationsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupServiceListPendingInvitationsResponse>, I>>(
+    object: I,
+  ): GroupServiceListPendingInvitationsResponse {
+    const message = createBaseGroupServiceListPendingInvitationsResponse();
+    message.invitations = object.invitations?.map((e) => PendingGroupInvitation.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePendingGroupInvitation(): PendingGroupInvitation {
+  return { userEmail: "", invitedBy: undefined, createdAt: undefined };
+}
+
+export const PendingGroupInvitation = {
+  encode(message: PendingGroupInvitation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.userEmail !== "") {
+      writer.uint32(10).string(message.userEmail);
+    }
+    if (message.invitedBy !== undefined) {
+      User.encode(message.invitedBy, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PendingGroupInvitation {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePendingGroupInvitation();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userEmail = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.invitedBy = User.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PendingGroupInvitation {
+    return {
+      userEmail: isSet(object.userEmail) ? String(object.userEmail) : "",
+      invitedBy: isSet(object.invitedBy) ? User.fromJSON(object.invitedBy) : undefined,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+    };
+  },
+
+  toJSON(message: PendingGroupInvitation): unknown {
+    const obj: any = {};
+    message.userEmail !== undefined && (obj.userEmail = message.userEmail);
+    message.invitedBy !== undefined && (obj.invitedBy = message.invitedBy ? User.toJSON(message.invitedBy) : undefined);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PendingGroupInvitation>, I>>(base?: I): PendingGroupInvitation {
+    return PendingGroupInvitation.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PendingGroupInvitation>, I>>(object: I): PendingGroupInvitation {
+    const message = createBasePendingGroupInvitation();
+    message.userEmail = object.userEmail ?? "";
+    message.invitedBy = (object.invitedBy !== undefined && object.invitedBy !== null)
+      ? User.fromPartial(object.invitedBy)
+      : undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    return message;
+  },
+};
+
 function createBaseGroup(): Group {
   return {
     id: "",
@@ -1555,6 +1833,11 @@ export interface GroupService {
     request: DeepPartial<GroupServiceRemoveMemberRequest>,
     metadata?: grpc.Metadata,
   ): Promise<GroupServiceRemoveMemberResponse>;
+  /** ListPendingInvitations retrieves pending invitations for a group */
+  ListPendingInvitations(
+    request: DeepPartial<GroupServiceListPendingInvitationsRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GroupServiceListPendingInvitationsResponse>;
 }
 
 export class GroupServiceClientImpl implements GroupService {
@@ -1570,6 +1853,7 @@ export class GroupServiceClientImpl implements GroupService {
     this.ListMembers = this.ListMembers.bind(this);
     this.AddMember = this.AddMember.bind(this);
     this.RemoveMember = this.RemoveMember.bind(this);
+    this.ListPendingInvitations = this.ListPendingInvitations.bind(this);
   }
 
   Create(
@@ -1620,6 +1904,17 @@ export class GroupServiceClientImpl implements GroupService {
     metadata?: grpc.Metadata,
   ): Promise<GroupServiceRemoveMemberResponse> {
     return this.rpc.unary(GroupServiceRemoveMemberDesc, GroupServiceRemoveMemberRequest.fromPartial(request), metadata);
+  }
+
+  ListPendingInvitations(
+    request: DeepPartial<GroupServiceListPendingInvitationsRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GroupServiceListPendingInvitationsResponse> {
+    return this.rpc.unary(
+      GroupServiceListPendingInvitationsDesc,
+      GroupServiceListPendingInvitationsRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
@@ -1799,6 +2094,29 @@ export const GroupServiceRemoveMemberDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = GroupServiceRemoveMemberResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const GroupServiceListPendingInvitationsDesc: UnaryMethodDefinitionish = {
+  methodName: "ListPendingInvitations",
+  service: GroupServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GroupServiceListPendingInvitationsRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GroupServiceListPendingInvitationsResponse.decode(data);
       return {
         ...value,
         toObject() {

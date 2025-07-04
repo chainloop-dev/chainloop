@@ -34,14 +34,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	GroupService_Create_FullMethodName       = "/controlplane.v1.GroupService/Create"
-	GroupService_Get_FullMethodName          = "/controlplane.v1.GroupService/Get"
-	GroupService_List_FullMethodName         = "/controlplane.v1.GroupService/List"
-	GroupService_Update_FullMethodName       = "/controlplane.v1.GroupService/Update"
-	GroupService_Delete_FullMethodName       = "/controlplane.v1.GroupService/Delete"
-	GroupService_ListMembers_FullMethodName  = "/controlplane.v1.GroupService/ListMembers"
-	GroupService_AddMember_FullMethodName    = "/controlplane.v1.GroupService/AddMember"
-	GroupService_RemoveMember_FullMethodName = "/controlplane.v1.GroupService/RemoveMember"
+	GroupService_Create_FullMethodName                 = "/controlplane.v1.GroupService/Create"
+	GroupService_Get_FullMethodName                    = "/controlplane.v1.GroupService/Get"
+	GroupService_List_FullMethodName                   = "/controlplane.v1.GroupService/List"
+	GroupService_Update_FullMethodName                 = "/controlplane.v1.GroupService/Update"
+	GroupService_Delete_FullMethodName                 = "/controlplane.v1.GroupService/Delete"
+	GroupService_ListMembers_FullMethodName            = "/controlplane.v1.GroupService/ListMembers"
+	GroupService_AddMember_FullMethodName              = "/controlplane.v1.GroupService/AddMember"
+	GroupService_RemoveMember_FullMethodName           = "/controlplane.v1.GroupService/RemoveMember"
+	GroupService_ListPendingInvitations_FullMethodName = "/controlplane.v1.GroupService/ListPendingInvitations"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -64,6 +65,8 @@ type GroupServiceClient interface {
 	AddMember(ctx context.Context, in *GroupServiceAddMemberRequest, opts ...grpc.CallOption) (*GroupServiceAddMemberResponse, error)
 	// RemoveMember removes a user from a group
 	RemoveMember(ctx context.Context, in *GroupServiceRemoveMemberRequest, opts ...grpc.CallOption) (*GroupServiceRemoveMemberResponse, error)
+	// ListPendingInvitations retrieves pending invitations for a group
+	ListPendingInvitations(ctx context.Context, in *GroupServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*GroupServiceListPendingInvitationsResponse, error)
 }
 
 type groupServiceClient struct {
@@ -146,6 +149,15 @@ func (c *groupServiceClient) RemoveMember(ctx context.Context, in *GroupServiceR
 	return out, nil
 }
 
+func (c *groupServiceClient) ListPendingInvitations(ctx context.Context, in *GroupServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*GroupServiceListPendingInvitationsResponse, error) {
+	out := new(GroupServiceListPendingInvitationsResponse)
+	err := c.cc.Invoke(ctx, GroupService_ListPendingInvitations_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupServiceServer is the server API for GroupService service.
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility
@@ -166,6 +178,8 @@ type GroupServiceServer interface {
 	AddMember(context.Context, *GroupServiceAddMemberRequest) (*GroupServiceAddMemberResponse, error)
 	// RemoveMember removes a user from a group
 	RemoveMember(context.Context, *GroupServiceRemoveMemberRequest) (*GroupServiceRemoveMemberResponse, error)
+	// ListPendingInvitations retrieves pending invitations for a group
+	ListPendingInvitations(context.Context, *GroupServiceListPendingInvitationsRequest) (*GroupServiceListPendingInvitationsResponse, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }
 
@@ -196,6 +210,9 @@ func (UnimplementedGroupServiceServer) AddMember(context.Context, *GroupServiceA
 }
 func (UnimplementedGroupServiceServer) RemoveMember(context.Context, *GroupServiceRemoveMemberRequest) (*GroupServiceRemoveMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
+}
+func (UnimplementedGroupServiceServer) ListPendingInvitations(context.Context, *GroupServiceListPendingInvitationsRequest) (*GroupServiceListPendingInvitationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPendingInvitations not implemented")
 }
 func (UnimplementedGroupServiceServer) mustEmbedUnimplementedGroupServiceServer() {}
 
@@ -354,6 +371,24 @@ func _GroupService_RemoveMember_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupService_ListPendingInvitations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupServiceListPendingInvitationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).ListPendingInvitations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_ListPendingInvitations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).ListPendingInvitations(ctx, req.(*GroupServiceListPendingInvitationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupService_ServiceDesc is the grpc.ServiceDesc for GroupService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -392,6 +427,10 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveMember",
 			Handler:    _GroupService_RemoveMember_Handler,
+		},
+		{
+			MethodName: "ListPendingInvitations",
+			Handler:    _GroupService_ListPendingInvitations_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

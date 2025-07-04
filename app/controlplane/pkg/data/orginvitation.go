@@ -40,12 +40,13 @@ func NewOrgInvitation(data *Data, logger log.Logger) biz.OrgInvitationRepo {
 	}
 }
 
-func (r *OrgInvitation) Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role) (*biz.OrgInvitation, error) {
+func (r *OrgInvitation) Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role, invCtx *biz.OrgInvitationContext) (*biz.OrgInvitation, error) {
 	invite, err := r.data.DB.OrgInvitation.Create().
 		SetOrganizationID(orgID).
 		SetSenderID(senderID).
 		SetRole(role).
 		SetReceiverEmail(receiverEmail).
+		SetNillableContext(invCtx).
 		Save(ctx)
 
 	if err != nil {
@@ -137,6 +138,7 @@ func entInviteToBiz(i *ent.OrgInvitation) *biz.OrgInvitation {
 		CreatedAt:     toTimePtr(i.CreatedAt),
 		Status:        i.Status,
 		Role:          i.Role,
+		Context:       &i.Context,
 	}
 
 	if i.Edges.Organization != nil {

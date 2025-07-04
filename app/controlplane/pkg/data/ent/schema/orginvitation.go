@@ -49,6 +49,8 @@ func (OrgInvitation) Fields() []ent.Field {
 		field.UUID("sender_id", uuid.UUID{}),
 		// Role that will be assigned to the user when they accept the invitation
 		field.Enum("role").GoType(authz.Role("")).Optional(),
+		// Context is a JSON field that can be used to store additional information
+		field.JSON("context", biz.OrgInvitationContext{}).Optional(),
 	}
 }
 

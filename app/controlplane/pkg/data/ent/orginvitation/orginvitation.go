@@ -32,6 +32,8 @@ const (
 	FieldSenderID = "sender_id"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
+	// FieldContext holds the string denoting the context field in the database.
+	FieldContext = "context"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeSender holds the string denoting the sender edge name in mutations.
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldOrganizationID,
 	FieldSenderID,
 	FieldRole,
+	FieldContext,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
