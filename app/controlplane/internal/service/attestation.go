@@ -680,6 +680,19 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		}
 	}
 
+	// we need this token to forward it to the provider service next
+	token, err := entities.GetRawToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract validation
+	if req.GetContractBytes() != nil {
+		if err = s.workflowContractUseCase.ValidateContractPolicies(req.GetContractBytes(), token); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	}
+
 	// Check if the workflow already exists, if it does we might just need to update the contract
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
 		if !biz.IsNotFound(err) {
