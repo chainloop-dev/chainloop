@@ -43,6 +43,8 @@ service GroupService {
   rpc AddMember(GroupServiceAddMemberRequest) returns (GroupServiceAddMemberResponse) {}
   // RemoveMember removes a user from a group
   rpc RemoveMember(GroupServiceRemoveMemberRequest) returns (GroupServiceRemoveMemberResponse) {}
+  // ListPendingInvitations retrieves pending invitations for a group
+  rpc ListPendingInvitations(GroupServiceListPendingInvitationsRequest) returns (GroupServiceListPendingInvitationsResponse) {}
 }
 
 // GroupServiceCreateRequest contains the information needed to create a new group
@@ -159,6 +161,31 @@ message GroupServiceRemoveMemberRequest {
 
 // GroupServiceRemoveMemberResponse is returned upon successful removal of a user from a group
 message GroupServiceRemoveMemberResponse {}
+
+message GroupServiceListPendingInvitationsRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 2;
+}
+
+// GroupServiceListPendingInvitationsResponse contains a list of pending invitations for a group
+message GroupServiceListPendingInvitationsResponse {
+  // List of pending invitations for the group
+  repeated PendingGroupInvitation invitations = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+}
+
+// PendingInvitation represents an invitation to join a group that has not yet been accepted
+message PendingGroupInvitation {
+  // The email address of the user invited to the group
+  string user_email = 1 [(buf.validate.field).string.email = true];
+  // The user who sent the invitation
+  optional User invited_by = 2;
+  // Timestamp when the invitation was created
+  google.protobuf.Timestamp created_at = 3;
+}
 
 // Group represents a collection of users with shared access to resources
 message Group {

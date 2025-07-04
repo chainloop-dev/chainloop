@@ -25,16 +25,20 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
 type OrgInvitationUseCase struct {
-	logger   *log.Helper
-	repo     OrgInvitationRepo
-	mRepo    MembershipRepo
-	userRepo UserRepo
-	auditor  *AuditorUseCase
+	logger *log.Helper
+	// Repositories
+	repo      OrgInvitationRepo
+	mRepo     MembershipRepo
+	userRepo  UserRepo
+	groupRepo GroupRepo
+	// Use cases
+	auditor *AuditorUseCase
 }
 
 type OrgInvitation struct {
@@ -45,10 +49,20 @@ type OrgInvitation struct {
 	CreatedAt     *time.Time
 	Status        OrgInvitationStatus
 	Role          authz.Role
+	// Context is a JSON field that can be used to store additional information
+	Context *OrgInvitationContext
+}
+
+// OrgInvitationContext is used to pass additional context when accepting an invitation
+type OrgInvitationContext struct {
+	// GroupIDToJoin is the ID of the group to join when accepting the invitation
+	GroupIDToJoin uuid.UUID `json:"group_id_to_join,omitempty"`
+	// GroupMaintainer indicates if the user should be added as a maintainer of the group
+	GroupMaintainer bool `json:"group_maintainer,omitempty"`
 }
 
 type OrgInvitationRepo interface {
-	Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role) (*OrgInvitation, error)
+	Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role, invCtx *OrgInvitationContext) (*OrgInvitation, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*OrgInvitation, error)
 	PendingInvitation(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvitation, error)
 	PendingInvitations(ctx context.Context, receiverEmail string) ([]*OrgInvitation, error)
@@ -57,15 +71,16 @@ type OrgInvitationRepo interface {
 	ChangeStatus(ctx context.Context, ID uuid.UUID, status OrgInvitationStatus) error
 }
 
-func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, l log.Logger) (*OrgInvitationUseCase, error) {
+func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, groupRepo GroupRepo, l log.Logger) (*OrgInvitationUseCase, error) {
 	return &OrgInvitationUseCase{
 		logger: servicelogger.ScopedHelper(l, "biz/orgInvitation"),
-		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC,
+		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC, groupRepo: groupRepo,
 	}, nil
 }
 
 type invitationCreateOpts struct {
 	role authz.Role
+	ctx  *OrgInvitationContext
 }
 
 type InvitationCreateOpt func(*invitationCreateOpts)
@@ -73,6 +88,14 @@ type InvitationCreateOpt func(*invitationCreateOpts)
 func WithInvitationRole(r authz.Role) InvitationCreateOpt {
 	return func(o *invitationCreateOpts) {
 		o.role = r
+	}
+}
+
+// WithInvitationContext allows passing additional context when creating an invitation
+// This context will be taken into account when accepting the invitation
+func WithInvitationContext(ctx *OrgInvitationContext) InvitationCreateOpt {
+	return func(o *invitationCreateOpts) {
+		o.ctx = ctx
 	}
 }
 
@@ -151,7 +174,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	}
 
 	// 6 - Create the invitation
-	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail, opts.role)
+	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail, opts.role, opts.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating invitation: %w", err)
 	}
@@ -261,6 +284,11 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 			}, &orgUUID)
 		}
 
+		// Process group membership if present in the invitation context
+		if err := uc.processGroupMembership(ctx, invitation, orgUUID, userUUID); err != nil {
+			return fmt.Errorf("error processing group membership to user %s: %w", receiverEmail, err)
+		}
+
 		uc.logger.Infow("msg", "Accepting invitation", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", user.ID, "role", role)
 		// change the status of the invitation
 		if err := uc.repo.ChangeStatus(ctx, invitation.ID, OrgInvitationStatusAccepted); err != nil {
@@ -294,6 +322,48 @@ func (uc *OrgInvitationUseCase) FindByID(ctx context.Context, invitationID strin
 	}
 
 	return invitation, nil
+}
+
+// processGroupMembership adds a user to a group if the invitation context contains a group to join
+func (uc *OrgInvitationUseCase) processGroupMembership(ctx context.Context, invitation *OrgInvitation, orgUUID uuid.UUID, userUUID uuid.UUID) error {
+	// Skip if there's no group to join in the invitation context
+	if invitation.Context == nil || invitation.Context.GroupIDToJoin == uuid.Nil {
+		return nil
+	}
+
+	groupID := invitation.Context.GroupIDToJoin
+	uc.logger.Infow("msg", "Adding user to group", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID, "group_id", groupID)
+
+	// Check if the group exists
+	gr, err := uc.groupRepo.FindByOrgAndID(ctx, orgUUID, groupID)
+	if err != nil {
+		return fmt.Errorf("error finding group %s: %w", groupID.String(), err)
+	}
+
+	if _, err := uc.groupRepo.AddMemberToGroup(ctx, orgUUID, groupID, userUUID, invitation.Context.GroupMaintainer); err != nil {
+		if IsErrAlreadyExists(err) {
+			// User is already a member of the group, nothing to do
+			uc.logger.Infow("msg", "User already in group", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID.String(), "group_id", groupID.String())
+			return nil
+		}
+
+		return fmt.Errorf("error adding user %s to group %s: %w", userUUID, groupID.String(), err)
+	}
+
+	// Dispatch event to the audit log for group membership addition
+	uc.auditor.Dispatch(ctx, &events.GroupMemberAdded{
+		GroupBase: &events.GroupBase{
+			GroupID:   &groupID,
+			GroupName: gr.Name,
+		},
+		UserID:     &userUUID,
+		UserEmail:  invitation.ReceiverEmail,
+		Maintainer: invitation.Context.GroupMaintainer,
+	}, &orgUUID)
+
+	uc.logger.Infow("msg", "User added to group successfully", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID.String(), "group_id", groupID.String())
+
+	return nil
 }
 
 type OrgInvitationStatus string

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -36,6 +37,8 @@ type OrgInvitation struct {
 	SenderID uuid.UUID `json:"sender_id,omitempty"`
 	// Role holds the value of the "role" field.
 	Role authz.Role `json:"role,omitempty"`
+	// Context holds the value of the "context" field.
+	Context biz.OrgInvitationContext `json:"context,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrgInvitationQuery when eager-loading is set.
 	Edges        OrgInvitationEdges `json:"edges"`
@@ -80,6 +83,8 @@ func (*OrgInvitation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case orginvitation.FieldContext:
+			values[i] = new([]byte)
 		case orginvitation.FieldReceiverEmail, orginvitation.FieldStatus, orginvitation.FieldRole:
 			values[i] = new(sql.NullString)
 		case orginvitation.FieldCreatedAt, orginvitation.FieldDeletedAt:
@@ -149,6 +154,14 @@ func (oi *OrgInvitation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				oi.Role = authz.Role(value.String)
 			}
+		case orginvitation.FieldContext:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field context", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &oi.Context); err != nil {
+					return fmt.Errorf("unmarshal field context: %w", err)
+				}
+			}
 		default:
 			oi.selectValues.Set(columns[i], values[i])
 		}
@@ -215,6 +228,9 @@ func (oi *OrgInvitation) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", oi.Role))
+	builder.WriteString(", ")
+	builder.WriteString("context=")
+	builder.WriteString(fmt.Sprintf("%v", oi.Context))
 	builder.WriteByte(')')
 	return builder.String()
 }

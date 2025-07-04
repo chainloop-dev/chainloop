@@ -293,6 +293,140 @@ func TestOrgInvitationUseCase(t *testing.T) {
 	suite.Run(t, new(OrgInvitationIntegrationTestSuite))
 }
 
+func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
+	ctx := context.Background()
+
+	// Create a test group in org1
+	groupName := "test-group-for-invitation"
+	groupDescription := "A group for testing invitation with group context"
+	userUUID := uuid.MustParse(s.user.ID)
+	orgUUID := uuid.MustParse(s.org1.ID)
+
+	group, err := s.Group.Create(ctx, orgUUID, groupName, groupDescription, userUUID)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), group)
+
+	// Create a new receiver that isn't a member of any org yet
+	receiverForGroupEmail := "group-receiver@cyberdyne.io"
+	receiver, err := s.User.UpsertByEmail(ctx, receiverForGroupEmail, nil)
+	require.NoError(s.T(), err)
+
+	s.T().Run("invitation with group context adds user to group when accepted", func(t *testing.T) {
+		// Create invitation context with group information
+		invitationContext := &biz.OrgInvitationContext{
+			GroupIDToJoin:   group.ID,
+			GroupMaintainer: true,
+		}
+
+		// Create invitation with group context
+		invite, err := s.OrgInvitation.Create(
+			ctx,
+			s.org1.ID,
+			s.user.ID,
+			receiverForGroupEmail,
+			biz.WithInvitationRole(authz.RoleViewer),
+			biz.WithInvitationContext(invitationContext),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Verify context was saved properly
+		assert.NotNil(t, invite.Context)
+		assert.Equal(t, group.ID, invite.Context.GroupIDToJoin)
+		assert.Equal(t, true, invite.Context.GroupMaintainer)
+
+		// Accept the invitation
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, receiverForGroupEmail)
+		require.NoError(t, err)
+
+		// Verify user is now a member of the organization
+		memberships, err := s.Membership.ByUser(ctx, receiver.ID)
+		require.NoError(t, err)
+		assert.Len(t, memberships, 1)
+		assert.Equal(t, s.org1.ID, memberships[0].OrganizationID.String())
+		assert.Equal(t, authz.RoleViewer, memberships[0].Role)
+
+		// Verify user is now a member of the group
+		groupMembers, count, err := s.Group.ListMembers(ctx, orgUUID, &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &group.ID,
+			},
+		}, nil)
+		require.NoError(t, err)
+
+		// Should be 2 members: the original creator and the new member
+		assert.Equal(t, 2, count)
+
+		// Find the new member in the list
+		var foundMember bool
+		var isMaintainer bool
+		for _, member := range groupMembers {
+			if member.User.ID == receiver.ID {
+				foundMember = true
+				isMaintainer = member.Maintainer
+				break
+			}
+		}
+
+		assert.True(t, foundMember, "The user should be a member of the group")
+		assert.True(t, isMaintainer, "The user should be a maintainer of the group")
+	})
+
+	s.T().Run("invitation with non-maintainer group context works correctly", func(t *testing.T) {
+		// Create another test receiver
+		anotherReceiverEmail := "regular-group-member@cyberdyne.io"
+		anotherReceiver, err := s.User.UpsertByEmail(ctx, anotherReceiverEmail, nil)
+		require.NoError(t, err)
+
+		// Create invitation context with group information, but not as maintainer
+		invitationContext := &biz.OrgInvitationContext{
+			GroupIDToJoin:   group.ID,
+			GroupMaintainer: false,
+		}
+
+		// Create invitation with group context
+		invite, err := s.OrgInvitation.Create(
+			ctx,
+			s.org1.ID,
+			s.user.ID,
+			anotherReceiverEmail,
+			biz.WithInvitationRole(authz.RoleViewer),
+			biz.WithInvitationContext(invitationContext),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Accept the invitation
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, anotherReceiverEmail)
+		require.NoError(t, err)
+
+		// Verify user is now a member of the group
+		groupMembers, count, err := s.Group.ListMembers(ctx, orgUUID, &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &group.ID,
+			},
+		}, nil)
+		require.NoError(t, err)
+
+		// Should be 3 members now
+		assert.Equal(t, 3, count)
+
+		// Find the new member in the list
+		var foundMember bool
+		var isMaintainer bool
+		for _, member := range groupMembers {
+			if member.User.ID == anotherReceiver.ID {
+				foundMember = true
+				isMaintainer = member.Maintainer
+				break
+			}
+		}
+
+		assert.True(t, foundMember, "The user should be a member of the group")
+		assert.False(t, isMaintainer, "The user should not be a maintainer of the group")
+	})
+}
+
 // Utility struct to hold the test suite
 type OrgInvitationIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite

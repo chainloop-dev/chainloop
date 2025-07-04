@@ -116,6 +116,26 @@ func (oiu *OrgInvitationUpdate) ClearRole() *OrgInvitationUpdate {
 	return oiu
 }
 
+// SetContext sets the "context" field.
+func (oiu *OrgInvitationUpdate) SetContext(bic biz.OrgInvitationContext) *OrgInvitationUpdate {
+	oiu.mutation.SetContext(bic)
+	return oiu
+}
+
+// SetNillableContext sets the "context" field if the given value is not nil.
+func (oiu *OrgInvitationUpdate) SetNillableContext(bic *biz.OrgInvitationContext) *OrgInvitationUpdate {
+	if bic != nil {
+		oiu.SetContext(*bic)
+	}
+	return oiu
+}
+
+// ClearContext clears the value of the "context" field.
+func (oiu *OrgInvitationUpdate) ClearContext() *OrgInvitationUpdate {
+	oiu.mutation.ClearContext()
+	return oiu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (oiu *OrgInvitationUpdate) SetOrganization(o *Organization) *OrgInvitationUpdate {
 	return oiu.SetOrganizationID(o.ID)
@@ -223,6 +243,12 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if oiu.mutation.RoleCleared() {
 		_spec.ClearField(orginvitation.FieldRole, field.TypeEnum)
+	}
+	if value, ok := oiu.mutation.Context(); ok {
+		_spec.SetField(orginvitation.FieldContext, field.TypeJSON, value)
+	}
+	if oiu.mutation.ContextCleared() {
+		_spec.ClearField(orginvitation.FieldContext, field.TypeJSON)
 	}
 	if oiu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -386,6 +412,26 @@ func (oiuo *OrgInvitationUpdateOne) ClearRole() *OrgInvitationUpdateOne {
 	return oiuo
 }
 
+// SetContext sets the "context" field.
+func (oiuo *OrgInvitationUpdateOne) SetContext(bic biz.OrgInvitationContext) *OrgInvitationUpdateOne {
+	oiuo.mutation.SetContext(bic)
+	return oiuo
+}
+
+// SetNillableContext sets the "context" field if the given value is not nil.
+func (oiuo *OrgInvitationUpdateOne) SetNillableContext(bic *biz.OrgInvitationContext) *OrgInvitationUpdateOne {
+	if bic != nil {
+		oiuo.SetContext(*bic)
+	}
+	return oiuo
+}
+
+// ClearContext clears the value of the "context" field.
+func (oiuo *OrgInvitationUpdateOne) ClearContext() *OrgInvitationUpdateOne {
+	oiuo.mutation.ClearContext()
+	return oiuo
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (oiuo *OrgInvitationUpdateOne) SetOrganization(o *Organization) *OrgInvitationUpdateOne {
 	return oiuo.SetOrganizationID(o.ID)
@@ -523,6 +569,12 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 	}
 	if oiuo.mutation.RoleCleared() {
 		_spec.ClearField(orginvitation.FieldRole, field.TypeEnum)
+	}
+	if value, ok := oiuo.mutation.Context(); ok {
+		_spec.SetField(orginvitation.FieldContext, field.TypeJSON, value)
+	}
+	if oiuo.mutation.ContextCleared() {
+		_spec.ClearField(orginvitation.FieldContext, field.TypeJSON)
 	}
 	if oiuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

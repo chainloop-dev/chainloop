@@ -47,6 +47,8 @@ type GroupRepo interface {
 	AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, maintainer bool) (*GroupMembership, error)
 	// RemoveMemberFromGroup removes a user from a group.
 	RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID) error
+	// ListPendingInvitationsByGroup retrieves a list of pending invitations for a group
+	ListPendingInvitationsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error)
 }
 
 // GroupMembership represents a membership of a user in a group.
@@ -140,22 +142,36 @@ type RemoveMemberFromGroupOpts struct {
 	RequesterID uuid.UUID
 }
 
+// AddMemberToGroupResult represents the result of adding a member to a group.
+type AddMemberToGroupResult struct {
+	// Membership is the membership that was created or found.
+	Membership *GroupMembership
+	// InvitationSent indicates if an invitation was sent instead of creating a membership directly.
+	InvitationSent bool
+}
+
 type GroupUseCase struct {
 	// logger is used to log messages.
 	logger *log.Helper
 	// Repositories
-	groupRepo      GroupRepo
-	membershipRepo MembershipRepo
-	// Auditor use case for logging events
-	auditorUC *AuditorUseCase
+	groupRepo         GroupRepo
+	membershipRepo    MembershipRepo
+	userRepo          UserRepo
+	orgInvitationRepo OrgInvitationRepo
+	// Use Cases
+	orgInvitationUC *OrgInvitationUseCase
+	auditorUC       *AuditorUseCase
 }
 
-func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, auditorUC *AuditorUseCase) *GroupUseCase {
+func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo) *GroupUseCase {
 	return &GroupUseCase{
-		logger:         log.NewHelper(log.With(logger, "component", "biz/group")),
-		groupRepo:      groupRepo,
-		membershipRepo: membershipRepo,
-		auditorUC:      auditorUC,
+		logger:            log.NewHelper(log.With(logger, "component", "biz/group")),
+		groupRepo:         groupRepo,
+		membershipRepo:    membershipRepo,
+		userRepo:          userRepo,
+		orgInvitationUC:   orgInvitationUC,
+		auditorUC:         auditorUC,
+		orgInvitationRepo: invitationRepo,
 	}
 }
 
@@ -344,9 +360,34 @@ func (uc *GroupUseCase) Delete(ctx context.Context, orgID uuid.UUID, opts *Ident
 	return nil
 }
 
+// ListPendingInvitations retrieves a list of pending invitations for a group.
+func (uc *GroupUseCase) ListPendingInvitations(ctx context.Context, orgID uuid.UUID, groupID *uuid.UUID, groupName *string, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error) {
+	if groupID == nil && groupName == nil {
+		return nil, 0, NewErrValidationStr("either group ID or group name must be provided")
+	}
+
+	if orgID == uuid.Nil {
+		return nil, 0, NewErrValidationStr("organization ID cannot be empty")
+	}
+
+	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, groupID, groupName)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
+	if paginationOpts != nil {
+		pgOpts = paginationOpts
+	}
+
+	return uc.groupRepo.ListPendingInvitationsByGroup(ctx, orgID, resolvedGroupID, pgOpts)
+}
+
 // AddMemberToGroup adds a user to a group.
 // The requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
-func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, opts *AddMemberToGroupOpts) (*GroupMembership, error) {
+// Returns AddMemberToGroupResult which indicates whether a membership was created or an invitation was sent.
+func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, opts *AddMemberToGroupOpts) (*AddMemberToGroupResult, error) {
+	// Validate input parameters
 	if opts == nil {
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
@@ -355,71 +396,132 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 		return nil, NewErrValidationStr("organization ID, user email, and requester ID cannot be empty")
 	}
 
-	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, opts.ID, opts.Name)
+	// Resolve group ID and check that the group exists
+	resolvedGroupID, existingGroup, err := uc.resolveAndValidateGroup(ctx, orgID, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate requester permissions
+	if err := uc.validateRequesterPermissions(ctx, orgID, opts.RequesterID, resolvedGroupID); err != nil {
+		return nil, err
+	}
+
+	// Find the user in the organization
+	userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
+	if err != nil && !IsNotFound(err) {
+		return nil, fmt.Errorf("failed to find user by email: %w", err)
+	}
+
+	// If the user is not found in the organization, send an invitation
+	if userMembership == nil {
+		return uc.handleNonExistingUser(ctx, orgID, resolvedGroupID, opts)
+	}
+
+	// Process existing user
+	return uc.addExistingUserToGroup(ctx, orgID, resolvedGroupID, existingGroup, userMembership, opts)
+}
+
+// resolveAndValidateGroup resolves the group ID and verifies the group exists
+func (uc *GroupUseCase) resolveAndValidateGroup(ctx context.Context, orgID uuid.UUID, opts *AddMemberToGroupOpts) (uuid.UUID, *Group, error) {
+	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, opts.ID, opts.Name)
+	if err != nil {
+		return uuid.Nil, nil, err
 	}
 
 	// Check the group exists
 	existingGroup, err := uc.groupRepo.FindByOrgAndID(ctx, orgID, resolvedGroupID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find group: %w", err)
+		return uuid.Nil, nil, fmt.Errorf("failed to find group: %w", err)
 	}
 
 	if existingGroup == nil {
-		return nil, NewErrNotFound("group")
+		return uuid.Nil, nil, NewErrNotFound("group")
 	}
 
+	return resolvedGroupID, existingGroup, nil
+}
+
+// validateRequesterPermissions checks if the requester has sufficient permissions
+func (uc *GroupUseCase) validateRequesterPermissions(ctx context.Context, orgID, requesterID, groupID uuid.UUID) error {
 	// Check if the requester is part of the organization
-	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
+	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, requesterID)
 	if err != nil && !IsNotFound(err) {
-		return nil, NewErrValidationStr("failed to check existing membership")
+		return NewErrValidationStr("failed to check existing membership")
 	}
 
 	if requesterMembership == nil {
-		return nil, NewErrValidationStr("requester is not a member of the organization")
+		return NewErrValidationStr("requester is not a member of the organization")
 	}
 
-	// Check if the requester has sufficient permissions
 	// Allow if the requester is an org owner or admin
 	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+	if isAdminOrOwner {
+		return nil
+	}
 
 	// If not an admin/owner, check if the requester is a maintainer of this group
-	if !isAdminOrOwner {
-		// Check if the requester is a maintainer of this group
-		requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
-		if err != nil && !IsNotFound(err) {
-			return nil, fmt.Errorf("failed to check requester's group membership: %w", err)
-		}
-
-		// If not a maintainer of this group, deny access
-		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
-			return nil, NewErrValidationStr("requester does not have permission to add members to this group")
-		}
-	}
-
-	// Find the user by email in the organization
-	userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
+	requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, requesterID, groupID)
 	if err != nil && !IsNotFound(err) {
-		return nil, fmt.Errorf("failed to find user by email: %w", err)
-	}
-	if userMembership == nil {
-		return nil, NewErrValidationStr("user with the provided email is not a member of the organization")
+		return fmt.Errorf("failed to check requester's group membership: %w", err)
 	}
 
-	userUUID := uuid.MustParse(userMembership.User.ID)
+	// If not a maintainer of this group, deny access
+	if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
+		return NewErrValidationStr("requester does not have permission to add members to this group")
+	}
+
+	return nil
+}
+
+// handleNonExistingUser creates an invitation for a user not yet in the organization
+func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupID uuid.UUID, opts *AddMemberToGroupOpts) (*AddMemberToGroupResult, error) {
+	// Check if the user email is already invited to the organization
+	invitation, err := uc.orgInvitationRepo.PendingInvitation(ctx, orgID, opts.UserEmail)
+	if err != nil && !IsNotFound(err) {
+		return nil, fmt.Errorf("failed to check existing invitation: %w", err)
+	}
+
+	// If an invitation already exists, return an error
+	if invitation != nil {
+		return nil, NewErrAlreadyExistsStr("user is already invited to the organization")
+	}
+
+	// Create an organization invitation with group context
+	invitationContext := &OrgInvitationContext{
+		GroupIDToJoin:   groupID,
+		GroupMaintainer: opts.Maintainer,
+	}
+
+	// Create an invitation for the user to join the organization
+	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleViewer), WithInvitationContext(invitationContext)); err != nil {
+		return nil, fmt.Errorf("failed to create invitation: %w", err)
+	}
+
+	// Return a result indicating an invitation was sent
+	return &AddMemberToGroupResult{
+		InvitationSent: true,
+	}, nil
+}
+
+// addExistingUserToGroup adds an existing user to a group
+func (uc *GroupUseCase) addExistingUserToGroup(ctx context.Context, orgID, groupID uuid.UUID, group *Group, userMembership *Membership, opts *AddMemberToGroupOpts) (*AddMemberToGroupResult, error) {
+	userUUID, err := uuid.Parse(userMembership.User.ID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
 
 	// Check if the user is already a member of the group
-	existingMembership, err := uc.groupRepo.FindGroupMembershipByGroupAndID(ctx, resolvedGroupID, userUUID)
+	existingGroupMembership, err := uc.groupRepo.FindGroupMembershipByGroupAndID(ctx, groupID, userUUID)
 	if err != nil && !IsNotFound(err) {
 		return nil, fmt.Errorf("failed to check existing membership: %w", err)
 	}
-	if existingMembership != nil {
+	if existingGroupMembership != nil {
 		return nil, NewErrAlreadyExistsStr("user is already a member of this group")
 	}
 
 	// Add the user to the group
-	membership, err := uc.groupRepo.AddMemberToGroup(ctx, orgID, resolvedGroupID, userUUID, opts.Maintainer)
+	membership, err := uc.groupRepo.AddMemberToGroup(ctx, orgID, groupID, userUUID, opts.Maintainer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add member to group: %w", err)
 	}
@@ -427,14 +529,18 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 	// Dispatch event to the audit log for group membership addition
 	uc.auditorUC.Dispatch(ctx, &events.GroupMemberAdded{
 		GroupBase: &events.GroupBase{
-			GroupID:   &existingGroup.ID,
-			GroupName: existingGroup.Name,
+			GroupID:   &group.ID,
+			GroupName: group.Name,
 		},
 		UserID:     &userUUID,
+		UserEmail:  opts.UserEmail,
 		Maintainer: opts.Maintainer,
 	}, &orgID)
 
-	return membership, nil
+	// Return a result indicating a direct membership was created
+	return &AddMemberToGroupResult{
+		Membership: membership,
+	}, nil
 }
 
 // RemoveMemberFromGroup removes a user from a group.

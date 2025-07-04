@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.GroupServiceListPendingInvitationsResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceListPendingInvitationsResponse contains a list of pending invitations for a group",
+  "properties": {
+    "invitations": {
+      "description": "List of pending invitations for the group",
+      "items": {
+        "$ref": "controlplane.v1.PendingGroupInvitation.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationResponse.jsonschema.json",
+      "description": "Pagination information for the response"
+    }
+  },
+  "title": "Group Service List Pending Invitations Response",
+  "type": "object"
+}

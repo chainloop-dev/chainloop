@@ -102,6 +102,20 @@ func (oic *OrgInvitationCreate) SetNillableRole(a *authz.Role) *OrgInvitationCre
 	return oic
 }
 
+// SetContext sets the "context" field.
+func (oic *OrgInvitationCreate) SetContext(bic biz.OrgInvitationContext) *OrgInvitationCreate {
+	oic.mutation.SetContext(bic)
+	return oic
+}
+
+// SetNillableContext sets the "context" field if the given value is not nil.
+func (oic *OrgInvitationCreate) SetNillableContext(bic *biz.OrgInvitationContext) *OrgInvitationCreate {
+	if bic != nil {
+		oic.SetContext(*bic)
+	}
+	return oic
+}
+
 // SetID sets the "id" field.
 func (oic *OrgInvitationCreate) SetID(u uuid.UUID) *OrgInvitationCreate {
 	oic.mutation.SetID(u)
@@ -264,6 +278,10 @@ func (oic *OrgInvitationCreate) createSpec() (*OrgInvitation, *sqlgraph.CreateSp
 		_spec.SetField(orginvitation.FieldRole, field.TypeEnum, value)
 		_node.Role = value
 	}
+	if value, ok := oic.mutation.Context(); ok {
+		_spec.SetField(orginvitation.FieldContext, field.TypeJSON, value)
+		_node.Context = value
+	}
 	if nodes := oic.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -422,6 +440,24 @@ func (u *OrgInvitationUpsert) ClearRole() *OrgInvitationUpsert {
 	return u
 }
 
+// SetContext sets the "context" field.
+func (u *OrgInvitationUpsert) SetContext(v biz.OrgInvitationContext) *OrgInvitationUpsert {
+	u.Set(orginvitation.FieldContext, v)
+	return u
+}
+
+// UpdateContext sets the "context" field to the value that was provided on create.
+func (u *OrgInvitationUpsert) UpdateContext() *OrgInvitationUpsert {
+	u.SetExcluded(orginvitation.FieldContext)
+	return u
+}
+
+// ClearContext clears the value of the "context" field.
+func (u *OrgInvitationUpsert) ClearContext() *OrgInvitationUpsert {
+	u.SetNull(orginvitation.FieldContext)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -557,6 +593,27 @@ func (u *OrgInvitationUpsertOne) UpdateRole() *OrgInvitationUpsertOne {
 func (u *OrgInvitationUpsertOne) ClearRole() *OrgInvitationUpsertOne {
 	return u.Update(func(s *OrgInvitationUpsert) {
 		s.ClearRole()
+	})
+}
+
+// SetContext sets the "context" field.
+func (u *OrgInvitationUpsertOne) SetContext(v biz.OrgInvitationContext) *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetContext(v)
+	})
+}
+
+// UpdateContext sets the "context" field to the value that was provided on create.
+func (u *OrgInvitationUpsertOne) UpdateContext() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateContext()
+	})
+}
+
+// ClearContext clears the value of the "context" field.
+func (u *OrgInvitationUpsertOne) ClearContext() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearContext()
 	})
 }
 
@@ -862,6 +919,27 @@ func (u *OrgInvitationUpsertBulk) UpdateRole() *OrgInvitationUpsertBulk {
 func (u *OrgInvitationUpsertBulk) ClearRole() *OrgInvitationUpsertBulk {
 	return u.Update(func(s *OrgInvitationUpsert) {
 		s.ClearRole()
+	})
+}
+
+// SetContext sets the "context" field.
+func (u *OrgInvitationUpsertBulk) SetContext(v biz.OrgInvitationContext) *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.SetContext(v)
+	})
+}
+
+// UpdateContext sets the "context" field to the value that was provided on create.
+func (u *OrgInvitationUpsertBulk) UpdateContext() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.UpdateContext()
+	})
+}
+
+// ClearContext clears the value of the "context" field.
+func (u *OrgInvitationUpsertBulk) ClearContext() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearContext()
 	})
 }
 

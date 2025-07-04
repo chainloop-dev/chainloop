@@ -374,6 +374,49 @@ func (g *GroupService) RemoveMember(ctx context.Context, req *pb.GroupServiceRem
 	return &pb.GroupServiceRemoveMemberResponse{}, nil
 }
 
+// ListPendingInvitations retrieves a list of pending invitations for a group
+func (g *GroupService) ListPendingInvitations(ctx context.Context, req *pb.GroupServiceListPendingInvitationsRequest) (*pb.GroupServiceListPendingInvitationsResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse orgID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Parse groupID and groupName from the request
+	groupID, groupName, err := req.GetGroupReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Call the business logic to list pending invitations
+	invitations, count, err := g.groupUseCase.ListPendingInvitations(ctx, orgUUID, groupID, groupName, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Convert business objects to protobuf messages
+	pbInvitations := make([]*pb.PendingGroupInvitation, 0, len(invitations))
+	for _, invitation := range invitations {
+		pbInvitations = append(pbInvitations, bizOrgInvitationToPendingGroupInvitationPb(invitation))
+	}
+
+	return &pb.GroupServiceListPendingInvitationsResponse{
+		Invitations: pbInvitations,
+		Pagination:  paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
+}
+
 // bizGroupToPb converts a biz.Group to a pb.Group protobuf message.
 func bizGroupToPb(gr *biz.Group) *pb.Group {
 	base := &pb.Group{
@@ -400,4 +443,19 @@ func bizGroupMemberToPb(m *biz.GroupMembership) *pb.GroupMember {
 		CreatedAt:    timestamppb.New(*m.CreatedAt),
 		UpdatedAt:    timestamppb.New(*m.UpdatedAt),
 	}
+}
+
+// bizOrgInvitationToPendingGroupInvitationPb converts a biz.OrgInvitation to a pb.PendingGroupInvitation protobuf message.
+func bizOrgInvitationToPendingGroupInvitationPb(inv *biz.OrgInvitation) *pb.PendingGroupInvitation {
+	base := &pb.PendingGroupInvitation{
+		UserEmail: inv.ReceiverEmail,
+		CreatedAt: timestamppb.New(*inv.CreatedAt),
+	}
+
+	// Include the sender if available
+	if inv.Sender != nil {
+		base.InvitedBy = bizUserToPb(inv.Sender)
+	}
+
+	return base
 }

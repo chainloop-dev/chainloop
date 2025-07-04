@@ -7496,6 +7496,7 @@ type OrgInvitationMutation struct {
 	created_at          *time.Time
 	deleted_at          *time.Time
 	role                *authz.Role
+	context             *biz.OrgInvitationContext
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -7888,6 +7889,55 @@ func (m *OrgInvitationMutation) ResetRole() {
 	delete(m.clearedFields, orginvitation.FieldRole)
 }
 
+// SetContext sets the "context" field.
+func (m *OrgInvitationMutation) SetContext(bic biz.OrgInvitationContext) {
+	m.context = &bic
+}
+
+// Context returns the value of the "context" field in the mutation.
+func (m *OrgInvitationMutation) Context() (r biz.OrgInvitationContext, exists bool) {
+	v := m.context
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContext returns the old "context" field's value of the OrgInvitation entity.
+// If the OrgInvitation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrgInvitationMutation) OldContext(ctx context.Context) (v biz.OrgInvitationContext, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContext is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContext requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContext: %w", err)
+	}
+	return oldValue.Context, nil
+}
+
+// ClearContext clears the value of the "context" field.
+func (m *OrgInvitationMutation) ClearContext() {
+	m.context = nil
+	m.clearedFields[orginvitation.FieldContext] = struct{}{}
+}
+
+// ContextCleared returns if the "context" field was cleared in this mutation.
+func (m *OrgInvitationMutation) ContextCleared() bool {
+	_, ok := m.clearedFields[orginvitation.FieldContext]
+	return ok
+}
+
+// ResetContext resets all changes to the "context" field.
+func (m *OrgInvitationMutation) ResetContext() {
+	m.context = nil
+	delete(m.clearedFields, orginvitation.FieldContext)
+}
+
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *OrgInvitationMutation) ClearOrganization() {
 	m.clearedorganization = true
@@ -7976,7 +8026,7 @@ func (m *OrgInvitationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrgInvitationMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.receiver_email != nil {
 		fields = append(fields, orginvitation.FieldReceiverEmail)
 	}
@@ -7997,6 +8047,9 @@ func (m *OrgInvitationMutation) Fields() []string {
 	}
 	if m.role != nil {
 		fields = append(fields, orginvitation.FieldRole)
+	}
+	if m.context != nil {
+		fields = append(fields, orginvitation.FieldContext)
 	}
 	return fields
 }
@@ -8020,6 +8073,8 @@ func (m *OrgInvitationMutation) Field(name string) (ent.Value, bool) {
 		return m.SenderID()
 	case orginvitation.FieldRole:
 		return m.Role()
+	case orginvitation.FieldContext:
+		return m.Context()
 	}
 	return nil, false
 }
@@ -8043,6 +8098,8 @@ func (m *OrgInvitationMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldSenderID(ctx)
 	case orginvitation.FieldRole:
 		return m.OldRole(ctx)
+	case orginvitation.FieldContext:
+		return m.OldContext(ctx)
 	}
 	return nil, fmt.Errorf("unknown OrgInvitation field %s", name)
 }
@@ -8101,6 +8158,13 @@ func (m *OrgInvitationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRole(v)
 		return nil
+	case orginvitation.FieldContext:
+		v, ok := value.(biz.OrgInvitationContext)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContext(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OrgInvitation field %s", name)
 }
@@ -8137,6 +8201,9 @@ func (m *OrgInvitationMutation) ClearedFields() []string {
 	if m.FieldCleared(orginvitation.FieldRole) {
 		fields = append(fields, orginvitation.FieldRole)
 	}
+	if m.FieldCleared(orginvitation.FieldContext) {
+		fields = append(fields, orginvitation.FieldContext)
+	}
 	return fields
 }
 
@@ -8156,6 +8223,9 @@ func (m *OrgInvitationMutation) ClearField(name string) error {
 		return nil
 	case orginvitation.FieldRole:
 		m.ClearRole()
+		return nil
+	case orginvitation.FieldContext:
+		m.ClearContext()
 		return nil
 	}
 	return fmt.Errorf("unknown OrgInvitation nullable field %s", name)
@@ -8185,6 +8255,9 @@ func (m *OrgInvitationMutation) ResetField(name string) error {
 		return nil
 	case orginvitation.FieldRole:
 		m.ResetRole()
+		return nil
+	case orginvitation.FieldContext:
+		m.ResetContext()
 		return nil
 	}
 	return fmt.Errorf("unknown OrgInvitation field %s", name)

@@ -140,8 +140,9 @@ var (
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
 	// Groups
-	PolicyGroupList = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead = &Policy{ResourceGroup, ActionRead}
+	PolicyGroupList                   = &Policy{ResourceGroup, ActionList}
+	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
+	PolicyGroupRead                   = &Policy{ResourceGroup, ActionRead}
 	// Group Memberships
 	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
 	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
@@ -240,6 +241,7 @@ var RolesMap = map[Role][]*Policy{
 		// Groups
 		PolicyGroupList,
 		PolicyGroupRead,
+		PolicyGroupListPendingInvitations,
 
 		// Group Memberships
 		PolicyGroupListMemberships,
@@ -360,7 +362,8 @@ var ServerOperationsMap = map[string][]*Policy{
 
 	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
 	// Groups
-	"/controlplane.v1.GroupService/List": {PolicyGroupList},
+	"/controlplane.v1.GroupService/List":                   {PolicyGroupList},
+	"/controlplane.v1.GroupService/ListPendingInvitations": {PolicyGroupListPendingInvitations},
 	// Group Memberships
 	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
 	// For the following endpoints, we rely on the service layer to check the permissions
