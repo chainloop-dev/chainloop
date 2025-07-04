@@ -20,11 +20,14 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
@@ -365,4 +368,54 @@ func entProjectMembershipToBiz(m *ent.Membership, u *ent.User, g *ent.Group) *bi
 	}
 
 	return mem
+}
+
+// ListPendingInvitationsByProject retrieves pending invitations for a specific project in an organization.
+func (r *ProjectRepo) ListPendingInvitationsByProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.OrgInvitation, int, error) {
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	// Check the project exists in the organization
+	_, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to find project: %w", err)
+	}
+
+	// Build the query for pending invitations related to the project
+	query := r.data.DB.OrgInvitation.Query().
+		Where(
+			orginvitation.OrganizationIDEQ(orgID),
+			orginvitation.DeletedAtIsNil(),
+			orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
+			func(_ *sql.Selector) {
+				sqljson.ValueEQ(orginvitation.FieldContext, projectID.String(), sqljson.DotPath("project_id_to_join"))
+			},
+		).
+		WithOrganization().
+		WithSender()
+
+	// Get the count of all filtered rows without the limit and offset
+	count, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count pending invitations: %w", err)
+	}
+
+	// Apply pagination options and execute the query
+	invitations, err := query.
+		Order(ent.Desc(orginvitation.FieldCreatedAt)).
+		Limit(paginationOpts.Limit()).
+		Offset(paginationOpts.Offset()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to retrieve pending invitations: %w", err)
+	}
+
+	// Convert ent.OrgInvitation entities to biz.OrgInvitation
+	result := make([]*biz.OrgInvitation, 0, len(invitations))
+	for _, inv := range invitations {
+		result = append(result, entInviteToBiz(inv))
+	}
+
+	return result, count, nil
 }

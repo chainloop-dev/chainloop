@@ -177,6 +177,33 @@ export interface ProjectServiceUpdateMemberRoleRequest {
 export interface ProjectServiceUpdateMemberRoleResponse {
 }
 
+export interface ProjectServiceListPendingInvitationsRequest {
+  /** IdentityReference is used to specify the project by either its ID or name */
+  projectReference?: IdentityReference;
+  /** Pagination parameters to limit and offset results */
+  pagination?: OffsetPaginationRequest;
+}
+
+/** ProjectServiceListPendingInvitationsResponse contains a list of pending invitations for a project */
+export interface ProjectServiceListPendingInvitationsResponse {
+  /** List of pending invitations for the project */
+  invitations: PendingProjectInvitation[];
+  /** Pagination information for the response */
+  pagination?: OffsetPaginationResponse;
+}
+
+/** PendingInvitation represents an invitation to join a project that has not yet been accepted */
+export interface PendingProjectInvitation {
+  /** The email address of the user invited to the project */
+  userEmail: string;
+  /** The user who sent the invitation */
+  invitedBy?:
+    | User
+    | undefined;
+  /** Timestamp when the invitation was created */
+  createdAt?: Date;
+}
+
 function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
   return { name: "", projectName: "", description: undefined, expiresIn: undefined };
 }
@@ -1484,6 +1511,261 @@ export const ProjectServiceUpdateMemberRoleResponse = {
   },
 };
 
+function createBaseProjectServiceListPendingInvitationsRequest(): ProjectServiceListPendingInvitationsRequest {
+  return { projectReference: undefined, pagination: undefined };
+}
+
+export const ProjectServiceListPendingInvitationsRequest = {
+  encode(message: ProjectServiceListPendingInvitationsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListPendingInvitationsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListPendingInvitationsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListPendingInvitationsRequest {
+    return {
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectServiceListPendingInvitationsRequest): unknown {
+    const obj: any = {};
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListPendingInvitationsRequest>, I>>(
+    base?: I,
+  ): ProjectServiceListPendingInvitationsRequest {
+    return ProjectServiceListPendingInvitationsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListPendingInvitationsRequest>, I>>(
+    object: I,
+  ): ProjectServiceListPendingInvitationsRequest {
+    const message = createBaseProjectServiceListPendingInvitationsRequest();
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectServiceListPendingInvitationsResponse(): ProjectServiceListPendingInvitationsResponse {
+  return { invitations: [], pagination: undefined };
+}
+
+export const ProjectServiceListPendingInvitationsResponse = {
+  encode(message: ProjectServiceListPendingInvitationsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.invitations) {
+      PendingProjectInvitation.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListPendingInvitationsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListPendingInvitationsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.invitations.push(PendingProjectInvitation.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListPendingInvitationsResponse {
+    return {
+      invitations: Array.isArray(object?.invitations)
+        ? object.invitations.map((e: any) => PendingProjectInvitation.fromJSON(e))
+        : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectServiceListPendingInvitationsResponse): unknown {
+    const obj: any = {};
+    if (message.invitations) {
+      obj.invitations = message.invitations.map((e) => e ? PendingProjectInvitation.toJSON(e) : undefined);
+    } else {
+      obj.invitations = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListPendingInvitationsResponse>, I>>(
+    base?: I,
+  ): ProjectServiceListPendingInvitationsResponse {
+    return ProjectServiceListPendingInvitationsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListPendingInvitationsResponse>, I>>(
+    object: I,
+  ): ProjectServiceListPendingInvitationsResponse {
+    const message = createBaseProjectServiceListPendingInvitationsResponse();
+    message.invitations = object.invitations?.map((e) => PendingProjectInvitation.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePendingProjectInvitation(): PendingProjectInvitation {
+  return { userEmail: "", invitedBy: undefined, createdAt: undefined };
+}
+
+export const PendingProjectInvitation = {
+  encode(message: PendingProjectInvitation, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.userEmail !== "") {
+      writer.uint32(10).string(message.userEmail);
+    }
+    if (message.invitedBy !== undefined) {
+      User.encode(message.invitedBy, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PendingProjectInvitation {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePendingProjectInvitation();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userEmail = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.invitedBy = User.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PendingProjectInvitation {
+    return {
+      userEmail: isSet(object.userEmail) ? String(object.userEmail) : "",
+      invitedBy: isSet(object.invitedBy) ? User.fromJSON(object.invitedBy) : undefined,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+    };
+  },
+
+  toJSON(message: PendingProjectInvitation): unknown {
+    const obj: any = {};
+    message.userEmail !== undefined && (obj.userEmail = message.userEmail);
+    message.invitedBy !== undefined && (obj.invitedBy = message.invitedBy ? User.toJSON(message.invitedBy) : undefined);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PendingProjectInvitation>, I>>(base?: I): PendingProjectInvitation {
+    return PendingProjectInvitation.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PendingProjectInvitation>, I>>(object: I): PendingProjectInvitation {
+    const message = createBasePendingProjectInvitation();
+    message.userEmail = object.userEmail ?? "";
+    message.invitedBy = (object.invitedBy !== undefined && object.invitedBy !== null)
+      ? User.fromPartial(object.invitedBy)
+      : undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    return message;
+  },
+};
+
 export interface ProjectService {
   /** Project level API tokens */
   APITokenCreate(
@@ -1515,6 +1797,10 @@ export interface ProjectService {
     request: DeepPartial<ProjectServiceUpdateMemberRoleRequest>,
     metadata?: grpc.Metadata,
   ): Promise<ProjectServiceUpdateMemberRoleResponse>;
+  ListPendingInvitations(
+    request: DeepPartial<ProjectServiceListPendingInvitationsRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceListPendingInvitationsResponse>;
 }
 
 export class ProjectServiceClientImpl implements ProjectService {
@@ -1529,6 +1815,7 @@ export class ProjectServiceClientImpl implements ProjectService {
     this.AddMember = this.AddMember.bind(this);
     this.RemoveMember = this.RemoveMember.bind(this);
     this.UpdateMemberRole = this.UpdateMemberRole.bind(this);
+    this.ListPendingInvitations = this.ListPendingInvitations.bind(this);
   }
 
   APITokenCreate(
@@ -1600,6 +1887,17 @@ export class ProjectServiceClientImpl implements ProjectService {
     return this.rpc.unary(
       ProjectServiceUpdateMemberRoleDesc,
       ProjectServiceUpdateMemberRoleRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  ListPendingInvitations(
+    request: DeepPartial<ProjectServiceListPendingInvitationsRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ProjectServiceListPendingInvitationsResponse> {
+    return this.rpc.unary(
+      ProjectServiceListPendingInvitationsDesc,
+      ProjectServiceListPendingInvitationsRequest.fromPartial(request),
       metadata,
     );
   }
@@ -1758,6 +2056,29 @@ export const ProjectServiceUpdateMemberRoleDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = ProjectServiceUpdateMemberRoleResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ProjectServiceListPendingInvitationsDesc: UnaryMethodDefinitionish = {
+  methodName: "ListPendingInvitations",
+  service: ProjectServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ProjectServiceListPendingInvitationsRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ProjectServiceListPendingInvitationsResponse.decode(data);
       return {
         ...value,
         toObject() {

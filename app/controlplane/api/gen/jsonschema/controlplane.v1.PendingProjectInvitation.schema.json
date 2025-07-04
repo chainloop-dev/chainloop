@@ -1,0 +1,38 @@
+{
+  "$id": "controlplane.v1.PendingProjectInvitation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PendingInvitation represents an invitation to join a project that has not yet been accepted",
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the invitation was created"
+    },
+    "^(invitedBy)$": {
+      "$ref": "controlplane.v1.User.schema.json",
+      "description": "The user who sent the invitation"
+    },
+    "^(userEmail)$": {
+      "description": "The email address of the user invited to the project",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the invitation was created"
+    },
+    "invited_by": {
+      "$ref": "controlplane.v1.User.schema.json",
+      "description": "The user who sent the invitation"
+    },
+    "user_email": {
+      "description": "The email address of the user invited to the project",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "title": "Pending Project Invitation",
+  "type": "object"
+}

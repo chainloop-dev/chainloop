@@ -152,9 +152,10 @@ var (
 	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
 	PolicyProjectAPITokenRevoke = &Policy{ResourceProjectAPIToken, ActionDelete}
 	// Project Memberships
-	PolicyProjectListMemberships   = &Policy{ResourceProjectMembership, ActionList}
-	PolicyProjectAddMemberships    = &Policy{ResourceProjectMembership, ActionCreate}
-	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
+	PolicyProjectListMemberships        = &Policy{ResourceProjectMembership, ActionList}
+	PolicyProjectAddMemberships         = &Policy{ResourceProjectMembership, ActionCreate}
+	PolicyProjectRemoveMemberships      = &Policy{ResourceProjectMembership, ActionDelete}
+	PolicyProjectListPendingInvitations = &Policy{ResourceProjectMembership, ActionList}
 )
 
 // RolesMap The default list of policies for each role
@@ -254,6 +255,7 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectListMemberships,
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
+		PolicyProjectListPendingInvitations,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
@@ -291,6 +293,7 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectListMemberships,
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
+		PolicyProjectListPendingInvitations,
 	},
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
@@ -375,9 +378,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},
 	"/controlplane.v1.ProjectService/APITokenRevoke": {PolicyProjectAPITokenRevoke},
 	// Project Memberships
-	"/controlplane.v1.ProjectService/ListMembers":  {PolicyProjectListMemberships},
-	"/controlplane.v1.ProjectService/AddMember":    {PolicyProjectAddMemberships},
-	"/controlplane.v1.ProjectService/RemoveMember": {PolicyProjectRemoveMemberships},
+	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
+	"/controlplane.v1.ProjectService/RemoveMember":           {PolicyProjectRemoveMemberships},
+	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListPendingInvitations},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

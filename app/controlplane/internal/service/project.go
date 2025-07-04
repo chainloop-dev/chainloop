@@ -363,6 +363,58 @@ func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *pb.ProjectSe
 	return &pb.ProjectServiceUpdateMemberRoleResponse{}, nil
 }
 
+// ListPendingInvitations retrieves a list of pending invitations for a project
+func (s *ProjectService) ListPendingInvitations(ctx context.Context, req *pb.ProjectServiceListPendingInvitationsRequest) (*pb.ProjectServiceListPendingInvitationsResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse orgID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Make sure the user has permission to list members of the project
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectReference, authz.PolicyProjectListPendingInvitations)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse groupID and projectName from the request
+	projectID, projectName, err := req.GetProjectReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Call the business logic to list pending invitations
+	invitations, count, err := s.projectUseCase.ListPendingInvitations(ctx, orgUUID, &biz.IdentityReference{
+		ID:   projectID,
+		Name: projectName,
+	}, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Convert business objects to protobuf messages
+	pbInvitations := make([]*pb.PendingProjectInvitation, 0, len(invitations))
+	for _, invitation := range invitations {
+		pbInvitations = append(pbInvitations, bizOrgInvitationToPendingProjectInvitationPb(invitation))
+	}
+
+	return &pb.ProjectServiceListPendingInvitationsResponse{
+		Invitations: pbInvitations,
+		Pagination:  paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
+}
+
 // extractMembershipReference extracts either a user email or a group reference from a membership reference
 // If both or neither are provided, returns an error
 func (s *ProjectService) extractMembershipReference(membershipRef *pb.ProjectMembershipReference) (string, *biz.IdentityReference, error) {
@@ -451,4 +503,19 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 	}
 
 	return pbMember
+}
+
+// bizOrgInvitationToPendingProjectInvitationPb converts a biz.OrgInvitation to a pb.PendingProjectInvitation protobuf message.
+func bizOrgInvitationToPendingProjectInvitationPb(inv *biz.OrgInvitation) *pb.PendingProjectInvitation {
+	base := &pb.PendingProjectInvitation{
+		UserEmail: inv.ReceiverEmail,
+		CreatedAt: timestamppb.New(*inv.CreatedAt),
+	}
+
+	// Include the sender if available
+	if inv.Sender != nil {
+		base.InvitedBy = bizUserToPb(inv.Sender)
+	}
+
+	return base
 }
