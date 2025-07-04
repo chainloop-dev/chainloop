@@ -310,7 +310,7 @@ func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *pb.ProjectSe
 	}
 
 	// Make sure the provided project exists and the user has permission to update member roles in it
-	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAddMemberships)
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectUpdateMemberships)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func (s *ProjectService) ListPendingInvitations(ctx context.Context, req *pb.Pro
 	}
 
 	// Make sure the user has permission to list members of the project
-	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectReference, authz.PolicyProjectListPendingInvitations)
+	_, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.ProjectReference, authz.PolicyProjectListMemberships)
 	if err != nil {
 		return nil, err
 	}

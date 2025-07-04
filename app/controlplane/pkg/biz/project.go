@@ -356,7 +356,7 @@ func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, proj
 	}
 
 	// Create an invitation for the user to join the organization with project context
-	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleViewer), WithInvitationContext(invitationContext)); err != nil {
+	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleOrgMember), WithInvitationContext(invitationContext)); err != nil {
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
 	}
 

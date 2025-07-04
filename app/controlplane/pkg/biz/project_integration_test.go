@@ -1756,6 +1756,7 @@ func (s *projectMembersIntegrationTestSuite) TestAddNonExistingMemberToProject()
 		s.NotNil(foundInvitation.Context, "Invitation should have context")
 		s.Equal(projectID, foundInvitation.Context.ProjectIDToJoin)
 		s.Equal(authz.RoleProjectViewer, foundInvitation.Context.ProjectRole)
+		s.Equal(authz.RoleOrgMember, foundInvitation.Role)
 	})
 
 	s.Run("add already invited user returns error", func() {
