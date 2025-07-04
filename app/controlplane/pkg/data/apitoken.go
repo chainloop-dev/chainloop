@@ -76,6 +76,8 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 
 	if projectID != nil {
 		query = query.Where(apitoken.ProjectIDEQ(*projectID))
+	} else {
+		query = query.Where(apitoken.ProjectIDIsNil())
 	}
 
 	token, err := query.Only(ctx)
