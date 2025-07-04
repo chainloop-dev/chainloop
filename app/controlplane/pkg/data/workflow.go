@@ -118,11 +118,11 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			if err != nil {
 				if ent.IsNotFound(err) {
 					// Create a new contract associated with the workflow
-					// TODO: associate it with the project soon
 					contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
-						OrgID:    orgUUID,
-						Name:     defaultContractName,
-						Contract: opts.DetectedContract,
+						OrgID:     orgUUID,
+						Name:      defaultContractName,
+						Contract:  opts.DetectedContract,
+						ProjectID: &projectID,
 					})
 					if err != nil {
 						return fmt.Errorf("creating contract: %w", err)

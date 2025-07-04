@@ -102,11 +102,15 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 }
 
 func (r *WorkflowContractRepo) addCreateToTx(ctx context.Context, tx *ent.Tx, opts *biz.ContractCreateOpts) (*ent.WorkflowContract, *ent.WorkflowContractVersion, error) {
-	contract, err := tx.WorkflowContract.Create().
+	contractQuery := tx.WorkflowContract.Create().
 		SetName(opts.Name).SetOrganizationID(opts.OrgID).
-		SetNillableDescription(opts.Description).
-		Save(ctx)
+		SetNillableDescription(opts.Description)
 
+	if opts.ProjectID != nil {
+		contractQuery = contractQuery.SetScopedResourceID(*opts.ProjectID).SetScopedResourceType(biz.ContractScopeProject)
+	}
+
+	contract, err := contractQuery.Save(ctx)
 	if err != nil {
 		return nil, nil, handleError(err)
 	}

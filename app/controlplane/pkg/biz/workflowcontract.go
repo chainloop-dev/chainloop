@@ -96,6 +96,8 @@ type ContractCreateOpts struct {
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
 	Contract *Contract
+	// ProjectID indicates the project to be scoped to
+	ProjectID *uuid.UUID
 }
 
 type ContractUpdateOpts struct {
