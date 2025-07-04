@@ -37,6 +37,7 @@ service ProjectService {
   rpc AddMember(ProjectServiceAddMemberRequest) returns (ProjectServiceAddMemberResponse);
   rpc RemoveMember(ProjectServiceRemoveMemberRequest) returns (ProjectServiceRemoveMemberResponse);
   rpc UpdateMemberRole(ProjectServiceUpdateMemberRoleRequest) returns (ProjectServiceUpdateMemberRoleResponse);
+  rpc ListPendingInvitations(ProjectServiceListPendingInvitationsRequest) returns (ProjectServiceListPendingInvitationsResponse) {}
 }
 
 message ProjectServiceAPITokenCreateRequest {
@@ -173,3 +174,28 @@ message ProjectServiceUpdateMemberRoleRequest {
 
 // ProjectServiceUpdateMemberRoleResponse is returned upon successful update of a member's role in a project
 message ProjectServiceUpdateMemberRoleResponse {}
+
+message ProjectServiceListPendingInvitationsRequest {
+  // IdentityReference is used to specify the project by either its ID or name
+  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 2;
+}
+
+// ProjectServiceListPendingInvitationsResponse contains a list of pending invitations for a project
+message ProjectServiceListPendingInvitationsResponse {
+  // List of pending invitations for the project
+  repeated PendingProjectInvitation invitations = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+}
+
+// PendingInvitation represents an invitation to join a project that has not yet been accepted
+message PendingProjectInvitation {
+  // The email address of the user invited to the project
+  string user_email = 1 [(buf.validate.field).string.email = true];
+  // The user who sent the invitation
+  optional User invited_by = 2;
+  // Timestamp when the invitation was created
+  google.protobuf.Timestamp created_at = 3;
+}

@@ -46,18 +46,22 @@ type ProjectsRepo interface {
 	UpdateMemberRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, newRole authz.Role) (*ProjectMembership, error)
 	// FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group).
 	FindProjectMembershipByProjectAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*ProjectMembership, error)
+	// ListPendingInvitationsByProject retrieves a list of pending invitations for a project.
+	ListPendingInvitationsByProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error)
 }
 
 // ProjectUseCase is a use case for projects
 type ProjectUseCase struct {
 	logger *log.Helper
 	// Use Cases
-	auditorUC    *AuditorUseCase
-	groupUC      *GroupUseCase
-	membershipUC *MembershipUseCase
+	auditorUC       *AuditorUseCase
+	groupUC         *GroupUseCase
+	membershipUC    *MembershipUseCase
+	orgInvitationUC *OrgInvitationUseCase
 	// Repositories
 	projectsRepository   ProjectsRepo
 	membershipRepository MembershipRepo
+	orgInvitationRepo    OrgInvitationRepo
 }
 
 // Project is a project in the organization
@@ -130,7 +134,15 @@ type UpdateMemberRoleOpts struct {
 	NewRole authz.Role
 }
 
-func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase) *ProjectUseCase {
+// AddMemberToProjectResult represents the result of adding a member to a project.
+type AddMemberToProjectResult struct {
+	// Membership is the membership that was created or found.
+	Membership *ProjectMembership
+	// InvitationSent indicates if an invitation was sent instead of creating a membership directly.
+	InvitationSent bool
+}
+
+func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase, orgInvitationUC *OrgInvitationUseCase, orgInvitationRepo OrgInvitationRepo) *ProjectUseCase {
 	return &ProjectUseCase{
 		logger:               servicelogger.ScopedHelper(logger, "biz/project"),
 		projectsRepository:   projectsRepository,
@@ -138,6 +150,8 @@ func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, memb
 		auditorUC:            auditorUC,
 		groupUC:              groupUC,
 		membershipUC:         membershipUC,
+		orgInvitationUC:      orgInvitationUC,
+		orgInvitationRepo:    orgInvitationRepo,
 	}
 }
 
@@ -195,8 +209,35 @@ func (uc *ProjectUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, proj
 	return uc.projectsRepository.ListMembers(ctx, orgID, resolvedProjectID, pgOpts)
 }
 
+// ListPendingInvitations retrieves a list of pending invitations for a project.
+func (uc *ProjectUseCase) ListPendingInvitations(ctx context.Context, orgID uuid.UUID, projectRef *IdentityReference, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error) {
+	if projectRef == nil {
+		return nil, 0, NewErrValidationStr("project reference cannot be nil")
+	}
+
+	if orgID == uuid.Nil {
+		return nil, 0, NewErrValidationStr("organization ID cannot be empty")
+	}
+
+	// Validate and resolve the project reference to a project ID
+	resolvedProjectID, err := uc.ValidateProjectIdentifier(ctx, orgID, projectRef)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Use default pagination options if none provided
+	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
+	if paginationOpts != nil {
+		pgOpts = paginationOpts
+	}
+
+	// Call the repository method to get the pending invitations
+	return uc.projectsRepository.ListPendingInvitationsByProject(ctx, orgID, resolvedProjectID, pgOpts)
+}
+
 // AddMemberToProject adds a user or group to a project.
-func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUID, opts *AddMemberToProjectOpts) (*ProjectMembership, error) {
+// Returns AddMemberToProjectResult which indicates whether a membership was created or an invitation was sent.
+func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUID, opts *AddMemberToProjectOpts) (*AddMemberToProjectResult, error) {
 	if opts == nil {
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
@@ -226,27 +267,39 @@ func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUI
 		return nil, fmt.Errorf("requester does not have permission to add members to this project: %w", err)
 	}
 
-	var membership *ProjectMembership
+	var result *AddMemberToProjectResult
+	var resultErr error
 
 	// Process based on whether we're adding a user or a group
 	if opts.UserEmail != "" {
-		membership, err = uc.addUserToProject(ctx, orgID, resolvedProjectID, existingProject, opts)
+		result, resultErr = uc.addUserToProject(ctx, orgID, resolvedProjectID, existingProject, opts)
 	} else {
-		membership, err = uc.addGroupToProject(ctx, orgID, resolvedProjectID, existingProject, opts)
+		// For groups, we don't support invitations yet, so just create a membership
+		membership, err := uc.addGroupToProject(ctx, orgID, resolvedProjectID, existingProject, opts)
+		if err != nil {
+			resultErr = err
+		} else {
+			result = &AddMemberToProjectResult{
+				Membership: membership,
+			}
+		}
 	}
 
-	return membership, err
+	return result, resultErr
 }
 
 // addUserToProject adds a user to a project and logs the action.
-func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, project *Project, opts *AddMemberToProjectOpts) (*ProjectMembership, error) {
+// If the user doesn't exist in the organization, an invitation is sent instead.
+func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, project *Project, opts *AddMemberToProjectOpts) (*AddMemberToProjectResult, error) {
 	// Find the user by email in the organization
 	userMembership, err := uc.membershipRepository.FindByOrgIDAndUserEmail(ctx, orgID, opts.UserEmail)
 	if err != nil && !IsNotFound(err) {
 		return nil, fmt.Errorf("failed to find user by email: %w", err)
 	}
+
+	// If the user is not in the organization, handle invitation flow
 	if userMembership == nil {
-		return nil, NewErrValidationStr("user with the provided email is not a member of the organization")
+		return uc.handleNonExistingUser(ctx, orgID, projectID, opts)
 	}
 
 	userUUID := uuid.MustParse(userMembership.User.ID)
@@ -277,7 +330,40 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 		Role:      string(opts.Role),
 	}, &orgID)
 
-	return membership, nil
+	return &AddMemberToProjectResult{
+		Membership:     membership,
+		InvitationSent: false,
+	}, nil
+}
+
+// handleNonExistingUser creates an invitation for a user not yet in the organization with project context
+func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, projectID uuid.UUID, opts *AddMemberToProjectOpts) (*AddMemberToProjectResult, error) {
+	// Check if the user email is already invited to the organization
+	invitation, err := uc.orgInvitationRepo.PendingInvitation(ctx, orgID, opts.UserEmail)
+	if err != nil && !IsNotFound(err) {
+		return nil, fmt.Errorf("failed to check existing invitation: %w", err)
+	}
+
+	// If an invitation already exists, return an error
+	if invitation != nil {
+		return nil, NewErrAlreadyExistsStr("user is already invited to the organization")
+	}
+
+	// Create an organization invitation with project context
+	invitationContext := &OrgInvitationContext{
+		ProjectIDToJoin: projectID,
+		ProjectRole:     opts.Role,
+	}
+
+	// Create an invitation for the user to join the organization with project context
+	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleOrgMember), WithInvitationContext(invitationContext)); err != nil {
+		return nil, fmt.Errorf("failed to create invitation: %w", err)
+	}
+
+	// Return a result indicating an invitation was sent
+	return &AddMemberToProjectResult{
+		InvitationSent: true,
+	}, nil
 }
 
 // addGroupToProject adds a group to a project and logs the action.

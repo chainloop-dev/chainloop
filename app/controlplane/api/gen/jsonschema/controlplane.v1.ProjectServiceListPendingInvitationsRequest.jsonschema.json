@@ -1,0 +1,26 @@
+{
+  "$id": "controlplane.v1.ProjectServiceListPendingInvitationsRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(project_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.jsonschema.json",
+      "description": "Pagination parameters to limit and offset results"
+    },
+    "projectReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "IdentityReference is used to specify the project by either its ID or name"
+    }
+  },
+  "required": [
+    "project_reference"
+  ],
+  "title": "Project Service List Pending Invitations Request",
+  "type": "object"
+}

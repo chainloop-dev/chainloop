@@ -35,22 +35,23 @@ const (
 
 	// Resources
 
-	ResourceWorkflowContract      = "workflow_contract"
-	ResourceCASArtifact           = "cas_artifact"
-	ResourceCASBackend            = "cas_backend"
-	ResourceReferrer              = "referrer"
-	ResourceAvailableIntegration  = "integration_available"
-	ResourceRegisteredIntegration = "integration_registered"
-	ResourceAttachedIntegration   = "integration_attached"
-	ResourceOrgMetric             = "metrics_org"
-	ResourceRobotAccount          = "robot_account"
-	ResourceWorkflowRun           = "workflow_run"
-	ResourceWorkflow              = "workflow"
-	Organization                  = "organization"
-	ResourceGroup                 = "group"
-	ResourceGroupMembership       = "group_membership"
-	ResourceProjectAPIToken       = "project_api_token"
-	ResourceProjectMembership     = "project_membership"
+	ResourceWorkflowContract             = "workflow_contract"
+	ResourceCASArtifact                  = "cas_artifact"
+	ResourceCASBackend                   = "cas_backend"
+	ResourceReferrer                     = "referrer"
+	ResourceAvailableIntegration         = "integration_available"
+	ResourceRegisteredIntegration        = "integration_registered"
+	ResourceAttachedIntegration          = "integration_attached"
+	ResourceOrgMetric                    = "metrics_org"
+	ResourceRobotAccount                 = "robot_account"
+	ResourceWorkflowRun                  = "workflow_run"
+	ResourceWorkflow                     = "workflow"
+	Organization                         = "organization"
+	ResourceGroup                        = "group"
+	ResourceGroupMembership              = "group_membership"
+	ResourceProjectAPIToken              = "project_api_token"
+	ResourceProjectMembership            = "project_membership"
+	ResourceProjectMembershipInvitations = "project_membership_invitations"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -93,6 +94,7 @@ var ManagedResources = []string{
 	Organization,
 	ResourceGroup,
 	ResourceGroupMembership,
+	ResourceProjectMembership,
 }
 
 var (
@@ -154,6 +156,7 @@ var (
 	// Project Memberships
 	PolicyProjectListMemberships   = &Policy{ResourceProjectMembership, ActionList}
 	PolicyProjectAddMemberships    = &Policy{ResourceProjectMembership, ActionCreate}
+	PolicyProjectUpdateMemberships = &Policy{ResourceProjectMembership, ActionUpdate}
 	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
 )
 
@@ -254,6 +257,7 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectListMemberships,
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
+		PolicyProjectUpdateMemberships,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
@@ -291,6 +295,7 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectListMemberships,
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
+		PolicyProjectUpdateMemberships,
 	},
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
@@ -375,9 +380,11 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},
 	"/controlplane.v1.ProjectService/APITokenRevoke": {PolicyProjectAPITokenRevoke},
 	// Project Memberships
-	"/controlplane.v1.ProjectService/ListMembers":  {PolicyProjectListMemberships},
-	"/controlplane.v1.ProjectService/AddMember":    {PolicyProjectAddMemberships},
-	"/controlplane.v1.ProjectService/RemoveMember": {PolicyProjectRemoveMemberships},
+	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
+	"/controlplane.v1.ProjectService/RemoveMember":           {PolicyProjectRemoveMemberships},
+	"/controlplane.v1.ProjectService/UpdateMemberRole":       {PolicyProjectUpdateMemberships},
+	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListMemberships},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

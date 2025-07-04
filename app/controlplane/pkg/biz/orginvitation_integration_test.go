@@ -427,6 +427,226 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 	})
 }
 
+func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
+	ctx := context.Background()
+
+	// Create a test project in org1
+	projectName := "test-project-for-invitation"
+	userUUID := uuid.MustParse(s.user.ID)
+	orgUUID := uuid.MustParse(s.org1.ID)
+
+	project, err := s.Project.Create(ctx, s.org1.ID, projectName)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), project)
+
+	// Create a new receiver that isn't a member of any org yet
+	receiverForProjectEmail := "project-receiver@cyberdyne.io"
+	receiver, err := s.User.UpsertByEmail(ctx, receiverForProjectEmail, nil)
+	require.NoError(s.T(), err)
+
+	s.T().Run("invitation with project context adds user to project when accepted", func(t *testing.T) {
+		// Create invitation context with project information
+		invitationContext := &biz.OrgInvitationContext{
+			ProjectIDToJoin: project.ID,
+			ProjectRole:     authz.RoleProjectAdmin,
+		}
+
+		// Create invitation with project context
+		invite, err := s.OrgInvitation.Create(
+			ctx,
+			s.org1.ID,
+			s.user.ID,
+			receiverForProjectEmail,
+			biz.WithInvitationRole(authz.RoleViewer),
+			biz.WithInvitationContext(invitationContext),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Verify context was saved properly
+		assert.NotNil(t, invite.Context)
+		assert.Equal(t, project.ID, invite.Context.ProjectIDToJoin)
+		assert.Equal(t, authz.RoleProjectAdmin, invite.Context.ProjectRole)
+
+		// Accept the invitation
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, receiverForProjectEmail)
+		require.NoError(t, err)
+
+		// Verify user is now a member of the organization
+		memberships, err := s.Membership.ByUser(ctx, receiver.ID)
+		require.NoError(t, err)
+		assert.Len(t, memberships, 1)
+		assert.Equal(t, s.org1.ID, memberships[0].OrganizationID.String())
+		assert.Equal(t, authz.RoleViewer, memberships[0].Role)
+
+		// Verify user is now a member of the project
+		projectMembers, count, err := s.Project.ListMembers(ctx, orgUUID, &biz.IdentityReference{
+			ID: &project.ID,
+		}, nil)
+		require.NoError(t, err)
+
+		// The count should include the original project members plus the new member
+		assert.Greater(t, count, 0, "The project should have at least one member")
+
+		// Find the new member in the list
+		var foundMember bool
+		var memberRole authz.Role
+		for _, member := range projectMembers {
+			if member.User != nil && member.User.ID == receiver.ID {
+				foundMember = true
+				memberRole = member.Role
+				break
+			}
+		}
+
+		assert.True(t, foundMember, "The user should be a member of the project")
+		assert.Equal(t, authz.RoleProjectAdmin, memberRole, "The user should have the project admin role")
+	})
+
+	s.T().Run("invitation with different project role works correctly", func(t *testing.T) {
+		// Create another test receiver
+		anotherReceiverEmail := "project-viewer@cyberdyne.io"
+		anotherReceiver, err := s.User.UpsertByEmail(ctx, anotherReceiverEmail, nil)
+		require.NoError(t, err)
+
+		// Create invitation context with project information, but with viewer role
+		invitationContext := &biz.OrgInvitationContext{
+			ProjectIDToJoin: project.ID,
+			ProjectRole:     authz.RoleProjectViewer,
+		}
+
+		// Create invitation with project context
+		invite, err := s.OrgInvitation.Create(
+			ctx,
+			s.org1.ID,
+			s.user.ID,
+			anotherReceiverEmail,
+			biz.WithInvitationRole(authz.RoleViewer),
+			biz.WithInvitationContext(invitationContext),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Accept the invitation
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, anotherReceiverEmail)
+		require.NoError(t, err)
+
+		// Verify user is now a member of the project
+		projectMembers, count, err := s.Project.ListMembers(ctx, orgUUID, &biz.IdentityReference{
+			ID: &project.ID,
+		}, nil)
+		require.NoError(t, err)
+
+		// The count should have increased
+		assert.Greater(t, count, 1, "The project should have multiple members")
+
+		// Find the new member in the list
+		var foundMember bool
+		var memberRole authz.Role
+		for _, member := range projectMembers {
+			if member.User != nil && member.User.ID == anotherReceiver.ID {
+				foundMember = true
+				memberRole = member.Role
+				break
+			}
+		}
+
+		assert.True(t, foundMember, "The user should be a member of the project")
+		assert.Equal(t, authz.RoleProjectViewer, memberRole, "The user should have the project viewer role")
+	})
+
+	s.T().Run("invitation with both group and project context works correctly", func(t *testing.T) {
+		// Create a test group
+		groupName := "combined-test-group"
+		groupDescription := "A group for testing combined invitation context"
+		group, err := s.Group.Create(ctx, orgUUID, groupName, groupDescription, userUUID)
+		require.NoError(t, err)
+		require.NotNil(t, group)
+
+		// Create another test receiver
+		combinedReceiverEmail := "combined-receiver@cyberdyne.io"
+		combinedReceiver, err := s.User.UpsertByEmail(ctx, combinedReceiverEmail, nil)
+		require.NoError(t, err)
+
+		// Create invitation context with both group and project information
+		invitationContext := &biz.OrgInvitationContext{
+			GroupIDToJoin:   group.ID,
+			GroupMaintainer: true,
+			ProjectIDToJoin: project.ID,
+			ProjectRole:     authz.RoleProjectViewer,
+		}
+
+		// Create invitation with combined context
+		invite, err := s.OrgInvitation.Create(
+			ctx,
+			s.org1.ID,
+			s.user.ID,
+			combinedReceiverEmail,
+			biz.WithInvitationRole(authz.RoleViewer),
+			biz.WithInvitationContext(invitationContext),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Verify context was saved properly
+		assert.NotNil(t, invite.Context)
+		assert.Equal(t, group.ID, invite.Context.GroupIDToJoin)
+		assert.True(t, invite.Context.GroupMaintainer)
+		assert.Equal(t, project.ID, invite.Context.ProjectIDToJoin)
+		assert.Equal(t, authz.RoleProjectViewer, invite.Context.ProjectRole)
+
+		// Accept the invitation
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, combinedReceiverEmail)
+		require.NoError(t, err)
+
+		// Verify user is now a member of the organization
+		memberships, err := s.Membership.ByUser(ctx, combinedReceiver.ID)
+		require.NoError(t, err)
+		assert.Len(t, memberships, 1)
+		assert.Equal(t, s.org1.ID, memberships[0].OrganizationID.String())
+
+		// Verify user is now a member of the group
+		groupMembers, groupCount, err := s.Group.ListMembers(ctx, orgUUID, &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &group.ID,
+			},
+		}, nil)
+		require.NoError(t, err)
+		assert.Greater(t, groupCount, 0, "The group should have at least one member")
+
+		var foundGroupMember bool
+		var isMaintainer bool
+		for _, member := range groupMembers {
+			if member.User.ID == combinedReceiver.ID {
+				foundGroupMember = true
+				isMaintainer = member.Maintainer
+				break
+			}
+		}
+		assert.True(t, foundGroupMember, "The user should be a member of the group")
+		assert.True(t, isMaintainer, "The user should be a maintainer of the group")
+
+		// Verify user is now a member of the project
+		projectMembers, projectCount, err := s.Project.ListMembers(ctx, orgUUID, &biz.IdentityReference{
+			ID: &project.ID,
+		}, nil)
+		require.NoError(t, err)
+		assert.Greater(t, projectCount, 0, "The project should have at least one member")
+
+		var foundProjectMember bool
+		var projectRole authz.Role
+		for _, member := range projectMembers {
+			if member.User != nil && member.User.ID == combinedReceiver.ID {
+				foundProjectMember = true
+				projectRole = member.Role
+				break
+			}
+		}
+		assert.True(t, foundProjectMember, "The user should be a member of the project")
+		assert.Equal(t, authz.RoleProjectViewer, projectRole, "The user should have the project contributor role")
+	})
+}
+
 // Utility struct to hold the test suite
 type OrgInvitationIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite

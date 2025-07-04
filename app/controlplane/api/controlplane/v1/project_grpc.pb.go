@@ -34,13 +34,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ProjectService_APITokenCreate_FullMethodName   = "/controlplane.v1.ProjectService/APITokenCreate"
-	ProjectService_APITokenList_FullMethodName     = "/controlplane.v1.ProjectService/APITokenList"
-	ProjectService_APITokenRevoke_FullMethodName   = "/controlplane.v1.ProjectService/APITokenRevoke"
-	ProjectService_ListMembers_FullMethodName      = "/controlplane.v1.ProjectService/ListMembers"
-	ProjectService_AddMember_FullMethodName        = "/controlplane.v1.ProjectService/AddMember"
-	ProjectService_RemoveMember_FullMethodName     = "/controlplane.v1.ProjectService/RemoveMember"
-	ProjectService_UpdateMemberRole_FullMethodName = "/controlplane.v1.ProjectService/UpdateMemberRole"
+	ProjectService_APITokenCreate_FullMethodName         = "/controlplane.v1.ProjectService/APITokenCreate"
+	ProjectService_APITokenList_FullMethodName           = "/controlplane.v1.ProjectService/APITokenList"
+	ProjectService_APITokenRevoke_FullMethodName         = "/controlplane.v1.ProjectService/APITokenRevoke"
+	ProjectService_ListMembers_FullMethodName            = "/controlplane.v1.ProjectService/ListMembers"
+	ProjectService_AddMember_FullMethodName              = "/controlplane.v1.ProjectService/AddMember"
+	ProjectService_RemoveMember_FullMethodName           = "/controlplane.v1.ProjectService/RemoveMember"
+	ProjectService_UpdateMemberRole_FullMethodName       = "/controlplane.v1.ProjectService/UpdateMemberRole"
+	ProjectService_ListPendingInvitations_FullMethodName = "/controlplane.v1.ProjectService/ListPendingInvitations"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -56,6 +57,7 @@ type ProjectServiceClient interface {
 	AddMember(ctx context.Context, in *ProjectServiceAddMemberRequest, opts ...grpc.CallOption) (*ProjectServiceAddMemberResponse, error)
 	RemoveMember(ctx context.Context, in *ProjectServiceRemoveMemberRequest, opts ...grpc.CallOption) (*ProjectServiceRemoveMemberResponse, error)
 	UpdateMemberRole(ctx context.Context, in *ProjectServiceUpdateMemberRoleRequest, opts ...grpc.CallOption) (*ProjectServiceUpdateMemberRoleResponse, error)
+	ListPendingInvitations(ctx context.Context, in *ProjectServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*ProjectServiceListPendingInvitationsResponse, error)
 }
 
 type projectServiceClient struct {
@@ -129,6 +131,15 @@ func (c *projectServiceClient) UpdateMemberRole(ctx context.Context, in *Project
 	return out, nil
 }
 
+func (c *projectServiceClient) ListPendingInvitations(ctx context.Context, in *ProjectServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*ProjectServiceListPendingInvitationsResponse, error) {
+	out := new(ProjectServiceListPendingInvitationsResponse)
+	err := c.cc.Invoke(ctx, ProjectService_ListPendingInvitations_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -142,6 +153,7 @@ type ProjectServiceServer interface {
 	AddMember(context.Context, *ProjectServiceAddMemberRequest) (*ProjectServiceAddMemberResponse, error)
 	RemoveMember(context.Context, *ProjectServiceRemoveMemberRequest) (*ProjectServiceRemoveMemberResponse, error)
 	UpdateMemberRole(context.Context, *ProjectServiceUpdateMemberRoleRequest) (*ProjectServiceUpdateMemberRoleResponse, error)
+	ListPendingInvitations(context.Context, *ProjectServiceListPendingInvitationsRequest) (*ProjectServiceListPendingInvitationsResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -169,6 +181,9 @@ func (UnimplementedProjectServiceServer) RemoveMember(context.Context, *ProjectS
 }
 func (UnimplementedProjectServiceServer) UpdateMemberRole(context.Context, *ProjectServiceUpdateMemberRoleRequest) (*ProjectServiceUpdateMemberRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateMemberRole not implemented")
+}
+func (UnimplementedProjectServiceServer) ListPendingInvitations(context.Context, *ProjectServiceListPendingInvitationsRequest) (*ProjectServiceListPendingInvitationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPendingInvitations not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -309,6 +324,24 @@ func _ProjectService_UpdateMemberRole_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_ListPendingInvitations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectServiceListPendingInvitationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).ListPendingInvitations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_ListPendingInvitations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).ListPendingInvitations(ctx, req.(*ProjectServiceListPendingInvitationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -343,6 +376,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateMemberRole",
 			Handler:    _ProjectService_UpdateMemberRole_Handler,
+		},
+		{
+			MethodName: "ListPendingInvitations",
+			Handler:    _ProjectService_ListPendingInvitations_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

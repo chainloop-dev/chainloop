@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.ProjectServiceListPendingInvitationsResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceListPendingInvitationsResponse contains a list of pending invitations for a project",
+  "properties": {
+    "invitations": {
+      "description": "List of pending invitations for the project",
+      "items": {
+        "$ref": "controlplane.v1.PendingProjectInvitation.schema.json"
+      },
+      "type": "array"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationResponse.schema.json",
+      "description": "Pagination information for the response"
+    }
+  },
+  "title": "Project Service List Pending Invitations Response",
+  "type": "object"
+}

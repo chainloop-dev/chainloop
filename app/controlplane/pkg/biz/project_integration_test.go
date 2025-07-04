@@ -221,8 +221,8 @@ func (s *projectMembersIntegrationTestSuite) TestAddMemberToProject() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(user2.ID, membership.User.ID)
-		s.Equal(authz.RoleProjectViewer, membership.Role)
+		s.Equal(user2.ID, membership.Membership.User.ID)
+		s.Equal(authz.RoleProjectViewer, membership.Membership.Role)
 
 		// Verify the member was added by listing members
 		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
@@ -247,8 +247,8 @@ func (s *projectMembersIntegrationTestSuite) TestAddMemberToProject() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(user3.ID, membership.User.ID)
-		s.Equal(authz.RoleProjectAdmin, membership.Role)
+		s.Equal(user3.ID, membership.Membership.User.ID)
+		s.Equal(authz.RoleProjectAdmin, membership.Membership.Role)
 
 		// Verify the member was added by listing members
 		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
@@ -294,20 +294,44 @@ func (s *projectMembersIntegrationTestSuite) TestAddMemberToProject() {
 
 	s.Run("add member who is not in the organization", func() {
 		// Create user who is not in the organization
-		_, err := s.User.UpsertByEmail(ctx, "not-in-org@example.com", nil)
+		nonExistingEmail := "not-in-org@example.com"
+		_, err := s.User.UpsertByEmail(ctx, nonExistingEmail, nil)
 		require.NoError(s.T(), err)
 		// Note: not adding this user to the organization
 
 		opts := &biz.AddMemberToProjectOpts{
 			ProjectReference: projectRef,
-			UserEmail:        "not-in-org@example.com",
+			UserEmail:        nonExistingEmail,
 			RequesterID:      uuid.MustParse(s.user.ID),
 			Role:             authz.RoleProjectViewer,
 		}
 
-		_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
-		s.Error(err)
-		s.ErrorContains(err, "user with the provided email is not a member of the organization")
+		result, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(result)
+		s.True(result.InvitationSent, "An invitation should be sent for users not in the organization")
+		s.Nil(result.Membership, "No membership should be created directly")
+
+		// Verify an invitation was created
+		invitations, err := s.OrgInvitation.ListByOrg(ctx, s.org.ID)
+		s.NoError(err)
+		s.GreaterOrEqual(len(invitations), 1)
+
+		// Find the invitation for this email
+		var foundInvitation *biz.OrgInvitation
+		for _, inv := range invitations {
+			if inv.ReceiverEmail == nonExistingEmail {
+				foundInvitation = inv
+				break
+			}
+		}
+
+		s.NotNil(foundInvitation, "Should find an invitation for the email")
+
+		// Verify the invitation has project context
+		s.NotNil(foundInvitation.Context, "Invitation should have context")
+		s.Equal(projectID, foundInvitation.Context.ProjectIDToJoin)
+		s.Equal(authz.RoleProjectViewer, foundInvitation.Context.ProjectRole)
 	})
 
 	s.Run("add member who is already in the project", func() {
@@ -613,8 +637,8 @@ func (s *projectAdminPermissionsTestSuite) TestAdminPermissions() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), addOpts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(newUser.ID, membership.User.ID)
-		s.Equal(authz.RoleProjectViewer, membership.Role)
+		s.Equal(newUser.ID, membership.Membership.User.ID)
+		s.Equal(authz.RoleProjectViewer, membership.Membership.Role)
 
 		// Verify the member was added
 		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
@@ -844,8 +868,8 @@ func (s *projectPermissionsTestSuite) TestProjectAdminPermissions() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), addOpts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(newUser.ID, membership.User.ID)
-		s.Equal(authz.RoleProjectViewer, membership.Role)
+		s.Equal(newUser.ID, membership.Membership.User.ID)
+		s.Equal(authz.RoleProjectViewer, membership.Membership.Role)
 	})
 
 	s.Run("project admin can remove member from project", func() {
@@ -882,8 +906,8 @@ func (s *projectPermissionsTestSuite) TestProjectAdminPermissions() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), addOpts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(s.regularUser.ID, membership.User.ID)
-		s.True(membership.Role == authz.RoleProjectAdmin)
+		s.Equal(s.regularUser.ID, membership.Membership.User.ID)
+		s.True(membership.Membership.Role == authz.RoleProjectAdmin)
 	})
 }
 
@@ -979,8 +1003,8 @@ func (s *projectPermissionsTestSuite) TestOrgAdminPermissions() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), addOpts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(newUser.ID, membership.User.ID)
-		s.Equal(authz.RoleProjectViewer, membership.Role)
+		s.Equal(newUser.ID, membership.Membership.User.ID)
+		s.Equal(authz.RoleProjectViewer, membership.Membership.Role)
 	})
 
 	s.Run("organization admin can remove member from any project", func() {
@@ -1081,8 +1105,8 @@ func (s *projectGroupMembersIntegrationTestSuite) TestAddGroupToProject() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(s.group.ID, membership.Group.ID)
-		s.Equal(authz.RoleProjectViewer, membership.Role)
+		s.Equal(s.group.ID, membership.Membership.Group.ID)
+		s.Equal(authz.RoleProjectViewer, membership.Membership.Role)
 
 		// Verify the group was added by listing project members
 		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
@@ -1106,8 +1130,8 @@ func (s *projectGroupMembersIntegrationTestSuite) TestAddGroupToProject() {
 		membership, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(membership)
-		s.Equal(group2.ID, membership.Group.ID)
-		s.Equal(authz.RoleProjectAdmin, membership.Role)
+		s.Equal(group2.ID, membership.Membership.Group.ID)
+		s.Equal(authz.RoleProjectAdmin, membership.Membership.Role)
 
 		// Verify both groups are members of the project
 		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
@@ -1680,5 +1704,78 @@ func (s *projectGroupMembersIntegrationTestSuite) TestUpdateGroupRoleInProject()
 		err = s.Project.UpdateMemberRole(ctx, uuid.MustParse(s.org.ID), updateOpts)
 		s.Error(err)
 		s.Contains(err.Error(), "requester is not a member of the organization")
+	})
+}
+
+// Test adding non-existing users to projects through invitations
+func (s *projectMembersIntegrationTestSuite) TestAddNonExistingMemberToProject() {
+	ctx := context.Background()
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{
+		ID: &projectID,
+	}
+
+	s.Run("add non-existing member to project creates invitation", func() {
+		nonExistingEmail := "non-existing-user@example.com"
+
+		// Ensure user doesn't already exist
+		_, err := s.Repos.Membership.FindByOrgIDAndUserEmail(ctx, uuid.MustParse(s.org.ID), nonExistingEmail)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			UserEmail:        nonExistingEmail,
+			RequesterID:      uuid.MustParse(s.user.ID),
+			Role:             authz.RoleProjectViewer,
+		}
+
+		result, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		s.NoError(err)
+		s.NotNil(result)
+		s.True(result.InvitationSent, "An invitation should be sent for non-existing users")
+		s.Nil(result.Membership, "No membership should be created directly")
+
+		// Verify an invitation was created
+		invitations, err := s.OrgInvitation.ListByOrg(ctx, s.org.ID)
+		s.NoError(err)
+		s.GreaterOrEqual(len(invitations), 1)
+
+		// Find the invitation for this email
+		var foundInvitation *biz.OrgInvitation
+		for _, inv := range invitations {
+			if inv.ReceiverEmail == nonExistingEmail {
+				foundInvitation = inv
+				break
+			}
+		}
+
+		s.NotNil(foundInvitation, "Should find an invitation for the email")
+
+		// Verify the invitation has project context
+		s.NotNil(foundInvitation.Context, "Invitation should have context")
+		s.Equal(projectID, foundInvitation.Context.ProjectIDToJoin)
+		s.Equal(authz.RoleProjectViewer, foundInvitation.Context.ProjectRole)
+		s.Equal(authz.RoleOrgMember, foundInvitation.Role)
+	})
+
+	s.Run("add already invited user returns error", func() {
+		alreadyInvitedEmail := "already-invited@example.com"
+
+		// First create an invitation
+		_, err := s.OrgInvitation.Create(ctx, s.org.ID, s.user.ID, alreadyInvitedEmail)
+		s.NoError(err)
+
+		// Now try to add the same email to a project
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			UserEmail:        alreadyInvitedEmail,
+			RequesterID:      uuid.MustParse(s.user.ID),
+			Role:             authz.RoleProjectAdmin,
+		}
+
+		_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		s.Error(err)
+		s.True(biz.IsErrAlreadyExists(err), "Should get already exists error for invited users")
 	})
 }
