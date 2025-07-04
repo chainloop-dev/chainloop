@@ -92,6 +92,26 @@ func (atu *APITokenUpdate) ClearRevokedAt() *APITokenUpdate {
 	return atu
 }
 
+// SetLastUsedAt sets the "last_used_at" field.
+func (atu *APITokenUpdate) SetLastUsedAt(t time.Time) *APITokenUpdate {
+	atu.mutation.SetLastUsedAt(t)
+	return atu
+}
+
+// SetNillableLastUsedAt sets the "last_used_at" field if the given value is not nil.
+func (atu *APITokenUpdate) SetNillableLastUsedAt(t *time.Time) *APITokenUpdate {
+	if t != nil {
+		atu.SetLastUsedAt(*t)
+	}
+	return atu
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (atu *APITokenUpdate) ClearLastUsedAt() *APITokenUpdate {
+	atu.mutation.ClearLastUsedAt()
+	return atu
+}
+
 // SetOrganizationID sets the "organization_id" field.
 func (atu *APITokenUpdate) SetOrganizationID(u uuid.UUID) *APITokenUpdate {
 	atu.mutation.SetOrganizationID(u)
@@ -223,6 +243,12 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if atu.mutation.RevokedAtCleared() {
 		_spec.ClearField(apitoken.FieldRevokedAt, field.TypeTime)
+	}
+	if value, ok := atu.mutation.LastUsedAt(); ok {
+		_spec.SetField(apitoken.FieldLastUsedAt, field.TypeTime, value)
+	}
+	if atu.mutation.LastUsedAtCleared() {
+		_spec.ClearField(apitoken.FieldLastUsedAt, field.TypeTime)
 	}
 	if atu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -361,6 +387,26 @@ func (atuo *APITokenUpdateOne) SetNillableRevokedAt(t *time.Time) *APITokenUpdat
 // ClearRevokedAt clears the value of the "revoked_at" field.
 func (atuo *APITokenUpdateOne) ClearRevokedAt() *APITokenUpdateOne {
 	atuo.mutation.ClearRevokedAt()
+	return atuo
+}
+
+// SetLastUsedAt sets the "last_used_at" field.
+func (atuo *APITokenUpdateOne) SetLastUsedAt(t time.Time) *APITokenUpdateOne {
+	atuo.mutation.SetLastUsedAt(t)
+	return atuo
+}
+
+// SetNillableLastUsedAt sets the "last_used_at" field if the given value is not nil.
+func (atuo *APITokenUpdateOne) SetNillableLastUsedAt(t *time.Time) *APITokenUpdateOne {
+	if t != nil {
+		atuo.SetLastUsedAt(*t)
+	}
+	return atuo
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (atuo *APITokenUpdateOne) ClearLastUsedAt() *APITokenUpdateOne {
+	atuo.mutation.ClearLastUsedAt()
 	return atuo
 }
 
@@ -525,6 +571,12 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 	}
 	if atuo.mutation.RevokedAtCleared() {
 		_spec.ClearField(apitoken.FieldRevokedAt, field.TypeTime)
+	}
+	if value, ok := atuo.mutation.LastUsedAt(); ok {
+		_spec.SetField(apitoken.FieldLastUsedAt, field.TypeTime, value)
+	}
+	if atuo.mutation.LastUsedAtCleared() {
+		_spec.ClearField(apitoken.FieldLastUsedAt, field.TypeTime)
 	}
 	if atuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

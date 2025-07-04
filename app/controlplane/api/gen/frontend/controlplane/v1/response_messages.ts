@@ -655,6 +655,7 @@ export interface APITokenItem {
   createdAt?: Date;
   revokedAt?: Date;
   expiresAt?: Date;
+  lastUsedAt?: Date;
 }
 
 function createBaseWorkflowItem(): WorkflowItem {
@@ -3885,6 +3886,7 @@ function createBaseAPITokenItem(): APITokenItem {
     createdAt: undefined,
     revokedAt: undefined,
     expiresAt: undefined,
+    lastUsedAt: undefined,
   };
 }
 
@@ -3919,6 +3921,9 @@ export const APITokenItem = {
     }
     if (message.expiresAt !== undefined) {
       Timestamp.encode(toTimestamp(message.expiresAt), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.lastUsedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastUsedAt), writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -4000,6 +4005,13 @@ export const APITokenItem = {
 
           message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.lastUsedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4021,6 +4033,7 @@ export const APITokenItem = {
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       revokedAt: isSet(object.revokedAt) ? fromJsonTimestamp(object.revokedAt) : undefined,
       expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
+      lastUsedAt: isSet(object.lastUsedAt) ? fromJsonTimestamp(object.lastUsedAt) : undefined,
     };
   },
 
@@ -4036,6 +4049,7 @@ export const APITokenItem = {
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.revokedAt !== undefined && (obj.revokedAt = message.revokedAt.toISOString());
     message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
+    message.lastUsedAt !== undefined && (obj.lastUsedAt = message.lastUsedAt.toISOString());
     return obj;
   },
 
@@ -4055,6 +4069,7 @@ export const APITokenItem = {
     message.createdAt = object.createdAt ?? undefined;
     message.revokedAt = object.revokedAt ?? undefined;
     message.expiresAt = object.expiresAt ?? undefined;
+    message.lastUsedAt = object.lastUsedAt ?? undefined;
     return message;
   },
 };

@@ -88,6 +88,20 @@ func (atc *APITokenCreate) SetNillableRevokedAt(t *time.Time) *APITokenCreate {
 	return atc
 }
 
+// SetLastUsedAt sets the "last_used_at" field.
+func (atc *APITokenCreate) SetLastUsedAt(t time.Time) *APITokenCreate {
+	atc.mutation.SetLastUsedAt(t)
+	return atc
+}
+
+// SetNillableLastUsedAt sets the "last_used_at" field if the given value is not nil.
+func (atc *APITokenCreate) SetNillableLastUsedAt(t *time.Time) *APITokenCreate {
+	if t != nil {
+		atc.SetLastUsedAt(*t)
+	}
+	return atc
+}
+
 // SetOrganizationID sets the "organization_id" field.
 func (atc *APITokenCreate) SetOrganizationID(u uuid.UUID) *APITokenCreate {
 	atc.mutation.SetOrganizationID(u)
@@ -247,6 +261,10 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 		_spec.SetField(apitoken.FieldRevokedAt, field.TypeTime, value)
 		_node.RevokedAt = value
 	}
+	if value, ok := atc.mutation.LastUsedAt(); ok {
+		_spec.SetField(apitoken.FieldLastUsedAt, field.TypeTime, value)
+		_node.LastUsedAt = value
+	}
 	if nodes := atc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -384,6 +402,24 @@ func (u *APITokenUpsert) UpdateRevokedAt() *APITokenUpsert {
 // ClearRevokedAt clears the value of the "revoked_at" field.
 func (u *APITokenUpsert) ClearRevokedAt() *APITokenUpsert {
 	u.SetNull(apitoken.FieldRevokedAt)
+	return u
+}
+
+// SetLastUsedAt sets the "last_used_at" field.
+func (u *APITokenUpsert) SetLastUsedAt(v time.Time) *APITokenUpsert {
+	u.Set(apitoken.FieldLastUsedAt, v)
+	return u
+}
+
+// UpdateLastUsedAt sets the "last_used_at" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateLastUsedAt() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldLastUsedAt)
+	return u
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (u *APITokenUpsert) ClearLastUsedAt() *APITokenUpsert {
+	u.SetNull(apitoken.FieldLastUsedAt)
 	return u
 }
 
@@ -531,6 +567,27 @@ func (u *APITokenUpsertOne) UpdateRevokedAt() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearRevokedAt() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearRevokedAt()
+	})
+}
+
+// SetLastUsedAt sets the "last_used_at" field.
+func (u *APITokenUpsertOne) SetLastUsedAt(v time.Time) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetLastUsedAt(v)
+	})
+}
+
+// UpdateLastUsedAt sets the "last_used_at" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateLastUsedAt() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateLastUsedAt()
+	})
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (u *APITokenUpsertOne) ClearLastUsedAt() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearLastUsedAt()
 	})
 }
 
@@ -850,6 +907,27 @@ func (u *APITokenUpsertBulk) UpdateRevokedAt() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearRevokedAt() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearRevokedAt()
+	})
+}
+
+// SetLastUsedAt sets the "last_used_at" field.
+func (u *APITokenUpsertBulk) SetLastUsedAt(v time.Time) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetLastUsedAt(v)
+	})
+}
+
+// UpdateLastUsedAt sets the "last_used_at" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateLastUsedAt() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateLastUsedAt()
+	})
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (u *APITokenUpsertBulk) ClearLastUsedAt() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearLastUsedAt()
 	})
 }
 

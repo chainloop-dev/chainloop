@@ -30,6 +30,8 @@ type APIToken struct {
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// RevokedAt holds the value of the "revoked_at" field.
 	RevokedAt time.Time `json:"revoked_at,omitempty"`
+	// LastUsedAt holds the value of the "last_used_at" field.
+	LastUsedAt time.Time `json:"last_used_at,omitempty"`
 	// OrganizationID holds the value of the "organization_id" field.
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
@@ -80,7 +82,7 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apitoken.FieldName, apitoken.FieldDescription:
 			values[i] = new(sql.NullString)
-		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt:
+		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt, apitoken.FieldLastUsedAt:
 			values[i] = new(sql.NullTime)
 		case apitoken.FieldID, apitoken.FieldOrganizationID, apitoken.FieldProjectID:
 			values[i] = new(uuid.UUID)
@@ -134,6 +136,12 @@ func (at *APIToken) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field revoked_at", values[i])
 			} else if value.Valid {
 				at.RevokedAt = value.Time
+			}
+		case apitoken.FieldLastUsedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_used_at", values[i])
+			} else if value.Valid {
+				at.LastUsedAt = value.Time
 			}
 		case apitoken.FieldOrganizationID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -207,6 +215,9 @@ func (at *APIToken) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("revoked_at=")
 	builder.WriteString(at.RevokedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("last_used_at=")
+	builder.WriteString(at.LastUsedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
 	builder.WriteString(fmt.Sprintf("%v", at.OrganizationID))

@@ -9,6 +9,9 @@
     "^(expires_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
+    "^(last_used_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
     "^(organization_id)$": {
       "type": "string"
     },
@@ -37,6 +40,9 @@
     },
     "id": {
       "type": "string"
+    },
+    "lastUsedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
     "name": {
       "type": "string"

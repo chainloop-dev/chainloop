@@ -210,3 +210,17 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 
 	return ctx, nil
 }
+
+func WithAPITokenUsageUpdater(apiTokenUC *biz.APITokenUseCase, logger *log.Helper) middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			if token := entities.CurrentAPIToken(ctx); token != nil {
+				if err := apiTokenUC.UpdateLastUsedAt(ctx, token.ID); err != nil {
+					logger.Warnw("msg", "failed to record API token usage", "error", err)
+				}
+			}
+
+			return handler(ctx, req)
+		}
+	}
+}

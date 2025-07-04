@@ -119,6 +119,10 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		res.RevokedAt = timestamppb.New(*in.RevokedAt)
 	}
 
+	if in.LastUsedAt != nil {
+		res.LastUsedAt = timestamppb.New(*in.LastUsedAt)
+	}
+
 	if in.ProjectID != nil {
 		res.ProjectId = in.ProjectID.String()
 	}

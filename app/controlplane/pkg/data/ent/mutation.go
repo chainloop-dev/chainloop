@@ -81,6 +81,7 @@ type APITokenMutation struct {
 	created_at          *time.Time
 	expires_at          *time.Time
 	revoked_at          *time.Time
+	last_used_at        *time.Time
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -414,6 +415,55 @@ func (m *APITokenMutation) ResetRevokedAt() {
 	delete(m.clearedFields, apitoken.FieldRevokedAt)
 }
 
+// SetLastUsedAt sets the "last_used_at" field.
+func (m *APITokenMutation) SetLastUsedAt(t time.Time) {
+	m.last_used_at = &t
+}
+
+// LastUsedAt returns the value of the "last_used_at" field in the mutation.
+func (m *APITokenMutation) LastUsedAt() (r time.Time, exists bool) {
+	v := m.last_used_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastUsedAt returns the old "last_used_at" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldLastUsedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastUsedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastUsedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastUsedAt: %w", err)
+	}
+	return oldValue.LastUsedAt, nil
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (m *APITokenMutation) ClearLastUsedAt() {
+	m.last_used_at = nil
+	m.clearedFields[apitoken.FieldLastUsedAt] = struct{}{}
+}
+
+// LastUsedAtCleared returns if the "last_used_at" field was cleared in this mutation.
+func (m *APITokenMutation) LastUsedAtCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldLastUsedAt]
+	return ok
+}
+
+// ResetLastUsedAt resets all changes to the "last_used_at" field.
+func (m *APITokenMutation) ResetLastUsedAt() {
+	m.last_used_at = nil
+	delete(m.clearedFields, apitoken.FieldLastUsedAt)
+}
+
 // SetOrganizationID sets the "organization_id" field.
 func (m *APITokenMutation) SetOrganizationID(u uuid.UUID) {
 	m.organization = &u
@@ -587,7 +637,7 @@ func (m *APITokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APITokenMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, apitoken.FieldName)
 	}
@@ -602,6 +652,9 @@ func (m *APITokenMutation) Fields() []string {
 	}
 	if m.revoked_at != nil {
 		fields = append(fields, apitoken.FieldRevokedAt)
+	}
+	if m.last_used_at != nil {
+		fields = append(fields, apitoken.FieldLastUsedAt)
 	}
 	if m.organization != nil {
 		fields = append(fields, apitoken.FieldOrganizationID)
@@ -627,6 +680,8 @@ func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 		return m.ExpiresAt()
 	case apitoken.FieldRevokedAt:
 		return m.RevokedAt()
+	case apitoken.FieldLastUsedAt:
+		return m.LastUsedAt()
 	case apitoken.FieldOrganizationID:
 		return m.OrganizationID()
 	case apitoken.FieldProjectID:
@@ -650,6 +705,8 @@ func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldExpiresAt(ctx)
 	case apitoken.FieldRevokedAt:
 		return m.OldRevokedAt(ctx)
+	case apitoken.FieldLastUsedAt:
+		return m.OldLastUsedAt(ctx)
 	case apitoken.FieldOrganizationID:
 		return m.OldOrganizationID(ctx)
 	case apitoken.FieldProjectID:
@@ -697,6 +754,13 @@ func (m *APITokenMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRevokedAt(v)
+		return nil
+	case apitoken.FieldLastUsedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastUsedAt(v)
 		return nil
 	case apitoken.FieldOrganizationID:
 		v, ok := value.(uuid.UUID)
@@ -751,6 +815,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldRevokedAt) {
 		fields = append(fields, apitoken.FieldRevokedAt)
 	}
+	if m.FieldCleared(apitoken.FieldLastUsedAt) {
+		fields = append(fields, apitoken.FieldLastUsedAt)
+	}
 	if m.FieldCleared(apitoken.FieldProjectID) {
 		fields = append(fields, apitoken.FieldProjectID)
 	}
@@ -777,6 +844,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 	case apitoken.FieldRevokedAt:
 		m.ClearRevokedAt()
 		return nil
+	case apitoken.FieldLastUsedAt:
+		m.ClearLastUsedAt()
+		return nil
 	case apitoken.FieldProjectID:
 		m.ClearProjectID()
 		return nil
@@ -802,6 +872,9 @@ func (m *APITokenMutation) ResetField(name string) error {
 		return nil
 	case apitoken.FieldRevokedAt:
 		m.ResetRevokedAt()
+		return nil
+	case apitoken.FieldLastUsedAt:
+		m.ResetLastUsedAt()
 		return nil
 	case apitoken.FieldOrganizationID:
 		m.ResetOrganizationID()
