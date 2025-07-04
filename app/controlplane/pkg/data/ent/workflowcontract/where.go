@@ -425,6 +425,29 @@ func HasVersionsWith(preds ...predicate.WorkflowContractVersion) predicate.Workf
 	})
 }
 
+// HasOrganization applies the HasEdge predicate on the "organization" edge.
+func HasOrganization() predicate.WorkflowContract {
+	return predicate.WorkflowContract(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
+func HasOrganizationWith(preds ...predicate.Organization) predicate.WorkflowContract {
+	return predicate.WorkflowContract(func(s *sql.Selector) {
+		step := newOrganizationStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasWorkflows applies the HasEdge predicate on the "workflows" edge.
 func HasWorkflows() predicate.WorkflowContract {
 	return predicate.WorkflowContract(func(s *sql.Selector) {

@@ -15259,6 +15259,8 @@ type WorkflowContractMutation struct {
 	versions             map[uuid.UUID]struct{}
 	removedversions      map[uuid.UUID]struct{}
 	clearedversions      bool
+	organization         *uuid.UUID
+	clearedorganization  bool
 	workflows            map[uuid.UUID]struct{}
 	removedworkflows     map[uuid.UUID]struct{}
 	clearedworkflows     bool
@@ -15693,6 +15695,45 @@ func (m *WorkflowContractMutation) ResetVersions() {
 	m.removedversions = nil
 }
 
+// SetOrganizationID sets the "organization" edge to the Organization entity by id.
+func (m *WorkflowContractMutation) SetOrganizationID(id uuid.UUID) {
+	m.organization = &id
+}
+
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (m *WorkflowContractMutation) ClearOrganization() {
+	m.clearedorganization = true
+}
+
+// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
+func (m *WorkflowContractMutation) OrganizationCleared() bool {
+	return m.clearedorganization
+}
+
+// OrganizationID returns the "organization" edge ID in the mutation.
+func (m *WorkflowContractMutation) OrganizationID() (id uuid.UUID, exists bool) {
+	if m.organization != nil {
+		return *m.organization, true
+	}
+	return
+}
+
+// OrganizationIDs returns the "organization" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OrganizationID instead. It exists only for internal usage by the builders.
+func (m *WorkflowContractMutation) OrganizationIDs() (ids []uuid.UUID) {
+	if id := m.organization; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOrganization resets all changes to the "organization" edge.
+func (m *WorkflowContractMutation) ResetOrganization() {
+	m.organization = nil
+	m.clearedorganization = false
+}
+
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by ids.
 func (m *WorkflowContractMutation) AddWorkflowIDs(ids ...uuid.UUID) {
 	if m.workflows == nil {
@@ -15992,9 +16033,12 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowContractMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.versions != nil {
 		edges = append(edges, workflowcontract.EdgeVersions)
+	}
+	if m.organization != nil {
+		edges = append(edges, workflowcontract.EdgeOrganization)
 	}
 	if m.workflows != nil {
 		edges = append(edges, workflowcontract.EdgeWorkflows)
@@ -16012,6 +16056,10 @@ func (m *WorkflowContractMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case workflowcontract.EdgeOrganization:
+		if id := m.organization; id != nil {
+			return []ent.Value{*id}
+		}
 	case workflowcontract.EdgeWorkflows:
 		ids := make([]ent.Value, 0, len(m.workflows))
 		for id := range m.workflows {
@@ -16024,7 +16072,7 @@ func (m *WorkflowContractMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowContractMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedversions != nil {
 		edges = append(edges, workflowcontract.EdgeVersions)
 	}
@@ -16056,9 +16104,12 @@ func (m *WorkflowContractMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowContractMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedversions {
 		edges = append(edges, workflowcontract.EdgeVersions)
+	}
+	if m.clearedorganization {
+		edges = append(edges, workflowcontract.EdgeOrganization)
 	}
 	if m.clearedworkflows {
 		edges = append(edges, workflowcontract.EdgeWorkflows)
@@ -16072,6 +16123,8 @@ func (m *WorkflowContractMutation) EdgeCleared(name string) bool {
 	switch name {
 	case workflowcontract.EdgeVersions:
 		return m.clearedversions
+	case workflowcontract.EdgeOrganization:
+		return m.clearedorganization
 	case workflowcontract.EdgeWorkflows:
 		return m.clearedworkflows
 	}
@@ -16082,6 +16135,9 @@ func (m *WorkflowContractMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *WorkflowContractMutation) ClearEdge(name string) error {
 	switch name {
+	case workflowcontract.EdgeOrganization:
+		m.ClearOrganization()
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract unique edge %s", name)
 }
@@ -16092,6 +16148,9 @@ func (m *WorkflowContractMutation) ResetEdge(name string) error {
 	switch name {
 	case workflowcontract.EdgeVersions:
 		m.ResetVersions()
+		return nil
+	case workflowcontract.EdgeOrganization:
+		m.ResetOrganization()
 		return nil
 	case workflowcontract.EdgeWorkflows:
 		m.ResetWorkflows()

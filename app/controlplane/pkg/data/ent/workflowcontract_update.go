@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
@@ -128,6 +129,25 @@ func (wcu *WorkflowContractUpdate) AddVersions(w ...*WorkflowContractVersion) *W
 	return wcu.AddVersionIDs(ids...)
 }
 
+// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
+func (wcu *WorkflowContractUpdate) SetOrganizationID(id uuid.UUID) *WorkflowContractUpdate {
+	wcu.mutation.SetOrganizationID(id)
+	return wcu
+}
+
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractUpdate {
+	if id != nil {
+		wcu = wcu.SetOrganizationID(*id)
+	}
+	return wcu
+}
+
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (wcu *WorkflowContractUpdate) SetOrganization(o *Organization) *WorkflowContractUpdate {
+	return wcu.SetOrganizationID(o.ID)
+}
+
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (wcu *WorkflowContractUpdate) AddWorkflowIDs(ids ...uuid.UUID) *WorkflowContractUpdate {
 	wcu.mutation.AddWorkflowIDs(ids...)
@@ -167,6 +187,12 @@ func (wcu *WorkflowContractUpdate) RemoveVersions(w ...*WorkflowContractVersion)
 		ids[i] = w[i].ID
 	}
 	return wcu.RemoveVersionIDs(ids...)
+}
+
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (wcu *WorkflowContractUpdate) ClearOrganization() *WorkflowContractUpdate {
+	wcu.mutation.ClearOrganization()
+	return wcu
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
@@ -307,6 +333,35 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wcu.mutation.OrganizationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowcontract.OrganizationTable,
+			Columns: []string{workflowcontract.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wcu.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowcontract.OrganizationTable,
+			Columns: []string{workflowcontract.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -476,6 +531,25 @@ func (wcuo *WorkflowContractUpdateOne) AddVersions(w ...*WorkflowContractVersion
 	return wcuo.AddVersionIDs(ids...)
 }
 
+// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
+func (wcuo *WorkflowContractUpdateOne) SetOrganizationID(id uuid.UUID) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetOrganizationID(id)
+	return wcuo
+}
+
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractUpdateOne {
+	if id != nil {
+		wcuo = wcuo.SetOrganizationID(*id)
+	}
+	return wcuo
+}
+
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (wcuo *WorkflowContractUpdateOne) SetOrganization(o *Organization) *WorkflowContractUpdateOne {
+	return wcuo.SetOrganizationID(o.ID)
+}
+
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
 func (wcuo *WorkflowContractUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *WorkflowContractUpdateOne {
 	wcuo.mutation.AddWorkflowIDs(ids...)
@@ -515,6 +589,12 @@ func (wcuo *WorkflowContractUpdateOne) RemoveVersions(w ...*WorkflowContractVers
 		ids[i] = w[i].ID
 	}
 	return wcuo.RemoveVersionIDs(ids...)
+}
+
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (wcuo *WorkflowContractUpdateOne) ClearOrganization() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearOrganization()
+	return wcuo
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
@@ -685,6 +765,35 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wcuo.mutation.OrganizationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowcontract.OrganizationTable,
+			Columns: []string{workflowcontract.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wcuo.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowcontract.OrganizationTable,
+			Columns: []string{workflowcontract.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

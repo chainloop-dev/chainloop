@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -130,6 +131,25 @@ func (wcc *WorkflowContractCreate) AddVersions(w ...*WorkflowContractVersion) *W
 		ids[i] = w[i].ID
 	}
 	return wcc.AddVersionIDs(ids...)
+}
+
+// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
+func (wcc *WorkflowContractCreate) SetOrganizationID(id uuid.UUID) *WorkflowContractCreate {
+	wcc.mutation.SetOrganizationID(id)
+	return wcc
+}
+
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (wcc *WorkflowContractCreate) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractCreate {
+	if id != nil {
+		wcc = wcc.SetOrganizationID(*id)
+	}
+	return wcc
+}
+
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (wcc *WorkflowContractCreate) SetOrganization(o *Organization) *WorkflowContractCreate {
+	return wcc.SetOrganizationID(o.ID)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
@@ -279,6 +299,23 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wcc.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowcontract.OrganizationTable,
+			Columns: []string{workflowcontract.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.organization_workflow_contracts = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := wcc.mutation.WorkflowsIDs(); len(nodes) > 0 {

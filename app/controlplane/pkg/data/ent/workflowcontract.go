@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/google/uuid"
 )
@@ -42,11 +43,13 @@ type WorkflowContract struct {
 type WorkflowContractEdges struct {
 	// Versions holds the value of the versions edge.
 	Versions []*WorkflowContractVersion `json:"versions,omitempty"`
+	// Organization holds the value of the organization edge.
+	Organization *Organization `json:"organization,omitempty"`
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // VersionsOrErr returns the Versions value or an error if the edge
@@ -58,10 +61,21 @@ func (e WorkflowContractEdges) VersionsOrErr() ([]*WorkflowContractVersion, erro
 	return nil, &NotLoadedError{edge: "versions"}
 }
 
+// OrganizationOrErr returns the Organization value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowContractEdges) OrganizationOrErr() (*Organization, error) {
+	if e.Organization != nil {
+		return e.Organization, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: organization.Label}
+	}
+	return nil, &NotLoadedError{edge: "organization"}
+}
+
 // WorkflowsOrErr returns the Workflows value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkflowContractEdges) WorkflowsOrErr() ([]*Workflow, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Workflows, nil
 	}
 	return nil, &NotLoadedError{edge: "workflows"}
@@ -160,6 +174,11 @@ func (wc *WorkflowContract) Value(name string) (ent.Value, error) {
 // QueryVersions queries the "versions" edge of the WorkflowContract entity.
 func (wc *WorkflowContract) QueryVersions() *WorkflowContractVersionQuery {
 	return NewWorkflowContractClient(wc.config).QueryVersions(wc)
+}
+
+// QueryOrganization queries the "organization" edge of the WorkflowContract entity.
+func (wc *WorkflowContract) QueryOrganization() *OrganizationQuery {
+	return NewWorkflowContractClient(wc.config).QueryOrganization(wc)
 }
 
 // QueryWorkflows queries the "workflows" edge of the WorkflowContract entity.

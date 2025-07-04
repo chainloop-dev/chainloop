@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
@@ -23,14 +24,15 @@ import (
 // WorkflowContractQuery is the builder for querying WorkflowContract entities.
 type WorkflowContractQuery struct {
 	config
-	ctx           *QueryContext
-	order         []workflowcontract.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.WorkflowContract
-	withVersions  *WorkflowContractVersionQuery
-	withWorkflows *WorkflowQuery
-	withFKs       bool
-	modifiers     []func(*sql.Selector)
+	ctx              *QueryContext
+	order            []workflowcontract.OrderOption
+	inters           []Interceptor
+	predicates       []predicate.WorkflowContract
+	withVersions     *WorkflowContractVersionQuery
+	withOrganization *OrganizationQuery
+	withWorkflows    *WorkflowQuery
+	withFKs          bool
+	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -82,6 +84,28 @@ func (wcq *WorkflowContractQuery) QueryVersions() *WorkflowContractVersionQuery 
 			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, selector),
 			sqlgraph.To(workflowcontractversion.Table, workflowcontractversion.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, workflowcontract.VersionsTable, workflowcontract.VersionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOrganization chains the current query on the "organization" edge.
+func (wcq *WorkflowContractQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: wcq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, workflowcontract.OrganizationTable, workflowcontract.OrganizationColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wcq.driver.Dialect(), step)
 		return fromU, nil
@@ -298,13 +322,14 @@ func (wcq *WorkflowContractQuery) Clone() *WorkflowContractQuery {
 		return nil
 	}
 	return &WorkflowContractQuery{
-		config:        wcq.config,
-		ctx:           wcq.ctx.Clone(),
-		order:         append([]workflowcontract.OrderOption{}, wcq.order...),
-		inters:        append([]Interceptor{}, wcq.inters...),
-		predicates:    append([]predicate.WorkflowContract{}, wcq.predicates...),
-		withVersions:  wcq.withVersions.Clone(),
-		withWorkflows: wcq.withWorkflows.Clone(),
+		config:           wcq.config,
+		ctx:              wcq.ctx.Clone(),
+		order:            append([]workflowcontract.OrderOption{}, wcq.order...),
+		inters:           append([]Interceptor{}, wcq.inters...),
+		predicates:       append([]predicate.WorkflowContract{}, wcq.predicates...),
+		withVersions:     wcq.withVersions.Clone(),
+		withOrganization: wcq.withOrganization.Clone(),
+		withWorkflows:    wcq.withWorkflows.Clone(),
 		// clone intermediate query.
 		sql:       wcq.sql.Clone(),
 		path:      wcq.path,
@@ -320,6 +345,17 @@ func (wcq *WorkflowContractQuery) WithVersions(opts ...func(*WorkflowContractVer
 		opt(query)
 	}
 	wcq.withVersions = query
+	return wcq
+}
+
+// WithOrganization tells the query-builder to eager-load the nodes that are connected to
+// the "organization" edge. The optional arguments are used to configure the query builder of the edge.
+func (wcq *WorkflowContractQuery) WithOrganization(opts ...func(*OrganizationQuery)) *WorkflowContractQuery {
+	query := (&OrganizationClient{config: wcq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	wcq.withOrganization = query
 	return wcq
 }
 
@@ -413,11 +449,15 @@ func (wcq *WorkflowContractQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		nodes       = []*WorkflowContract{}
 		withFKs     = wcq.withFKs
 		_spec       = wcq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			wcq.withVersions != nil,
+			wcq.withOrganization != nil,
 			wcq.withWorkflows != nil,
 		}
 	)
+	if wcq.withOrganization != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, workflowcontract.ForeignKeys...)
 	}
@@ -446,6 +486,12 @@ func (wcq *WorkflowContractQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		if err := wcq.loadVersions(ctx, query, nodes,
 			func(n *WorkflowContract) { n.Edges.Versions = []*WorkflowContractVersion{} },
 			func(n *WorkflowContract, e *WorkflowContractVersion) { n.Edges.Versions = append(n.Edges.Versions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wcq.withOrganization; query != nil {
+		if err := wcq.loadOrganization(ctx, query, nodes, nil,
+			func(n *WorkflowContract, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -487,6 +533,38 @@ func (wcq *WorkflowContractQuery) loadVersions(ctx context.Context, query *Workf
 			return fmt.Errorf(`unexpected referenced foreign-key "workflow_contract_versions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (wcq *WorkflowContractQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*WorkflowContract, init func(*WorkflowContract), assign func(*WorkflowContract, *Organization)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*WorkflowContract)
+	for i := range nodes {
+		if nodes[i].organization_workflow_contracts == nil {
+			continue
+		}
+		fk := *nodes[i].organization_workflow_contracts
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(organization.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "organization_workflow_contracts" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }

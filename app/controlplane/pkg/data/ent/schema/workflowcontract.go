@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ func (WorkflowContract) Fields() []ent.Field {
 			}),
 		field.Time("deleted_at").Optional(),
 		field.String("description").Optional(),
-		// If this value is set, the contract is scoped to a project or organization
+		// If this value is set, the contract is scoped to a resource
 		field.Enum("scoped_resource_type").GoType(biz.ContractScope("")).Optional(),
 		field.UUID("scoped_resource_id", uuid.UUID{}).Optional(),
 	}
@@ -55,6 +55,11 @@ func (WorkflowContract) Fields() []ent.Field {
 func (WorkflowContract) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("versions", WorkflowContractVersion.Type),
+		// We keep the organization edge to be able to easily list all the contracts
+		// regardless of the scope
+		edge.From("organization", Organization.Type).
+			Ref("workflow_contracts").
+			Unique(),
 		// A contract can be associated to multiple workflows
 		edge.From("workflows", Workflow.Type).Ref("contract"),
 	}
@@ -62,7 +67,11 @@ func (WorkflowContract) Edges() []ent.Edge {
 
 func (WorkflowContract) Indexes() []ent.Index {
 	return []ent.Index{
-		// names are unique within a organization and affects only to non-deleted items
+		// names are unique within a organization and affects only to non-scoped and non-deleted items
+		index.Fields("name").Edges("organization").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL AND scoped_resource_type IS NULL"),
+		),
+		// names are unique within a resource and affects only to non-deleted items
 		index.Fields("name", "scoped_resource_type", "scoped_resource_id").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),

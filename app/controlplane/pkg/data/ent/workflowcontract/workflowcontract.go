@@ -31,6 +31,8 @@ const (
 	FieldScopedResourceID = "scoped_resource_id"
 	// EdgeVersions holds the string denoting the versions edge name in mutations.
 	EdgeVersions = "versions"
+	// EdgeOrganization holds the string denoting the organization edge name in mutations.
+	EdgeOrganization = "organization"
 	// EdgeWorkflows holds the string denoting the workflows edge name in mutations.
 	EdgeWorkflows = "workflows"
 	// Table holds the table name of the workflowcontract in the database.
@@ -42,6 +44,13 @@ const (
 	VersionsInverseTable = "workflow_contract_versions"
 	// VersionsColumn is the table column denoting the versions relation/edge.
 	VersionsColumn = "workflow_contract_versions"
+	// OrganizationTable is the table that holds the organization relation/edge.
+	OrganizationTable = "workflow_contracts"
+	// OrganizationInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OrganizationInverseTable = "organizations"
+	// OrganizationColumn is the table column denoting the organization relation/edge.
+	OrganizationColumn = "organization_workflow_contracts"
 	// WorkflowsTable is the table that holds the workflows relation/edge.
 	WorkflowsTable = "workflows"
 	// WorkflowsInverseTable is the table name for the Workflow entity.
@@ -152,6 +161,13 @@ func ByVersions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByOrganizationField orders the results by organization field.
+func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByWorkflowsCount orders the results by workflows count.
 func ByWorkflowsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -170,6 +186,13 @@ func newVersionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(VersionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
+	)
+}
+func newOrganizationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrganizationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
 	)
 }
 func newWorkflowsStep() *sqlgraph.Step {

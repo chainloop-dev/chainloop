@@ -3535,6 +3535,22 @@ func (c *WorkflowContractClient) QueryVersions(wc *WorkflowContract) *WorkflowCo
 	return query
 }
 
+// QueryOrganization queries the organization edge of a WorkflowContract.
+func (c *WorkflowContractClient) QueryOrganization(wc *WorkflowContract) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := wc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, workflowcontract.OrganizationTable, workflowcontract.OrganizationColumn),
+		)
+		fromV = sqlgraph.Neighbors(wc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryWorkflows queries the workflows edge of a WorkflowContract.
 func (c *WorkflowContractClient) QueryWorkflows(wc *WorkflowContract) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()

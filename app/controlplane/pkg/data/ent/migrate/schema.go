@@ -660,6 +660,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
+				Name:    "workflowcontract_name_organization_workflow_contracts",
+				Unique:  true,
+				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL AND scoped_resource_type IS NULL",
+				},
+			},
+			{
 				Name:    "workflowcontract_name_scoped_resource_type_scoped_resource_id",
 				Unique:  true,
 				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[5], WorkflowContractsColumns[6]},
