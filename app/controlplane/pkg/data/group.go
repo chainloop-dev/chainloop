@@ -172,8 +172,8 @@ func (g GroupRepo) ListPendingInvitationsByGroup(ctx context.Context, orgID uuid
 			orginvitation.OrganizationIDEQ(orgID),
 			orginvitation.DeletedAtIsNil(),
 			orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
-			func(_ *sql.Selector) {
-				sqljson.ValueEQ(orginvitation.FieldContext, groupID.String(), sqljson.DotPath("group_id_to_join"))
+			func(s *sql.Selector) {
+				s.Where(sqljson.ValueEQ(orginvitation.FieldContext, groupID.String(), sqljson.DotPath("group_id_to_join")))
 			},
 		).
 		WithOrganization().
