@@ -388,8 +388,8 @@ func (r *ProjectRepo) ListPendingInvitationsByProject(ctx context.Context, orgID
 			orginvitation.OrganizationIDEQ(orgID),
 			orginvitation.DeletedAtIsNil(),
 			orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
-			func(_ *sql.Selector) {
-				sqljson.ValueEQ(orginvitation.FieldContext, projectID.String(), sqljson.DotPath("project_id_to_join"))
+			func(s *sql.Selector) {
+				s.Where(sqljson.ValueEQ(orginvitation.FieldContext, projectID.String(), sqljson.DotPath("project_id_to_join")))
 			},
 		).
 		WithOrganization().
