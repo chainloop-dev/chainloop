@@ -374,7 +374,7 @@ func rbacEnabled(ctx context.Context) bool {
 
 	// we have an user
 	currentSubject := usercontext.CurrentAuthzSubject(ctx)
-	return currentSubject == string(authz.RoleOrgMember)
+	return currentSubject == string(authz.RoleOrgMember) || currentSubject == string(authz.RoleViewer)
 }
 
 // NOTE: some of these http errors get automatically translated to gRPC status codes
