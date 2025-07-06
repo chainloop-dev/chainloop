@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://chainloop.dev/schemas/runner-context.json",
+  "$id": "https://chainloop.dev/schemas/runner-context-response-0.1.json",
   "title": "Runner Context Response",
   "description": "Schema for the runner context response containing repository configuration and metadata",
   "type": "object",

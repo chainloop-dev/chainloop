@@ -76,7 +76,7 @@ var (
 	cvssSpecVersion4_0 string
 
 	// Runner Context schemas
-	//go:embed external_schemas/runnercontext/runner-context-0.1.schema.json
+	//go:embed external_schemas/runnercontext/runner-context-response-0.1.schema.json
 	runnerContextSpecVersion0_1 string
 )
 
@@ -85,17 +85,17 @@ var (
 // The keys are the URLs of the schemas and the values are the schema content that can be found in the embedded
 // files.
 var schemaURLMapping = map[string]string{
-	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                 jsfSpecVersion0_82,
-	"http://cyclonedx.org/schema/spdx.schema.json":                     spdxSpec,
-	"http://cyclonedx.org/schema/bom-1.5.schema.json":                  bomSpecVersion1_5,
-	"http://cyclonedx.org/schema/bom-1.6.schema.json":                  bomSpecVersion1_6,
-	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json": casfSpecVersion2_0,
-	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json": casfSpecVersion2_1,
-	"https://www.first.org/cvss/cvss-v2.0.json":                        cvssSpecVersion2_0,
-	"https://www.first.org/cvss/cvss-v3.0.json":                        cvssSpecVersion3_0,
-	"https://www.first.org/cvss/cvss-v3.1.json":                        cvssSpecVersion3_1,
-	"https://www.first.org/cvss/cvss-v4.0.json":                        cvssSpecVersion4_0,
-	"https://chainloop.dev/schemas/runner-context.json":                runnerContextSpecVersion0_1,
+	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                      jsfSpecVersion0_82,
+	"http://cyclonedx.org/schema/spdx.schema.json":                          spdxSpec,
+	"http://cyclonedx.org/schema/bom-1.5.schema.json":                       bomSpecVersion1_5,
+	"http://cyclonedx.org/schema/bom-1.6.schema.json":                       bomSpecVersion1_6,
+	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":      casfSpecVersion2_0,
+	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json":      casfSpecVersion2_1,
+	"https://www.first.org/cvss/cvss-v2.0.json":                             cvssSpecVersion2_0,
+	"https://www.first.org/cvss/cvss-v3.0.json":                             cvssSpecVersion3_0,
+	"https://www.first.org/cvss/cvss-v3.1.json":                             cvssSpecVersion3_1,
+	"https://www.first.org/cvss/cvss-v4.0.json":                             cvssSpecVersion4_0,
+	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json": runnerContextSpecVersion0_1,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
@@ -117,7 +117,7 @@ func init() {
 	compiledCSAFSchemas[CSAFVersion2_1] = compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json")
 
 	compiledRunnerContextSchemas = make(map[RunnerContextVersion]*jsonschema.Schema)
-	compiledRunnerContextSchemas[RunnerContextVersion0_1] = compiler.MustCompile("https://chainloop.dev/schemas/runner-context.json")
+	compiledRunnerContextSchemas[RunnerContextVersion0_1] = compiler.MustCompile("https://chainloop.dev/schemas/runner-context-response-0.1.schema.json")
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
