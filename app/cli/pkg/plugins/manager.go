@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -62,7 +63,8 @@ func (m *Manager) LoadPlugins(ctx context.Context) error {
 	for _, plugin := range plugins {
 		// Load the plugin - if there is an error just skip it - we can think of a better strategy later
 		if err := m.loadPlugin(ctx, plugin); err != nil {
-			fmt.Printf("failed to load plugin: %s\n", err)
+			fmt.Printf("failed to load plugin: %s - reason: %s\n", plugin, getFirstErrorLine(err))
+
 			continue
 		}
 	}
@@ -145,4 +147,19 @@ func (m *Manager) Shutdown() {
 	for _, client := range m.pluginClients {
 		client.Kill()
 	}
+}
+
+// getFirstErrorLine extracts only the first line from an error message
+func getFirstErrorLine(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	errStr := err.Error()
+	// Split by newline and return only the first part
+	parts := strings.Split(errStr, "\n")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return errStr
 }
