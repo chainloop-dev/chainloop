@@ -1306,9 +1306,10 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 	// Find user2 and user3 in the members list and verify their initial maintainer status
 	var user2Member, user3Member *biz.GroupMembership
 	for _, m := range members {
-		if m.User.ID == user2.ID {
+		switch m.User.ID {
+		case user2.ID:
 			user2Member = m
-		} else if m.User.ID == user3.ID {
+		case user3.ID:
 			user3Member = m
 		}
 	}
