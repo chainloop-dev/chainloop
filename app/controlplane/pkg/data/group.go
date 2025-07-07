@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -60,16 +61,23 @@ func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.Li
 		Where(group.DeletedAtIsNil(), group.OrganizationIDEQ(orgID)).
 		WithMembers().WithOrganization()
 
+	// Apply filters as ORs if any filter is provided
+	var predicates []predicate.Group
 	if filterOpts.Name != "" {
-		query.Where(group.NameContains(filterOpts.Name))
+		predicates = append(predicates, group.NameContains(filterOpts.Name))
 	}
 
 	if filterOpts.Description != "" {
-		query.Where(group.DescriptionContains(filterOpts.Description))
+		predicates = append(predicates, group.DescriptionContains(filterOpts.Description))
 	}
 
 	if filterOpts.MemberEmail != "" {
-		query.Where(group.HasMembersWith(user.EmailContains(filterOpts.MemberEmail)))
+		predicates = append(predicates, group.HasMembersWith(user.EmailContains(filterOpts.MemberEmail)))
+	}
+
+	// Apply OR predicates if any exist
+	if len(predicates) > 0 {
+		query.Where(group.Or(predicates...))
 	}
 
 	// Get the count of all filtered rows without the limit and offset

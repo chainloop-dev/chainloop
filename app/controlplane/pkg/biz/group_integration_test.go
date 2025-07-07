@@ -449,6 +449,40 @@ func (s *groupListIntegrationTestSuite) TestList() {
 		s.Contains(groups[0].Description, "A team")
 	})
 
+	s.Run("list groups with name OR description filter", func() {
+		// Clear existing groups
+		_, _ = s.Data.DB.Group.Delete().Exec(ctx)
+
+		// Create groups with different names and descriptions
+		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "frontend-team", "Frontend development team", uuid.MustParse(s.user.ID))
+		require.NoError(s.T(), err)
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "backend-team", "Backend development team", uuid.MustParse(s.user.ID))
+		require.NoError(s.T(), err)
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "qa-team", "Quality Assurance team", uuid.MustParse(s.user.ID))
+		require.NoError(s.T(), err)
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "devops-team", "Team responsible for infrastructure", uuid.MustParse(s.user.ID))
+		require.NoError(s.T(), err)
+
+		// Filter with a term that appears in one group's name and another group's description
+		// Should match both the "frontend-team" (name contains "front") and "backend-team" (description contains "development")
+		filterOpts := &biz.ListGroupOpts{
+			Name:        "front",
+			Description: "development",
+		}
+
+		groups, count, err := s.Group.List(ctx, uuid.MustParse(s.org.ID), filterOpts, nil)
+		s.NoError(err)
+
+		// Should match 2 groups due to OR filtering
+		s.Equal(2, count)
+		s.Equal(2, len(groups))
+
+		// Verify that both expected groups are in the results
+		groupNames := []string{groups[0].Name, groups[1].Name}
+		s.Contains(groupNames, "frontend-team")
+		s.Contains(groupNames, "backend-team")
+	})
+
 	s.Run("list groups with member email filter", func() {
 		// Create a second user
 		user2, err := s.User.UpsertByEmail(ctx, "user2@example.com", nil)
