@@ -245,7 +245,6 @@ func newPluginDescribeCmd() *cobra.Command {
 
 func newPluginInstallCmd() *cobra.Command {
 	var file string
-	var filename string
 	var location string
 
 	cmd := &cobra.Command{
@@ -257,7 +256,6 @@ func newPluginInstallCmd() *cobra.Command {
 
 			opts := &action.PluginInstallOptions{
 				File:     file,
-				Filename: filename,
 				Location: location,
 			}
 
@@ -272,8 +270,7 @@ func newPluginInstallCmd() *cobra.Command {
 	}
 
 	// Common flags
-	cmd.Flags().StringVarP(&file, "file", "f", "", "URL of the plugin to download (required)")
-	cmd.Flags().StringVarP(&filename, "filename", "", "", "Custom filename to save the plugin as (optional)")
+	cmd.Flags().StringVarP(&file, "file", "f", "", "URL or path to the plugin to install (required)")
 	cobra.CheckErr(cmd.MarkFlagRequired("file"))
 
 	return cmd
