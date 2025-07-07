@@ -649,6 +649,7 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 
 // UpdateMemberMaintainerStatus updates the maintainer status of a group member.
 // The requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
+// nolint: gocyclo
 func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, opts *UpdateMemberMaintainerStatusOpts) error {
 	if opts == nil {
 		return NewErrValidationStr("options cannot be nil")

@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var user2Email = "update-status-user2@example.com"
+
 // Run the tests
 func TestGroupUseCase(t *testing.T) {
 	suite.Run(t, new(groupIntegrationTestSuite))
@@ -1320,7 +1322,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 
 	s.Run("promote a regular member to maintainer", func() {
 		// Promote user2 to maintainer
-		user2Email := "update-status-user2@example.com"
 		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
@@ -1406,7 +1407,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 
 	s.Run("update status that is already set", func() {
 		// Try to set user2 as maintainer again (should be a no-op)
-		user2Email := "update-status-user2@example.com"
 		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
@@ -1522,7 +1522,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 	// New tests that use user ID instead of email
 	s.Run("promote a regular member to maintainer using user ID", func() {
 		// Reset user2 back to a regular member
-		user2Email := "update-status-user2@example.com"
 		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
