@@ -35,22 +35,23 @@ const (
 
 	// Resources
 
-	ResourceWorkflowContract      = "workflow_contract"
-	ResourceCASArtifact           = "cas_artifact"
-	ResourceCASBackend            = "cas_backend"
-	ResourceReferrer              = "referrer"
-	ResourceAvailableIntegration  = "integration_available"
-	ResourceRegisteredIntegration = "integration_registered"
-	ResourceAttachedIntegration   = "integration_attached"
-	ResourceOrgMetric             = "metrics_org"
-	ResourceRobotAccount          = "robot_account"
-	ResourceWorkflowRun           = "workflow_run"
-	ResourceWorkflow              = "workflow"
-	Organization                  = "organization"
-	ResourceGroup                 = "group"
-	ResourceGroupMembership       = "group_membership"
-	ResourceProjectAPIToken       = "project_api_token"
-	ResourceProjectMembership     = "project_membership"
+	ResourceWorkflowContract        = "workflow_contract"
+	ResourceCASArtifact             = "cas_artifact"
+	ResourceCASBackend              = "cas_backend"
+	ResourceReferrer                = "referrer"
+	ResourceAvailableIntegration    = "integration_available"
+	ResourceRegisteredIntegration   = "integration_registered"
+	ResourceAttachedIntegration     = "integration_attached"
+	ResourceOrgMetric               = "metrics_org"
+	ResourceRobotAccount            = "robot_account"
+	ResourceWorkflowRun             = "workflow_run"
+	ResourceWorkflow                = "workflow"
+	Organization                    = "organization"
+	ResourceGroup                   = "group"
+	ResourceGroupMembership         = "group_membership"
+	ResourceProjectAPIToken         = "project_api_token"
+	ResourceProjectMembership       = "project_membership"
+	ResourceOrganizationInvitations = "organization_invitations"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -158,6 +159,8 @@ var (
 	PolicyProjectAddMemberships    = &Policy{ResourceProjectMembership, ActionCreate}
 	PolicyProjectUpdateMemberships = &Policy{ResourceProjectMembership, ActionUpdate}
 	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
+	// Organization Invitations
+	PolicyOrganizationInvitationsCreate = &Policy{ResourceOrganizationInvitations, ActionCreate}
 )
 
 // RolesMap The default list of policies for each role
@@ -200,6 +203,8 @@ var RolesMap = map[Role][]*Policy{
 		// We do a manual check in the artifact upload endpoint
 		// so we need the actual policy in place skipping it is not enough
 		PolicyArtifactUpload,
+		// We manually check this policy to be able to know if the user can invite users to the system
+		PolicyOrganizationInvitationsCreate,
 		// + all the policies from the viewer role inherited automatically
 	},
 	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at

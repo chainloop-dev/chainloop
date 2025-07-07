@@ -166,7 +166,8 @@ type UpdateMemberMaintainerStatusOpts struct {
 
 type GroupUseCase struct {
 	// logger is used to log messages.
-	logger *log.Helper
+	logger   *log.Helper
+	enforcer *authz.Enforcer
 	// Repositories
 	groupRepo         GroupRepo
 	membershipRepo    MembershipRepo
@@ -177,7 +178,7 @@ type GroupUseCase struct {
 	auditorUC       *AuditorUseCase
 }
 
-func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo) *GroupUseCase {
+func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo, enforcer *authz.Enforcer) *GroupUseCase {
 	return &GroupUseCase{
 		logger:            log.NewHelper(log.With(logger, "component", "biz/group")),
 		groupRepo:         groupRepo,
@@ -186,6 +187,7 @@ func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo Memb
 		orgInvitationUC:   orgInvitationUC,
 		auditorUC:         auditorUC,
 		orgInvitationRepo: invitationRepo,
+		enforcer:          enforcer,
 	}
 }
 
@@ -499,6 +501,21 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 	// If an invitation already exists, return an error
 	if invitation != nil {
 		return nil, NewErrAlreadyExistsStr("user is already invited to the organization")
+	}
+
+	// Check if the requester is an admin or owner of the organization
+	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check requester's role: %w", err)
+	}
+
+	pass, err := uc.enforcer.Enforce(string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check requester's role: %w", err)
+	}
+
+	if !pass {
+		return nil, NewErrValidationStr("only organization admins or owners can invite new users")
 	}
 
 	// Create an organization invitation with group context
