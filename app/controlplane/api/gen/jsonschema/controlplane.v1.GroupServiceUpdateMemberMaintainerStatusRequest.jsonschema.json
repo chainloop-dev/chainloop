@@ -12,10 +12,9 @@
       "description": "The new maintainer status for the user",
       "type": "boolean"
     },
-    "^(user_email)$": {
-      "description": "The user whose maintainer status is to be updated",
-      "format": "email",
-      "type": "string"
+    "^(user_reference)$": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "The user whose maintainer status is to be updated"
     }
   },
   "properties": {
@@ -27,14 +26,14 @@
       "description": "The new maintainer status for the user",
       "type": "boolean"
     },
-    "userEmail": {
-      "description": "The user whose maintainer status is to be updated",
-      "format": "email",
-      "type": "string"
+    "userReference": {
+      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
+      "description": "The user whose maintainer status is to be updated"
     }
   },
   "required": [
-    "group_reference"
+    "group_reference",
+    "user_reference"
   ],
   "title": "Group Service Update Member Maintainer Status Request",
   "type": "object"

@@ -451,7 +451,7 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 	// Create options for updating the member's maintainer status
 	updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 		IdentityReference: &biz.IdentityReference{},
-		UserEmail:         req.GetUserEmail(),
+		UserReference:     &biz.IdentityReference{},
 		RequesterID:       requesterUUID,
 		IsMaintainer:      req.GetIsMaintainer(),
 	}
@@ -460,6 +460,12 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 	updateOpts.ID, updateOpts.Name, err = req.GetGroupReference().Parse()
 	if err != nil {
 		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	// Parse userID and userName from the request
+	updateOpts.UserReference.ID, updateOpts.UserReference.Name, err = req.GetUserReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid user reference: %s", err.Error()))
 	}
 
 	// Call the business logic to update the member's maintainer status

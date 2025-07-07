@@ -200,7 +200,7 @@ export interface GroupServiceUpdateMemberMaintainerStatusRequest {
   /** IdentityReference is used to specify the group by either its ID or name */
   groupReference?: IdentityReference;
   /** The user whose maintainer status is to be updated */
-  userEmail: string;
+  userReference?: IdentityReference;
   /** The new maintainer status for the user */
   isMaintainer: boolean;
 }
@@ -1812,7 +1812,7 @@ export const GroupMember = {
 };
 
 function createBaseGroupServiceUpdateMemberMaintainerStatusRequest(): GroupServiceUpdateMemberMaintainerStatusRequest {
-  return { groupReference: undefined, userEmail: "", isMaintainer: false };
+  return { groupReference: undefined, userReference: undefined, isMaintainer: false };
 }
 
 export const GroupServiceUpdateMemberMaintainerStatusRequest = {
@@ -1823,8 +1823,8 @@ export const GroupServiceUpdateMemberMaintainerStatusRequest = {
     if (message.groupReference !== undefined) {
       IdentityReference.encode(message.groupReference, writer.uint32(10).fork()).ldelim();
     }
-    if (message.userEmail !== "") {
-      writer.uint32(18).string(message.userEmail);
+    if (message.userReference !== undefined) {
+      IdentityReference.encode(message.userReference, writer.uint32(18).fork()).ldelim();
     }
     if (message.isMaintainer === true) {
       writer.uint32(24).bool(message.isMaintainer);
@@ -1851,7 +1851,7 @@ export const GroupServiceUpdateMemberMaintainerStatusRequest = {
             break;
           }
 
-          message.userEmail = reader.string();
+          message.userReference = IdentityReference.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -1872,7 +1872,7 @@ export const GroupServiceUpdateMemberMaintainerStatusRequest = {
   fromJSON(object: any): GroupServiceUpdateMemberMaintainerStatusRequest {
     return {
       groupReference: isSet(object.groupReference) ? IdentityReference.fromJSON(object.groupReference) : undefined,
-      userEmail: isSet(object.userEmail) ? String(object.userEmail) : "",
+      userReference: isSet(object.userReference) ? IdentityReference.fromJSON(object.userReference) : undefined,
       isMaintainer: isSet(object.isMaintainer) ? Boolean(object.isMaintainer) : false,
     };
   },
@@ -1881,7 +1881,8 @@ export const GroupServiceUpdateMemberMaintainerStatusRequest = {
     const obj: any = {};
     message.groupReference !== undefined &&
       (obj.groupReference = message.groupReference ? IdentityReference.toJSON(message.groupReference) : undefined);
-    message.userEmail !== undefined && (obj.userEmail = message.userEmail);
+    message.userReference !== undefined &&
+      (obj.userReference = message.userReference ? IdentityReference.toJSON(message.userReference) : undefined);
     message.isMaintainer !== undefined && (obj.isMaintainer = message.isMaintainer);
     return obj;
   },
@@ -1899,7 +1900,9 @@ export const GroupServiceUpdateMemberMaintainerStatusRequest = {
     message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
       ? IdentityReference.fromPartial(object.groupReference)
       : undefined;
-    message.userEmail = object.userEmail ?? "";
+    message.userReference = (object.userReference !== undefined && object.userReference !== null)
+      ? IdentityReference.fromPartial(object.userReference)
+      : undefined;
     message.isMaintainer = object.isMaintainer ?? false;
     return message;
   },
