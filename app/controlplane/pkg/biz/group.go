@@ -501,6 +501,17 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 		return nil, NewErrAlreadyExistsStr("user is already invited to the organization")
 	}
 
+	// Check if the requester is an admin or owner of the organization
+	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check requester's role: %w", err)
+	}
+
+	// Only send an invitation if the requester is an admin or owner of the organization
+	if requesterMembership.Role != authz.RoleAdmin && requesterMembership.Role != authz.RoleOwner {
+		return nil, NewErrValidationStr("only organization admins or owners can invite new users to groups")
+	}
+
 	// Create an organization invitation with group context
 	invitationContext := &OrgInvitationContext{
 		GroupIDToJoin:   groupID,
