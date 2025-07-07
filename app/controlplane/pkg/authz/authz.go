@@ -368,6 +368,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
 	// Groups
 	"/controlplane.v1.GroupService/List": {PolicyGroupList},
+	"/controlplane.v1.GroupService/Get":  {PolicyGroupRead},
 	// Group Memberships
 	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
 	// For the following endpoints, we rely on the service layer to check the permissions
