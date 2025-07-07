@@ -31,7 +31,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var user2Email = "update-status-user2@example.com"
+var (
+	user2Email = "update-status-user2@example.com"
+	user3Email = "update-status-user3@example.com"
+)
 
 // Run the tests
 func TestGroupUseCase(t *testing.T) {
@@ -1364,7 +1367,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 
 	s.Run("demote a maintainer to regular member", func() {
 		// Demote user3 from maintainer to regular member
-		user3Email := "update-status-user3@example.com"
 		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
@@ -1422,7 +1424,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 		s.NoError(err)
 
 		// Try to set user3 as non-maintainer again (should be a no-op)
-		user3Email := "update-status-user3@example.com"
 		updateOpts = &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
@@ -1477,7 +1478,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 		require.NoError(s.T(), err)
 
 		// Try to update a user's status with the non-maintainer as requester
-		user3Email := "update-status-user3@example.com"
 		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
@@ -1595,7 +1595,6 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 
 	s.Run("demote a maintainer to regular member using user ID", func() {
 		// Reset user3 back to a maintainer
-		user3Email := "update-status-user3@example.com"
 		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
 			IdentityReference: &biz.IdentityReference{
 				ID: &s.group.ID,
