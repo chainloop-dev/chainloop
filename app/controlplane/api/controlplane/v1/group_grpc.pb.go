@@ -34,15 +34,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	GroupService_Create_FullMethodName                 = "/controlplane.v1.GroupService/Create"
-	GroupService_Get_FullMethodName                    = "/controlplane.v1.GroupService/Get"
-	GroupService_List_FullMethodName                   = "/controlplane.v1.GroupService/List"
-	GroupService_Update_FullMethodName                 = "/controlplane.v1.GroupService/Update"
-	GroupService_Delete_FullMethodName                 = "/controlplane.v1.GroupService/Delete"
-	GroupService_ListMembers_FullMethodName            = "/controlplane.v1.GroupService/ListMembers"
-	GroupService_AddMember_FullMethodName              = "/controlplane.v1.GroupService/AddMember"
-	GroupService_RemoveMember_FullMethodName           = "/controlplane.v1.GroupService/RemoveMember"
-	GroupService_ListPendingInvitations_FullMethodName = "/controlplane.v1.GroupService/ListPendingInvitations"
+	GroupService_Create_FullMethodName                       = "/controlplane.v1.GroupService/Create"
+	GroupService_Get_FullMethodName                          = "/controlplane.v1.GroupService/Get"
+	GroupService_List_FullMethodName                         = "/controlplane.v1.GroupService/List"
+	GroupService_Update_FullMethodName                       = "/controlplane.v1.GroupService/Update"
+	GroupService_Delete_FullMethodName                       = "/controlplane.v1.GroupService/Delete"
+	GroupService_ListMembers_FullMethodName                  = "/controlplane.v1.GroupService/ListMembers"
+	GroupService_AddMember_FullMethodName                    = "/controlplane.v1.GroupService/AddMember"
+	GroupService_RemoveMember_FullMethodName                 = "/controlplane.v1.GroupService/RemoveMember"
+	GroupService_UpdateMemberMaintainerStatus_FullMethodName = "/controlplane.v1.GroupService/UpdateMemberMaintainerStatus"
+	GroupService_ListPendingInvitations_FullMethodName       = "/controlplane.v1.GroupService/ListPendingInvitations"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -65,6 +66,8 @@ type GroupServiceClient interface {
 	AddMember(ctx context.Context, in *GroupServiceAddMemberRequest, opts ...grpc.CallOption) (*GroupServiceAddMemberResponse, error)
 	// RemoveMember removes a user from a group
 	RemoveMember(ctx context.Context, in *GroupServiceRemoveMemberRequest, opts ...grpc.CallOption) (*GroupServiceRemoveMemberResponse, error)
+	// UpdateMemberMaintainerStatus updates the maintainer status of a group member
+	UpdateMemberMaintainerStatus(ctx context.Context, in *GroupServiceUpdateMemberMaintainerStatusRequest, opts ...grpc.CallOption) (*GroupServiceUpdateMemberMaintainerStatusResponse, error)
 	// ListPendingInvitations retrieves pending invitations for a group
 	ListPendingInvitations(ctx context.Context, in *GroupServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*GroupServiceListPendingInvitationsResponse, error)
 }
@@ -149,6 +152,15 @@ func (c *groupServiceClient) RemoveMember(ctx context.Context, in *GroupServiceR
 	return out, nil
 }
 
+func (c *groupServiceClient) UpdateMemberMaintainerStatus(ctx context.Context, in *GroupServiceUpdateMemberMaintainerStatusRequest, opts ...grpc.CallOption) (*GroupServiceUpdateMemberMaintainerStatusResponse, error) {
+	out := new(GroupServiceUpdateMemberMaintainerStatusResponse)
+	err := c.cc.Invoke(ctx, GroupService_UpdateMemberMaintainerStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *groupServiceClient) ListPendingInvitations(ctx context.Context, in *GroupServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*GroupServiceListPendingInvitationsResponse, error) {
 	out := new(GroupServiceListPendingInvitationsResponse)
 	err := c.cc.Invoke(ctx, GroupService_ListPendingInvitations_FullMethodName, in, out, opts...)
@@ -178,6 +190,8 @@ type GroupServiceServer interface {
 	AddMember(context.Context, *GroupServiceAddMemberRequest) (*GroupServiceAddMemberResponse, error)
 	// RemoveMember removes a user from a group
 	RemoveMember(context.Context, *GroupServiceRemoveMemberRequest) (*GroupServiceRemoveMemberResponse, error)
+	// UpdateMemberMaintainerStatus updates the maintainer status of a group member
+	UpdateMemberMaintainerStatus(context.Context, *GroupServiceUpdateMemberMaintainerStatusRequest) (*GroupServiceUpdateMemberMaintainerStatusResponse, error)
 	// ListPendingInvitations retrieves pending invitations for a group
 	ListPendingInvitations(context.Context, *GroupServiceListPendingInvitationsRequest) (*GroupServiceListPendingInvitationsResponse, error)
 	mustEmbedUnimplementedGroupServiceServer()
@@ -210,6 +224,9 @@ func (UnimplementedGroupServiceServer) AddMember(context.Context, *GroupServiceA
 }
 func (UnimplementedGroupServiceServer) RemoveMember(context.Context, *GroupServiceRemoveMemberRequest) (*GroupServiceRemoveMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
+}
+func (UnimplementedGroupServiceServer) UpdateMemberMaintainerStatus(context.Context, *GroupServiceUpdateMemberMaintainerStatusRequest) (*GroupServiceUpdateMemberMaintainerStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMemberMaintainerStatus not implemented")
 }
 func (UnimplementedGroupServiceServer) ListPendingInvitations(context.Context, *GroupServiceListPendingInvitationsRequest) (*GroupServiceListPendingInvitationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPendingInvitations not implemented")
@@ -371,6 +388,24 @@ func _GroupService_RemoveMember_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupService_UpdateMemberMaintainerStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupServiceUpdateMemberMaintainerStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).UpdateMemberMaintainerStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_UpdateMemberMaintainerStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).UpdateMemberMaintainerStatus(ctx, req.(*GroupServiceUpdateMemberMaintainerStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GroupService_ListPendingInvitations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GroupServiceListPendingInvitationsRequest)
 	if err := dec(in); err != nil {
@@ -427,6 +462,10 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveMember",
 			Handler:    _GroupService_RemoveMember_Handler,
+		},
+		{
+			MethodName: "UpdateMemberMaintainerStatus",
+			Handler:    _GroupService_UpdateMemberMaintainerStatus_Handler,
 		},
 		{
 			MethodName: "ListPendingInvitations",

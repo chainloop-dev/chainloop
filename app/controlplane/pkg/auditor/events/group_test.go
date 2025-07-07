@@ -129,6 +129,21 @@ func TestGroupEvents(t *testing.T) {
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
 		},
+		{
+			name: "Group member maintainer status updated by user",
+			event: &events.GroupMemberUpdated{
+				GroupBase: &events.GroupBase{
+					GroupID:   &groupUUID,
+					GroupName: groupName,
+				},
+				UserID:              &memberUUID,
+				UserEmail:           userEmail,
+				NewMaintainerStatus: true,
+			},
+			expected: "testdata/groups/group_member_updated.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
 	}
 
 	for _, tt := range tests {

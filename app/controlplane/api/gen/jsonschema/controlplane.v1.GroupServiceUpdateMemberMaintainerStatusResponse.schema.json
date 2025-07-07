@@ -1,0 +1,9 @@
+{
+  "$id": "controlplane.v1.GroupServiceUpdateMemberMaintainerStatusResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status",
+  "properties": {},
+  "title": "Group Service Update Member Maintainer Status Response",
+  "type": "object"
+}

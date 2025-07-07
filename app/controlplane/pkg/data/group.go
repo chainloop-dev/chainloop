@@ -464,6 +464,89 @@ func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, g
 	return nil
 }
 
+// UpdateMemberMaintainerStatus updates the maintainer status of a group member.
+func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, isMaintainer bool) error {
+	return WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
+		// Check if the user is a member of this group
+		existingMembership, err := tx.GroupMembership.Query().
+			Where(
+				groupmembership.GroupIDEQ(groupID),
+				groupmembership.UserIDEQ(userID),
+				groupmembership.DeletedAtIsNil(),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound("group membership")
+			}
+			return fmt.Errorf("failed to check existing group membership: %w", err)
+		}
+
+		// Get the current maintainer status
+		wasMaintainer := existingMembership.Maintainer
+
+		// If the status isn't changing, we don't need to do anything
+		if wasMaintainer == isMaintainer {
+			return nil
+		}
+
+		// Update the group membership with the new maintainer status
+		_, err = tx.GroupMembership.UpdateOne(existingMembership).
+			SetMaintainer(isMaintainer).
+			SetUpdatedAt(time.Now()).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to update group membership maintainer status: %w", err)
+		}
+
+		// Update the membership table as well
+		if isMaintainer {
+			// If becoming a maintainer, create the membership record if it doesn't exist
+			exists, err := tx.Membership.Query().
+				Where(
+					membership.MemberID(userID),
+					membership.ResourceID(groupID),
+					membership.ResourceTypeEQ(authz.ResourceTypeGroup),
+				).
+				Exist(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to check existing membership: %w", err)
+			}
+
+			if !exists {
+				// Create a new membership record for the group maintainer role
+				_, err = tx.Membership.Create().
+					SetUserID(userID).
+					SetOrganizationID(orgID).
+					SetRole(authz.RoleGroupMaintainer).
+					SetMembershipType(authz.MembershipTypeUser).
+					SetMemberID(userID).
+					SetResourceType(authz.ResourceTypeGroup).
+					SetResourceID(groupID).
+					Save(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to create membership for user %s in group %s: %w", userID, groupID, err)
+				}
+			}
+		} else {
+			// If no longer a maintainer, remove the membership record
+			_, err = tx.Membership.Delete().Where(
+				membership.MemberID(userID),
+				membership.ResourceID(groupID),
+				membership.ResourceTypeEQ(authz.ResourceTypeGroup),
+				membership.HasOrganizationWith(
+					organization.ID(orgID),
+				),
+			).Exec(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to delete group maintainer membership: %w", err)
+			}
+		}
+
+		return nil
+	})
+}
+
 // entGroupToBiz converts an ent.Group to a biz.Group.
 func entGroupToBiz(gr *ent.Group) *biz.Group {
 	grp := &biz.Group{

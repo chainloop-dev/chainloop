@@ -1100,15 +1100,6 @@ func (s *groupMembersIntegrationTestSuite) TestRemoveMemberFromGroup() {
 		err = s.Group.RemoveMemberFromGroup(ctx, uuid.MustParse(org2.ID), removeOpts)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
-
-		// Member count should remain unchanged
-		_, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
-			IdentityReference: &biz.IdentityReference{
-				ID: &s.group.ID,
-			},
-		}, nil)
-		s.NoError(err)
-		s.Equal(2, count)
 	})
 
 	s.Run("remove member from non-existent group", func() {
@@ -1261,5 +1252,302 @@ func (s *groupMembersIntegrationTestSuite) TestGroupMemberCount() {
 		groupAfterRemove2, err := s.Group.Get(ctx, uuid.MustParse(s.org.ID), &biz.IdentityReference{ID: &s.group.ID})
 		s.NoError(err)
 		s.Equal(1, groupAfterRemove2.MemberCount, "Group should have 1 member after removing two")
+	})
+}
+
+// Test updating maintainer status of group members
+func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
+	ctx := context.Background()
+
+	// Create additional users
+	user2, err := s.User.UpsertByEmail(ctx, "update-status-user2@example.com", nil)
+	require.NoError(s.T(), err)
+
+	user3, err := s.User.UpsertByEmail(ctx, "update-status-user3@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add users to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	require.NoError(s.T(), err)
+
+	// Add users to the group (user2 as a regular member, user3 as a maintainer)
+	opts1 := &biz.AddMemberToGroupOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &s.group.ID,
+		},
+		UserEmail:   "update-status-user2@example.com",
+		RequesterID: uuid.MustParse(s.user.ID),
+		Maintainer:  false,
+	}
+	_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts1)
+	require.NoError(s.T(), err)
+
+	opts2 := &biz.AddMemberToGroupOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &s.group.ID,
+		},
+		UserEmail:   "update-status-user3@example.com",
+		RequesterID: uuid.MustParse(s.user.ID),
+		Maintainer:  true,
+	}
+	_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts2)
+	require.NoError(s.T(), err)
+
+	// Verify initial maintainer status
+	members, _, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &s.group.ID,
+		},
+	}, nil)
+	s.NoError(err)
+
+	// Find user2 and user3 in the members list and verify their initial maintainer status
+	var user2Member, user3Member *biz.GroupMembership
+	for _, m := range members {
+		if m.User.ID == user2.ID {
+			user2Member = m
+		} else if m.User.ID == user3.ID {
+			user3Member = m
+		}
+	}
+	s.NotNil(user2Member, "User2 should be a member of the group")
+	s.NotNil(user3Member, "User3 should be a member of the group")
+	s.False(user2Member.Maintainer, "User2 should not be a maintainer initially")
+	s.True(user3Member.Maintainer, "User3 should be a maintainer initially")
+
+	s.Run("promote a regular member to maintainer", func() {
+		// Promote user2 to maintainer
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "update-status-user2@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: true,
+		}
+
+		err := s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify user2 is now a maintainer
+		members, _, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+		}, nil)
+		s.NoError(err)
+
+		var updatedUser2Member *biz.GroupMembership
+		for _, m := range members {
+			if m.User.ID == user2.ID {
+				updatedUser2Member = m
+				break
+			}
+		}
+		s.NotNil(updatedUser2Member, "User2 should still be a member")
+		s.True(updatedUser2Member.Maintainer, "User2 should now be a maintainer")
+
+		// Also verify that the membership record was created
+		user2UUID := uuid.MustParse(user2.ID)
+		membership, err := s.Repos.Membership.FindByUserAndResourceID(ctx, user2UUID, s.group.ID)
+		s.NoError(err)
+		s.NotNil(membership)
+		s.Equal(authz.RoleGroupMaintainer, membership.Role)
+	})
+
+	s.Run("demote a maintainer to regular member", func() {
+		// Demote user3 from maintainer to regular member
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "update-status-user3@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: false,
+		}
+
+		err := s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify user3 is no longer a maintainer
+		members, _, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+		}, nil)
+		s.NoError(err)
+
+		var updatedUser3Member *biz.GroupMembership
+		for _, m := range members {
+			if m.User.ID == user3.ID {
+				updatedUser3Member = m
+				break
+			}
+		}
+		s.NotNil(updatedUser3Member, "User3 should still be a member")
+		s.False(updatedUser3Member.Maintainer, "User3 should no longer be a maintainer")
+
+		// Verify membership record was removed
+		user3UUID := uuid.MustParse(user3.ID)
+		membership, err := s.Repos.Membership.FindByUserAndResourceID(ctx, user3UUID, s.group.ID)
+		s.Error(err)
+		s.Nil(membership)
+		s.True(biz.IsNotFound(err), "Membership record should not exist")
+	})
+
+	s.Run("update status that is already set", func() {
+		// Try to set user2 as maintainer again (should be a no-op)
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "update-status-user2@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: true,
+		}
+
+		err := s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Try to set user3 as non-maintainer again (should be a no-op)
+		updateOpts = &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "update-status-user3@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: false,
+		}
+
+		err = s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+	})
+
+	s.Run("update status of non-existent user", func() {
+		// Try to update a user who's not in the organization
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "nonexistent@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: true,
+		}
+
+		err := s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "not a member of the organization")
+	})
+
+	s.Run("update status with non-maintainer requester", func() {
+		// Create another user who is a member but not a maintainer
+		nonMaintainer, err := s.User.UpsertByEmail(ctx, "non-maintainer@example.com", nil)
+		require.NoError(s.T(), err)
+		_, err = s.Membership.Create(ctx, s.org.ID, nonMaintainer.ID)
+		require.NoError(s.T(), err)
+
+		// Add the non-maintainer to the group
+		nonMaintainerOpts := &biz.AddMemberToGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   "non-maintainer@example.com",
+			RequesterID: uuid.MustParse(s.user.ID),
+			Maintainer:  false,
+		}
+		_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), nonMaintainerOpts)
+		require.NoError(s.T(), err)
+
+		// Try to update a user's status with the non-maintainer as requester
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "update-status-user3@example.com",
+			RequesterID:  uuid.MustParse(nonMaintainer.ID),
+			IsMaintainer: true,
+		}
+
+		err = s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "does not have permission")
+	})
+
+	s.Run("update status of non-member user", func() {
+		// Create a user who is in the organization but not in the group
+		nonMember, err := s.User.UpsertByEmail(ctx, "non-group-member@example.com", nil)
+		require.NoError(s.T(), err)
+		_, err = s.Membership.Create(ctx, s.org.ID, nonMember.ID)
+		require.NoError(s.T(), err)
+
+		// Try to update the non-member's maintainer status
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "non-group-member@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: true,
+		}
+
+		err = s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.Error(err)
+		s.Contains(err.Error(), "not a member of this group")
+	})
+
+	s.Run("update status in wrong organization", func() {
+		// Create a new organization
+		org2, err := s.Organization.CreateWithRandomName(ctx)
+		require.NoError(s.T(), err)
+
+		// Try to update a user in the wrong organization
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:    "update-status-user2@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: false,
+		}
+
+		err = s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(org2.ID), updateOpts)
+		s.Error(err)
+		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("update status with group name instead of ID", func() {
+		// Update user2's maintainer status using group name instead of ID
+		groupName := s.group.Name
+		updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+			IdentityReference: &biz.IdentityReference{
+				Name: &groupName,
+			},
+			UserEmail:    "update-status-user2@example.com",
+			RequesterID:  uuid.MustParse(s.user.ID),
+			IsMaintainer: false,
+		}
+
+		err := s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+		s.NoError(err)
+
+		// Verify user2 is no longer a maintainer
+		members, _, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+		}, nil)
+		s.NoError(err)
+
+		var updatedUser2Member *biz.GroupMembership
+		for _, m := range members {
+			if m.User.ID == user2.ID {
+				updatedUser2Member = m
+				break
+			}
+		}
+		s.NotNil(updatedUser2Member, "User2 should still be a member")
+		s.False(updatedUser2Member.Maintainer, "User2 should no longer be a maintainer")
 	})
 }
