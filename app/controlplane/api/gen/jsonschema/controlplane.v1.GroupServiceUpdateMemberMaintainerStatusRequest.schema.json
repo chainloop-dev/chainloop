@@ -1,0 +1,44 @@
+{
+  "$id": "controlplane.v1.GroupServiceUpdateMemberMaintainerStatusRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GroupServiceUpdateMemberMaintainerStatusRequest contains the information needed to update a member's maintainer status",
+  "patternProperties": {
+    "^(groupReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "^(isMaintainer)$": {
+      "description": "The new maintainer status for the user",
+      "type": "boolean"
+    },
+    "^(userId)$": {
+      "description": "The user whose maintainer status is to be updated",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "group_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "IdentityReference is used to specify the group by either its ID or name"
+    },
+    "is_maintainer": {
+      "description": "The new maintainer status for the user",
+      "type": "boolean"
+    },
+    "user_id": {
+      "description": "The user whose maintainer status is to be updated",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_reference",
+    "user_id"
+  ],
+  "title": "Group Service Update Member Maintainer Status Request",
+  "type": "object"
+}

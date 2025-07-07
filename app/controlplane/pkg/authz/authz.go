@@ -35,23 +35,22 @@ const (
 
 	// Resources
 
-	ResourceWorkflowContract             = "workflow_contract"
-	ResourceCASArtifact                  = "cas_artifact"
-	ResourceCASBackend                   = "cas_backend"
-	ResourceReferrer                     = "referrer"
-	ResourceAvailableIntegration         = "integration_available"
-	ResourceRegisteredIntegration        = "integration_registered"
-	ResourceAttachedIntegration          = "integration_attached"
-	ResourceOrgMetric                    = "metrics_org"
-	ResourceRobotAccount                 = "robot_account"
-	ResourceWorkflowRun                  = "workflow_run"
-	ResourceWorkflow                     = "workflow"
-	Organization                         = "organization"
-	ResourceGroup                        = "group"
-	ResourceGroupMembership              = "group_membership"
-	ResourceProjectAPIToken              = "project_api_token"
-	ResourceProjectMembership            = "project_membership"
-	ResourceProjectMembershipInvitations = "project_membership_invitations"
+	ResourceWorkflowContract      = "workflow_contract"
+	ResourceCASArtifact           = "cas_artifact"
+	ResourceCASBackend            = "cas_backend"
+	ResourceReferrer              = "referrer"
+	ResourceAvailableIntegration  = "integration_available"
+	ResourceRegisteredIntegration = "integration_registered"
+	ResourceAttachedIntegration   = "integration_attached"
+	ResourceOrgMetric             = "metrics_org"
+	ResourceRobotAccount          = "robot_account"
+	ResourceWorkflowRun           = "workflow_run"
+	ResourceWorkflow              = "workflow"
+	Organization                  = "organization"
+	ResourceGroup                 = "group"
+	ResourceGroupMembership       = "group_membership"
+	ResourceProjectAPIToken       = "project_api_token"
+	ResourceProjectMembership     = "project_membership"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -149,6 +148,7 @@ var (
 	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
 	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
 	PolicyGroupRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
+	PolicyGroupUpdateMemberships = &Policy{ResourceGroupMembership, ActionUpdate}
 	// Project API Token
 	PolicyProjectAPITokenList   = &Policy{ResourceProjectAPIToken, ActionList}
 	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
@@ -302,6 +302,7 @@ var RolesMap = map[Role][]*Policy{
 		PolicyGroupListPendingInvitations,
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
+		PolicyGroupUpdateMemberships,
 	},
 }
 
@@ -373,9 +374,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
 	// For the following endpoints, we rely on the service layer to check the permissions
 	// That's why we let everyone access them (empty policies)
-	"/controlplane.v1.GroupService/AddMember":              {},
-	"/controlplane.v1.GroupService/RemoveMember":           {},
-	"/controlplane.v1.GroupService/ListPendingInvitations": {},
+	"/controlplane.v1.GroupService/AddMember":                    {},
+	"/controlplane.v1.GroupService/RemoveMember":                 {},
+	"/controlplane.v1.GroupService/ListPendingInvitations":       {},
+	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
 	// Project API Token
 	"/controlplane.v1.ProjectService/APITokenCreate": {PolicyProjectAPITokenCreate},
 	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},

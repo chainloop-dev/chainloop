@@ -421,6 +421,64 @@ func (g *GroupService) ListPendingInvitations(ctx context.Context, req *pb.Group
 	}, nil
 }
 
+// UpdateMemberMaintainerStatus updates the maintainer status of a member in a group.
+func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb.GroupServiceUpdateMemberMaintainerStatusRequest) (*pb.GroupServiceUpdateMemberMaintainerStatusResponse, error) {
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := g.userHasPermissionToUpdateMembership(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
+		return nil, err
+	}
+
+	// Parse orgID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Parse requesterID (current user)
+	requesterUUID, err := uuid.Parse(currentUser.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid user ID")
+	}
+
+	// Create options for updating the member's maintainer status
+	updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+		IdentityReference: &biz.IdentityReference{},
+		UserReference:     &biz.IdentityReference{},
+		RequesterID:       requesterUUID,
+		IsMaintainer:      req.GetIsMaintainer(),
+	}
+
+	// Parse groupID and groupName from the request
+	updateOpts.ID, updateOpts.Name, err = req.GetGroupReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	// Parse userID
+	userUUID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid user ID")
+	}
+
+	updateOpts.UserReference.ID = &userUUID
+
+	// Call the business logic to update the member's maintainer status
+	err = g.groupUseCase.UpdateMemberMaintainerStatus(ctx, orgUUID, updateOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	return &pb.GroupServiceUpdateMemberMaintainerStatusResponse{}, nil
+}
+
 // bizGroupToPb converts a biz.Group to a pb.Group protobuf message.
 func bizGroupToPb(gr *biz.Group) *pb.Group {
 	base := &pb.Group{

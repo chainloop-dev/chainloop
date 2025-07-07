@@ -195,6 +195,20 @@ export interface GroupMember {
   updatedAt?: Date;
 }
 
+/** GroupServiceUpdateMemberMaintainerStatusRequest contains the information needed to update a member's maintainer status */
+export interface GroupServiceUpdateMemberMaintainerStatusRequest {
+  /** IdentityReference is used to specify the group by either its ID or name */
+  groupReference?: IdentityReference;
+  /** The user whose maintainer status is to be updated */
+  userId: string;
+  /** The new maintainer status for the user */
+  isMaintainer: boolean;
+}
+
+/** GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status */
+export interface GroupServiceUpdateMemberMaintainerStatusResponse {
+}
+
 function createBaseGroupServiceCreateRequest(): GroupServiceCreateRequest {
   return { name: "", description: "" };
 }
@@ -1797,6 +1811,148 @@ export const GroupMember = {
   },
 };
 
+function createBaseGroupServiceUpdateMemberMaintainerStatusRequest(): GroupServiceUpdateMemberMaintainerStatusRequest {
+  return { groupReference: undefined, userId: "", isMaintainer: false };
+}
+
+export const GroupServiceUpdateMemberMaintainerStatusRequest = {
+  encode(
+    message: GroupServiceUpdateMemberMaintainerStatusRequest,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.groupReference !== undefined) {
+      IdentityReference.encode(message.groupReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.userId !== "") {
+      writer.uint32(18).string(message.userId);
+    }
+    if (message.isMaintainer === true) {
+      writer.uint32(24).bool(message.isMaintainer);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceUpdateMemberMaintainerStatusRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupServiceUpdateMemberMaintainerStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.groupReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.isMaintainer = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GroupServiceUpdateMemberMaintainerStatusRequest {
+    return {
+      groupReference: isSet(object.groupReference) ? IdentityReference.fromJSON(object.groupReference) : undefined,
+      userId: isSet(object.userId) ? String(object.userId) : "",
+      isMaintainer: isSet(object.isMaintainer) ? Boolean(object.isMaintainer) : false,
+    };
+  },
+
+  toJSON(message: GroupServiceUpdateMemberMaintainerStatusRequest): unknown {
+    const obj: any = {};
+    message.groupReference !== undefined &&
+      (obj.groupReference = message.groupReference ? IdentityReference.toJSON(message.groupReference) : undefined);
+    message.userId !== undefined && (obj.userId = message.userId);
+    message.isMaintainer !== undefined && (obj.isMaintainer = message.isMaintainer);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupServiceUpdateMemberMaintainerStatusRequest>, I>>(
+    base?: I,
+  ): GroupServiceUpdateMemberMaintainerStatusRequest {
+    return GroupServiceUpdateMemberMaintainerStatusRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupServiceUpdateMemberMaintainerStatusRequest>, I>>(
+    object: I,
+  ): GroupServiceUpdateMemberMaintainerStatusRequest {
+    const message = createBaseGroupServiceUpdateMemberMaintainerStatusRequest();
+    message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
+      ? IdentityReference.fromPartial(object.groupReference)
+      : undefined;
+    message.userId = object.userId ?? "";
+    message.isMaintainer = object.isMaintainer ?? false;
+    return message;
+  },
+};
+
+function createBaseGroupServiceUpdateMemberMaintainerStatusResponse(): GroupServiceUpdateMemberMaintainerStatusResponse {
+  return {};
+}
+
+export const GroupServiceUpdateMemberMaintainerStatusResponse = {
+  encode(_: GroupServiceUpdateMemberMaintainerStatusResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceUpdateMemberMaintainerStatusResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupServiceUpdateMemberMaintainerStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GroupServiceUpdateMemberMaintainerStatusResponse {
+    return {};
+  },
+
+  toJSON(_: GroupServiceUpdateMemberMaintainerStatusResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupServiceUpdateMemberMaintainerStatusResponse>, I>>(
+    base?: I,
+  ): GroupServiceUpdateMemberMaintainerStatusResponse {
+    return GroupServiceUpdateMemberMaintainerStatusResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupServiceUpdateMemberMaintainerStatusResponse>, I>>(
+    _: I,
+  ): GroupServiceUpdateMemberMaintainerStatusResponse {
+    const message = createBaseGroupServiceUpdateMemberMaintainerStatusResponse();
+    return message;
+  },
+};
+
 /** GroupService provides operations for managing groups within the system */
 export interface GroupService {
   /** Create creates a new group with the specified name and description */
@@ -1833,6 +1989,11 @@ export interface GroupService {
     request: DeepPartial<GroupServiceRemoveMemberRequest>,
     metadata?: grpc.Metadata,
   ): Promise<GroupServiceRemoveMemberResponse>;
+  /** UpdateMemberMaintainerStatus updates the maintainer status of a group member */
+  UpdateMemberMaintainerStatus(
+    request: DeepPartial<GroupServiceUpdateMemberMaintainerStatusRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GroupServiceUpdateMemberMaintainerStatusResponse>;
   /** ListPendingInvitations retrieves pending invitations for a group */
   ListPendingInvitations(
     request: DeepPartial<GroupServiceListPendingInvitationsRequest>,
@@ -1853,6 +2014,7 @@ export class GroupServiceClientImpl implements GroupService {
     this.ListMembers = this.ListMembers.bind(this);
     this.AddMember = this.AddMember.bind(this);
     this.RemoveMember = this.RemoveMember.bind(this);
+    this.UpdateMemberMaintainerStatus = this.UpdateMemberMaintainerStatus.bind(this);
     this.ListPendingInvitations = this.ListPendingInvitations.bind(this);
   }
 
@@ -1904,6 +2066,17 @@ export class GroupServiceClientImpl implements GroupService {
     metadata?: grpc.Metadata,
   ): Promise<GroupServiceRemoveMemberResponse> {
     return this.rpc.unary(GroupServiceRemoveMemberDesc, GroupServiceRemoveMemberRequest.fromPartial(request), metadata);
+  }
+
+  UpdateMemberMaintainerStatus(
+    request: DeepPartial<GroupServiceUpdateMemberMaintainerStatusRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GroupServiceUpdateMemberMaintainerStatusResponse> {
+    return this.rpc.unary(
+      GroupServiceUpdateMemberMaintainerStatusDesc,
+      GroupServiceUpdateMemberMaintainerStatusRequest.fromPartial(request),
+      metadata,
+    );
   }
 
   ListPendingInvitations(
@@ -2094,6 +2267,29 @@ export const GroupServiceRemoveMemberDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = GroupServiceRemoveMemberResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const GroupServiceUpdateMemberMaintainerStatusDesc: UnaryMethodDefinitionish = {
+  methodName: "UpdateMemberMaintainerStatus",
+  service: GroupServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GroupServiceUpdateMemberMaintainerStatusRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GroupServiceUpdateMemberMaintainerStatusResponse.decode(data);
       return {
         ...value,
         toObject() {

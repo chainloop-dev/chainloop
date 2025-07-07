@@ -47,6 +47,8 @@ type GroupRepo interface {
 	AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, maintainer bool) (*GroupMembership, error)
 	// RemoveMemberFromGroup removes a user from a group.
 	RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID) error
+	// UpdateMemberMaintainerStatus updates the maintainer status of a group member.
+	UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, isMaintainer bool) error
 	// ListPendingInvitationsByGroup retrieves a list of pending invitations for a group
 	ListPendingInvitationsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error)
 }
@@ -148,6 +150,18 @@ type AddMemberToGroupResult struct {
 	Membership *GroupMembership
 	// InvitationSent indicates if an invitation was sent instead of creating a membership directly.
 	InvitationSent bool
+}
+
+// UpdateMemberMaintainerStatusOpts defines options for updating a member's maintainer status in a group.
+type UpdateMemberMaintainerStatusOpts struct {
+	// Group reference
+	*IdentityReference
+	// UserReference is used to identify the user whose maintainer status is to be updated
+	UserReference *IdentityReference
+	// RequesterID is the ID of the user who is requesting to update the maintainer status. Must be a maintainer or admin.
+	RequesterID uuid.UUID
+	// IsMaintainer is the new maintainer status for the user.
+	IsMaintainer bool
 }
 
 type GroupUseCase struct {
@@ -628,6 +642,138 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 			GroupName: existingGroup.Name,
 		},
 		UserID: &userUUID,
+	}, &orgID)
+
+	return nil
+}
+
+// UpdateMemberMaintainerStatus updates the maintainer status of a group member.
+// The requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
+// nolint: gocyclo
+func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, opts *UpdateMemberMaintainerStatusOpts) error {
+	if opts == nil {
+		return NewErrValidationStr("options cannot be nil")
+	}
+
+	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
+		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	}
+
+	// Ensure we have either a UserReference or UserEmail
+	if opts.UserReference == nil || (opts.UserReference.ID == nil && opts.UserReference.Name == nil) {
+		return NewErrValidationStr("either user reference or user email must be provided")
+	}
+
+	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, opts.ID, opts.Name)
+	if err != nil {
+		return err
+	}
+
+	// Check the group exists
+	existingGroup, err := uc.groupRepo.FindByOrgAndID(ctx, orgID, resolvedGroupID)
+	if err != nil {
+		return fmt.Errorf("failed to find group: %w", err)
+	}
+
+	if existingGroup == nil {
+		return NewErrNotFound("group")
+	}
+
+	// Check if the requester is part of the organization
+	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
+	if err != nil && !IsNotFound(err) {
+		return NewErrValidationStr("failed to check existing membership")
+	}
+
+	if requesterMembership == nil {
+		return NewErrValidationStr("requester is not a member of the organization")
+	}
+
+	// Check if the requester has sufficient permissions
+	// Allow if the requester is an org owner or admin
+	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+
+	// If not an admin/owner, check if the requester is a maintainer of this group
+	if !isAdminOrOwner {
+		// Check if the requester is a maintainer of this group
+		requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+		if err != nil && !IsNotFound(err) {
+			return fmt.Errorf("failed to check requester's group membership: %w", err)
+		}
+
+		// If not a maintainer of this group, deny access
+		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
+			return NewErrValidationStr("requester does not have permission to update maintainer status in this group")
+		}
+	}
+
+	// Find the user by reference or email
+	var userUUID uuid.UUID
+	var userEmail string
+
+	// If UserReference is provided, use it to resolve the user ID
+	if opts.UserReference != nil && (opts.UserReference.ID != nil || opts.UserReference.Name != nil) {
+		// If ID is provided directly, use it
+		if opts.UserReference.ID != nil {
+			userUUID = *opts.UserReference.ID
+			// Look up the user to verify they exist and get their email
+			user, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, userUUID)
+			if err != nil {
+				return fmt.Errorf("failed to find user by ID: %w", err)
+			}
+			if user == nil {
+				return NewErrNotFound("user")
+			}
+			userEmail = user.User.Email
+		} else if opts.UserReference.Name != nil {
+			// If name (email) is provided, look up the user
+			userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, *opts.UserReference.Name)
+			if err != nil && !IsNotFound(err) {
+				return fmt.Errorf("failed to find user by email: %w", err)
+			}
+			if userMembership == nil {
+				return NewErrValidationStr("user with the provided email is not a member of the organization")
+			}
+			userUUID = uuid.MustParse(userMembership.User.ID)
+			userEmail = *opts.UserReference.Name
+		}
+	} else {
+		// Fall back to using UserEmail
+		userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, *opts.UserReference.Name)
+		if err != nil && !IsNotFound(err) {
+			return fmt.Errorf("failed to find user by email: %w", err)
+		}
+		if userMembership == nil {
+			return NewErrValidationStr("user with the provided email is not a member of the organization")
+		}
+		userUUID = uuid.MustParse(userMembership.User.ID)
+		userEmail = *opts.UserReference.Name
+	}
+
+	// Check if the user is a member of the group
+	existingMembership, err := uc.groupRepo.FindGroupMembershipByGroupAndID(ctx, resolvedGroupID, userUUID)
+	if err != nil && !IsNotFound(err) {
+		return fmt.Errorf("failed to check existing membership: %w", err)
+	}
+	if existingMembership == nil {
+		return NewErrValidationStr("user is not a member of this group")
+	}
+
+	// Update the member's maintainer status
+	if err := uc.groupRepo.UpdateMemberMaintainerStatus(ctx, orgID, resolvedGroupID, userUUID, opts.IsMaintainer); err != nil {
+		return fmt.Errorf("failed to update member maintainer status: %w", err)
+	}
+
+	// Dispatch event to the audit log for group membership update
+	uc.auditorUC.Dispatch(ctx, &events.GroupMemberUpdated{
+		GroupBase: &events.GroupBase{
+			GroupID:   &existingGroup.ID,
+			GroupName: existingGroup.Name,
+		},
+		UserID:              &userUUID,
+		UserEmail:           userEmail,
+		NewMaintainerStatus: opts.IsMaintainer,
+		OldMaintainerStatus: existingMembership.Maintainer,
 	}, &orgID)
 
 	return nil

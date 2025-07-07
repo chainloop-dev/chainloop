@@ -43,6 +43,8 @@ service GroupService {
   rpc AddMember(GroupServiceAddMemberRequest) returns (GroupServiceAddMemberResponse) {}
   // RemoveMember removes a user from a group
   rpc RemoveMember(GroupServiceRemoveMemberRequest) returns (GroupServiceRemoveMemberResponse) {}
+  // UpdateMemberMaintainerStatus updates the maintainer status of a group member
+  rpc UpdateMemberMaintainerStatus(GroupServiceUpdateMemberMaintainerStatusRequest) returns (GroupServiceUpdateMemberMaintainerStatusResponse) {}
   // ListPendingInvitations retrieves pending invitations for a group
   rpc ListPendingInvitations(GroupServiceListPendingInvitationsRequest) returns (GroupServiceListPendingInvitationsResponse) {}
 }
@@ -216,3 +218,19 @@ message GroupMember {
   // Timestamp when the group membership was last modified
   google.protobuf.Timestamp updated_at = 4;
 }
+
+// GroupServiceUpdateMemberMaintainerStatusRequest contains the information needed to update a member's maintainer status
+message GroupServiceUpdateMemberMaintainerStatusRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // The user whose maintainer status is to be updated
+  string user_id = 2 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).required = true
+  ];
+  // The new maintainer status for the user
+  bool is_maintainer = 3;
+}
+
+// GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status
+message GroupServiceUpdateMemberMaintainerStatusResponse {}
