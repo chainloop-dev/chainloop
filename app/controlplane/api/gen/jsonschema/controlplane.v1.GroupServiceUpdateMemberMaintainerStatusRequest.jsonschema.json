@@ -12,9 +12,11 @@
       "description": "The new maintainer status for the user",
       "type": "boolean"
     },
-    "^(user_reference)$": {
-      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
-      "description": "The user whose maintainer status is to be updated"
+    "^(user_id)$": {
+      "description": "The user whose maintainer status is to be updated",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
     }
   },
   "properties": {
@@ -26,14 +28,16 @@
       "description": "The new maintainer status for the user",
       "type": "boolean"
     },
-    "userReference": {
-      "$ref": "controlplane.v1.IdentityReference.jsonschema.json",
-      "description": "The user whose maintainer status is to be updated"
+    "userId": {
+      "description": "The user whose maintainer status is to be updated",
+      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
     }
   },
   "required": [
     "group_reference",
-    "user_reference"
+    "user_id"
   ],
   "title": "Group Service Update Member Maintainer Status Request",
   "type": "object"

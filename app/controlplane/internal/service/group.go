@@ -462,11 +462,13 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
 	}
 
-	// Parse userID and userName from the request
-	updateOpts.UserReference.ID, updateOpts.UserReference.Name, err = req.GetUserReference().Parse()
+	// Parse userID
+	userUUID, err := uuid.Parse(req.GetUserId())
 	if err != nil {
-		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid user reference: %s", err.Error()))
+		return nil, errors.BadRequest("invalid", "invalid user ID")
 	}
+
+	updateOpts.UserReference.ID = &userUUID
 
 	// Call the business logic to update the member's maintainer status
 	err = g.groupUseCase.UpdateMemberMaintainerStatus(ctx, orgUUID, updateOpts)

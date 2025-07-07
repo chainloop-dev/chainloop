@@ -224,7 +224,10 @@ message GroupServiceUpdateMemberMaintainerStatusRequest {
   // IdentityReference is used to specify the group by either its ID or name
   IdentityReference group_reference = 1 [(buf.validate.field).required = true];
   // The user whose maintainer status is to be updated
-  IdentityReference user_reference = 2 [(buf.validate.field).required = true];
+  string user_id = 2 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).required = true
+  ];
   // The new maintainer status for the user
   bool is_maintainer = 3;
 }
