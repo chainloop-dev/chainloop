@@ -52,7 +52,8 @@ type ProjectsRepo interface {
 
 // ProjectUseCase is a use case for projects
 type ProjectUseCase struct {
-	logger *log.Helper
+	logger   *log.Helper
+	enforcer *authz.Enforcer
 	// Use Cases
 	auditorUC       *AuditorUseCase
 	groupUC         *GroupUseCase
@@ -142,7 +143,7 @@ type AddMemberToProjectResult struct {
 	InvitationSent bool
 }
 
-func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase, orgInvitationUC *OrgInvitationUseCase, orgInvitationRepo OrgInvitationRepo) *ProjectUseCase {
+func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase, orgInvitationUC *OrgInvitationUseCase, orgInvitationRepo OrgInvitationRepo, enforcer *authz.Enforcer) *ProjectUseCase {
 	return &ProjectUseCase{
 		logger:               servicelogger.ScopedHelper(logger, "biz/project"),
 		projectsRepository:   projectsRepository,
@@ -152,6 +153,7 @@ func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, memb
 		membershipUC:         membershipUC,
 		orgInvitationUC:      orgInvitationUC,
 		orgInvitationRepo:    orgInvitationRepo,
+		enforcer:             enforcer,
 	}
 }
 
@@ -356,9 +358,13 @@ func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, proj
 		return nil, fmt.Errorf("failed to check requester's role: %w", err)
 	}
 
-	// Only send an invitation if the requester is an admin or owner of the organization
-	if requesterMembership.Role != authz.RoleAdmin && requesterMembership.Role != authz.RoleOwner {
-		return nil, NewErrValidationStr("only organization admins or owners can invite new users to projects")
+	pass, err := uc.enforcer.Enforce(string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check requester's role: %w", err)
+	}
+
+	if !pass {
+		return nil, NewErrValidationStr("only organization admins or owners can invite new users")
 	}
 
 	// Create an organization invitation with project context
