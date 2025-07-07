@@ -309,7 +309,7 @@ func (s *projectMembersIntegrationTestSuite) TestAddMemberToProject() {
 		result, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
 		s.NotNil(result)
-		s.True(result.InvitationSent, "An invitation should be sent for users not in the organization")
+		s.True(result.InvitationSent, "An invitation should be sent for users not in the organization when requester is an org admin")
 		s.Nil(result.Membership, "No membership should be created directly")
 
 		// Verify an invitation was created
@@ -334,23 +334,73 @@ func (s *projectMembersIntegrationTestSuite) TestAddMemberToProject() {
 		s.Equal(authz.RoleProjectViewer, foundInvitation.Context.ProjectRole)
 	})
 
-	s.Run("add member who is already in the project", func() {
-		// Try to add user2 again (who we added in the first test)
-		opts := &biz.AddMemberToProjectOpts{
+	s.Run("project admin (non-org admin) should not be able to invite new users", func() {
+		// Create a project admin who is not an org admin
+		projectAdminUser, err := s.User.UpsertByEmail(ctx, "project-admin@example.com", nil)
+		require.NoError(s.T(), err)
+
+		// Add user to organization as a regular member (not org admin)
+		_, err = s.Membership.Create(ctx, s.org.ID, projectAdminUser.ID, biz.WithMembershipRole(authz.RoleOrgMember), biz.WithCurrentMembership())
+		require.NoError(s.T(), err)
+
+		// Add user to project as a project admin
+		projectAdminOpts := &biz.AddMemberToProjectOpts{
 			ProjectReference: projectRef,
-			UserEmail:        "add-user2@example.com",
-			RequesterID:      uuid.MustParse(s.user.ID),
+			UserEmail:        "project-admin@example.com",
+			RequesterID:      uuid.MustParse(s.user.ID), // Using the org admin to add them
 			Role:             authz.RoleProjectAdmin,
 		}
+		_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), projectAdminOpts)
+		require.NoError(s.T(), err)
 
-		_, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
+		// Create a new user who is not in the organization
+		nonExistingEmail := "not-in-org-2@example.com"
+		_, err = s.User.UpsertByEmail(ctx, nonExistingEmail, nil)
+		require.NoError(s.T(), err)
+
+		// Try to add the non-existing user using the project admin
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			UserEmail:        nonExistingEmail,
+			RequesterID:      uuid.MustParse(projectAdminUser.ID),
+			Role:             authz.RoleProjectViewer,
+		}
+
+		// The invitation should be rejected
+		_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.Error(err)
-		s.True(biz.IsErrAlreadyExists(err))
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "only organization admins or owners can invite new users")
+	})
 
-		// Verify the number of members hasn't changed
-		_, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+	s.Run("org owner should be able to invite new users", func() {
+		// Create an org owner
+		orgOwnerUser, err := s.User.UpsertByEmail(ctx, "org-owner@example.com", nil)
+		require.NoError(s.T(), err)
+
+		// Add user to organization as an owner
+		_, err = s.Membership.Create(ctx, s.org.ID, orgOwnerUser.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
+		require.NoError(s.T(), err)
+
+		// Create a new user who is not in the organization
+		nonExistingEmail := "not-in-org-3@example.com"
+		_, err = s.User.UpsertByEmail(ctx, nonExistingEmail, nil)
+		require.NoError(s.T(), err)
+
+		// Try to add the non-existing user using the org owner
+		opts := &biz.AddMemberToProjectOpts{
+			ProjectReference: projectRef,
+			UserEmail:        nonExistingEmail,
+			RequesterID:      uuid.MustParse(orgOwnerUser.ID),
+			Role:             authz.RoleProjectViewer,
+		}
+
+		// The invitation should be sent successfully
+		result, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), opts)
 		s.NoError(err)
-		s.Equal(2, count) // still the original 2 members
+		s.NotNil(result)
+		s.True(result.InvitationSent, "An invitation should be sent for users not in the organization when requester is an org owner")
+		s.Nil(result.Membership, "No membership should be created directly")
 	})
 }
 

@@ -337,6 +337,7 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 }
 
 // handleNonExistingUser creates an invitation for a user not yet in the organization with project context
+// Only sends an invitation if the requester is an admin or owner of the organization
 func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, projectID uuid.UUID, opts *AddMemberToProjectOpts) (*AddMemberToProjectResult, error) {
 	// Check if the user email is already invited to the organization
 	invitation, err := uc.orgInvitationRepo.PendingInvitation(ctx, orgID, opts.UserEmail)
@@ -347,6 +348,17 @@ func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, proj
 	// If an invitation already exists, return an error
 	if invitation != nil {
 		return nil, NewErrAlreadyExistsStr("user is already invited to the organization")
+	}
+
+	// Check if the requester is an admin or owner of the organization
+	requesterMembership, err := uc.membershipUC.FindByOrgAndUser(ctx, orgID.String(), opts.RequesterID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to check requester's role: %w", err)
+	}
+
+	// Only send an invitation if the requester is an admin or owner of the organization
+	if requesterMembership.Role != authz.RoleAdmin && requesterMembership.Role != authz.RoleOwner {
+		return nil, NewErrValidationStr("only organization admins or owners can invite new users to projects")
 	}
 
 	// Create an organization invitation with project context
