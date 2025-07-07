@@ -566,7 +566,7 @@ func (s *groupMembersIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add user to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin))
 	assert.NoError(err)
 
 	// Create a group for membership tests
