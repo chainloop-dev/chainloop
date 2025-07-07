@@ -432,6 +432,10 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 		return nil, err
 	}
 
+	if err := g.userHasPermissionToUpdateMembership(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
+		return nil, err
+	}
+
 	// Parse orgID
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
