@@ -390,16 +390,19 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/RemoveMember":                 {},
 	"/controlplane.v1.GroupService/ListPendingInvitations":       {},
 	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
+
+	// Projects: Check happen at service level
+
 	// Project API Token
-	"/controlplane.v1.ProjectService/APITokenCreate": {PolicyProjectAPITokenCreate},
-	"/controlplane.v1.ProjectService/APITokenList":   {PolicyProjectAPITokenList},
-	"/controlplane.v1.ProjectService/APITokenRevoke": {PolicyProjectAPITokenRevoke},
+	"/controlplane.v1.ProjectService/APITokenCreate": {},
+	"/controlplane.v1.ProjectService/APITokenList":   {},
+	"/controlplane.v1.ProjectService/APITokenRevoke": {},
 	// Project Memberships
-	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
-	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
-	"/controlplane.v1.ProjectService/RemoveMember":           {PolicyProjectRemoveMemberships},
-	"/controlplane.v1.ProjectService/UpdateMemberRole":       {PolicyProjectUpdateMemberships},
-	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/ListMembers":            {},
+	"/controlplane.v1.ProjectService/AddMember":              {},
+	"/controlplane.v1.ProjectService/RemoveMember":           {},
+	"/controlplane.v1.ProjectService/UpdateMemberRole":       {},
+	"/controlplane.v1.ProjectService/ListPendingInvitations": {},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
