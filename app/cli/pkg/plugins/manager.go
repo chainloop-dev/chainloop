@@ -24,12 +24,14 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/rs/zerolog"
 )
 
 // Manager handles loading and managing plugins.
 type Manager struct {
 	plugins       map[string]*LoadedPlugin
 	pluginClients map[string]*plugin.Client
+	logger        *zerolog.Logger
 }
 
 // LoadedPlugin represents a loaded plugin with its metadata.
@@ -40,10 +42,11 @@ type LoadedPlugin struct {
 }
 
 // NewManager creates a new plugin manager.
-func NewManager() *Manager {
+func NewManager(logger *zerolog.Logger) *Manager {
 	return &Manager{
 		plugins:       make(map[string]*LoadedPlugin),
 		pluginClients: make(map[string]*plugin.Client),
+		logger:        logger,
 	}
 }
 
@@ -63,8 +66,8 @@ func (m *Manager) LoadPlugins(ctx context.Context) error {
 	for _, plugin := range plugins {
 		// Load the plugin - if there is an error just skip it - we can think of a better strategy later
 		if err := m.loadPlugin(ctx, plugin); err != nil {
-			fmt.Printf("failed to load plugin: %s - reason: %s\n", plugin, getFirstErrorLine(err))
-
+			m.logger.Error().Msgf("failed to load plugin: %s", plugin)
+			m.logger.Debug().Err(err).Msgf("plugin loading failure reason: %s", plugin)
 			continue
 		}
 	}
