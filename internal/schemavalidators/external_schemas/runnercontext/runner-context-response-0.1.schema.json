@@ -1,273 +1,353 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://chainloop.dev/schemas/runner-context-response-0.1.json",
-  "title": "Runner Context Response",
-  "description": "Schema for the runner context response containing repository configuration and metadata",
-  "type": "object",
-  "required": ["meta", "data"],
   "properties": {
-    "meta": {
-      "$ref": "#/definitions/RunnerContextMeta"
-    },
-    "data": {
-      "$ref": "#/definitions/RunnerContextData"
-    }
+      "meta": {
+          "properties": {
+              "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the runner context schema version"
+              }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+              "id"
+          ],
+          "description": "Metadata information for the runner context"
+      },
+      "data": {
+          "properties": {
+              "tool": {
+                  "type": "string",
+                  "description": "Tool identifier with version/hash information"
+              },
+              "provider": {
+                  "type": "string",
+                  "description": "Source control provider (e.g."
+              },
+              "repos": {
+                  "items": {
+                      "properties": {
+                          "owner": {
+                              "type": "string",
+                              "description": "Repository owner name"
+                          },
+                          "repository": {
+                              "type": "string",
+                              "description": "Repository name"
+                          },
+                          "branches": {
+                              "items": {
+                                  "properties": {
+                                      "name": {
+                                          "type": "string",
+                                          "description": "Branch name"
+                                      },
+                                      "active_rules": {
+                                          "items": {
+                                              "properties": {
+                                                  "name": {
+                                                      "type": "string",
+                                                      "description": "Rule name"
+                                                  },
+                                                  "enabled": {
+                                                      "type": "string",
+                                                      "description": "Rule enabled state"
+                                                  },
+                                                  "context": {
+                                                      "items": {
+                                                          "properties": {
+                                                              "name": {
+                                                                  "type": "string",
+                                                                  "description": "Context variable name"
+                                                              },
+                                                              "value": {
+                                                                  "type": "string",
+                                                                  "description": "Context variable value"
+                                                              },
+                                                              "enabled": {
+                                                                  "type": "string",
+                                                                  "description": "Context variable enabled state"
+                                                              }
+                                                          },
+                                                          "additionalProperties": false,
+                                                          "type": "object",
+                                                          "required": [
+                                                              "name",
+                                                              "value",
+                                                              "enabled"
+                                                          ]
+                                                      },
+                                                      "type": "array",
+                                                      "description": "Array of context variables"
+                                                  }
+                                              },
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                  "name",
+                                                  "enabled"
+                                              ]
+                                          },
+                                          "type": "array",
+                                          "description": "Array of active rules for the branch"
+                                      },
+                                      "users": {
+                                          "items": {
+                                              "properties": {
+                                                  "id": {
+                                                      "type": "string",
+                                                      "description": "User identifier"
+                                                  },
+                                                  "name": {
+                                                      "type": "string",
+                                                      "description": "User name"
+                                                  },
+                                                  "roles": {
+                                                      "items": {
+                                                          "type": "string"
+                                                      },
+                                                      "type": "array",
+                                                      "description": "User roles"
+                                                  },
+                                                  "settings": {
+                                                      "items": {
+                                                          "properties": {
+                                                              "name": {
+                                                                  "type": "string",
+                                                                  "description": "User-specific setting name"
+                                                              },
+                                                              "value": {
+                                                                  "type": "string",
+                                                                  "description": "User-specific setting value"
+                                                              },
+                                                              "context": {
+                                                                  "items": {
+                                                                      "properties": {
+                                                                          "name": {
+                                                                              "type": "string",
+                                                                              "description": "Context variable name"
+                                                                          },
+                                                                          "value": {
+                                                                              "type": "string",
+                                                                              "description": "Context variable value"
+                                                                          },
+                                                                          "enabled": {
+                                                                              "type": "string",
+                                                                              "description": "Context variable enabled state"
+                                                                          }
+                                                                      },
+                                                                      "additionalProperties": false,
+                                                                      "type": "object",
+                                                                      "required": [
+                                                                          "name",
+                                                                          "value",
+                                                                          "enabled"
+                                                                      ]
+                                                                  },
+                                                                  "type": "array",
+                                                                  "description": "Array of context variables"
+                                                              }
+                                                          },
+                                                          "additionalProperties": false,
+                                                          "type": "object",
+                                                          "required": [
+                                                              "name",
+                                                              "value"
+                                                          ]
+                                                      },
+                                                      "type": "array",
+                                                      "description": "User-specific settings"
+                                                  }
+                                              },
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                  "id",
+                                                  "name"
+                                              ]
+                                          },
+                                          "type": "array",
+                                          "description": "Users with access to this branch"
+                                      },
+                                      "commits": {
+                                          "items": {
+                                              "type": "string"
+                                          },
+                                          "type": "array",
+                                          "description": "Array of commit SHA identifiers"
+                                      }
+                                  },
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                      "name",
+                                      "active_rules"
+                                  ]
+                              },
+                              "type": "array",
+                              "description": "Array of branch configurations"
+                          },
+                          "settings": {
+                              "items": {
+                                  "properties": {
+                                      "name": {
+                                          "type": "string",
+                                          "description": "Setting name"
+                                      },
+                                      "value": {
+                                          "type": "string",
+                                          "description": "Setting value"
+                                      },
+                                      "context": {
+                                          "items": {
+                                              "properties": {
+                                                  "name": {
+                                                      "type": "string",
+                                                      "description": "Context variable name"
+                                                  },
+                                                  "value": {
+                                                      "type": "string",
+                                                      "description": "Context variable value"
+                                                  },
+                                                  "enabled": {
+                                                      "type": "string",
+                                                      "description": "Context variable enabled state"
+                                                  }
+                                              },
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                  "name",
+                                                  "value",
+                                                  "enabled"
+                                              ]
+                                          },
+                                          "type": "array",
+                                          "description": "Array of context variables"
+                                      }
+                                  },
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                      "name",
+                                      "value"
+                                  ]
+                              },
+                              "type": "array",
+                              "description": "Array of repository-level settings"
+                          },
+                          "users": {
+                              "items": {
+                                  "properties": {
+                                      "id": {
+                                          "type": "string",
+                                          "description": "User identifier"
+                                      },
+                                      "name": {
+                                          "type": "string",
+                                          "description": "User name"
+                                      },
+                                      "roles": {
+                                          "items": {
+                                              "type": "string"
+                                          },
+                                          "type": "array",
+                                          "description": "User roles"
+                                      },
+                                      "settings": {
+                                          "items": {
+                                              "properties": {
+                                                  "name": {
+                                                      "type": "string",
+                                                      "description": "User-specific setting name"
+                                                  },
+                                                  "value": {
+                                                      "type": "string",
+                                                      "description": "User-specific setting value"
+                                                  },
+                                                  "context": {
+                                                      "items": {
+                                                          "properties": {
+                                                              "name": {
+                                                                  "type": "string",
+                                                                  "description": "Context variable name"
+                                                              },
+                                                              "value": {
+                                                                  "type": "string",
+                                                                  "description": "Context variable value"
+                                                              },
+                                                              "enabled": {
+                                                                  "type": "string",
+                                                                  "description": "Context variable enabled state"
+                                                              }
+                                                          },
+                                                          "additionalProperties": false,
+                                                          "type": "object",
+                                                          "required": [
+                                                              "name",
+                                                              "value",
+                                                              "enabled"
+                                                          ]
+                                                      },
+                                                      "type": "array",
+                                                      "description": "Array of context variables"
+                                                  }
+                                              },
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                  "name",
+                                                  "value"
+                                              ]
+                                          },
+                                          "type": "array",
+                                          "description": "User-specific settings"
+                                      }
+                                  },
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                      "id",
+                                      "name"
+                                  ]
+                              },
+                              "type": "array",
+                              "description": "Array of user configurations"
+                          }
+                      },
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                          "owner",
+                          "repository"
+                      ]
+                  },
+                  "type": "array",
+                  "description": "Array of repository configurations"
+              },
+              "org": {
+                  "items": true,
+                  "type": "array",
+                  "description": "Organization-level configuration"
+              }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+              "tool",
+              "provider"
+          ],
+          "description": "Main payload data containing tool"
+      }
   },
-  "definitions": {
-    "RunnerContextMeta": {
-      "title": "Runner Context Meta",
-      "description": "Metadata information for the runner context",
-      "type": "object",
-      "required": ["id"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the runner context schema version"
-        }
-      },
-      "additionalProperties": false
-    },
-    "RunnerContextData": {
-      "title": "Runner Context Data",
-      "description": "Main payload data containing tool, provider, and repository information",
-      "type": "object",
-      "required": ["tool", "provider"],
-      "properties": {
-        "tool": {
-          "type": "string",
-          "description": "Tool identifier with version/hash information"
-        },
-        "provider": {
-          "type": "string",
-          "description": "Source control provider (e.g., GITHUB, GITLAB)"
-        },
-        "repos": {
-          "type": "array",
-          "description": "Array of repository configurations",
-          "items": {
-            "$ref": "#/definitions/Repo"
-          }
-        },
-        "org": {
-          "type": "array",
-          "description": "Organization-level configuration (currently unused)",
-          "items": {}
-        }
-      },
-      "additionalProperties": false
-    },
-    "Repo": {
-      "title": "Repository",
-      "description": "Repository configuration including branches, settings, and users",
-      "type": "object",
-      "required": ["owner", "repository"],
-      "properties": {
-        "owner": {
-          "type": "string",
-          "description": "Repository owner name"
-        },
-        "owner_id": {
-          "type": "string",
-          "description": "Repository owner unique identifier"
-        },
-        "repository": {
-          "type": "string",
-          "description": "Repository name"
-        },
-        "repository_id": {
-          "type": "string",
-          "description": "Repository unique identifier"
-        },
-        "branches": {
-          "type": "array",
-          "description": "Array of branch configurations",
-          "items": {
-            "$ref": "#/definitions/Branch"
-          }
-        },
-        "settings": {
-          "type": "array",
-          "description": "Repository-level settings",
-          "items": {
-            "$ref": "#/definitions/Setting"
-          }
-        },
-        "users": {
-          "type": "array",
-          "description": "Repository-level users with roles and settings",
-          "items": {
-            "$ref": "#/definitions/User"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "Branch": {
-      "title": "Branch",
-      "description": "Branch configuration with rules, users, and commits",
-      "type": "object",
-      "required": ["name", "active_rules"],
-      "properties": {
-        "branch_id": {
-          "type": "string",
-          "description": "Branch unique identifier"
-        },
-        "name": {
-          "type": "string",
-          "description": "Branch name"
-        },
-        "active_rules": {
-          "type": "array",
-          "description": "Active rules for this branch",
-          "items": {
-            "$ref": "#/definitions/Rule"
-          }
-        },
-        "users": {
-          "type": "array",
-          "description": "Users with access to this branch",
-          "items": {
-            "$ref": "#/definitions/User"
-          }
-        },
-        "commits": {
-          "type": "array",
-          "description": "Array of commit SHA identifiers",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]+$"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "Rule": {
-      "title": "Rule",
-      "description": "Rule configuration with context variables",
-      "type": "object",
-      "required": ["name", "enabled"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Rule name identifier"
-        },
-        "enabled": {
-          "type": "string",
-          "description": "Rule enabled status"
-        },
-        "context": {
-          "type": "array",
-          "description": "Context variables for this rule",
-          "items": {
-            "$ref": "#/definitions/SettingContext"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "SettingContext": {
-      "title": "Setting Context",
-      "description": "Context variable with name, value, and enabled status",
-      "type": "object",
-      "required": ["name", "value", "enabled"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Context variable name"
-        },
-        "value": {
-          "type": "string",
-          "description": "Context variable value"
-        },
-        "enabled": {
-          "type": "string",
-          "description": "Context variable enabled status"
-        }
-      },
-      "additionalProperties": false
-    },
-    "Setting": {
-      "title": "Setting",
-      "description": "Setting configuration with optional context",
-      "type": "object",
-      "required": ["name", "value"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Setting name identifier"
-        },
-        "value": {
-          "type": "string",
-          "description": "Setting value"
-        },
-        "context": {
-          "type": "array",
-          "description": "Optional context variables for this setting",
-          "items": {
-            "$ref": "#/definitions/SettingContext"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "User": {
-      "title": "User",
-      "description": "User configuration with roles and settings",
-      "type": "object",
-      "required": ["id", "name"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "User unique identifier"
-        },
-        "name": {
-          "type": "string",
-          "description": "User display name"
-        },
-        "role": {
-          "type": "string",
-          "description": "Single role for branch-level users"
-        },
-        "roles": {
-          "type": "array",
-          "description": "Multiple roles for repository-level users",
-          "items": {
-            "type": "string"
-          }
-        },
-        "settings": {
-          "type": "array",
-          "description": "User-specific settings (for repository-level users)",
-          "items": {
-            "$ref": "#/definitions/UserSetting"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "UserSetting": {
-      "title": "User Setting",
-      "description": "User-specific setting with context variables",
-      "type": "object",
-      "required": ["name", "value", "context"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Setting name identifier"
-        },
-        "value": {
-          "type": "string",
-          "description": "Setting value"
-        },
-        "context": {
-          "type": "array",
-          "description": "Context variables for this user setting",
-          "items": {
-            "$ref": "#/definitions/SettingContext"
-          }
-        }
-      },
-      "additionalProperties": false
-    }
-  }
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+      "meta",
+      "data"
+  ],
+  "title": "Runner Context Response Schema",
+  "description": "JSON Schema for validating the Runner Context Response structure"
 }
