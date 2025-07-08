@@ -172,10 +172,7 @@ func (action *PluginInstall) Run(_ context.Context, opts *PluginInstallOptions) 
 
 	// determine filename
 	filename := filepath.Base(opts.File)
-	if opts.Filename != "" {
-		filename = opts.Filename
-		action.cfg.Logger.Debug().Str("customFilename", opts.Filename).Msg("Using custom filename")
-	} else if filename == "." || filename == "/" {
+	if filename == "." || filename == "/" {
 		action.cfg.Logger.Error().Str("file", opts.File).Msg("Invalid URL or object key, could not determine filename")
 		return nil, fmt.Errorf("invalid URL or object key, could not determine filename")
 	}
