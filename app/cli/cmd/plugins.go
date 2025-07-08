@@ -270,7 +270,7 @@ func newPluginInstallCmd() *cobra.Command {
 	}
 
 	// Common flags
-	cmd.Flags().StringVarP(&file, "file", "f", "", "URL or path to the plugin to install (required)")
+	cmd.Flags().StringVarP(&file, "file", "f", "", "URL or path to the plugin to install")
 	cobra.CheckErr(cmd.MarkFlagRequired("file"))
 
 	return cmd
