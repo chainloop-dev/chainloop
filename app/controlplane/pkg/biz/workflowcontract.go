@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,6 +41,17 @@ type WorkflowContract struct {
 	CreatedAt               *time.Time
 	// WorkflowRefs is the list of workflows associated with this contract
 	WorkflowRefs []*WorkflowRef
+	// entity the contract is scoped to, if not set it's scoped to the organization
+	ScopedEntity *ScopedEntity
+}
+
+type ScopedEntity struct {
+	// Type is the type of the scoped entity i.e project or org
+	Type string
+	// ID is the id of the scoped entity
+	ID uuid.UUID
+	// Name is the name of the scoped entity
+	Name string
 }
 
 type WorkflowContractVersion struct {
@@ -153,6 +164,7 @@ type WorkflowContractCreateOpts struct {
 	OrgID, Name string
 	RawSchema   []byte
 	Description *string
+	ProjectID   *uuid.UUID
 	// Make sure that the name is unique in the organization
 	AddUniquePrefix bool
 }
@@ -192,8 +204,11 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 
 	// Create a workflow with a unique name if needed
 	args := &ContractCreateOpts{
-		OrgID: orgUUID, Name: opts.Name, Description: opts.Description,
-		Contract: contract,
+		OrgID:       orgUUID,
+		Name:        opts.Name,
+		Description: opts.Description,
+		Contract:    contract,
+		ProjectID:   opts.ProjectID,
 	}
 
 	var c *WorkflowContract

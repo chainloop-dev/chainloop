@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.ScopedEntity.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "ID is the id of the scoped entity",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name is the name of the scoped entity",
+      "type": "string"
+    },
+    "type": {
+      "description": "Type is the type of the scoped entity i.e project or org",
+      "type": "string"
+    }
+  },
+  "title": "Scoped Entity",
+  "type": "object"
+}

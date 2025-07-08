@@ -437,6 +437,17 @@ export interface WorkflowContractItem {
    */
   workflowNames: string[];
   workflowRefs: WorkflowRef[];
+  /** wether the contract is scoped to an entity in the organization */
+  scopedEntity?: ScopedEntity;
+}
+
+export interface ScopedEntity {
+  /** Type is the type of the scoped entity i.e project or org */
+  type: string;
+  /** ID is the id of the scoped entity */
+  id: string;
+  /** Name is the name of the scoped entity */
+  name: string;
 }
 
 export interface WorkflowRef {
@@ -2806,6 +2817,7 @@ function createBaseWorkflowContractItem(): WorkflowContractItem {
     latestRevisionCreatedAt: undefined,
     workflowNames: [],
     workflowRefs: [],
+    scopedEntity: undefined,
   };
 }
 
@@ -2834,6 +2846,9 @@ export const WorkflowContractItem = {
     }
     for (const v of message.workflowRefs) {
       WorkflowRef.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.scopedEntity !== undefined) {
+      ScopedEntity.encode(message.scopedEntity, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -2901,6 +2916,13 @@ export const WorkflowContractItem = {
 
           message.workflowRefs.push(WorkflowRef.decode(reader, reader.uint32()));
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.scopedEntity = ScopedEntity.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2924,6 +2946,7 @@ export const WorkflowContractItem = {
       workflowRefs: Array.isArray(object?.workflowRefs)
         ? object.workflowRefs.map((e: any) => WorkflowRef.fromJSON(e))
         : [],
+      scopedEntity: isSet(object.scopedEntity) ? ScopedEntity.fromJSON(object.scopedEntity) : undefined,
     };
   },
 
@@ -2946,6 +2969,8 @@ export const WorkflowContractItem = {
     } else {
       obj.workflowRefs = [];
     }
+    message.scopedEntity !== undefined &&
+      (obj.scopedEntity = message.scopedEntity ? ScopedEntity.toJSON(message.scopedEntity) : undefined);
     return obj;
   },
 
@@ -2963,6 +2988,93 @@ export const WorkflowContractItem = {
     message.latestRevisionCreatedAt = object.latestRevisionCreatedAt ?? undefined;
     message.workflowNames = object.workflowNames?.map((e) => e) || [];
     message.workflowRefs = object.workflowRefs?.map((e) => WorkflowRef.fromPartial(e)) || [];
+    message.scopedEntity = (object.scopedEntity !== undefined && object.scopedEntity !== null)
+      ? ScopedEntity.fromPartial(object.scopedEntity)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseScopedEntity(): ScopedEntity {
+  return { type: "", id: "", name: "" };
+}
+
+export const ScopedEntity = {
+  encode(message: ScopedEntity, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== "") {
+      writer.uint32(10).string(message.type);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ScopedEntity {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseScopedEntity();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ScopedEntity {
+    return {
+      type: isSet(object.type) ? String(object.type) : "",
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+    };
+  },
+
+  toJSON(message: ScopedEntity): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = message.type);
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ScopedEntity>, I>>(base?: I): ScopedEntity {
+    return ScopedEntity.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ScopedEntity>, I>>(object: I): ScopedEntity {
+    const message = createBaseScopedEntity();
+    message.type = object.type ?? "";
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };

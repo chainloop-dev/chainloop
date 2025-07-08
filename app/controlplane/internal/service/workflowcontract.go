@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -93,6 +95,23 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	// Force project if RBAC is enabled
+	if rbacEnabled(ctx) && !req.ProjectReference.IsSet() {
+		return nil, errors.BadRequest("invalid", "project is required")
+	}
+
+	// if the project is provided we make sure it exists and the user has permission to it
+	var projectID *uuid.UUID
+	if req.ProjectReference.IsSet() {
+		// Make sure the provided project exists and the user has permission to create tokens in it
+		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
+		if err != nil {
+			return nil, err
+		}
+
+		projectID = &project.ID
+	}
+
 	// we need this token to forward it to the provider service next
 	token, err := entities.GetRawToken(ctx)
 	if err != nil {
@@ -107,9 +126,12 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 
 	// Currently supporting only v1 version
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
-		OrgID: currentOrg.ID,
-		Name:  req.Name, Description: req.Description,
-		RawSchema: req.RawContract})
+		OrgID:       currentOrg.ID,
+		Name:        req.Name,
+		Description: req.Description,
+		RawSchema:   req.RawContract,
+		ProjectID:   projectID,
+	})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -178,7 +200,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		workflowNames = append(workflowNames, ref.Name)
 	}
 
-	return &pb.WorkflowContractItem{
+	result := &pb.WorkflowContractItem{
 		Id:                      schema.ID.String(),
 		CreatedAt:               timestamppb.New(*schema.CreatedAt),
 		Name:                    schema.Name,
@@ -188,6 +210,16 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		WorkflowRefs:            workflowRefs,
 		Description:             schema.Description,
 	}
+
+	if schema.ScopedEntity != nil {
+		result.ScopedEntity = &pb.ScopedEntity{
+			Type: schema.ScopedEntity.Type,
+			Id:   schema.ScopedEntity.ID.String(),
+			Name: schema.ScopedEntity.Name,
+		}
+	}
+
+	return result
 }
 
 func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {

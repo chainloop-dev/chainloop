@@ -72,7 +72,7 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*bi
 		if err != nil {
 			return nil, err
 		}
-		res := entContractToBizContract(s, latestV, workflowReferences)
+		res := r.entContractToBizContract(ctx, s, latestV, workflowReferences)
 		result = append(result, res)
 	}
 
@@ -97,7 +97,7 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 		return nil, err
 	}
 
-	res := entContractToBizContract(contract, version, nil)
+	res := r.entContractToBizContract(ctx, contract, version, nil)
 	return res, nil
 }
 
@@ -141,7 +141,7 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 	}
 
 	return &biz.WorkflowContractWithVersion{
-		Contract: entContractToBizContract(version.Edges.Contract, version, nil),
+		Contract: r.entContractToBizContract(ctx, version.Edges.Contract, version, nil),
 		Version:  contractVersion,
 	}, nil
 }
@@ -188,7 +188,7 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 		}
 	}
 
-	s := entContractToBizContract(contract, latestV, workflowReferences)
+	s := r.entContractToBizContract(ctx, contract, latestV, workflowReferences)
 	return &biz.WorkflowContractWithVersion{
 		Contract: s,
 		Version:  v,
@@ -262,7 +262,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	}
 
 	return &biz.WorkflowContractWithVersion{
-		Contract: entContractToBizContract(contract, lv, workflowReferences),
+		Contract: r.entContractToBizContract(ctx, contract, lv, workflowReferences),
 		Version:  v,
 	}, nil
 }
@@ -285,7 +285,7 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 		return nil, err
 	}
 
-	return entContractToBizContract(contract, latestV, workflowReferences), nil
+	return r.entContractToBizContract(ctx, contract, latestV, workflowReferences), nil
 }
 
 func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.WorkflowContract, error) {
@@ -306,7 +306,7 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 		return nil, fmt.Errorf("failed to get latest version: %w", err)
 	}
 
-	return entContractToBizContract(contract, latestV, workflowReferences), nil
+	return r.entContractToBizContract(ctx, contract, latestV, workflowReferences), nil
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
@@ -403,7 +403,7 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 	return query.Only(ctx)
 }
 
-func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowReferences []*biz.WorkflowRef) *biz.WorkflowContract {
+func (r *WorkflowContractRepo) entContractToBizContract(ctx context.Context, w *ent.WorkflowContract, version *ent.WorkflowContractVersion, workflowReferences []*biz.WorkflowRef) *biz.WorkflowContract {
 	c := &biz.WorkflowContract{
 		Name:                    w.Name,
 		ID:                      w.ID,
@@ -411,6 +411,23 @@ func entContractToBizContract(w *ent.WorkflowContract, version *ent.WorkflowCont
 		LatestRevisionCreatedAt: toTimePtr(version.CreatedAt),
 		WorkflowRefs:            workflowReferences,
 		Description:             w.Description,
+	}
+
+	if w.ScopedResourceID != uuid.Nil {
+		c.ScopedEntity = &biz.ScopedEntity{
+			Type: string(w.ScopedResourceType),
+			ID:   w.ScopedResourceID,
+		}
+	}
+
+	// preload the project name if the contract is scoped to a project
+	if w.ScopedResourceType == biz.ContractScopeProject {
+		project, err := r.data.DB.Project.Get(ctx, w.ScopedResourceID)
+		if err != nil {
+			r.log.Errorf("failed to get project: %w", err)
+			return c
+		}
+		c.ScopedEntity.Name = project.Name
 	}
 
 	c.LatestRevision = version.Revision

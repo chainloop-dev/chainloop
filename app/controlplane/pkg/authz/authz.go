@@ -275,19 +275,27 @@ var RolesMap = map[Role][]*Policy{
 	RoleProjectViewer: {
 		PolicyWorkflowRead,
 		PolicyWorkflowRunRead,
+		// workflow contracts
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
 	},
 	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
 	// and it's only considered when the org-level role is `RoleOrgMember`
 	RoleProjectAdmin: {
-		// attestations
+		// workflow contracts
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+		PolicyWorkflowContractCreate,
+		PolicyWorkflowContractUpdate,
+		PolicyWorkflowContractDelete,
 
+		// attestations
 		PolicyWorkflowRead,
 		PolicyWorkflowCreate,
 		PolicyWorkflowRunCreate,
 		PolicyWorkflowRunUpdate, // to reset attestations
 
 		// workflow operations
-
 		PolicyWorkflowUpdate,
 		PolicyWorkflowDelete,
 
