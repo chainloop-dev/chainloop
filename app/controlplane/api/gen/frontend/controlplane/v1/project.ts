@@ -202,6 +202,8 @@ export interface PendingProjectInvitation {
     | undefined;
   /** Timestamp when the invitation was created */
   createdAt?: Date;
+  /** Unique identifier for the invitation */
+  invitationId: string;
 }
 
 function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
@@ -1681,7 +1683,7 @@ export const ProjectServiceListPendingInvitationsResponse = {
 };
 
 function createBasePendingProjectInvitation(): PendingProjectInvitation {
-  return { userEmail: "", invitedBy: undefined, createdAt: undefined };
+  return { userEmail: "", invitedBy: undefined, createdAt: undefined, invitationId: "" };
 }
 
 export const PendingProjectInvitation = {
@@ -1694,6 +1696,9 @@ export const PendingProjectInvitation = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.invitationId !== "") {
+      writer.uint32(34).string(message.invitationId);
     }
     return writer;
   },
@@ -1726,6 +1731,13 @@ export const PendingProjectInvitation = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.invitationId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1740,6 +1752,7 @@ export const PendingProjectInvitation = {
       userEmail: isSet(object.userEmail) ? String(object.userEmail) : "",
       invitedBy: isSet(object.invitedBy) ? User.fromJSON(object.invitedBy) : undefined,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      invitationId: isSet(object.invitationId) ? String(object.invitationId) : "",
     };
   },
 
@@ -1748,6 +1761,7 @@ export const PendingProjectInvitation = {
     message.userEmail !== undefined && (obj.userEmail = message.userEmail);
     message.invitedBy !== undefined && (obj.invitedBy = message.invitedBy ? User.toJSON(message.invitedBy) : undefined);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.invitationId !== undefined && (obj.invitationId = message.invitationId);
     return obj;
   },
 
@@ -1762,6 +1776,7 @@ export const PendingProjectInvitation = {
       ? User.fromPartial(object.invitedBy)
       : undefined;
     message.createdAt = object.createdAt ?? undefined;
+    message.invitationId = object.invitationId ?? "";
     return message;
   },
 };

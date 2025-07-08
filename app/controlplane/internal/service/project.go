@@ -508,8 +508,9 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 // bizOrgInvitationToPendingProjectInvitationPb converts a biz.OrgInvitation to a pb.PendingProjectInvitation protobuf message.
 func bizOrgInvitationToPendingProjectInvitationPb(inv *biz.OrgInvitation) *pb.PendingProjectInvitation {
 	base := &pb.PendingProjectInvitation{
-		UserEmail: inv.ReceiverEmail,
-		CreatedAt: timestamppb.New(*inv.CreatedAt),
+		InvitationId: inv.ID.String(),
+		UserEmail:    inv.ReceiverEmail,
+		CreatedAt:    timestamppb.New(*inv.CreatedAt),
 	}
 
 	// Include the sender if available

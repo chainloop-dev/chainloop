@@ -187,6 +187,8 @@ message PendingGroupInvitation {
   optional User invited_by = 2;
   // Timestamp when the invitation was created
   google.protobuf.Timestamp created_at = 3;
+  // Unique identifier for the invitation
+  string invitation_id = 4;
 }
 
 // Group represents a collection of users with shared access to resources
