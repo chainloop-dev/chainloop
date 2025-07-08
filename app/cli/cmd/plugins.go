@@ -340,26 +340,17 @@ func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
 
 func pluginInfoTableOutput(plugin *plugins.LoadedPlugin) {
 	t := newTableWriter()
-
-	t.AppendHeader(table.Row{"Name", "Version", "Description", "Commands"})
-	t.AppendRow(table.Row{plugin.Metadata.Name, plugin.Metadata.Version, plugin.Metadata.Description, fmt.Sprintf("%d command(s)", len(plugin.Metadata.Commands))})
-
+	t.SetTitle(fmt.Sprintf("Plugin: %s", plugin.Metadata.Name))
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Version", plugin.Metadata.Version})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Description", plugin.Metadata.Description})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Commands", fmt.Sprintf("%d command(s)", len(plugin.Metadata.Commands))})
+	t.AppendSeparator()
 	t.Render()
 
-	pluginInfoCommandsTableOutput(plugin)
 	pluginInfoFlagsTableOutput(plugin)
-}
-
-func pluginInfoCommandsTableOutput(plugin *plugins.LoadedPlugin) {
-	t := newTableWriter()
-
-	t.AppendHeader(table.Row{"Plugin", "Command", "Description", "Usage"})
-	for _, cmd := range plugin.Metadata.Commands {
-		t.AppendRow(table.Row{plugin.Metadata.Name, cmd.Name, cmd.Description, cmd.Usage})
-		t.AppendSeparator()
-	}
-
-	t.Render()
 }
 
 func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
@@ -378,15 +369,18 @@ func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
 		return
 	}
 
-	t := newTableWriter()
-
-	t.AppendHeader(table.Row{"Plugin", "Command", "Flag", "Description", "Type", "Default", "Required"})
 	for _, cmd := range plugin.Metadata.Commands {
-		for _, flag := range cmd.Flags {
-			t.AppendRow(table.Row{plugin.Metadata.Name, cmd.Name, flag.Name, flag.Description, flag.Type, flag.Default, flag.Required})
-			t.AppendSeparator()
-		}
-	}
+		t := newTableWriter()
+		t.SetTitle(fmt.Sprintf("Command: %s, flags:", cmd.Name))
+		t.AppendSeparator()
 
-	t.Render()
+		for _, flag := range cmd.Flags {
+			defaultValue := ""
+			if flag.Default != nil {
+				defaultValue = fmt.Sprintf("(default: %v)", flag.Default)
+			}
+			t.AppendRow(table.Row{fmt.Sprintf("--%s", flag.Name), flag.Description, defaultValue})
+		}
+		t.Render()
+	}
 }
