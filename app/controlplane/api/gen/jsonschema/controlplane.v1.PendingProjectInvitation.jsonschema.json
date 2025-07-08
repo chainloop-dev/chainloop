@@ -8,6 +8,10 @@
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the invitation was created"
     },
+    "^(invitation_id)$": {
+      "description": "Unique identifier for the invitation",
+      "type": "string"
+    },
     "^(invited_by)$": {
       "$ref": "controlplane.v1.User.jsonschema.json",
       "description": "The user who sent the invitation"
@@ -22,6 +26,10 @@
     "createdAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the invitation was created"
+    },
+    "invitationId": {
+      "description": "Unique identifier for the invitation",
+      "type": "string"
     },
     "invitedBy": {
       "$ref": "controlplane.v1.User.jsonschema.json",

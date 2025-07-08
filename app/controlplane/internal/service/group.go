@@ -510,8 +510,9 @@ func bizGroupMemberToPb(m *biz.GroupMembership) *pb.GroupMember {
 // bizOrgInvitationToPendingGroupInvitationPb converts a biz.OrgInvitation to a pb.PendingGroupInvitation protobuf message.
 func bizOrgInvitationToPendingGroupInvitationPb(inv *biz.OrgInvitation) *pb.PendingGroupInvitation {
 	base := &pb.PendingGroupInvitation{
-		UserEmail: inv.ReceiverEmail,
-		CreatedAt: timestamppb.New(*inv.CreatedAt),
+		InvitationId: inv.ID.String(),
+		UserEmail:    inv.ReceiverEmail,
+		CreatedAt:    timestamppb.New(*inv.CreatedAt),
 	}
 
 	// Include the sender if available
