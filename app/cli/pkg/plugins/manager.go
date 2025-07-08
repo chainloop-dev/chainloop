@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -150,19 +149,4 @@ func (m *Manager) Shutdown() {
 	for _, client := range m.pluginClients {
 		client.Kill()
 	}
-}
-
-// getFirstErrorLine extracts only the first line from an error message
-func getFirstErrorLine(err error) string {
-	if err == nil {
-		return ""
-	}
-
-	errStr := err.Error()
-	// Split by newline and return only the first part
-	parts := strings.Split(errStr, "\n")
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return errStr
 }
