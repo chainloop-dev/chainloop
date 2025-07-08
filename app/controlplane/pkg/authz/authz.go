@@ -47,6 +47,7 @@ const (
 	ResourceWorkflowRun             = "workflow_run"
 	ResourceWorkflow                = "workflow"
 	Organization                    = "organization"
+	OrganizationMemberships         = "organization_memberships"
 	ResourceGroup                   = "group"
 	ResourceGroupMembership         = "group_membership"
 	ResourceProjectAPIToken         = "project_api_token"
@@ -92,9 +93,12 @@ var ManagedResources = []string{
 	ResourceWorkflowRun,
 	ResourceWorkflow,
 	Organization,
+	OrganizationMemberships,
 	ResourceGroup,
 	ResourceGroupMembership,
+	ResourceProjectAPIToken,
 	ResourceProjectMembership,
+	ResourceOrganizationInvitations,
 }
 
 var (
@@ -140,7 +144,7 @@ var (
 	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
 	// User Membership
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
-	PolicyOrganizationListMemberships = &Policy{Organization, ActionRead}
+	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
 	// Groups
 	PolicyGroupList                   = &Policy{ResourceGroup, ActionList}
 	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
@@ -263,6 +267,9 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
 		PolicyProjectUpdateMemberships,
+
+		// Org memberships
+		PolicyOrganizationListMemberships,
 	},
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
