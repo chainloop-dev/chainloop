@@ -201,6 +201,14 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
+		// Projects (only for viewers to access the route, RBAC is done at project level)
+		PolicyProjectListMemberships,
+		PolicyProjectAddMemberships,
+		PolicyProjectRemoveMemberships,
+		PolicyProjectUpdateMemberships,
+		PolicyProjectAPITokenList,
+		PolicyProjectAPITokenCreate,
+		PolicyProjectAPITokenRevoke,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
