@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
@@ -371,16 +372,33 @@ func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
 
 	for _, cmd := range plugin.Metadata.Commands {
 		t := newTableWriter()
-		t.SetTitle(fmt.Sprintf("Command: %s, flags:", cmd.Name))
+		t.SetTitle(fmt.Sprintf("Command: %s", cmd.Name))
 		t.AppendSeparator()
 
+		flagDetails := "Flags:\n"
+
+		// Find the longest flag name to align descriptions properly
+		maxFlagLen := 0
 		for _, flag := range cmd.Flags {
+			if len(flag.Name) > maxFlagLen {
+				maxFlagLen = len(flag.Name)
+			}
+		}
+
+		maxFlagLen += 2 // For the "--" prefix
+		for _, flag := range cmd.Flags {
+			flagName := fmt.Sprintf("  --%s", flag.Name)
+			padding := strings.Repeat(" ", maxFlagLen-len(flag.Name)+4) // +4 for extra spacing
+
 			defaultValue := ""
 			if flag.Default != nil {
-				defaultValue = fmt.Sprintf("(default: %v)", flag.Default)
+				defaultValue = fmt.Sprintf(" (default: %v)", flag.Default)
 			}
-			t.AppendRow(table.Row{fmt.Sprintf("--%s", flag.Name), flag.Description, defaultValue})
+
+			flagDetails += fmt.Sprintf("%s%s%s%s\n", flagName, padding, flag.Description, defaultValue)
 		}
+
+		t.AppendRow(table.Row{flagDetails})
 		t.Render()
 	}
 }
