@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -237,6 +238,10 @@ func (uc *GroupUseCase) Create(ctx context.Context, orgID uuid.UUID, name string
 		return nil, NewErrNotFound("membership")
 	}
 
+	if isReservedGroupName(name) {
+		return nil, NewErrValidationStr("group name is reserved")
+	}
+
 	group, err := uc.groupRepo.Create(ctx, orgID, &CreateGroupOpts{
 		Name:        name,
 		Description: description,
@@ -291,6 +296,11 @@ func (uc *GroupUseCase) Update(ctx context.Context, orgID uuid.UUID, idReference
 
 	if orgID == uuid.Nil {
 		return nil, NewErrValidationStr("organization ID cannot be empty")
+	}
+
+	// Validate the new name if it's being updated
+	if opts.NewName != nil && isReservedGroupName(*opts.NewName) {
+		return nil, NewErrValidationStr("group name is reserved")
 	}
 
 	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, idReference.ID, idReference.Name)
@@ -823,4 +833,19 @@ func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.
 	}
 
 	return groups[0].ID, nil
+}
+
+// isReservedGroupName checks if the provided group name is a reserved name.
+// Reserved names are used by the system for default roles and cannot be used for custom groups.
+// Any name starting with "Org-" (case insensitive) is considered reserved.
+func isReservedGroupName(name string) bool {
+	// Convert the input name to lowercase for case-insensitive comparison
+	nameLower := strings.ToLower(name)
+
+	// Check if the name starts with "org-" (case insensitive)
+	if strings.HasPrefix(nameLower, "org-") {
+		return true
+	}
+
+	return false
 }
