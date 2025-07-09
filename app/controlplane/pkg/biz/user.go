@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -120,6 +120,7 @@ type UpsertByEmailOpts struct {
 	DisableAutoOnboarding *bool
 	FirstName             *string
 	LastName              *string
+	SSOGroups             []string
 }
 
 // UpsertByEmail finds or creates a user by email. By default, it will auto-onboard the user
@@ -147,8 +148,9 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 		uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
 			UserBase: &events.UserBase{
-				UserID: ToPtr(uuid.MustParse(u.ID)),
-				Email:  u.Email,
+				UserID:    ToPtr(uuid.MustParse(u.ID)),
+				Email:     u.Email,
+				SSOGroups: opts.SSOGroups,
 			},
 		}, nil)
 	} else {
@@ -156,8 +158,9 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
 		uc.auditorUC.Dispatch(ctx, &events.UserLoggedIn{
 			UserBase: &events.UserBase{
-				UserID: ToPtr(uuid.MustParse(u.ID)),
-				Email:  u.Email,
+				UserID:    ToPtr(uuid.MustParse(u.ID)),
+				Email:     u.Email,
+				SSOGroups: opts.SSOGroups,
 			},
 			LoggedIn: time.Now(),
 		}, nil)
