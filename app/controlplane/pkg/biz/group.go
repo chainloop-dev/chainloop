@@ -839,13 +839,6 @@ func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.
 // Reserved names are used by the system for default roles and cannot be used for custom groups.
 // Any name starting with "Org-" (case insensitive) is considered reserved.
 func isReservedGroupName(name string) bool {
-	// Convert the input name to lowercase for case-insensitive comparison
-	nameLower := strings.ToLower(name)
-
 	// Check if the name starts with "org-" (case insensitive)
-	if strings.HasPrefix(nameLower, "org-") {
-		return true
-	}
-
-	return false
+	return strings.HasPrefix(strings.ToLower(name), "org-")
 }
