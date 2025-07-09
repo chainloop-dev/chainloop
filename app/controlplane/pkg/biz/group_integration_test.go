@@ -339,7 +339,7 @@ func (s *groupIntegrationTestSuite) TestSoftDelete() {
 		org2, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
 
-		group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "org-specific-group", description, uuid.MustParse(s.user.ID))
+		group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "orga-specific-group", description, uuid.MustParse(s.user.ID))
 		s.NoError(err)
 
 		err = s.Group.Delete(ctx, uuid.MustParse(org2.ID), &biz.IdentityReference{
