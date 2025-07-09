@@ -43,14 +43,21 @@ func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, 
 	// dynamically load user information from the context
 	var opts []auditor.GeneratorOption
 	var gotActor bool
-	if user := entities.CurrentUser(ctx); user != nil {
+
+	// Determine actor from context
+	switch {
+	case entities.CurrentUser(ctx) != nil:
+		user := entities.CurrentUser(ctx)
 		parsedUUID, _ := uuid.Parse(user.ID)
 		opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, parsedUUID, user.Email))
 		gotActor = true
-	} else if apiToken := entities.CurrentAPIToken(ctx); apiToken != nil {
+	case entities.CurrentAPIToken(ctx) != nil:
+		apiToken := entities.CurrentAPIToken(ctx)
 		parsedUUID, _ := uuid.Parse(apiToken.ID)
 		opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, parsedUUID, ""))
 		gotActor = true
+	default:
+		opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, ""))
 	}
 
 	if !gotActor && entry.RequiresActor() {
@@ -68,7 +75,7 @@ func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, 
 		return
 	}
 
-	// Send event o event bus
+	// Send event to event bus
 	if err := uc.publisher.Publish(payload); err != nil {
 		sentry.CaptureException(fmt.Errorf("failed to publish event: %w", err))
 	}

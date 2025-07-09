@@ -21,10 +21,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +80,7 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMembershipAdded with API Token",
+			name: "ProjectMembershipAdded by system",
 			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
@@ -91,8 +90,8 @@ func TestProjectEvents(t *testing.T) {
 				UserEmail: userEmail,
 				Role:      string(authz.RoleProjectViewer),
 			},
-			expected: "testdata/projects/project_member_added_with_api_token.json",
-			actor:    auditor.ActorTypeAPIToken,
+			expected: "testdata/projects/project_member_added_by_system.json",
+			actor:    auditor.ActorTypeSystem,
 			actorID:  userUUID,
 		},
 		{
@@ -112,7 +111,7 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMemberRoleUpdated with API Token",
+			name: "ProjectMemberRoleUpdated by system",
 			event: &events.ProjectMemberRoleUpdated{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
@@ -123,8 +122,8 @@ func TestProjectEvents(t *testing.T) {
 				OldRole:   string(authz.RoleProjectViewer),
 				NewRole:   "role:project:admin",
 			},
-			expected: "testdata/projects/project_member_role_updated_with_api_token.json",
-			actor:    auditor.ActorTypeAPIToken,
+			expected: "testdata/projects/project_member_role_updated_by_system.json",
+			actor:    auditor.ActorTypeSystem,
 			actorID:  userUUID,
 		},
 		{
@@ -142,7 +141,7 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "ProjectMembershipRemoved with API Token",
+			name: "ProjectMembershipRemoved by system",
 			event: &events.ProjectMembershipRemoved{
 				ProjectBase: &events.ProjectBase{
 					ProjectID:   &projectUUID,
@@ -151,8 +150,8 @@ func TestProjectEvents(t *testing.T) {
 				UserID:    &memberUUID,
 				UserEmail: userEmail,
 			},
-			expected: "testdata/projects/project_member_removed_with_api_token.json",
-			actor:    auditor.ActorTypeAPIToken,
+			expected: "testdata/projects/project_member_removed_by_system.json",
+			actor:    auditor.ActorTypeSystem,
 			actorID:  userUUID,
 		},
 	}
@@ -162,10 +161,10 @@ func TestProjectEvents(t *testing.T) {
 			opts := []auditor.GeneratorOption{
 				auditor.WithOrgID(orgUUID),
 			}
-			if tt.actor == auditor.ActorTypeAPIToken {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, ""))
-			} else {
+			if tt.actor == auditor.ActorTypeUser {
 				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail))
+			} else {
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, ""))
 			}
 
 			eventPayload, err := auditor.GenerateAuditEvent(tt.event, opts...)

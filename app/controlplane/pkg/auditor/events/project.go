@@ -109,12 +109,12 @@ func (p *ProjectMemberRoleUpdated) ActionInfo() (json.RawMessage, error) {
 func (p *ProjectMemberRoleUpdated) Description() string {
 	if p.UserID != nil {
 		// User role update
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated user '%s' role in project '%s' from '%s' to '%s'",
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has updated user '%s' role in project '%s' from '%s' to '%s'",
 			p.UserEmail, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
 	}
 
 	// Group role update
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated group '%s' role in project '%s' from '%s' to '%s'",
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has updated group '%s' role in project '%s' from '%s' to '%s'",
 		p.GroupName, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
 }
 
@@ -156,12 +156,12 @@ func (p *ProjectMembershipAdded) Description() string {
 
 	if p.UserID != nil {
 		// User addition
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has added user '%s' to the project '%s'%s",
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has added user '%s' to the project '%s'%s",
 			p.UserEmail, p.ProjectName, roleDesc)
 	}
 
 	// Group addition
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has added group '%s' to the project '%s'%s",
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has added group '%s' to the project '%s'%s",
 		p.GroupName, p.ProjectName, roleDesc)
 }
 
@@ -196,11 +196,11 @@ func (p *ProjectMembershipRemoved) ActionInfo() (json.RawMessage, error) {
 func (p *ProjectMembershipRemoved) Description() string {
 	if p.UserID != nil {
 		// User removal
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has removed user '%s' from the project '%s'",
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has removed user '%s' from the project '%s'",
 			p.UserEmail, p.ProjectName)
 	}
 
 	// Group removal
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has removed group '%s' from the project '%s'",
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has removed group '%s' from the project '%s'",
 		p.GroupName, p.ProjectName)
 }

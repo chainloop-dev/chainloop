@@ -46,8 +46,9 @@ func TestGroupUseCase(t *testing.T) {
 // Utility struct to hold the base test suite
 type groupIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org  *biz.Organization
-	user *biz.User
+	org      *biz.Organization
+	user     *biz.User
+	userUUID *uuid.UUID
 }
 
 func (s *groupIntegrationTestSuite) SetupTest() {
@@ -62,6 +63,9 @@ func (s *groupIntegrationTestSuite) SetupTest() {
 	// Create a user for membership tests
 	s.user, err = s.User.UpsertByEmail(ctx, fmt.Sprintf("test-user-%s@example.com", uuid.New().String()), nil)
 	assert.NoError(err)
+
+	userUUID := uuid.MustParse(s.user.ID)
+	s.userUUID = &userUUID
 
 	// Add user to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID)
@@ -90,7 +94,7 @@ func (s *groupIntegrationTestSuite) TestCreate() {
 			opts: &biz.CreateGroupOpts{
 				Name:        "test-group",
 				Description: localDescription,
-				UserID:      uuid.MustParse(s.user.ID),
+				UserID:      s.userUUID,
 			},
 			expectError: false,
 		},
@@ -99,7 +103,7 @@ func (s *groupIntegrationTestSuite) TestCreate() {
 			opts: &biz.CreateGroupOpts{
 				Name:        "",
 				Description: localDescription,
-				UserID:      uuid.MustParse(s.user.ID),
+				UserID:      s.userUUID,
 			},
 			expectError: true,
 			errorMsg:    "name cannot be empty",
@@ -107,12 +111,10 @@ func (s *groupIntegrationTestSuite) TestCreate() {
 		{
 			name: "nil user ID",
 			opts: &biz.CreateGroupOpts{
-				Name:        "test-group",
+				Name:        "this-is-another-test-group",
 				Description: localDescription,
-				UserID:      uuid.Nil,
 			},
-			expectError: true,
-			errorMsg:    "organization ID and user ID cannot be empty",
+			expectError: false,
 		},
 	}
 
@@ -149,12 +151,12 @@ func (s *groupIntegrationTestSuite) TestCreateDuplicate() {
 	description := "This is a test group for duplicate tests"
 	differentDescription := "Different description"
 
-	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, uuid.MustParse(s.user.ID))
+	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, s.userUUID)
 	s.NoError(err)
 	s.NotNil(group)
 
 	// Try to create another group with the same name
-	_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, differentDescription, uuid.MustParse(s.user.ID))
+	_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, differentDescription, s.userUUID)
 	s.Error(err)
 	s.Contains(err.Error(), "duplicated")
 
@@ -167,7 +169,7 @@ func (s *groupIntegrationTestSuite) TestCreateDuplicate() {
 	require.NoError(s.T(), err)
 
 	// Should succeed because it's in a different organization
-	group2, err := s.Group.Create(ctx, uuid.MustParse(org2.ID), name, description, uuid.MustParse(s.user.ID))
+	group2, err := s.Group.Create(ctx, uuid.MustParse(org2.ID), name, description, s.userUUID)
 	s.NoError(err)
 	s.NotNil(group2)
 	s.Equal(name, group2.Name)
@@ -181,7 +183,7 @@ func (s *groupIntegrationTestSuite) TestFindByID() {
 	name := "test-find-group"
 	groupDescription := "This is a test group for finding by ID"
 
-	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, groupDescription, uuid.MustParse(s.user.ID))
+	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, groupDescription, s.userUUID)
 	s.NoError(err)
 	s.NotNil(group)
 
@@ -226,13 +228,13 @@ func (s *groupIntegrationTestSuite) TestUpdate() {
 	name := "test-update-group"
 	description := "This is a test group for updating"
 
-	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, uuid.MustParse(s.user.ID))
+	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, s.userUUID)
 	s.NoError(err)
 	s.NotNil(group)
 
 	// Create a second group to test name uniqueness constraint
 	secondGroupName := "existing-group-name"
-	secondGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), secondGroupName, "Second group description", uuid.MustParse(s.user.ID))
+	secondGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), secondGroupName, "Second group description", s.userUUID)
 	s.NoError(err)
 	s.NotNil(secondGroup)
 
@@ -311,7 +313,7 @@ func (s *groupIntegrationTestSuite) TestSoftDelete() {
 	name := "test-delete-group"
 	description := "This is a test group for deleting"
 
-	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, uuid.MustParse(s.user.ID))
+	group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, s.userUUID)
 	s.NoError(err)
 	s.NotNil(group)
 
@@ -330,7 +332,7 @@ func (s *groupIntegrationTestSuite) TestSoftDelete() {
 		s.True(biz.IsNotFound(err))
 
 		// We should be able to create a new group with the same name after deletion
-		newGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, uuid.MustParse(s.user.ID))
+		newGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), name, description, s.userUUID)
 		s.NoError(err)
 		s.NotNil(newGroup)
 	})
@@ -339,7 +341,7 @@ func (s *groupIntegrationTestSuite) TestSoftDelete() {
 		org2, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
 
-		group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "org-specific-group", description, uuid.MustParse(s.user.ID))
+		group, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "org-specific-group", description, s.userUUID)
 		s.NoError(err)
 
 		err = s.Group.Delete(ctx, uuid.MustParse(org2.ID), &biz.IdentityReference{
@@ -362,8 +364,9 @@ func (s *groupIntegrationTestSuite) TestSoftDelete() {
 // Utility struct for listing tests
 type groupListIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org  *biz.Organization
-	user *biz.User
+	org      *biz.Organization
+	user     *biz.User
+	userUUID *uuid.UUID
 }
 
 func (s *groupListIntegrationTestSuite) SetupTest() {
@@ -405,11 +408,11 @@ func (s *groupListIntegrationTestSuite) TestList() {
 	s.Run("list groups without filters", func() {
 		// Create a few groups
 		desc1 := "Description 1"
-		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-1", desc1, uuid.MustParse(s.user.ID))
+		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-1", desc1, s.userUUID)
 		require.NoError(s.T(), err)
 
 		desc2 := "Description 2"
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-2", desc2, uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-2", desc2, s.userUUID)
 		require.NoError(s.T(), err)
 
 		groups, count, err := s.Group.List(ctx, uuid.MustParse(s.org.ID), nil, nil)
@@ -422,9 +425,9 @@ func (s *groupListIntegrationTestSuite) TestList() {
 		devDescription := "Development Team"
 		opsDescription := "Operations Team"
 		// Create groups with different names
-		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "dev-team", devDescription, uuid.MustParse(s.user.ID))
+		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "dev-team", devDescription, s.userUUID)
 		require.NoError(s.T(), err)
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "ops-team", opsDescription, uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "ops-team", opsDescription, s.userUUID)
 		require.NoError(s.T(), err)
 
 		// Filter by name
@@ -440,9 +443,9 @@ func (s *groupListIntegrationTestSuite) TestList() {
 		teamADescription := "This is the A team"
 		teamBDescription := "This is the B team"
 		// Create groups with different descriptions
-		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "team-a", teamADescription, uuid.MustParse(s.user.ID))
+		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "team-a", teamADescription, s.userUUID)
 		require.NoError(s.T(), err)
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "team-b", teamBDescription, uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "team-b", teamBDescription, s.userUUID)
 		require.NoError(s.T(), err)
 
 		// Filter by description
@@ -459,13 +462,13 @@ func (s *groupListIntegrationTestSuite) TestList() {
 		_, _ = s.Data.DB.Group.Delete().Exec(ctx)
 
 		// Create groups with different names and descriptions
-		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "frontend-team", "Frontend development team", uuid.MustParse(s.user.ID))
+		_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "frontend-team", "Frontend development team", s.userUUID)
 		require.NoError(s.T(), err)
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "backend-team", "Backend development team", uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "backend-team", "Backend development team", s.userUUID)
 		require.NoError(s.T(), err)
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "qa-team", "Quality Assurance team", uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "qa-team", "Quality Assurance team", s.userUUID)
 		require.NoError(s.T(), err)
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "devops-team", "Team responsible for infrastructure", uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "devops-team", "Team responsible for infrastructure", s.userUUID)
 		require.NoError(s.T(), err)
 
 		// Filter with a term that appears in one group's name and another group's description
@@ -499,12 +502,13 @@ func (s *groupListIntegrationTestSuite) TestList() {
 
 		// Create a group with user as maintainer
 		groupWithUser1 := "Group with user 1"
-		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-with-user1", groupWithUser1, uuid.MustParse(s.user.ID))
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-with-user1", groupWithUser1, s.userUUID)
 		require.NoError(s.T(), err)
 
 		// Create a group with user2 as maintainer
 		groupWithUser2 := "Group with user 2"
-		group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-with-user2", groupWithUser2, uuid.MustParse(user2.ID))
+		user2UUID := uuid.MustParse(user2.ID)
+		group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-with-user2", groupWithUser2, &user2UUID)
 		require.NoError(s.T(), err)
 
 		// Filter by member email
@@ -520,7 +524,7 @@ func (s *groupListIntegrationTestSuite) TestList() {
 		// Create several groups
 		for i := 1; i <= 5; i++ {
 			lDescription := fmt.Sprintf("Description %d", i)
-			_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), fmt.Sprintf("the-group-%d", i), lDescription, uuid.MustParse(s.user.ID))
+			_, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), fmt.Sprintf("the-group-%d", i), lDescription, s.userUUID)
 			require.NoError(s.T(), err)
 		}
 
@@ -565,13 +569,15 @@ func (s *groupMembersIntegrationTestSuite) SetupTest() {
 	s.user, err = s.User.UpsertByEmail(ctx, fmt.Sprintf("test-user-%s@example.com", uuid.New().String()), nil)
 	assert.NoError(err)
 
+	userUUID := uuid.MustParse(s.user.ID)
+
 	// Add user to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin))
 	assert.NoError(err)
 
 	// Create a group for membership tests
 	membersDescription := "Group for testing members"
-	s.group, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-members-group", membersDescription, uuid.MustParse(s.user.ID))
+	s.group, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-members-group", membersDescription, &userUUID)
 	assert.NoError(err)
 }
 
@@ -1684,4 +1690,110 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 		s.Error(err)
 		s.Contains(err.Error(), "user not found")
 	})
+}
+
+// TestAddMemberToGroupSystemCall tests adding a member to a group without a requester ID (system call)
+func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroupSystemCall() {
+	ctx := context.Background()
+
+	// Create a new group specifically for this test
+	systemCallGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "system-call-test-group", "Group for testing system calls", nil)
+	require.NoError(s.T(), err)
+
+	// Create a user to add to the group
+	systemUser, err := s.User.UpsertByEmail(ctx, "system-call-user@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add user to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID)
+	require.NoError(s.T(), err)
+
+	// Add the user to the group without a requester ID (system call)
+	opts := &biz.AddMemberToGroupOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &systemCallGroup.ID,
+		},
+		UserEmail:  "system-call-user@example.com",
+		Maintainer: true,
+		// No RequesterID provided (it's uuid.Nil by default)
+	}
+
+	// This should succeed since requester is optional
+	result, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), result)
+	require.NotNil(s.T(), result.Membership)
+	require.False(s.T(), result.InvitationSent)
+	require.True(s.T(), result.Membership.Maintainer)
+
+	// Verify the user was actually added by listing the members
+	listOpts := &biz.ListMembersOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &systemCallGroup.ID,
+		},
+	}
+	members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), listOpts, nil)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 1, count) // Only the added user should be in the group
+	require.Len(s.T(), members, 1)
+	require.Equal(s.T(), systemUser.ID, members[0].User.ID)
+	require.True(s.T(), members[0].Maintainer)
+}
+
+// TestUpdateMemberMaintainerStatusSystemCall tests updating a member's maintainer status without a requester ID (system call)
+func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatusSystemCall() {
+	ctx := context.Background()
+
+	// Create a new group specifically for this test
+	systemCallGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-status-system-call-group", "Group for testing system calls", nil)
+	require.NoError(s.T(), err)
+
+	// Create a user to add to the group
+	systemUser, err := s.User.UpsertByEmail(ctx, "update-status-system-user@example.com", nil)
+	require.NoError(s.T(), err)
+
+	// Add user to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID)
+	require.NoError(s.T(), err)
+
+	// First add the user to the group (with requester ID for this setup step)
+	addOpts := &biz.AddMemberToGroupOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &systemCallGroup.ID,
+		},
+		UserEmail:   "update-status-system-user@example.com",
+		RequesterID: uuid.MustParse(s.user.ID),
+		Maintainer:  false, // Initially not a maintainer
+	}
+	_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), addOpts)
+	require.NoError(s.T(), err)
+
+	// Now update the maintainer status without a requester ID (system call)
+	systemUserUUID := uuid.MustParse(systemUser.ID)
+	updateOpts := &biz.UpdateMemberMaintainerStatusOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &systemCallGroup.ID,
+		},
+		UserReference: &biz.IdentityReference{
+			ID: &systemUserUUID,
+		},
+		IsMaintainer: true,
+		// No RequesterID provided (it's uuid.Nil by default)
+	}
+
+	// This should succeed since requester is optional
+	err = s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
+	require.NoError(s.T(), err)
+
+	// Verify the maintainer status was actually updated
+	listOpts := &biz.ListMembersOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID: &systemCallGroup.ID,
+		},
+	}
+	members, _, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), listOpts, nil)
+	require.NoError(s.T(), err)
+	require.Len(s.T(), members, 1)
+	require.Equal(s.T(), systemUser.ID, members[0].User.ID)
+	require.True(s.T(), members[0].Maintainer) // Should now be a maintainer
 }

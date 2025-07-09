@@ -302,7 +302,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 	userUUID := uuid.MustParse(s.user.ID)
 	orgUUID := uuid.MustParse(s.org1.ID)
 
-	group, err := s.Group.Create(ctx, orgUUID, groupName, groupDescription, userUUID)
+	group, err := s.Group.Create(ctx, orgUUID, groupName, groupDescription, &userUUID)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), group)
 
@@ -559,7 +559,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 		// Create a test group
 		groupName := "combined-test-group"
 		groupDescription := "A group for testing combined invitation context"
-		group, err := s.Group.Create(ctx, orgUUID, groupName, groupDescription, userUUID)
+		group, err := s.Group.Create(ctx, orgUUID, groupName, groupDescription, &userUUID)
 		require.NoError(t, err)
 		require.NotNil(t, group)
 

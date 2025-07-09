@@ -222,13 +222,21 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 
 	err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		// Create the group with the provided options
-		gr, err := tx.Group.Create().
+		builder := tx.Group.Create().
 			SetName(opts.Name).
 			SetDescription(opts.Description).
-			AddMemberIDs(opts.UserID).
-			SetOrganizationID(orgID).
-			SetMemberCount(1).
-			Save(ctx)
+			SetOrganizationID(orgID)
+
+		// Only set the member count and add member if userID is provided
+		if opts.UserID != nil {
+			builder = builder.
+				AddMemberIDs(*opts.UserID).
+				SetMemberCount(1)
+		} else {
+			builder = builder.SetMemberCount(0)
+		}
+
+		gr, err := builder.Save(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {
 				return biz.NewErrAlreadyExistsStr("group with the same name already exists")
@@ -236,32 +244,35 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 			return err
 		}
 
-		// Update the group-user member to set it's a group maintainer
-		if _, grUerr := tx.GroupMembership.Update().
-			Where(
-				groupmembership.GroupIDEQ(gr.ID),
-				groupmembership.UserIDEQ(opts.UserID),
-			).
-			SetMaintainer(true).
-			Save(ctx); grUerr != nil {
-			if ent.IsNotFound(grUerr) {
-				return biz.NewErrNotFound("group user")
+		// Only add memberships if userID is not nil
+		if opts.UserID != nil {
+			// Update the group-user member to set it's a group maintainer
+			if _, grUerr := tx.GroupMembership.Update().
+				Where(
+					groupmembership.GroupIDEQ(gr.ID),
+					groupmembership.UserIDEQ(*opts.UserID),
+				).
+				SetMaintainer(true).
+				Save(ctx); grUerr != nil {
+				if ent.IsNotFound(grUerr) {
+					return biz.NewErrNotFound("group user")
+				}
+				return grUerr
 			}
-			return grUerr
-		}
 
-		// Update the user membership with the role of maintainer
-		_, err = tx.Membership.Create().
-			SetUserID(opts.UserID).
-			SetOrganizationID(orgID).
-			SetRole(authz.RoleGroupMaintainer).
-			SetMembershipType(authz.MembershipTypeUser).
-			SetMemberID(opts.UserID).
-			SetResourceType(authz.ResourceTypeGroup).
-			SetResourceID(gr.ID).
-			Save(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to create membership for user %s in group %s: %w", opts.UserID, gr.ID, err)
+			// Update the user membership with the role of maintainer
+			_, err = tx.Membership.Create().
+				SetUserID(*opts.UserID).
+				SetOrganizationID(orgID).
+				SetRole(authz.RoleGroupMaintainer).
+				SetMembershipType(authz.MembershipTypeUser).
+				SetMemberID(*opts.UserID).
+				SetResourceType(authz.ResourceTypeGroup).
+				SetResourceID(gr.ID).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to create membership for user %s in group %s: %w", *opts.UserID, gr.ID, err)
+			}
 		}
 
 		entGroup = *gr

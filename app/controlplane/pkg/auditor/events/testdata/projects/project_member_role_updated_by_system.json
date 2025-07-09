@@ -2,11 +2,11 @@
   "ActionType": "ProjectMemberRoleUpdated",
   "TargetType": "Project",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
-  "ActorType": "API_TOKEN",
-  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "SYSTEM",
+  "ActorID": null,
   "ActorEmail": "",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "API Token 1089bb36-e27b-428b-8009-d015c8737c54 has updated user 'test@example.com' role in project 'test-project' from 'viewer' to 'admin'",
+  "Description": "system@chainloop.dev has updated user 'test@example.com' role in project 'test-project' from 'viewer' to 'admin'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",
@@ -15,5 +15,5 @@
     "old_role": "role:project:viewer",
     "new_role": "role:project:admin"
   },
-  "Digest": "sha256:5ab471ec21db79fcad5a0634c6a767f8532cf840047c906984361b0a9153d6b8"
+  "Digest": "sha256:5d99de1aed32c9ab88025686cd2029ffa411b734dd44b957defba40df4c6246e"
 }

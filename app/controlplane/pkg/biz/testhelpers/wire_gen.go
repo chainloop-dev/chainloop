@@ -7,6 +7,7 @@
 package testhelpers
 
 import (
+	"fmt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -213,7 +214,12 @@ func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
 
 // Connection to nats is optional, if not configured, pubsub will be disabled
 func newNatsConnection() (*nats.Conn, error) {
-	return nil, nil
+	nc, err := nats.Connect("nats://0.0.0.0:4222")
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to nats: %w", err)
+	}
+
+	return nc, nil
 }
 
 func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
