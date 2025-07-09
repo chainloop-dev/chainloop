@@ -98,7 +98,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		}
 
 		// Find or create the default project version
-		if _, err := findProjectVersionWithClient(ctx, tx, projectID, ""); err != nil {
+		if _, err := findProjectVersionWithClient(ctx, tx.Client(), projectID, ""); err != nil {
 			if !ent.IsNotFound(err) {
 				return fmt.Errorf("finding project version: %w", err)
 			}
