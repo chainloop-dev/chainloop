@@ -193,6 +193,10 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			s.Equal(tc.opts.Project, got.Project)
 			s.NotEmpty(got.ContractID)
 			s.NotEmpty(got.ContractName)
+			// There is a project version created
+			pv, err := s.TestingUseCases.ProjectVersion.FindByProjectAndVersion(ctx, got.ProjectID.String(), "")
+			s.NoError(err)
+			s.NotNil(pv)
 		})
 	}
 }

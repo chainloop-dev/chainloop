@@ -97,6 +97,17 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			return fmt.Errorf("creating project: %w", err)
 		}
 
+		// Find or create the default project version
+		if _, err := findProjectVersionWithTx(ctx, tx, projectID, ""); err != nil {
+			if !ent.IsNotFound(err) {
+				return fmt.Errorf("finding project version: %w", err)
+			}
+
+			if _, err := createProjectVersionWithTx(ctx, tx, projectID, "", false); err != nil {
+				return fmt.Errorf("creating project version: %w", err)
+			}
+		}
+
 		// We do not have an explicit contract
 		// 1 - try to find it with the default name
 		// 2 - if not found, create it with the default name
