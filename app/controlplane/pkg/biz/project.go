@@ -244,8 +244,8 @@ func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUI
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return nil, NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return nil, NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure only one of UserEmail or GroupReference is provided
@@ -264,9 +264,11 @@ func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUI
 		return nil, err
 	}
 
-	// Verify the requester has permissions to add members to the project
-	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
-		return nil, fmt.Errorf("requester does not have permission to add members to this project: %w", err)
+	// Verify the requester has permissions to add members to the project (if a requester is provided)
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+			return nil, fmt.Errorf("requester does not have permission to add members to this project: %w", err)
+		}
 	}
 
 	var result *AddMemberToProjectResult
@@ -433,8 +435,8 @@ func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uui
 		return NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure only one of UserEmail or GroupReference is provided
@@ -448,9 +450,11 @@ func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uui
 		return err
 	}
 
-	// Verify the requester has permissions to remove members from the project
-	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
-		return fmt.Errorf("requester does not have permission to remove members from this project: %w", err)
+	// Verify the requester has permissions to remove members from the project (if a requester is provided)
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+			return fmt.Errorf("requester does not have permission to remove members from this project: %w", err)
+		}
 	}
 
 	// Process based on whether we're removing a user or a group
@@ -668,8 +672,8 @@ func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID,
 		return NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure only one of UserEmail or GroupReference is provided
@@ -688,9 +692,11 @@ func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID,
 		return err
 	}
 
-	// Verify the requester has permissions to update member roles in the project
-	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
-		return fmt.Errorf("requester does not have permission to update member roles in this project: %w", err)
+	// Verify the requester has permissions to update member roles in the project (if a requester is provided)
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+			return fmt.Errorf("requester does not have permission to update member roles in this project: %w", err)
+		}
 	}
 
 	// Process based on whether we're updating a user or a group

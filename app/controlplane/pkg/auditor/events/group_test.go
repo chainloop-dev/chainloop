@@ -151,10 +151,11 @@ func TestGroupEvents(t *testing.T) {
 			opts := []auditor.GeneratorOption{
 				auditor.WithOrgID(orgUUID),
 			}
-			if tt.actor == auditor.ActorTypeAPIToken {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, ""))
-			} else {
+
+			if tt.actor == auditor.ActorTypeUser {
 				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail))
+			} else {
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, ""))
 			}
 
 			eventPayload, err := auditor.GenerateAuditEvent(tt.event, opts...)

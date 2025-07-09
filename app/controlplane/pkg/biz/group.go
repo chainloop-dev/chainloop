@@ -94,7 +94,7 @@ type CreateGroupOpts struct {
 	// The description is a brief description of the group.
 	Description string
 	// UserID is the ID of the user who owns the group.
-	UserID uuid.UUID
+	UserID *uuid.UUID
 }
 
 // UpdateGroupOpts defines options for updating a group.
@@ -129,7 +129,8 @@ type AddMemberToGroupOpts struct {
 	*IdentityReference
 	// UserEmail is the email of the user to add to the group.
 	UserEmail string
-	// RequesterID is the ID of the user who is requesting to add the member. Must be a maintainer.
+	// RequesterID is the ID of the user who is requesting to add the member. Optional.
+	// If provided, the requester must be a maintainer or admin.
 	RequesterID uuid.UUID
 	// Maintainer indicates if the new member should be a maintainer.
 	Maintainer bool
@@ -140,7 +141,8 @@ type RemoveMemberFromGroupOpts struct {
 	*IdentityReference
 	// UserEmail is the email of the user to remove from the group.
 	UserEmail string
-	// RequesterID is the ID of the user who is requesting to remove the member. Must be a maintainer.
+	// RequesterID is the ID of the user who is requesting to remove the member. Optional.
+	// If provided, the requester must be a maintainer or admin.
 	RequesterID uuid.UUID
 }
 
@@ -158,7 +160,8 @@ type UpdateMemberMaintainerStatusOpts struct {
 	*IdentityReference
 	// UserReference is used to identify the user whose maintainer status is to be updated
 	UserReference *IdentityReference
-	// RequesterID is the ID of the user who is requesting to update the maintainer status. Must be a maintainer or admin.
+	// RequesterID is the ID of the user who is requesting to update the maintainer status. Optional.
+	// If provided, the requester must be a maintainer or admin.
 	RequesterID uuid.UUID
 	// IsMaintainer is the new maintainer status for the user.
 	IsMaintainer bool
@@ -220,21 +223,24 @@ func (uc *GroupUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, opts *
 }
 
 // Create creates a new group in the organization.
-func (uc *GroupUseCase) Create(ctx context.Context, orgID uuid.UUID, name string, description string, userID uuid.UUID) (*Group, error) {
+func (uc *GroupUseCase) Create(ctx context.Context, orgID uuid.UUID, name string, description string, userID *uuid.UUID) (*Group, error) {
 	if name == "" {
 		return nil, NewErrValidationStr("name cannot be empty")
 	}
 
-	if orgID == uuid.Nil || userID == uuid.Nil {
-		return nil, NewErrValidationStr("organization ID and user ID cannot be empty")
+	if orgID == uuid.Nil {
+		return nil, NewErrValidationStr("organization ID")
 	}
 
-	// Check if the user is a member of the organization
-	m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find membership: %w", err)
-	} else if m == nil {
-		return nil, NewErrNotFound("membership")
+	// Only check if the user is a member of the organization if userID is provided
+	if userID != nil {
+		// Check if the user is a member of the organization
+		m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, *userID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find membership: %w", err)
+		} else if m == nil {
+			return nil, NewErrNotFound("membership")
+		}
 	}
 
 	group, err := uc.groupRepo.Create(ctx, orgID, &CreateGroupOpts{
@@ -400,7 +406,7 @@ func (uc *GroupUseCase) ListPendingInvitations(ctx context.Context, orgID uuid.U
 }
 
 // AddMemberToGroup adds a user to a group.
-// The requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
+// If RequesterID is provided, the requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
 // Returns AddMemberToGroupResult which indicates whether a membership was created or an invitation was sent.
 func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, opts *AddMemberToGroupOpts) (*AddMemberToGroupResult, error) {
 	// Validate input parameters
@@ -408,8 +414,8 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.UserEmail == "" || opts.RequesterID == uuid.Nil {
-		return nil, NewErrValidationStr("organization ID, user email, and requester ID cannot be empty")
+	if orgID == uuid.Nil || opts.UserEmail == "" {
+		return nil, NewErrValidationStr("organization ID and user email cannot be empty")
 	}
 
 	// Resolve group ID and check that the group exists
@@ -418,9 +424,11 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 		return nil, err
 	}
 
-	// Validate requester permissions
-	if err := uc.validateRequesterPermissions(ctx, orgID, opts.RequesterID, resolvedGroupID); err != nil {
-		return nil, err
+	// Validate requester permissions only if RequesterID is provided
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.validateRequesterPermissions(ctx, orgID, opts.RequesterID, resolvedGroupID); err != nil {
+			return nil, fmt.Errorf("failed to validate requester permissions: %w", err)
+		}
 	}
 
 	// Find the user in the organization
@@ -431,6 +439,10 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 
 	// If the user is not found in the organization, send an invitation
 	if userMembership == nil {
+		// We need a requester for creating invitations
+		if opts.RequesterID == uuid.Nil {
+			return nil, NewErrValidationStr("requester ID is required for inviting new users")
+		}
 		return uc.handleNonExistingUser(ctx, orgID, resolvedGroupID, opts)
 	}
 
@@ -581,8 +593,8 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 		return NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.UserEmail == "" || opts.RequesterID == uuid.Nil {
-		return NewErrValidationStr("organization ID, user email, and requester ID cannot be empty")
+	if orgID == uuid.Nil || opts.UserEmail == "" {
+		return NewErrValidationStr("organization ID and user email cannot be empty")
 	}
 
 	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, opts.ID, opts.Name)
@@ -672,8 +684,8 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 		return NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure we have either a UserReference or UserEmail
@@ -697,30 +709,32 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 	}
 
 	// Check if the requester is part of the organization
-	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
-	if err != nil && !IsNotFound(err) {
-		return NewErrValidationStr("failed to check existing membership")
-	}
-
-	if requesterMembership == nil {
-		return NewErrValidationStr("requester is not a member of the organization")
-	}
-
-	// Check if the requester has sufficient permissions
-	// Allow if the requester is an org owner or admin
-	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
-
-	// If not an admin/owner, check if the requester is a maintainer of this group
-	if !isAdminOrOwner {
-		// Check if the requester is a maintainer of this group
-		requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+	if opts.RequesterID != uuid.Nil {
+		requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
 		if err != nil && !IsNotFound(err) {
-			return fmt.Errorf("failed to check requester's group membership: %w", err)
+			return NewErrValidationStr("failed to check existing membership")
 		}
 
-		// If not a maintainer of this group, deny access
-		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
-			return NewErrValidationStr("requester does not have permission to update maintainer status in this group")
+		if requesterMembership == nil {
+			return NewErrValidationStr("requester is not a member of the organization")
+		}
+
+		// Check if the requester has sufficient permissions
+		// Allow if the requester is an org owner or admin
+		isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+
+		// If not an admin/owner, check if the requester is a maintainer of this group
+		if !isAdminOrOwner {
+			// Check if the requester is a maintainer of this group
+			requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+			if err != nil && !IsNotFound(err) {
+				return fmt.Errorf("failed to check requester's group membership: %w", err)
+			}
+
+			// If not a maintainer of this group, deny access
+			if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
+				return NewErrValidationStr("requester does not have permission to update maintainer status in this group")
+			}
 		}
 	}
 

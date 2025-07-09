@@ -65,7 +65,7 @@ func (g *GroupService) Create(ctx context.Context, req *pb.GroupServiceCreateReq
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
 	}
 
-	gr, err := g.groupUseCase.Create(ctx, orgUUID, req.Name, req.Description, userUUID)
+	gr, err := g.groupUseCase.Create(ctx, orgUUID, req.Name, req.Description, &userUUID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, g.log)
 	}

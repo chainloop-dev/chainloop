@@ -2,11 +2,11 @@
   "ActionType": "ProjectMembershipAdded",
   "TargetType": "Project",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
-  "ActorType": "API_TOKEN",
-  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "SYSTEM",
+  "ActorID": null,
   "ActorEmail": "",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "API Token 1089bb36-e27b-428b-8009-d015c8737c54 has added user 'test@example.com' to the project 'test-project' with role 'viewer'",
+  "Description": "system@chainloop.dev has added user 'test@example.com' to the project 'test-project' with role 'viewer'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",
@@ -14,5 +14,5 @@
     "user_email": "test@example.com",
     "role": "role:project:viewer"
   },
-  "Digest": "sha256:e166950b0f58a8d79a22f50c05e87cbcd6792017e8082c2a25be3371a3b323db"
+  "Digest": "sha256:4001d6187db2e8b9d70a052ad44db1a432237cf88800f048f19d5b1b143f3bb8"
 }
