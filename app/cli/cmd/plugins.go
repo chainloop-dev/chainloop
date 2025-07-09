@@ -387,8 +387,12 @@ func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
 
 		maxFlagLen += 2 // For the "--" prefix
 		for _, flag := range cmd.Flags {
-			flagName := fmt.Sprintf("  --%s", flag.Name)
-			padding := strings.Repeat(" ", maxFlagLen-len(flag.Name)+4) // +4 for extra spacing
+			shorthand := "   "
+			if flag.Shorthand != "" {
+				shorthand = fmt.Sprintf("-%s,", flag.Shorthand)
+			}
+			flagName := fmt.Sprintf("  %s--%s", shorthand, flag.Name)
+			padding := strings.Repeat(" ", maxFlagLen-len(flag.Name)+2)
 
 			defaultValue := ""
 			if flag.Default != nil {
