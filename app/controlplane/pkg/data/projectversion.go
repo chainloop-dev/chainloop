@@ -109,7 +109,7 @@ func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.
 		Save(ctx)
 }
 
-func findProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string) (*ent.ProjectVersion, error) {
+func findProjectVersionWithClient(ctx context.Context, tx *ent.Client, projectID uuid.UUID, version string) (*ent.ProjectVersion, error) {
 	return tx.ProjectVersion.Query().
 		Where(
 			projectversion.ProjectID(projectID),
