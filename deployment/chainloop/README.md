@@ -396,7 +396,7 @@ For example, these commands generate a self-signed certificate with an RSA priva
 ```bash
 > openssl genrsa -aes256 -out ca.key 4096
 ...
-> openssl req -new -x509 -sha256 -key ca.key -out ca.crt -days 365
+> openssl req -new -x509 -sha256 -key ca.key -out ca.crt -addext "basicConstraints=CA:TRUE" --addext "keyUsage=keyCertSign, cRLSign" -days 365
 ...
 ```
 
