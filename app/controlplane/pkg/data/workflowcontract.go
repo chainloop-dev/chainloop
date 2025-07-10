@@ -48,10 +48,29 @@ func NewWorkflowContractRepo(data *Data, logger log.Logger) biz.WorkflowContract
 	}
 }
 
-func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.WorkflowContract, error) {
-	contracts, err := orgScopedQuery(r.data.DB, orgID).
+// List returns a list of workflow contracts for a given organization
+// If no project filters are provided, we return all the contracts scoped to the organization
+// otherwise we return the global contracts alongside the org scoped projects
+func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowContractListFilters) ([]*biz.WorkflowContract, error) {
+	wcontractQuery := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflowContracts().
-		Where(workflowcontract.DeletedAtIsNil()).
+		Where(workflowcontract.DeletedAtIsNil())
+
+	// If specific projects are provided
+	// we return the global contracts alongside the org scoped projects
+	if len(filter.FilterByProjects) > 0 {
+		wcontractQuery = wcontractQuery.Where(
+			workflowcontract.Or(
+				workflowcontract.And(
+					workflowcontract.ScopedResourceTypeIn(biz.ContractScopeProject),
+					workflowcontract.ScopedResourceIDIn(filter.FilterByProjects...),
+				),
+				workflowcontract.ScopedResourceIDIsNil(),
+			),
+		)
+	}
+
+	contracts, err := wcontractQuery.
 		WithWorkflows(func(q *ent.WorkflowQuery) {
 			q.Where(workflow.DeletedAtIsNil())
 		}).

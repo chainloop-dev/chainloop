@@ -78,7 +78,7 @@ type WorkflowContractWithVersion struct {
 
 type WorkflowContractRepo interface {
 	Create(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error)
-	List(ctx context.Context, orgID uuid.UUID) ([]*WorkflowContract, error)
+	List(ctx context.Context, orgID uuid.UUID, filter *WorkflowContractListFilters) ([]*WorkflowContract, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
@@ -128,13 +128,32 @@ func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *polic
 	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, auditorUC: auditorUC, logger: log.NewHelper(logger)}
 }
 
-func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*WorkflowContract, error) {
+type WorkflowContractListFilters struct {
+	// FilterByProjects is used to filter the result by a project list
+	// If it's empty, no filter will be applied
+	FilterByProjects []uuid.UUID
+}
+
+type WorkflowListOpt func(opts *WorkflowContractListFilters)
+
+func WithProjectFilter(projectIDs []uuid.UUID) WorkflowListOpt {
+	return func(opts *WorkflowContractListFilters) {
+		opts.FilterByProjects = projectIDs
+	}
+}
+
+func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string, opts ...WorkflowListOpt) ([]*WorkflowContract, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.List(ctx, orgUUID)
+	filters := &WorkflowContractListFilters{}
+	for _, opt := range opts {
+		opt(filters)
+	}
+
+	return uc.repo.List(ctx, orgUUID, filters)
 }
 
 func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, contractID string) (*WorkflowContract, error) {

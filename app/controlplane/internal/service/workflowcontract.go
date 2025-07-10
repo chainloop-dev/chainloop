@@ -48,7 +48,7 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 		return nil, err
 	}
 
-	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID)
+	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID, biz.WithProjectFilter(s.visibleProjects(ctx)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
