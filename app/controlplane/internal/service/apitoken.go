@@ -101,7 +101,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	}
 
 	// Only expose system tokens
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenRevoked(req.IncludeRevoked), biz.WithApiTokenProjectFilter(defaultProjectFilter), biz.WithApiTokenScope(mapTokenScope(req.Scope)))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenRevoked(req.IncludeRevoked), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(mapTokenScope(req.Scope)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

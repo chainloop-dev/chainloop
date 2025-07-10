@@ -201,7 +201,7 @@ func (s *apiTokenTestSuite) TestRevoke() {
 	s.Run("token can be revoked once", func() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		s.NoError(err)
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenRevoked(true))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenRevoked(true))
 		s.NoError(err)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		// It's revoked
@@ -270,7 +270,7 @@ func (s *apiTokenTestSuite) TestList() {
 	})
 
 	s.Run("can return only for a specific project", func() {
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenProjectFilter([]uuid.UUID{s.p1.ID}))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenProjectFilter([]uuid.UUID{s.p1.ID}))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 2)
 		s.Equal(s.t4.ID, tokens[0].ID)
@@ -278,13 +278,13 @@ func (s *apiTokenTestSuite) TestList() {
 	})
 
 	s.Run("can return scoped to a project", func() {
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenScope(biz.APITokenScopeProject))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeProject))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 3)
 	})
 
 	s.Run("can return scoped to a global", func() {
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenScope(biz.APITokenScopeGlobal))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeGlobal))
 		s.NoError(err)
 		s.Len(tokens, 2)
 	})
@@ -310,7 +310,7 @@ func (s *apiTokenTestSuite) TestList() {
 	})
 
 	s.Run("doesn't return revoked unless requested", func() {
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenRevoked(true))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenRevoked(true))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 5)
 		s.Equal(s.t1.ID, tokens[0].ID)

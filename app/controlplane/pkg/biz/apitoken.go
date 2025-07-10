@@ -273,19 +273,19 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 
 type APITokenListOpt func(*APITokenListFilters)
 
-func WithApiTokenProjectFilter(projectIDs []uuid.UUID) APITokenListOpt {
+func WithAPITokenProjectFilter(projectIDs []uuid.UUID) APITokenListOpt {
 	return func(opts *APITokenListFilters) {
 		opts.FilterByProjects = projectIDs
 	}
 }
 
-func WithApiTokenRevoked(includeRevoked bool) APITokenListOpt {
+func WithAPITokenRevoked(includeRevoked bool) APITokenListOpt {
 	return func(opts *APITokenListFilters) {
 		opts.IncludeRevoked = includeRevoked
 	}
 }
 
-func WithApiTokenScope(scope APITokenScope) APITokenListOpt {
+func WithAPITokenScope(scope APITokenScope) APITokenListOpt {
 	return func(opts *APITokenListFilters) {
 		opts.FilterByScope = scope
 	}
