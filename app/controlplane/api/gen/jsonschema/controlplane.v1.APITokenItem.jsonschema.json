@@ -18,14 +18,12 @@
     "^(organization_name)$": {
       "type": "string"
     },
-    "^(project_id)$": {
-      "type": "string"
-    },
-    "^(project_name)$": {
-      "type": "string"
-    },
     "^(revoked_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(scoped_entity)$": {
+      "$ref": "controlplane.v1.ScopedEntity.jsonschema.json",
+      "description": "wether the token is scoped to an entity in the organization"
     }
   },
   "properties": {
@@ -53,14 +51,12 @@
     "organizationName": {
       "type": "string"
     },
-    "projectId": {
-      "type": "string"
-    },
-    "projectName": {
-      "type": "string"
-    },
     "revokedAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "scopedEntity": {
+      "$ref": "controlplane.v1.ScopedEntity.jsonschema.json",
+      "description": "wether the token is scoped to an entity in the organization"
     }
   },
   "title": "API Token Item",

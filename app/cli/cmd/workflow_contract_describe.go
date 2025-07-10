@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,6 +85,8 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	t := newTableWriter()
 	t.SetTitle("Contract")
 	t.AppendRow(table.Row{"Name", c.Name})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Scope", c.ScopedEntity.String()})
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Description", c.Description})
 	t.AppendSeparator()

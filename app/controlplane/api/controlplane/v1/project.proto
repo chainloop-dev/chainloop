@@ -29,6 +29,7 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 
 service ProjectService {
   // Project level API tokens
+  // DEPRECATED: Use the API token service instead
   rpc APITokenCreate(ProjectServiceAPITokenCreateRequest) returns (ProjectServiceAPITokenCreateResponse);
   rpc APITokenList(ProjectServiceAPITokenListRequest) returns (ProjectServiceAPITokenListResponse);
   rpc APITokenRevoke(ProjectServiceAPITokenRevokeRequest) returns (ProjectServiceAPITokenRevokeResponse);

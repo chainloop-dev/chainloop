@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -43,6 +44,14 @@ type ScopedEntity struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+func (s *ScopedEntity) String() string {
+	if s == nil {
+		return "global"
+	}
+
+	return fmt.Sprintf("%s/%s", s.Type, s.Name)
 }
 
 type WorkflowRef struct {

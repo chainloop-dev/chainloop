@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import (
 
 func newAPITokenCreateCmd() *cobra.Command {
 	var (
-		description, name string
-		expiresIn         time.Duration
+		description, name, projectName string
+		expiresIn                      time.Duration
 	)
 
 	cmd := &cobra.Command{
@@ -40,7 +40,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 				duration = &expiresIn
 			}
 
-			res, err := action.NewAPITokenCreate(actionOpts).Run(context.Background(), name, description, duration)
+			res, err := action.NewAPITokenCreate(actionOpts).Run(context.Background(), name, description, projectName, duration)
 			if err != nil {
 				return fmt.Errorf("creating API token: %w", err)
 			}
@@ -61,6 +61,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 	cmd.InheritedFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "output format, valid options are table, json, token")
 	err := cmd.MarkFlagRequired("name")
 	cobra.CheckErr(err)
+	cmd.Flags().StringVar(&projectName, "project", "", "project name used to scope the token, if not set the token will be created at the organization level")
 
 	return cmd
 }
@@ -77,9 +78,9 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"Name", "Description", "Created At", "Expires At", "Revoked At", "Last used at"})
+	t.AppendHeader(table.Row{"Name", "Scope", "Description", "Created At", "Expires At", "Revoked At", "Last used at"})
 	for _, p := range tokens {
-		r := table.Row{p.Name, p.Description, p.CreatedAt.Format(time.RFC822)}
+		r := table.Row{p.Name, p.ScopedEntity.String(), p.Description, p.CreatedAt.Format(time.RFC822)}
 		if p.ExpiresAt != nil {
 			r = append(r, p.ExpiresAt.Format(time.RFC822))
 		} else {

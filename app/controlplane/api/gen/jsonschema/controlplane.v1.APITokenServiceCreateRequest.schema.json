@@ -5,6 +5,10 @@
   "patternProperties": {
     "^(expiresIn)$": {
       "$ref": "google.protobuf.Duration.schema.json"
+    },
+    "^(projectReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "You might need to specify a project reference if you want/need to create a token scoped to a project"
     }
   },
   "properties": {
@@ -17,6 +21,10 @@
     "name": {
       "minLength": 1,
       "type": "string"
+    },
+    "project_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "You might need to specify a project reference if you want/need to create a token scoped to a project"
     }
   },
   "title": "API Token Service Create Request",

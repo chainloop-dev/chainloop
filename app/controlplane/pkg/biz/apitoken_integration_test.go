@@ -124,7 +124,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 
 		for _, tc := range testCases {
 			s.Run(tc.name, func() {
-				var opts []biz.APITokenUseCaseOpt
+				var opts []biz.APITokenCreateOpt
 				if tc.project != nil {
 					opts = append(opts, biz.APITokenWithProject(tc.project))
 				}
@@ -201,7 +201,7 @@ func (s *apiTokenTestSuite) TestRevoke() {
 	s.Run("token can be revoked once", func() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		s.NoError(err)
-		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenRevoked(true))
 		s.NoError(err)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		// It's revoked
@@ -240,7 +240,7 @@ func (s *apiTokenTestSuite) TestFindByID() {
 func (s *apiTokenTestSuite) TestList() {
 	ctx := context.Background()
 	s.Run("invalid org ID", func() {
-		tokens, err := s.APIToken.List(ctx, "deadbeef", false)
+		tokens, err := s.APIToken.List(ctx, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 		s.Nil(tokens)
@@ -249,14 +249,14 @@ func (s *apiTokenTestSuite) TestList() {
 	s.Run("returns empty list", func() {
 		emptyOrg, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
-		tokens, err := s.APIToken.List(ctx, emptyOrg.ID, false)
+		tokens, err := s.APIToken.List(ctx, emptyOrg.ID)
 		s.NoError(err)
 		s.Len(tokens, 0)
 	})
 
 	s.Run("returns all tokens for that org both system and project scoped", func() {
 		var err error
-		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
+		tokens, err := s.APIToken.List(ctx, s.org.ID)
 		s.NoError(err)
 		require.Len(s.T(), tokens, 4)
 		s.Equal(s.t1.ID, tokens[0].ID)
@@ -265,7 +265,7 @@ func (s *apiTokenTestSuite) TestList() {
 		s.NotEmpty(tokens[1].Name)
 		s.Equal(s.t2.Name, tokens[1].Name)
 
-		tokens, err = s.APIToken.List(ctx, s.org2.ID, false)
+		tokens, err = s.APIToken.List(ctx, s.org2.ID)
 		s.NoError(err)
 		require.Len(s.T(), tokens, 1)
 		s.Equal(s.t3.ID, tokens[0].ID)
@@ -273,7 +273,7 @@ func (s *apiTokenTestSuite) TestList() {
 
 	s.Run("can return only for a specific project", func() {
 		var err error
-		tokens, err := s.APIToken.List(ctx, s.org.ID, false, biz.APITokenWithProject(s.p1))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenProjectFilter([]uuid.UUID{s.p1.ID}))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 2)
 		s.Equal(s.t4.ID, tokens[0].ID)
@@ -282,7 +282,7 @@ func (s *apiTokenTestSuite) TestList() {
 
 	s.Run("or just the system tokens", func() {
 		var err error
-		tokens, err := s.APIToken.List(ctx, s.org.ID, false, biz.APITokenShowOnlySystemTokens(true))
+		tokens, err := s.APIToken.List(ctx, s.org.ID)
 		s.NoError(err)
 		require.Len(s.T(), tokens, 2)
 		s.Equal(s.t1.ID, tokens[0].ID)

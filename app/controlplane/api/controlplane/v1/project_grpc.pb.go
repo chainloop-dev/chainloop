@@ -49,6 +49,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
 	// Project level API tokens
+	// DEPRECATED: Use the API token service instead
 	APITokenCreate(ctx context.Context, in *ProjectServiceAPITokenCreateRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenCreateResponse, error)
 	APITokenList(ctx context.Context, in *ProjectServiceAPITokenListRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenListResponse, error)
 	APITokenRevoke(ctx context.Context, in *ProjectServiceAPITokenRevokeRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenRevokeResponse, error)
@@ -145,6 +146,7 @@ func (c *projectServiceClient) ListPendingInvitations(ctx context.Context, in *P
 // for forward compatibility
 type ProjectServiceServer interface {
 	// Project level API tokens
+	// DEPRECATED: Use the API token service instead
 	APITokenCreate(context.Context, *ProjectServiceAPITokenCreateRequest) (*ProjectServiceAPITokenCreateResponse, error)
 	APITokenList(context.Context, *ProjectServiceAPITokenListRequest) (*ProjectServiceAPITokenListResponse, error)
 	APITokenRevoke(context.Context, *ProjectServiceAPITokenRevokeRequest) (*ProjectServiceAPITokenRevokeResponse, error)

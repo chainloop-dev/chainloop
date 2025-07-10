@@ -92,28 +92,18 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*biz.APIToken, error) {
+func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.APITokenListFilters) ([]*biz.APIToken, error) {
 	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
-	if orgID != nil {
-		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
+	if orgID == nil {
+		return nil, fmt.Errorf("organizationID is required")
 	}
 
-	if showOnlySystemTokens && projectID != nil {
-		return nil, fmt.Errorf("projectID cannot be provided when skipProjectScopedTokens is true")
+	if len(filters.FilterByProjects) > 0 {
+		query = query.Where(apitoken.ProjectIDIn(filters.FilterByProjects...))
 	}
 
-	if showOnlySystemTokens {
-		query = query.Where(apitoken.ProjectIDIsNil())
-	} else if projectID != nil {
-		query = query.Where(apitoken.ProjectIDEQ(*projectID))
-	}
-
-	if projectID != nil {
-		query = query.Where(apitoken.ProjectIDEQ(*projectID))
-	}
-
-	if !includeRevoked {
+	if !filters.IncludeRevoked {
 		query = query.Where(apitoken.RevokedAtIsNil())
 	}
 

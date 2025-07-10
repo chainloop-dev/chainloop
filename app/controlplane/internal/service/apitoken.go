@@ -20,7 +20,9 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -44,13 +46,29 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		return nil, err
 	}
 
+	// Authorization checks
+	// Force setting a project scope if RBAC is enabled
+	if rbacEnabled(ctx) && !req.ProjectReference.IsSet() {
+		return nil, errors.BadRequest("invalid", "project is required")
+	}
+
+	// if the project is provided we make sure it exists and the user has permission to it
+	var project *biz.Project
+	if req.ProjectReference.IsSet() {
+		// Make sure the provided project exists and the user has permission to create tokens in it
+		project, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var expiresIn *time.Duration
 	if req.ExpiresIn != nil {
 		expiresIn = new(time.Duration)
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID)
+	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -70,7 +88,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	}
 
 	// Only expose system tokens
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenShowOnlySystemTokens(true))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenRevoked(req.IncludeRevoked), biz.WithApiTokenProjectFilter(s.visibleProjects(ctx)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -124,11 +142,11 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 	}
 
 	if in.ProjectID != nil {
-		res.ProjectId = in.ProjectID.String()
-	}
-
-	if in.ProjectName != nil {
-		res.ProjectName = *in.ProjectName
+		res.ScopedEntity = &pb.ScopedEntity{
+			Type: string(biz.ContractScopeProject),
+			Id:   in.ProjectID.String(),
+			Name: *in.ProjectName,
+		}
 	}
 
 	return res

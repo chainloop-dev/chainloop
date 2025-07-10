@@ -19,6 +19,7 @@ package controlplane.v1;
 
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
+import "controlplane/v1/shared_message.proto";
 import "google/protobuf/duration.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -33,6 +34,8 @@ message APITokenServiceCreateRequest {
   string name = 3 [(buf.validate.field).string.min_len = 1];
 
   optional string description = 1;
+  // You might need to specify a project reference if you want/need to create a token scoped to a project
+  IdentityReference project_reference = 4;
   optional google.protobuf.Duration expires_in = 2;
 }
 

@@ -1782,7 +1782,10 @@ export const PendingProjectInvitation = {
 };
 
 export interface ProjectService {
-  /** Project level API tokens */
+  /**
+   * Project level API tokens
+   * DEPRECATED: Use the API token service instead
+   */
   APITokenCreate(
     request: DeepPartial<ProjectServiceAPITokenCreateRequest>,
     metadata?: grpc.Metadata,

@@ -87,7 +87,7 @@ func (s *ProjectService) APITokenList(ctx context.Context, req *pb.ProjectServic
 		return nil, err
 	}
 
-	tokens, err := s.apiTokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProject(project))
+	tokens, err := s.apiTokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenProjectFilter([]uuid.UUID{project.ID}), biz.WithApiTokenRevoked(req.IncludeRevoked))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
