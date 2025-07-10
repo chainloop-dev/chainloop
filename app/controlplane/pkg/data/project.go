@@ -335,7 +335,7 @@ func (r *ProjectRepo) queryMembership(orgID uuid.UUID, projectID uuid.UUID, memb
 			membership.MemberID(memberID),
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
 			membership.ResourceID(projectID),
-		)
+		).WithOrganization()
 }
 
 // entProjectToBiz converts an ent.Project to a biz.Project

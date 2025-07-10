@@ -284,7 +284,7 @@ func (r *MembershipRepo) ListGroupMembershipsByUser(ctx context.Context, userID 
 		groupRoleMemberships, err := r.data.DB.Membership.Query().Where(
 			membership.MembershipTypeEQ(authz.MembershipTypeGroup),
 			membership.MemberIDIn(groupIDs...),
-		).All(ctx)
+		).WithOrganization().All(ctx)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to query group role memberships: %w", err)
