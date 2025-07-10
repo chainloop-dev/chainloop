@@ -52,14 +52,13 @@ type CASMappingRepo interface {
 }
 
 type CASMappingUseCase struct {
-	repo           CASMappingRepo
-	membershipRepo MembershipRepo
-	projectsRepo   ProjectsRepo
-	logger         *log.Helper
+	repo         CASMappingRepo
+	membershipUC *MembershipUseCase
+	logger       *log.Helper
 }
 
-func NewCASMappingUseCase(repo CASMappingRepo, mRepo MembershipRepo, pRepo ProjectsRepo, logger log.Logger) *CASMappingUseCase {
-	return &CASMappingUseCase{repo, mRepo, pRepo, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
+func NewCASMappingUseCase(repo CASMappingRepo, membershipUC *MembershipUseCase, logger log.Logger) *CASMappingUseCase {
+	return &CASMappingUseCase{repo, membershipUC, servicelogger.ScopedHelper(logger, "cas-mapping-usecase")}
 }
 
 type CASMappingCreateOpts struct {
@@ -99,7 +98,7 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	userOrgs, projectIDs, err := getOrgsAndRBACInfoForUser(ctx, userUUID, uc.membershipRepo, uc.projectsRepo)
+	userOrgs, projectIDs, err := uc.membershipUC.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
 		return nil, err
 	}
