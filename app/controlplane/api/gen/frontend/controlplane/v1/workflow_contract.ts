@@ -3,6 +3,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { WorkflowContractItem, WorkflowContractVersionItem } from "./response_messages";
+import { IdentityReference } from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -17,7 +18,11 @@ export interface WorkflowContractServiceCreateRequest {
   name: string;
   /** Raw representation of the contract in json, yaml or cue */
   rawContract: Uint8Array;
-  description?: string | undefined;
+  description?:
+    | string
+    | undefined;
+  /** You might need to specify a project reference if you want/need to create a contract scoped to a project */
+  projectReference?: IdentityReference;
 }
 
 export interface WorkflowContractServiceCreateResponse {
@@ -176,7 +181,7 @@ export const WorkflowContractServiceListResponse = {
 };
 
 function createBaseWorkflowContractServiceCreateRequest(): WorkflowContractServiceCreateRequest {
-  return { name: "", rawContract: new Uint8Array(0), description: undefined };
+  return { name: "", rawContract: new Uint8Array(0), description: undefined, projectReference: undefined };
 }
 
 export const WorkflowContractServiceCreateRequest = {
@@ -189,6 +194,9 @@ export const WorkflowContractServiceCreateRequest = {
     }
     if (message.description !== undefined) {
       writer.uint32(26).string(message.description);
+    }
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -221,6 +229,13 @@ export const WorkflowContractServiceCreateRequest = {
 
           message.description = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -235,6 +250,9 @@ export const WorkflowContractServiceCreateRequest = {
       name: isSet(object.name) ? String(object.name) : "",
       rawContract: isSet(object.rawContract) ? bytesFromBase64(object.rawContract) : new Uint8Array(0),
       description: isSet(object.description) ? String(object.description) : undefined,
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
     };
   },
 
@@ -244,6 +262,10 @@ export const WorkflowContractServiceCreateRequest = {
     message.rawContract !== undefined &&
       (obj.rawContract = base64FromBytes(message.rawContract !== undefined ? message.rawContract : new Uint8Array(0)));
     message.description !== undefined && (obj.description = message.description);
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
     return obj;
   },
 
@@ -260,6 +282,9 @@ export const WorkflowContractServiceCreateRequest = {
     message.name = object.name ?? "";
     message.rawContract = object.rawContract ?? new Uint8Array(0);
     message.description = object.description ?? undefined;
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
     return message;
   },
 };

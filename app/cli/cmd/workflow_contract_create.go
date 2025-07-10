@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 )
 
 func newWorkflowContractCreateCmd() *cobra.Command {
-	var name, description, contractPath string
+	var name, description, contractPath, projectName string
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -31,7 +31,7 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("description") {
 				desc = &description
 			}
-			res, err := action.NewWorkflowContractCreate(actionOpts).Run(name, desc, contractPath)
+			res, err := action.NewWorkflowContractCreate(actionOpts).Run(name, desc, contractPath, projectName)
 			if err != nil {
 				return err
 			}
@@ -47,6 +47,7 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
+	cmd.Flags().StringVar(&projectName, "project", "", "project name used to scope the contract, if not set the contract will be created in the organization")
 
 	return cmd
 }

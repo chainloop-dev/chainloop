@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(projectReference)$": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "You might need to specify a project reference if you want/need to create a contract scoped to a project"
+    },
     "^(rawContract)$": {
       "description": "Raw representation of the contract in json, yaml or cue",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
@@ -15,6 +19,10 @@
     },
     "name": {
       "type": "string"
+    },
+    "project_reference": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "You might need to specify a project reference if you want/need to create a contract scoped to a project"
     },
     "raw_contract": {
       "description": "Raw representation of the contract in json, yaml or cue",

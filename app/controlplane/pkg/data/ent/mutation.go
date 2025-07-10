@@ -15246,25 +15246,27 @@ func (m *WorkflowMutation) ResetEdge(name string) error {
 // WorkflowContractMutation represents an operation that mutates the WorkflowContract nodes in the graph.
 type WorkflowContractMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	name                *string
-	created_at          *time.Time
-	deleted_at          *time.Time
-	description         *string
-	clearedFields       map[string]struct{}
-	versions            map[uuid.UUID]struct{}
-	removedversions     map[uuid.UUID]struct{}
-	clearedversions     bool
-	organization        *uuid.UUID
-	clearedorganization bool
-	workflows           map[uuid.UUID]struct{}
-	removedworkflows    map[uuid.UUID]struct{}
-	clearedworkflows    bool
-	done                bool
-	oldValue            func(context.Context) (*WorkflowContract, error)
-	predicates          []predicate.WorkflowContract
+	op                   Op
+	typ                  string
+	id                   *uuid.UUID
+	name                 *string
+	created_at           *time.Time
+	deleted_at           *time.Time
+	description          *string
+	scoped_resource_type *biz.ContractScope
+	scoped_resource_id   *uuid.UUID
+	clearedFields        map[string]struct{}
+	versions             map[uuid.UUID]struct{}
+	removedversions      map[uuid.UUID]struct{}
+	clearedversions      bool
+	organization         *uuid.UUID
+	clearedorganization  bool
+	workflows            map[uuid.UUID]struct{}
+	removedworkflows     map[uuid.UUID]struct{}
+	clearedworkflows     bool
+	done                 bool
+	oldValue             func(context.Context) (*WorkflowContract, error)
+	predicates           []predicate.WorkflowContract
 }
 
 var _ ent.Mutation = (*WorkflowContractMutation)(nil)
@@ -15541,6 +15543,104 @@ func (m *WorkflowContractMutation) ResetDescription() {
 	delete(m.clearedFields, workflowcontract.FieldDescription)
 }
 
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (m *WorkflowContractMutation) SetScopedResourceType(bs biz.ContractScope) {
+	m.scoped_resource_type = &bs
+}
+
+// ScopedResourceType returns the value of the "scoped_resource_type" field in the mutation.
+func (m *WorkflowContractMutation) ScopedResourceType() (r biz.ContractScope, exists bool) {
+	v := m.scoped_resource_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopedResourceType returns the old "scoped_resource_type" field's value of the WorkflowContract entity.
+// If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractMutation) OldScopedResourceType(ctx context.Context) (v biz.ContractScope, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopedResourceType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopedResourceType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopedResourceType: %w", err)
+	}
+	return oldValue.ScopedResourceType, nil
+}
+
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (m *WorkflowContractMutation) ClearScopedResourceType() {
+	m.scoped_resource_type = nil
+	m.clearedFields[workflowcontract.FieldScopedResourceType] = struct{}{}
+}
+
+// ScopedResourceTypeCleared returns if the "scoped_resource_type" field was cleared in this mutation.
+func (m *WorkflowContractMutation) ScopedResourceTypeCleared() bool {
+	_, ok := m.clearedFields[workflowcontract.FieldScopedResourceType]
+	return ok
+}
+
+// ResetScopedResourceType resets all changes to the "scoped_resource_type" field.
+func (m *WorkflowContractMutation) ResetScopedResourceType() {
+	m.scoped_resource_type = nil
+	delete(m.clearedFields, workflowcontract.FieldScopedResourceType)
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (m *WorkflowContractMutation) SetScopedResourceID(u uuid.UUID) {
+	m.scoped_resource_id = &u
+}
+
+// ScopedResourceID returns the value of the "scoped_resource_id" field in the mutation.
+func (m *WorkflowContractMutation) ScopedResourceID() (r uuid.UUID, exists bool) {
+	v := m.scoped_resource_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopedResourceID returns the old "scoped_resource_id" field's value of the WorkflowContract entity.
+// If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractMutation) OldScopedResourceID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopedResourceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopedResourceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopedResourceID: %w", err)
+	}
+	return oldValue.ScopedResourceID, nil
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (m *WorkflowContractMutation) ClearScopedResourceID() {
+	m.scoped_resource_id = nil
+	m.clearedFields[workflowcontract.FieldScopedResourceID] = struct{}{}
+}
+
+// ScopedResourceIDCleared returns if the "scoped_resource_id" field was cleared in this mutation.
+func (m *WorkflowContractMutation) ScopedResourceIDCleared() bool {
+	_, ok := m.clearedFields[workflowcontract.FieldScopedResourceID]
+	return ok
+}
+
+// ResetScopedResourceID resets all changes to the "scoped_resource_id" field.
+func (m *WorkflowContractMutation) ResetScopedResourceID() {
+	m.scoped_resource_id = nil
+	delete(m.clearedFields, workflowcontract.FieldScopedResourceID)
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by ids.
 func (m *WorkflowContractMutation) AddVersionIDs(ids ...uuid.UUID) {
 	if m.versions == nil {
@@ -15722,7 +15822,7 @@ func (m *WorkflowContractMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, workflowcontract.FieldName)
 	}
@@ -15734,6 +15834,12 @@ func (m *WorkflowContractMutation) Fields() []string {
 	}
 	if m.description != nil {
 		fields = append(fields, workflowcontract.FieldDescription)
+	}
+	if m.scoped_resource_type != nil {
+		fields = append(fields, workflowcontract.FieldScopedResourceType)
+	}
+	if m.scoped_resource_id != nil {
+		fields = append(fields, workflowcontract.FieldScopedResourceID)
 	}
 	return fields
 }
@@ -15751,6 +15857,10 @@ func (m *WorkflowContractMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case workflowcontract.FieldDescription:
 		return m.Description()
+	case workflowcontract.FieldScopedResourceType:
+		return m.ScopedResourceType()
+	case workflowcontract.FieldScopedResourceID:
+		return m.ScopedResourceID()
 	}
 	return nil, false
 }
@@ -15768,6 +15878,10 @@ func (m *WorkflowContractMutation) OldField(ctx context.Context, name string) (e
 		return m.OldDeletedAt(ctx)
 	case workflowcontract.FieldDescription:
 		return m.OldDescription(ctx)
+	case workflowcontract.FieldScopedResourceType:
+		return m.OldScopedResourceType(ctx)
+	case workflowcontract.FieldScopedResourceID:
+		return m.OldScopedResourceID(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowContract field %s", name)
 }
@@ -15805,6 +15919,20 @@ func (m *WorkflowContractMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetDescription(v)
 		return nil
+	case workflowcontract.FieldScopedResourceType:
+		v, ok := value.(biz.ContractScope)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopedResourceType(v)
+		return nil
+	case workflowcontract.FieldScopedResourceID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopedResourceID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)
 }
@@ -15841,6 +15969,12 @@ func (m *WorkflowContractMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowcontract.FieldDescription) {
 		fields = append(fields, workflowcontract.FieldDescription)
 	}
+	if m.FieldCleared(workflowcontract.FieldScopedResourceType) {
+		fields = append(fields, workflowcontract.FieldScopedResourceType)
+	}
+	if m.FieldCleared(workflowcontract.FieldScopedResourceID) {
+		fields = append(fields, workflowcontract.FieldScopedResourceID)
+	}
 	return fields
 }
 
@@ -15861,6 +15995,12 @@ func (m *WorkflowContractMutation) ClearField(name string) error {
 	case workflowcontract.FieldDescription:
 		m.ClearDescription()
 		return nil
+	case workflowcontract.FieldScopedResourceType:
+		m.ClearScopedResourceType()
+		return nil
+	case workflowcontract.FieldScopedResourceID:
+		m.ClearScopedResourceID()
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract nullable field %s", name)
 }
@@ -15880,6 +16020,12 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 		return nil
 	case workflowcontract.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case workflowcontract.FieldScopedResourceType:
+		m.ResetScopedResourceType()
+		return nil
+	case workflowcontract.FieldScopedResourceID:
+		m.ResetScopedResourceID()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)

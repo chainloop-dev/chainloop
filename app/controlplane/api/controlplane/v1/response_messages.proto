@@ -176,6 +176,17 @@ message WorkflowContractItem {
   // Workflows associated with this contract
   repeated string workflow_names = 5 [deprecated = true];
   repeated WorkflowRef workflow_refs = 7;
+  // wether the contract is scoped to an entity in the organization
+  ScopedEntity scoped_entity = 9;
+}
+
+message ScopedEntity {
+  // Type is the type of the scoped entity i.e project or org
+  string type = 1;
+  // ID is the id of the scoped entity
+  string id = 2;
+  // Name is the name of the scoped entity
+  string name = 3;
 }
 
 message WorkflowRef {

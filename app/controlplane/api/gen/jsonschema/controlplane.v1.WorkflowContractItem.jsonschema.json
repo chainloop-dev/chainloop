@@ -14,6 +14,10 @@
     "^(latest_revision_created_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
+    "^(scoped_entity)$": {
+      "$ref": "controlplane.v1.ScopedEntity.jsonschema.json",
+      "description": "wether the contract is scoped to an entity in the organization"
+    },
     "^(workflow_names)$": {
       "description": "Workflows associated with this contract",
       "items": {
@@ -48,6 +52,10 @@
     },
     "name": {
       "type": "string"
+    },
+    "scopedEntity": {
+      "$ref": "controlplane.v1.ScopedEntity.jsonschema.json",
+      "description": "wether the contract is scoped to an entity in the organization"
     },
     "workflowNames": {
       "description": "Workflows associated with this contract",

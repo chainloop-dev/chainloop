@@ -40,3 +40,11 @@ func (i *IdentityReference) Parse() (*uuid.UUID, *string, error) {
 
 	return nil, nil, nil
 }
+
+func (i *IdentityReference) IsSet() bool {
+	if i == nil {
+		return false
+	}
+
+	return i.GetId() != "" || i.GetName() != ""
+}

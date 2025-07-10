@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -240,6 +240,26 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 	}
 }
 
+func (s *workflowContractIntegrationTestSuite) TestList() {
+	ctx := context.Background()
+
+	s.Run("by default it returns all the contracts from the org both global and scoped", func() {
+		contracts, err := s.WorkflowContract.List(ctx, s.org.ID)
+		s.NoError(err)
+		s.Equal(3, len(contracts))
+	})
+
+	s.Run("if filtered by project it returns the contracts scoped to the project alongside the global contracts", func() {
+		contracts, err := s.WorkflowContract.List(ctx, s.org.ID, biz.WithProjectFilter([]uuid.UUID{s.p1.ID}))
+		s.NoError(err)
+		s.Equal(2, len(contracts))
+		s.Equal(s.contractScopedToProject.ID, contracts[0].ID)
+		s.True(contracts[0].IsProjectScoped())
+		s.Equal(s.contractOrg1.ID, contracts[1].ID)
+		s.True(contracts[1].IsGlobalScoped())
+	})
+}
+
 func (s *workflowContractIntegrationTestSuite) TestCreateWithCustomContract() {
 	ctx := context.Background()
 
@@ -315,8 +335,10 @@ func TestWorkflowContractUseCase(t *testing.T) {
 type workflowContractIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	org, org2 *biz.Organization
+	p1        *biz.Project
 
-	contractOrg1 *biz.WorkflowContract
+	contractOrg1            *biz.WorkflowContract
+	contractScopedToProject *biz.WorkflowContract
 }
 
 func (s *workflowContractIntegrationTestSuite) SetupTest() {
@@ -329,6 +351,18 @@ func (s *workflowContractIntegrationTestSuite) SetupTest() {
 	s.org2, err = s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
 
+	s.p1, err = s.Project.Create(ctx, s.org.ID, "a-valid-project")
+	s.NoError(err)
+
+	p2, err := s.Project.Create(ctx, s.org.ID, "a-valid-project-2")
+	s.NoError(err)
+
 	s.contractOrg1, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract"})
 	s.NoError(err)
+
+	s.contractScopedToProject, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract-scoped-to-project", ProjectID: &s.p1.ID})
+	s.NoError(err)
+
+	_, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract-scoped-to-project-2", ProjectID: &p2.ID})
+	s.Require().NoError(err)
 }

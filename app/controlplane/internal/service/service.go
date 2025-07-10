@@ -200,9 +200,10 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		}
 	}
 
+	var defaultMessage = fmt.Sprintf("you do not have permissions to access to the %s associated with this resource", resourceType)
 	// If no matching resources were found, return forbidden error
 	if len(matchingResources) == 0 {
-		return errors.Forbidden("forbidden", "operation not allowed")
+		return errors.Forbidden("forbidden", defaultMessage)
 	}
 
 	// Try to enforce the policy with each matching role
@@ -220,7 +221,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	}
 
 	// If none of the roles pass, return forbidden error
-	return errors.Forbidden("forbidden", "operation not allowed")
+	return errors.Forbidden("forbidden", defaultMessage)
 }
 
 // userHasPermissionOnProject is a helper method that checks if a policy can be applied to a project. It looks for a project
