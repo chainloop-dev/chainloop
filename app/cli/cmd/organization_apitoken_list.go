@@ -40,7 +40,7 @@ func newAPITokenListCmd() *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List API tokens in this organization",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if scope != "" && !slices.Contains(availableScopes, scope) {
 				return fmt.Errorf("invalid scope %q, please chose one of: %v", scope, availableScopes)
 			}
