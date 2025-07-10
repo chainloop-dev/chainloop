@@ -78,9 +78,9 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"Name", "Scope", "Description", "Created At", "Expires At", "Revoked At", "Last used at"})
+	t.AppendHeader(table.Row{"ID", "Name", "Scope", "Description", "Created At", "Expires At", "Revoked At", "Last used at"})
 	for _, p := range tokens {
-		r := table.Row{p.Name, p.ScopedEntity.String(), p.Description, p.CreatedAt.Format(time.RFC822)}
+		r := table.Row{p.ID, p.Name, p.ScopedEntity.String(), p.Description, p.CreatedAt.Format(time.RFC822)}
 		if p.ExpiresAt != nil {
 			r = append(r, p.ExpiresAt.Format(time.RFC822))
 		} else {

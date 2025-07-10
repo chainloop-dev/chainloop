@@ -62,7 +62,7 @@ type APITokenRepo interface {
 	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
 	UpdateLastUsedAt(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
-	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)
+	FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -342,23 +342,18 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	return nil
 }
 
-func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string, opts ...APITokenCreateOpt) (*APIToken, error) {
-	options := &apiTokenOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
+func (uc *APITokenUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) (*APIToken, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	var projectID *uuid.UUID
-	if options.project != nil {
-		projectID = ToPtr(options.project.ID)
+	tokenUUID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
 	}
 
-	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name, projectID)
+	t, err := uc.apiTokenRepo.FindByIDInOrg(ctx, orgUUID, tokenUUID)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
 	}

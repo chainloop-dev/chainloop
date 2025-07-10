@@ -34,9 +34,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ProjectService_APITokenCreate_FullMethodName         = "/controlplane.v1.ProjectService/APITokenCreate"
-	ProjectService_APITokenList_FullMethodName           = "/controlplane.v1.ProjectService/APITokenList"
-	ProjectService_APITokenRevoke_FullMethodName         = "/controlplane.v1.ProjectService/APITokenRevoke"
 	ProjectService_ListMembers_FullMethodName            = "/controlplane.v1.ProjectService/ListMembers"
 	ProjectService_AddMember_FullMethodName              = "/controlplane.v1.ProjectService/AddMember"
 	ProjectService_RemoveMember_FullMethodName           = "/controlplane.v1.ProjectService/RemoveMember"
@@ -48,11 +45,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
-	// Project level API tokens
-	// DEPRECATED: Use the API token service instead
-	APITokenCreate(ctx context.Context, in *ProjectServiceAPITokenCreateRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenCreateResponse, error)
-	APITokenList(ctx context.Context, in *ProjectServiceAPITokenListRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenListResponse, error)
-	APITokenRevoke(ctx context.Context, in *ProjectServiceAPITokenRevokeRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenRevokeResponse, error)
 	// Project membership management
 	ListMembers(ctx context.Context, in *ProjectServiceListMembersRequest, opts ...grpc.CallOption) (*ProjectServiceListMembersResponse, error)
 	AddMember(ctx context.Context, in *ProjectServiceAddMemberRequest, opts ...grpc.CallOption) (*ProjectServiceAddMemberResponse, error)
@@ -67,33 +59,6 @@ type projectServiceClient struct {
 
 func NewProjectServiceClient(cc grpc.ClientConnInterface) ProjectServiceClient {
 	return &projectServiceClient{cc}
-}
-
-func (c *projectServiceClient) APITokenCreate(ctx context.Context, in *ProjectServiceAPITokenCreateRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenCreateResponse, error) {
-	out := new(ProjectServiceAPITokenCreateResponse)
-	err := c.cc.Invoke(ctx, ProjectService_APITokenCreate_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) APITokenList(ctx context.Context, in *ProjectServiceAPITokenListRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenListResponse, error) {
-	out := new(ProjectServiceAPITokenListResponse)
-	err := c.cc.Invoke(ctx, ProjectService_APITokenList_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) APITokenRevoke(ctx context.Context, in *ProjectServiceAPITokenRevokeRequest, opts ...grpc.CallOption) (*ProjectServiceAPITokenRevokeResponse, error) {
-	out := new(ProjectServiceAPITokenRevokeResponse)
-	err := c.cc.Invoke(ctx, ProjectService_APITokenRevoke_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *projectServiceClient) ListMembers(ctx context.Context, in *ProjectServiceListMembersRequest, opts ...grpc.CallOption) (*ProjectServiceListMembersResponse, error) {
@@ -145,11 +110,6 @@ func (c *projectServiceClient) ListPendingInvitations(ctx context.Context, in *P
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
 type ProjectServiceServer interface {
-	// Project level API tokens
-	// DEPRECATED: Use the API token service instead
-	APITokenCreate(context.Context, *ProjectServiceAPITokenCreateRequest) (*ProjectServiceAPITokenCreateResponse, error)
-	APITokenList(context.Context, *ProjectServiceAPITokenListRequest) (*ProjectServiceAPITokenListResponse, error)
-	APITokenRevoke(context.Context, *ProjectServiceAPITokenRevokeRequest) (*ProjectServiceAPITokenRevokeResponse, error)
 	// Project membership management
 	ListMembers(context.Context, *ProjectServiceListMembersRequest) (*ProjectServiceListMembersResponse, error)
 	AddMember(context.Context, *ProjectServiceAddMemberRequest) (*ProjectServiceAddMemberResponse, error)
@@ -163,15 +123,6 @@ type ProjectServiceServer interface {
 type UnimplementedProjectServiceServer struct {
 }
 
-func (UnimplementedProjectServiceServer) APITokenCreate(context.Context, *ProjectServiceAPITokenCreateRequest) (*ProjectServiceAPITokenCreateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method APITokenCreate not implemented")
-}
-func (UnimplementedProjectServiceServer) APITokenList(context.Context, *ProjectServiceAPITokenListRequest) (*ProjectServiceAPITokenListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method APITokenList not implemented")
-}
-func (UnimplementedProjectServiceServer) APITokenRevoke(context.Context, *ProjectServiceAPITokenRevokeRequest) (*ProjectServiceAPITokenRevokeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method APITokenRevoke not implemented")
-}
 func (UnimplementedProjectServiceServer) ListMembers(context.Context, *ProjectServiceListMembersRequest) (*ProjectServiceListMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMembers not implemented")
 }
@@ -198,60 +149,6 @@ type UnsafeProjectServiceServer interface {
 
 func RegisterProjectServiceServer(s grpc.ServiceRegistrar, srv ProjectServiceServer) {
 	s.RegisterService(&ProjectService_ServiceDesc, srv)
-}
-
-func _ProjectService_APITokenCreate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectServiceAPITokenCreateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).APITokenCreate(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_APITokenCreate_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).APITokenCreate(ctx, req.(*ProjectServiceAPITokenCreateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_APITokenList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectServiceAPITokenListRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).APITokenList(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_APITokenList_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).APITokenList(ctx, req.(*ProjectServiceAPITokenListRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_APITokenRevoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectServiceAPITokenRevokeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).APITokenRevoke(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_APITokenRevoke_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).APITokenRevoke(ctx, req.(*ProjectServiceAPITokenRevokeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ProjectService_ListMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -351,18 +248,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "controlplane.v1.ProjectService",
 	HandlerType: (*ProjectServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "APITokenCreate",
-			Handler:    _ProjectService_APITokenCreate_Handler,
-		},
-		{
-			MethodName: "APITokenList",
-			Handler:    _ProjectService_APITokenList_Handler,
-		},
-		{
-			MethodName: "APITokenRevoke",
-			Handler:    _ProjectService_APITokenRevoke_Handler,
-		},
 		{
 			MethodName: "ListMembers",
 			Handler:    _ProjectService_ListMembers_Handler,

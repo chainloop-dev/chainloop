@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 	var project *biz.Project
 	if req.ProjectReference.IsSet() {
 		// Make sure the provided project exists and the user has permission to create tokens in it
-		project, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
+		project, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyAPITokenCreate)
 		if err != nil {
 			return nil, err
 		}
@@ -107,9 +107,21 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, err
 	}
 
-	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	t, err := s.APITokenUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetId())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// 1 - Only admins can manage global contracts
+	if t.ProjectID == nil && rbacEnabled(ctx) {
+		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
+	}
+
+	// Make sure the user has permission to revoke the token in the project
+	if t.ProjectID != nil {
+		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProject, *t.ProjectID); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {

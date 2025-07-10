@@ -71,16 +71,8 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 	return entAPITokenToBiz(token), nil
 }
 
-func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*biz.APIToken, error) {
-	query := r.data.DB.APIToken.Query().Where(apitoken.NameEQ(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil())
-
-	if projectID != nil {
-		query = query.Where(apitoken.ProjectIDEQ(*projectID))
-	} else {
-		query = query.Where(apitoken.ProjectIDIsNil())
-	}
-
-	token, err := query.Only(ctx)
+func (r *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*biz.APIToken, error) {
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("API token")

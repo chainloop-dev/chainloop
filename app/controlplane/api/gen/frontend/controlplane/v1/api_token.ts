@@ -28,7 +28,7 @@ export interface APITokenServiceCreateResponse_APITokenFull {
 }
 
 export interface APITokenServiceRevokeRequest {
-  name: string;
+  id: string;
 }
 
 export interface APITokenServiceRevokeResponse {
@@ -290,13 +290,13 @@ export const APITokenServiceCreateResponse_APITokenFull = {
 };
 
 function createBaseAPITokenServiceRevokeRequest(): APITokenServiceRevokeRequest {
-  return { name: "" };
+  return { id: "" };
 }
 
 export const APITokenServiceRevokeRequest = {
   encode(message: APITokenServiceRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
     return writer;
   },
@@ -313,7 +313,7 @@ export const APITokenServiceRevokeRequest = {
             break;
           }
 
-          message.name = reader.string();
+          message.id = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -325,12 +325,12 @@ export const APITokenServiceRevokeRequest = {
   },
 
   fromJSON(object: any): APITokenServiceRevokeRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { id: isSet(object.id) ? String(object.id) : "" };
   },
 
   toJSON(message: APITokenServiceRevokeRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    message.id !== undefined && (obj.id = message.id);
     return obj;
   },
 
@@ -340,7 +340,7 @@ export const APITokenServiceRevokeRequest = {
 
   fromPartial<I extends Exact<DeepPartial<APITokenServiceRevokeRequest>, I>>(object: I): APITokenServiceRevokeRequest {
     const message = createBaseAPITokenServiceRevokeRequest();
-    message.name = object.name ?? "";
+    message.id = object.id ?? "";
     return message;
   },
 };
