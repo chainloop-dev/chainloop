@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
@@ -27,14 +28,27 @@ func newAPITokenListCmd() *cobra.Command {
 	var (
 		includeRevoked bool
 		project        string
+		scope          string
 	)
+
+	var availableScopes = []string{
+		"project",
+		"global",
+	}
 
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List API tokens in this organization",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if scope != "" && !slices.Contains(availableScopes, scope) {
+				return fmt.Errorf("invalid scope %q, please chose one of: %v", scope, availableScopes)
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAPITokenList(actionOpts).Run(context.Background(), includeRevoked, project)
+			res, err := action.NewAPITokenList(actionOpts).Run(context.Background(), includeRevoked, project, scope)
 			if err != nil {
 				return fmt.Errorf("listing API tokens: %w", err)
 			}
@@ -45,5 +59,6 @@ func newAPITokenListCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&includeRevoked, "all", "a", false, "show all API tokens including revoked ones")
 	cmd.Flags().StringVarP(&project, "project", "p", "", "filter by project name")
+	cmd.Flags().StringVarP(&scope, "scope", "s", "", fmt.Sprintf("filter by scope, available scopes: %v", availableScopes))
 	return cmd
 }

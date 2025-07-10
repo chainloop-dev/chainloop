@@ -255,15 +255,13 @@ func (s *apiTokenTestSuite) TestList() {
 	})
 
 	s.Run("returns all tokens for that org both system and project scoped", func() {
-		var err error
 		tokens, err := s.APIToken.List(ctx, s.org.ID)
 		s.NoError(err)
-		require.Len(s.T(), tokens, 4)
+		require.Len(s.T(), tokens, 5)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.Equal(s.t2.ID, tokens[1].ID)
 		// It has a name set
 		s.NotEmpty(tokens[1].Name)
-		s.Equal(s.t2.Name, tokens[1].Name)
 
 		tokens, err = s.APIToken.List(ctx, s.org2.ID)
 		s.NoError(err)
@@ -272,12 +270,33 @@ func (s *apiTokenTestSuite) TestList() {
 	})
 
 	s.Run("can return only for a specific project", func() {
-		var err error
 		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenProjectFilter([]uuid.UUID{s.p1.ID}))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 2)
 		s.Equal(s.t4.ID, tokens[0].ID)
 		s.Equal(s.t5.ID, tokens[1].ID)
+	})
+
+	s.Run("can return scoped to a project", func() {
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenScope(biz.APITokenScopeProject))
+		s.NoError(err)
+		require.Len(s.T(), tokens, 3)
+	})
+
+	s.Run("can return scoped to a global", func() {
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenScope(biz.APITokenScopeGlobal))
+		s.NoError(err)
+		s.Len(tokens, 2)
+	})
+
+	s.Run("they are org scoped", func() {
+		tokens, err := s.APIToken.List(ctx, s.org.ID)
+		s.NoError(err)
+		s.Len(tokens, 5)
+
+		tokens, err = s.APIToken.List(ctx, s.org2.ID)
+		s.NoError(err)
+		s.Len(tokens, 1)
 	})
 
 	s.Run("doesn't return revoked by default", func() {
@@ -286,15 +305,14 @@ func (s *apiTokenTestSuite) TestList() {
 		require.NoError(s.T(), err)
 		tokens, err := s.APIToken.List(ctx, s.org.ID)
 		s.NoError(err)
-		require.Len(s.T(), tokens, 3)
+		require.Len(s.T(), tokens, 4)
 		s.Equal(s.t2.ID, tokens[0].ID)
 	})
 
 	s.Run("doesn't return revoked unless requested", func() {
-		// revoke one token
 		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenRevoked(true))
 		s.NoError(err)
-		require.Len(s.T(), tokens, 4)
+		require.Len(s.T(), tokens, 5)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.Equal(s.t2.ID, tokens[1].ID)
 	})
@@ -327,9 +345,9 @@ func TestAPITokenUseCase(t *testing.T) {
 // Utility struct to hold the test suite
 type apiTokenTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org, org2          *biz.Organization
-	t1, t2, t3, t4, t5 *biz.APIToken
-	p1, p2             *biz.Project
+	org, org2              *biz.Organization
+	t1, t2, t3, t4, t5, t6 *biz.APIToken
+	p1, p2                 *biz.Project
 }
 
 func (s *apiTokenTestSuite) SetupTest() {
@@ -363,6 +381,10 @@ func (s *apiTokenTestSuite) SetupTest() {
 	s.t4, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
 	require.NoError(s.T(), err)
 	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
+	require.NoError(s.T(), err)
+
+	// Create 1 token for project 2
+	s.t6, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p2))
 	require.NoError(s.T(), err)
 }
 

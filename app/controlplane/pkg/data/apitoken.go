@@ -87,12 +87,23 @@ func (r *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uu
 func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.APITokenListFilters) ([]*biz.APIToken, error) {
 	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
-	if orgID == nil {
-		return nil, fmt.Errorf("organizationID is required")
+	if filters == nil {
+		filters = &biz.APITokenListFilters{}
+	}
+
+	if orgID != nil {
+		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
 	}
 
 	if len(filters.FilterByProjects) > 0 {
 		query = query.Where(apitoken.ProjectIDIn(filters.FilterByProjects...))
+	}
+
+	switch filters.FilterByScope {
+	case biz.APITokenScopeProject:
+		query = query.Where(apitoken.ProjectIDNotNil())
+	case biz.APITokenScopeGlobal:
+		query = query.Where(apitoken.ProjectIDIsNil())
 	}
 
 	if !filters.IncludeRevoked {

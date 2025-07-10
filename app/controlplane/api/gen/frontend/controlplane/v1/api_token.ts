@@ -38,6 +38,47 @@ export interface APITokenServiceListRequest {
   includeRevoked: boolean;
   /** optional project reference to filter by */
   project?: IdentityReference;
+  /** filter by the scope of the token */
+  scope: APITokenServiceListRequest_Scope;
+}
+
+export enum APITokenServiceListRequest_Scope {
+  SCOPE_UNSPECIFIED = 0,
+  SCOPE_PROJECT = 1,
+  SCOPE_GLOBAL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function aPITokenServiceListRequest_ScopeFromJSON(object: any): APITokenServiceListRequest_Scope {
+  switch (object) {
+    case 0:
+    case "SCOPE_UNSPECIFIED":
+      return APITokenServiceListRequest_Scope.SCOPE_UNSPECIFIED;
+    case 1:
+    case "SCOPE_PROJECT":
+      return APITokenServiceListRequest_Scope.SCOPE_PROJECT;
+    case 2:
+    case "SCOPE_GLOBAL":
+      return APITokenServiceListRequest_Scope.SCOPE_GLOBAL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return APITokenServiceListRequest_Scope.UNRECOGNIZED;
+  }
+}
+
+export function aPITokenServiceListRequest_ScopeToJSON(object: APITokenServiceListRequest_Scope): string {
+  switch (object) {
+    case APITokenServiceListRequest_Scope.SCOPE_UNSPECIFIED:
+      return "SCOPE_UNSPECIFIED";
+    case APITokenServiceListRequest_Scope.SCOPE_PROJECT:
+      return "SCOPE_PROJECT";
+    case APITokenServiceListRequest_Scope.SCOPE_GLOBAL:
+      return "SCOPE_GLOBAL";
+    case APITokenServiceListRequest_Scope.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface APITokenServiceListResponse {
@@ -392,7 +433,7 @@ export const APITokenServiceRevokeResponse = {
 };
 
 function createBaseAPITokenServiceListRequest(): APITokenServiceListRequest {
-  return { includeRevoked: false, project: undefined };
+  return { includeRevoked: false, project: undefined, scope: 0 };
 }
 
 export const APITokenServiceListRequest = {
@@ -402,6 +443,9 @@ export const APITokenServiceListRequest = {
     }
     if (message.project !== undefined) {
       IdentityReference.encode(message.project, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.scope !== 0) {
+      writer.uint32(16).int32(message.scope);
     }
     return writer;
   },
@@ -427,6 +471,13 @@ export const APITokenServiceListRequest = {
 
           message.project = IdentityReference.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.scope = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -440,6 +491,7 @@ export const APITokenServiceListRequest = {
     return {
       includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
       project: isSet(object.project) ? IdentityReference.fromJSON(object.project) : undefined,
+      scope: isSet(object.scope) ? aPITokenServiceListRequest_ScopeFromJSON(object.scope) : 0,
     };
   },
 
@@ -448,6 +500,7 @@ export const APITokenServiceListRequest = {
     message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
     message.project !== undefined &&
       (obj.project = message.project ? IdentityReference.toJSON(message.project) : undefined);
+    message.scope !== undefined && (obj.scope = aPITokenServiceListRequest_ScopeToJSON(message.scope));
     return obj;
   },
 
@@ -461,6 +514,7 @@ export const APITokenServiceListRequest = {
     message.project = (object.project !== undefined && object.project !== null)
       ? IdentityReference.fromPartial(object.project)
       : undefined;
+    message.scope = object.scope ?? 0;
     return message;
   },
 };

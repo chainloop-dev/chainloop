@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -284,18 +285,42 @@ func WithApiTokenRevoked(includeRevoked bool) APITokenListOpt {
 	}
 }
 
+func WithApiTokenScope(scope APITokenScope) APITokenListOpt {
+	return func(opts *APITokenListFilters) {
+		opts.FilterByScope = scope
+	}
+}
+
+type APITokenScope string
+
+const (
+	APITokenScopeProject APITokenScope = "project"
+	APITokenScopeGlobal  APITokenScope = "global"
+)
+
+var availableAPITokenScopes = []APITokenScope{
+	APITokenScopeProject,
+	APITokenScopeGlobal,
+}
+
 type APITokenListFilters struct {
 	// FilterByProjects is used to filter the result by a project list
 	// If it's empty, no filter will be applied
 	FilterByProjects []uuid.UUID
 	// IncludeRevoked is used to include revoked tokens in the result
 	IncludeRevoked bool
+	// FilterByScope is used to filter the result by the scope of the token
+	FilterByScope APITokenScope
 }
 
 func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITokenListOpt) ([]*APIToken, error) {
 	filters := &APITokenListFilters{}
 	for _, opt := range opts {
 		opt(filters)
+	}
+
+	if filters.FilterByScope != "" && !slices.Contains(availableAPITokenScopes, filters.FilterByScope) {
+		return nil, NewErrValidationStr(fmt.Sprintf("invalid scope %q, please chose one of: %v", filters.FilterByScope, availableAPITokenScopes))
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -400,6 +425,8 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 			return fmt.Errorf("adding default policies: %w", err)
 		}
 	}
+
+	suc.base.logger.Info("policies synced")
 
 	return nil
 }

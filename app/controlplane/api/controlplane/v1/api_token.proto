@@ -59,6 +59,15 @@ message APITokenServiceListRequest {
 
   // optional project reference to filter by
   IdentityReference project = 4;
+
+  enum Scope {
+    SCOPE_UNSPECIFIED = 0;
+    SCOPE_PROJECT = 1;
+    SCOPE_GLOBAL = 2;
+  }
+
+  // filter by the scope of the token
+  Scope scope = 2;
 }
 
 message APITokenServiceListResponse {

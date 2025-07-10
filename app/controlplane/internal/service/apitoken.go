@@ -101,7 +101,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	}
 
 	// Only expose system tokens
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenRevoked(req.IncludeRevoked), biz.WithApiTokenProjectFilter(defaultProjectFilter))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenRevoked(req.IncludeRevoked), biz.WithApiTokenProjectFilter(defaultProjectFilter), biz.WithApiTokenScope(mapTokenScope(req.Scope)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -112,6 +112,17 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	}
 
 	return &pb.APITokenServiceListResponse{Result: result}, nil
+}
+
+func mapTokenScope(scope pb.APITokenServiceListRequest_Scope) biz.APITokenScope {
+	switch scope {
+	case pb.APITokenServiceListRequest_SCOPE_PROJECT:
+		return biz.APITokenScopeProject
+	case pb.APITokenServiceListRequest_SCOPE_GLOBAL:
+		return biz.APITokenScopeGlobal
+	}
+
+	return ""
 }
 
 func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRevokeRequest) (*pb.APITokenServiceRevokeResponse, error) {
