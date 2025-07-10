@@ -162,7 +162,7 @@ type casMappingSuite struct {
 
 func (s *casMappingSuite) SetupTest() {
 	s.repo = repoM.NewCASMappingRepo(s.T())
-	s.useCase = biz.NewCASMappingUseCase(s.repo, nil, nil, nil)
+	s.useCase = biz.NewCASMappingUseCase(s.repo, nil, nil)
 }
 
 func TestCASMapping(t *testing.T) {
