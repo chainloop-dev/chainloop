@@ -98,9 +98,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v2 := _wireValue
 	casClientUseCase := biz.NewCASClientUseCase(casCredentialsUseCase, bootstrap_CASServer, logger, v2...)
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
-	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	referrerSharedIndex := bootstrap.ReferrerSharedIndex
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipRepo, projectsRepo, referrerSharedIndex, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipUseCase, referrerSharedIndex, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -118,6 +117,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
+	projectsRepo := data.NewProjectsRepo(dataData, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v3 := bootstrap.PolicyProviders
 	v4 := newPolicyProviderConfig(v3)
@@ -168,7 +168,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipRepo, projectsRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
 	v6 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)

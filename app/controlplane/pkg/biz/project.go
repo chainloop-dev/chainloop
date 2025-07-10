@@ -18,7 +18,6 @@ package biz
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -649,21 +648,15 @@ func (uc *ProjectUseCase) verifyRequesterHasPermissions(ctx context.Context, org
 }
 
 // getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership
-func getProjectsWithMembership(ctx context.Context, projectsRepo ProjectsRepo, orgID uuid.UUID, memberships []*Membership) ([]uuid.UUID, error) {
+func getProjectsWithMembershipInOrg(orgID uuid.UUID, memberships []*Membership) []uuid.UUID {
 	ids := make([]uuid.UUID, 0)
-	projects, err := projectsRepo.ListProjectsByOrgID(ctx, orgID)
-	if err != nil {
-		return nil, fmt.Errorf("listing projects: %w", err)
-	}
-	for _, p := range projects {
-		if slices.ContainsFunc(memberships, func(m *Membership) bool {
-			return m.ResourceType == authz.ResourceTypeProject && m.ResourceID == p.ID
-		}) {
-			ids = append(ids, p.ID)
+	for _, m := range memberships {
+		if m.ResourceType == authz.ResourceTypeProject && m.OrganizationID == orgID {
+			ids = append(ids, m.ResourceID)
 		}
 	}
 
-	return ids, nil
+	return ids
 }
 
 // UpdateMemberRole updates the role of a user or group in a project.
