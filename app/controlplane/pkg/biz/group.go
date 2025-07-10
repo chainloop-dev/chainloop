@@ -37,6 +37,8 @@ type GroupRepo interface {
 	Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, opts *UpdateGroupOpts) (*Group, error)
 	// FindByOrgAndID finds a group by its organization ID and group ID.
 	FindByOrgAndID(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID) (*Group, error)
+	// FindByOrgAndName finds a group by its organization ID and group name.
+	FindByOrgAndName(ctx context.Context, orgID uuid.UUID, name string) (*Group, error)
 	// FindGroupMembershipByGroupAndID finds a group membership by group ID and user ID.
 	FindGroupMembershipByGroupAndID(ctx context.Context, groupID uuid.UUID, userID uuid.UUID) (*GroupMembership, error)
 	// SoftDelete soft-deletes a group by marking it as deleted.
@@ -831,6 +833,7 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 
 // ValidateGroupIdentifier validates and resolves the group ID or name to a group ID.
 // Returns an error if both are nil or if the resolved group does not exist.
+// TODO: change to return the group since this is very inefficient in some cases
 func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.UUID, groupID *uuid.UUID, groupName *string) (uuid.UUID, error) {
 	if groupID == nil && groupName == nil {
 		return uuid.Nil, NewErrValidationStr("either group ID or group name must be provided")
@@ -841,19 +844,10 @@ func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.
 	}
 
 	// If group ID is not provided, try to find the group by name
-	groups, _, err := uc.groupRepo.List(ctx, orgID, &ListGroupOpts{Name: *groupName}, pagination.NewDefaultOffsetPaginationOpts())
+	group, err := uc.groupRepo.FindByOrgAndName(ctx, orgID, *groupName)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to list groups: %w", err)
+		return uuid.Nil, fmt.Errorf("failed to find group: %w", err)
 	}
 
-	if len(groups) == 0 {
-		return uuid.Nil, NewErrNotFound("group")
-	}
-
-	// If the group name is not unique, return an error
-	if len(groups) > 1 {
-		return uuid.Nil, NewErrValidationStr("group name is not unique")
-	}
-
-	return groups[0].ID, nil
+	return group.ID, nil
 }

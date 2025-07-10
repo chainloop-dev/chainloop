@@ -302,6 +302,21 @@ func (g GroupRepo) FindByOrgAndID(ctx context.Context, orgID uuid.UUID, groupID 
 	return entGroupToBiz(entGroup), nil
 }
 
+func (g GroupRepo) FindByOrgAndName(ctx context.Context, orgID uuid.UUID, name string) (*biz.Group, error) {
+	entGroup, err := g.data.DB.Group.Query().
+		Where(group.DeletedAtIsNil(), group.Name(name), group.OrganizationID(orgID)).
+		WithOrganization().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("group")
+		}
+		return nil, err
+	}
+
+	return entGroupToBiz(entGroup), nil
+}
+
 // FindGroupMembershipByGroupAndID retrieves a group membership for a specific user in a group.
 func (g GroupRepo) FindGroupMembershipByGroupAndID(ctx context.Context, groupID uuid.UUID, userID uuid.UUID) (*biz.GroupMembership, error) {
 	// Query the group user membership for the specified user in the group
