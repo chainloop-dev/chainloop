@@ -91,9 +91,6 @@ message WorkflowContractServiceDescribeRequest {
     }
   }];
   int32 revision = 2;
-
-  // You might need to specify a project reference if you want/need to describe a contract scoped to a project
-  IdentityReference project_reference = 5;
 }
 
 message WorkflowContractServiceDescribeResponse {

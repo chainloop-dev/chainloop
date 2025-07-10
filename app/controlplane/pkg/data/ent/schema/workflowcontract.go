@@ -67,12 +67,9 @@ func (WorkflowContract) Edges() []ent.Edge {
 
 func (WorkflowContract) Indexes() []ent.Index {
 	return []ent.Index{
-		// names are unique within a organization and affects only to non-scoped and non-deleted items
+		// TODO: add a unique index on name and scoped_resource_type and scoped_resource_id
+		// for now keeping a global one for backward compatibility
 		index.Fields("name").Edges("organization").Unique().Annotations(
-			entsql.IndexWhere("deleted_at IS NULL AND scoped_resource_type IS NULL"),
-		),
-		// names are unique within a resource and affects only to non-deleted items
-		index.Fields("name", "scoped_resource_type", "scoped_resource_id").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),
 	}

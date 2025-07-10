@@ -160,6 +160,14 @@ func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, n
 	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)
 }
 
+func (c *WorkflowContract) IsGlobalScoped() bool {
+	return c.ScopedEntity == nil
+}
+
+func (c *WorkflowContract) IsProjectScoped() bool {
+	return c.ScopedEntity != nil && c.ScopedEntity.Type == string(ContractScopeProject)
+}
+
 type WorkflowContractCreateOpts struct {
 	OrgID, Name string
 	RawSchema   []byte
