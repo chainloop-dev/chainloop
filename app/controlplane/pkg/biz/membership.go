@@ -361,9 +361,9 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, project
 	return nil
 }
 
-func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo MembershipRepo, pRepo ProjectsRepo) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
+func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
 	// Load ALL memberships for the given user
-	memberships, err := mRepo.ListAllByUser(ctx, userID)
+	memberships, err := uc.ListAllMembershipsForUser(ctx, userID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list memberships: %w", err)
 	}
@@ -376,13 +376,9 @@ func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo Memb
 			userOrgs = append(userOrgs, m.ResourceID)
 			// If the role in the org is member, we must enable RBAC for projects.
 			if m.Role == authz.RoleOrgMember {
-				// get list of projects in org, and match it with the memberships to build a filter
-				orgProjects, err := getProjectsWithMembership(ctx, pRepo, m.ResourceID, memberships)
-				if err != nil {
-					return nil, nil, err
-				}
+				// get the list of projects in org, and match it with the memberships to build a filter.
 				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
-				projectIDs[m.ResourceID] = orgProjects
+				projectIDs[m.ResourceID] = getProjectsWithMembershipInOrg(m.ResourceID, memberships)
 			}
 		}
 	}
