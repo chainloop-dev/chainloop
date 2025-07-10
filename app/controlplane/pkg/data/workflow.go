@@ -62,6 +62,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, fmt.Errorf("contract name and ID cannot be provided at the same time")
 	}
 
+	// Load an existing contract reference if provided
 	var contractUUID uuid.UUID
 	if opts.ContractID != "" {
 		contractUUID, err = uuid.Parse(opts.ContractID)
@@ -133,6 +134,17 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			}
 
 			contractUUID = contract.ID
+		} else {
+			// We want to use an existing contract, let's make sure it's scoped to the project or org
+			existingContract, err := contractInOrg(ctx, r.data.DB, orgUUID, &contractUUID, nil)
+			if err != nil {
+				return err
+			}
+
+			// Fail if it's scoped to a different project
+			if existingContract.ScopedResourceID != uuid.Nil && existingContract.ScopedResourceID != projectID && existingContract.ScopedResourceType == biz.ContractScopeProject {
+				return biz.NewErrUnauthorizedStr(fmt.Sprintf("contract %q is scoped to a different project", opts.ContractName))
+			}
 		}
 
 		entwf, err = tx.Workflow.Create().
