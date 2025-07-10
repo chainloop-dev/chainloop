@@ -7038,27 +7038,87 @@ func (m *MembershipMutation) ResetResourceID() {
 	delete(m.clearedFields, membership.FieldResourceID)
 }
 
-// SetOrganizationID sets the "organization" edge to the Organization entity by id.
-func (m *MembershipMutation) SetOrganizationID(id uuid.UUID) {
-	m.organization = &id
+// SetOrganizationID sets the "organization_id" field.
+func (m *MembershipMutation) SetOrganizationID(u uuid.UUID) {
+	m.organization = &u
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *MembershipMutation) OrganizationID() (r uuid.UUID, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the Membership entity.
+// If the Membership object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MembershipMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *MembershipMutation) ResetOrganizationID() {
+	m.organization = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *MembershipMutation) SetUserID(u uuid.UUID) {
+	m.user = &u
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *MembershipMutation) UserID() (r uuid.UUID, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Membership entity.
+// If the Membership object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MembershipMutation) OldUserID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *MembershipMutation) ResetUserID() {
+	m.user = nil
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *MembershipMutation) ClearOrganization() {
 	m.clearedorganization = true
+	m.clearedFields[membership.FieldOrganizationID] = struct{}{}
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
 func (m *MembershipMutation) OrganizationCleared() bool {
 	return m.clearedorganization
-}
-
-// OrganizationID returns the "organization" edge ID in the mutation.
-func (m *MembershipMutation) OrganizationID() (id uuid.UUID, exists bool) {
-	if m.organization != nil {
-		return *m.organization, true
-	}
-	return
 }
 
 // OrganizationIDs returns the "organization" edge IDs in the mutation.
@@ -7077,27 +7137,15 @@ func (m *MembershipMutation) ResetOrganization() {
 	m.clearedorganization = false
 }
 
-// SetUserID sets the "user" edge to the User entity by id.
-func (m *MembershipMutation) SetUserID(id uuid.UUID) {
-	m.user = &id
-}
-
 // ClearUser clears the "user" edge to the User entity.
 func (m *MembershipMutation) ClearUser() {
 	m.cleareduser = true
+	m.clearedFields[membership.FieldUserID] = struct{}{}
 }
 
 // UserCleared reports if the "user" edge to the User entity was cleared.
 func (m *MembershipMutation) UserCleared() bool {
 	return m.cleareduser
-}
-
-// UserID returns the "user" edge ID in the mutation.
-func (m *MembershipMutation) UserID() (id uuid.UUID, exists bool) {
-	if m.user != nil {
-		return *m.user, true
-	}
-	return
 }
 
 // UserIDs returns the "user" edge IDs in the mutation.
@@ -7150,7 +7198,7 @@ func (m *MembershipMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MembershipMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 10)
 	if m.current != nil {
 		fields = append(fields, membership.FieldCurrent)
 	}
@@ -7174,6 +7222,12 @@ func (m *MembershipMutation) Fields() []string {
 	}
 	if m.resource_id != nil {
 		fields = append(fields, membership.FieldResourceID)
+	}
+	if m.organization != nil {
+		fields = append(fields, membership.FieldOrganizationID)
+	}
+	if m.user != nil {
+		fields = append(fields, membership.FieldUserID)
 	}
 	return fields
 }
@@ -7199,6 +7253,10 @@ func (m *MembershipMutation) Field(name string) (ent.Value, bool) {
 		return m.ResourceType()
 	case membership.FieldResourceID:
 		return m.ResourceID()
+	case membership.FieldOrganizationID:
+		return m.OrganizationID()
+	case membership.FieldUserID:
+		return m.UserID()
 	}
 	return nil, false
 }
@@ -7224,6 +7282,10 @@ func (m *MembershipMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldResourceType(ctx)
 	case membership.FieldResourceID:
 		return m.OldResourceID(ctx)
+	case membership.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
+	case membership.FieldUserID:
+		return m.OldUserID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Membership field %s", name)
 }
@@ -7288,6 +7350,20 @@ func (m *MembershipMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetResourceID(v)
+		return nil
+	case membership.FieldOrganizationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
+		return nil
+	case membership.FieldUserID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Membership field %s", name)
@@ -7388,6 +7464,12 @@ func (m *MembershipMutation) ResetField(name string) error {
 		return nil
 	case membership.FieldResourceID:
 		m.ResetResourceID()
+		return nil
+	case membership.FieldOrganizationID:
+		m.ResetOrganizationID()
+		return nil
+	case membership.FieldUserID:
+		m.ResetUserID()
 		return nil
 	}
 	return fmt.Errorf("unknown Membership field %s", name)

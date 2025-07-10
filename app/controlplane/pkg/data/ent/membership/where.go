@@ -82,6 +82,16 @@ func ResourceID(v uuid.UUID) predicate.Membership {
 	return predicate.Membership(sql.FieldEQ(FieldResourceID, v))
 }
 
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
+func UserID(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldUserID, v))
+}
+
 // CurrentEQ applies the EQ predicate on the "current" field.
 func CurrentEQ(v bool) predicate.Membership {
 	return predicate.Membership(sql.FieldEQ(FieldCurrent, v))
@@ -380,6 +390,46 @@ func ResourceIDIsNil() predicate.Membership {
 // ResourceIDNotNil applies the NotNil predicate on the "resource_id" field.
 func ResourceIDNotNil() predicate.Membership {
 	return predicate.Membership(sql.FieldNotNull(FieldResourceID))
+}
+
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNotIn(FieldOrganizationID, vs...))
+}
+
+// UserIDEQ applies the EQ predicate on the "user_id" field.
+func UserIDEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldEQ(FieldUserID, v))
+}
+
+// UserIDNEQ applies the NEQ predicate on the "user_id" field.
+func UserIDNEQ(v uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNEQ(FieldUserID, v))
+}
+
+// UserIDIn applies the In predicate on the "user_id" field.
+func UserIDIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldIn(FieldUserID, vs...))
+}
+
+// UserIDNotIn applies the NotIn predicate on the "user_id" field.
+func UserIDNotIn(vs ...uuid.UUID) predicate.Membership {
+	return predicate.Membership(sql.FieldNotIn(FieldUserID, vs...))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

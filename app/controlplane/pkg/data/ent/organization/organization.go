@@ -45,7 +45,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "membership" package.
 	MembershipsInverseTable = "memberships"
 	// MembershipsColumn is the table column denoting the memberships relation/edge.
-	MembershipsColumn = "organization_memberships"
+	MembershipsColumn = "organization_id"
 	// WorkflowContractsTable is the table that holds the workflow_contracts relation/edge.
 	WorkflowContractsTable = "workflow_contracts"
 	// WorkflowContractsInverseTable is the table name for the WorkflowContract entity.

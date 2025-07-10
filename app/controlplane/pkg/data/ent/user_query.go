@@ -508,7 +508,9 @@ func (uq *UserQuery) loadMemberships(ctx context.Context, query *MembershipQuery
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(membership.FieldUserID)
+	}
 	query.Where(predicate.Membership(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.MembershipsColumn), fks...))
 	}))
@@ -517,13 +519,10 @@ func (uq *UserQuery) loadMemberships(ctx context.Context, query *MembershipQuery
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.user_memberships
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "user_memberships" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.UserID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_memberships" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

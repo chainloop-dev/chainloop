@@ -28,7 +28,6 @@ type MembershipQuery struct {
 	predicates       []predicate.Membership
 	withOrganization *OrganizationQuery
 	withUser         *UserQuery
-	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -410,19 +409,12 @@ func (mq *MembershipQuery) prepareQuery(ctx context.Context) error {
 func (mq *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membership, error) {
 	var (
 		nodes       = []*Membership{}
-		withFKs     = mq.withFKs
 		_spec       = mq.querySpec()
 		loadedTypes = [2]bool{
 			mq.withOrganization != nil,
 			mq.withUser != nil,
 		}
 	)
-	if mq.withOrganization != nil || mq.withUser != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, membership.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Membership).scanValues(nil, columns)
 	}
@@ -463,10 +455,7 @@ func (mq *MembershipQuery) loadOrganization(ctx context.Context, query *Organiza
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Membership)
 	for i := range nodes {
-		if nodes[i].organization_memberships == nil {
-			continue
-		}
-		fk := *nodes[i].organization_memberships
+		fk := nodes[i].OrganizationID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -483,7 +472,7 @@ func (mq *MembershipQuery) loadOrganization(ctx context.Context, query *Organiza
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_memberships" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "organization_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -495,10 +484,7 @@ func (mq *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Membership)
 	for i := range nodes {
-		if nodes[i].user_memberships == nil {
-			continue
-		}
-		fk := *nodes[i].user_memberships
+		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -515,7 +501,7 @@ func (mq *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_memberships" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -551,6 +537,12 @@ func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != membership.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if mq.withOrganization != nil {
+			_spec.Node.AddColumnOnce(membership.FieldOrganizationID)
+		}
+		if mq.withUser != nil {
+			_spec.Node.AddColumnOnce(membership.FieldUserID)
 		}
 	}
 	if ps := mq.predicates; len(ps) > 0 {
