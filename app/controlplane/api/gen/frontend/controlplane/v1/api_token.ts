@@ -36,6 +36,8 @@ export interface APITokenServiceRevokeResponse {
 
 export interface APITokenServiceListRequest {
   includeRevoked: boolean;
+  /** optional project reference to filter by */
+  project?: IdentityReference;
 }
 
 export interface APITokenServiceListResponse {
@@ -390,13 +392,16 @@ export const APITokenServiceRevokeResponse = {
 };
 
 function createBaseAPITokenServiceListRequest(): APITokenServiceListRequest {
-  return { includeRevoked: false };
+  return { includeRevoked: false, project: undefined };
 }
 
 export const APITokenServiceListRequest = {
   encode(message: APITokenServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.includeRevoked === true) {
       writer.uint32(8).bool(message.includeRevoked);
+    }
+    if (message.project !== undefined) {
+      IdentityReference.encode(message.project, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -415,6 +420,13 @@ export const APITokenServiceListRequest = {
 
           message.includeRevoked = reader.bool();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.project = IdentityReference.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -425,12 +437,17 @@ export const APITokenServiceListRequest = {
   },
 
   fromJSON(object: any): APITokenServiceListRequest {
-    return { includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false };
+    return {
+      includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
+      project: isSet(object.project) ? IdentityReference.fromJSON(object.project) : undefined,
+    };
   },
 
   toJSON(message: APITokenServiceListRequest): unknown {
     const obj: any = {};
     message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
+    message.project !== undefined &&
+      (obj.project = message.project ? IdentityReference.toJSON(message.project) : undefined);
     return obj;
   },
 
@@ -441,6 +458,9 @@ export const APITokenServiceListRequest = {
   fromPartial<I extends Exact<DeepPartial<APITokenServiceListRequest>, I>>(object: I): APITokenServiceListRequest {
     const message = createBaseAPITokenServiceListRequest();
     message.includeRevoked = object.includeRevoked ?? false;
+    message.project = (object.project !== undefined && object.project !== null)
+      ? IdentityReference.fromPartial(object.project)
+      : undefined;
     return message;
   },
 };

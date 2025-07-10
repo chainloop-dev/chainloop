@@ -278,6 +278,8 @@ var RolesMap = map[Role][]*Policy{
 		// workflow contracts
 		PolicyWorkflowContractList,
 		PolicyWorkflowContractRead,
+		// Project API Token
+		PolicyAPITokenList,
 	},
 	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
 	// and it's only considered when the org-level role is `RoleOrgMember`

@@ -2044,6 +2044,7 @@ Options
 --expiration duration   optional API token expiration, in hours i.e 1h, 24h, 178h (week), ...
 -h, --help                  help for create
 --name string           token name
+--project string        project name used to scope the token, if not set the token will be created at the organization level
 ```
 
 Options inherited from parent commands
@@ -2108,8 +2109,9 @@ chainloop organization api-token list [flags]
 Options
 
 ```
--a, --all    show all API tokens including revoked ones
--h, --help   help for list
+-a, --all              show all API tokens including revoked ones
+-h, --help             help for list
+-p, --project string   filter by project name
 ```
 
 Options inherited from parent commands
@@ -2139,8 +2141,8 @@ chainloop organization api-token revoke [flags]
 Options
 
 ```
--h, --help          help for revoke
---name string   API token name
+-h, --help        help for revoke
+--id string   API token ID
 ```
 
 Options inherited from parent commands

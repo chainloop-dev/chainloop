@@ -22,7 +22,6 @@ import "controlplane/v1/group.proto";
 import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
 import "controlplane/v1/shared_message.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";

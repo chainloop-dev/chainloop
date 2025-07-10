@@ -10,6 +10,10 @@
   "properties": {
     "include_revoked": {
       "type": "boolean"
+    },
+    "project": {
+      "$ref": "controlplane.v1.IdentityReference.schema.json",
+      "description": "optional project reference to filter by"
     }
   },
   "title": "API Token Service List Request",

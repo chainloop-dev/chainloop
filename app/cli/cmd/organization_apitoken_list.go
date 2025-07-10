@@ -24,14 +24,17 @@ import (
 )
 
 func newAPITokenListCmd() *cobra.Command {
-	var includeRevoked bool
+	var (
+		includeRevoked bool
+		project        string
+	)
 
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List API tokens in this organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAPITokenList(actionOpts).Run(context.Background(), includeRevoked)
+			res, err := action.NewAPITokenList(actionOpts).Run(context.Background(), includeRevoked, project)
 			if err != nil {
 				return fmt.Errorf("listing API tokens: %w", err)
 			}
@@ -41,5 +44,6 @@ func newAPITokenListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&includeRevoked, "all", "a", false, "show all API tokens including revoked ones")
+	cmd.Flags().StringVarP(&project, "project", "p", "", "filter by project name")
 	return cmd
 }

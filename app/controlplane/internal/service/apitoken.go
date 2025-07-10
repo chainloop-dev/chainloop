@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -87,8 +88,20 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		return nil, err
 	}
 
+	// default to visible projects for the user
+	defaultProjectFilter := s.visibleProjects(ctx)
+	// or the user has provided a project filter
+	if req.Project.IsSet() {
+		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProject(), authz.PolicyAPITokenList)
+		if err != nil {
+			return nil, err
+		}
+
+		defaultProjectFilter = []uuid.UUID{project.ID}
+	}
+
 	// Only expose system tokens
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenRevoked(req.IncludeRevoked), biz.WithApiTokenProjectFilter(s.visibleProjects(ctx)))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithApiTokenRevoked(req.IncludeRevoked), biz.WithApiTokenProjectFilter(defaultProjectFilter))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

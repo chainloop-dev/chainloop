@@ -56,6 +56,9 @@ message APITokenServiceRevokeResponse {}
 
 message APITokenServiceListRequest {
   bool include_revoked = 1;
+
+  // optional project reference to filter by
+  IdentityReference project = 4;
 }
 
 message APITokenServiceListResponse {

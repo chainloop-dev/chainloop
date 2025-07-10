@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,9 +30,15 @@ func NewAPITokenList(cfg *ActionsOpts) *APITokenList {
 	return &APITokenList{cfg}
 }
 
-func (action *APITokenList) Run(ctx context.Context, includeRevoked bool) ([]*APITokenItem, error) {
+func (action *APITokenList) Run(ctx context.Context, includeRevoked bool, project string) ([]*APITokenItem, error) {
 	client := pb.NewAPITokenServiceClient(action.cfg.CPConnection)
-	resp, err := client.List(ctx, &pb.APITokenServiceListRequest{IncludeRevoked: includeRevoked})
+
+	req := &pb.APITokenServiceListRequest{IncludeRevoked: includeRevoked}
+	if project != "" {
+		req.Project = &pb.IdentityReference{Name: &project}
+	}
+
+	resp, err := client.List(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("listing API tokens: %w", err)
 	}

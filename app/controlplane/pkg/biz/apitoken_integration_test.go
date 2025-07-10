@@ -280,20 +280,11 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Equal(s.t5.ID, tokens[1].ID)
 	})
 
-	s.Run("or just the system tokens", func() {
-		var err error
-		tokens, err := s.APIToken.List(ctx, s.org.ID)
-		s.NoError(err)
-		require.Len(s.T(), tokens, 2)
-		s.Equal(s.t1.ID, tokens[0].ID)
-		s.Equal(s.t2.ID, tokens[1].ID)
-	})
-
 	s.Run("doesn't return revoked by default", func() {
 		// revoke one token
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		require.NoError(s.T(), err)
-		tokens, err := s.APIToken.List(ctx, s.org.ID, false)
+		tokens, err := s.APIToken.List(ctx, s.org.ID)
 		s.NoError(err)
 		require.Len(s.T(), tokens, 3)
 		s.Equal(s.t2.ID, tokens[0].ID)
@@ -301,7 +292,7 @@ func (s *apiTokenTestSuite) TestList() {
 
 	s.Run("doesn't return revoked unless requested", func() {
 		// revoke one token
-		tokens, err := s.APIToken.List(ctx, s.org.ID, true)
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithApiTokenRevoked(true))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 4)
 		s.Equal(s.t1.ID, tokens[0].ID)
