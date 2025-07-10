@@ -1460,6 +1460,48 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
+## chainloop gather-runner-context
+
+Gather runner context data from a given provider.
+
+Synopsis
+
+Gather runner context data from a given provider.
+
+Provided by plugin: platform v0.218.0-SNAPSHOT-bd8099ad
+
+```
+chainloop gather-runner-context [flags]
+```
+
+Options
+
+```
+-h, --help                     help for gather-runner-context
+--output-file string       Output file path for the protection data (JSON format) (default "runner-context.json")
+--runner-api-url string    Provider API URL
+--runner-org string        Provider organization name
+--runner-provider string   Provider name
+--runner-repo string       Provider repository name
+--runner-token string      Provider access token with read rights to the given repository.
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
 ## chainloop integration
 
 Third party integrations
@@ -2965,6 +3007,7 @@ Options
 --description string   description of the contract
 -h, --help                 help for create
 --name string          contract name
+--project string       project name used to scope the contract, if not set the contract will be created in the organization
 ```
 
 Options inherited from parent commands
