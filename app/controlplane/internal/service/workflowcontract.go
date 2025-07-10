@@ -76,7 +76,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 
 	// 1 - If the contract is scoped to a project, make sure the user has permission to read it
 	// otherwise everyone can read it, use it
-	if err := s.checkContractAccess(ctx, contract, true); err != nil {
+	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractRead, true); err != nil {
 		return nil, err
 	}
 
@@ -160,7 +160,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	if err := s.checkContractAccess(ctx, contract, false); err != nil {
+	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
 		return nil, err
 	}
 
@@ -206,7 +206,7 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	if err := s.checkContractAccess(ctx, contract, false); err != nil {
+	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractDelete, false); err != nil {
 		return nil, err
 	}
 
@@ -279,7 +279,7 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 // checkContractAccess checks if the current user can manage a contract
 // if the contract is global it makes sure that the user is an admin
 // if the contract is scoped to a project it makes sure that the user has permission in the project
-func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contract *biz.WorkflowContract, allowGlobalAccess bool) error {
+func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contract *biz.WorkflowContract, policy *authz.Policy, allowGlobalAccess bool) error {
 	// 1 - Only admins can manage global contracts unless allowGlobalAccess is true
 	if contract.IsGlobalScoped() && rbacEnabled(ctx) && !allowGlobalAccess {
 		return errors.BadRequest("invalid", "you can not manage a global contract")
@@ -287,7 +287,7 @@ func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contr
 
 	// 2 - If the contract is scoped to a project, make sure the user has permission to read it
 	if contract.IsProjectScoped() {
-		if err := s.authorizeResource(ctx, authz.PolicyWorkflowContractRead, authz.ResourceTypeProject, contract.ScopedEntity.ID); err != nil {
+		if err := s.authorizeResource(ctx, policy, authz.ResourceTypeProject, contract.ScopedEntity.ID); err != nil {
 			return err
 		}
 	}
