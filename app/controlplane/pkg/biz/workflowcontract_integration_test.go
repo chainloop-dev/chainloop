@@ -335,7 +335,7 @@ func TestWorkflowContractUseCase(t *testing.T) {
 type workflowContractIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	org, org2 *biz.Organization
-	p1, p2    *biz.Project
+	p1        *biz.Project
 
 	contractOrg1            *biz.WorkflowContract
 	contractScopedToProject *biz.WorkflowContract
