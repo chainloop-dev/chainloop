@@ -325,8 +325,8 @@ var (
 		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project", "group"}},
 		{Name: "resource_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "organization_memberships", Type: field.TypeUUID, Nullable: true},
-		{Name: "user_memberships", Type: field.TypeUUID, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
 	}
 	// MembershipsTable holds the schema information for the "memberships" table.
 	MembershipsTable = &schema.Table{
@@ -349,7 +349,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "membership_organization_memberships_user_memberships",
+				Name:    "membership_organization_id_user_id",
 				Unique:  false,
 				Columns: []*schema.Column{MembershipsColumns[9], MembershipsColumns[10]},
 			},

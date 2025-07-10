@@ -131,6 +131,18 @@ func (mc *MembershipCreate) SetNillableResourceID(u *uuid.UUID) *MembershipCreat
 	return mc
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (mc *MembershipCreate) SetOrganizationID(u uuid.UUID) *MembershipCreate {
+	mc.mutation.SetOrganizationID(u)
+	return mc
+}
+
+// SetUserID sets the "user_id" field.
+func (mc *MembershipCreate) SetUserID(u uuid.UUID) *MembershipCreate {
+	mc.mutation.SetUserID(u)
+	return mc
+}
+
 // SetID sets the "id" field.
 func (mc *MembershipCreate) SetID(u uuid.UUID) *MembershipCreate {
 	mc.mutation.SetID(u)
@@ -145,37 +157,9 @@ func (mc *MembershipCreate) SetNillableID(u *uuid.UUID) *MembershipCreate {
 	return mc
 }
 
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (mc *MembershipCreate) SetOrganizationID(id uuid.UUID) *MembershipCreate {
-	mc.mutation.SetOrganizationID(id)
-	return mc
-}
-
-// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (mc *MembershipCreate) SetNillableOrganizationID(id *uuid.UUID) *MembershipCreate {
-	if id != nil {
-		mc = mc.SetOrganizationID(*id)
-	}
-	return mc
-}
-
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (mc *MembershipCreate) SetOrganization(o *Organization) *MembershipCreate {
 	return mc.SetOrganizationID(o.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (mc *MembershipCreate) SetUserID(id uuid.UUID) *MembershipCreate {
-	mc.mutation.SetUserID(id)
-	return mc
-}
-
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (mc *MembershipCreate) SetNillableUserID(id *uuid.UUID) *MembershipCreate {
-	if id != nil {
-		mc = mc.SetUserID(*id)
-	}
-	return mc
 }
 
 // SetUser sets the "user" edge to the User entity.
@@ -265,6 +249,18 @@ func (mc *MembershipCreate) check() error {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
 	}
+	if _, ok := mc.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "Membership.organization_id"`)}
+	}
+	if _, ok := mc.mutation.UserID(); !ok {
+		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "Membership.user_id"`)}
+	}
+	if len(mc.mutation.OrganizationIDs()) == 0 {
+		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Membership.organization"`)}
+	}
+	if len(mc.mutation.UserIDs()) == 0 {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Membership.user"`)}
+	}
 	return nil
 }
 
@@ -347,7 +343,7 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.organization_memberships = &nodes[0]
+		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := mc.mutation.UserIDs(); len(nodes) > 0 {
@@ -364,7 +360,7 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.user_memberships = &nodes[0]
+		_node.UserID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -524,6 +520,30 @@ func (u *MembershipUpsert) UpdateResourceID() *MembershipUpsert {
 // ClearResourceID clears the value of the "resource_id" field.
 func (u *MembershipUpsert) ClearResourceID() *MembershipUpsert {
 	u.SetNull(membership.FieldResourceID)
+	return u
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *MembershipUpsert) SetOrganizationID(v uuid.UUID) *MembershipUpsert {
+	u.Set(membership.FieldOrganizationID, v)
+	return u
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateOrganizationID() *MembershipUpsert {
+	u.SetExcluded(membership.FieldOrganizationID)
+	return u
+}
+
+// SetUserID sets the "user_id" field.
+func (u *MembershipUpsert) SetUserID(v uuid.UUID) *MembershipUpsert {
+	u.Set(membership.FieldUserID, v)
+	return u
+}
+
+// UpdateUserID sets the "user_id" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateUserID() *MembershipUpsert {
+	u.SetExcluded(membership.FieldUserID)
 	return u
 }
 
@@ -701,6 +721,34 @@ func (u *MembershipUpsertOne) UpdateResourceID() *MembershipUpsertOne {
 func (u *MembershipUpsertOne) ClearResourceID() *MembershipUpsertOne {
 	return u.Update(func(s *MembershipUpsert) {
 		s.ClearResourceID()
+	})
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *MembershipUpsertOne) SetOrganizationID(v uuid.UUID) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateOrganizationID() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// SetUserID sets the "user_id" field.
+func (u *MembershipUpsertOne) SetUserID(v uuid.UUID) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetUserID(v)
+	})
+}
+
+// UpdateUserID sets the "user_id" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateUserID() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateUserID()
 	})
 }
 
@@ -1045,6 +1093,34 @@ func (u *MembershipUpsertBulk) UpdateResourceID() *MembershipUpsertBulk {
 func (u *MembershipUpsertBulk) ClearResourceID() *MembershipUpsertBulk {
 	return u.Update(func(s *MembershipUpsert) {
 		s.ClearResourceID()
+	})
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *MembershipUpsertBulk) SetOrganizationID(v uuid.UUID) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateOrganizationID() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// SetUserID sets the "user_id" field.
+func (u *MembershipUpsertBulk) SetUserID(v uuid.UUID) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetUserID(v)
+	})
+}
+
+// UpdateUserID sets the "user_id" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateUserID() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateUserID()
 	})
 }
 

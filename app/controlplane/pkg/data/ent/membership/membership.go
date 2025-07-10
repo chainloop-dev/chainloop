@@ -33,6 +33,10 @@ const (
 	FieldResourceType = "resource_type"
 	// FieldResourceID holds the string denoting the resource_id field in the database.
 	FieldResourceID = "resource_id"
+	// FieldOrganizationID holds the string denoting the organization_id field in the database.
+	FieldOrganizationID = "organization_id"
+	// FieldUserID holds the string denoting the user_id field in the database.
+	FieldUserID = "user_id"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -45,14 +49,14 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
 	OrganizationInverseTable = "organizations"
 	// OrganizationColumn is the table column denoting the organization relation/edge.
-	OrganizationColumn = "organization_memberships"
+	OrganizationColumn = "organization_id"
 	// UserTable is the table that holds the user relation/edge.
 	UserTable = "memberships"
 	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
-	UserColumn = "user_memberships"
+	UserColumn = "user_id"
 )
 
 // Columns holds all SQL columns for membership fields.
@@ -66,24 +70,14 @@ var Columns = []string{
 	FieldMemberID,
 	FieldResourceType,
 	FieldResourceID,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "memberships"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"organization_memberships",
-	"user_memberships",
+	FieldOrganizationID,
+	FieldUserID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -177,6 +171,16 @@ func ByResourceType(opts ...sql.OrderTermOption) OrderOption {
 // ByResourceID orders the results by the resource_id field.
 func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
+}
+
+// ByOrganizationID orders the results by the organization_id field.
+func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+}
+
+// ByUserID orders the results by the user_id field.
+func ByUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUserID, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

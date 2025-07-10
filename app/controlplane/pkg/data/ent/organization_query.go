@@ -730,7 +730,9 @@ func (oq *OrganizationQuery) loadMemberships(ctx context.Context, query *Members
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(membership.FieldOrganizationID)
+	}
 	query.Where(predicate.Membership(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(organization.MembershipsColumn), fks...))
 	}))
@@ -739,13 +741,10 @@ func (oq *OrganizationQuery) loadMemberships(ctx context.Context, query *Members
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.organization_memberships
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "organization_memberships" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.OrganizationID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "organization_memberships" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

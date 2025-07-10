@@ -39,7 +39,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "membership" package.
 	MembershipsInverseTable = "memberships"
 	// MembershipsColumn is the table column denoting the memberships relation/edge.
-	MembershipsColumn = "user_memberships"
+	MembershipsColumn = "user_id"
 	// GroupTable is the table that holds the group relation/edge. The primary key declared below.
 	GroupTable = "group_memberships"
 	// GroupInverseTable is the table name for the Group entity.
