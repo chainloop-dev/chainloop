@@ -504,7 +504,7 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 			ID:   id,
 			Name: name,
 		},
-		VisibleProjectsIDs: g.visibleProjects(ctx),
+		FilterByProject: g.visibleProjects(ctx),
 	}
 
 	// Initialize the pagination options, with default values

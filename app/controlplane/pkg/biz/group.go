@@ -175,8 +175,8 @@ type UpdateMemberMaintainerStatusOpts struct {
 type ListProjectsByGroupOpts struct {
 	// Group reference
 	*IdentityReference
-	// VisibleProjectsIDs is a list of project IDs that the requester can see.
-	VisibleProjectsIDs []uuid.UUID
+	// FilterByProject is a list of project IDs to filter the results by.
+	FilterByProject []uuid.UUID
 }
 
 type GroupUseCase struct {
@@ -896,5 +896,5 @@ func (uc *GroupUseCase) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID
 		pgOpts = paginationOpts
 	}
 
-	return uc.groupRepo.ListProjectsByGroup(ctx, orgID, resolvedGroupID, opts.VisibleProjectsIDs, pgOpts)
+	return uc.groupRepo.ListProjectsByGroup(ctx, orgID, resolvedGroupID, opts.FilterByProject, pgOpts)
 }
