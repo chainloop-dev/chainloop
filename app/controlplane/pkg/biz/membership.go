@@ -154,6 +154,9 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 	}
 
 	uc.logger.Infow("msg", "Deleting membership", "org_id", orgID, "membership_id", m.ID.String())
+
+	// Delete the main membership - this will also remove the user from all groups in the org
+	// and clean up associated resource memberships in the data layer
 	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
 		return fmt.Errorf("failed to delete membership: %w", err)
 	}

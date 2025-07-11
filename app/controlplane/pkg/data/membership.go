@@ -18,10 +18,12 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
@@ -240,8 +242,67 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 }
 
 // Delete deletes a membership by ID.
+// When deleting a membership, it's important to ensure we're not leaving any dangling references.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.data.DB.Membership.DeleteOneID(id).Exec(ctx)
+	// First, fetch the membership to understand what we're deleting
+	membershipToDelete, err := r.data.DB.Membership.Query().Where(membership.ID(id)).WithOrganization().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil // Already deleted, nothing to do
+		}
+		return fmt.Errorf("failed to get membership: %w", err)
+	}
+
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// Delete the specific membership
+		if err := tx.Membership.DeleteOneID(id).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to delete membership: %w", err)
+		}
+
+		// If this is an organization membership and the member type is a user,
+		// we also need to clean up any resource memberships for this user in the organization
+		if membershipToDelete.ResourceType == authz.ResourceTypeOrganization && membershipToDelete.MembershipType == authz.MembershipTypeUser {
+			// Extract the organization id and user ID from the membership
+			orgID := membershipToDelete.Edges.Organization.ID
+			userID := membershipToDelete.MemberID
+
+			// Delete all other resource memberships for this user in the organization
+			// This will cover all membership types including group-related ones
+			if _, err := tx.Membership.Delete().Where(
+				membership.IDNEQ(id), // Don't try to delete the one we already deleted
+				membership.MemberID(userID),
+				membership.HasOrganizationWith(organization.ID(orgID)),
+			).Exec(ctx); err != nil {
+				return fmt.Errorf("failed to delete related memberships: %w", err)
+			}
+
+			// Remove the user from all groups in the organization by soft-deleting group memberships
+			now := time.Now()
+
+			// Soft delete all group memberships for this user in this organization
+			if _, err := tx.GroupMembership.Update().Where(
+				groupmembership.UserID(userID),
+				groupmembership.DeletedAtIsNil(),
+				groupmembership.HasGroupWith(group.OrganizationID(orgID)),
+			).SetDeletedAt(now).SetUpdatedAt(now).Save(ctx); err != nil {
+				return fmt.Errorf("failed to delete group memberships for user %s in organization %s: %w", userID, orgID, err)
+			}
+
+			// Decrement the member count of each group this user was a member of
+			// We don't need a separate check for groups the user was a maintainer of
+			// because all memberships were already deleted above
+			if _, err := tx.Group.Update().
+				Where(
+					group.HasMembersWith(user.ID(userID)),
+					group.HasOrganizationWith(organization.ID(orgID)),
+				).
+				AddMemberCount(-1).Save(ctx); err != nil {
+				return fmt.Errorf("failed to decrement group member count: %w", err)
+			}
+		}
+
+		return nil
+	})
 }
 
 // RBAC methods
