@@ -630,7 +630,7 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 	}
 
 	// Extract project IDs from memberships
-	var projectIDs []uuid.UUID
+	projectIDs := make([]uuid.UUID, 0, len(memberships))
 	for _, m := range memberships {
 		projectIDs = append(projectIDs, m.ResourceID)
 	}
