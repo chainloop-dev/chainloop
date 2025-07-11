@@ -1,0 +1,20 @@
+apiVersion: policy.chainloop.dev/v1
+kind: ValidationPolicy
+metadata:
+  name: {{.Name | sanitize}}
+  description: {{.Description | trimSpace}}
+spec:
+  policies:
+      # Type of artifact to validate
+      # See docs: https://docs.chainloop.dev/concepts/material-types
+    - kind: {{.MaterialKind}}  
+      {{if .Embedded -}}
+      # Embedded Rego policy
+      # See docs: https://docs.chainloop.dev/guides/custom-policies#embedded-vs-external
+      rego: |
+{{.RegoContent | indent 8}}
+      {{else -}}
+      # Path to external Rego policy file
+      # See docs: https://docs.chainloop.dev/guides/custom-policies#rego-policy-structure
+      path: {{.RegoPath}}
+      {{end -}}
