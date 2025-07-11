@@ -108,8 +108,6 @@ type GroupProjectInfo struct {
 	Role authz.Role
 	// LatestVersionID is the ID of the latest version of the project, if available
 	LatestVersionID *uuid.UUID
-	// Group is the group that is a member of this project
-	Group *Group
 	// CreatedAt is the timestamp when the project was created
 	CreatedAt *time.Time
 }

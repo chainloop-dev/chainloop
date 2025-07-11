@@ -583,17 +583,6 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
 
-	// Check the group exists in the organization
-	existingGroup, err := g.data.DB.Group.Query().
-		Where(group.ID(groupID), group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
-		Only(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, 0, biz.NewErrNotFound("group")
-		}
-		return nil, 0, err
-	}
-
 	// Get all memberships where this group is a member and the resource type is a project
 	membershipQuery := g.data.DB.Membership.Query().
 		Where(
@@ -663,7 +652,6 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 	}
 
 	// Build the result following the order of memberships
-	bizGroup := entGroupToBiz(existingGroup)
 	projectInfos := make([]*biz.GroupProjectInfo, 0, len(memberships))
 
 	for _, m := range memberships {
@@ -678,7 +666,6 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 			Name:        pr.Name,
 			Description: pr.Description,
 			Role:        m.Role,
-			Group:       bizGroup,
 			CreatedAt:   toTimePtr(pr.CreatedAt),
 		}
 
