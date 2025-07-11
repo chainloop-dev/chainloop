@@ -193,6 +193,24 @@ message PendingGroupInvitation {
   string invitation_id = 4;
 }
 
+// Group represents a collection of users with shared access to resources
+message Group {
+  // Unique identifier for the group
+  string id = 1;
+  // Human-readable name of the group
+  string name = 2;
+  // Additional details about the group's purpose
+  string description = 3;
+  // UUID of the organization that this group belongs to
+  string organization_id = 4;
+  // Count of members in the group
+  int32 member_count = 5;
+  // Timestamp when the group was created
+  google.protobuf.Timestamp created_at = 6;
+  // Timestamp when the group was last modified
+  google.protobuf.Timestamp updated_at = 7;
+}
+
 // GroupMember represents a user's membership within a group with their role information
 message GroupMember {
   // The user who is a member of the group

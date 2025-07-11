@@ -5,7 +5,7 @@ import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import { User } from "./response_messages";
-import { Group, IdentityReference } from "./shared_message";
+import { IdentityReference } from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -165,6 +165,24 @@ export interface PendingGroupInvitation {
   createdAt?: Date;
   /** Unique identifier for the invitation */
   invitationId: string;
+}
+
+/** Group represents a collection of users with shared access to resources */
+export interface Group {
+  /** Unique identifier for the group */
+  id: string;
+  /** Human-readable name of the group */
+  name: string;
+  /** Additional details about the group's purpose */
+  description: string;
+  /** UUID of the organization that this group belongs to */
+  organizationId: string;
+  /** Count of members in the group */
+  memberCount: number;
+  /** Timestamp when the group was created */
+  createdAt?: Date;
+  /** Timestamp when the group was last modified */
+  updatedAt?: Date;
 }
 
 /** GroupMember represents a user's membership within a group with their role information */
@@ -1597,6 +1615,150 @@ export const PendingGroupInvitation = {
       : undefined;
     message.createdAt = object.createdAt ?? undefined;
     message.invitationId = object.invitationId ?? "";
+    return message;
+  },
+};
+
+function createBaseGroup(): Group {
+  return {
+    id: "",
+    name: "",
+    description: "",
+    organizationId: "",
+    memberCount: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
+}
+
+export const Group = {
+  encode(message: Group, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.organizationId !== "") {
+      writer.uint32(34).string(message.organizationId);
+    }
+    if (message.memberCount !== 0) {
+      writer.uint32(40).int32(message.memberCount);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(58).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Group {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroup();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.organizationId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.memberCount = reader.int32();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Group {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
+      memberCount: isSet(object.memberCount) ? Number(object.memberCount) : 0,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+    };
+  },
+
+  toJSON(message: Group): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
+    message.organizationId !== undefined && (obj.organizationId = message.organizationId);
+    message.memberCount !== undefined && (obj.memberCount = Math.round(message.memberCount));
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Group>, I>>(base?: I): Group {
+    return Group.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Group>, I>>(object: I): Group {
+    const message = createBaseGroup();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    message.organizationId = object.organizationId ?? "";
+    message.memberCount = object.memberCount ?? 0;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     return message;
   },
 };
