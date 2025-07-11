@@ -42,7 +42,6 @@ message IdentityReference {
   };
 }
 
-
 // ProjectMemberRole defines the roles a member can have in a project
 enum ProjectMemberRole {
   // Default role for a project member

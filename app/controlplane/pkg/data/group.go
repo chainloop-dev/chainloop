@@ -604,7 +604,7 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 		)
 
 	// If visibleProjectIDs is provided, filter memberships to include only those projects
-	if len(visibleProjectIDs) > 0 {
+	if visibleProjectIDs != nil {
 		membershipQuery = membershipQuery.Where(membership.ResourceIDIn(visibleProjectIDs...))
 	}
 
