@@ -268,48 +268,36 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 			// Delete all other resource memberships for this user in the organization
 			// This will cover all membership types including group-related ones
-			_, err := tx.Membership.Delete().Where(
+			if _, err := tx.Membership.Delete().Where(
 				membership.IDNEQ(id), // Don't try to delete the one we already deleted
 				membership.MemberID(userID),
 				membership.HasOrganizationWith(organization.ID(orgID)),
-			).Exec(ctx)
-
-			if err != nil {
+			).Exec(ctx); err != nil {
 				return fmt.Errorf("failed to delete related memberships: %w", err)
 			}
 
-			// Remove the user from all groups in the organization
+			// Remove the user from all groups in the organization by soft-deleting group memberships
 			now := time.Now()
 
-			// Find all group memberships for the user in the organization
-			groupMemberships, err := tx.GroupMembership.Query().Where(
+			// Soft delete all group memberships for this user in this organization
+			if _, err := tx.GroupMembership.Update().Where(
 				groupmembership.UserID(userID),
 				groupmembership.DeletedAtIsNil(),
 				groupmembership.HasGroupWith(group.OrganizationID(orgID)),
-			).All(ctx)
-
-			if err != nil {
-				return fmt.Errorf("failed to query group memberships: %w", err)
+			).SetDeletedAt(now).SetUpdatedAt(now).Save(ctx); err != nil {
+				return fmt.Errorf("failed to delete group memberships for user %s in organization %s: %w", userID, orgID, err)
 			}
 
-			for _, gm := range groupMemberships {
-				// Soft delete each membership
-				if _, err := tx.GroupMembership.UpdateOne(gm).
-					SetDeletedAt(now).
-					SetUpdatedAt(now).
-					Save(ctx); err != nil {
-					return fmt.Errorf("failed to remove user from group: %w", err)
-				}
-
-				// We don't need to delete the user's membership to this group separately
-				// since we already deleted all memberships for this user in this organization above
-
-				// Decrement the member count of the group
-				if err := tx.Group.UpdateOneID(gm.GroupID).
-					AddMemberCount(-1).
-					Exec(ctx); err != nil {
-					return fmt.Errorf("failed to decrement group member count: %w", err)
-				}
+			// Decrement the member count of each group this user was a member of
+			// We don't need a separate check for groups the user was a maintainer of
+			// because all memberships were already deleted above
+			if _, err := tx.Group.Update().
+				Where(
+					group.HasMembersWith(user.ID(userID)),
+					group.HasOrganizationWith(organization.ID(orgID)),
+				).
+				AddMemberCount(-1).Save(ctx); err != nil {
+				return fmt.Errorf("failed to decrement group member count: %w", err)
 			}
 		}
 
