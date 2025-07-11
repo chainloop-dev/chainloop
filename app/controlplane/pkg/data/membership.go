@@ -263,8 +263,7 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 		// If this is an organization membership and the member type is a user,
 		// we also need to clean up any resource memberships for this user in the organization
-		if membershipToDelete.ResourceType == authz.ResourceTypeOrganization &&
-			membershipToDelete.MembershipType == authz.MembershipTypeUser {
+		if membershipToDelete.ResourceType == authz.ResourceTypeOrganization && membershipToDelete.MembershipType == authz.MembershipTypeUser {
 
 			// Extract the organization id from the membership
 			orgID := membershipToDelete.Edges.Organization.ID
