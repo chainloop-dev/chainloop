@@ -630,15 +630,12 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 	}
 
 	// Extract project IDs from memberships
-	projectIDs := make([]uuid.UUID, 0, len(memberships))
-	// Create a map to store role by project ID for later use
-	projectRoles := make(map[uuid.UUID]authz.Role)
+	var projectIDs []uuid.UUID
 	for _, m := range memberships {
 		projectIDs = append(projectIDs, m.ResourceID)
-		projectRoles[m.ResourceID] = m.Role
 	}
 
-	// Query the actual projects using the project IDs
+	// Query the projects
 	entProjects, err := g.data.DB.Project.Query().
 		Where(
 			project.IDIn(projectIDs...),
@@ -653,21 +650,41 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 		return nil, 0, fmt.Errorf("failed to fetch projects: %w", err)
 	}
 
-	// Convert to business layer project info
-	projectInfos := make([]*biz.GroupProjectInfo, 0, len(entProjects))
+	// Create a map of projects by ID for efficient lookup
+	projectsMap := make(map[uuid.UUID]*ent.Project, len(entProjects))
 	for _, p := range entProjects {
+		projectsMap[p.ID] = p
+	}
+
+	// Create a map to store role by project ID
+	projectRoles := make(map[uuid.UUID]authz.Role, len(memberships))
+	for _, m := range memberships {
+		projectRoles[m.ResourceID] = m.Role
+	}
+
+	// Build the result following the order of memberships
+	bizGroup := entGroupToBiz(existingGroup)
+	projectInfos := make([]*biz.GroupProjectInfo, 0, len(memberships))
+
+	for _, m := range memberships {
+		pr, exists := projectsMap[m.ResourceID]
+		if !exists {
+			// Skip projects that might have been deleted but membership still exists
+			continue
+		}
+
 		projectInfo := &biz.GroupProjectInfo{
-			ID:          p.ID,
-			Name:        p.Name,
-			Description: p.Description,
-			Role:        projectRoles[p.ID], // Use the role we stored earlier
-			Group:       entGroupToBiz(existingGroup),
-			CreatedAt:   toTimePtr(p.CreatedAt),
+			ID:          pr.ID,
+			Name:        pr.Name,
+			Description: pr.Description,
+			Role:        m.Role,
+			Group:       bizGroup,
+			CreatedAt:   toTimePtr(pr.CreatedAt),
 		}
 
 		// If the project has versions, include the latest version ID
-		if len(p.Edges.Versions) > 0 {
-			projectInfo.LatestVersionID = &p.Edges.Versions[0].ID
+		if len(pr.Edges.Versions) > 0 {
+			projectInfo.LatestVersionID = &pr.Edges.Versions[0].ID
 		}
 
 		projectInfos = append(projectInfos, projectInfo)
