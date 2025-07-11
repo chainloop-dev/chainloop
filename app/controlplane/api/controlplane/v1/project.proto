@@ -51,23 +51,6 @@ message ProjectServiceListMembersResponse {
   OffsetPaginationResponse pagination = 2;
 }
 
-// ProjectMember represents an user or group who is a member of a project
-message ProjectMember {
-  // Subject can be either a user or a group
-  oneof subject {
-    // The user who is a member of the project
-    User user = 1;
-    // The group who is a member of the project
-    Group group = 2;
-  }
-  // The role of the user in the project
-  ProjectMemberRole role = 3;
-  // Timestamp when the project membership was created
-  google.protobuf.Timestamp created_at = 4;
-  // Timestamp when the project membership was last modified
-  google.protobuf.Timestamp updated_at = 5;
-}
-
 // ProjectServiceAddMemberRequest contains the information needed to add a user to a project
 message ProjectServiceAddMemberRequest {
   // IdentityReference is used to specify the project by either its ID or name
@@ -106,16 +89,6 @@ message ProjectMembershipReference {
     // The group to add to the project
     IdentityReference group_reference = 2;
   }
-}
-
-// ProjectMemberRole defines the roles a member can have in a project
-enum ProjectMemberRole {
-  // Default role for a project member
-  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0;
-  // Admin role for a project member
-  PROJECT_MEMBER_ROLE_ADMIN = 1;
-  // Viewer role for a project member
-  PROJECT_MEMBER_ROLE_VIEWER = 2;
 }
 
 // ProjectServiceUpdateMemberRoleRequest contains the information needed to update a member's role in a project

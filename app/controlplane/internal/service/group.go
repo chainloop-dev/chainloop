@@ -479,6 +479,55 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 	return &pb.GroupServiceUpdateMemberMaintainerStatusResponse{}, nil
 }
 
+// ListProjects retrieves a paginated list of projects that a group is a member of.
+func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceListProjectsRequest) (*pb.GroupServiceListProjectsResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse orgID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Parse groupID and groupName from the request
+	id, name, err := req.GetGroupReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	// Initialize the options for getting projects
+	groupOpts := &biz.IdentityReference{
+		ID:   id,
+		Name: name,
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Retrieve the list of project members
+	projectMembers, count, err := g.groupUseCase.ListProjectsByGroup(ctx, orgUUID, groupOpts, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Convert the projectMembers to protobuf messages
+	result := make([]*pb.ProjectMember, 0, len(projectMembers))
+	for _, project := range projectMembers {
+		result = append(result, bizProjectMembershipToPb(project))
+	}
+
+	return &pb.GroupServiceListProjectsResponse{
+		ProjectMembers: result,
+		Pagination:     paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
+}
+
 // bizGroupToPb converts a biz.Group to a pb.Group protobuf message.
 func bizGroupToPb(gr *biz.Group) *pb.Group {
 	base := &pb.Group{

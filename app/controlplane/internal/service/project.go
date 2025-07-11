@@ -410,9 +410,14 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 		}
 	}
 
+	if m.LatestProjectVersionID != nil {
+		pbMember.LatestProjectVersionId = m.LatestProjectVersionID.String()
+	}
+
 	if m.CreatedAt != nil {
 		pbMember.CreatedAt = timestamppb.New(*m.CreatedAt)
 	}
+
 	if m.UpdatedAt != nil {
 		pbMember.UpdatedAt = timestamppb.New(*m.UpdatedAt)
 	}

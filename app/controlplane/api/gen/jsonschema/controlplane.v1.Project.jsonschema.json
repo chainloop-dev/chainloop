@@ -1,0 +1,60 @@
+{
+  "$id": "controlplane.v1.Project.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Project represents a project within the system",
+  "patternProperties": {
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the project was created"
+    },
+    "^(member_count)$": {
+      "description": "Count of members in the project",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(organization_id)$": {
+      "description": "UUID of the organization that this project belongs to",
+      "type": "string"
+    },
+    "^(updated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the project was last modified"
+    }
+  },
+  "properties": {
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the project was created"
+    },
+    "description": {
+      "description": "Additional details about the project's purpose",
+      "type": "string"
+    },
+    "id": {
+      "description": "Unique identifier for the project",
+      "type": "string"
+    },
+    "memberCount": {
+      "description": "Count of members in the project",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "name": {
+      "description": "Human-readable name of the project",
+      "type": "string"
+    },
+    "organizationId": {
+      "description": "UUID of the organization that this project belongs to",
+      "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the project was last modified"
+    }
+  },
+  "title": "Project",
+  "type": "object"
+}

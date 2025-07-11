@@ -88,6 +88,8 @@ type ProjectMembership struct {
 	MembershipType authz.MembershipType
 	// Role represents the role of the user/group in the project (admin or viewer).
 	Role authz.Role
+	// LatestProjectVersionID is the ID of the latest project version this membership is associated with.
+	LatestProjectVersionID *uuid.UUID
 	// CreatedAt is the timestamp when the user/group was added to the project.
 	CreatedAt *time.Time
 	// UpdatedAt is the timestamp when the membership was last updated.

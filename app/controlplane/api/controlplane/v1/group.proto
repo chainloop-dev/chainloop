@@ -47,6 +47,8 @@ service GroupService {
   rpc UpdateMemberMaintainerStatus(GroupServiceUpdateMemberMaintainerStatusRequest) returns (GroupServiceUpdateMemberMaintainerStatusResponse) {}
   // ListPendingInvitations retrieves pending invitations for a group
   rpc ListPendingInvitations(GroupServiceListPendingInvitationsRequest) returns (GroupServiceListPendingInvitationsResponse) {}
+  // ListProjects retrieves a paginated list of projects the group is a member of
+  rpc ListProjects(GroupServiceListProjectsRequest) returns (GroupServiceListProjectsResponse) {}
 }
 
 // GroupServiceCreateRequest contains the information needed to create a new group
@@ -191,24 +193,6 @@ message PendingGroupInvitation {
   string invitation_id = 4;
 }
 
-// Group represents a collection of users with shared access to resources
-message Group {
-  // Unique identifier for the group
-  string id = 1;
-  // Human-readable name of the group
-  string name = 2;
-  // Additional details about the group's purpose
-  string description = 3;
-  // UUID of the organization that this group belongs to
-  string organization_id = 4;
-  // Count of members in the group
-  int32 member_count = 5;
-  // Timestamp when the group was created
-  google.protobuf.Timestamp created_at = 6;
-  // Timestamp when the group was last modified
-  google.protobuf.Timestamp updated_at = 7;
-}
-
 // GroupMember represents a user's membership within a group with their role information
 message GroupMember {
   // The user who is a member of the group
@@ -236,3 +220,19 @@ message GroupServiceUpdateMemberMaintainerStatusRequest {
 
 // GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status
 message GroupServiceUpdateMemberMaintainerStatusResponse {}
+
+// GroupServiceListProjectsRequest contains parameters for filtering and paginating project results for a group
+message GroupServiceListProjectsRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 2;
+}
+
+// GroupServiceListProjectsResponse contains a paginated list of projects for a group
+message GroupServiceListProjectsResponse {
+  // List of projects memberships matching the request criteria
+  repeated ProjectMember project_members = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+}

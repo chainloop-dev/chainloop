@@ -44,6 +44,7 @@ const (
 	GroupService_RemoveMember_FullMethodName                 = "/controlplane.v1.GroupService/RemoveMember"
 	GroupService_UpdateMemberMaintainerStatus_FullMethodName = "/controlplane.v1.GroupService/UpdateMemberMaintainerStatus"
 	GroupService_ListPendingInvitations_FullMethodName       = "/controlplane.v1.GroupService/ListPendingInvitations"
+	GroupService_ListProjects_FullMethodName                 = "/controlplane.v1.GroupService/ListProjects"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -70,6 +71,8 @@ type GroupServiceClient interface {
 	UpdateMemberMaintainerStatus(ctx context.Context, in *GroupServiceUpdateMemberMaintainerStatusRequest, opts ...grpc.CallOption) (*GroupServiceUpdateMemberMaintainerStatusResponse, error)
 	// ListPendingInvitations retrieves pending invitations for a group
 	ListPendingInvitations(ctx context.Context, in *GroupServiceListPendingInvitationsRequest, opts ...grpc.CallOption) (*GroupServiceListPendingInvitationsResponse, error)
+	// ListProjects retrieves a paginated list of projects the group is a member of
+	ListProjects(ctx context.Context, in *GroupServiceListProjectsRequest, opts ...grpc.CallOption) (*GroupServiceListProjectsResponse, error)
 }
 
 type groupServiceClient struct {
@@ -170,6 +173,15 @@ func (c *groupServiceClient) ListPendingInvitations(ctx context.Context, in *Gro
 	return out, nil
 }
 
+func (c *groupServiceClient) ListProjects(ctx context.Context, in *GroupServiceListProjectsRequest, opts ...grpc.CallOption) (*GroupServiceListProjectsResponse, error) {
+	out := new(GroupServiceListProjectsResponse)
+	err := c.cc.Invoke(ctx, GroupService_ListProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupServiceServer is the server API for GroupService service.
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility
@@ -194,6 +206,8 @@ type GroupServiceServer interface {
 	UpdateMemberMaintainerStatus(context.Context, *GroupServiceUpdateMemberMaintainerStatusRequest) (*GroupServiceUpdateMemberMaintainerStatusResponse, error)
 	// ListPendingInvitations retrieves pending invitations for a group
 	ListPendingInvitations(context.Context, *GroupServiceListPendingInvitationsRequest) (*GroupServiceListPendingInvitationsResponse, error)
+	// ListProjects retrieves a paginated list of projects the group is a member of
+	ListProjects(context.Context, *GroupServiceListProjectsRequest) (*GroupServiceListProjectsResponse, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }
 
@@ -230,6 +244,9 @@ func (UnimplementedGroupServiceServer) UpdateMemberMaintainerStatus(context.Cont
 }
 func (UnimplementedGroupServiceServer) ListPendingInvitations(context.Context, *GroupServiceListPendingInvitationsRequest) (*GroupServiceListPendingInvitationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPendingInvitations not implemented")
+}
+func (UnimplementedGroupServiceServer) ListProjects(context.Context, *GroupServiceListProjectsRequest) (*GroupServiceListProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
 }
 func (UnimplementedGroupServiceServer) mustEmbedUnimplementedGroupServiceServer() {}
 
@@ -424,6 +441,24 @@ func _GroupService_ListPendingInvitations_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupService_ListProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupServiceListProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).ListProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_ListProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).ListProjects(ctx, req.(*GroupServiceListProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupService_ServiceDesc is the grpc.ServiceDesc for GroupService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -470,6 +505,10 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPendingInvitations",
 			Handler:    _GroupService_ListPendingInvitations_Handler,
+		},
+		{
+			MethodName: "ListProjects",
+			Handler:    _GroupService_ListProjects_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
