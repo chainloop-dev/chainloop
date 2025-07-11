@@ -244,8 +244,6 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 // Delete deletes a membership by ID.
 // When deleting a membership, it's important to ensure we're not leaving any dangling references.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	var membershipToDelete *ent.Membership
-
 	// First, fetch the membership to understand what we're deleting
 	membershipToDelete, err := r.data.DB.Membership.Query().Where(membership.ID(id)).WithOrganization().Only(ctx)
 	if err != nil {
@@ -255,7 +253,7 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("failed to get membership: %w", err)
 	}
 
-	err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// Delete the specific membership
 		if err := tx.Membership.DeleteOneID(id).Exec(ctx); err != nil {
 			return fmt.Errorf("failed to delete membership: %w", err)
@@ -264,14 +262,12 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		// If this is an organization membership and the member type is a user,
 		// we also need to clean up any resource memberships for this user in the organization
 		if membershipToDelete.ResourceType == authz.ResourceTypeOrganization && membershipToDelete.MembershipType == authz.MembershipTypeUser {
-			// Extract the organization id from the membership
+			// Extract the organization id and user ID from the membership
 			orgID := membershipToDelete.Edges.Organization.ID
-
-			// Extract the user ID from the membership
-			// Note: membershipToDelete.MemberID is already the user ID in this case
 			userID := membershipToDelete.MemberID
 
 			// Delete all other resource memberships for this user in the organization
+			// This will cover all membership types including group-related ones
 			_, err := tx.Membership.Delete().Where(
 				membership.IDNEQ(id), // Don't try to delete the one we already deleted
 				membership.MemberID(userID),
@@ -305,17 +301,8 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 					return fmt.Errorf("failed to remove user from group: %w", err)
 				}
 
-				if gm.Maintainer {
-					// Also remove the user membership if it exists
-					if _, err := tx.Membership.Delete().Where(
-						membership.MemberID(userID),
-						membership.ResourceTypeEQ(authz.ResourceTypeGroup),
-						membership.ResourceID(gm.GroupID),
-						membership.HasOrganizationWith(organization.ID(orgID)),
-					).Exec(ctx); err != nil {
-						return fmt.Errorf("failed to remove user from group: %w", err)
-					}
-				}
+				// We don't need to delete the user's membership to this group separately
+				// since we already deleted all memberships for this user in this organization above
 
 				// Decrement the member count of the group
 				if err := tx.Group.UpdateOneID(gm.GroupID).
@@ -328,12 +315,6 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 		return nil
 	})
-
-	if err != nil {
-		return fmt.Errorf("failed to delete membership: %w", err)
-	}
-
-	return nil
 }
 
 // RBAC methods
