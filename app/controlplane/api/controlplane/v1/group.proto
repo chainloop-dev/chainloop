@@ -264,7 +264,7 @@ message ProjectInfo {
   // Description of the project
   string description = 3;
   // Role of the group in the project (admin or viewer)
-  string role = 4;
+  ProjectMemberRole role = 4;
   // The latest version ID of the project, if available
   optional string latest_version_id = 5;
   // Timestamp when the project was created

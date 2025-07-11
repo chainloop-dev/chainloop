@@ -175,9 +175,8 @@ type UpdateMemberMaintainerStatusOpts struct {
 type ListProjectsByGroupOpts struct {
 	// Group reference
 	*IdentityReference
-	// RequesterID is the ID of the user who is requesting to list projects. Optional.
-	// Used to scope down the projects to those visible to the requester.
-	RequesterID *uuid.UUID
+	// VisibleProjectsIDs is a list of project IDs that the requester can see.
+	VisibleProjectsIDs []uuid.UUID
 }
 
 type GroupUseCase struct {
@@ -897,15 +896,5 @@ func (uc *GroupUseCase) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID
 		pgOpts = paginationOpts
 	}
 
-	var requesterMemberships []*Membership
-	// If requesterID is provided, list all memberships for the requester
-	if opts.RequesterID != nil {
-		var listErr error
-		requesterMemberships, listErr = uc.membershipUC.ListAllMembershipsForUser(ctx, *opts.RequesterID)
-		if listErr != nil {
-			return nil, 0, fmt.Errorf("failed to list memberships: %w", listErr)
-		}
-	}
-
-	return uc.groupRepo.ListProjectsByGroup(ctx, orgID, resolvedGroupID, getProjectsWithMembershipInOrg(orgID, requesterMemberships), pgOpts)
+	return uc.groupRepo.ListProjectsByGroup(ctx, orgID, resolvedGroupID, opts.VisibleProjectsIDs, pgOpts)
 }

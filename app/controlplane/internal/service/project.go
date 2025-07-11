@@ -385,14 +385,7 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 	var role pb.ProjectMemberRole
 
 	// Map the role string back to a protobuf enum
-	switch m.Role {
-	case authz.RoleProjectAdmin:
-		role = pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_ADMIN
-	case authz.RoleProjectViewer:
-		role = pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_VIEWER
-	default:
-		role = pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_UNSPECIFIED
-	}
+	role = mapAuthzRoleToProjectMemberRole(m.Role)
 
 	pbMember := &pb.ProjectMember{
 		Role: role,
@@ -423,6 +416,18 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 	}
 
 	return pbMember
+}
+
+// mapAuthzRoleToProjectMemberRole maps an authorization role to a ProjectMemberRole protobuf enum
+func mapAuthzRoleToProjectMemberRole(role authz.Role) pb.ProjectMemberRole {
+	switch role {
+	case authz.RoleProjectAdmin:
+		return pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_ADMIN
+	case authz.RoleProjectViewer:
+		return pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_VIEWER
+	default:
+		return pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_UNSPECIFIED
+	}
 }
 
 // bizOrgInvitationToPendingProjectInvitationPb converts a biz.OrgInvitation to a pb.PendingProjectInvitation protobuf message.

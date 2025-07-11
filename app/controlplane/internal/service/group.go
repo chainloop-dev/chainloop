@@ -486,11 +486,6 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 		return nil, err
 	}
 
-	currentUser, err := requireCurrentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Parse orgID
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
@@ -503,19 +498,13 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
 	}
 
-	// Parse requesterID (current user)
-	requesterUUID, err := uuid.Parse(currentUser.ID)
-	if err != nil {
-		return nil, errors.BadRequest("invalid", "invalid user ID")
-	}
-
 	// Initialize the options for getting projects
 	groupOpts := &biz.ListProjectsByGroupOpts{
 		IdentityReference: &biz.IdentityReference{
 			ID:   id,
 			Name: name,
 		},
-		RequesterID: &requesterUUID,
+		VisibleProjectsIDs: g.visibleProjects(ctx),
 	}
 
 	// Initialize the pagination options, with default values
@@ -592,7 +581,7 @@ func bizGroupProjectInfoToPb(info *biz.GroupProjectInfo) *pb.ProjectInfo {
 		Id:          info.ID.String(),
 		Name:        info.Name,
 		Description: info.Description,
-		Role:        string(info.Role),
+		Role:        mapAuthzRoleToProjectMemberRole(info.Role),
 		CreatedAt:   timestamppb.New(*info.CreatedAt),
 	}
 

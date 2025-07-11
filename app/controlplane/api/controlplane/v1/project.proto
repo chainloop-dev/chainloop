@@ -110,16 +110,6 @@ message ProjectMembershipReference {
   }
 }
 
-// ProjectMemberRole defines the roles a member can have in a project
-enum ProjectMemberRole {
-  // Default role for a project member
-  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0;
-  // Admin role for a project member
-  PROJECT_MEMBER_ROLE_ADMIN = 1;
-  // Viewer role for a project member
-  PROJECT_MEMBER_ROLE_VIEWER = 2;
-}
-
 // ProjectServiceUpdateMemberRoleRequest contains the information needed to update a member's role in a project
 message ProjectServiceUpdateMemberRoleRequest {
   // IdentityReference is used to specify the project by either its ID or name

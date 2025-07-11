@@ -5,7 +5,12 @@ import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import { User } from "./response_messages";
-import { IdentityReference } from "./shared_message";
+import {
+  IdentityReference,
+  ProjectMemberRole,
+  projectMemberRoleFromJSON,
+  projectMemberRoleToJSON,
+} from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -236,7 +241,7 @@ export interface ProjectInfo {
   /** Description of the project */
   description: string;
   /** Role of the group in the project (admin or viewer) */
-  role: string;
+  role: ProjectMemberRole;
   /** The latest version ID of the project, if available */
   latestVersionId?:
     | string
@@ -2164,7 +2169,7 @@ export const GroupServiceListProjectsResponse = {
 };
 
 function createBaseProjectInfo(): ProjectInfo {
-  return { id: "", name: "", description: "", role: "", latestVersionId: undefined, createdAt: undefined };
+  return { id: "", name: "", description: "", role: 0, latestVersionId: undefined, createdAt: undefined };
 }
 
 export const ProjectInfo = {
@@ -2178,8 +2183,8 @@ export const ProjectInfo = {
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
     }
-    if (message.role !== "") {
-      writer.uint32(34).string(message.role);
+    if (message.role !== 0) {
+      writer.uint32(32).int32(message.role);
     }
     if (message.latestVersionId !== undefined) {
       writer.uint32(42).string(message.latestVersionId);
@@ -2219,11 +2224,11 @@ export const ProjectInfo = {
           message.description = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag !== 32) {
             break;
           }
 
-          message.role = reader.string();
+          message.role = reader.int32() as any;
           continue;
         case 5:
           if (tag !== 42) {
@@ -2253,7 +2258,7 @@ export const ProjectInfo = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      role: isSet(object.role) ? String(object.role) : "",
+      role: isSet(object.role) ? projectMemberRoleFromJSON(object.role) : 0,
       latestVersionId: isSet(object.latestVersionId) ? String(object.latestVersionId) : undefined,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
     };
@@ -2264,7 +2269,7 @@ export const ProjectInfo = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
-    message.role !== undefined && (obj.role = message.role);
+    message.role !== undefined && (obj.role = projectMemberRoleToJSON(message.role));
     message.latestVersionId !== undefined && (obj.latestVersionId = message.latestVersionId);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     return obj;
@@ -2279,7 +2284,7 @@ export const ProjectInfo = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.description = object.description ?? "";
-    message.role = object.role ?? "";
+    message.role = object.role ?? 0;
     message.latestVersionId = object.latestVersionId ?? undefined;
     message.createdAt = object.createdAt ?? undefined;
     return message;

@@ -3,6 +3,49 @@ import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "controlplane.v1";
 
+/** ProjectMemberRole defines the roles a member can have in a project */
+export enum ProjectMemberRole {
+  /** PROJECT_MEMBER_ROLE_UNSPECIFIED - Default role for a project member */
+  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0,
+  /** PROJECT_MEMBER_ROLE_ADMIN - Admin role for a project member */
+  PROJECT_MEMBER_ROLE_ADMIN = 1,
+  /** PROJECT_MEMBER_ROLE_VIEWER - Viewer role for a project member */
+  PROJECT_MEMBER_ROLE_VIEWER = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function projectMemberRoleFromJSON(object: any): ProjectMemberRole {
+  switch (object) {
+    case 0:
+    case "PROJECT_MEMBER_ROLE_UNSPECIFIED":
+      return ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED;
+    case 1:
+    case "PROJECT_MEMBER_ROLE_ADMIN":
+      return ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN;
+    case 2:
+    case "PROJECT_MEMBER_ROLE_VIEWER":
+      return ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ProjectMemberRole.UNRECOGNIZED;
+  }
+}
+
+export function projectMemberRoleToJSON(object: ProjectMemberRole): string {
+  switch (object) {
+    case ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED:
+      return "PROJECT_MEMBER_ROLE_UNSPECIFIED";
+    case ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN:
+      return "PROJECT_MEMBER_ROLE_ADMIN";
+    case ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER:
+      return "PROJECT_MEMBER_ROLE_VIEWER";
+    case ProjectMemberRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** IdentityReference represents a reference to an identity in the system. */
 export interface IdentityReference {
   /** ID is optional, but if provided, it must be a valid UUID. */
