@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -44,13 +47,29 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		return nil, err
 	}
 
+	// Authorization checks
+	// Force setting a project scope if RBAC is enabled
+	if rbacEnabled(ctx) && !req.ProjectReference.IsSet() {
+		return nil, errors.BadRequest("invalid", "project is required")
+	}
+
+	// if the project is provided we make sure it exists and the user has permission to it
+	var project *biz.Project
+	if req.ProjectReference.IsSet() {
+		// Make sure the provided project exists and the user has permission to create tokens in it
+		project, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyAPITokenCreate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var expiresIn *time.Duration
 	if req.ExpiresIn != nil {
 		expiresIn = new(time.Duration)
 		*expiresIn = req.ExpiresIn.AsDuration()
 	}
 
-	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID)
+	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProject(project))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -69,8 +88,20 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		return nil, err
 	}
 
+	// default to visible projects for the user
+	defaultProjectFilter := s.visibleProjects(ctx)
+	// or the user has provided a project filter
+	if req.Project.IsSet() {
+		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProject(), authz.PolicyAPITokenList)
+		if err != nil {
+			return nil, err
+		}
+
+		defaultProjectFilter = []uuid.UUID{project.ID}
+	}
+
 	// Only expose system tokens
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenShowOnlySystemTokens(true))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenRevoked(req.IncludeRevoked), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(mapTokenScope(req.Scope)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -83,15 +114,38 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	return &pb.APITokenServiceListResponse{Result: result}, nil
 }
 
+func mapTokenScope(scope pb.APITokenServiceListRequest_Scope) biz.APITokenScope {
+	switch scope {
+	case pb.APITokenServiceListRequest_SCOPE_PROJECT:
+		return biz.APITokenScopeProject
+	case pb.APITokenServiceListRequest_SCOPE_GLOBAL:
+		return biz.APITokenScopeGlobal
+	}
+
+	return ""
+}
+
 func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRevokeRequest) (*pb.APITokenServiceRevokeResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := s.APITokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	t, err := s.APITokenUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetId())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// 1 - Only admins can manage global contracts
+	if t.ProjectID == nil && rbacEnabled(ctx) {
+		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
+	}
+
+	// Make sure the user has permission to revoke the token in the project
+	if t.ProjectID != nil {
+		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProject, *t.ProjectID); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {
@@ -124,11 +178,11 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 	}
 
 	if in.ProjectID != nil {
-		res.ProjectId = in.ProjectID.String()
-	}
-
-	if in.ProjectName != nil {
-		res.ProjectName = *in.ProjectName
+		res.ScopedEntity = &pb.ScopedEntity{
+			Type: string(biz.ContractScopeProject),
+			Id:   in.ProjectID.String(),
+			Name: *in.ProjectName,
+		}
 	}
 
 	return res

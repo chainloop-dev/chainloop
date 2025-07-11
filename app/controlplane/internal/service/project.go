@@ -18,7 +18,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -32,96 +31,12 @@ import (
 type ProjectService struct {
 	pb.UnimplementedProjectServiceServer
 	*service
-
-	// Use Cases
-	apiTokenUseCase *biz.APITokenUseCase
 }
 
-func NewProjectService(apiTokenUseCase *biz.APITokenUseCase, opts ...NewOpt) *ProjectService {
+func NewProjectService(opts ...NewOpt) *ProjectService {
 	return &ProjectService{
-		service:         newService(opts...),
-		apiTokenUseCase: apiTokenUseCase,
+		service: newService(opts...),
 	}
-}
-
-func (s *ProjectService) APITokenCreate(ctx context.Context, req *pb.ProjectServiceAPITokenCreateRequest) (*pb.ProjectServiceAPITokenCreateResponse, error) {
-	currentOrg, err := requireCurrentOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Make sure the provided project exists and the user has permission to create tokens in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, &pb.IdentityReference{Name: &req.ProjectName}, authz.PolicyProjectAPITokenCreate)
-	if err != nil {
-		return nil, err
-	}
-
-	var expiresIn *time.Duration
-	if req.ExpiresIn != nil {
-		expiresIn = new(time.Duration)
-		*expiresIn = req.ExpiresIn.AsDuration()
-	}
-
-	token, err := s.apiTokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, currentOrg.ID, biz.APITokenWithProject(project))
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	return &pb.ProjectServiceAPITokenCreateResponse{
-		Result: &pb.ProjectServiceAPITokenCreateResponse_APITokenFull{
-			Item: apiTokenBizToPb(token),
-			Jwt:  token.JWT,
-		},
-	}, nil
-}
-
-func (s *ProjectService) APITokenList(ctx context.Context, req *pb.ProjectServiceAPITokenListRequest) (*pb.ProjectServiceAPITokenListResponse, error) {
-	currentOrg, err := requireCurrentOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Make sure the provided project exists and the user has permission to create tokens in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAPITokenList)
-	if err != nil {
-		return nil, err
-	}
-
-	tokens, err := s.apiTokenUseCase.List(ctx, currentOrg.ID, req.IncludeRevoked, biz.APITokenWithProject(project))
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	result := make([]*pb.APITokenItem, 0, len(tokens))
-	for _, p := range tokens {
-		result = append(result, apiTokenBizToPb(p))
-	}
-
-	return &pb.ProjectServiceAPITokenListResponse{Result: result}, nil
-}
-
-func (s *ProjectService) APITokenRevoke(ctx context.Context, req *pb.ProjectServiceAPITokenRevokeRequest) (*pb.ProjectServiceAPITokenRevokeResponse, error) {
-	currentOrg, err := requireCurrentOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Make sure the provided project exists and the user has permission to create tokens in it
-	project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyProjectAPITokenRevoke)
-	if err != nil {
-		return nil, err
-	}
-
-	t, err := s.apiTokenUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.Name, biz.APITokenWithProject(project))
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	if err := s.apiTokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	return &pb.ProjectServiceAPITokenRevokeResponse{}, nil
 }
 
 // ListMembers lists the members of a project.

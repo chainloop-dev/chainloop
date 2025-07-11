@@ -50,7 +50,7 @@ const (
 	OrganizationMemberships         = "organization_memberships"
 	ResourceGroup                   = "group"
 	ResourceGroupMembership         = "group_membership"
-	ResourceProjectAPIToken         = "project_api_token"
+	ResourceAPIToken                = "api_token"
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
 
@@ -96,7 +96,7 @@ var ManagedResources = []string{
 	OrganizationMemberships,
 	ResourceGroup,
 	ResourceGroupMembership,
-	ResourceProjectAPIToken,
+	ResourceAPIToken,
 	ResourceProjectMembership,
 	ResourceOrganizationInvitations,
 }
@@ -154,10 +154,10 @@ var (
 	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
 	PolicyGroupRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
 	PolicyGroupUpdateMemberships = &Policy{ResourceGroupMembership, ActionUpdate}
-	// Project API Token
-	PolicyProjectAPITokenList   = &Policy{ResourceProjectAPIToken, ActionList}
-	PolicyProjectAPITokenCreate = &Policy{ResourceProjectAPIToken, ActionCreate}
-	PolicyProjectAPITokenRevoke = &Policy{ResourceProjectAPIToken, ActionDelete}
+	// API Token
+	PolicyAPITokenList   = &Policy{ResourceAPIToken, ActionList}
+	PolicyAPITokenCreate = &Policy{ResourceAPIToken, ActionCreate}
+	PolicyAPITokenRevoke = &Policy{ResourceAPIToken, ActionDelete}
 	// Project Memberships
 	PolicyProjectListMemberships   = &Policy{ResourceProjectMembership, ActionList}
 	PolicyProjectAddMemberships    = &Policy{ResourceProjectMembership, ActionCreate}
@@ -257,10 +257,10 @@ var RolesMap = map[Role][]*Policy{
 		// Group Memberships
 		PolicyGroupListMemberships,
 
-		// Project API Token
-		PolicyProjectAPITokenList,
-		PolicyProjectAPITokenCreate,
-		PolicyProjectAPITokenRevoke,
+		// Additional check for API tokens is done at the service level
+		PolicyAPITokenList,
+		PolicyAPITokenCreate,
+		PolicyAPITokenRevoke,
 
 		// Project Memberships
 		PolicyProjectListMemberships,
@@ -278,6 +278,8 @@ var RolesMap = map[Role][]*Policy{
 		// workflow contracts
 		PolicyWorkflowContractList,
 		PolicyWorkflowContractRead,
+		// Project API Token
+		PolicyAPITokenList,
 	},
 	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
 	// and it's only considered when the org-level role is `RoleOrgMember`
@@ -307,9 +309,9 @@ var RolesMap = map[Role][]*Policy{
 		PolicyAttachedIntegrationDetach,
 
 		// Project API Token
-		PolicyProjectAPITokenList,
-		PolicyProjectAPITokenCreate,
-		PolicyProjectAPITokenRevoke,
+		PolicyAPITokenList,
+		PolicyAPITokenCreate,
+		PolicyAPITokenRevoke,
 
 		// Project Memberships
 		PolicyProjectListMemberships,
@@ -411,6 +413,11 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ProjectService/RemoveMember":           {},
 	"/controlplane.v1.ProjectService/UpdateMemberRole":       {},
 	"/controlplane.v1.ProjectService/ListPendingInvitations": {},
+
+	// API tokens RBAC are handled at the service level
+	"/controlplane.v1.APITokenService/List":   {},
+	"/controlplane.v1.APITokenService/Create": {},
+	"/controlplane.v1.APITokenService/Revoke": {},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

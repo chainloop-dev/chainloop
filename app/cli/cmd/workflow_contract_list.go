@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
@@ -51,12 +50,7 @@ func contractListTableOutput(contracts []*action.WorkflowContractItem) error {
 
 	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "Updated At", "# Workflows", "Scope"})
 	for _, p := range contracts {
-		scope := "org"
-		if p.ScopedEntity != nil {
-			scope = fmt.Sprintf("%s/%s", p.ScopedEntity.Type, p.ScopedEntity.Name)
-		}
-
-		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), p.LatestRevisionCreatedAt.Format(time.RFC822), len(p.WorkflowRefs), scope})
+		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), p.LatestRevisionCreatedAt.Format(time.RFC822), len(p.WorkflowRefs), p.ScopedEntity.String()})
 	}
 
 	t.Render()

@@ -97,7 +97,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 		wantToken := &biz.APIToken{ID: uuid.New(), OrganizationID: wantOrgID}
 
 		t.Run(tc.name, func(t *testing.T) {
-			apiTokenRepo := bizMocks.NewMockAPITokenRepo(t)
+			apiTokenRepo := bizMocks.NewAPITokenRepo(t)
 			orgRepo := bizMocks.NewOrganizationRepo(t)
 			apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, nil, nil, nil, nil)
 			require.NoError(t, err)

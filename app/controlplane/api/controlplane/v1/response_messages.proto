@@ -330,8 +330,8 @@ message APITokenItem {
   string description = 2;
   string organization_id = 3;
   string organization_name = 8;
-  string project_id = 9;
-  string project_name = 10;
+  // wether the token is scoped to an entity in the organization
+  ScopedEntity scoped_entity = 10;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp revoked_at = 5;
   google.protobuf.Timestamp expires_at = 6;

@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -57,13 +58,12 @@ type APIToken struct {
 
 type APITokenRepo interface {
 	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*APIToken, error)
-	// List all the tokens optionally filtering it by organization and including revoked tokens
-	List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error)
+	List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
 	UpdateLastUsedAt(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
-	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)
+	FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -134,22 +134,16 @@ type apiTokenOptions struct {
 	showOnlySystemTokens bool
 }
 
-type APITokenUseCaseOpt func(*apiTokenOptions)
+type APITokenCreateOpt func(*apiTokenOptions)
 
-func APITokenWithProject(project *Project) APITokenUseCaseOpt {
+func APITokenWithProject(project *Project) APITokenCreateOpt {
 	return func(o *apiTokenOptions) {
 		o.project = project
 	}
 }
 
-func APITokenShowOnlySystemTokens(show bool) APITokenUseCaseOpt {
-	return func(o *apiTokenOptions) {
-		o.showOnlySystemTokens = show
-	}
-}
-
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string, opts ...APITokenUseCaseOpt) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string, opts ...APITokenCreateOpt) (*APIToken, error) {
 	options := &apiTokenOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -277,10 +271,56 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 	return token, nil
 }
 
-func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoked bool, opts ...APITokenUseCaseOpt) ([]*APIToken, error) {
-	options := &apiTokenOptions{}
+type APITokenListOpt func(*APITokenListFilters)
+
+func WithAPITokenProjectFilter(projectIDs []uuid.UUID) APITokenListOpt {
+	return func(opts *APITokenListFilters) {
+		opts.FilterByProjects = projectIDs
+	}
+}
+
+func WithAPITokenRevoked(includeRevoked bool) APITokenListOpt {
+	return func(opts *APITokenListFilters) {
+		opts.IncludeRevoked = includeRevoked
+	}
+}
+
+func WithAPITokenScope(scope APITokenScope) APITokenListOpt {
+	return func(opts *APITokenListFilters) {
+		opts.FilterByScope = scope
+	}
+}
+
+type APITokenScope string
+
+const (
+	APITokenScopeProject APITokenScope = "project"
+	APITokenScopeGlobal  APITokenScope = "global"
+)
+
+var availableAPITokenScopes = []APITokenScope{
+	APITokenScopeProject,
+	APITokenScopeGlobal,
+}
+
+type APITokenListFilters struct {
+	// FilterByProjects is used to filter the result by a project list
+	// If it's empty, no filter will be applied
+	FilterByProjects []uuid.UUID
+	// IncludeRevoked is used to include revoked tokens in the result
+	IncludeRevoked bool
+	// FilterByScope is used to filter the result by the scope of the token
+	FilterByScope APITokenScope
+}
+
+func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITokenListOpt) ([]*APIToken, error) {
+	filters := &APITokenListFilters{}
 	for _, opt := range opts {
-		opt(options)
+		opt(filters)
+	}
+
+	if filters.FilterByScope != "" && !slices.Contains(availableAPITokenScopes, filters.FilterByScope) {
+		return nil, NewErrValidationStr(fmt.Sprintf("invalid scope %q, please chose one of: %v", filters.FilterByScope, availableAPITokenScopes))
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -288,12 +328,7 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, includeRevoke
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	var projectID *uuid.UUID
-	if options.project != nil {
-		projectID = ToPtr(options.project.ID)
-	}
-
-	return uc.apiTokenRepo.List(ctx, &orgUUID, projectID, includeRevoked, options.showOnlySystemTokens)
+	return uc.apiTokenRepo.List(ctx, &orgUUID, filters)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
@@ -332,23 +367,18 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	return nil
 }
 
-func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string, opts ...APITokenUseCaseOpt) (*APIToken, error) {
-	options := &apiTokenOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
+func (uc *APITokenUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) (*APIToken, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	var projectID *uuid.UUID
-	if options.project != nil {
-		projectID = ToPtr(options.project.ID)
+	tokenUUID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
 	}
 
-	t, err := uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name, projectID)
+	t, err := uc.apiTokenRepo.FindByIDInOrg(ctx, orgUUID, tokenUUID)
 	if err != nil {
 		return nil, fmt.Errorf("finding token: %w", err)
 	}
@@ -384,7 +414,7 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 	suc.base.logger.Info("syncing policies for all the API tokens")
 
 	// List all the non-revoked tokens from all the orgs
-	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, nil, false, false)
+	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, nil)
 	if err != nil {
 		return fmt.Errorf("listing tokens: %w", err)
 	}
@@ -395,6 +425,8 @@ func (suc *APITokenSyncerUseCase) SyncPolicies() error {
 			return fmt.Errorf("adding default policies: %w", err)
 		}
 	}
+
+	suc.base.logger.Info("policies synced")
 
 	return nil
 }

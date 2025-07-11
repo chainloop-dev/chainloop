@@ -22,61 +22,17 @@ import "controlplane/v1/group.proto";
 import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
 import "controlplane/v1/shared_message.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service ProjectService {
-  // Project level API tokens
-  rpc APITokenCreate(ProjectServiceAPITokenCreateRequest) returns (ProjectServiceAPITokenCreateResponse);
-  rpc APITokenList(ProjectServiceAPITokenListRequest) returns (ProjectServiceAPITokenListResponse);
-  rpc APITokenRevoke(ProjectServiceAPITokenRevokeRequest) returns (ProjectServiceAPITokenRevokeResponse);
   // Project membership management
   rpc ListMembers(ProjectServiceListMembersRequest) returns (ProjectServiceListMembersResponse);
   rpc AddMember(ProjectServiceAddMemberRequest) returns (ProjectServiceAddMemberResponse);
   rpc RemoveMember(ProjectServiceRemoveMemberRequest) returns (ProjectServiceRemoveMemberResponse);
   rpc UpdateMemberRole(ProjectServiceUpdateMemberRoleRequest) returns (ProjectServiceUpdateMemberRoleResponse);
   rpc ListPendingInvitations(ProjectServiceListPendingInvitationsRequest) returns (ProjectServiceListPendingInvitationsResponse) {}
-}
-
-message ProjectServiceAPITokenCreateRequest {
-  string name = 1 [(buf.validate.field).string.min_len = 1];
-  string project_name = 2 [(buf.validate.field).string.min_len = 1];
-  optional string description = 3;
-  optional google.protobuf.Duration expires_in = 4;
-}
-
-message ProjectServiceAPITokenCreateResponse {
-  APITokenFull result = 1;
-
-  message APITokenFull {
-    APITokenItem item = 1;
-    string jwt = 2;
-  }
-}
-
-// ProjectServiceAPITokenRevokeRequest contains the information needed to revoke an API token for a project
-message ProjectServiceAPITokenRevokeRequest {
-  // The name of the API token to revoke
-  string name = 1 [(buf.validate.field).string.min_len = 1];
-  // IdentityReference is used to specify the project by either its ID or name
-  IdentityReference project_reference = 2 [(buf.validate.field).required = true];
-}
-
-// ProjectServiceAPITokenRevokeResponse is returned upon successful revocation of an API token
-message ProjectServiceAPITokenRevokeResponse {}
-
-// ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project
-message ProjectServiceAPITokenListRequest {
-  // IdentityReference is used to specify the project by either its ID or name
-  IdentityReference project_reference = 1 [(buf.validate.field).required = true];
-  // Flag to include revoked tokens in the list
-  bool include_revoked = 2;
-}
-
-message ProjectServiceAPITokenListResponse {
-  repeated APITokenItem result = 1;
 }
 
 // ProjectServiceListMembersRequest contains the information needed to list members of a project

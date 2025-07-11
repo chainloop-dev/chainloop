@@ -33,12 +33,18 @@ func NewAPITokenCreate(cfg *ActionsOpts) *APITokenCreate {
 	return &APITokenCreate{cfg}
 }
 
-func (action *APITokenCreate) Run(ctx context.Context, name, description string, expiresIn *time.Duration) (*APITokenItem, error) {
+func (action *APITokenCreate) Run(ctx context.Context, name, description, projectName string, expiresIn *time.Duration) (*APITokenItem, error) {
 	client := pb.NewAPITokenServiceClient(action.cfg.CPConnection)
 
 	req := &pb.APITokenServiceCreateRequest{Name: name, Description: &description}
 	if expiresIn != nil {
 		req.ExpiresIn = durationpb.New(*expiresIn)
+	}
+
+	if projectName != "" {
+		req.ProjectReference = &pb.IdentityReference{
+			Name: &projectName,
+		}
 	}
 
 	resp, err := client.Create(ctx, req)
@@ -62,13 +68,12 @@ type APITokenItem struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	// JWT is returned only during the creation
-	JWT         string     `json:"jwt,omitempty"`
-	CreatedAt   *time.Time `json:"createdAt"`
-	RevokedAt   *time.Time `json:"revokedAt,omitempty"`
-	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
-	LastUsedAt  *time.Time `json:"lastUsedAt,omitempty"`
-	ProjectID   string     `json:"projectId,omitempty"`
-	ProjectName string     `json:"projectName,omitempty"`
+	JWT          string        `json:"jwt,omitempty"`
+	CreatedAt    *time.Time    `json:"createdAt"`
+	RevokedAt    *time.Time    `json:"revokedAt,omitempty"`
+	ExpiresAt    *time.Time    `json:"expiresAt,omitempty"`
+	LastUsedAt   *time.Time    `json:"lastUsedAt,omitempty"`
+	ScopedEntity *ScopedEntity `json:"scopedEntity,omitempty"`
 }
 
 func pbAPITokenItemToAPITokenItem(p *pb.APITokenItem) *APITokenItem {
@@ -95,12 +100,12 @@ func pbAPITokenItemToAPITokenItem(p *pb.APITokenItem) *APITokenItem {
 		item.LastUsedAt = toTimePtr(p.LastUsedAt.AsTime())
 	}
 
-	if p.ProjectId != "" {
-		item.ProjectID = p.ProjectId
-	}
-
-	if p.ProjectName != "" {
-		item.ProjectName = p.ProjectName
+	if p.ScopedEntity != nil {
+		item.ScopedEntity = &ScopedEntity{
+			Type: p.ScopedEntity.Type,
+			ID:   p.ScopedEntity.Id,
+			Name: p.ScopedEntity.Name,
+		}
 	}
 
 	return item

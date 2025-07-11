@@ -661,8 +661,8 @@ export interface APITokenItem {
   description: string;
   organizationId: string;
   organizationName: string;
-  projectId: string;
-  projectName: string;
+  /** wether the token is scoped to an entity in the organization */
+  scopedEntity?: ScopedEntity;
   createdAt?: Date;
   revokedAt?: Date;
   expiresAt?: Date;
@@ -3993,8 +3993,7 @@ function createBaseAPITokenItem(): APITokenItem {
     description: "",
     organizationId: "",
     organizationName: "",
-    projectId: "",
-    projectName: "",
+    scopedEntity: undefined,
     createdAt: undefined,
     revokedAt: undefined,
     expiresAt: undefined,
@@ -4019,11 +4018,8 @@ export const APITokenItem = {
     if (message.organizationName !== "") {
       writer.uint32(66).string(message.organizationName);
     }
-    if (message.projectId !== "") {
-      writer.uint32(74).string(message.projectId);
-    }
-    if (message.projectName !== "") {
-      writer.uint32(82).string(message.projectName);
+    if (message.scopedEntity !== undefined) {
+      ScopedEntity.encode(message.scopedEntity, writer.uint32(82).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
@@ -4082,19 +4078,12 @@ export const APITokenItem = {
 
           message.organizationName = reader.string();
           continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.projectId = reader.string();
-          continue;
         case 10:
           if (tag !== 82) {
             break;
           }
 
-          message.projectName = reader.string();
+          message.scopedEntity = ScopedEntity.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -4140,8 +4129,7 @@ export const APITokenItem = {
       description: isSet(object.description) ? String(object.description) : "",
       organizationId: isSet(object.organizationId) ? String(object.organizationId) : "",
       organizationName: isSet(object.organizationName) ? String(object.organizationName) : "",
-      projectId: isSet(object.projectId) ? String(object.projectId) : "",
-      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      scopedEntity: isSet(object.scopedEntity) ? ScopedEntity.fromJSON(object.scopedEntity) : undefined,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       revokedAt: isSet(object.revokedAt) ? fromJsonTimestamp(object.revokedAt) : undefined,
       expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
@@ -4156,8 +4144,8 @@ export const APITokenItem = {
     message.description !== undefined && (obj.description = message.description);
     message.organizationId !== undefined && (obj.organizationId = message.organizationId);
     message.organizationName !== undefined && (obj.organizationName = message.organizationName);
-    message.projectId !== undefined && (obj.projectId = message.projectId);
-    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.scopedEntity !== undefined &&
+      (obj.scopedEntity = message.scopedEntity ? ScopedEntity.toJSON(message.scopedEntity) : undefined);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.revokedAt !== undefined && (obj.revokedAt = message.revokedAt.toISOString());
     message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
@@ -4176,8 +4164,9 @@ export const APITokenItem = {
     message.description = object.description ?? "";
     message.organizationId = object.organizationId ?? "";
     message.organizationName = object.organizationName ?? "";
-    message.projectId = object.projectId ?? "";
-    message.projectName = object.projectName ?? "";
+    message.scopedEntity = (object.scopedEntity !== undefined && object.scopedEntity !== null)
+      ? ScopedEntity.fromPartial(object.scopedEntity)
+      : undefined;
     message.createdAt = object.createdAt ?? undefined;
     message.revokedAt = object.revokedAt ?? undefined;
     message.expiresAt = object.expiresAt ?? undefined;
