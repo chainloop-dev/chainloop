@@ -617,31 +617,33 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 		return NewErrNotFound("group")
 	}
 
-	// Check if the requester is part of the organization
-	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
-	if err != nil && !IsNotFound(err) {
-		return NewErrValidationStr("failed to check existing membership")
-	}
-
-	if requesterMembership == nil {
-		return NewErrValidationStr("requester is not a member of the organization")
-	}
-
-	// Check if the requester has sufficient permissions
-	// Allow if the requester is an org owner or admin
-	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
-
-	// If not an admin/owner, check if the requester is a maintainer of this group
-	if !isAdminOrOwner {
-		// Check if the requester is a maintainer of this group
-		requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+	if opts.RequesterID != uuid.Nil {
+		// Check if the requester is part of the organization
+		requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
 		if err != nil && !IsNotFound(err) {
-			return fmt.Errorf("failed to check requester's group membership: %w", err)
+			return NewErrValidationStr("failed to check existing membership")
 		}
 
-		// If not a maintainer of this group, deny access
-		if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
-			return NewErrValidationStr("requester does not have permission to add members to this group")
+		if requesterMembership == nil {
+			return NewErrValidationStr("requester is not a member of the organization")
+		}
+
+		// Check if the requester has sufficient permissions
+		// Allow if the requester is an org owner or admin
+		isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
+
+		// If not an admin/owner, check if the requester is a maintainer of this group
+		if !isAdminOrOwner {
+			// Check if the requester is a maintainer of this group
+			requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
+			if err != nil && !IsNotFound(err) {
+				return fmt.Errorf("failed to check requester's group membership: %w", err)
+			}
+
+			// If not a maintainer of this group, deny access
+			if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
+				return NewErrValidationStr("requester does not have permission to add members to this group")
+			}
 		}
 	}
 
