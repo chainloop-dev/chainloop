@@ -479,6 +479,58 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 	return &pb.GroupServiceUpdateMemberMaintainerStatusResponse{}, nil
 }
 
+// ListProjects retrieves a paginated list of projects that a group is a member of.
+func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceListProjectsRequest) (*pb.GroupServiceListProjectsResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse orgID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Parse groupID and groupName from the request
+	id, name, err := req.GetGroupReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	// Initialize the options for getting projects
+	groupOpts := &biz.ListProjectsByGroupOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID:   id,
+			Name: name,
+		},
+		FilterByProject: g.visibleProjects(ctx),
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Retrieve the list of project info
+	projectInfoList, count, err := g.groupUseCase.ListProjectsByGroup(ctx, orgUUID, groupOpts, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Convert the GroupProjectInfo to protobuf messages
+	result := make([]*pb.ProjectInfo, 0, len(projectInfoList))
+	for _, project := range projectInfoList {
+		result = append(result, bizGroupProjectInfoToPb(project))
+	}
+
+	return &pb.GroupServiceListProjectsResponse{
+		Projects:   result,
+		Pagination: paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
+}
+
 // bizGroupToPb converts a biz.Group to a pb.Group protobuf message.
 func bizGroupToPb(gr *biz.Group) *pb.Group {
 	base := &pb.Group{
@@ -521,4 +573,23 @@ func bizOrgInvitationToPendingGroupInvitationPb(inv *biz.OrgInvitation) *pb.Pend
 	}
 
 	return base
+}
+
+// bizGroupProjectInfoToPb converts a biz.GroupProjectInfo to a pb.ProjectInfo protobuf message.
+func bizGroupProjectInfoToPb(info *biz.GroupProjectInfo) *pb.ProjectInfo {
+	projectInfo := &pb.ProjectInfo{
+		Id:          info.ID.String(),
+		Name:        info.Name,
+		Description: info.Description,
+		Role:        mapAuthzRoleToProjectMemberRole(info.Role),
+		CreatedAt:   timestamppb.New(*info.CreatedAt),
+	}
+
+	// Add the latest version ID if available
+	if info.LatestVersionID != nil {
+		latestVersionID := info.LatestVersionID.String()
+		projectInfo.LatestVersionId = &latestVersionID
+	}
+
+	return projectInfo
 }

@@ -6,52 +6,14 @@ import { Timestamp } from "../../google/protobuf/timestamp";
 import { Group } from "./group";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import { User } from "./response_messages";
-import { IdentityReference } from "./shared_message";
+import {
+  IdentityReference,
+  ProjectMemberRole,
+  projectMemberRoleFromJSON,
+  projectMemberRoleToJSON,
+} from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
-
-/** ProjectMemberRole defines the roles a member can have in a project */
-export enum ProjectMemberRole {
-  /** PROJECT_MEMBER_ROLE_UNSPECIFIED - Default role for a project member */
-  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0,
-  /** PROJECT_MEMBER_ROLE_ADMIN - Admin role for a project member */
-  PROJECT_MEMBER_ROLE_ADMIN = 1,
-  /** PROJECT_MEMBER_ROLE_VIEWER - Viewer role for a project member */
-  PROJECT_MEMBER_ROLE_VIEWER = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function projectMemberRoleFromJSON(object: any): ProjectMemberRole {
-  switch (object) {
-    case 0:
-    case "PROJECT_MEMBER_ROLE_UNSPECIFIED":
-      return ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED;
-    case 1:
-    case "PROJECT_MEMBER_ROLE_ADMIN":
-      return ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN;
-    case 2:
-    case "PROJECT_MEMBER_ROLE_VIEWER":
-      return ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ProjectMemberRole.UNRECOGNIZED;
-  }
-}
-
-export function projectMemberRoleToJSON(object: ProjectMemberRole): string {
-  switch (object) {
-    case ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED:
-      return "PROJECT_MEMBER_ROLE_UNSPECIFIED";
-    case ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN:
-      return "PROJECT_MEMBER_ROLE_ADMIN";
-    case ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER:
-      return "PROJECT_MEMBER_ROLE_VIEWER";
-    case ProjectMemberRole.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
 
 /** ProjectServiceListMembersRequest contains the information needed to list members of a project */
 export interface ProjectServiceListMembersRequest {
@@ -85,6 +47,8 @@ export interface ProjectMember {
   createdAt?: Date;
   /** Timestamp when the project membership was last modified */
   updatedAt?: Date;
+  /** The ID of latest project version this member is associated with */
+  latestProjectVersionId: string;
 }
 
 /** ProjectServiceAddMemberRequest contains the information needed to add a user to a project */
@@ -333,7 +297,14 @@ export const ProjectServiceListMembersResponse = {
 };
 
 function createBaseProjectMember(): ProjectMember {
-  return { user: undefined, group: undefined, role: 0, createdAt: undefined, updatedAt: undefined };
+  return {
+    user: undefined,
+    group: undefined,
+    role: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+    latestProjectVersionId: "",
+  };
 }
 
 export const ProjectMember = {
@@ -352,6 +323,9 @@ export const ProjectMember = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.latestProjectVersionId !== "") {
+      writer.uint32(50).string(message.latestProjectVersionId);
     }
     return writer;
   },
@@ -398,6 +372,13 @@ export const ProjectMember = {
 
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.latestProjectVersionId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -414,6 +395,7 @@ export const ProjectMember = {
       role: isSet(object.role) ? projectMemberRoleFromJSON(object.role) : 0,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      latestProjectVersionId: isSet(object.latestProjectVersionId) ? String(object.latestProjectVersionId) : "",
     };
   },
 
@@ -424,6 +406,7 @@ export const ProjectMember = {
     message.role !== undefined && (obj.role = projectMemberRoleToJSON(message.role));
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.latestProjectVersionId !== undefined && (obj.latestProjectVersionId = message.latestProjectVersionId);
     return obj;
   },
 
@@ -438,6 +421,7 @@ export const ProjectMember = {
     message.role = object.role ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.latestProjectVersionId = object.latestProjectVersionId ?? "";
     return message;
   },
 };

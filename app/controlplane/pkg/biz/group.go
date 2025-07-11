@@ -53,6 +53,8 @@ type GroupRepo interface {
 	UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, isMaintainer bool) error
 	// ListPendingInvitationsByGroup retrieves a list of pending invitations for a group
 	ListPendingInvitationsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error)
+	// ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
+	ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, visibleProjectIDs []uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*GroupProjectInfo, int, error)
 }
 
 // GroupMembership represents a membership of a user in a group.
@@ -169,6 +171,14 @@ type UpdateMemberMaintainerStatusOpts struct {
 	IsMaintainer bool
 }
 
+// ListProjectsByGroupOpts defines options for listing projects by group.
+type ListProjectsByGroupOpts struct {
+	// Group reference
+	*IdentityReference
+	// FilterByProject is a list of project IDs to filter the results by.
+	FilterByProject []uuid.UUID
+}
+
 type GroupUseCase struct {
 	// logger is used to log messages.
 	logger   *log.Helper
@@ -181,9 +191,10 @@ type GroupUseCase struct {
 	// Use Cases
 	orgInvitationUC *OrgInvitationUseCase
 	auditorUC       *AuditorUseCase
+	membershipUC    *MembershipUseCase
 }
 
-func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo, enforcer *authz.Enforcer) *GroupUseCase {
+func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo, enforcer *authz.Enforcer, membershipUseCase *MembershipUseCase) *GroupUseCase {
 	return &GroupUseCase{
 		logger:            log.NewHelper(log.With(logger, "component", "biz/group")),
 		groupRepo:         groupRepo,
@@ -193,6 +204,7 @@ func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo Memb
 		auditorUC:         auditorUC,
 		orgInvitationRepo: invitationRepo,
 		enforcer:          enforcer,
+		membershipUC:      membershipUseCase,
 	}
 }
 
@@ -852,4 +864,37 @@ func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.
 	}
 
 	return group.ID, nil
+}
+
+// ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
+func (uc *GroupUseCase) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, opts *ListProjectsByGroupOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*GroupProjectInfo, int, error) {
+	if opts == nil {
+		return nil, 0, NewErrValidationStr("options cannot be nil")
+	}
+
+	if orgID == uuid.Nil {
+		return nil, 0, NewErrValidationStr("organization ID cannot be empty")
+	}
+
+	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, opts.ID, opts.Name)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Check the group exists
+	existingGroup, err := uc.groupRepo.FindByOrgAndID(ctx, orgID, resolvedGroupID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to find group: %w", err)
+	}
+
+	if existingGroup == nil {
+		return nil, 0, NewErrNotFound("group")
+	}
+
+	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
+	if paginationOpts != nil {
+		pgOpts = paginationOpts
+	}
+
+	return uc.groupRepo.ListProjectsByGroup(ctx, orgID, resolvedGroupID, opts.FilterByProject, pgOpts)
 }

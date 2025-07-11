@@ -20,6 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
+
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+
 	"entgo.io/ent/dialect/sql/sqljson"
 
 	"entgo.io/ent/dialect/sql"
@@ -571,6 +575,109 @@ func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.
 
 		return nil
 	})
+}
+
+// ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
+func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, visibleProjectIDs []uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.GroupProjectInfo, int, error) {
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	// Get all memberships where this group is a member and the resource type is a project
+	membershipQuery := g.data.DB.Membership.Query().
+		Where(
+			membership.MemberIDEQ(groupID),
+			membership.MembershipTypeEQ(authz.MembershipTypeGroup),
+			membership.ResourceTypeEQ(authz.ResourceTypeProject),
+			membership.HasOrganizationWith(organization.IDEQ(orgID)),
+		)
+
+	// If visibleProjectIDs is provided, filter memberships to include only those projects
+	if visibleProjectIDs != nil {
+		membershipQuery = membershipQuery.Where(membership.ResourceIDIn(visibleProjectIDs...))
+	}
+
+	// Get total count first (after applying visibility filters)
+	count, err := membershipQuery.Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count project memberships: %w", err)
+	}
+
+	// Apply pagination to the memberships query
+	memberships, err := membershipQuery.
+		Order(ent.Desc(membership.FieldCreatedAt)).
+		Offset(paginationOpts.Offset()).
+		Limit(paginationOpts.Limit()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	// If no memberships found, return empty result
+	if len(memberships) == 0 {
+		return []*biz.GroupProjectInfo{}, count, nil
+	}
+
+	// Extract project IDs from memberships
+	projectIDs := make([]uuid.UUID, 0, len(memberships))
+	for _, m := range memberships {
+		projectIDs = append(projectIDs, m.ResourceID)
+	}
+
+	// Query the projects
+	entProjects, err := g.data.DB.Project.Query().
+		Where(
+			project.IDIn(projectIDs...),
+			project.OrganizationID(orgID),
+			project.DeletedAtIsNil(),
+		).
+		WithVersions(func(query *ent.ProjectVersionQuery) {
+			query.Where(projectversion.Latest(true)).Select(projectversion.FieldID)
+		}).
+		All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch projects: %w", err)
+	}
+
+	// Create a map of projects by ID for efficient lookup
+	projectsMap := make(map[uuid.UUID]*ent.Project, len(entProjects))
+	for _, p := range entProjects {
+		projectsMap[p.ID] = p
+	}
+
+	// Create a map to store role by project ID
+	projectRoles := make(map[uuid.UUID]authz.Role, len(memberships))
+	for _, m := range memberships {
+		projectRoles[m.ResourceID] = m.Role
+	}
+
+	// Build the result following the order of memberships
+	projectInfos := make([]*biz.GroupProjectInfo, 0, len(memberships))
+
+	for _, m := range memberships {
+		pr, exists := projectsMap[m.ResourceID]
+		if !exists {
+			// Skip projects that might have been deleted but membership still exists
+			continue
+		}
+
+		projectInfo := &biz.GroupProjectInfo{
+			ID:          pr.ID,
+			Name:        pr.Name,
+			Description: pr.Description,
+			Role:        m.Role,
+			CreatedAt:   toTimePtr(pr.CreatedAt),
+		}
+
+		// If the project has versions, include the latest version ID
+		if len(pr.Edges.Versions) > 0 {
+			projectInfo.LatestVersionID = &pr.Edges.Versions[0].ID
+		}
+
+		projectInfos = append(projectInfos, projectInfo)
+	}
+
+	return projectInfos, count, nil
 }
 
 // entGroupToBiz converts an ent.Group to a biz.Group.

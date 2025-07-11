@@ -5,7 +5,12 @@ import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import { User } from "./response_messages";
-import { IdentityReference } from "./shared_message";
+import {
+  IdentityReference,
+  ProjectMemberRole,
+  projectMemberRoleFromJSON,
+  projectMemberRoleToJSON,
+} from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -209,6 +214,40 @@ export interface GroupServiceUpdateMemberMaintainerStatusRequest {
 
 /** GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status */
 export interface GroupServiceUpdateMemberMaintainerStatusResponse {
+}
+
+/** GroupServiceListProjectsRequest contains parameters for filtering and paginating project results for a group */
+export interface GroupServiceListProjectsRequest {
+  /** IdentityReference is used to specify the group by either its ID or name */
+  groupReference?: IdentityReference;
+  /** Pagination parameters to limit and offset results */
+  pagination?: OffsetPaginationRequest;
+}
+
+/** GroupServiceListProjectsResponse contains a paginated list of projects for a group */
+export interface GroupServiceListProjectsResponse {
+  /** List of projects memberships matching the request criteria */
+  projects: ProjectInfo[];
+  /** Pagination information for the response */
+  pagination?: OffsetPaginationResponse;
+}
+
+/** ProjectInfo represents detailed information about a project that a group is a member of */
+export interface ProjectInfo {
+  /** Unique identifier of the project */
+  id: string;
+  /** Name of the project */
+  name: string;
+  /** Description of the project */
+  description: string;
+  /** Role of the group in the project (admin or viewer) */
+  role: ProjectMemberRole;
+  /** The latest version ID of the project, if available */
+  latestVersionId?:
+    | string
+    | undefined;
+  /** Timestamp when the project was created */
+  createdAt?: Date;
 }
 
 function createBaseGroupServiceCreateRequest(): GroupServiceCreateRequest {
@@ -1968,6 +2007,290 @@ export const GroupServiceUpdateMemberMaintainerStatusResponse = {
   },
 };
 
+function createBaseGroupServiceListProjectsRequest(): GroupServiceListProjectsRequest {
+  return { groupReference: undefined, pagination: undefined };
+}
+
+export const GroupServiceListProjectsRequest = {
+  encode(message: GroupServiceListProjectsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupReference !== undefined) {
+      IdentityReference.encode(message.groupReference, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceListProjectsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupServiceListProjectsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.groupReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GroupServiceListProjectsRequest {
+    return {
+      groupReference: isSet(object.groupReference) ? IdentityReference.fromJSON(object.groupReference) : undefined,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: GroupServiceListProjectsRequest): unknown {
+    const obj: any = {};
+    message.groupReference !== undefined &&
+      (obj.groupReference = message.groupReference ? IdentityReference.toJSON(message.groupReference) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupServiceListProjectsRequest>, I>>(base?: I): GroupServiceListProjectsRequest {
+    return GroupServiceListProjectsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupServiceListProjectsRequest>, I>>(
+    object: I,
+  ): GroupServiceListProjectsRequest {
+    const message = createBaseGroupServiceListProjectsRequest();
+    message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
+      ? IdentityReference.fromPartial(object.groupReference)
+      : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGroupServiceListProjectsResponse(): GroupServiceListProjectsResponse {
+  return { projects: [], pagination: undefined };
+}
+
+export const GroupServiceListProjectsResponse = {
+  encode(message: GroupServiceListProjectsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.projects) {
+      ProjectInfo.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceListProjectsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupServiceListProjectsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projects.push(ProjectInfo.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GroupServiceListProjectsResponse {
+    return {
+      projects: Array.isArray(object?.projects) ? object.projects.map((e: any) => ProjectInfo.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: GroupServiceListProjectsResponse): unknown {
+    const obj: any = {};
+    if (message.projects) {
+      obj.projects = message.projects.map((e) => e ? ProjectInfo.toJSON(e) : undefined);
+    } else {
+      obj.projects = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupServiceListProjectsResponse>, I>>(
+    base?: I,
+  ): GroupServiceListProjectsResponse {
+    return GroupServiceListProjectsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupServiceListProjectsResponse>, I>>(
+    object: I,
+  ): GroupServiceListProjectsResponse {
+    const message = createBaseGroupServiceListProjectsResponse();
+    message.projects = object.projects?.map((e) => ProjectInfo.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectInfo(): ProjectInfo {
+  return { id: "", name: "", description: "", role: 0, latestVersionId: undefined, createdAt: undefined };
+}
+
+export const ProjectInfo = {
+  encode(message: ProjectInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.role !== 0) {
+      writer.uint32(32).int32(message.role);
+    }
+    if (message.latestVersionId !== undefined) {
+      writer.uint32(42).string(message.latestVersionId);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectInfo {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.latestVersionId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectInfo {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      role: isSet(object.role) ? projectMemberRoleFromJSON(object.role) : 0,
+      latestVersionId: isSet(object.latestVersionId) ? String(object.latestVersionId) : undefined,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectInfo): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
+    message.role !== undefined && (obj.role = projectMemberRoleToJSON(message.role));
+    message.latestVersionId !== undefined && (obj.latestVersionId = message.latestVersionId);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectInfo>, I>>(base?: I): ProjectInfo {
+    return ProjectInfo.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectInfo>, I>>(object: I): ProjectInfo {
+    const message = createBaseProjectInfo();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    message.role = object.role ?? 0;
+    message.latestVersionId = object.latestVersionId ?? undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    return message;
+  },
+};
+
 /** GroupService provides operations for managing groups within the system */
 export interface GroupService {
   /** Create creates a new group with the specified name and description */
@@ -2014,6 +2337,11 @@ export interface GroupService {
     request: DeepPartial<GroupServiceListPendingInvitationsRequest>,
     metadata?: grpc.Metadata,
   ): Promise<GroupServiceListPendingInvitationsResponse>;
+  /** ListProjects retrieves a paginated list of projects the group is a member of */
+  ListProjects(
+    request: DeepPartial<GroupServiceListProjectsRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GroupServiceListProjectsResponse>;
 }
 
 export class GroupServiceClientImpl implements GroupService {
@@ -2031,6 +2359,7 @@ export class GroupServiceClientImpl implements GroupService {
     this.RemoveMember = this.RemoveMember.bind(this);
     this.UpdateMemberMaintainerStatus = this.UpdateMemberMaintainerStatus.bind(this);
     this.ListPendingInvitations = this.ListPendingInvitations.bind(this);
+    this.ListProjects = this.ListProjects.bind(this);
   }
 
   Create(
@@ -2103,6 +2432,13 @@ export class GroupServiceClientImpl implements GroupService {
       GroupServiceListPendingInvitationsRequest.fromPartial(request),
       metadata,
     );
+  }
+
+  ListProjects(
+    request: DeepPartial<GroupServiceListProjectsRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<GroupServiceListProjectsResponse> {
+    return this.rpc.unary(GroupServiceListProjectsDesc, GroupServiceListProjectsRequest.fromPartial(request), metadata);
   }
 }
 
@@ -2328,6 +2664,29 @@ export const GroupServiceListPendingInvitationsDesc: UnaryMethodDefinitionish = 
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = GroupServiceListPendingInvitationsResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const GroupServiceListProjectsDesc: UnaryMethodDefinitionish = {
+  methodName: "ListProjects",
+  service: GroupServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GroupServiceListProjectsRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GroupServiceListProjectsResponse.decode(data);
       return {
         ...value,
         toObject() {

@@ -53,6 +53,7 @@ const (
 	ResourceAPIToken                = "api_token"
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
+	ResourceGroupProjects           = "group_projects"
 
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
@@ -154,6 +155,8 @@ var (
 	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
 	PolicyGroupRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
 	PolicyGroupUpdateMemberships = &Policy{ResourceGroupMembership, ActionUpdate}
+	// Group-Projects
+	PolicyGroupListProjects = &Policy{ResourceGroupProjects, ActionList}
 	// API Token
 	PolicyAPITokenList   = &Policy{ResourceAPIToken, ActionList}
 	PolicyAPITokenCreate = &Policy{ResourceAPIToken, ActionCreate}
@@ -253,6 +256,9 @@ var RolesMap = map[Role][]*Policy{
 		// Groups
 		PolicyGroupList,
 		PolicyGroupRead,
+
+		// Group Projects
+		PolicyGroupListProjects,
 
 		// Group Memberships
 		PolicyGroupListMemberships,
@@ -393,7 +399,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/List": {PolicyGroupList},
 	"/controlplane.v1.GroupService/Get":  {PolicyGroupRead},
 	// Group Memberships
-	"/controlplane.v1.GroupService/ListMembers": {PolicyGroupListMemberships},
+	"/controlplane.v1.GroupService/ListMembers":  {PolicyGroupListMemberships},
+	"/controlplane.v1.GroupService/ListProjects": {PolicyGroupListProjects},
 	// For the following endpoints, we rely on the service layer to check the permissions
 	// That's why we let everyone access them (empty policies)
 	"/controlplane.v1.GroupService/AddMember":                    {},

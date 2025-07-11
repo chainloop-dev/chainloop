@@ -8,6 +8,10 @@
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the project membership was created"
     },
+    "^(latest_project_version_id)$": {
+      "description": "The ID of latest project version this member is associated with",
+      "type": "string"
+    },
     "^(updated_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the project membership was last modified"
@@ -21,6 +25,10 @@
     "group": {
       "$ref": "controlplane.v1.Group.jsonschema.json",
       "description": "The group who is a member of the project"
+    },
+    "latestProjectVersionId": {
+      "description": "The ID of latest project version this member is associated with",
+      "type": "string"
     },
     "role": {
       "anyOf": [
