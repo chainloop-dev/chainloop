@@ -277,6 +277,215 @@ func (s *membershipIntegrationTestSuite) TestCreateMembership() {
 	})
 }
 
+func (s *membershipIntegrationTestSuite) TestDeleteCleanup() {
+	ctx := context.Background()
+
+	// Create users
+	user, err := s.User.UpsertByEmail(ctx, "cleanup-test@example.com", nil)
+	s.NoError(err)
+	adminUser, err := s.User.UpsertByEmail(ctx, "admin-user@example.com", nil)
+	s.NoError(err)
+
+	// Create an organization
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	// Add users to organization with different roles
+	membershipUser, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithCurrentMembership())
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, adminUser.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
+	s.NoError(err)
+
+	// Create a project in the organization
+	project, err := s.Project.Create(ctx, org.ID, "test-cleanup-project")
+	s.NoError(err)
+
+	// Add user to the project
+	projectRef := &biz.IdentityReference{ID: &project.ID}
+	projectOpts := &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		UserEmail:        "cleanup-test@example.com",
+		RequesterID:      uuid.MustParse(adminUser.ID),
+		Role:             authz.RoleProjectViewer,
+	}
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(org.ID), projectOpts)
+	s.NoError(err)
+
+	// Create a group in the organization
+	userUUID := uuid.MustParse(user.ID)
+	group, err := s.Group.Create(ctx, uuid.MustParse(org.ID), "test-cleanup-group", "Group for cleanup testing", &userUUID)
+	s.NoError(err)
+
+	// Create another user to add to the group
+	otherUser, err := s.User.UpsertByEmail(ctx, "other-member@example.com", nil)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, otherUser.ID)
+	s.NoError(err)
+
+	// Add other user to the group
+	groupRef := &biz.IdentityReference{ID: &group.ID}
+	groupOpts := &biz.AddMemberToGroupOpts{
+		IdentityReference: groupRef,
+		UserEmail:         "other-member@example.com",
+		RequesterID:       uuid.MustParse(user.ID),
+		Maintainer:        false,
+	}
+	_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(org.ID), groupOpts)
+	s.NoError(err)
+
+	// Verify initial state
+	s.Run("verify initial state", func() {
+		// Verify user is in the project
+		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(org.ID), projectRef, nil)
+		s.NoError(err)
+		s.Equal(1, count)
+		s.Equal(1, len(members))
+		s.Equal(user.ID, members[0].User.ID)
+
+		// Verify user is in the group as maintainer
+		groupMembers, groupCount, err := s.Group.ListMembers(ctx, uuid.MustParse(org.ID), &biz.ListMembersOpts{
+			IdentityReference: groupRef,
+		}, nil)
+		s.NoError(err)
+		s.Equal(2, groupCount) // User + otherUser
+		userFound := false
+		for _, member := range groupMembers {
+			if member.User.ID == user.ID {
+				s.True(member.Maintainer)
+				userFound = true
+				break
+			}
+		}
+		s.True(userFound, "User should be found in the group as a maintainer")
+	})
+
+	// Delete the user's membership
+	s.Run("delete user membership", func() {
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, membershipUser.ID.String())
+		s.NoError(err)
+
+		// Check that the organization still exists (since there's still admin user)
+		_, err = s.Organization.FindByID(ctx, org.ID)
+		s.NoError(err)
+
+		// Verify user is removed from project
+		projectMembers, projectCount, err := s.Project.ListMembers(ctx, uuid.MustParse(org.ID), projectRef, nil)
+		s.NoError(err)
+		s.Equal(0, projectCount)
+		s.Equal(0, len(projectMembers))
+
+		// Verify user is removed from group but other member remains
+		groupMembers, groupCount, err := s.Group.ListMembers(ctx, uuid.MustParse(org.ID), &biz.ListMembersOpts{
+			IdentityReference: groupRef,
+		}, nil)
+		s.NoError(err)
+		s.Equal(1, groupCount) // Only otherUser should remain
+		s.Equal(1, len(groupMembers))
+		s.Equal(otherUser.ID, groupMembers[0].User.ID)
+		s.False(groupMembers[0].Maintainer)
+
+		// Verify group membership has been decremented
+		updatedGroup, err := s.Group.Get(ctx, uuid.MustParse(org.ID), &biz.IdentityReference{ID: &group.ID})
+		s.NoError(err)
+		s.Equal(1, updatedGroup.MemberCount)
+	})
+}
+
+func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
+	ctx := context.Background()
+
+	// Create a user
+	user, err := s.User.UpsertByEmail(ctx, "groups-test@example.com", nil)
+	s.NoError(err)
+	userUUID := uuid.MustParse(user.ID)
+
+	// Create an organization
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	orgUUID := uuid.MustParse(org.ID)
+
+	// Add user to organization
+	membershipUser, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
+	s.NoError(err)
+
+	// Create multiple groups with the user as maintainer
+	group1, err := s.Group.Create(ctx, orgUUID, "group-1", "First group", &userUUID)
+	s.NoError(err)
+	group2, err := s.Group.Create(ctx, orgUUID, "group-2", "Second group", &userUUID)
+	s.NoError(err)
+
+	// Add the groups to a project
+	pr, err := s.Project.Create(ctx, org.ID, "test-groups-project")
+	s.NoError(err)
+	projectRef := &biz.IdentityReference{ID: &pr.ID}
+
+	// Add group1 to project
+	groupProjectOpts := &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		GroupReference:   &biz.IdentityReference{ID: &group1.ID},
+		RequesterID:      userUUID,
+		Role:             authz.RoleProjectAdmin,
+	}
+	_, err = s.Project.AddMemberToProject(ctx, orgUUID, groupProjectOpts)
+	s.NoError(err)
+
+	// Verify initial state
+	s.Run("verify initial state with groups", func() {
+		// Check user is a maintainer in both groups
+		group1Members, _, err := s.Group.ListMembers(ctx, orgUUID, &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{ID: &group1.ID},
+		}, nil)
+		s.NoError(err)
+		s.Equal(1, len(group1Members))
+		s.Equal(user.ID, group1Members[0].User.ID)
+		s.True(group1Members[0].Maintainer)
+
+		group2Members, _, err := s.Group.ListMembers(ctx, orgUUID, &biz.ListMembersOpts{
+			IdentityReference: &biz.IdentityReference{ID: &group2.ID},
+		}, nil)
+		s.NoError(err)
+		s.Equal(1, len(group2Members))
+		s.Equal(user.ID, group2Members[0].User.ID)
+		s.True(group2Members[0].Maintainer)
+
+		// Check group1 is in the project
+		projectMembers, _, err := s.Project.ListMembers(ctx, orgUUID, projectRef, nil)
+		s.NoError(err)
+		s.Equal(1, len(projectMembers))
+		s.Equal(group1.ID, projectMembers[0].Group.ID)
+	})
+
+	// Delete the user's membership
+	s.Run("delete user membership with groups", func() {
+		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, membershipUser.ID.String())
+		s.NoError(err)
+
+		// The organization should be deleted since this was the only user
+		_, err = s.Organization.FindByID(ctx, org.ID)
+		s.True(biz.IsNotFound(err), "Organization should be deleted")
+
+		// All groups should be soft-deleted
+		_, err = s.Group.Get(ctx, orgUUID, &biz.IdentityReference{ID: &group1.ID})
+		s.True(biz.IsNotFound(err), "Group 1 should be deleted")
+
+		_, err = s.Group.Get(ctx, orgUUID, &biz.IdentityReference{ID: &group2.ID})
+		s.True(biz.IsNotFound(err), "Group 2 should be deleted")
+
+		// The project should be deleted
+		_, err = s.Project.FindProjectByReference(ctx, org.ID, &biz.IdentityReference{ID: projectRef.ID})
+		s.True(biz.IsNotFound(err), "Project should be deleted")
+
+		// Verify group memberships are marked as deleted
+		group1Mem, group1Err := s.Repos.GroupRepo.FindGroupMembershipByGroupAndID(ctx, group1.ID, userUUID)
+		s.True(biz.IsNotFound(group1Err))
+		s.Nil(group1Mem)
+
+		group2Mem, group2Err := s.Repos.GroupRepo.FindGroupMembershipByGroupAndID(ctx, group2.ID, userUUID)
+		s.True(biz.IsNotFound(group2Err))
+		s.Nil(group2Mem)
+	})
+}
+
 // Run the tests
 func TestMembershipUseCase(t *testing.T) {
 	suite.Run(t, new(membershipIntegrationTestSuite))
