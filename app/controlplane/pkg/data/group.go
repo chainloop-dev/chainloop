@@ -578,13 +578,13 @@ func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.
 }
 
 // ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
-func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.ProjectMembership, int, error) {
+func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, visibleProjectIDs []uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.GroupProjectInfo, int, error) {
 	if paginationOpts == nil {
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
 
 	// Check the group exists in the organization
-	_, err := g.data.DB.Group.Query().
+	existingGroup, err := g.data.DB.Group.Query().
 		Where(group.ID(groupID), group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil {
@@ -595,7 +595,6 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 	}
 
 	// Get all memberships where this group is a member and the resource type is a project
-	// Apply pagination directly on the memberships query
 	membershipQuery := g.data.DB.Membership.Query().
 		Where(
 			membership.MemberIDEQ(groupID),
@@ -604,7 +603,12 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 			membership.HasOrganizationWith(organization.IDEQ(orgID)),
 		)
 
-	// Get total count first
+	// If visibleProjectIDs is provided, filter memberships to include only those projects
+	if len(visibleProjectIDs) > 0 {
+		membershipQuery = membershipQuery.Where(membership.ResourceIDIn(visibleProjectIDs...))
+	}
+
+	// Get total count first (after applying visibility filters)
 	count, err := membershipQuery.Count(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count project memberships: %w", err)
@@ -622,11 +626,11 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 
 	// If no memberships found, return empty result
 	if len(memberships) == 0 {
-		return []*biz.ProjectMembership{}, count, nil
+		return []*biz.GroupProjectInfo{}, count, nil
 	}
 
 	// Extract project IDs from memberships
-	var projectIDs []uuid.UUID
+	projectIDs := make([]uuid.UUID, 0, len(memberships))
 	// Create a map to store role by project ID for later use
 	projectRoles := make(map[uuid.UUID]authz.Role)
 	for _, m := range memberships {
@@ -649,33 +653,27 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 		return nil, 0, fmt.Errorf("failed to fetch projects: %w", err)
 	}
 
-	// Get the group for membership
-	existingGroup, err := g.data.DB.Group.Query().
-		Where(group.ID(groupID), group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
-		Only(ctx)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to fetch group: %w", err)
-	}
-
-	// Convert to business layer project memberships
-	projectMemberships := make([]*biz.ProjectMembership, 0, len(entProjects))
+	// Convert to business layer project info
+	projectInfos := make([]*biz.GroupProjectInfo, 0, len(entProjects))
 	for _, p := range entProjects {
-		projectMembership := &biz.ProjectMembership{
-			Group:          entGroupToBiz(existingGroup),
-			MembershipType: authz.MembershipTypeGroup,
-			Role:           projectRoles[p.ID], // Use the role we stored earlier
-			CreatedAt:      toTimePtr(p.CreatedAt),
+		projectInfo := &biz.GroupProjectInfo{
+			ID:          p.ID,
+			Name:        p.Name,
+			Description: p.Description,
+			Role:        projectRoles[p.ID], // Use the role we stored earlier
+			Group:       entGroupToBiz(existingGroup),
+			CreatedAt:   toTimePtr(p.CreatedAt),
 		}
 
 		// If the project has versions, include the latest version ID
 		if len(p.Edges.Versions) > 0 {
-			projectMembership.LatestProjectVersionID = &p.Edges.Versions[0].ID
+			projectInfo.LatestVersionID = &p.Edges.Versions[0].ID
 		}
 
-		projectMemberships = append(projectMemberships, projectMembership)
+		projectInfos = append(projectInfos, projectInfo)
 	}
 
-	return projectMemberships, count, nil
+	return projectInfos, count, nil
 }
 
 // entGroupToBiz converts an ent.Group to a biz.Group.

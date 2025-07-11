@@ -5,7 +5,7 @@ import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import { User } from "./response_messages";
-import { Group, IdentityReference, ProjectMember } from "./shared_message";
+import { Group, IdentityReference } from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -204,9 +204,27 @@ export interface GroupServiceListProjectsRequest {
 /** GroupServiceListProjectsResponse contains a paginated list of projects for a group */
 export interface GroupServiceListProjectsResponse {
   /** List of projects memberships matching the request criteria */
-  projectMembers: ProjectMember[];
+  projects: ProjectInfo[];
   /** Pagination information for the response */
   pagination?: OffsetPaginationResponse;
+}
+
+/** ProjectInfo represents detailed information about a project that a group is a member of */
+export interface ProjectInfo {
+  /** Unique identifier of the project */
+  id: string;
+  /** Name of the project */
+  name: string;
+  /** Description of the project */
+  description: string;
+  /** Role of the group in the project (admin or viewer) */
+  role: string;
+  /** The latest version ID of the project, if available */
+  latestVersionId?:
+    | string
+    | undefined;
+  /** Timestamp when the project was created */
+  createdAt?: Date;
 }
 
 function createBaseGroupServiceCreateRequest(): GroupServiceCreateRequest {
@@ -1902,13 +1920,13 @@ export const GroupServiceListProjectsRequest = {
 };
 
 function createBaseGroupServiceListProjectsResponse(): GroupServiceListProjectsResponse {
-  return { projectMembers: [], pagination: undefined };
+  return { projects: [], pagination: undefined };
 }
 
 export const GroupServiceListProjectsResponse = {
   encode(message: GroupServiceListProjectsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.projectMembers) {
-      ProjectMember.encode(v!, writer.uint32(10).fork()).ldelim();
+    for (const v of message.projects) {
+      ProjectInfo.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
       OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
@@ -1928,7 +1946,7 @@ export const GroupServiceListProjectsResponse = {
             break;
           }
 
-          message.projectMembers.push(ProjectMember.decode(reader, reader.uint32()));
+          message.projects.push(ProjectInfo.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -1948,19 +1966,17 @@ export const GroupServiceListProjectsResponse = {
 
   fromJSON(object: any): GroupServiceListProjectsResponse {
     return {
-      projectMembers: Array.isArray(object?.projectMembers)
-        ? object.projectMembers.map((e: any) => ProjectMember.fromJSON(e))
-        : [],
+      projects: Array.isArray(object?.projects) ? object.projects.map((e: any) => ProjectInfo.fromJSON(e)) : [],
       pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
     };
   },
 
   toJSON(message: GroupServiceListProjectsResponse): unknown {
     const obj: any = {};
-    if (message.projectMembers) {
-      obj.projectMembers = message.projectMembers.map((e) => e ? ProjectMember.toJSON(e) : undefined);
+    if (message.projects) {
+      obj.projects = message.projects.map((e) => e ? ProjectInfo.toJSON(e) : undefined);
     } else {
-      obj.projectMembers = [];
+      obj.projects = [];
     }
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
@@ -1977,10 +1993,133 @@ export const GroupServiceListProjectsResponse = {
     object: I,
   ): GroupServiceListProjectsResponse {
     const message = createBaseGroupServiceListProjectsResponse();
-    message.projectMembers = object.projectMembers?.map((e) => ProjectMember.fromPartial(e)) || [];
+    message.projects = object.projects?.map((e) => ProjectInfo.fromPartial(e)) || [];
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? OffsetPaginationResponse.fromPartial(object.pagination)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectInfo(): ProjectInfo {
+  return { id: "", name: "", description: "", role: "", latestVersionId: undefined, createdAt: undefined };
+}
+
+export const ProjectInfo = {
+  encode(message: ProjectInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.role !== "") {
+      writer.uint32(34).string(message.role);
+    }
+    if (message.latestVersionId !== undefined) {
+      writer.uint32(42).string(message.latestVersionId);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectInfo {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.latestVersionId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectInfo {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      role: isSet(object.role) ? String(object.role) : "",
+      latestVersionId: isSet(object.latestVersionId) ? String(object.latestVersionId) : undefined,
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectInfo): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
+    message.role !== undefined && (obj.role = message.role);
+    message.latestVersionId !== undefined && (obj.latestVersionId = message.latestVersionId);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectInfo>, I>>(base?: I): ProjectInfo {
+    return ProjectInfo.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectInfo>, I>>(object: I): ProjectInfo {
+    const message = createBaseProjectInfo();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    message.role = object.role ?? "";
+    message.latestVersionId = object.latestVersionId ?? undefined;
+    message.createdAt = object.createdAt ?? undefined;
     return message;
   },
 };
