@@ -64,6 +64,7 @@ type APITokenRepo interface {
 	UpdateLastUsedAt(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 	FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
 }
 
 type APITokenUseCase struct {
@@ -400,6 +401,15 @@ func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, 
 	}
 
 	return t, nil
+}
+
+func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*APIToken, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	return uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name)
 }
 
 func NewAPITokenSyncerUseCase(tokenUC *APITokenUseCase) *APITokenSyncerUseCase {

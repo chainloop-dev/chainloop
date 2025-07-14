@@ -84,6 +84,19 @@ func (r *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uu
 	return entAPITokenToBiz(token), nil
 }
 
+func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.APIToken, error) {
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.Name(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("API token")
+		}
+
+		return nil, err
+	}
+
+	return entAPITokenToBiz(token), nil
+}
+
 func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.APITokenListFilters) ([]*biz.APIToken, error) {
 	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
