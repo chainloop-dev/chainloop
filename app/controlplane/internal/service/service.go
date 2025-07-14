@@ -193,7 +193,6 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 			// Org Viewers cannot become Project Admins. Skipping this item in case it's inherited from a group
 			// nolint:staticcheck
 			!(orgRole == string(authz.RoleViewer) && rm.Role == authz.RoleProjectAdmin) {
-
 			pass, err := s.enforcer.Enforce(string(rm.Role), op)
 			if err != nil {
 				return handleUseCaseErr(err, s.log)
