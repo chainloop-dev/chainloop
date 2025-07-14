@@ -188,7 +188,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 
 	// iterate through all resource memberships and find any that matches
 	for _, rm := range m.Resources {
-			pass, err := s.enforcer.Enforce(string(rm.Role), op) {
+			pass, err := s.enforcer.Enforce(string(rm.Role), op)
 			if err != nil {
 				return handleUseCaseErr(err, s.log)
 			}
