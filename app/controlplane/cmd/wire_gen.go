@@ -340,7 +340,7 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 }
 
 func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC)}
+	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC), service.WithGroupUseCase(gUC)}
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {
