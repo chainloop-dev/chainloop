@@ -188,14 +188,16 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 
 	// iterate through all resource memberships and find any that matches
 	for _, rm := range m.Resources {
-		pass, err := s.enforcer.Enforce(string(rm.Role), op)
-		if err != nil {
-			return handleUseCaseErr(err, s.log)
-		}
+		if rm.ResourceType == resourceType && rm.ResourceID == resourceID {
+			pass, err := s.enforcer.Enforce(string(rm.Role), op)
+			if err != nil {
+				return handleUseCaseErr(err, s.log)
+			}
 
-		if pass {
-			s.log.Debugw("msg", "authorized using user membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "user_id", m.UserID)
-			return nil
+			if pass {
+				s.log.Debugw("msg", "authorized using user membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "user_id", m.UserID)
+				return nil
+			}
 		}
 	}
 
