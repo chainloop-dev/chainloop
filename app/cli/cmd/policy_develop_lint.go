@@ -34,7 +34,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 		Long: `Performs comprehensive validation of:
 - *.yaml files (schema validation)
 - *.rego (formatting, linting, structure)`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewPolicyLint(actionOpts)
 			if err != nil {
 				return fmt.Errorf("failed to initialize linter: %w", err)
