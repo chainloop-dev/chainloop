@@ -16,10 +16,9 @@
 package action
 
 import (
-	"context"
 	"fmt"
 
-	policy "github.com/chainloop-dev/chainloop/app/cli/internal/policy/init"
+	policy "github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
 type PolicyInitOpts struct {
@@ -27,6 +26,7 @@ type PolicyInitOpts struct {
 	Embedded    bool
 	Name        string
 	Description string
+	Directory   string
 }
 
 type PolicyInit struct {
@@ -41,9 +41,9 @@ func NewPolicyInit(opts *PolicyInitOpts, actionOpts *ActionsOpts) (*PolicyInit, 
 	}, nil
 }
 
-func (action *PolicyInit) Run(_ context.Context, dir string) error {
+func (action *PolicyInit) Run() error {
 	initOpts := &policy.InitOptions{
-		Dir:         dir,
+		Directory:   action.opts.Directory,
 		Embedded:    action.opts.Embedded,
 		Force:       action.opts.Force,
 		Name:        action.opts.Name,

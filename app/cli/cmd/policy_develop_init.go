@@ -28,10 +28,11 @@ func newPolicyDevelopInitCmd() *cobra.Command {
 		embedded    bool
 		name        string
 		description string
+		directory   string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "init [directory]",
+		Use:   "init",
 		Short: "Initialize a new policy",
 		Long: `Initialize a new policy by creating template policy files in the specified directory.
 By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
@@ -39,20 +40,18 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
   # Initialize in current directory with separate files
   chainloop policy develop init
 
-  # Initialize in specific directory with embedded format
-  chainloop policy develop init ./policies --embedded`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Default to current directory if not specified
-			dir := "."
-			if len(args) > 0 {
-				dir = args[0]
+  # Initialize in specific directory with embedded format and policy name
+  chainloop policy develop init --directory ./policies --embedded --name mypolicy`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if directory == "" {
+				directory = "."
 			}
-
 			opts := &action.PolicyInitOpts{
 				Force:       force,
 				Embedded:    embedded,
 				Name:        name,
 				Description: description,
+				Directory:   directory,
 			}
 
 			policyInit, err := action.NewPolicyInit(opts, actionOpts)
@@ -60,7 +59,7 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
 				return fmt.Errorf("failed to initialize policy: %w", err)
 			}
 
-			if err := policyInit.Run(cmd.Context(), dir); err != nil {
+			if err := policyInit.Run(); err != nil {
 				return newGracefulError(err)
 			}
 
@@ -74,6 +73,6 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
 	cmd.Flags().BoolVar(&embedded, "embedded", false, "initialize an embedded policy (single YAML file)")
 	cmd.Flags().StringVar(&name, "name", "", "name of the policy")
 	cmd.Flags().StringVar(&description, "description", "", "description of the policy")
-
+	cmd.Flags().StringVar(&directory, "directory", "", "directory for policy")
 	return cmd
 }

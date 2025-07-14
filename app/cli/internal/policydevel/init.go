@@ -50,7 +50,7 @@ type Content struct {
 }
 
 type InitOptions struct {
-	Dir         string
+	Directory   string
 	Embedded    bool
 	Force       bool
 	Name        string
@@ -73,7 +73,7 @@ func Initialize(opts *InitOptions) error {
 		files[fileNameBase+".rego"] = content.Rego
 	}
 
-	return writeFiles(opts.Dir, files, opts.Force)
+	return writeFiles(opts.Directory, files, opts.Force)
 }
 
 func getPolicyName(name string) string {
