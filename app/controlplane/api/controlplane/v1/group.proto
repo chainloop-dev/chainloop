@@ -267,6 +267,6 @@ message ProjectInfo {
   ProjectMemberRole role = 4;
   // The latest version ID of the project, if available
   optional string latest_version_id = 5;
-  // Timestamp when the project was created
+  // Timestamp when the membership was created
   google.protobuf.Timestamp created_at = 6;
 }

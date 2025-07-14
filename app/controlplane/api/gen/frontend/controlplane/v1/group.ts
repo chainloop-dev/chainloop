@@ -246,7 +246,7 @@ export interface ProjectInfo {
   latestVersionId?:
     | string
     | undefined;
-  /** Timestamp when the project was created */
+  /** Timestamp when the membership was created */
   createdAt?: Date;
 }
 

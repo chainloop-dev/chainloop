@@ -6,7 +6,7 @@
   "patternProperties": {
     "^(createdAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json",
-      "description": "Timestamp when the project was created"
+      "description": "Timestamp when the membership was created"
     },
     "^(latestVersionId)$": {
       "description": "The latest version ID of the project, if available",
@@ -16,7 +16,7 @@
   "properties": {
     "created_at": {
       "$ref": "google.protobuf.Timestamp.schema.json",
-      "description": "Timestamp when the project was created"
+      "description": "Timestamp when the membership was created"
     },
     "description": {
       "description": "Description of the project",

@@ -1524,7 +1524,7 @@ type ProjectInfo struct {
 	Role ProjectMemberRole `protobuf:"varint,4,opt,name=role,proto3,enum=controlplane.v1.ProjectMemberRole" json:"role,omitempty"`
 	// The latest version ID of the project, if available
 	LatestVersionId *string `protobuf:"bytes,5,opt,name=latest_version_id,json=latestVersionId,proto3,oneof" json:"latest_version_id,omitempty"`
-	// Timestamp when the project was created
+	// Timestamp when the membership was created
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 }
 
