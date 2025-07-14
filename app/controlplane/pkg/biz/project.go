@@ -319,7 +319,7 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 	}
 
 	// Org viewers cannot be added as project admin, since they cannot perform updates on resources
-	if opts.Role == authz.RoleProjectAdmin && userMembership.Role != authz.RoleViewer {
+	if opts.Role == authz.RoleProjectAdmin && userMembership.Role == authz.RoleViewer {
 		return nil, NewErrValidationStr("users with org role Org Viewer cannot be Project Admins")
 	}
 
