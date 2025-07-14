@@ -193,22 +193,33 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	// for example admin in project1, then apply RBAC enforcement
 	m := entities.CurrentMembership(ctx)
 
-	// iterate through all resource memberships and find any that matches
+	var matchingResources []*entities.ResourceMembership
+	// First, collect all memberships that match the requested resource type and ID
 	for _, rm := range m.Resources {
 		if rm.ResourceType == resourceType && rm.ResourceID == resourceID {
-			pass, err := s.enforcer.Enforce(string(rm.Role), op)
-			if err != nil {
-				return handleUseCaseErr(err, s.log)
-			}
-
-			if pass {
-				s.log.Debugw("msg", "authorized using user membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "user_id", m.UserID)
-				return nil
-			}
+			matchingResources = append(matchingResources, rm)
 		}
 	}
 
 	var defaultMessage = fmt.Sprintf("you do not have permissions to access to the %s associated with this resource", resourceType)
+	// If no matching resources were found, return forbidden error
+	if len(matchingResources) == 0 {
+		return errors.Forbidden("forbidden", defaultMessage)
+	}
+
+	// Try to enforce the policy with each matching role
+	// If any role passes, authorize the request
+	for _, rm := range matchingResources {
+		pass, err := s.enforcer.Enforce(string(rm.Role), op)
+		if err != nil {
+			return handleUseCaseErr(err, s.log)
+		}
+
+		if pass {
+			s.log.Debugw("msg", "authorized using user membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "user_id", m.UserID)
+			return nil
+		}
+	}
 
 	// If none of the roles pass, return forbidden error
 	return errors.Forbidden("forbidden", defaultMessage)
