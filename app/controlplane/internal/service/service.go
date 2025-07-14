@@ -184,16 +184,11 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	// 2 - We are a user
 	// find the resource membership that matches the resource type and ID
 	// for example admin in project1, then apply RBAC enforcement
-	orgRole := usercontext.CurrentAuthzSubject(ctx)
 	m := entities.CurrentMembership(ctx)
 
 	// iterate through all resource memberships and find any that matches
 	for _, rm := range m.Resources {
-		if rm.ResourceType == resourceType && rm.ResourceID == resourceID &&
-			// Org Viewers cannot become Project Admins. Skipping this item in case it's inherited from a group
-			// nolint:staticcheck
-			!(orgRole == string(authz.RoleViewer) && rm.Role == authz.RoleProjectAdmin) {
-			pass, err := s.enforcer.Enforce(string(rm.Role), op)
+			pass, err := s.enforcer.Enforce(string(rm.Role), op) {
 			if err != nil {
 				return handleUseCaseErr(err, s.log)
 			}
