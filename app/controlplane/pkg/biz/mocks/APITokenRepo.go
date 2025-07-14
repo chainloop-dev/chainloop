@@ -109,6 +109,36 @@ func (_m *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id u
 	return r0, r1
 }
 
+// FindByNameInOrg provides a mock function with given fields: ctx, orgID, name
+func (_m *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.APIToken, error) {
+	ret := _m.Called(ctx, orgID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByNameInOrg")
+	}
+
+	var r0 *biz.APIToken
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*biz.APIToken, error)); ok {
+		return rf(ctx, orgID, name)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *biz.APIToken); ok {
+		r0 = rf(ctx, orgID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*biz.APIToken)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = rf(ctx, orgID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: ctx, orgID, filters
 func (_m *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.APITokenListFilters) ([]*biz.APIToken, error) {
 	ret := _m.Called(ctx, orgID, filters)
