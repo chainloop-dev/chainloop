@@ -49,7 +49,8 @@ type GroupBase struct {
 }
 
 func (g *GroupBase) RequiresActor() bool {
-	return true
+	// Groups might be created automatically by the system, so we don't require an actor
+	return false
 }
 
 func (g *GroupBase) TargetType() auditor.TargetType {
