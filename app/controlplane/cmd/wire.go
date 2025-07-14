@@ -100,7 +100,6 @@ func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase
 		service.WithLogger(l),
 		service.WithEnforcer(enforcer),
 		service.WithProjectUseCase(pUC),
-		service.WithGroupUseCase(gUC),
 	}
 }
 

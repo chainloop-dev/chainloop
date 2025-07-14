@@ -318,6 +318,11 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 		return nil, fmt.Errorf("failed to find user by email: %w", err)
 	}
 
+	// Org viewers cannot be added as project admin, since they cannot perform updates on resources
+	if opts.Role == authz.RoleProjectAdmin && userMembership.Role != authz.RoleViewer {
+		return nil, NewErrValidationStr("users with org role Org Viewer cannot be Project Admins")
+	}
+
 	// If the user is not in the organization, handle invitation flow
 	if userMembership == nil {
 		return uc.handleNonExistingUser(ctx, orgID, projectID, opts)
