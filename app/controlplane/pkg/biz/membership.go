@@ -346,6 +346,7 @@ func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, user
 	for _, um := range userMemberships {
 		if um.ResourceType == authz.ResourceTypeOrganization && um.Role == authz.RoleViewer {
 			for _, gm := range groupMemberships {
+				// if user is org viewer and project admin through a group, skip it.
 				if gm.Role == authz.RoleProjectAdmin {
 					continue
 				}
