@@ -1,4 +1,4 @@
-h1:WasPyGuTE05lx75h+qqmoAknSDJPoN50E8hqbhNFVQs=
+h1:XoiYtAbqVAQdLw1aRpVIJu6sqZPWEZR3WuocvtoCi2Y=
 20230706165452_init-schema.sql h1:VvqbNFEQnCvUVyj2iDYVQQxDM0+sSXqocpt/5H64k8M=
 20230710111950-cas-backend.sql h1:A8iBuSzZIEbdsv9ipBtscZQuaBp3V5/VMw7eZH6GX+g=
 20230712094107-cas-backends-workflow-runs.sql h1:a5rzxpVGyd56nLRSsKrmCFc9sebg65RWzLghKHh5xvI=
@@ -97,3 +97,4 @@ h1:WasPyGuTE05lx75h+qqmoAknSDJPoN50E8hqbhNFVQs=
 20250704090359.sql h1:a0ksfjy2dtzviJL16HbC4eT1xBxy2qFH5mNFOpYlUrA=
 20250710105502.sql h1:EA6Ta1qsZcrNoOrO5zUNgiweHDtjl0HUlobukRuruko=
 20250714172256.sql h1:S0ImNk0sMjWVVZvS6VVHn2h96/nx8GOf4aVxELbJAcg=
+20250715100956.sql h1:8gZbbUts4ZcQRqhg/ZmZoIC5ScoonGDKaxJcvaglkoo=

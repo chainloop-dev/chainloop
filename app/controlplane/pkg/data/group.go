@@ -228,9 +228,6 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 			SetDescription(opts.Description).
 			SetOrganizationID(orgID)
 
-		// Set initial member count to 0, we'll update it after transaction
-		builder = builder.SetMemberCount(0)
-
 		// Add member if userID is provided
 		if opts.UserID != nil {
 			builder = builder.AddMemberIDs(*opts.UserID)
