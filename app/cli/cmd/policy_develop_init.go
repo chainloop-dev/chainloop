@@ -42,7 +42,7 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
 
   # Initialize in specific directory with embedded format and policy name
   chainloop policy develop init --directory ./policies --embedded --name mypolicy`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if directory == "" {
 				directory = "."
 			}
