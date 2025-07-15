@@ -769,6 +769,7 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 	// Find the user by reference or email
 	var userUUID uuid.UUID
 	var userEmail string
+	var userMembership *Membership
 
 	// If UserReference is provided, use it to resolve the user ID
 	if opts.UserReference != nil && (opts.UserReference.ID != nil || opts.UserReference.Name != nil) {
@@ -776,17 +777,17 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 		if opts.UserReference.ID != nil {
 			userUUID = *opts.UserReference.ID
 			// Look up the user to verify they exist and get their email
-			user, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, userUUID)
+			userMembership, err = uc.membershipRepo.FindByOrgAndUser(ctx, orgID, userUUID)
 			if err != nil {
 				return fmt.Errorf("failed to find user by ID: %w", err)
 			}
-			if user == nil {
+			if userMembership == nil {
 				return NewErrNotFound("user")
 			}
-			userEmail = user.User.Email
+			userEmail = userMembership.User.Email
 		} else if opts.UserReference.Name != nil {
 			// If name (email) is provided, look up the user
-			userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, *opts.UserReference.Name)
+			userMembership, err = uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, *opts.UserReference.Name)
 			if err != nil && !IsNotFound(err) {
 				return fmt.Errorf("failed to find user by email: %w", err)
 			}
@@ -798,7 +799,7 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 		}
 	} else {
 		// Fall back to using UserEmail
-		userMembership, err := uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, *opts.UserReference.Name)
+		userMembership, err = uc.membershipRepo.FindByOrgIDAndUserEmail(ctx, orgID, *opts.UserReference.Name)
 		if err != nil && !IsNotFound(err) {
 			return fmt.Errorf("failed to find user by email: %w", err)
 		}
@@ -807,6 +808,11 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 		}
 		userUUID = uuid.MustParse(userMembership.User.ID)
 		userEmail = *opts.UserReference.Name
+	}
+
+	// illegal combination: org viewers cannot become maintainers
+	if userMembership != nil && userMembership.Role == authz.RoleViewer && opts.IsMaintainer {
+		return NewErrValidationStr("org viewers cannot become group maintainers")
 	}
 
 	// Check if the user is a member of the group
