@@ -2729,6 +2729,7 @@ Options inherited from parent commands
 ### chainloop policy develop
 
 Tools for policy development
+Refer to https://docs.chainloop.dev/guides/custom-policies
 
 Options
 
@@ -2797,7 +2798,7 @@ Initialize a new policy by creating template policy files in the specified direc
 By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.
 
 ```
-chainloop policy develop init [directory] [flags]
+chainloop policy develop init [flags]
 ```
 
 Examples
@@ -2807,14 +2808,15 @@ Examples
 Initialize in current directory with separate files
 chainloop policy develop init
 
-Initialize in specific directory with embedded format
-chainloop policy develop init ./policies --embedded
+Initialize in specific directory with embedded format and policy name
+chainloop policy develop init --directory ./policies --embedded --name mypolicy
 ```
 
 Options
 
 ```
 --description string   description of the policy
+--directory string     directory for policy
 --embedded             initialize an embedded policy (single YAML file)
 -f, --force                overwrite existing files
 -h, --help                 help for init
