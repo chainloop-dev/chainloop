@@ -647,7 +647,7 @@ func (uc *ProjectUseCase) verifyRequesterHasPermissions(ctx context.Context, org
 	}
 
 	// Second check: if requester is an org owner or admin, they have all permissions
-	if currentOrgMembership.Role == authz.RoleOwner || currentOrgMembership.Role == authz.RoleAdmin {
+	if currentOrgMembership.Role.IsAdmin() {
 		return nil
 	}
 

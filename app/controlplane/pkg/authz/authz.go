@@ -24,6 +24,15 @@ type Policy struct {
 
 type Role string
 
+// RBACEnabled returns whether an org-scoped role has RBAC enabled and needs resource-scoped enforcement.
+func (r Role) RBACEnabled() bool {
+	return r == RoleOrgMember || r == RoleOrgContributor
+}
+
+func (r Role) IsAdmin() bool {
+	return r == RoleAdmin || r == RoleOwner
+}
+
 const (
 	// Actions
 
@@ -67,11 +76,13 @@ const (
 
 	// New RBAC roles
 
-	// RoleOrgMember is the role that users get by default when they join an organization.
-	// They cannot see projects until they are invited. However, they are able to create their own projects,
+	// RoleOrgMember cannot see projects until they are invited. However, they are able to create their own projects,
 	// so Casbin rules (role, resource-type, action) are NOT enough to check for permission, since we must check for ownership as well.
 	// That last check will be done at the service level.
 	RoleOrgMember Role = "role:org:member"
+
+	// RoleOrgContributor can work on projects they are invited to with scoped role ProjectAdmin or ProjectViewer, but they cannot create their own projects.
+	RoleOrgContributor Role = "role:org:contributor"
 
 	RoleProjectAdmin  Role = "role:project:admin"
 	RoleProjectViewer Role = "role:project:viewer"
@@ -214,8 +225,32 @@ var RolesMap = map[Role][]*Policy{
 		PolicyOrganizationInvitationsCreate,
 		// + all the policies from the viewer role inherited automatically
 	},
+
 	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at
 	// the organization level will need specific project roles to access their contents
+	RoleOrgContributor: {
+		// Referrer
+		PolicyReferrerRead,
+		// Artifact
+		PolicyArtifactDownload,
+		// Attached integrations
+		PolicyAttachedIntegrationList,
+		// Metrics
+		PolicyOrgMetricsRead,
+		// Workflow Contract
+		PolicyWorkflowContractList,
+		PolicyWorkflowContractRead,
+		// WorkflowRun
+		PolicyWorkflowRunList,
+		PolicyWorkflowRunRead,
+		// Workflow
+		PolicyWorkflowList,
+		PolicyWorkflowRead,
+		// Organization
+		PolicyOrganizationRead,
+	},
+
+	// RoleOrgMember are contributors that can also create their own projects
 	RoleOrgMember: {
 		// Allowed endpoints. RBAC will be applied where needed
 		PolicyWorkflowRead,
@@ -437,6 +472,7 @@ func (Role) Values() (roles []string) {
 
 		// RBAC roles
 		RoleOrgMember,
+		RoleOrgContributor,
 		RoleProjectAdmin,
 		RoleProjectViewer,
 		RoleGroupMaintainer,

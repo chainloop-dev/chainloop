@@ -284,7 +284,7 @@ func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Cont
 	}
 
 	// Allow if user has admin or owner role
-	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
+	if authz.Role(userRole).IsAdmin() {
 		return nil
 	}
 
@@ -381,7 +381,7 @@ func rbacEnabled(ctx context.Context) bool {
 
 	// we have an user
 	currentSubject := usercontext.CurrentAuthzSubject(ctx)
-	return currentSubject == string(authz.RoleOrgMember)
+	return authz.Role(currentSubject).RBACEnabled()
 }
 
 // NOTE: some of these http errors get automatically translated to gRPC status codes

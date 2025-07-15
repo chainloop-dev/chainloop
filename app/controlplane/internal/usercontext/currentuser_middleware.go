@@ -129,7 +129,7 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, membershipUC *biz.M
 					// TODO: move to authz middleware once we add support for all the tokens
 					// for now in that middleware we are not mapping admins nor owners to a specific role
 					// Admins and Owners can perform any operation. Members will need additional RBAC behaviour at service layer
-					if subject != string(authz.RoleAdmin) && subject != string(authz.RoleOwner) && subject != string(authz.RoleOrgMember) {
+					if !authz.Role(subject).IsAdmin() && !authz.Role(subject).RBACEnabled() {
 						return nil, fmt.Errorf("your user doesn't have permissions to perform attestations in this organization, role=%s, orgID=%s", subject, org.ID)
 					}
 
