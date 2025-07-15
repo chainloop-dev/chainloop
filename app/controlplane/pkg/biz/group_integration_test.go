@@ -1531,8 +1531,7 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 			UserReference: &biz.IdentityReference{
 				Name: &nonMemberEmail,
 			},
-			RequesterID:  uuid.MustParse(s.user.ID),
-			IsMaintainer: true,
+			RequesterID: uuid.MustParse(s.user.ID),
 		}
 
 		err = s.Group.UpdateMemberMaintainerStatus(ctx, uuid.MustParse(s.org.ID), updateOpts)
