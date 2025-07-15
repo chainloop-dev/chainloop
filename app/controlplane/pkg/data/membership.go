@@ -34,16 +34,14 @@ import (
 )
 
 type MembershipRepo struct {
-	data      *Data
-	log       *log.Helper
-	groupRepo biz.GroupRepo
+	data *Data
+	log  *log.Helper
 }
 
-func NewMembershipRepo(data *Data, groupRepo biz.GroupRepo, logger log.Logger) biz.MembershipRepo {
+func NewMembershipRepo(data *Data, logger log.Logger) biz.MembershipRepo {
 	return &MembershipRepo{
-		data:      data,
-		groupRepo: groupRepo,
-		log:       log.NewHelper(logger),
+		data: data,
+		log:  log.NewHelper(logger),
 	}
 }
 
@@ -255,10 +253,7 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("failed to get membership: %w", err)
 	}
 
-	// Prepare a slice to hold group IDs that need to be updated
-	var groupIDs []uuid.UUID
-
-	if trErr := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// Delete the specific membership
 		if err := tx.Membership.DeleteOneID(id).Exec(ctx); err != nil {
 			return fmt.Errorf("failed to delete membership: %w", err)
@@ -284,21 +279,6 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 			// Remove the user from all groups in the organization by soft-deleting group memberships
 			now := time.Now()
 
-			// Find all group IDs where this user is a member in this organization
-			groupMemberships, grpMemErr := tx.GroupMembership.Query().Where(
-				groupmembership.UserID(userID),
-				groupmembership.DeletedAtIsNil(),
-				groupmembership.HasGroupWith(group.OrganizationID(orgID)),
-			).Select(groupmembership.FieldGroupID).All(ctx)
-			if grpMemErr != nil {
-				return fmt.Errorf("failed to fetch group IDs for user %s in organization %s: %w", userID, orgID, err)
-			}
-
-			// Collect group IDs to update member counts later
-			for _, gm := range groupMemberships {
-				groupIDs = append(groupIDs, gm.GroupID)
-			}
-
 			// Soft delete all group memberships for this user in this organization
 			if _, err := tx.GroupMembership.Update().Where(
 				groupmembership.UserID(userID),
@@ -307,27 +287,22 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 			).SetDeletedAt(now).SetUpdatedAt(now).Save(ctx); err != nil {
 				return fmt.Errorf("failed to delete group memberships for user %s in organization %s: %w", userID, orgID, err)
 			}
+
+			// Decrement the member count of each group this user was a member of
+			// Only decrement if member_count > 0 to avoid negative values
+			if _, err := tx.Group.Update().
+				Where(
+					group.HasGroupUsersWith(groupmembership.UserID(userID), groupmembership.DeletedAtIsNil()),
+					group.HasOrganizationWith(organization.ID(orgID)),
+					group.MemberCountGT(0),
+				).
+				AddMemberCount(-1).Save(ctx); err != nil {
+				return fmt.Errorf("failed to decrement group member count: %w", err)
+			}
 		}
 
 		return nil
-	}); trErr != nil {
-		return trErr
-	}
-
-	// For each affected group, update the member count based on actual query
-	updated := map[uuid.UUID]struct{}{}
-	for _, gid := range groupIDs {
-		if _, seen := updated[gid]; seen {
-			// deduplicate group IDs
-			continue
-		}
-		updated[gid] = struct{}{}
-		if err := r.groupRepo.UpdateGroupMemberCount(ctx, gid); err != nil {
-			return fmt.Errorf("failed to update group member count for group %s: %w", gid, err)
-		}
-	}
-
-	return nil
+	})
 }
 
 // RBAC methods

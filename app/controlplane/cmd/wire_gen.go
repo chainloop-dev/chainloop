@@ -38,8 +38,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	userRepo := data.NewUserRepo(dataData, logger)
-	groupRepo := data.NewGroupRepo(dataData, logger)
-	membershipRepo := data.NewMembershipRepo(dataData, groupRepo, logger)
+	membershipRepo := data.NewMembershipRepo(dataData, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	providers := loader.LoadProviders(readerWriter)
@@ -129,6 +128,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, logger)
+	groupRepo := data.NewGroupRepo(dataData, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
