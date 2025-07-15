@@ -393,7 +393,7 @@ func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, user
 		if m.ResourceType == authz.ResourceTypeOrganization {
 			userOrgs = append(userOrgs, m.ResourceID)
 			// If the role in the org is member, we must enable RBAC for projects.
-			if m.Role == authz.RoleOrgMember {
+			if m.Role.RBACEnabled() {
 				// get the list of projects in org, and match it with the memberships to build a filter.
 				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
 				projectIDs[m.ResourceID] = getProjectsWithMembershipInOrg(m.ResourceID, memberships)
