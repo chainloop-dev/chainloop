@@ -37,7 +37,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	if err != nil {
 		return nil, nil, err
 	}
-	membershipRepo := data.NewMembershipRepo(dataData, logger)
+	groupRepo := data.NewGroupRepo(dataData, logger)
+	membershipRepo := data.NewMembershipRepo(dataData, groupRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	bootstrap_CASServer := NewCASBackendConfig()
@@ -118,7 +119,6 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
-	groupRepo := data.NewGroupRepo(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
 		cleanup()

@@ -9,5 +9,4 @@ SET "member_count" = (
     FROM "group_memberships" gm
     WHERE gm."group_id" = g."id"
       AND gm."deleted_at" IS NULL
-)
-WHERE 1=1; -- Apply to all groups
+); -- Apply to all groups
