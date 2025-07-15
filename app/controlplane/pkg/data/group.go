@@ -678,7 +678,7 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 			project.DeletedAtIsNil(),
 		).
 		WithVersions(func(query *ent.ProjectVersionQuery) {
-			query.Where(projectversion.Latest(true)).Select(projectversion.FieldID)
+			query.Where(projectversion.Latest(true), projectversion.DeletedAtIsNil()).Select(projectversion.FieldID)
 		}).
 		All(ctx)
 	if err != nil {
