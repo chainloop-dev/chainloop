@@ -340,22 +340,7 @@ func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, user
 		return nil, fmt.Errorf("failed to list group memberships for user: %w", err)
 	}
 
-	// remove incompatible/illegal combinations (org viewer and project admin)
-	combined := make([]*Membership, 0)
-	combined = append(combined, userMemberships...)
-	for _, um := range userMemberships {
-		if um.ResourceType == authz.ResourceTypeOrganization && um.Role == authz.RoleViewer {
-			for _, gm := range groupMemberships {
-				// if user is org viewer and project admin through a group, skip it.
-				if gm.Role == authz.RoleProjectAdmin {
-					continue
-				}
-				combined = append(combined, gm)
-			}
-		}
-	}
-
-	return combined, nil
+	return append(userMemberships, groupMemberships...), nil
 }
 
 // SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
