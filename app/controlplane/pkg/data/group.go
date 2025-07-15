@@ -369,20 +369,68 @@ func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUI
 }
 
 // SoftDelete soft-deletes a group by setting the DeletedAt field to the current time.
+// It also marks all group memberships as deleted and removes any pending invitations related to the group.
 func (g GroupRepo) SoftDelete(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID) error {
-	// Softly delete the group by setting the DeletedAt field
-	_, err := g.data.DB.Group.UpdateOneID(groupID).
-		SetDeletedAt(time.Now()).
-		Where(group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
-		Save(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return biz.NewErrNotFound("group")
-		}
-		return err
-	}
+	return WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
+		now := time.Now()
 
-	return nil
+		// Softly delete the group by setting the DeletedAt field
+		_, err := tx.Group.UpdateOneID(groupID).
+			SetDeletedAt(now).
+			Where(group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
+			Save(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound("group")
+			}
+			return fmt.Errorf("failed to mark group as deleted: %w", err)
+		}
+
+		// Mark as deleted all group memberships for this group
+		_, err = tx.GroupMembership.Update().
+			Where(
+				groupmembership.GroupID(groupID),
+				groupmembership.DeletedAtIsNil(),
+			).
+			SetDeletedAt(now).
+			Save(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("failed to mark group memberships as deleted: %w", err)
+		}
+
+		// Delete all memberships where this group is either the member or the resource
+		_, err = tx.Membership.Delete().Where(
+			membership.HasOrganizationWith(organization.ID(orgID)),
+			membership.Or(
+				membership.MemberID(groupID),
+				membership.And(
+					membership.ResourceID(groupID),
+					membership.ResourceTypeEQ(authz.ResourceTypeGroup),
+				),
+			),
+		).Exec(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("failed to delete group memberships: %w", err)
+		}
+
+		// Mark as deleted any pending invitations for this group
+		_, err = tx.OrgInvitation.Update().
+			Where(
+				orginvitation.OrganizationIDEQ(orgID),
+				orginvitation.DeletedAtIsNil(),
+				orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
+				func(s *sql.Selector) {
+					s.Where(sqljson.ValueEQ(orginvitation.FieldContext, groupID.String(), sqljson.DotPath("group_id_to_join")))
+				},
+			).
+			SetDeletedAt(now).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to cancel pending invitations for deleted group: %w", err)
+		}
+
+		return nil
+	})
 }
 
 // AddMemberToGroup adds a user to a group, creating a new membership if they are not already a member.
