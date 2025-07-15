@@ -91,7 +91,7 @@ func (s *projectMembersIntegrationTestSuite) TestListMembers() {
 	// Add users to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
 	require.NoError(s.T(), err)
 
 	// Add users to the project
@@ -201,7 +201,7 @@ func (s *projectMembersIntegrationTestSuite) TestAddMemberToProject() {
 	// Add users to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
 	require.NoError(s.T(), err)
 
 	projectID := s.project.ID
@@ -421,7 +421,7 @@ func (s *projectMembersIntegrationTestSuite) TestRemoveMemberFromProject() {
 	// Add users to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
 	require.NoError(s.T(), err)
 	_, err = s.Membership.Create(ctx, s.org.ID, user4.ID)
 	require.NoError(s.T(), err)
@@ -649,7 +649,7 @@ func (s *projectAdminPermissionsTestSuite) TestAdminPermissions() {
 	require.NoError(s.T(), err)
 
 	// Add the user to the organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithCurrentMembership(), biz.WithMembershipRole(authz.RoleOrgMember))
 	require.NoError(s.T(), err)
 
 	// Grant project admin role to the user
@@ -770,7 +770,7 @@ func (s *projectPermissionsTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add project admin user to organization as a regular member
-	_, err = s.Membership.Create(ctx, s.org.ID, s.projectAdminUser.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.org.ID, s.projectAdminUser.ID, biz.WithCurrentMembership(), biz.WithMembershipRole(authz.RoleOrgMember))
 	assert.NoError(err)
 
 	// Create a regular user
@@ -778,7 +778,7 @@ func (s *projectPermissionsTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Add regular user to organization as a regular member
-	_, err = s.Membership.Create(ctx, s.org.ID, s.regularUser.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, s.regularUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
 	assert.NoError(err)
 
 	// Create a project for tests
@@ -1340,7 +1340,7 @@ func (s *projectMembersIntegrationTestSuite) TestUpdateUserRoleInProject() {
 	// Add users to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, user1.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
 	require.NoError(s.T(), err)
 
 	projectID := s.project.ID
