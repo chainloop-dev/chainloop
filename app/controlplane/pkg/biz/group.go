@@ -453,6 +453,11 @@ func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, o
 		return nil, fmt.Errorf("failed to find user by email: %w", err)
 	}
 
+	// Illegal. Org viewers cannot become maintainers
+	if userMembership != nil && userMembership.Role == authz.RoleViewer && opts.Maintainer {
+		return nil, NewErrValidationStr("org viewers cannot become group maintainers")
+	}
+
 	// If the user is not found in the organization, send an invitation
 	if userMembership == nil {
 		// We need a requester for creating invitations
