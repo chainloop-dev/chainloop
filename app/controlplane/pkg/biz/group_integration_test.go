@@ -912,7 +912,6 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 			},
 			UserEmail:   "add-user2@example.com",
 			RequesterID: uuid.MustParse(s.user.ID),
-			Maintainer:  true,
 		}
 
 		_, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
@@ -927,6 +926,22 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 		}, nil)
 		s.NoError(err)
 		s.Equal(3, count) // still the original 3 members
+	})
+
+	s.Run("a viewer cannot be maintainer", func() {
+		// Try to add user2 again (who we added in the first test)
+		opts := &biz.AddMemberToGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   "add-user2@example.com",
+			RequesterID: uuid.MustParse(s.user.ID),
+			Maintainer:  true,
+		}
+
+		_, err := s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), opts)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
 	})
 }
 
