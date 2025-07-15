@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -277,7 +279,7 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, o
 		projectMembership.User = entUserToBizUser(u)
 	case authz.MembershipTypeGroup:
 		// Fetch the group details for group memberships
-		g, err := r.data.DB.Group.Get(ctx, memberID)
+		g, err := r.data.DB.Group.Query().Where(group.ID(memberID), group.DeletedAtIsNil()).Only(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return nil, biz.NewErrNotFound("group")
