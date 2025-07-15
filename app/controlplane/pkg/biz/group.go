@@ -55,6 +55,8 @@ type GroupRepo interface {
 	ListPendingInvitationsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error)
 	// ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
 	ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, visibleProjectIDs []uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*GroupProjectInfo, int, error)
+	// UpdateGroupMemberCount updates the member count of a group.
+	UpdateGroupMemberCount(ctx context.Context, groupID uuid.UUID) error
 }
 
 // GroupMembership represents a membership of a user in a group.

@@ -20,13 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
-
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
-
-	"entgo.io/ent/dialect/sql/sqljson"
-
-	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -36,10 +29,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -231,13 +228,12 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 			SetDescription(opts.Description).
 			SetOrganizationID(orgID)
 
-		// Only set the member count and add member if userID is provided
+		// Set initial member count to 0, we'll update it after transaction
+		builder = builder.SetMemberCount(0)
+
+		// Add member if userID is provided
 		if opts.UserID != nil {
-			builder = builder.
-				AddMemberIDs(*opts.UserID).
-				SetMemberCount(1)
-		} else {
-			builder = builder.SetMemberCount(0)
+			builder = builder.AddMemberIDs(*opts.UserID)
 		}
 
 		gr, err := builder.Save(ctx)
@@ -285,6 +281,11 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create group: %w", err)
+	}
+
+	// Update the member count based on actual query
+	if err := g.UpdateGroupMemberCount(ctx, entGroup.ID); err != nil {
+		g.log.Warnf("failed to update member count for newly created group %s: %v", entGroup.ID, err)
 	}
 
 	return g.FindByOrgAndID(ctx, orgID, entGroup.ID)
@@ -474,14 +475,14 @@ func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupI
 			}
 		}
 
-		// Increment the member count of the group
-		if err := tx.Group.UpdateOneID(groupID).AddMemberCount(1).Exec(ctx); err != nil {
-			return fmt.Errorf("failed to increment group member count: %w", err)
-		}
-
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("failed to add member to group: %w", err)
+	}
+
+	// Update the member count based on actual query after transaction
+	if err := g.UpdateGroupMemberCount(ctx, groupID); err != nil {
+		g.log.Warnf("failed to update member count after adding member to group %s: %v", groupID, err)
 	}
 
 	// Return the newly created membership
@@ -527,16 +528,16 @@ func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, g
 			}
 		}
 
-		// Decrement the member count of the group
-		if err := tx.Group.UpdateOneID(groupID).AddMemberCount(-1).Exec(ctx); err != nil {
-			return fmt.Errorf("failed to increment group member count: %w", err)
-		}
-
 		return nil
 	})
 
 	if err != nil {
 		return err
+	}
+
+	// Update the member count based on actual query after transaction
+	if err := g.UpdateGroupMemberCount(ctx, groupID); err != nil {
+		g.log.Warnf("failed to update member count after removing member from group %s: %v", groupID, err)
 	}
 
 	return nil
@@ -757,4 +758,28 @@ func entGroupMembershipToBiz(gu *ent.GroupMembership) *biz.GroupMembership {
 		UpdatedAt:  toTimePtr(gu.UpdatedAt),
 		DeletedAt:  toTimePtr(gu.DeletedAt),
 	}
+}
+
+// UpdateGroupMemberCount updates the member count of a group based on an actual count query
+// This should be called after membership changes have been committed.
+func (g GroupRepo) UpdateGroupMemberCount(ctx context.Context, groupID uuid.UUID) error {
+	// Count active members in the group
+	count, err := g.data.DB.GroupMembership.Query().
+		Where(
+			groupmembership.GroupIDEQ(groupID),
+			groupmembership.DeletedAtIsNil(),
+		).
+		Count(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to count group members: %w", err)
+	}
+
+	// Update the group's member count to the actual count
+	if _, err := g.data.DB.Group.UpdateOneID(groupID).
+		SetMemberCount(count).
+		Save(ctx); err != nil {
+		return fmt.Errorf("failed to update group member count: %w", err)
+	}
+
+	return nil
 }
