@@ -192,6 +192,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	// find the resource membership that matches the resource type and ID
 	// for example admin in project1, then apply RBAC enforcement
 	m := entities.CurrentMembership(ctx)
+
 	var matchingResources []*entities.ResourceMembership
 	// First, collect all memberships that match the requested resource type and ID
 	for _, rm := range m.Resources {
