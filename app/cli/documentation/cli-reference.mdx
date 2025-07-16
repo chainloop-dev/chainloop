@@ -2573,10 +2573,38 @@ List the members of the current organization
 chainloop organization member list [flags]
 ```
 
+Examples
+
+```
+Let the default pagination apply
+chainloop organization member list
+
+Specify the page and page size
+chainloop organization member list --page 2 --limit 10
+
+Filter by name
+chainloop organization member list --name alice
+
+Filter by email
+chainloop organization member list --email alice@example.com
+
+Filter by role
+chainloop organization member list --role admin
+
+Combine filters and pagination
+chainloop organization member list --role admin --page 2 --limit 5
+
+```
+
 Options
 
 ```
--h, --help   help for list
+--email string   Filter by member email
+-h, --help           help for list
+--limit int      number of items to show (default 50)
+--name string    Filter by member name or last name
+--page int       page number (default 1)
+--role string    Role of the user in the organization, available admin, owner, viewer
 ```
 
 Options inherited from parent commands
