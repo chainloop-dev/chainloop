@@ -253,20 +253,20 @@ message GroupServiceListProjectsResponse {
   repeated ProjectInfo projects = 1;
   // Pagination information for the response
   OffsetPaginationResponse pagination = 2;
-}
 
-// ProjectInfo represents detailed information about a project that a group is a member of
-message ProjectInfo {
-  // Unique identifier of the project
-  string id = 1;
-  // Name of the project
-  string name = 2;
-  // Description of the project
-  string description = 3;
-  // Role of the group in the project (admin or viewer)
-  ProjectMemberRole role = 4;
-  // The latest version ID of the project, if available
-  optional string latest_version_id = 5;
-  // Timestamp when the project was created
-  google.protobuf.Timestamp created_at = 6;
+  // ProjectInfo represents detailed information about a project that a group is a member of
+  message ProjectInfo {
+    // Unique identifier of the project
+    string id = 1;
+    // Name of the project
+    string name = 2;
+    // Description of the project
+    string description = 3;
+    // Role of the group in the project (admin or viewer)
+    ProjectMemberRole role = 4;
+    // The latest version ID of the project, if available
+    optional string latest_version_id = 5;
+    // Timestamp when the membership was created
+    google.protobuf.Timestamp created_at = 6;
+  }
 }

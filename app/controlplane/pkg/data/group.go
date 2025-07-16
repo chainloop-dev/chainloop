@@ -712,7 +712,7 @@ func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, gro
 			Name:        pr.Name,
 			Description: pr.Description,
 			Role:        m.Role,
-			CreatedAt:   toTimePtr(pr.CreatedAt),
+			CreatedAt:   toTimePtr(m.CreatedAt),
 		}
 
 		// If the project has versions, include the latest version ID
