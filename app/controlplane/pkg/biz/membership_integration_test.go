@@ -17,7 +17,6 @@ package biz_test
 
 import (
 	"context"
-	"slices"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -485,90 +484,6 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 		s.True(biz.IsNotFound(group2Err))
 		s.Nil(group2Mem)
 	})
-}
-
-func (s *membershipIntegrationTestSuite) TestListAllMemberships() {
-	// test illegal combinations (viewer and project admin)
-
-	ctx := context.Background()
-
-	// Create a user
-	user, err := s.User.UpsertByEmail(ctx, "user@example.com", nil)
-	s.NoError(err)
-	userUUID := uuid.MustParse(user.ID)
-
-	// Create an organization
-	org, err := s.Organization.CreateWithRandomName(ctx)
-	s.NoError(err)
-	orgUUID := uuid.MustParse(org.ID)
-
-	// Add user to organization
-	_, err = s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(authz.RoleViewer), biz.WithCurrentMembership())
-	s.NoError(err)
-
-	groupProjectAdmin, err := s.Group.Create(ctx, orgUUID, "group-admin", "Group project admin", nil)
-	s.NoError(err)
-
-	groupProjectViewer, err := s.Group.Create(ctx, orgUUID, "group-viewer", "Group project viewer", nil)
-	s.NoError(err)
-
-	// Add user to both groups
-	_, err = s.Group.AddMemberToGroup(ctx, orgUUID, &biz.AddMemberToGroupOpts{
-		IdentityReference: &biz.IdentityReference{ID: &groupProjectAdmin.ID},
-		UserEmail:         user.Email,
-	})
-	s.NoError(err)
-
-	_, err = s.Group.AddMemberToGroup(ctx, orgUUID, &biz.AddMemberToGroupOpts{
-		IdentityReference: &biz.IdentityReference{ID: &groupProjectViewer.ID},
-		UserEmail:         user.Email,
-	})
-	s.NoError(err)
-
-	// Create a project
-	pr, err := s.Project.Create(ctx, org.ID, "test-project")
-	s.NoError(err)
-	projectRef := &biz.IdentityReference{ID: &pr.ID}
-
-	// try to add user to project as project admin
-	_, err = s.Project.AddMemberToProject(ctx, orgUUID, &biz.AddMemberToProjectOpts{
-		ProjectReference: projectRef,
-		UserEmail:        user.Email,
-		Role:             authz.RoleProjectAdmin,
-	})
-	// Expect error because of an illegal combination
-	s.Error(err)
-
-	// Add group admin to project as project admin
-	_, err = s.Project.AddMemberToProject(ctx, orgUUID, &biz.AddMemberToProjectOpts{
-		ProjectReference: projectRef,
-		GroupReference:   &biz.IdentityReference{ID: &groupProjectAdmin.ID},
-		Role:             authz.RoleProjectAdmin,
-	})
-	s.NoError(err)
-
-	// User shouldn't acquire the project admin role
-	mm, err := s.Membership.ListAllMembershipsForUser(ctx, userUUID)
-	s.NoError(err)
-	// Expect only org membership
-	s.Equal(1, len(mm))
-	s.Equal(authz.ResourceTypeOrganization, mm[0].ResourceType)
-
-	// Add group viewer
-	_, err = s.Project.AddMemberToProject(ctx, orgUUID, &biz.AddMemberToProjectOpts{
-		ProjectReference: projectRef,
-		GroupReference:   &biz.IdentityReference{ID: &groupProjectViewer.ID},
-		Role:             authz.RoleProjectViewer,
-	})
-	s.NoError(err)
-
-	// expect user to acquire the membership
-	mm, err = s.Membership.ListAllMembershipsForUser(ctx, userUUID)
-	s.NoError(err)
-	s.Equal(2, len(mm))
-	s.True(slices.ContainsFunc(mm, func(m *biz.Membership) bool {
-		return m.ResourceType == authz.ResourceTypeProject && m.Role == authz.RoleProjectViewer && m.ResourceID == pr.ID
-	}))
 }
 
 // Run the tests
