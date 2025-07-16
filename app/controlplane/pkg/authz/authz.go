@@ -55,6 +55,7 @@ const (
 	ResourceRobotAccount            = "robot_account"
 	ResourceWorkflowRun             = "workflow_run"
 	ResourceWorkflow                = "workflow"
+	ResourceProject                 = "project"
 	Organization                    = "organization"
 	OrganizationMemberships         = "organization_memberships"
 	ResourceGroup                   = "group"
@@ -104,6 +105,7 @@ var ManagedResources = []string{
 	ResourceRobotAccount,
 	ResourceWorkflowRun,
 	ResourceWorkflow,
+	ResourceProject,
 	Organization,
 	OrganizationMemberships,
 	ResourceGroup,
@@ -154,6 +156,8 @@ var (
 	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
 	PolicyWorkflowUpdate = &Policy{ResourceWorkflow, ActionUpdate}
 	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
+	// Projects
+	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
 	// User Membership
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
@@ -229,29 +233,6 @@ var RolesMap = map[Role][]*Policy{
 	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at
 	// the organization level will need specific project roles to access their contents
 	RoleOrgContributor: {
-		// Referrer
-		PolicyReferrerRead,
-		// Artifact
-		PolicyArtifactDownload,
-		// Attached integrations
-		PolicyAttachedIntegrationList,
-		// Metrics
-		PolicyOrgMetricsRead,
-		// Workflow Contract
-		PolicyWorkflowContractList,
-		PolicyWorkflowContractRead,
-		// WorkflowRun
-		PolicyWorkflowRunList,
-		PolicyWorkflowRunRead,
-		// Workflow
-		PolicyWorkflowList,
-		PolicyWorkflowRead,
-		// Organization
-		PolicyOrganizationRead,
-	},
-
-	// RoleOrgMember are contributors that can also create their own projects
-	RoleOrgMember: {
 		// Allowed endpoints. RBAC will be applied where needed
 		PolicyWorkflowRead,
 		PolicyWorkflowContractList,
@@ -312,6 +293,12 @@ var RolesMap = map[Role][]*Policy{
 		// Org memberships
 		PolicyOrganizationListMemberships,
 	},
+
+	// RoleOrgMember are contributors that can also create their own projects
+	RoleOrgMember: {
+		PolicyProjectCreate,
+	},
+
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
 		PolicyWorkflowRead,

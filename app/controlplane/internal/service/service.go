@@ -253,6 +253,27 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 	return p, nil
 }
 
+func (s *service) userCanCreateProject(ctx context.Context) error {
+	// Only org tokens can create projects
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		if token.ProjectID != nil {
+			return errors.Forbidden("unauthorized", "user cannot create project")
+		}
+	}
+
+	orgRole := usercontext.CurrentAuthzSubject(ctx)
+	pass, err := s.enforcer.Enforce(orgRole, authz.PolicyProjectCreate)
+	if err != nil {
+		return handleUseCaseErr(err, s.log)
+	}
+
+	if !pass {
+		return errors.Forbidden("unauthorized", "user cannot create project")
+	}
+
+	return nil
+}
+
 // userHasPermissionToAddGroupMember checks if the user has permission to add members to a group
 func (s *service) userHasPermissionToAddGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
 	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupAddMemberships)
