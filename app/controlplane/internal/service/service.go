@@ -257,7 +257,7 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 	// Only org tokens can create projects
 	if token := entities.CurrentAPIToken(ctx); token != nil {
 		if token.ProjectID != nil {
-			return errors.Forbidden("unauthorized", "user cannot create project")
+			return errors.Forbidden("unauthorized", "you are not allowed to create projects")
 		}
 	}
 
@@ -268,7 +268,7 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 	}
 
 	if !pass {
-		return errors.Forbidden("unauthorized", "user cannot create project")
+		return errors.Forbidden("unauthorized", "you are not allowed to create projects")
 	}
 
 	return nil

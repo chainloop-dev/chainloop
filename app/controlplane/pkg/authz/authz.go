@@ -269,6 +269,25 @@ var RolesMap = map[Role][]*Policy{
 		PolicyOrgMetricsRead,
 		PolicyReferrerRead,
 
+		// Additional check for API tokens is done at the service level
+		PolicyAPITokenList,
+		PolicyAPITokenCreate,
+		PolicyAPITokenRevoke,
+	},
+
+	// RoleOrgMember inherits from RoleOrgContributor and can also create their own projects and see members
+	RoleOrgMember: {
+		PolicyProjectCreate,
+
+		// Org memberships
+		PolicyOrganizationListMemberships,
+
+		// Project Memberships
+		PolicyProjectListMemberships,
+		PolicyProjectAddMemberships,
+		PolicyProjectRemoveMemberships,
+		PolicyProjectUpdateMemberships,
+
 		// Groups
 		PolicyGroupList,
 		PolicyGroupRead,
@@ -278,25 +297,6 @@ var RolesMap = map[Role][]*Policy{
 
 		// Group Memberships
 		PolicyGroupListMemberships,
-
-		// Additional check for API tokens is done at the service level
-		PolicyAPITokenList,
-		PolicyAPITokenCreate,
-		PolicyAPITokenRevoke,
-
-		// Project Memberships
-		PolicyProjectListMemberships,
-		PolicyProjectAddMemberships,
-		PolicyProjectRemoveMemberships,
-		PolicyProjectUpdateMemberships,
-
-		// Org memberships
-		PolicyOrganizationListMemberships,
-	},
-
-	// RoleOrgMember are contributors that can also create their own projects
-	RoleOrgMember: {
-		PolicyProjectCreate,
 	},
 
 	// RoleProjectViewer: has read-only permissions on a project
