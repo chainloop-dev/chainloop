@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	policy "github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
 type PolicyLintOpts struct {
@@ -51,7 +51,7 @@ func (action *PolicyLint) Run(_ context.Context, opts *PolicyLintOpts) (*PolicyL
 	}
 
 	// Read policies
-	policy, err := policy.Read(absPath, opts.Format)
+	policy, err := policydevel.Read(absPath, opts.Format)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy: %w", err)
 	}

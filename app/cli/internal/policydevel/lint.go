@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package policy
+package policydevel
 
 import (
 	"context"
@@ -24,10 +24,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bufbuild/protoyaml-go"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/linter"
 	"github.com/styrainc/regal/pkg/rules"
-	"gopkg.in/yaml.v3"
 )
 
 type Policy struct {
@@ -42,12 +44,7 @@ type File struct {
 	Content []byte
 }
 
-type EmbeddedPolicy struct {
-	Kind string
-	Rego string
-}
-
-// Read policy files from the given directory
+// Read policy files from the given directory or file
 func Read(absPath string, format bool) (*Policy, error) {
 	fileInfo, err := os.Stat(absPath)
 	if os.IsNotExist(err) {
@@ -60,64 +57,77 @@ func Read(absPath string, format bool) (*Policy, error) {
 	}
 
 	if fileInfo.IsDir() {
-		// Read all *.yaml and *.rego files in the directory
-		files, err := os.ReadDir(absPath)
-		if err != nil {
-			return nil, fmt.Errorf("reading directory: %w", err)
-		}
-
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-
-			filePath := filepath.Join(absPath, file.Name())
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				return nil, fmt.Errorf("reading %s: %w", file.Name(), err)
-			}
-
-			switch strings.ToLower(filepath.Ext(file.Name())) {
-			case ".yaml", ".yml":
-				policy.YAMLFiles = append(policy.YAMLFiles, &File{
-					Path:    filePath,
-					Content: content,
-				})
-			case ".rego":
-				policy.RegoFiles = append(policy.RegoFiles, &File{
-					Path:    filePath,
-					Content: content,
-				})
-			}
-
-			if len(policy.YAMLFiles) == 0 && len(policy.RegoFiles) == 0 {
-				return nil, fmt.Errorf("directory must contain at least one .yaml/.yml or .rego file")
-			}
+		if err := readDirectory(policy, absPath); err != nil {
+			return nil, err
 		}
 	} else {
-		// Read given file
-		content, err := os.ReadFile(absPath)
-		if err != nil {
-			return nil, fmt.Errorf("reading file: %w", err)
-		}
-
-		switch strings.ToLower(filepath.Ext(absPath)) {
-		case ".yaml", ".yml":
-			policy.YAMLFiles = append(policy.YAMLFiles, &File{
-				Path:    absPath,
-				Content: content,
-			})
-		case ".rego":
-			policy.RegoFiles = append(policy.RegoFiles, &File{
-				Path:    absPath,
-				Content: content,
-			})
-		default:
-			return nil, fmt.Errorf("file must be either .yaml/.yml or .rego")
+		if err := readSingleFile(policy, absPath); err != nil {
+			return nil, err
 		}
 	}
 
+	// Verify we found at least one valid file
+	if len(policy.YAMLFiles) == 0 && len(policy.RegoFiles) == 0 {
+		return nil, fmt.Errorf("no valid .yaml/.yml or .rego files found")
+	}
+
 	return policy, nil
+}
+
+func readDirectory(policy *Policy, dirPath string) error {
+	files, err := os.ReadDir(dirPath)
+	if err != nil {
+		return fmt.Errorf("reading directory: %w", err)
+	}
+
+	var foundValidFile bool
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		filePath := filepath.Join(dirPath, file.Name())
+		if err := processFile(policy, filePath); err != nil {
+			// Skip unsupported files but continue processing others
+			continue
+		}
+		foundValidFile = true
+	}
+
+	if !foundValidFile {
+		return fmt.Errorf("no valid .yaml/.yml or .rego files found in directory")
+	}
+
+	return nil
+}
+
+func readSingleFile(policy *Policy, filePath string) error {
+	return processFile(policy, filePath)
+}
+
+func processFile(policy *Policy, filePath string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", filepath.Base(filePath), err)
+	}
+
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".yaml", ".yml":
+		policy.YAMLFiles = append(policy.YAMLFiles, &File{
+			Path:    filePath,
+			Content: content,
+		})
+	case ".rego":
+		policy.RegoFiles = append(policy.RegoFiles, &File{
+			Path:    filePath,
+			Content: content,
+		})
+	default:
+		return fmt.Errorf("unsupported file extension %s, must be .yaml/.yml or .rego", ext)
+	}
+
+	return nil
 }
 
 func (p *Policy) Validate() []error {
@@ -141,75 +151,53 @@ func (p *Policy) Validate() []error {
 }
 
 func (p *Policy) validateYAMLFile(file *File) []error {
-	var errors []error
-	var node yaml.Node
-
-	if err := yaml.Unmarshal(file.Content, &node); err != nil {
-		return []error{fmt.Errorf("%s: invalid YAML: %w", file.Path, err)}
+	var policy v1.Policy
+	if err := unmarshal.FromRaw(file.Content, unmarshal.RawFormatYAML, &policy, true); err != nil {
+		return []error{fmt.Errorf("%s: failed to parse/validate: %w", file.Path, err)}
 	}
 
-	var data map[string]interface{}
-	if err := node.Decode(&data); err != nil {
-		return []error{fmt.Errorf("%s: invalid YAML structure: %w", file.Path, err)}
+	errs := p.processEmbeddedPolicies(&policy, file)
+
+	// Update policy file with formatted content
+	if p.Format {
+		outYAML, err := protoyaml.Marshal(&policy)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: failed to marshal updated YAML: %w", file.Path, err))
+		} else if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
+			errs = append(errs, fmt.Errorf("%s: failed to save updated file: %w", file.Path, err))
+		} else {
+			file.Content = outYAML
+		}
 	}
 
-	// Validate YAML structure
-	if missing := checkRequiredFields(data, []string{"apiVersion", "kind", "spec"}); len(missing) > 0 {
-		errors = append(errors, fmt.Errorf("%s: missing required fields: %s", file.Path, strings.Join(missing, ", ")))
-	}
+	return errs
+}
 
-	// Process each embedded policy
-	if spec, ok := data["spec"].(map[string]interface{}); ok {
-		if policies, ok := spec["policies"].([]interface{}); ok {
-			for i, policy := range policies {
-				if policyMap, ok := policy.(map[string]interface{}); ok {
-					if regoContent, ok := policyMap["rego"].(string); ok {
-						regoLine := findRegoLineInYAML(&node, i)
-						formattedContent, regoErrors := p.validateAndFormatRego(
-							regoContent,
-							fmt.Sprintf("%s (policy #%d)", file.Path, i+1),
-							regoLine,
-						)
+func (p *Policy) processEmbeddedPolicies(pa *v1.Policy, file *File) []error {
+	var errs []error
 
-						errors = append(errors, regoErrors...)
+	for idx, spec := range pa.Spec.Policies {
+		if regoSrc := spec.GetEmbedded(); regoSrc != "" {
+			formatted, reErrs := p.validateAndFormatRego(
+				regoSrc,
+				fmt.Sprintf("%s:(embedded #%d)", file.Path, idx+1),
+			)
+			errs = append(errs, reErrs...)
 
-						// Check and apply formatting changes
-						if p.Format && formattedContent != regoContent {
-							policyMap["rego"] = formattedContent
-
-							updatedContent, err := yaml.Marshal(data)
-							if err != nil {
-								errors = append(errors, fmt.Errorf("%s: failed to marshal updated YAML: %w", file.Path, err))
-							} else if err := os.WriteFile(file.Path, updatedContent, 0600); err != nil {
-								errors = append(errors, fmt.Errorf("%s: failed to save formatted file: %w", file.Path, err))
-							} else {
-								file.Content = updatedContent
-							}
-						}
-					}
-				}
+			if p.Format && formatted != regoSrc {
+				spec.Source = &v1.PolicySpecV2_Embedded{Embedded: formatted}
 			}
 		}
 	}
 
-	return errors
-}
-
-func checkRequiredFields(data map[string]interface{}, fields []string) []string {
-	var missing []string
-	for _, field := range fields {
-		if _, exists := data[field]; !exists {
-			missing = append(missing, field)
-		}
-	}
-	return missing
+	return errs
 }
 
 func (p *Policy) validateRegoFile(file *File) []error {
 	var errors []error
 	original := string(file.Content)
 
-	formatted, errs := p.validateAndFormatRego(original, file.Path, 1)
+	formatted, errs := p.validateAndFormatRego(original, file.Path)
 	errors = append(errors, errs...)
 
 	if p.Format && formatted != original {
@@ -224,7 +212,7 @@ func (p *Policy) validateRegoFile(file *File) []error {
 }
 
 // Runs the Regal linter on the given rego content and returns any violations as errors
-func (p *Policy) runRegalLinter(filePath, content string, lineOffset int) []error {
+func (p *Policy) runRegalLinter(filePath, content string) []error {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
 		return []error{err}
@@ -239,7 +227,7 @@ func (p *Policy) runRegalLinter(filePath, content string, lineOffset int) []erro
 	errors := make([]error, 0, len(report.Violations))
 	for _, v := range report.Violations {
 		errors = append(errors, fmt.Errorf("%d: %s",
-			v.Location.Row+lineOffset,
+			v.Location.Row,
 			v.Description,
 		))
 	}
@@ -247,12 +235,12 @@ func (p *Policy) runRegalLinter(filePath, content string, lineOffset int) []erro
 	return errors
 }
 
-func (p *Policy) validateAndFormatRego(content, file string, offset int) (string, []error) {
+func (p *Policy) validateAndFormatRego(content, path string) (string, []error) {
 	var errs []error
 
 	// 1. Optionally format
 	if p.Format {
-		formatted, err := p.applyOPAFmt(content, file)
+		formatted, err := p.applyOPAFmt(content, path)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -261,10 +249,12 @@ func (p *Policy) validateAndFormatRego(content, file string, offset int) (string
 	}
 
 	// 2. Structural validation
-	errs = append(errs, checkResultStructure(content, file, []string{"skipped", "violations", "skip_reason"})...)
+	errs = append(errs, checkResultStructure(content, path, []string{"skipped", "violations", "skip_reason"})...)
 
-	// 3. Run Regal linter and remap OPA fmt lines
-	errs = append(errs, p.runLintWithOffset(content, file, offset)...)
+	// 3. Run Regal linter
+	rawErrs := p.runRegalLinter(path, content)
+
+	errs = append(errs, p.remapOPAfmtErrors(rawErrs, path)...)
 
 	return content, errs
 }
@@ -304,15 +294,10 @@ func checkResultStructure(content, path string, keys []string) []error {
 	return errs
 }
 
-func (p *Policy) runLintWithOffset(content, path string, offset int) []error {
-	rawErrs := p.runRegalLinter(path, content, offset)
-	return p.remapOPAfmtErrors(rawErrs, path, offset)
-}
-
-// Processes raw errors from OPA fmr ran by Regal and:
+// Processes raw errors from OPA fmt ran by Regal and:
 // 1. Splits grouped errors into individual errors
 // 2. Adjusts line numbers for embedded rego scripts
-func (p *Policy) remapOPAfmtErrors(rawErrs []error, path string, offset int) []error {
+func (p *Policy) remapOPAfmtErrors(rawErrs []error, path string) []error {
 	var errs []error
 	// Regex matches file path, line number and error message like: /path/file:line: message
 	errorRegex := regexp.MustCompile(`^` + regexp.QuoteMeta(path) + `:(\d+):\s*(.+)$`)
@@ -336,7 +321,7 @@ func (p *Policy) remapOPAfmtErrors(rawErrs []error, path string, offset int) []e
 			// Try to match the standard error format
 			if matches := errorRegex.FindStringSubmatch(line); len(matches) == 3 {
 				if lineNum, convErr := strconv.Atoi(matches[1]); convErr == nil {
-					errs = append(errs, fmt.Errorf("%s:%d: %s", path, lineNum+offset, matches[2]))
+					errs = append(errs, fmt.Errorf("%s:%d: %s", path, lineNum, matches[2]))
 					continue
 				}
 			}
@@ -347,44 +332,4 @@ func (p *Policy) remapOPAfmtErrors(rawErrs []error, path string, offset int) []e
 	}
 
 	return errs
-}
-
-// Locates beginning line of embedded rego script
-func findRegoLineInYAML(doc *yaml.Node, sectionIdx int) int {
-	if doc == nil || len(doc.Content) == 0 {
-		return 1
-	}
-
-	// Navigate through the YAML structure
-	root := doc.Content[0]
-	spec := findKey(root, "spec")
-	if spec == nil {
-		return 1
-	}
-
-	policies := findKey(spec, "policies")
-	if policies == nil || policies.Kind != yaml.SequenceNode || sectionIdx >= len(policies.Content) {
-		return 1
-	}
-
-	policy := policies.Content[sectionIdx]
-	rego := findKey(policy, "rego")
-	if rego == nil {
-		return 1
-	}
-
-	return rego.Line
-}
-
-func findKey(node *yaml.Node, key string) *yaml.Node {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return nil
-	}
-
-	for i := 0; i < len(node.Content)-1; i += 2 {
-		if node.Content[i].Value == key {
-			return node.Content[i+1]
-		}
-	}
-	return nil
 }
