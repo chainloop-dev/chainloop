@@ -1,5 +1,5 @@
 {
-  "$id": "controlplane.v1.ProjectInfo.schema.json",
+  "$id": "controlplane.v1.GroupServiceListProjectsResponse.ProjectInfo.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "ProjectInfo represents detailed information about a project that a group is a member of",

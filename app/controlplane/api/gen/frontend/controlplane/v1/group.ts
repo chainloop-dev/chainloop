@@ -227,13 +227,13 @@ export interface GroupServiceListProjectsRequest {
 /** GroupServiceListProjectsResponse contains a paginated list of projects for a group */
 export interface GroupServiceListProjectsResponse {
   /** List of projects memberships matching the request criteria */
-  projects: ProjectInfo[];
+  projects: GroupServiceListProjectsResponse_ProjectInfo[];
   /** Pagination information for the response */
   pagination?: OffsetPaginationResponse;
 }
 
 /** ProjectInfo represents detailed information about a project that a group is a member of */
-export interface ProjectInfo {
+export interface GroupServiceListProjectsResponse_ProjectInfo {
   /** Unique identifier of the project */
   id: string;
   /** Name of the project */
@@ -246,7 +246,7 @@ export interface ProjectInfo {
   latestVersionId?:
     | string
     | undefined;
-  /** Timestamp when the project was created */
+  /** Timestamp when the membership was created */
   createdAt?: Date;
 }
 
@@ -2093,7 +2093,7 @@ function createBaseGroupServiceListProjectsResponse(): GroupServiceListProjectsR
 export const GroupServiceListProjectsResponse = {
   encode(message: GroupServiceListProjectsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.projects) {
-      ProjectInfo.encode(v!, writer.uint32(10).fork()).ldelim();
+      GroupServiceListProjectsResponse_ProjectInfo.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
       OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
@@ -2113,7 +2113,7 @@ export const GroupServiceListProjectsResponse = {
             break;
           }
 
-          message.projects.push(ProjectInfo.decode(reader, reader.uint32()));
+          message.projects.push(GroupServiceListProjectsResponse_ProjectInfo.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -2133,7 +2133,9 @@ export const GroupServiceListProjectsResponse = {
 
   fromJSON(object: any): GroupServiceListProjectsResponse {
     return {
-      projects: Array.isArray(object?.projects) ? object.projects.map((e: any) => ProjectInfo.fromJSON(e)) : [],
+      projects: Array.isArray(object?.projects)
+        ? object.projects.map((e: any) => GroupServiceListProjectsResponse_ProjectInfo.fromJSON(e))
+        : [],
       pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
     };
   },
@@ -2141,7 +2143,9 @@ export const GroupServiceListProjectsResponse = {
   toJSON(message: GroupServiceListProjectsResponse): unknown {
     const obj: any = {};
     if (message.projects) {
-      obj.projects = message.projects.map((e) => e ? ProjectInfo.toJSON(e) : undefined);
+      obj.projects = message.projects.map((e) =>
+        e ? GroupServiceListProjectsResponse_ProjectInfo.toJSON(e) : undefined
+      );
     } else {
       obj.projects = [];
     }
@@ -2160,7 +2164,7 @@ export const GroupServiceListProjectsResponse = {
     object: I,
   ): GroupServiceListProjectsResponse {
     const message = createBaseGroupServiceListProjectsResponse();
-    message.projects = object.projects?.map((e) => ProjectInfo.fromPartial(e)) || [];
+    message.projects = object.projects?.map((e) => GroupServiceListProjectsResponse_ProjectInfo.fromPartial(e)) || [];
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? OffsetPaginationResponse.fromPartial(object.pagination)
       : undefined;
@@ -2168,12 +2172,12 @@ export const GroupServiceListProjectsResponse = {
   },
 };
 
-function createBaseProjectInfo(): ProjectInfo {
+function createBaseGroupServiceListProjectsResponse_ProjectInfo(): GroupServiceListProjectsResponse_ProjectInfo {
   return { id: "", name: "", description: "", role: 0, latestVersionId: undefined, createdAt: undefined };
 }
 
-export const ProjectInfo = {
-  encode(message: ProjectInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GroupServiceListProjectsResponse_ProjectInfo = {
+  encode(message: GroupServiceListProjectsResponse_ProjectInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -2195,10 +2199,10 @@ export const ProjectInfo = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectInfo {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupServiceListProjectsResponse_ProjectInfo {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectInfo();
+    const message = createBaseGroupServiceListProjectsResponse_ProjectInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2253,7 +2257,7 @@ export const ProjectInfo = {
     return message;
   },
 
-  fromJSON(object: any): ProjectInfo {
+  fromJSON(object: any): GroupServiceListProjectsResponse_ProjectInfo {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
@@ -2264,7 +2268,7 @@ export const ProjectInfo = {
     };
   },
 
-  toJSON(message: ProjectInfo): unknown {
+  toJSON(message: GroupServiceListProjectsResponse_ProjectInfo): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
@@ -2275,12 +2279,16 @@ export const ProjectInfo = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ProjectInfo>, I>>(base?: I): ProjectInfo {
-    return ProjectInfo.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<GroupServiceListProjectsResponse_ProjectInfo>, I>>(
+    base?: I,
+  ): GroupServiceListProjectsResponse_ProjectInfo {
+    return GroupServiceListProjectsResponse_ProjectInfo.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<ProjectInfo>, I>>(object: I): ProjectInfo {
-    const message = createBaseProjectInfo();
+  fromPartial<I extends Exact<DeepPartial<GroupServiceListProjectsResponse_ProjectInfo>, I>>(
+    object: I,
+  ): GroupServiceListProjectsResponse_ProjectInfo {
+    const message = createBaseGroupServiceListProjectsResponse_ProjectInfo();
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.description = object.description ?? "";

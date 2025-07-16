@@ -520,7 +520,7 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 	}
 
 	// Convert the GroupProjectInfo to protobuf messages
-	result := make([]*pb.ProjectInfo, 0, len(projectInfoList))
+	result := make([]*pb.GroupServiceListProjectsResponse_ProjectInfo, 0, len(projectInfoList))
 	for _, project := range projectInfoList {
 		result = append(result, bizGroupProjectInfoToPb(project))
 	}
@@ -576,8 +576,8 @@ func bizOrgInvitationToPendingGroupInvitationPb(inv *biz.OrgInvitation) *pb.Pend
 }
 
 // bizGroupProjectInfoToPb converts a biz.GroupProjectInfo to a pb.ProjectInfo protobuf message.
-func bizGroupProjectInfoToPb(info *biz.GroupProjectInfo) *pb.ProjectInfo {
-	projectInfo := &pb.ProjectInfo{
+func bizGroupProjectInfoToPb(info *biz.GroupProjectInfo) *pb.GroupServiceListProjectsResponse_ProjectInfo {
+	projectInfo := &pb.GroupServiceListProjectsResponse_ProjectInfo{
 		Id:          info.ID.String(),
 		Name:        info.Name,
 		Description: info.Description,
