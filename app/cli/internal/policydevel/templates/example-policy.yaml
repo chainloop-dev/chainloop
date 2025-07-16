@@ -2,8 +2,8 @@
 #
 # For policy examples and reference:
 # https://github.com/chainloop-dev/chainloop/tree/main/docs/examples/policies
-apiVersion: policy.chainloop.dev/v1
-kind: ValidationPolicy
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
 metadata:
   name: {{.Name | sanitize}}
   description: {{.Description | trimSpace}}
@@ -15,7 +15,7 @@ spec:
       {{if .Embedded -}}
       # Embedded Rego policy
       # See docs: https://docs.chainloop.dev/guides/custom-policies#embedded-vs-external
-      rego: |
+      embedded: |
 {{.RegoContent | indent 8}}
       {{else -}}
       # Path to external Rego policy file

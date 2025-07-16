@@ -18,7 +18,7 @@ package action
 import (
 	"fmt"
 
-	policy "github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
 type PolicyInitOpts struct {
@@ -42,7 +42,7 @@ func NewPolicyInit(opts *PolicyInitOpts, actionOpts *ActionsOpts) (*PolicyInit, 
 }
 
 func (action *PolicyInit) Run() error {
-	initOpts := &policy.InitOptions{
+	initOpts := &policydevel.InitOptions{
 		Directory:   action.opts.Directory,
 		Embedded:    action.opts.Embedded,
 		Force:       action.opts.Force,
@@ -50,7 +50,7 @@ func (action *PolicyInit) Run() error {
 		Description: action.opts.Description,
 	}
 
-	if err := policy.Initialize(initOpts); err != nil {
+	if err := policydevel.Initialize(initOpts); err != nil {
 		return fmt.Errorf("initializing policy: %w", err)
 	}
 
