@@ -2703,6 +2703,180 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
+## chainloop policy
+
+Craft chainloop policies
+
+Options
+
+```
+-h, --help   help for policy
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop policy develop
+
+Tools for policy development
+Refer to https://docs.chainloop.dev/guides/custom-policies
+
+Options
+
+```
+-h, --help   help for develop
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+#### chainloop policy develop help
+
+Help about any command
+
+Synopsis
+
+Help provides help for any command in the application.
+Simply type develop help [path to command] for full details.
+
+```
+chainloop policy develop help [command] [flags]
+```
+
+Options
+
+```
+-h, --help   help for help
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+#### chainloop policy develop init
+
+Initialize a new policy
+
+Synopsis
+
+Initialize a new policy by creating template policy files in the specified directory.
+By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.
+
+```
+chainloop policy develop init [flags]
+```
+
+Examples
+
+```
+
+Initialize in current directory with separate files
+chainloop policy develop init
+
+Initialize in specific directory with embedded format and policy name
+chainloop policy develop init --directory ./policies --embedded --name mypolicy
+```
+
+Options
+
+```
+--description string   description of the policy
+--directory string     directory for policy
+--embedded             initialize an embedded policy (single YAML file)
+-f, --force                overwrite existing files
+-h, --help                 help for init
+--name string          name of the policy
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop policy help
+
+Help about any command
+
+Synopsis
+
+Help provides help for any command in the application.
+Simply type policy help [path to command] for full details.
+
+```
+chainloop policy help [command] [flags]
+```
+
+Options
+
+```
+-h, --help   help for help
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
 ## chainloop version
 
 Command line version
