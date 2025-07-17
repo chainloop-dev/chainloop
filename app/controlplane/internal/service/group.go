@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
 	"github.com/go-kratos/kratos/v2/errors"
@@ -244,6 +245,10 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		IdentityReference: &biz.IdentityReference{},
 		Maintainers:       req.Maintainers,
 		MemberEmail:       req.MemberEmail,
+	}
+
+	if err = g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, currentOrg.ID, req.GetGroupReference(), authz.PolicyGroupListMemberships); err != nil {
+		return nil, err
 	}
 
 	// Parse groupID and groupName from the request
@@ -486,10 +491,15 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 		return nil, err
 	}
 
+	if err = g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, currentOrg.ID, req.GetGroupReference(), authz.PolicyGroupListProjects); err != nil {
+		return nil, err
+	}
+
 	// Parse orgID
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
+
 	}
 
 	// Parse groupID and groupName from the request

@@ -161,17 +161,19 @@ var (
 	// User Membership
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
+
 	// Groups
-	PolicyGroupList                   = &Policy{ResourceGroup, ActionList}
-	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead                   = &Policy{ResourceGroup, ActionRead}
+	PolicyGroupList = &Policy{ResourceGroup, ActionList}
+	PolicyGroupRead = &Policy{ResourceGroup, ActionRead}
+
 	// Group Memberships
-	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
-	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
-	PolicyGroupRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
-	PolicyGroupUpdateMemberships = &Policy{ResourceGroupMembership, ActionUpdate}
-	// Group-Projects
-	PolicyGroupListProjects = &Policy{ResourceGroupProjects, ActionList}
+	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
+	PolicyGroupListMemberships        = &Policy{ResourceGroupMembership, ActionList}
+	PolicyGroupAddMemberships         = &Policy{ResourceGroupMembership, ActionCreate}
+	PolicyGroupRemoveMemberships      = &Policy{ResourceGroupMembership, ActionDelete}
+	PolicyGroupUpdateMemberships      = &Policy{ResourceGroupMembership, ActionUpdate}
+	PolicyGroupListProjects           = &Policy{ResourceGroupProjects, ActionList}
+
 	// API Token
 	PolicyAPITokenList   = &Policy{ResourceAPIToken, ActionList}
 	PolicyAPITokenCreate = &Policy{ResourceAPIToken, ActionCreate}
@@ -287,16 +289,6 @@ var RolesMap = map[Role][]*Policy{
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
 		PolicyProjectUpdateMemberships,
-
-		// Groups
-		PolicyGroupList,
-		PolicyGroupRead,
-
-		// Group Projects
-		PolicyGroupListProjects,
-
-		// Group Memberships
-		PolicyGroupListMemberships,
 	},
 
 	// RoleProjectViewer: has read-only permissions on a project
@@ -349,10 +341,13 @@ var RolesMap = map[Role][]*Policy{
 	},
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
+		// Group Memberships
+		PolicyGroupListMemberships,
 		PolicyGroupListPendingInvitations,
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
 		PolicyGroupUpdateMemberships,
+		PolicyGroupListProjects,
 	},
 }
 
@@ -416,32 +411,34 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.UserService/DeleteMembership": {},
 	"/controlplane.v1.AuthService/DeleteAccount":    {},
 
-	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
-	// Groups
-	"/controlplane.v1.GroupService/List": {PolicyGroupList},
-	"/controlplane.v1.GroupService/Get":  {PolicyGroupRead},
-	// Group Memberships
-	"/controlplane.v1.GroupService/ListMembers":  {PolicyGroupListMemberships},
-	"/controlplane.v1.GroupService/ListProjects": {PolicyGroupListProjects},
+	// org memberships onnly available to admins
+	// "/controlplane.v1.OrganizationService/ListMemberships"
+
+	// Groups (everyone see groups)
+	"/controlplane.v1.GroupService/List": {},
+	"/controlplane.v1.GroupService/Get":  {},
+
 	// For the following endpoints, we rely on the service layer to check the permissions
-	// That's why we let everyone access them (empty policies)
+	// That's why we let everyone access them (empty policies).
+	// Group Memberships are only available to org admins or maintainers
+	"/controlplane.v1.GroupService/ListMembers":                  {},
+	"/controlplane.v1.GroupService/ListProjects":                 {},
 	"/controlplane.v1.GroupService/AddMember":                    {},
 	"/controlplane.v1.GroupService/RemoveMember":                 {},
 	"/controlplane.v1.GroupService/ListPendingInvitations":       {},
 	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
 
-	// Projects: Check happen at service level
+	// Project Memberships
+	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
+	"/controlplane.v1.ProjectService/RemoveMember":           {PolicyProjectRemoveMemberships},
+	"/controlplane.v1.ProjectService/UpdateMemberRole":       {PolicyProjectUpdateMemberships},
+	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListMemberships},
 
-	// Project API Token
+	// Project API Token handled at the service level
 	"/controlplane.v1.ProjectService/APITokenCreate": {},
 	"/controlplane.v1.ProjectService/APITokenList":   {},
 	"/controlplane.v1.ProjectService/APITokenRevoke": {},
-	// Project Memberships
-	"/controlplane.v1.ProjectService/ListMembers":            {},
-	"/controlplane.v1.ProjectService/AddMember":              {},
-	"/controlplane.v1.ProjectService/RemoveMember":           {},
-	"/controlplane.v1.ProjectService/UpdateMemberRole":       {},
-	"/controlplane.v1.ProjectService/ListPendingInvitations": {},
 
 	// API tokens RBAC are handled at the service level
 	"/controlplane.v1.APITokenService/List":   {},
