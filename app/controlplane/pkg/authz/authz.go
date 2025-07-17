@@ -221,6 +221,8 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
+		// API tokens
+		PolicyAPITokenList,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
@@ -427,15 +429,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ProjectService/UpdateMemberRole":       {PolicyProjectUpdateMemberships},
 	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListMemberships},
 
-	// Project API Token handled at the service level
-	"/controlplane.v1.ProjectService/APITokenCreate": {},
-	"/controlplane.v1.ProjectService/APITokenList":   {},
-	"/controlplane.v1.ProjectService/APITokenRevoke": {},
-
 	// API tokens RBAC are handled at the service level
-	"/controlplane.v1.APITokenService/List":   {},
-	"/controlplane.v1.APITokenService/Create": {},
-	"/controlplane.v1.APITokenService/Revoke": {},
+	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
+	"/controlplane.v1.APITokenService/Create": {PolicyAPITokenCreate},
+	"/controlplane.v1.APITokenService/Revoke": {PolicyAPITokenRevoke},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
