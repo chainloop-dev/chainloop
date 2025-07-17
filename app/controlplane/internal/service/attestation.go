@@ -128,7 +128,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 
 	// If contract is private, check we have permissions on the project
 	scopedEntity := contractVersion.Contract.ScopedEntity
-	if rbacEnabled(ctx) && scopedEntity != nil && scopedEntity.Type == string(biz.ContractScopeProject) && scopedEntity.ID != wf.ProjectID {
+	if rbacEnabled(ctx) && contractVersion.Contract.IsProjectScoped() && scopedEntity.ID != wf.ProjectID {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
