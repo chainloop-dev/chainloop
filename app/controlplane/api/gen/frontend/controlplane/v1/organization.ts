@@ -2,6 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import {
   MembershipRole,
   membershipRoleFromJSON,
@@ -13,10 +14,29 @@ import {
 export const protobufPackage = "controlplane.v1";
 
 export interface OrganizationServiceListMembershipsRequest {
+  membershipId?:
+    | string
+    | undefined;
+  /** Optional filter by user name */
+  name?:
+    | string
+    | undefined;
+  /** Optional filter to search by user email address */
+  email?:
+    | string
+    | undefined;
+  /** Optional filter by role */
+  role?:
+    | MembershipRole
+    | undefined;
+  /** Pagination parameters to limit and offset results */
+  pagination?: OffsetPaginationRequest;
 }
 
 export interface OrganizationServiceListMembershipsResponse {
   result: OrgMembershipItem[];
+  /** Pagination information for the response */
+  pagination?: OffsetPaginationResponse;
 }
 
 export interface OrganizationServiceDeleteMembershipRequest {
@@ -54,11 +74,26 @@ export interface OrganizationServiceUpdateResponse {
 }
 
 function createBaseOrganizationServiceListMembershipsRequest(): OrganizationServiceListMembershipsRequest {
-  return {};
+  return { membershipId: undefined, name: undefined, email: undefined, role: undefined, pagination: undefined };
 }
 
 export const OrganizationServiceListMembershipsRequest = {
-  encode(_: OrganizationServiceListMembershipsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: OrganizationServiceListMembershipsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.membershipId !== undefined) {
+      writer.uint32(10).string(message.membershipId);
+    }
+    if (message.name !== undefined) {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.email !== undefined) {
+      writer.uint32(26).string(message.email);
+    }
+    if (message.role !== undefined) {
+      writer.uint32(32).int32(message.role);
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(42).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -69,6 +104,41 @@ export const OrganizationServiceListMembershipsRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.membershipId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -78,12 +148,25 @@ export const OrganizationServiceListMembershipsRequest = {
     return message;
   },
 
-  fromJSON(_: any): OrganizationServiceListMembershipsRequest {
-    return {};
+  fromJSON(object: any): OrganizationServiceListMembershipsRequest {
+    return {
+      membershipId: isSet(object.membershipId) ? String(object.membershipId) : undefined,
+      name: isSet(object.name) ? String(object.name) : undefined,
+      email: isSet(object.email) ? String(object.email) : undefined,
+      role: isSet(object.role) ? membershipRoleFromJSON(object.role) : undefined,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+    };
   },
 
-  toJSON(_: OrganizationServiceListMembershipsRequest): unknown {
+  toJSON(message: OrganizationServiceListMembershipsRequest): unknown {
     const obj: any = {};
+    message.membershipId !== undefined && (obj.membershipId = message.membershipId);
+    message.name !== undefined && (obj.name = message.name);
+    message.email !== undefined && (obj.email = message.email);
+    message.role !== undefined &&
+      (obj.role = message.role !== undefined ? membershipRoleToJSON(message.role) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -94,21 +177,31 @@ export const OrganizationServiceListMembershipsRequest = {
   },
 
   fromPartial<I extends Exact<DeepPartial<OrganizationServiceListMembershipsRequest>, I>>(
-    _: I,
+    object: I,
   ): OrganizationServiceListMembershipsRequest {
     const message = createBaseOrganizationServiceListMembershipsRequest();
+    message.membershipId = object.membershipId ?? undefined;
+    message.name = object.name ?? undefined;
+    message.email = object.email ?? undefined;
+    message.role = object.role ?? undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
+      : undefined;
     return message;
   },
 };
 
 function createBaseOrganizationServiceListMembershipsResponse(): OrganizationServiceListMembershipsResponse {
-  return { result: [] };
+  return { result: [], pagination: undefined };
 }
 
 export const OrganizationServiceListMembershipsResponse = {
   encode(message: OrganizationServiceListMembershipsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.result) {
       OrgMembershipItem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -127,6 +220,13 @@ export const OrganizationServiceListMembershipsResponse = {
 
           message.result.push(OrgMembershipItem.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -139,6 +239,7 @@ export const OrganizationServiceListMembershipsResponse = {
   fromJSON(object: any): OrganizationServiceListMembershipsResponse {
     return {
       result: Array.isArray(object?.result) ? object.result.map((e: any) => OrgMembershipItem.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
     };
   },
 
@@ -149,6 +250,8 @@ export const OrganizationServiceListMembershipsResponse = {
     } else {
       obj.result = [];
     }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -163,6 +266,9 @@ export const OrganizationServiceListMembershipsResponse = {
   ): OrganizationServiceListMembershipsResponse {
     const message = createBaseOrganizationServiceListMembershipsResponse();
     message.result = object.result?.map((e) => OrgMembershipItem.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
     return message;
   },
 };
