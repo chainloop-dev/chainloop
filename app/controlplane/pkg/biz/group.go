@@ -522,7 +522,7 @@ func (uc *GroupUseCase) validateRequesterPermissions(ctx context.Context, orgID,
 
 	// If not a maintainer of this group, deny access
 	if requesterGroupMembership == nil || requesterGroupMembership.Role != authz.RoleGroupMaintainer {
-		return NewErrValidationStr("requester does not have permission to add members to this group")
+		return NewErrValidationStr("requester does not have permission to manage members on this group")
 	}
 
 	return nil
