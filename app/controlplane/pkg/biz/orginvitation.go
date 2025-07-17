@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -157,15 +158,15 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	}
 
 	// 4 - The receiver does exist in the org already
-	memberships, err := uc.mRepo.FindByOrg(ctx, orgUUID)
+	_, membershipCount, err := uc.mRepo.FindByOrg(ctx, orgUUID, &ListByOrgOpts{
+		Email: &receiverEmail,
+	}, pagination.NewDefaultOffsetPaginationOpts())
 	if err != nil {
 		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
 	}
 
-	for _, m := range memberships {
-		if m.User != nil && m.User.Email == receiverEmail {
-			return nil, NewErrValidationStr("user already exists in the org")
-		}
+	if membershipCount > 0 {
+		return nil, NewErrValidationStr("user already exists in the org")
 	}
 
 	// 5 - Check if there is already an invitation for this user for this org

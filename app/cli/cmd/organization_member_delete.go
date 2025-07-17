@@ -25,12 +25,12 @@ import (
 
 // Get the membership entry associated to the current user for the given organization
 func loadMembershipCurrentOrg(ctx context.Context, membershipID string) (*action.MembershipItem, error) {
-	memberships, err := action.NewMembershipList(actionOpts).ListMembers(ctx)
+	res, err := action.NewMembershipList(actionOpts).ListMembers(ctx, 1, 1, &action.ListMembersOpts{MembershipID: &membershipID})
 	if err != nil {
 		return nil, fmt.Errorf("listing memberships: %w", err)
 	}
 
-	for _, m := range memberships {
+	for _, m := range res.Memberships {
 		if m.ID == membershipID {
 			return m, nil
 		}

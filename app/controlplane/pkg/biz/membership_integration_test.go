@@ -17,11 +17,13 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -47,24 +49,27 @@ func (s *membershipIntegrationTestSuite) TestByOrg() {
 	s.NoError(err)
 
 	s.Run("org 1", func() {
-		memberships, err := s.Membership.ByOrg(ctx, userOrg.ID)
+		memberships, count, err := s.Membership.ByOrg(ctx, userOrg.ID, &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(memberships, 1)
+		s.Equal(1, count)
 		s.Equal(memberships[0].OrganizationID.String(), userOrg.ID)
 		s.Equal(memberships[0].User.Email, user.Email)
 		s.Equal(memberships[0].Role, authz.RoleViewer)
 	})
 
 	s.Run("shared org", func() {
-		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
+		memberships, count, err := s.Membership.ByOrg(ctx, sharedOrg.ID, &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(memberships, 2)
+		s.Equal(2, count)
 	})
 
 	s.T().Run("non existing org", func(t *testing.T) {
-		memberships, err := s.Membership.ByOrg(ctx, uuid.NewString())
+		memberships, count, err := s.Membership.ByOrg(ctx, uuid.NewString(), &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(memberships, 0)
+		s.Equal(0, count)
 	})
 }
 
@@ -118,9 +123,10 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		s.NoError(err)
 
 		// User 2 is still a member
-		members, err := s.Membership.ByOrg(ctx, got.ID)
+		members, count, err := s.Membership.ByOrg(ctx, got.ID, &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(members, 1)
+		s.Equal(1, count)
 		s.Equal(user2.ID, members[0].User.ID)
 	})
 
@@ -158,16 +164,18 @@ func (s *membershipIntegrationTestSuite) TestDeleteOther() {
 	})
 
 	s.T().Run("I can delete other user membership", func(t *testing.T) {
-		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
+		memberships, count, err := s.Membership.ByOrg(ctx, sharedOrg.ID, &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(memberships, 1)
+		s.Equal(1, count)
 
 		err = s.Membership.DeleteOther(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String())
 		s.NoError(err)
 
-		memberships, err = s.Membership.ByOrg(ctx, sharedOrg.ID)
+		memberships, count, err = s.Membership.ByOrg(ctx, sharedOrg.ID, &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(memberships, 0)
+		s.Equal(0, count)
 	})
 }
 
@@ -202,9 +210,10 @@ func (s *membershipIntegrationTestSuite) TestUpdateRole() {
 	})
 
 	s.T().Run("I can update other roles", func(t *testing.T) {
-		memberships, err := s.Membership.ByOrg(ctx, sharedOrg.ID)
+		memberships, count, err := s.Membership.ByOrg(ctx, sharedOrg.ID, &biz.ListByOrgOpts{}, nil)
 		s.NoError(err)
 		s.Len(memberships, 1)
+		s.Equal(1, count)
 		s.Equal(authz.RoleViewer, memberships[0].Role)
 
 		got, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
@@ -489,9 +498,342 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 // Run the tests
 func TestMembershipUseCase(t *testing.T) {
 	suite.Run(t, new(membershipIntegrationTestSuite))
+	suite.Run(t, new(membershipFilteringPaginationTestSuite))
 }
 
 // Utility struct to hold the test suite
 type membershipIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
+}
+
+type membershipFilteringPaginationTestSuite struct {
+	testhelpers.UseCasesEachTestSuite
+	org  *biz.Organization
+	user *biz.User
+}
+
+func (s *membershipFilteringPaginationTestSuite) SetupTest() {
+	var err error
+	assert := assert.New(s.T())
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
+
+	ctx := context.Background()
+	s.org, err = s.Organization.CreateWithRandomName(ctx)
+	assert.NoError(err)
+
+	// Create a user for membership tests
+	s.user, err = s.User.UpsertByEmail(ctx, fmt.Sprintf("test-user-%s@example.com", uuid.New().String()), nil)
+	assert.NoError(err)
+
+	// Add user to organization
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID)
+	assert.NoError(err)
+}
+
+// Test comprehensive filtering and pagination functionality
+func (s *membershipFilteringPaginationTestSuite) TestByOrgWithFiltersAndPagination() {
+	ctx := context.Background()
+
+	// Create an organization
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	// Create users with different names and emails for filtering tests
+	johnSmith, err := s.User.UpsertByEmail(ctx, "john.smith@example.com", &biz.UpsertByEmailOpts{
+		FirstName: toPtrS("John"),
+		LastName:  toPtrS("Smith"),
+	})
+	s.NoError(err)
+
+	janeSmith, err := s.User.UpsertByEmail(ctx, "jane.smith@example.com", &biz.UpsertByEmailOpts{
+		FirstName: toPtrS("Jane"),
+		LastName:  toPtrS("Smith"),
+	})
+	s.NoError(err)
+
+	bobJohnson, err := s.User.UpsertByEmail(ctx, "bob.johnson@company.com", &biz.UpsertByEmailOpts{
+		FirstName: toPtrS("Bob"),
+		LastName:  toPtrS("Johnson"),
+	})
+	s.NoError(err)
+
+	aliceWilson, err := s.User.UpsertByEmail(ctx, "alice.wilson@test.org", &biz.UpsertByEmailOpts{
+		FirstName: toPtrS("Alice"),
+		LastName:  toPtrS("Wilson"),
+	})
+	s.NoError(err)
+
+	// Add all users to the organization
+	_, err = s.Membership.Create(ctx, org.ID, johnSmith.ID)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, janeSmith.ID)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, bobJohnson.ID)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, aliceWilson.ID)
+	s.NoError(err)
+
+	s.Run("filter by first name", func() {
+		nameFilter := "Bob"
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(1, count)
+		s.Len(memberships, 1)
+		s.Equal("Bob", memberships[0].User.FirstName)
+		s.Equal("bob.johnson@company.com", memberships[0].User.Email)
+	})
+
+	s.Run("filter by last name", func() {
+		nameFilter := "Smith"
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(2, count)
+		s.Len(memberships, 2)
+
+		// Should find both John Smith and Jane Smith
+		emails := []string{memberships[0].User.Email, memberships[1].User.Email}
+		s.Contains(emails, "john.smith@example.com")
+		s.Contains(emails, "jane.smith@example.com")
+	})
+
+	s.Run("filter by partial name", func() {
+		nameFilter := "ob" // Should match "Bob"
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(1, count)
+		s.Len(memberships, 1)
+		s.Equal("bob.johnson@company.com", memberships[0].User.Email)
+	})
+
+	s.Run("filter by email domain", func() {
+		emailFilter := "@example.com"
+		opts := &biz.ListByOrgOpts{Email: &emailFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(2, count)
+		s.Len(memberships, 2)
+
+		// Should find both John Smith and Jane Smith
+		emails := []string{memberships[0].User.Email, memberships[1].User.Email}
+		s.Contains(emails, "john.smith@example.com")
+		s.Contains(emails, "jane.smith@example.com")
+	})
+
+	s.Run("filter by specific email", func() {
+		emailFilter := "bob.johnson"
+		opts := &biz.ListByOrgOpts{Email: &emailFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(1, count)
+		s.Len(memberships, 1)
+		s.Equal("bob.johnson@company.com", memberships[0].User.Email)
+	})
+
+	s.Run("filter with no matches", func() {
+		nameFilter := "NonExistentName"
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(0, count)
+		s.Len(memberships, 0)
+	})
+
+	s.Run("pagination with limit", func() {
+		opts := &biz.ListByOrgOpts{}
+		paginationOpts, err := pagination.NewOffsetPaginationOpts(0, 2)
+		s.NoError(err)
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, paginationOpts)
+		s.NoError(err)
+		s.Equal(4, count)     // Total count should be 4
+		s.Len(memberships, 2) // But only 2 results returned due to limit
+	})
+
+	s.Run("pagination with offset", func() {
+		opts := &biz.ListByOrgOpts{}
+		paginationOpts, err := pagination.NewOffsetPaginationOpts(2, 2)
+		s.NoError(err)
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, paginationOpts)
+		s.NoError(err)
+		s.Equal(4, count)     // Total count should still be 4
+		s.Len(memberships, 2) // Should return remaining 2 results
+	})
+
+	s.Run("pagination beyond available results", func() {
+		opts := &biz.ListByOrgOpts{}
+		paginationOpts, err := pagination.NewOffsetPaginationOpts(10, 5)
+		s.NoError(err)
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, paginationOpts)
+		s.NoError(err)
+		s.Equal(4, count)     // Total count should still be 4
+		s.Len(memberships, 0) // No results due to high offset
+	})
+
+	s.Run("pagination with filtering", func() {
+		nameFilter := "Smith"
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+		paginationOpts, err := pagination.NewOffsetPaginationOpts(0, 1)
+		s.NoError(err)
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, paginationOpts)
+		s.NoError(err)
+		s.Equal(2, count)     // Total filtered count should be 2 (both Smiths)
+		s.Len(memberships, 1) // But only 1 result returned due to limit
+		s.Contains(memberships[0].User.Email, "smith@example.com")
+	})
+
+	s.Run("empty filters should return all results", func() {
+		emptyName := ""
+		emptyEmail := ""
+		opts := &biz.ListByOrgOpts{
+			Name:  &emptyName,
+			Email: &emptyEmail,
+		}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(4, count)
+		s.Len(memberships, 4)
+	})
+
+	s.Run("nil filter options should return all results", func() {
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, nil, nil)
+		s.NoError(err)
+		s.Equal(4, count)
+		s.Len(memberships, 4)
+	})
+
+	s.Run("case insensitive filtering", func() {
+		nameFilter := "SMITH" // uppercase
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(2, count) // Should still find both Smiths
+		s.Len(memberships, 2)
+	})
+}
+
+// Test that verifies the ordering of results
+func (s *membershipFilteringPaginationTestSuite) TestByOrgOrdering() {
+	ctx := context.Background()
+
+	// Create an organization
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	// Create users and add them with some delay to test ordering
+	user1, err := s.User.UpsertByEmail(ctx, "first@example.com", nil)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, user1.ID)
+	s.NoError(err)
+
+	// Small delay to ensure different creation times
+	user2, err := s.User.UpsertByEmail(ctx, "second@example.com", nil)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, user2.ID)
+	s.NoError(err)
+
+	user3, err := s.User.UpsertByEmail(ctx, "third@example.com", nil)
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, user3.ID)
+	s.NoError(err)
+
+	s.Run("results should be ordered by creation date descending", func() {
+		opts := &biz.ListByOrgOpts{}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(3, count)
+		s.Len(memberships, 3)
+
+		// Most recent should be first
+		s.Equal("third@example.com", memberships[0].User.Email)
+		s.Equal("second@example.com", memberships[1].User.Email)
+		s.Equal("first@example.com", memberships[2].User.Email)
+
+		// Verify timestamps are in descending order
+		s.True(memberships[0].CreatedAt.After(*memberships[1].CreatedAt))
+		s.True(memberships[1].CreatedAt.After(*memberships[2].CreatedAt))
+	})
+}
+
+// Test edge cases and error scenarios
+func (s *membershipFilteringPaginationTestSuite) TestByOrgEdgeCases() {
+	ctx := context.Background()
+
+	// Create an organization
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	s.Run("organization with no members", func() {
+		opts := &biz.ListByOrgOpts{}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(0, count)
+		s.Len(memberships, 0)
+	})
+
+	s.Run("non-existent organization", func() {
+		nonExistentOrgID := uuid.NewString()
+		opts := &biz.ListByOrgOpts{}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, nonExistentOrgID, opts, nil)
+		s.NoError(err)
+		s.Equal(0, count)
+		s.Len(memberships, 0)
+	})
+
+	s.Run("invalid UUID", func() {
+		invalidOrgID := "invalid-uuid"
+		opts := &biz.ListByOrgOpts{}
+
+		_, _, err := s.Membership.ByOrg(ctx, invalidOrgID, opts, nil)
+		s.Error(err)
+		s.True(biz.IsErrInvalidUUID(err))
+	})
+
+	// Add a user to test special characters in names/emails
+	user, err := s.User.UpsertByEmail(ctx, "test.user+special@example.com", &biz.UpsertByEmailOpts{
+		FirstName: toPtrS("Test-User"),
+		LastName:  toPtrS("O'Connor"),
+	})
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, user.ID)
+	s.NoError(err)
+
+	s.Run("special characters in filters", func() {
+		nameFilter := "O'Connor"
+		opts := &biz.ListByOrgOpts{Name: &nameFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(1, count)
+		s.Len(memberships, 1)
+		s.Equal("Test-User", memberships[0].User.FirstName)
+		s.Equal("O'Connor", memberships[0].User.LastName)
+	})
+
+	s.Run("special characters in email filter", func() {
+		emailFilter := "test.user+special"
+		opts := &biz.ListByOrgOpts{Email: &emailFilter}
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, opts, nil)
+		s.NoError(err)
+		s.Equal(1, count)
+		s.Len(memberships, 1)
+		s.Equal("test.user+special@example.com", memberships[0].User.Email)
+	})
 }

@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -43,6 +44,22 @@ type MembershipItem struct {
 	Role      Role `json:"role"`
 }
 
+type ListMembersOpts struct {
+	// MembershipID Optional, if provided, filters by a specific membership ID
+	MembershipID *string
+	// Name is the name of the user to filter by
+	Name *string
+	// Email is the email of the user to filter by
+	Email *string
+	// Role is the role of the user to filter by
+	Role *string
+}
+
+type ListMembershipResult struct {
+	Memberships    []*MembershipItem
+	PaginationMeta *OffsetPagination
+}
+
 func NewMembershipList(cfg *ActionsOpts) *MembershipList {
 	return &MembershipList{cfg}
 }
@@ -63,10 +80,33 @@ func (action *MembershipList) ListOrgs(ctx context.Context) ([]*MembershipItem, 
 	return result, nil
 }
 
-// List members of the current organization
-func (action *MembershipList) ListMembers(ctx context.Context) ([]*MembershipItem, error) {
+// ListMembers lists the members of an organization with pagination and optional filters.
+func (action *MembershipList) ListMembers(ctx context.Context, page int, pageSize int, opts *ListMembersOpts) (*ListMembershipResult, error) {
+	if page < 1 {
+		return nil, fmt.Errorf("page must be greater or equal to 1")
+	}
+	if pageSize < 1 {
+		return nil, fmt.Errorf("page-size must be greater or equal to 1")
+	}
+
 	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
-	resp, err := client.ListMemberships(ctx, &pb.OrganizationServiceListMembershipsRequest{})
+	req := &pb.OrganizationServiceListMembershipsRequest{
+		MembershipId: opts.MembershipID,
+		Name:         opts.Name,
+		Email:        opts.Email,
+		Pagination: &pb.OffsetPaginationRequest{
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		},
+	}
+
+	// If a role is specified, convert it to the protobuf enum
+	if opts.Role != nil {
+		casted := stringToPbRole(Role(*opts.Role))
+		req.Role = &casted
+	}
+
+	resp, err := client.ListMemberships(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +116,15 @@ func (action *MembershipList) ListMembers(ctx context.Context) ([]*MembershipIte
 		result = append(result, pbMembershipItemToAction(p))
 	}
 
-	return result, nil
+	return &ListMembershipResult{
+		Memberships: result,
+		PaginationMeta: &OffsetPagination{
+			Page:       int(resp.GetPagination().GetPage()),
+			PageSize:   int(resp.GetPagination().GetPageSize()),
+			TotalPages: int(resp.GetPagination().GetTotalPages()),
+			TotalCount: int(resp.GetPagination().GetTotalCount()),
+		},
+	}, nil
 }
 
 func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {

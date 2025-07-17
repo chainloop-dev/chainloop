@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationResponse.schema.json",
+      "description": "Pagination information for the response"
+    },
     "result": {
       "items": {
         "$ref": "controlplane.v1.OrgMembershipItem.schema.json"

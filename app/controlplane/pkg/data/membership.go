@@ -27,7 +27,9 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -89,17 +91,99 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 }
 
 // FindByOrg finds all memberships for a given organization
-func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := r.data.DB.Membership.Query().Where(
+func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID, opts *biz.ListByOrgOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.Membership, int, error) {
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	if opts == nil {
+		opts = &biz.ListByOrgOpts{}
+	}
+
+	// Build the base query
+	query := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ResourceIDEQ(orgID),
-	).WithUser().WithOrganization().All(ctx)
-	if err != nil {
-		return nil, err
+	).WithUser().WithOrganization()
+
+	// Apply filters if provided
+	var predicates []predicate.Membership
+	if opts.Name != nil && *opts.Name != "" {
+		// Filter by user's first name or last name containing the search term
+		predicates = append(predicates, membership.HasUserWith(
+			user.Or(
+				user.FirstNameContainsFold(*opts.Name),
+				user.LastNameContainsFold(*opts.Name),
+			),
+		))
 	}
 
-	return entMembershipsToBiz(memberships), nil
+	// Filter by user's email containing the search term
+	if opts.Email != nil && *opts.Email != "" {
+		predicates = append(predicates, membership.HasUserWith(user.EmailContainsFold(*opts.Email)))
+	}
+
+	// Apply OR predicates if any exist
+	if len(predicates) > 0 {
+		query = query.Where(membership.Or(predicates...))
+	}
+
+	// Filter by the membership ID if provided
+	if opts.MembershipID != nil {
+		query = query.Where(membership.IDEQ(*opts.MembershipID))
+	}
+
+	// Filter by role if provided
+	if opts.Role != nil {
+		query = query.Where(membership.RoleEQ(*opts.Role))
+	}
+
+	// Get the count of all filtered rows without the limit and offset
+	count, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination and execute the query
+	memberships, err := query.
+		Order(ent.Desc(membership.FieldCreatedAt)).
+		Limit(paginationOpts.Limit()).
+		Offset(paginationOpts.Offset()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch all member IDs from the memberships, in this context they are user IDs
+	memberIDs := make([]uuid.UUID, 0, len(memberships))
+	for _, m := range memberships {
+		memberIDs = append(memberIDs, m.MemberID)
+	}
+
+	// Fetch user data for all the member IDs
+	users, err := r.data.DB.User.Query().Where(user.IDIn(memberIDs...)).All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch user data: %w", err)
+	}
+
+	// Create a map of users by ID
+	userMap := make(map[uuid.UUID]*ent.User, len(users))
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
+	// Convert to biz.Membership objects and attach user data manually
+	result := make([]*biz.Membership, 0, len(memberships))
+	for _, m := range memberships {
+		bizMembership := entMembershipToBiz(m)
+		if u, ok := userMap[m.MemberID]; ok {
+			bizMembership.User = entUserToBizUser(u)
+		}
+		result = append(result, bizMembership)
+	}
+
+	return result, count, nil
 }
 
 // FindByOrgAndUser finds the membership for a given organization and user
