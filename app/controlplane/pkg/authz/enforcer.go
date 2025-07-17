@@ -264,5 +264,11 @@ func doSync(e *Enforcer, c *Config) error {
 		return fmt.Errorf("failed to add grouping policy: %w", err)
 	}
 
+	// ProjectAdmins are ProjectViewers as well
+	_, err = e.AddGroupingPolicy(string(RoleProjectAdmin), string(RoleProjectViewer))
+	if err != nil {
+		return fmt.Errorf("failed to add grouping policy: %w", err)
+	}
+
 	return nil
 }
