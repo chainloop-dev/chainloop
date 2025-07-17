@@ -834,7 +834,7 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 			if inv.ReceiverEmail == "not-in-org@example.com" {
 				found = true
 				s.Equal(biz.OrgInvitationStatusPending, inv.Status)
-				s.Equal(string(authz.RoleOrgMember), string(inv.Role))
+				s.Equal(string(authz.RoleOrgContributor), string(inv.Role))
 
 				// Verify the invitation context
 				s.NotNil(inv.Context, "Invitation context should not be nil")
