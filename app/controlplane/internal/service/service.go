@@ -254,6 +254,11 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 }
 
 func (s *service) userCanCreateProject(ctx context.Context) error {
+	// admins always can create projects
+	if !rbacEnabled(ctx) {
+		return nil
+	}
+
 	// Only org tokens can create projects
 	if token := entities.CurrentAPIToken(ctx); token != nil {
 		if token.ProjectID != nil {
