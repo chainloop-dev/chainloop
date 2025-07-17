@@ -114,10 +114,11 @@ func pbMembershipItemToAction(in *pb.OrgMembershipItem) *MembershipItem {
 type Role string
 
 const (
-	RoleAdmin  Role = "admin"
-	RoleOwner  Role = "owner"
-	RoleViewer Role = "viewer"
-	RoleMember Role = "member"
+	RoleAdmin       Role = "admin"
+	RoleOwner       Role = "owner"
+	RoleViewer      Role = "viewer"
+	RoleMember      Role = "member"
+	RoleContributor Role = "contributor"
 )
 
 type Roles []Role
@@ -127,6 +128,7 @@ var AvailableRoles = Roles{
 	RoleOwner,
 	RoleViewer,
 	RoleMember,
+	RoleContributor,
 }
 
 func (roles Roles) String() string {
@@ -147,6 +149,8 @@ func pbRoleToString(role pb.MembershipRole) Role {
 		return RoleOwner
 	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_MEMBER:
 		return RoleMember
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_CONTRIBUTOR:
+		return RoleContributor
 	}
 	return ""
 }

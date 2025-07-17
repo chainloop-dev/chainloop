@@ -275,6 +275,12 @@ var RolesMap = map[Role][]*Policy{
 		PolicyAPITokenList,
 		PolicyAPITokenCreate,
 		PolicyAPITokenRevoke,
+
+		// Project Memberships available to contributors if they are project admins
+		PolicyProjectListMemberships,
+		PolicyProjectAddMemberships,
+		PolicyProjectRemoveMemberships,
+		PolicyProjectUpdateMemberships,
 	},
 
 	// RoleOrgMember inherits from RoleOrgContributor and can also create their own projects and see members
@@ -283,12 +289,6 @@ var RolesMap = map[Role][]*Policy{
 
 		// Org memberships
 		PolicyOrganizationListMemberships,
-
-		// Project Memberships
-		PolicyProjectListMemberships,
-		PolicyProjectAddMemberships,
-		PolicyProjectRemoveMemberships,
-		PolicyProjectUpdateMemberships,
 	},
 
 	// RoleProjectViewer: has read-only permissions on a project
