@@ -288,9 +288,6 @@ var RolesMap = map[Role][]*Policy{
 	// RoleOrgMember inherits from RoleOrgContributor and can also create their own projects and see members
 	RoleOrgMember: {
 		PolicyProjectCreate,
-
-		// Org memberships
-		PolicyOrganizationListMemberships,
 	},
 
 	// RoleProjectViewer: has read-only permissions on a project
