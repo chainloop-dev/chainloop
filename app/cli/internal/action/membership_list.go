@@ -165,6 +165,8 @@ func stringToPbRole(role Role) pb.MembershipRole {
 		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_OWNER
 	case RoleMember:
 		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_MEMBER
+	case RoleContributor:
+		return pb.MembershipRole_MEMBERSHIP_ROLE_ORG_CONTRIBUTOR
 	}
 	return pb.MembershipRole_MEMBERSHIP_ROLE_UNSPECIFIED
 }
