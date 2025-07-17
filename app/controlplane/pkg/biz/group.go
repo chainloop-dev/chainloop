@@ -128,6 +128,9 @@ type ListMembersOpts struct {
 	Maintainers *bool
 	// MemberEmail is the email of the member to filter by.
 	MemberEmail *string
+	// RequesterID is the ID of the user who is requesting to list mmebers. Optional.
+	// If provided, the requester must be a maintainer or admin.
+	RequesterID uuid.UUID
 }
 
 // AddMemberToGroupOpts defines options for adding a member to a group.
@@ -228,6 +231,13 @@ func (uc *GroupUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, opts *
 	resolvedGroupID, err := uc.ValidateGroupIdentifier(ctx, orgID, opts.ID, opts.Name)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// Validate requester permissions only if RequesterID is provided
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.validateRequesterPermissions(ctx, orgID, opts.RequesterID, resolvedGroupID); err != nil {
+			return nil, 0, fmt.Errorf("failed to validate requester permissions: %w", err)
+		}
 	}
 
 	pgOpts := pagination.NewDefaultOffsetPaginationOpts()

@@ -328,6 +328,7 @@ var RolesMap = map[Role][]*Policy{
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
 		PolicyGroupListPendingInvitations,
+		PolicyGroupListMemberships,
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
 		PolicyGroupUpdateMemberships,
@@ -399,10 +400,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/List": {PolicyGroupList},
 	"/controlplane.v1.GroupService/Get":  {PolicyGroupRead},
 	// Group Memberships
-	"/controlplane.v1.GroupService/ListMembers":  {PolicyGroupListMemberships},
 	"/controlplane.v1.GroupService/ListProjects": {PolicyGroupListProjects},
 	// For the following endpoints, we rely on the service layer to check the permissions
 	// That's why we let everyone access them (empty policies)
+	"/controlplane.v1.GroupService/ListMembers":                  {},
 	"/controlplane.v1.GroupService/AddMember":                    {},
 	"/controlplane.v1.GroupService/RemoveMember":                 {},
 	"/controlplane.v1.GroupService/ListPendingInvitations":       {},
