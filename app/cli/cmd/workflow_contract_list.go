@@ -48,9 +48,9 @@ func contractItemTableOutput(contract *action.WorkflowContractItem) error {
 func contractListTableOutput(contracts []*action.WorkflowContractItem) error {
 	t := newTableWriter()
 
-	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "Updated At", "# Workflows"})
+	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "Updated At", "# Workflows", "Scope"})
 	for _, p := range contracts {
-		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), p.LatestRevisionCreatedAt.Format(time.RFC822), len(p.WorkflowRefs)})
+		t.AppendRow(table.Row{p.Name, p.LatestRevision, p.CreatedAt.Format(time.RFC822), p.LatestRevisionCreatedAt.Format(time.RFC822), len(p.WorkflowRefs), p.ScopedEntity.String()})
 	}
 
 	t.Render()

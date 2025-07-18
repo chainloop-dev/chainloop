@@ -22,6 +22,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -40,11 +42,23 @@ type Membership struct {
 	ResourceID     uuid.UUID
 }
 
+// ListByOrgOpts are the options to filter memberships of an organization
+type ListByOrgOpts struct {
+	// MembershipID the ID of the membership to filter by
+	MembershipID *uuid.UUID
+	// Name the name of the user to filter memberships by
+	Name *string
+	// Email the email of the user to filter memberships by
+	Email *string
+	// Role the role of the user to filter memberships by
+	Role *authz.Role
+}
+
 type MembershipRepo interface {
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid.UUID, userEmail string) (*Membership, error)
 	FindByUserAndResourceID(ctx context.Context, userID, resourceID uuid.UUID) (*Membership, error)
-	FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*Membership, error)
+	FindByOrg(ctx context.Context, orgID uuid.UUID, opts *ListByOrgOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Membership, int, error)
 	FindByIDInUser(ctx context.Context, userID, ID uuid.UUID) (*Membership, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*Membership, error)
 	FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*Membership, error)
@@ -113,12 +127,12 @@ func (uc *MembershipUseCase) LeaveAndDeleteOrg(ctx context.Context, userID, memb
 
 	// Check number of members in the org
 	// If it's the only one, delete the org
-	membershipsInOrg, err := uc.repo.FindByOrg(ctx, m.OrganizationID)
+	_, membershipCount, err := uc.repo.FindByOrg(ctx, m.OrganizationID, &ListByOrgOpts{}, pagination.NewDefaultOffsetPaginationOpts())
 	if err != nil {
 		return fmt.Errorf("failed to find memberships in org: %w", err)
 	}
 
-	if len(membershipsInOrg) == 0 {
+	if membershipCount == 0 {
 		// Delete the org
 		uc.logger.Infow("msg", "Deleting organization", "organization_id", m.OrganizationID.String())
 		if err := uc.orgUseCase.Delete(ctx, m.OrganizationID.String()); err != nil {
@@ -154,6 +168,9 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 	}
 
 	uc.logger.Infow("msg", "Deleting membership", "org_id", orgID, "membership_id", m.ID.String())
+
+	// Delete the main membership - this will also remove the user from all groups in the org
+	// and clean up associated resource memberships in the data layer
 	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
 		return fmt.Errorf("failed to delete membership: %w", err)
 	}
@@ -252,13 +269,22 @@ func (uc *MembershipUseCase) ByUser(ctx context.Context, userID string) ([]*Memb
 	return uc.repo.FindByUser(ctx, userUUID)
 }
 
-func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string) ([]*Membership, error) {
+func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string, opts *ListByOrgOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Membership, int, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
-		return nil, NewErrInvalidUUID(err)
+		return nil, 0, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.FindByOrg(ctx, orgUUID)
+	if opts == nil {
+		opts = &ListByOrgOpts{}
+	}
+
+	pgOpts := paginationOpts
+	if pgOpts == nil {
+		pgOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	return uc.repo.FindByOrg(ctx, orgUUID, opts, pgOpts)
 }
 
 // SetCurrent sets the current membership for the user
@@ -361,9 +387,9 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, project
 	return nil
 }
 
-func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo MembershipRepo, pRepo ProjectsRepo) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
+func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
 	// Load ALL memberships for the given user
-	memberships, err := mRepo.ListAllByUser(ctx, userID)
+	memberships, err := uc.ListAllMembershipsForUser(ctx, userID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list memberships: %w", err)
 	}
@@ -376,13 +402,9 @@ func getOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID, mRepo Memb
 			userOrgs = append(userOrgs, m.ResourceID)
 			// If the role in the org is member, we must enable RBAC for projects.
 			if m.Role == authz.RoleOrgMember {
-				// get list of projects in org, and match it with the memberships to build a filter
-				orgProjects, err := getProjectsWithMembership(ctx, pRepo, m.ResourceID, memberships)
-				if err != nil {
-					return nil, nil, err
-				}
+				// get the list of projects in org, and match it with the memberships to build a filter.
 				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
-				projectIDs[m.ResourceID] = orgProjects
+				projectIDs[m.ResourceID] = getProjectsWithMembershipInOrg(m.ResourceID, memberships)
 			}
 		}
 	}

@@ -2,16 +2,16 @@
   "ActionType": "ProjectMembershipRemoved",
   "TargetType": "Project",
   "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
-  "ActorType": "API_TOKEN",
-  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "SYSTEM",
+  "ActorID": null,
   "ActorEmail": "",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "API Token 1089bb36-e27b-428b-8009-d015c8737c54 has removed user 'test@example.com' from the project 'test-project'",
+  "Description": "system@chainloop.dev has removed user 'test@example.com' from the project 'test-project'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",
     "user_id": "4089bb36-e27b-428b-8009-d015c8737c57",
     "user_email": "test@example.com"
   },
-  "Digest": "sha256:15800e73f6bc26f866647be23c37d3448195b316f4d07f82280a1acd75821de2"
+  "Digest": "sha256:843bec1b22da94ea7320c20556893a53b04bf795d0f6dd6a6f5cd58e88da928f"
 }

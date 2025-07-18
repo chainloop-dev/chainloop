@@ -49,7 +49,8 @@ type GroupBase struct {
 }
 
 func (g *GroupBase) RequiresActor() bool {
-	return true
+	// Groups might be created automatically by the system, so we don't require an actor
+	return false
 }
 
 func (g *GroupBase) TargetType() auditor.TargetType {
@@ -87,7 +88,7 @@ func (g *GroupCreated) ActionInfo() (json.RawMessage, error) {
 }
 
 func (g *GroupCreated) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has created the group %s", g.GroupName)
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has created the group %s", g.GroupName)
 }
 
 // GroupUpdated represents an update to a group
@@ -112,9 +113,9 @@ func (g *GroupUpdated) ActionInfo() (json.RawMessage, error) {
 
 func (g *GroupUpdated) Description() string {
 	if g.OldName != nil && g.NewName != nil {
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has renamed the group from %s to %s", *g.OldName, *g.NewName)
+		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has renamed the group from %s to %s", *g.OldName, *g.NewName)
 	}
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated the group %s", g.GroupName)
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has updated the group %s", g.GroupName)
 }
 
 // GroupDeleted represents the deletion of a group
@@ -135,7 +136,7 @@ func (g *GroupDeleted) ActionInfo() (json.RawMessage, error) {
 }
 
 func (g *GroupDeleted) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has deleted the group %s", g.GroupName)
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has deleted the group %s", g.GroupName)
 }
 
 // GroupMemberAdded represents the addition of a member to a group
@@ -168,7 +169,7 @@ func (g *GroupMemberAdded) Description() string {
 		maintainerStatus = " as a maintainer"
 	}
 
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has added user %s to the group %s%s",
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has added user %s to the group %s%s",
 		g.UserEmail, g.GroupName, maintainerStatus)
 }
 
@@ -196,7 +197,7 @@ func (g *GroupMemberRemoved) ActionInfo() (json.RawMessage, error) {
 }
 
 func (g *GroupMemberRemoved) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has removed user %s from the group %s",
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has removed user %s from the group %s",
 		g.UserEmail, g.GroupName)
 }
 
@@ -226,6 +227,6 @@ func (g *GroupMemberUpdated) ActionInfo() (json.RawMessage, error) {
 }
 
 func (g *GroupMemberUpdated) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated user %s in the group %s",
+	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has updated user %s in the group %s",
 		g.UserEmail, g.GroupName)
 }

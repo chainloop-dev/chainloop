@@ -47,6 +47,8 @@ service GroupService {
   rpc UpdateMemberMaintainerStatus(GroupServiceUpdateMemberMaintainerStatusRequest) returns (GroupServiceUpdateMemberMaintainerStatusResponse) {}
   // ListPendingInvitations retrieves pending invitations for a group
   rpc ListPendingInvitations(GroupServiceListPendingInvitationsRequest) returns (GroupServiceListPendingInvitationsResponse) {}
+  // ListProjects retrieves a paginated list of projects the group is a member of
+  rpc ListProjects(GroupServiceListProjectsRequest) returns (GroupServiceListProjectsResponse) {}
 }
 
 // GroupServiceCreateRequest contains the information needed to create a new group
@@ -236,3 +238,35 @@ message GroupServiceUpdateMemberMaintainerStatusRequest {
 
 // GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status
 message GroupServiceUpdateMemberMaintainerStatusResponse {}
+
+// GroupServiceListProjectsRequest contains parameters for filtering and paginating project results for a group
+message GroupServiceListProjectsRequest {
+  // IdentityReference is used to specify the group by either its ID or name
+  IdentityReference group_reference = 1 [(buf.validate.field).required = true];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 2;
+}
+
+// GroupServiceListProjectsResponse contains a paginated list of projects for a group
+message GroupServiceListProjectsResponse {
+  // List of projects memberships matching the request criteria
+  repeated ProjectInfo projects = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+
+  // ProjectInfo represents detailed information about a project that a group is a member of
+  message ProjectInfo {
+    // Unique identifier of the project
+    string id = 1;
+    // Name of the project
+    string name = 2;
+    // Description of the project
+    string description = 3;
+    // Role of the group in the project (admin or viewer)
+    ProjectMemberRole role = 4;
+    // The latest version ID of the project, if available
+    optional string latest_version_id = 5;
+    // Timestamp when the membership was created
+    google.protobuf.Timestamp created_at = 6;
+  }
+}

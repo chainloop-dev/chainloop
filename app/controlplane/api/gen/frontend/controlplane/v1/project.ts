@@ -2,97 +2,18 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../../google/protobuf/duration";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import { Group } from "./group";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
-import { APITokenItem, User } from "./response_messages";
-import { IdentityReference } from "./shared_message";
+import { User } from "./response_messages";
+import {
+  IdentityReference,
+  ProjectMemberRole,
+  projectMemberRoleFromJSON,
+  projectMemberRoleToJSON,
+} from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
-
-/** ProjectMemberRole defines the roles a member can have in a project */
-export enum ProjectMemberRole {
-  /** PROJECT_MEMBER_ROLE_UNSPECIFIED - Default role for a project member */
-  PROJECT_MEMBER_ROLE_UNSPECIFIED = 0,
-  /** PROJECT_MEMBER_ROLE_ADMIN - Admin role for a project member */
-  PROJECT_MEMBER_ROLE_ADMIN = 1,
-  /** PROJECT_MEMBER_ROLE_VIEWER - Viewer role for a project member */
-  PROJECT_MEMBER_ROLE_VIEWER = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function projectMemberRoleFromJSON(object: any): ProjectMemberRole {
-  switch (object) {
-    case 0:
-    case "PROJECT_MEMBER_ROLE_UNSPECIFIED":
-      return ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED;
-    case 1:
-    case "PROJECT_MEMBER_ROLE_ADMIN":
-      return ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN;
-    case 2:
-    case "PROJECT_MEMBER_ROLE_VIEWER":
-      return ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ProjectMemberRole.UNRECOGNIZED;
-  }
-}
-
-export function projectMemberRoleToJSON(object: ProjectMemberRole): string {
-  switch (object) {
-    case ProjectMemberRole.PROJECT_MEMBER_ROLE_UNSPECIFIED:
-      return "PROJECT_MEMBER_ROLE_UNSPECIFIED";
-    case ProjectMemberRole.PROJECT_MEMBER_ROLE_ADMIN:
-      return "PROJECT_MEMBER_ROLE_ADMIN";
-    case ProjectMemberRole.PROJECT_MEMBER_ROLE_VIEWER:
-      return "PROJECT_MEMBER_ROLE_VIEWER";
-    case ProjectMemberRole.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface ProjectServiceAPITokenCreateRequest {
-  name: string;
-  projectName: string;
-  description?: string | undefined;
-  expiresIn?: Duration | undefined;
-}
-
-export interface ProjectServiceAPITokenCreateResponse {
-  result?: ProjectServiceAPITokenCreateResponse_APITokenFull;
-}
-
-export interface ProjectServiceAPITokenCreateResponse_APITokenFull {
-  item?: APITokenItem;
-  jwt: string;
-}
-
-/** ProjectServiceAPITokenRevokeRequest contains the information needed to revoke an API token for a project */
-export interface ProjectServiceAPITokenRevokeRequest {
-  /** The name of the API token to revoke */
-  name: string;
-  /** IdentityReference is used to specify the project by either its ID or name */
-  projectReference?: IdentityReference;
-}
-
-/** ProjectServiceAPITokenRevokeResponse is returned upon successful revocation of an API token */
-export interface ProjectServiceAPITokenRevokeResponse {
-}
-
-/** ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project */
-export interface ProjectServiceAPITokenListRequest {
-  /** IdentityReference is used to specify the project by either its ID or name */
-  projectReference?: IdentityReference;
-  /** Flag to include revoked tokens in the list */
-  includeRevoked: boolean;
-}
-
-export interface ProjectServiceAPITokenListResponse {
-  result: APITokenItem[];
-}
 
 /** ProjectServiceListMembersRequest contains the information needed to list members of a project */
 export interface ProjectServiceListMembersRequest {
@@ -126,6 +47,8 @@ export interface ProjectMember {
   createdAt?: Date;
   /** Timestamp when the project membership was last modified */
   updatedAt?: Date;
+  /** The ID of latest project version this member is associated with */
+  latestProjectVersionId: string;
 }
 
 /** ProjectServiceAddMemberRequest contains the information needed to add a user to a project */
@@ -205,534 +128,6 @@ export interface PendingProjectInvitation {
   /** Unique identifier for the invitation */
   invitationId: string;
 }
-
-function createBaseProjectServiceAPITokenCreateRequest(): ProjectServiceAPITokenCreateRequest {
-  return { name: "", projectName: "", description: undefined, expiresIn: undefined };
-}
-
-export const ProjectServiceAPITokenCreateRequest = {
-  encode(message: ProjectServiceAPITokenCreateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.projectName !== "") {
-      writer.uint32(18).string(message.projectName);
-    }
-    if (message.description !== undefined) {
-      writer.uint32(26).string(message.description);
-    }
-    if (message.expiresIn !== undefined) {
-      Duration.encode(message.expiresIn, writer.uint32(34).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenCreateRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenCreateRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.projectName = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.expiresIn = Duration.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProjectServiceAPITokenCreateRequest {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      projectName: isSet(object.projectName) ? String(object.projectName) : "",
-      description: isSet(object.description) ? String(object.description) : undefined,
-      expiresIn: isSet(object.expiresIn) ? Duration.fromJSON(object.expiresIn) : undefined,
-    };
-  },
-
-  toJSON(message: ProjectServiceAPITokenCreateRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.projectName !== undefined && (obj.projectName = message.projectName);
-    message.description !== undefined && (obj.description = message.description);
-    message.expiresIn !== undefined &&
-      (obj.expiresIn = message.expiresIn ? Duration.toJSON(message.expiresIn) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateRequest>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenCreateRequest {
-    return ProjectServiceAPITokenCreateRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateRequest>, I>>(
-    object: I,
-  ): ProjectServiceAPITokenCreateRequest {
-    const message = createBaseProjectServiceAPITokenCreateRequest();
-    message.name = object.name ?? "";
-    message.projectName = object.projectName ?? "";
-    message.description = object.description ?? undefined;
-    message.expiresIn = (object.expiresIn !== undefined && object.expiresIn !== null)
-      ? Duration.fromPartial(object.expiresIn)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseProjectServiceAPITokenCreateResponse(): ProjectServiceAPITokenCreateResponse {
-  return { result: undefined };
-}
-
-export const ProjectServiceAPITokenCreateResponse = {
-  encode(message: ProjectServiceAPITokenCreateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.result !== undefined) {
-      ProjectServiceAPITokenCreateResponse_APITokenFull.encode(message.result, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenCreateResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenCreateResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.result = ProjectServiceAPITokenCreateResponse_APITokenFull.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProjectServiceAPITokenCreateResponse {
-    return {
-      result: isSet(object.result)
-        ? ProjectServiceAPITokenCreateResponse_APITokenFull.fromJSON(object.result)
-        : undefined,
-    };
-  },
-
-  toJSON(message: ProjectServiceAPITokenCreateResponse): unknown {
-    const obj: any = {};
-    message.result !== undefined && (obj.result = message.result
-      ? ProjectServiceAPITokenCreateResponse_APITokenFull.toJSON(message.result)
-      : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenCreateResponse {
-    return ProjectServiceAPITokenCreateResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse>, I>>(
-    object: I,
-  ): ProjectServiceAPITokenCreateResponse {
-    const message = createBaseProjectServiceAPITokenCreateResponse();
-    message.result = (object.result !== undefined && object.result !== null)
-      ? ProjectServiceAPITokenCreateResponse_APITokenFull.fromPartial(object.result)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseProjectServiceAPITokenCreateResponse_APITokenFull(): ProjectServiceAPITokenCreateResponse_APITokenFull {
-  return { item: undefined, jwt: "" };
-}
-
-export const ProjectServiceAPITokenCreateResponse_APITokenFull = {
-  encode(
-    message: ProjectServiceAPITokenCreateResponse_APITokenFull,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
-    if (message.item !== undefined) {
-      APITokenItem.encode(message.item, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.jwt !== "") {
-      writer.uint32(18).string(message.jwt);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenCreateResponse_APITokenFull {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenCreateResponse_APITokenFull();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.item = APITokenItem.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.jwt = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProjectServiceAPITokenCreateResponse_APITokenFull {
-    return {
-      item: isSet(object.item) ? APITokenItem.fromJSON(object.item) : undefined,
-      jwt: isSet(object.jwt) ? String(object.jwt) : "",
-    };
-  },
-
-  toJSON(message: ProjectServiceAPITokenCreateResponse_APITokenFull): unknown {
-    const obj: any = {};
-    message.item !== undefined && (obj.item = message.item ? APITokenItem.toJSON(message.item) : undefined);
-    message.jwt !== undefined && (obj.jwt = message.jwt);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse_APITokenFull>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenCreateResponse_APITokenFull {
-    return ProjectServiceAPITokenCreateResponse_APITokenFull.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenCreateResponse_APITokenFull>, I>>(
-    object: I,
-  ): ProjectServiceAPITokenCreateResponse_APITokenFull {
-    const message = createBaseProjectServiceAPITokenCreateResponse_APITokenFull();
-    message.item = (object.item !== undefined && object.item !== null)
-      ? APITokenItem.fromPartial(object.item)
-      : undefined;
-    message.jwt = object.jwt ?? "";
-    return message;
-  },
-};
-
-function createBaseProjectServiceAPITokenRevokeRequest(): ProjectServiceAPITokenRevokeRequest {
-  return { name: "", projectReference: undefined };
-}
-
-export const ProjectServiceAPITokenRevokeRequest = {
-  encode(message: ProjectServiceAPITokenRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.projectReference !== undefined) {
-      IdentityReference.encode(message.projectReference, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenRevokeRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenRevokeRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.projectReference = IdentityReference.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProjectServiceAPITokenRevokeRequest {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      projectReference: isSet(object.projectReference)
-        ? IdentityReference.fromJSON(object.projectReference)
-        : undefined,
-    };
-  },
-
-  toJSON(message: ProjectServiceAPITokenRevokeRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.projectReference !== undefined &&
-      (obj.projectReference = message.projectReference
-        ? IdentityReference.toJSON(message.projectReference)
-        : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeRequest>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenRevokeRequest {
-    return ProjectServiceAPITokenRevokeRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeRequest>, I>>(
-    object: I,
-  ): ProjectServiceAPITokenRevokeRequest {
-    const message = createBaseProjectServiceAPITokenRevokeRequest();
-    message.name = object.name ?? "";
-    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
-      ? IdentityReference.fromPartial(object.projectReference)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseProjectServiceAPITokenRevokeResponse(): ProjectServiceAPITokenRevokeResponse {
-  return {};
-}
-
-export const ProjectServiceAPITokenRevokeResponse = {
-  encode(_: ProjectServiceAPITokenRevokeResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenRevokeResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenRevokeResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): ProjectServiceAPITokenRevokeResponse {
-    return {};
-  },
-
-  toJSON(_: ProjectServiceAPITokenRevokeResponse): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeResponse>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenRevokeResponse {
-    return ProjectServiceAPITokenRevokeResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenRevokeResponse>, I>>(
-    _: I,
-  ): ProjectServiceAPITokenRevokeResponse {
-    const message = createBaseProjectServiceAPITokenRevokeResponse();
-    return message;
-  },
-};
-
-function createBaseProjectServiceAPITokenListRequest(): ProjectServiceAPITokenListRequest {
-  return { projectReference: undefined, includeRevoked: false };
-}
-
-export const ProjectServiceAPITokenListRequest = {
-  encode(message: ProjectServiceAPITokenListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.projectReference !== undefined) {
-      IdentityReference.encode(message.projectReference, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.includeRevoked === true) {
-      writer.uint32(16).bool(message.includeRevoked);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenListRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenListRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.projectReference = IdentityReference.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.includeRevoked = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProjectServiceAPITokenListRequest {
-    return {
-      projectReference: isSet(object.projectReference)
-        ? IdentityReference.fromJSON(object.projectReference)
-        : undefined,
-      includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
-    };
-  },
-
-  toJSON(message: ProjectServiceAPITokenListRequest): unknown {
-    const obj: any = {};
-    message.projectReference !== undefined &&
-      (obj.projectReference = message.projectReference
-        ? IdentityReference.toJSON(message.projectReference)
-        : undefined);
-    message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenListRequest>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenListRequest {
-    return ProjectServiceAPITokenListRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenListRequest>, I>>(
-    object: I,
-  ): ProjectServiceAPITokenListRequest {
-    const message = createBaseProjectServiceAPITokenListRequest();
-    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
-      ? IdentityReference.fromPartial(object.projectReference)
-      : undefined;
-    message.includeRevoked = object.includeRevoked ?? false;
-    return message;
-  },
-};
-
-function createBaseProjectServiceAPITokenListResponse(): ProjectServiceAPITokenListResponse {
-  return { result: [] };
-}
-
-export const ProjectServiceAPITokenListResponse = {
-  encode(message: ProjectServiceAPITokenListResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.result) {
-      APITokenItem.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceAPITokenListResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProjectServiceAPITokenListResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.result.push(APITokenItem.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProjectServiceAPITokenListResponse {
-    return { result: Array.isArray(object?.result) ? object.result.map((e: any) => APITokenItem.fromJSON(e)) : [] };
-  },
-
-  toJSON(message: ProjectServiceAPITokenListResponse): unknown {
-    const obj: any = {};
-    if (message.result) {
-      obj.result = message.result.map((e) => e ? APITokenItem.toJSON(e) : undefined);
-    } else {
-      obj.result = [];
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ProjectServiceAPITokenListResponse>, I>>(
-    base?: I,
-  ): ProjectServiceAPITokenListResponse {
-    return ProjectServiceAPITokenListResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ProjectServiceAPITokenListResponse>, I>>(
-    object: I,
-  ): ProjectServiceAPITokenListResponse {
-    const message = createBaseProjectServiceAPITokenListResponse();
-    message.result = object.result?.map((e) => APITokenItem.fromPartial(e)) || [];
-    return message;
-  },
-};
 
 function createBaseProjectServiceListMembersRequest(): ProjectServiceListMembersRequest {
   return { projectReference: undefined, pagination: undefined };
@@ -902,7 +297,14 @@ export const ProjectServiceListMembersResponse = {
 };
 
 function createBaseProjectMember(): ProjectMember {
-  return { user: undefined, group: undefined, role: 0, createdAt: undefined, updatedAt: undefined };
+  return {
+    user: undefined,
+    group: undefined,
+    role: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+    latestProjectVersionId: "",
+  };
 }
 
 export const ProjectMember = {
@@ -921,6 +323,9 @@ export const ProjectMember = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.latestProjectVersionId !== "") {
+      writer.uint32(50).string(message.latestProjectVersionId);
     }
     return writer;
   },
@@ -967,6 +372,13 @@ export const ProjectMember = {
 
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.latestProjectVersionId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -983,6 +395,7 @@ export const ProjectMember = {
       role: isSet(object.role) ? projectMemberRoleFromJSON(object.role) : 0,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      latestProjectVersionId: isSet(object.latestProjectVersionId) ? String(object.latestProjectVersionId) : "",
     };
   },
 
@@ -993,6 +406,7 @@ export const ProjectMember = {
     message.role !== undefined && (obj.role = projectMemberRoleToJSON(message.role));
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.latestProjectVersionId !== undefined && (obj.latestProjectVersionId = message.latestProjectVersionId);
     return obj;
   },
 
@@ -1007,6 +421,7 @@ export const ProjectMember = {
     message.role = object.role ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.latestProjectVersionId = object.latestProjectVersionId ?? "";
     return message;
   },
 };
@@ -1782,19 +1197,6 @@ export const PendingProjectInvitation = {
 };
 
 export interface ProjectService {
-  /** Project level API tokens */
-  APITokenCreate(
-    request: DeepPartial<ProjectServiceAPITokenCreateRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<ProjectServiceAPITokenCreateResponse>;
-  APITokenList(
-    request: DeepPartial<ProjectServiceAPITokenListRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<ProjectServiceAPITokenListResponse>;
-  APITokenRevoke(
-    request: DeepPartial<ProjectServiceAPITokenRevokeRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<ProjectServiceAPITokenRevokeResponse>;
   /** Project membership management */
   ListMembers(
     request: DeepPartial<ProjectServiceListMembersRequest>,
@@ -1823,47 +1225,11 @@ export class ProjectServiceClientImpl implements ProjectService {
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
-    this.APITokenCreate = this.APITokenCreate.bind(this);
-    this.APITokenList = this.APITokenList.bind(this);
-    this.APITokenRevoke = this.APITokenRevoke.bind(this);
     this.ListMembers = this.ListMembers.bind(this);
     this.AddMember = this.AddMember.bind(this);
     this.RemoveMember = this.RemoveMember.bind(this);
     this.UpdateMemberRole = this.UpdateMemberRole.bind(this);
     this.ListPendingInvitations = this.ListPendingInvitations.bind(this);
-  }
-
-  APITokenCreate(
-    request: DeepPartial<ProjectServiceAPITokenCreateRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<ProjectServiceAPITokenCreateResponse> {
-    return this.rpc.unary(
-      ProjectServiceAPITokenCreateDesc,
-      ProjectServiceAPITokenCreateRequest.fromPartial(request),
-      metadata,
-    );
-  }
-
-  APITokenList(
-    request: DeepPartial<ProjectServiceAPITokenListRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<ProjectServiceAPITokenListResponse> {
-    return this.rpc.unary(
-      ProjectServiceAPITokenListDesc,
-      ProjectServiceAPITokenListRequest.fromPartial(request),
-      metadata,
-    );
-  }
-
-  APITokenRevoke(
-    request: DeepPartial<ProjectServiceAPITokenRevokeRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<ProjectServiceAPITokenRevokeResponse> {
-    return this.rpc.unary(
-      ProjectServiceAPITokenRevokeDesc,
-      ProjectServiceAPITokenRevokeRequest.fromPartial(request),
-      metadata,
-    );
   }
 
   ListMembers(
@@ -1919,75 +1285,6 @@ export class ProjectServiceClientImpl implements ProjectService {
 }
 
 export const ProjectServiceDesc = { serviceName: "controlplane.v1.ProjectService" };
-
-export const ProjectServiceAPITokenCreateDesc: UnaryMethodDefinitionish = {
-  methodName: "APITokenCreate",
-  service: ProjectServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return ProjectServiceAPITokenCreateRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = ProjectServiceAPITokenCreateResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const ProjectServiceAPITokenListDesc: UnaryMethodDefinitionish = {
-  methodName: "APITokenList",
-  service: ProjectServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return ProjectServiceAPITokenListRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = ProjectServiceAPITokenListResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const ProjectServiceAPITokenRevokeDesc: UnaryMethodDefinitionish = {
-  methodName: "APITokenRevoke",
-  service: ProjectServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return ProjectServiceAPITokenRevokeRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = ProjectServiceAPITokenRevokeResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
 
 export const ProjectServiceListMembersDesc: UnaryMethodDefinitionish = {
   methodName: "ListMembers",

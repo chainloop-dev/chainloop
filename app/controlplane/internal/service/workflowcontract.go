@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -46,7 +48,7 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 		return nil, err
 	}
 
-	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID)
+	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID, biz.WithProjectFilter(s.visibleProjects(ctx)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -72,6 +74,13 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
+	// 1 - If the contract is scoped to a project, make sure the user has permission to read it
+	// otherwise everyone can read it, use it
+	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractRead, true); err != nil {
+		return nil, err
+	}
+
+	// 2 - Get the contract version
 	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.ID.String(), int(req.GetRevision()))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -93,6 +102,24 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	// Authorization checks
+	// Force setting a project scope if RBAC is enabled
+	if rbacEnabled(ctx) && !req.ProjectReference.IsSet() {
+		return nil, errors.BadRequest("invalid", "project is required")
+	}
+
+	// if the project is provided we make sure it exists and the user has permission to it
+	var projectID *uuid.UUID
+	if req.ProjectReference.IsSet() {
+		// Make sure the provided project exists and the user has permission to create tokens in it
+		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
+		if err != nil {
+			return nil, err
+		}
+
+		projectID = &project.ID
+	}
+
 	// we need this token to forward it to the provider service next
 	token, err := entities.GetRawToken(ctx)
 	if err != nil {
@@ -107,9 +134,12 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 
 	// Currently supporting only v1 version
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
-		OrgID: currentOrg.ID,
-		Name:  req.Name, Description: req.Description,
-		RawSchema: req.RawContract})
+		OrgID:       currentOrg.ID,
+		Name:        req.Name,
+		Description: req.Description,
+		RawSchema:   req.RawContract,
+		ProjectID:   projectID,
+	})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -123,13 +153,27 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	} else if contract == nil {
+		return nil, errors.NotFound("not found", "contract not found")
+	}
+
+	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
+		return nil, err
+	}
+
 	token, err := entities.GetRawToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	// Validate the contract policies if the raw contract is provided
+	if len(req.RawContract) != 0 {
+		if err = s.contractUseCase.ValidateContractPolicies(req.RawContract, token); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
 	}
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.Name,
@@ -162,6 +206,10 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
+	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractDelete, false); err != nil {
+		return nil, err
+	}
+
 	if err := s.contractUseCase.Delete(ctx, currentOrg.ID, contract.ID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -178,7 +226,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		workflowNames = append(workflowNames, ref.Name)
 	}
 
-	return &pb.WorkflowContractItem{
+	result := &pb.WorkflowContractItem{
 		Id:                      schema.ID.String(),
 		CreatedAt:               timestamppb.New(*schema.CreatedAt),
 		Name:                    schema.Name,
@@ -188,6 +236,16 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		WorkflowRefs:            workflowRefs,
 		Description:             schema.Description,
 	}
+
+	if schema.ScopedEntity != nil {
+		result.ScopedEntity = &pb.ScopedEntity{
+			Type: schema.ScopedEntity.Type,
+			Id:   schema.ScopedEntity.ID.String(),
+			Name: schema.ScopedEntity.Name,
+		}
+	}
+
+	return result
 }
 
 func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {
@@ -216,4 +274,23 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 			Format: formatTranslator(schema.Schema.Format),
 		},
 	}
+}
+
+// checkContractAccess checks if the current user can manage a contract
+// if the contract is global it makes sure that the user is an admin
+// if the contract is scoped to a project it makes sure that the user has permission in the project
+func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contract *biz.WorkflowContract, policy *authz.Policy, allowGlobalAccess bool) error {
+	// 1 - Only admins can manage global contracts unless allowGlobalAccess is true
+	if contract.IsGlobalScoped() && rbacEnabled(ctx) && !allowGlobalAccess {
+		return errors.BadRequest("invalid", "you can not manage a global contract")
+	}
+
+	// 2 - If the contract is scoped to a project, make sure the user has permission to read it
+	if contract.IsProjectScoped() {
+		if err := s.authorizeResource(ctx, policy, authz.ResourceTypeProject, contract.ScopedEntity.ID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

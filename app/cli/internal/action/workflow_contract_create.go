@@ -29,11 +29,17 @@ func NewWorkflowContractCreate(cfg *ActionsOpts) *WorkflowContractCreate {
 	return &WorkflowContractCreate{cfg}
 }
 
-func (action *WorkflowContractCreate) Run(name string, description *string, contractPath string) (*WorkflowContractItem, error) {
+func (action *WorkflowContractCreate) Run(name string, description *string, contractPath string, projectName string) (*WorkflowContractItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	request := &pb.WorkflowContractServiceCreateRequest{
 		Name: name, Description: description,
+	}
+
+	if projectName != "" {
+		request.ProjectReference = &pb.IdentityReference{
+			Name: &projectName,
+		}
 	}
 
 	if contractPath != "" {

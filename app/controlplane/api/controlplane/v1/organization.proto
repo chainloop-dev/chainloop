@@ -18,6 +18,7 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "buf/validate/validate.proto";
+import "controlplane/v1/pagination.proto";
 import "controlplane/v1/response_messages.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -35,10 +36,25 @@ service OrganizationService {
   rpc UpdateMembership(OrganizationServiceUpdateMembershipRequest) returns (OrganizationServiceUpdateMembershipResponse);
 }
 
-message OrganizationServiceListMembershipsRequest {}
+message OrganizationServiceListMembershipsRequest {
+  optional string membership_id = 1 [(buf.validate.field).string.uuid = true];
+  // Optional filter by user name
+  optional string name = 2;
+  // Optional filter to search by user email address
+  optional string email = 3;
+  // Optional filter by role
+  optional MembershipRole role = 4 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 5;
+}
 
 message OrganizationServiceListMembershipsResponse {
   repeated OrgMembershipItem result = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
 }
 
 message OrganizationServiceDeleteMembershipRequest {

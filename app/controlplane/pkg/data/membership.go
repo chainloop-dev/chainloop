@@ -18,28 +18,34 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
 type MembershipRepo struct {
-	data *Data
-	log  *log.Helper
+	data      *Data
+	log       *log.Helper
+	groupRepo biz.GroupRepo
 }
 
-func NewMembershipRepo(data *Data, logger log.Logger) biz.MembershipRepo {
+func NewMembershipRepo(data *Data, groupRepo biz.GroupRepo, logger log.Logger) biz.MembershipRepo {
 	return &MembershipRepo{
-		data: data,
-		log:  log.NewHelper(logger),
+		data:      data,
+		groupRepo: groupRepo,
+		log:       log.NewHelper(logger),
 	}
 }
 
@@ -85,17 +91,99 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 }
 
 // FindByOrg finds all memberships for a given organization
-func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.Membership, error) {
-	memberships, err := r.data.DB.Membership.Query().Where(
+func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID, opts *biz.ListByOrgOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.Membership, int, error) {
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	if opts == nil {
+		opts = &biz.ListByOrgOpts{}
+	}
+
+	// Build the base query
+	query := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.ResourceIDEQ(orgID),
-	).WithUser().WithOrganization().All(ctx)
-	if err != nil {
-		return nil, err
+	).WithUser().WithOrganization()
+
+	// Apply filters if provided
+	var predicates []predicate.Membership
+	if opts.Name != nil && *opts.Name != "" {
+		// Filter by user's first name or last name containing the search term
+		predicates = append(predicates, membership.HasUserWith(
+			user.Or(
+				user.FirstNameContainsFold(*opts.Name),
+				user.LastNameContainsFold(*opts.Name),
+			),
+		))
 	}
 
-	return entMembershipsToBiz(memberships), nil
+	// Filter by user's email containing the search term
+	if opts.Email != nil && *opts.Email != "" {
+		predicates = append(predicates, membership.HasUserWith(user.EmailContainsFold(*opts.Email)))
+	}
+
+	// Apply OR predicates if any exist
+	if len(predicates) > 0 {
+		query = query.Where(membership.Or(predicates...))
+	}
+
+	// Filter by the membership ID if provided
+	if opts.MembershipID != nil {
+		query = query.Where(membership.IDEQ(*opts.MembershipID))
+	}
+
+	// Filter by role if provided
+	if opts.Role != nil {
+		query = query.Where(membership.RoleEQ(*opts.Role))
+	}
+
+	// Get the count of all filtered rows without the limit and offset
+	count, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination and execute the query
+	memberships, err := query.
+		Order(ent.Desc(membership.FieldCreatedAt)).
+		Limit(paginationOpts.Limit()).
+		Offset(paginationOpts.Offset()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch all member IDs from the memberships, in this context they are user IDs
+	memberIDs := make([]uuid.UUID, 0, len(memberships))
+	for _, m := range memberships {
+		memberIDs = append(memberIDs, m.MemberID)
+	}
+
+	// Fetch user data for all the member IDs
+	users, err := r.data.DB.User.Query().Where(user.IDIn(memberIDs...)).All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch user data: %w", err)
+	}
+
+	// Create a map of users by ID
+	userMap := make(map[uuid.UUID]*ent.User, len(users))
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
+	// Convert to biz.Membership objects and attach user data manually
+	result := make([]*biz.Membership, 0, len(memberships))
+	for _, m := range memberships {
+		bizMembership := entMembershipToBiz(m)
+		if u, ok := userMap[m.MemberID]; ok {
+			bizMembership.User = entUserToBizUser(u)
+		}
+		result = append(result, bizMembership)
+	}
+
+	return result, count, nil
 }
 
 // FindByOrgAndUser finds the membership for a given organization and user
@@ -240,8 +328,90 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 }
 
 // Delete deletes a membership by ID.
+// When deleting a membership, it's important to ensure we're not leaving any dangling references.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.data.DB.Membership.DeleteOneID(id).Exec(ctx)
+	// First, fetch the membership to understand what we're deleting
+	membershipToDelete, err := r.data.DB.Membership.Query().Where(membership.ID(id)).WithOrganization().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil // Already deleted, nothing to do
+		}
+		return fmt.Errorf("failed to get membership: %w", err)
+	}
+
+	// Prepare a slice to hold group IDs that need to be updated
+	var groupIDs []uuid.UUID
+
+	if trErr := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// Delete the specific membership
+		if err := tx.Membership.DeleteOneID(id).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to delete membership: %w", err)
+		}
+
+		// If this is an organization membership and the member type is a user,
+		// we also need to clean up any resource memberships for this user in the organization
+		if membershipToDelete.ResourceType == authz.ResourceTypeOrganization && membershipToDelete.MembershipType == authz.MembershipTypeUser {
+			// Extract the organization id and user ID from the membership
+			orgID := membershipToDelete.Edges.Organization.ID
+			userID := membershipToDelete.MemberID
+
+			// Delete all other resource memberships for this user in the organization
+			// This will cover all membership types including group-related ones
+			if _, err := tx.Membership.Delete().Where(
+				membership.IDNEQ(id), // Don't try to delete the one we already deleted
+				membership.MemberID(userID),
+				membership.HasOrganizationWith(organization.ID(orgID)),
+			).Exec(ctx); err != nil {
+				return fmt.Errorf("failed to delete related memberships: %w", err)
+			}
+
+			// Remove the user from all groups in the organization by soft-deleting group memberships
+			now := time.Now()
+
+			// Find all group IDs where this user is a member in this organization
+			groupMemberships, grpMemErr := tx.GroupMembership.Query().Where(
+				groupmembership.UserID(userID),
+				groupmembership.DeletedAtIsNil(),
+				groupmembership.HasGroupWith(group.OrganizationID(orgID)),
+			).Select(groupmembership.FieldGroupID).All(ctx)
+			if grpMemErr != nil {
+				return fmt.Errorf("failed to fetch group IDs for user %s in organization %s: %w", userID, orgID, err)
+			}
+
+			// Collect group IDs to update member counts later
+			for _, gm := range groupMemberships {
+				groupIDs = append(groupIDs, gm.GroupID)
+			}
+
+			// Soft delete all group memberships for this user in this organization
+			if _, err := tx.GroupMembership.Update().Where(
+				groupmembership.UserID(userID),
+				groupmembership.DeletedAtIsNil(),
+				groupmembership.HasGroupWith(group.OrganizationID(orgID)),
+			).SetDeletedAt(now).SetUpdatedAt(now).Save(ctx); err != nil {
+				return fmt.Errorf("failed to delete group memberships for user %s in organization %s: %w", userID, orgID, err)
+			}
+		}
+
+		return nil
+	}); trErr != nil {
+		return trErr
+	}
+
+	// For each affected group, update the member count based on actual query
+	updated := map[uuid.UUID]struct{}{}
+	for _, gid := range groupIDs {
+		if _, seen := updated[gid]; seen {
+			// deduplicate group IDs
+			continue
+		}
+		updated[gid] = struct{}{}
+		if err := r.groupRepo.UpdateGroupMemberCount(ctx, gid); err != nil {
+			return fmt.Errorf("failed to update group member count for group %s: %w", gid, err)
+		}
+	}
+
+	return nil
 }
 
 // RBAC methods
@@ -284,7 +454,7 @@ func (r *MembershipRepo) ListGroupMembershipsByUser(ctx context.Context, userID 
 		groupRoleMemberships, err := r.data.DB.Membership.Query().Where(
 			membership.MembershipTypeEQ(authz.MembershipTypeGroup),
 			membership.MemberIDIn(groupIDs...),
-		).All(ctx)
+		).WithOrganization().All(ctx)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to query group role memberships: %w", err)

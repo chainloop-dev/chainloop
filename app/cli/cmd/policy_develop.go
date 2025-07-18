@@ -23,9 +23,11 @@ func newPolicyDevelopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "develop",
 		Aliases: []string{"devel"},
-		Short:   "Tools for policy development",
+		Short: `Tools for policy development
+Refer to https://docs.chainloop.dev/guides/custom-policies
+`,
 	}
 
-	cmd.AddCommand(newPolicyDevelopLintCmd())
+	cmd.AddCommand(newPolicyDevelopInitCmd(), newPolicyDevelopLintCmd())
 	return cmd
 }

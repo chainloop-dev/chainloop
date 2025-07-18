@@ -18,7 +18,6 @@ package biz
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -89,10 +88,28 @@ type ProjectMembership struct {
 	MembershipType authz.MembershipType
 	// Role represents the role of the user/group in the project (admin or viewer).
 	Role authz.Role
+	// LatestProjectVersionID is the ID of the latest project version this membership is associated with.
+	LatestProjectVersionID *uuid.UUID
 	// CreatedAt is the timestamp when the user/group was added to the project.
 	CreatedAt *time.Time
 	// UpdatedAt is the timestamp when the membership was last updated.
 	UpdatedAt *time.Time
+}
+
+// GroupProjectInfo represents detailed information about a project that a group is a member of
+type GroupProjectInfo struct {
+	// ID is the unique identifier of the project
+	ID uuid.UUID
+	// Name is the name of the project
+	Name string
+	// Description is the description of the project
+	Description string
+	// Role represents the role of the group in the project (admin or viewer)
+	Role authz.Role
+	// LatestVersionID is the ID of the latest version of the project, if available
+	LatestVersionID *uuid.UUID
+	// CreatedAt is the timestamp when the membership was created
+	CreatedAt *time.Time
 }
 
 // AddMemberToProjectOpts defines options for adding a member to a project.
@@ -244,8 +261,8 @@ func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUI
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return nil, NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return nil, NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure only one of UserEmail or GroupReference is provided
@@ -264,9 +281,11 @@ func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUI
 		return nil, err
 	}
 
-	// Verify the requester has permissions to add members to the project
-	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
-		return nil, fmt.Errorf("requester does not have permission to add members to this project: %w", err)
+	// Verify the requester has permissions to add members to the project (if a requester is provided)
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+			return nil, fmt.Errorf("requester does not have permission to add members to this project: %w", err)
+		}
 	}
 
 	var result *AddMemberToProjectResult
@@ -433,8 +452,8 @@ func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uui
 		return NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure only one of UserEmail or GroupReference is provided
@@ -448,9 +467,11 @@ func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uui
 		return err
 	}
 
-	// Verify the requester has permissions to remove members from the project
-	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
-		return fmt.Errorf("requester does not have permission to remove members from this project: %w", err)
+	// Verify the requester has permissions to remove members from the project (if a requester is provided)
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+			return fmt.Errorf("requester does not have permission to remove members from this project: %w", err)
+		}
 	}
 
 	// Process based on whether we're removing a user or a group
@@ -645,21 +666,15 @@ func (uc *ProjectUseCase) verifyRequesterHasPermissions(ctx context.Context, org
 }
 
 // getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership
-func getProjectsWithMembership(ctx context.Context, projectsRepo ProjectsRepo, orgID uuid.UUID, memberships []*Membership) ([]uuid.UUID, error) {
+func getProjectsWithMembershipInOrg(orgID uuid.UUID, memberships []*Membership) []uuid.UUID {
 	ids := make([]uuid.UUID, 0)
-	projects, err := projectsRepo.ListProjectsByOrgID(ctx, orgID)
-	if err != nil {
-		return nil, fmt.Errorf("listing projects: %w", err)
-	}
-	for _, p := range projects {
-		if slices.ContainsFunc(memberships, func(m *Membership) bool {
-			return m.ResourceType == authz.ResourceTypeProject && m.ResourceID == p.ID
-		}) {
-			ids = append(ids, p.ID)
+	for _, m := range memberships {
+		if m.ResourceType == authz.ResourceTypeProject && m.OrganizationID == orgID {
+			ids = append(ids, m.ResourceID)
 		}
 	}
 
-	return ids, nil
+	return ids
 }
 
 // UpdateMemberRole updates the role of a user or group in a project.
@@ -668,8 +683,8 @@ func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID,
 		return NewErrValidationStr("options cannot be nil")
 	}
 
-	if orgID == uuid.Nil || opts.RequesterID == uuid.Nil {
-		return NewErrValidationStr("organization ID and requester ID cannot be empty")
+	if orgID == uuid.Nil {
+		return NewErrValidationStr("organization ID cannot be empty")
 	}
 
 	// Ensure only one of UserEmail or GroupReference is provided
@@ -688,9 +703,11 @@ func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID,
 		return err
 	}
 
-	// Verify the requester has permissions to update member roles in the project
-	if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
-		return fmt.Errorf("requester does not have permission to update member roles in this project: %w", err)
+	// Verify the requester has permissions to update member roles in the project (if a requester is provided)
+	if opts.RequesterID != uuid.Nil {
+		if err := uc.verifyRequesterHasPermissions(ctx, orgID, resolvedProjectID, opts.RequesterID); err != nil {
+			return fmt.Errorf("requester does not have permission to update member roles in this project: %w", err)
+		}
 	}
 
 	// Process based on whether we're updating a user or a group

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	chainloopVersion = "v1.23.0"
+	chainloopVersion = "v1.34.0"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -244,6 +244,10 @@ func (att *Attestation) AddRawEvidence(
 	// if not provided it will either be loaded from the contract or inferred automatically
 	// +optional
 	kind string,
+	// List of annotations to be attached to the evidence for example:
+	// "key1=value1,key2=value2"
+	// +optional
+	annotations []string,
 ) (*Attestation, error) {
 	args := []string{
 		"attestation", "add",
@@ -260,6 +264,12 @@ func (att *Attestation) AddRawEvidence(
 	if kind != "" {
 		args = append(args,
 			"--kind", kind,
+		)
+	}
+
+	for _, annotation := range annotations {
+		args = append(args,
+			"--annotation", annotation,
 		)
 	}
 
@@ -284,6 +294,10 @@ func (att *Attestation) AddFileEvidence(
 	// if not provided it will either be loaded from the contract or inferred automatically
 	// +optional
 	kind string,
+	// List of annotations to be attached to the evidence for example:
+	// "key1=value1,key2=value2"
+	// +optional
+	annotations []string,
 ) (*Attestation, error) {
 	filename, err := path.Name(ctx)
 	if err != nil {
@@ -296,6 +310,12 @@ func (att *Attestation) AddFileEvidence(
 		"attestation", "add",
 		"--attestation-id", att.AttestationID,
 		"--value", mountPath,
+	}
+
+	for _, annotation := range annotations {
+		args = append(args,
+			"--annotation", annotation,
+		)
 	}
 
 	if kind != "" {
@@ -412,12 +432,20 @@ func (att *Attestation) Push(
 	// Output format
 	// +default="table"
 	format OutputFormat,
+	// List of annotations to be attached to the attestation for example:
+	// "key1=value1,key2=value2"
+	// +optional
+	annotations []string,
 ) (string, error) {
 	container := att.Container(0)
 	args := []string{
 		"attestation", "push",
 		"--attestation-id", att.AttestationID,
 		"--output", string(format),
+	}
+
+	for _, annotation := range annotations {
+		args = append(args, "--annotation", annotation)
 	}
 
 	if key != nil {

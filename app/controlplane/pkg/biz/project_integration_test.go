@@ -1079,10 +1079,11 @@ func (s *projectPermissionsTestSuite) TestOrgAdminPermissions() {
 // Utility struct for project group members tests
 type projectGroupMembersIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org     *biz.Organization
-	user    *biz.User
-	project *biz.Project
-	group   *biz.Group
+	org      *biz.Organization
+	user     *biz.User
+	userUUID *uuid.UUID
+	project  *biz.Project
+	group    *biz.Group
 }
 
 func (s *projectGroupMembersIntegrationTestSuite) SetupTest() {
@@ -1097,6 +1098,8 @@ func (s *projectGroupMembersIntegrationTestSuite) SetupTest() {
 	// Create a user for tests - this user will be an org admin by default
 	s.user, err = s.User.UpsertByEmail(ctx, fmt.Sprintf("group-test-user-%s@example.com", uuid.New().String()), nil)
 	assert.NoError(err)
+	userUUID := uuid.MustParse(s.user.ID)
+	s.userUUID = &userUUID
 
 	// Add user to organization as an admin
 	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
@@ -1107,7 +1110,7 @@ func (s *projectGroupMembersIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	// Create a group for membership tests
-	s.group, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-group", "A test group for project membership", uuid.MustParse(s.user.ID))
+	s.group, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-group", "A test group for project membership", s.userUUID)
 	assert.NoError(err)
 }
 
@@ -1167,7 +1170,7 @@ func (s *projectGroupMembersIntegrationTestSuite) TestAddGroupToProject() {
 
 	s.Run("add multiple groups to project", func() {
 		// Create and add another group
-		group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-group-2", "Another test group", uuid.MustParse(s.user.ID))
+		group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "test-group-2", "Another test group", s.userUUID)
 		require.NoError(s.T(), err)
 
 		opts := &biz.AddMemberToProjectOpts{
@@ -1546,10 +1549,10 @@ func (s *projectGroupMembersIntegrationTestSuite) TestUpdateGroupRoleInProject()
 	}
 
 	// Create additional groups
-	group1, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-role-group1", "Group 1 for role updates", uuid.MustParse(s.user.ID))
+	group1, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-role-group1", "Group 1 for role updates", s.userUUID)
 	require.NoError(s.T(), err)
 
-	group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-role-group2", "Group 2 for role updates", uuid.MustParse(s.user.ID))
+	group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "update-role-group2", "Group 2 for role updates", s.userUUID)
 	require.NoError(s.T(), err)
 
 	// Add groups to the project with initial roles
@@ -1691,7 +1694,7 @@ func (s *projectGroupMembersIntegrationTestSuite) TestUpdateGroupRoleInProject()
 
 	s.Run("try to update role for group not in project", func() {
 		// Create a group in the organization but don't add it to the project
-		nonMemberGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "non-project-group", "Group not in project", uuid.MustParse(s.user.ID))
+		nonMemberGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "non-project-group", "Group not in project", s.userUUID)
 		require.NoError(s.T(), err)
 
 		updateOpts := &biz.UpdateMemberRoleOpts{

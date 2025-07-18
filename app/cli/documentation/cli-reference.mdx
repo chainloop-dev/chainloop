@@ -196,7 +196,7 @@ Options
 --annotation strings         additional annotation in the format of key=value
 --attestation-id string      Unique identifier of the in-progress attestation
 -h, --help                       help for add
---kind string                kind of the material to be recorded: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--kind string                kind of the material to be recorded: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
 --name string                name of the material as shown in the contract
 --registry-password string   registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string     OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
@@ -2044,6 +2044,7 @@ Options
 --expiration duration   optional API token expiration, in hours i.e 1h, 24h, 178h (week), ...
 -h, --help                  help for create
 --name string           token name
+--project string        project name used to scope the token, if not set the token will be created at the organization level
 ```
 
 Options inherited from parent commands
@@ -2108,8 +2109,10 @@ chainloop organization api-token list [flags]
 Options
 
 ```
--a, --all    show all API tokens including revoked ones
--h, --help   help for list
+-a, --all              show all API tokens including revoked ones
+-h, --help             help for list
+-p, --project string   filter by project name
+-s, --scope string     filter by scope, available scopes: [project global]
 ```
 
 Options inherited from parent commands
@@ -2139,8 +2142,8 @@ chainloop organization api-token revoke [flags]
 Options
 
 ```
--h, --help          help for revoke
---name string   API token name
+-h, --help        help for revoke
+--id string   API token ID
 ```
 
 Options inherited from parent commands
@@ -2570,10 +2573,38 @@ List the members of the current organization
 chainloop organization member list [flags]
 ```
 
+Examples
+
+```
+Let the default pagination apply
+chainloop organization member list
+
+Specify the page and page size
+chainloop organization member list --page 2 --limit 10
+
+Filter by name
+chainloop organization member list --name alice
+
+Filter by email
+chainloop organization member list --email alice@example.com
+
+Filter by role
+chainloop organization member list --role admin
+
+Combine filters and pagination
+chainloop organization member list --role admin --page 2 --limit 5
+
+```
+
 Options
 
 ```
--h, --help   help for list
+--email string   Filter by member email
+-h, --help           help for list
+--limit int      number of items to show (default 50)
+--name string    Filter by member name or last name
+--page int       page number (default 1)
+--role string    Role of the user in the organization, available admin, owner, viewer
 ```
 
 Options inherited from parent commands
@@ -2729,6 +2760,7 @@ Options inherited from parent commands
 ### chainloop policy develop
 
 Tools for policy development
+Refer to https://docs.chainloop.dev/guides/custom-policies
 
 Options
 
@@ -2769,6 +2801,57 @@ Options
 
 ```
 -h, --help   help for help
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+#### chainloop policy develop init
+
+Initialize a new policy
+
+Synopsis
+
+Initialize a new policy by creating template policy files in the specified directory.
+By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.
+
+```
+chainloop policy develop init [flags]
+```
+
+Examples
+
+```
+
+Initialize in current directory with separate files
+chainloop policy develop init
+
+Initialize in specific directory with embedded format and policy name
+chainloop policy develop init --directory ./policies --embedded --name mypolicy
+```
+
+Options
+
+```
+--description string   description of the policy
+--directory string     directory for policy
+--embedded             initialize an embedded policy (single YAML file)
+-f, --force                overwrite existing files
+-h, --help                 help for init
+--name string          name of the policy
 ```
 
 Options inherited from parent commands
@@ -3125,6 +3208,7 @@ Options
 --description string   description of the contract
 -h, --help                 help for create
 --name string          contract name
+--project string       project name used to scope the contract, if not set the contract will be created in the organization
 ```
 
 Options inherited from parent commands

@@ -2,7 +2,51 @@
   "$id": "controlplane.v1.OrganizationServiceListMembershipsRequest.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "properties": {},
+  "patternProperties": {
+    "^(membershipId)$": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "email": {
+      "description": "Optional filter to search by user email address",
+      "type": "string"
+    },
+    "membership_id": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "name": {
+      "description": "Optional filter by user name",
+      "type": "string"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination parameters to limit and offset results"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "MEMBERSHIP_ROLE_UNSPECIFIED",
+            "MEMBERSHIP_ROLE_ORG_VIEWER",
+            "MEMBERSHIP_ROLE_ORG_ADMIN",
+            "MEMBERSHIP_ROLE_ORG_OWNER",
+            "MEMBERSHIP_ROLE_ORG_MEMBER"
+          ],
+          "title": "Membership Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Optional filter by role"
+    }
+  },
   "title": "Organization Service List Memberships Request",
   "type": "object"
 }

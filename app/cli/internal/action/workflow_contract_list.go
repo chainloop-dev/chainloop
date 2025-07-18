@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -36,6 +37,21 @@ type WorkflowContractItem struct {
 	CreatedAt               *time.Time     `json:"createdAt"`
 	Workflows               []string       `json:"workflows,omitempty"` // TODO: remove this field after all clients are updated
 	WorkflowRefs            []*WorkflowRef `json:"workflowRefs,omitempty"`
+	ScopedEntity            *ScopedEntity  `json:"scopedEntity,omitempty"`
+}
+
+type ScopedEntity struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (s *ScopedEntity) String() string {
+	if s == nil {
+		return "global"
+	}
+
+	return fmt.Sprintf("%s/%s", s.Type, s.Name)
 }
 
 type WorkflowRef struct {
@@ -82,7 +98,7 @@ func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContra
 	for _, w := range in.WorkflowRefs {
 		workflowRefs = append(workflowRefs, pbWorkflowRefToAction(w))
 	}
-	return &WorkflowContractItem{
+	item := &WorkflowContractItem{
 		Name:                    in.GetName(),
 		ID:                      in.GetId(),
 		LatestRevision:          int(in.GetLatestRevision()),
@@ -92,6 +108,16 @@ func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContra
 		Description:             in.GetDescription(),
 		LatestRevisionCreatedAt: toTimePtr(in.GetLatestRevisionCreatedAt().AsTime()),
 	}
+
+	if in.ScopedEntity != nil {
+		item.ScopedEntity = &ScopedEntity{
+			Type: in.ScopedEntity.Type,
+			ID:   in.ScopedEntity.Id,
+			Name: in.ScopedEntity.Name,
+		}
+	}
+
+	return item
 }
 
 func pbWorkflowContractVersionItemToAction(in *pb.WorkflowContractVersionItem) *WorkflowContractVersionItem {

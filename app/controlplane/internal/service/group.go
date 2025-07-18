@@ -20,6 +20,9 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 
 	"github.com/go-kratos/kratos/v2/errors"
@@ -65,7 +68,7 @@ func (g *GroupService) Create(ctx context.Context, req *pb.GroupServiceCreateReq
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
 	}
 
-	gr, err := g.groupUseCase.Create(ctx, orgUUID, req.Name, req.Description, userUUID)
+	gr, err := g.groupUseCase.Create(ctx, orgUUID, req.Name, req.Description, &userUUID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, g.log)
 	}
@@ -233,10 +236,25 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		return nil, err
 	}
 
+	if err := g.userHasPermissionToListGroupMember(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
+		return nil, err
+	}
+
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Parse orgID
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Parse requesterID (current user)
+	requesterUUID, err := uuid.Parse(currentUser.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid user ID")
 	}
 
 	// Initialize the options for listing members
@@ -244,6 +262,7 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		IdentityReference: &biz.IdentityReference{},
 		Maintainers:       req.Maintainers,
 		MemberEmail:       req.MemberEmail,
+		RequesterID:       requesterUUID,
 	}
 
 	// Parse groupID and groupName from the request
@@ -479,6 +498,131 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 	return &pb.GroupServiceUpdateMemberMaintainerStatusResponse{}, nil
 }
 
+// ListProjects retrieves a paginated list of projects that a group is a member of.
+func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceListProjectsRequest) (*pb.GroupServiceListProjectsResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse orgID
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Parse groupID and groupName from the request
+	id, name, err := req.GetGroupReference().Parse()
+	if err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	// Initialize the options for getting projects
+	groupOpts := &biz.ListProjectsByGroupOpts{
+		IdentityReference: &biz.IdentityReference{
+			ID:   id,
+			Name: name,
+		},
+		FilterByProject: g.visibleProjects(ctx),
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Retrieve the list of project info
+	projectInfoList, count, err := g.groupUseCase.ListProjectsByGroup(ctx, orgUUID, groupOpts, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, g.log)
+	}
+
+	// Convert the GroupProjectInfo to protobuf messages
+	result := make([]*pb.GroupServiceListProjectsResponse_ProjectInfo, 0, len(projectInfoList))
+	for _, project := range projectInfoList {
+		result = append(result, bizGroupProjectInfoToPb(project))
+	}
+
+	return &pb.GroupServiceListProjectsResponse{
+		Projects:   result,
+		Pagination: paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
+}
+
+// userHasPermissionToAddGroupMember checks if the user has permission to add members to a group
+func (g *GroupService) userHasPermissionToAddGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupAddMemberships)
+}
+
+// userHasPermissionToRemoveGroupMember checks if the user has permission to remove members from a group
+func (g *GroupService) userHasPermissionToRemoveGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupRemoveMemberships)
+}
+
+// userHasPermissionToListPendingGroupInvitations checks if the user has permission to list pending group invitations
+func (g *GroupService) userHasPermissionToListPendingGroupInvitations(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupListPendingInvitations)
+}
+
+// userHasPermissionToListGroupMember checks if the user has permission to list group members
+func (g *GroupService) userHasPermissionToListGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupListMemberships)
+}
+
+// userHasPermissionToUpdateMembership checks if the user has permission to remove members from a group
+func (g *GroupService) userHasPermissionToUpdateMembership(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
+	return g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupUpdateMemberships)
+}
+
+// userHasPermissionOnGroupMembershipsWithPolicy is the core implementation that checks if a user has permission on a group
+// with an optional specific policy check. If the policy is nil, it falls back to the basic permission check.
+func (g *GroupService) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference, policy *authz.Policy) error {
+	// Check if the user has admin or owner role in the organization
+	userRole := usercontext.CurrentAuthzSubject(ctx)
+	if userRole == "" {
+		return errors.NotFound("not found", "current membership not found")
+	}
+
+	// Allow if user has admin or owner role
+	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
+		return nil
+	}
+
+	groupID, groupName, err := groupIdentifier.Parse()
+	if err != nil {
+		return errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
+	}
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return errors.BadRequest("invalid", "invalid organization ID")
+	}
+
+	// Resolve the group identifier to a valid group ID
+	resolvedGroupID, err := g.groupUseCase.ValidateGroupIdentifier(ctx, orgUUID, groupID, groupName)
+	if err != nil {
+		return handleUseCaseErr(err, g.log)
+	}
+
+	// Check the user's membership in the organization
+	m := entities.CurrentMembership(ctx)
+	for _, rm := range m.Resources {
+		if rm.ResourceType == authz.ResourceTypeGroup && rm.ResourceID == resolvedGroupID {
+			pass, err := g.enforcer.Enforce(string(rm.Role), policy)
+			if err != nil {
+				return handleUseCaseErr(err, g.log)
+			}
+			if pass {
+				return nil
+			}
+		}
+	}
+
+	// If neither a maintainer nor admin/owner, nor has specific policy permission, forbid the operation
+	return errors.Forbidden("forbidden", "operation not allowed")
+}
+
 // bizGroupToPb converts a biz.Group to a pb.Group protobuf message.
 func bizGroupToPb(gr *biz.Group) *pb.Group {
 	base := &pb.Group{
@@ -521,4 +665,23 @@ func bizOrgInvitationToPendingGroupInvitationPb(inv *biz.OrgInvitation) *pb.Pend
 	}
 
 	return base
+}
+
+// bizGroupProjectInfoToPb converts a biz.GroupProjectInfo to a pb.ProjectInfo protobuf message.
+func bizGroupProjectInfoToPb(info *biz.GroupProjectInfo) *pb.GroupServiceListProjectsResponse_ProjectInfo {
+	projectInfo := &pb.GroupServiceListProjectsResponse_ProjectInfo{
+		Id:          info.ID.String(),
+		Name:        info.Name,
+		Description: info.Description,
+		Role:        mapAuthzRoleToProjectMemberRole(info.Role),
+		CreatedAt:   timestamppb.New(*info.CreatedAt),
+	}
+
+	// Add the latest version ID if available
+	if info.LatestVersionID != nil {
+		latestVersionID := info.LatestVersionID.String()
+		projectInfo.LatestVersionId = &latestVersionID
+	}
+
+	return projectInfo
 }

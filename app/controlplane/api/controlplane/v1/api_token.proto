@@ -19,6 +19,7 @@ package controlplane.v1;
 
 import "buf/validate/validate.proto";
 import "controlplane/v1/response_messages.proto";
+import "controlplane/v1/shared_message.proto";
 import "google/protobuf/duration.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
@@ -33,6 +34,8 @@ message APITokenServiceCreateRequest {
   string name = 3 [(buf.validate.field).string.min_len = 1];
 
   optional string description = 1;
+  // You might need to specify a project reference if you want/need to create a token scoped to a project
+  IdentityReference project_reference = 4;
   optional google.protobuf.Duration expires_in = 2;
 }
 
@@ -46,20 +49,25 @@ message APITokenServiceCreateResponse {
 }
 
 message APITokenServiceRevokeRequest {
-  string name = 1 [(buf.validate.field) = {
-    // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
-    cel: {
-      message: "must contain only lowercase letters, numbers, and hyphens."
-      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
-      id: "name.dns-1123"
-    }
-  }];
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message APITokenServiceRevokeResponse {}
 
 message APITokenServiceListRequest {
   bool include_revoked = 1;
+
+  // optional project reference to filter by
+  IdentityReference project = 4;
+
+  enum Scope {
+    SCOPE_UNSPECIFIED = 0;
+    SCOPE_PROJECT = 1;
+    SCOPE_GLOBAL = 2;
+  }
+
+  // filter by the scope of the token
+  Scope scope = 2;
 }
 
 message APITokenServiceListResponse {

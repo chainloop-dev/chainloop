@@ -3,10 +3,12 @@
 package workflowcontract
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +25,10 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldScopedResourceType holds the string denoting the scoped_resource_type field in the database.
+	FieldScopedResourceType = "scoped_resource_type"
+	// FieldScopedResourceID holds the string denoting the scoped_resource_id field in the database.
+	FieldScopedResourceID = "scoped_resource_id"
 	// EdgeVersions holds the string denoting the versions edge name in mutations.
 	EdgeVersions = "versions"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -61,6 +67,8 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldDeletedAt,
 	FieldDescription,
+	FieldScopedResourceType,
+	FieldScopedResourceID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_contracts"
@@ -91,6 +99,16 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// ScopedResourceTypeValidator is a validator for the "scoped_resource_type" field enum values. It is called by the builders before save.
+func ScopedResourceTypeValidator(srt biz.ContractScope) error {
+	switch srt {
+	case "project", "org":
+		return nil
+	default:
+		return fmt.Errorf("workflowcontract: invalid enum value for scoped_resource_type field: %q", srt)
+	}
+}
+
 // OrderOption defines the ordering options for the WorkflowContract queries.
 type OrderOption func(*sql.Selector)
 
@@ -117,6 +135,16 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByScopedResourceType orders the results by the scoped_resource_type field.
+func ByScopedResourceType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopedResourceType, opts...).ToFunc()
+}
+
+// ByScopedResourceID orders the results by the scoped_resource_id field.
+func ByScopedResourceID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopedResourceID, opts...).ToFunc()
 }
 
 // ByVersionsCount orders the results by versions count.

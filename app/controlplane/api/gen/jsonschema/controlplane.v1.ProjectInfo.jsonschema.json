@@ -1,0 +1,59 @@
+{
+  "$id": "controlplane.v1.ProjectInfo.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectInfo represents detailed information about a project that a group is a member of",
+  "patternProperties": {
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the membership was created"
+    },
+    "^(latest_version_id)$": {
+      "description": "The latest version ID of the project, if available",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "Timestamp when the membership was created"
+    },
+    "description": {
+      "description": "Description of the project",
+      "type": "string"
+    },
+    "id": {
+      "description": "Unique identifier of the project",
+      "type": "string"
+    },
+    "latestVersionId": {
+      "description": "The latest version ID of the project, if available",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of the project",
+      "type": "string"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+            "PROJECT_MEMBER_ROLE_ADMIN",
+            "PROJECT_MEMBER_ROLE_VIEWER"
+          ],
+          "title": "Project Member Role",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Role of the group in the project (admin or viewer)"
+    }
+  },
+  "title": "Project Info",
+  "type": "object"
+}

@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -74,6 +75,11 @@ func DeletedAt(v time.Time) predicate.WorkflowContract {
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldEQ(FieldDescription, v))
+}
+
+// ScopedResourceID applies equality check predicate on the "scoped_resource_id" field. It's identical to ScopedResourceIDEQ.
+func ScopedResourceID(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldEQ(FieldScopedResourceID, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -304,6 +310,96 @@ func DescriptionEqualFold(v string) predicate.WorkflowContract {
 // DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
 func DescriptionContainsFold(v string) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldContainsFold(FieldDescription, v))
+}
+
+// ScopedResourceTypeEQ applies the EQ predicate on the "scoped_resource_type" field.
+func ScopedResourceTypeEQ(v biz.ContractScope) predicate.WorkflowContract {
+	vc := v
+	return predicate.WorkflowContract(sql.FieldEQ(FieldScopedResourceType, vc))
+}
+
+// ScopedResourceTypeNEQ applies the NEQ predicate on the "scoped_resource_type" field.
+func ScopedResourceTypeNEQ(v biz.ContractScope) predicate.WorkflowContract {
+	vc := v
+	return predicate.WorkflowContract(sql.FieldNEQ(FieldScopedResourceType, vc))
+}
+
+// ScopedResourceTypeIn applies the In predicate on the "scoped_resource_type" field.
+func ScopedResourceTypeIn(vs ...biz.ContractScope) predicate.WorkflowContract {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.WorkflowContract(sql.FieldIn(FieldScopedResourceType, v...))
+}
+
+// ScopedResourceTypeNotIn applies the NotIn predicate on the "scoped_resource_type" field.
+func ScopedResourceTypeNotIn(vs ...biz.ContractScope) predicate.WorkflowContract {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.WorkflowContract(sql.FieldNotIn(FieldScopedResourceType, v...))
+}
+
+// ScopedResourceTypeIsNil applies the IsNil predicate on the "scoped_resource_type" field.
+func ScopedResourceTypeIsNil() predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldIsNull(FieldScopedResourceType))
+}
+
+// ScopedResourceTypeNotNil applies the NotNil predicate on the "scoped_resource_type" field.
+func ScopedResourceTypeNotNil() predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNotNull(FieldScopedResourceType))
+}
+
+// ScopedResourceIDEQ applies the EQ predicate on the "scoped_resource_id" field.
+func ScopedResourceIDEQ(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldEQ(FieldScopedResourceID, v))
+}
+
+// ScopedResourceIDNEQ applies the NEQ predicate on the "scoped_resource_id" field.
+func ScopedResourceIDNEQ(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNEQ(FieldScopedResourceID, v))
+}
+
+// ScopedResourceIDIn applies the In predicate on the "scoped_resource_id" field.
+func ScopedResourceIDIn(vs ...uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldIn(FieldScopedResourceID, vs...))
+}
+
+// ScopedResourceIDNotIn applies the NotIn predicate on the "scoped_resource_id" field.
+func ScopedResourceIDNotIn(vs ...uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNotIn(FieldScopedResourceID, vs...))
+}
+
+// ScopedResourceIDGT applies the GT predicate on the "scoped_resource_id" field.
+func ScopedResourceIDGT(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldGT(FieldScopedResourceID, v))
+}
+
+// ScopedResourceIDGTE applies the GTE predicate on the "scoped_resource_id" field.
+func ScopedResourceIDGTE(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldGTE(FieldScopedResourceID, v))
+}
+
+// ScopedResourceIDLT applies the LT predicate on the "scoped_resource_id" field.
+func ScopedResourceIDLT(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldLT(FieldScopedResourceID, v))
+}
+
+// ScopedResourceIDLTE applies the LTE predicate on the "scoped_resource_id" field.
+func ScopedResourceIDLTE(v uuid.UUID) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldLTE(FieldScopedResourceID, v))
+}
+
+// ScopedResourceIDIsNil applies the IsNil predicate on the "scoped_resource_id" field.
+func ScopedResourceIDIsNil() predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldIsNull(FieldScopedResourceID))
+}
+
+// ScopedResourceIDNotNil applies the NotNil predicate on the "scoped_resource_id" field.
+func ScopedResourceIDNotNil() predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNotNull(FieldScopedResourceID))
 }
 
 // HasVersions applies the HasEdge predicate on the "versions" edge.

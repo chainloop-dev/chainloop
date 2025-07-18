@@ -20,9 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"entgo.io/ent/dialect/sql/sqljson"
-
-	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -32,10 +29,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -222,13 +223,17 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 
 	err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		// Create the group with the provided options
-		gr, err := tx.Group.Create().
+		builder := tx.Group.Create().
 			SetName(opts.Name).
 			SetDescription(opts.Description).
-			AddMemberIDs(opts.UserID).
-			SetOrganizationID(orgID).
-			SetMemberCount(1).
-			Save(ctx)
+			SetOrganizationID(orgID)
+
+		// Add member if userID is provided
+		if opts.UserID != nil {
+			builder = builder.AddMemberIDs(*opts.UserID)
+		}
+
+		gr, err := builder.Save(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {
 				return biz.NewErrAlreadyExistsStr("group with the same name already exists")
@@ -236,32 +241,35 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 			return err
 		}
 
-		// Update the group-user member to set it's a group maintainer
-		if _, grUerr := tx.GroupMembership.Update().
-			Where(
-				groupmembership.GroupIDEQ(gr.ID),
-				groupmembership.UserIDEQ(opts.UserID),
-			).
-			SetMaintainer(true).
-			Save(ctx); grUerr != nil {
-			if ent.IsNotFound(grUerr) {
-				return biz.NewErrNotFound("group user")
+		// Only add memberships if userID is not nil
+		if opts.UserID != nil {
+			// Update the group-user member to set it's a group maintainer
+			if _, grUerr := tx.GroupMembership.Update().
+				Where(
+					groupmembership.GroupIDEQ(gr.ID),
+					groupmembership.UserIDEQ(*opts.UserID),
+				).
+				SetMaintainer(true).
+				Save(ctx); grUerr != nil {
+				if ent.IsNotFound(grUerr) {
+					return biz.NewErrNotFound("group user")
+				}
+				return grUerr
 			}
-			return grUerr
-		}
 
-		// Update the user membership with the role of maintainer
-		_, err = tx.Membership.Create().
-			SetUserID(opts.UserID).
-			SetOrganizationID(orgID).
-			SetRole(authz.RoleGroupMaintainer).
-			SetMembershipType(authz.MembershipTypeUser).
-			SetMemberID(opts.UserID).
-			SetResourceType(authz.ResourceTypeGroup).
-			SetResourceID(gr.ID).
-			Save(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to create membership for user %s in group %s: %w", opts.UserID, gr.ID, err)
+			// Update the user membership with the role of maintainer
+			_, err = tx.Membership.Create().
+				SetUserID(*opts.UserID).
+				SetOrganizationID(orgID).
+				SetRole(authz.RoleGroupMaintainer).
+				SetMembershipType(authz.MembershipTypeUser).
+				SetMemberID(*opts.UserID).
+				SetResourceType(authz.ResourceTypeGroup).
+				SetResourceID(gr.ID).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to create membership for user %s in group %s: %w", *opts.UserID, gr.ID, err)
+			}
 		}
 
 		entGroup = *gr
@@ -272,6 +280,11 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 		return nil, fmt.Errorf("failed to create group: %w", err)
 	}
 
+	// Update the member count based on actual query
+	if err := g.UpdateGroupMemberCount(ctx, entGroup.ID); err != nil {
+		g.log.Warnf("failed to update member count for newly created group %s: %v", entGroup.ID, err)
+	}
+
 	return g.FindByOrgAndID(ctx, orgID, entGroup.ID)
 }
 
@@ -279,6 +292,21 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 func (g GroupRepo) FindByOrgAndID(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID) (*biz.Group, error) {
 	entGroup, err := g.data.DB.Group.Query().
 		Where(group.DeletedAtIsNil(), group.ID(groupID), group.OrganizationID(orgID)).
+		WithOrganization().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("group")
+		}
+		return nil, err
+	}
+
+	return entGroupToBiz(entGroup), nil
+}
+
+func (g GroupRepo) FindByOrgAndName(ctx context.Context, orgID uuid.UUID, name string) (*biz.Group, error) {
+	entGroup, err := g.data.DB.Group.Query().
+		Where(group.DeletedAtIsNil(), group.Name(name), group.OrganizationID(orgID)).
 		WithOrganization().
 		Only(ctx)
 	if err != nil {
@@ -339,20 +367,68 @@ func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUI
 }
 
 // SoftDelete soft-deletes a group by setting the DeletedAt field to the current time.
+// It also marks all group memberships as deleted and removes any pending invitations related to the group.
 func (g GroupRepo) SoftDelete(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID) error {
-	// Softly delete the group by setting the DeletedAt field
-	_, err := g.data.DB.Group.UpdateOneID(groupID).
-		SetDeletedAt(time.Now()).
-		Where(group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
-		Save(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return biz.NewErrNotFound("group")
-		}
-		return err
-	}
+	return WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
+		now := time.Now()
 
-	return nil
+		// Softly delete the group by setting the DeletedAt field
+		_, err := tx.Group.UpdateOneID(groupID).
+			SetDeletedAt(now).
+			Where(group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
+			Save(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound("group")
+			}
+			return fmt.Errorf("failed to mark group as deleted: %w", err)
+		}
+
+		// Mark as deleted all group memberships for this group
+		_, err = tx.GroupMembership.Update().
+			Where(
+				groupmembership.GroupID(groupID),
+				groupmembership.DeletedAtIsNil(),
+			).
+			SetDeletedAt(now).
+			Save(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("failed to mark group memberships as deleted: %w", err)
+		}
+
+		// Delete all memberships where this group is either the member or the resource
+		_, err = tx.Membership.Delete().Where(
+			membership.HasOrganizationWith(organization.ID(orgID)),
+			membership.Or(
+				membership.MemberID(groupID),
+				membership.And(
+					membership.ResourceID(groupID),
+					membership.ResourceTypeEQ(authz.ResourceTypeGroup),
+				),
+			),
+		).Exec(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("failed to delete group memberships: %w", err)
+		}
+
+		// Mark as deleted any pending invitations for this group
+		_, err = tx.OrgInvitation.Update().
+			Where(
+				orginvitation.OrganizationIDEQ(orgID),
+				orginvitation.DeletedAtIsNil(),
+				orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
+				func(s *sql.Selector) {
+					s.Where(sqljson.ValueEQ(orginvitation.FieldContext, groupID.String(), sqljson.DotPath("group_id_to_join")))
+				},
+			).
+			SetDeletedAt(now).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to cancel pending invitations for deleted group: %w", err)
+		}
+
+		return nil
+	})
 }
 
 // AddMemberToGroup adds a user to a group, creating a new membership if they are not already a member.
@@ -396,14 +472,14 @@ func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupI
 			}
 		}
 
-		// Increment the member count of the group
-		if err := tx.Group.UpdateOneID(groupID).AddMemberCount(1).Exec(ctx); err != nil {
-			return fmt.Errorf("failed to increment group member count: %w", err)
-		}
-
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("failed to add member to group: %w", err)
+	}
+
+	// Update the member count based on actual query after transaction
+	if err := g.UpdateGroupMemberCount(ctx, groupID); err != nil {
+		g.log.Warnf("failed to update member count after adding member to group %s: %v", groupID, err)
 	}
 
 	// Return the newly created membership
@@ -449,16 +525,16 @@ func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, g
 			}
 		}
 
-		// Decrement the member count of the group
-		if err := tx.Group.UpdateOneID(groupID).AddMemberCount(-1).Exec(ctx); err != nil {
-			return fmt.Errorf("failed to increment group member count: %w", err)
-		}
-
 		return nil
 	})
 
 	if err != nil {
 		return err
+	}
+
+	// Update the member count based on actual query after transaction
+	if err := g.UpdateGroupMemberCount(ctx, groupID); err != nil {
+		g.log.Warnf("failed to update member count after removing member from group %s: %v", groupID, err)
 	}
 
 	return nil
@@ -547,6 +623,109 @@ func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.
 	})
 }
 
+// ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
+func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, visibleProjectIDs []uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.GroupProjectInfo, int, error) {
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	// Get all memberships where this group is a member and the resource type is a project
+	membershipQuery := g.data.DB.Membership.Query().
+		Where(
+			membership.MemberIDEQ(groupID),
+			membership.MembershipTypeEQ(authz.MembershipTypeGroup),
+			membership.ResourceTypeEQ(authz.ResourceTypeProject),
+			membership.HasOrganizationWith(organization.IDEQ(orgID)),
+		)
+
+	// If visibleProjectIDs is provided, filter memberships to include only those projects
+	if visibleProjectIDs != nil {
+		membershipQuery = membershipQuery.Where(membership.ResourceIDIn(visibleProjectIDs...))
+	}
+
+	// Get total count first (after applying visibility filters)
+	count, err := membershipQuery.Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count project memberships: %w", err)
+	}
+
+	// Apply pagination to the memberships query
+	memberships, err := membershipQuery.
+		Order(ent.Desc(membership.FieldCreatedAt)).
+		Offset(paginationOpts.Offset()).
+		Limit(paginationOpts.Limit()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query memberships: %w", err)
+	}
+
+	// If no memberships found, return empty result
+	if len(memberships) == 0 {
+		return []*biz.GroupProjectInfo{}, count, nil
+	}
+
+	// Extract project IDs from memberships
+	projectIDs := make([]uuid.UUID, 0, len(memberships))
+	for _, m := range memberships {
+		projectIDs = append(projectIDs, m.ResourceID)
+	}
+
+	// Query the projects
+	entProjects, err := g.data.DB.Project.Query().
+		Where(
+			project.IDIn(projectIDs...),
+			project.OrganizationID(orgID),
+			project.DeletedAtIsNil(),
+		).
+		WithVersions(func(query *ent.ProjectVersionQuery) {
+			query.Where(projectversion.Latest(true), projectversion.DeletedAtIsNil()).Select(projectversion.FieldID)
+		}).
+		All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch projects: %w", err)
+	}
+
+	// Create a map of projects by ID for efficient lookup
+	projectsMap := make(map[uuid.UUID]*ent.Project, len(entProjects))
+	for _, p := range entProjects {
+		projectsMap[p.ID] = p
+	}
+
+	// Create a map to store role by project ID
+	projectRoles := make(map[uuid.UUID]authz.Role, len(memberships))
+	for _, m := range memberships {
+		projectRoles[m.ResourceID] = m.Role
+	}
+
+	// Build the result following the order of memberships
+	projectInfos := make([]*biz.GroupProjectInfo, 0, len(memberships))
+
+	for _, m := range memberships {
+		pr, exists := projectsMap[m.ResourceID]
+		if !exists {
+			// Skip projects that might have been deleted but membership still exists
+			continue
+		}
+
+		projectInfo := &biz.GroupProjectInfo{
+			ID:          pr.ID,
+			Name:        pr.Name,
+			Description: pr.Description,
+			Role:        m.Role,
+			CreatedAt:   toTimePtr(m.CreatedAt),
+		}
+
+		// If the project has versions, include the latest version ID
+		if len(pr.Edges.Versions) > 0 {
+			projectInfo.LatestVersionID = &pr.Edges.Versions[0].ID
+		}
+
+		projectInfos = append(projectInfos, projectInfo)
+	}
+
+	return projectInfos, count, nil
+}
+
 // entGroupToBiz converts an ent.Group to a biz.Group.
 func entGroupToBiz(gr *ent.Group) *biz.Group {
 	grp := &biz.Group{
@@ -576,4 +755,28 @@ func entGroupMembershipToBiz(gu *ent.GroupMembership) *biz.GroupMembership {
 		UpdatedAt:  toTimePtr(gu.UpdatedAt),
 		DeletedAt:  toTimePtr(gu.DeletedAt),
 	}
+}
+
+// UpdateGroupMemberCount updates the member count of a group based on an actual count query
+// This should be called after membership changes have been committed.
+func (g GroupRepo) UpdateGroupMemberCount(ctx context.Context, groupID uuid.UUID) error {
+	// Count active members in the group
+	count, err := g.data.DB.GroupMembership.Query().
+		Where(
+			groupmembership.GroupIDEQ(groupID),
+			groupmembership.DeletedAtIsNil(),
+		).
+		Count(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to count group members: %w", err)
+	}
+
+	// Update the group's member count to the actual count
+	if _, err := g.data.DB.Group.UpdateOneID(groupID).
+		SetMemberCount(count).
+		Save(ctx); err != nil {
+		return fmt.Errorf("failed to update group member count: %w", err)
+	}
+
+	return nil
 }

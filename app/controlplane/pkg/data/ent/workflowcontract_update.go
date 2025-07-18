@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -70,6 +71,46 @@ func (wcu *WorkflowContractUpdate) SetNillableDescription(s *string) *WorkflowCo
 // ClearDescription clears the value of the "description" field.
 func (wcu *WorkflowContractUpdate) ClearDescription() *WorkflowContractUpdate {
 	wcu.mutation.ClearDescription()
+	return wcu
+}
+
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (wcu *WorkflowContractUpdate) SetScopedResourceType(bs biz.ContractScope) *WorkflowContractUpdate {
+	wcu.mutation.SetScopedResourceType(bs)
+	return wcu
+}
+
+// SetNillableScopedResourceType sets the "scoped_resource_type" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableScopedResourceType(bs *biz.ContractScope) *WorkflowContractUpdate {
+	if bs != nil {
+		wcu.SetScopedResourceType(*bs)
+	}
+	return wcu
+}
+
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (wcu *WorkflowContractUpdate) ClearScopedResourceType() *WorkflowContractUpdate {
+	wcu.mutation.ClearScopedResourceType()
+	return wcu
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (wcu *WorkflowContractUpdate) SetScopedResourceID(u uuid.UUID) *WorkflowContractUpdate {
+	wcu.mutation.SetScopedResourceID(u)
+	return wcu
+}
+
+// SetNillableScopedResourceID sets the "scoped_resource_id" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableScopedResourceID(u *uuid.UUID) *WorkflowContractUpdate {
+	if u != nil {
+		wcu.SetScopedResourceID(*u)
+	}
+	return wcu
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (wcu *WorkflowContractUpdate) ClearScopedResourceID() *WorkflowContractUpdate {
+	wcu.mutation.ClearScopedResourceID()
 	return wcu
 }
 
@@ -202,6 +243,16 @@ func (wcu *WorkflowContractUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (wcu *WorkflowContractUpdate) check() error {
+	if v, ok := wcu.mutation.ScopedResourceType(); ok {
+		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (wcu *WorkflowContractUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractUpdate {
 	wcu.modifiers = append(wcu.modifiers, modifiers...)
@@ -209,6 +260,9 @@ func (wcu *WorkflowContractUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder
 }
 
 func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := wcu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontract.Table, workflowcontract.Columns, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	if ps := wcu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -228,6 +282,18 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if wcu.mutation.DescriptionCleared() {
 		_spec.ClearField(workflowcontract.FieldDescription, field.TypeString)
+	}
+	if value, ok := wcu.mutation.ScopedResourceType(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceType, field.TypeEnum, value)
+	}
+	if wcu.mutation.ScopedResourceTypeCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceType, field.TypeEnum)
+	}
+	if value, ok := wcu.mutation.ScopedResourceID(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
+	}
+	if wcu.mutation.ScopedResourceIDCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceID, field.TypeUUID)
 	}
 	if wcu.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -410,6 +476,46 @@ func (wcuo *WorkflowContractUpdateOne) ClearDescription() *WorkflowContractUpdat
 	return wcuo
 }
 
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (wcuo *WorkflowContractUpdateOne) SetScopedResourceType(bs biz.ContractScope) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetScopedResourceType(bs)
+	return wcuo
+}
+
+// SetNillableScopedResourceType sets the "scoped_resource_type" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableScopedResourceType(bs *biz.ContractScope) *WorkflowContractUpdateOne {
+	if bs != nil {
+		wcuo.SetScopedResourceType(*bs)
+	}
+	return wcuo
+}
+
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (wcuo *WorkflowContractUpdateOne) ClearScopedResourceType() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearScopedResourceType()
+	return wcuo
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (wcuo *WorkflowContractUpdateOne) SetScopedResourceID(u uuid.UUID) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetScopedResourceID(u)
+	return wcuo
+}
+
+// SetNillableScopedResourceID sets the "scoped_resource_id" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableScopedResourceID(u *uuid.UUID) *WorkflowContractUpdateOne {
+	if u != nil {
+		wcuo.SetScopedResourceID(*u)
+	}
+	return wcuo
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (wcuo *WorkflowContractUpdateOne) ClearScopedResourceID() *WorkflowContractUpdateOne {
+	wcuo.mutation.ClearScopedResourceID()
+	return wcuo
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
 func (wcuo *WorkflowContractUpdateOne) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractUpdateOne {
 	wcuo.mutation.AddVersionIDs(ids...)
@@ -552,6 +658,16 @@ func (wcuo *WorkflowContractUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (wcuo *WorkflowContractUpdateOne) check() error {
+	if v, ok := wcuo.mutation.ScopedResourceType(); ok {
+		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (wcuo *WorkflowContractUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractUpdateOne {
 	wcuo.modifiers = append(wcuo.modifiers, modifiers...)
@@ -559,6 +675,9 @@ func (wcuo *WorkflowContractUpdateOne) Modify(modifiers ...func(u *sql.UpdateBui
 }
 
 func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContract, err error) {
+	if err := wcuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontract.Table, workflowcontract.Columns, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	id, ok := wcuo.mutation.ID()
 	if !ok {
@@ -595,6 +714,18 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 	}
 	if wcuo.mutation.DescriptionCleared() {
 		_spec.ClearField(workflowcontract.FieldDescription, field.TypeString)
+	}
+	if value, ok := wcuo.mutation.ScopedResourceType(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceType, field.TypeEnum, value)
+	}
+	if wcuo.mutation.ScopedResourceTypeCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceType, field.TypeEnum)
+	}
+	if value, ok := wcuo.mutation.ScopedResourceID(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
+	}
+	if wcuo.mutation.ScopedResourceIDCleared() {
+		_spec.ClearField(workflowcontract.FieldScopedResourceID, field.TypeUUID)
 	}
 	if wcuo.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
@@ -71,6 +72,34 @@ func (wcc *WorkflowContractCreate) SetDescription(s string) *WorkflowContractCre
 func (wcc *WorkflowContractCreate) SetNillableDescription(s *string) *WorkflowContractCreate {
 	if s != nil {
 		wcc.SetDescription(*s)
+	}
+	return wcc
+}
+
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (wcc *WorkflowContractCreate) SetScopedResourceType(bs biz.ContractScope) *WorkflowContractCreate {
+	wcc.mutation.SetScopedResourceType(bs)
+	return wcc
+}
+
+// SetNillableScopedResourceType sets the "scoped_resource_type" field if the given value is not nil.
+func (wcc *WorkflowContractCreate) SetNillableScopedResourceType(bs *biz.ContractScope) *WorkflowContractCreate {
+	if bs != nil {
+		wcc.SetScopedResourceType(*bs)
+	}
+	return wcc
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (wcc *WorkflowContractCreate) SetScopedResourceID(u uuid.UUID) *WorkflowContractCreate {
+	wcc.mutation.SetScopedResourceID(u)
+	return wcc
+}
+
+// SetNillableScopedResourceID sets the "scoped_resource_id" field if the given value is not nil.
+func (wcc *WorkflowContractCreate) SetNillableScopedResourceID(u *uuid.UUID) *WorkflowContractCreate {
+	if u != nil {
+		wcc.SetScopedResourceID(*u)
 	}
 	return wcc
 }
@@ -191,6 +220,11 @@ func (wcc *WorkflowContractCreate) check() error {
 	if _, ok := wcc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkflowContract.created_at"`)}
 	}
+	if v, ok := wcc.mutation.ScopedResourceType(); ok {
+		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -242,6 +276,14 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 	if value, ok := wcc.mutation.Description(); ok {
 		_spec.SetField(workflowcontract.FieldDescription, field.TypeString, value)
 		_node.Description = value
+	}
+	if value, ok := wcc.mutation.ScopedResourceType(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceType, field.TypeEnum, value)
+		_node.ScopedResourceType = value
+	}
+	if value, ok := wcc.mutation.ScopedResourceID(); ok {
+		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
+		_node.ScopedResourceID = value
 	}
 	if nodes := wcc.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -380,6 +422,42 @@ func (u *WorkflowContractUpsert) ClearDescription() *WorkflowContractUpsert {
 	return u
 }
 
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (u *WorkflowContractUpsert) SetScopedResourceType(v biz.ContractScope) *WorkflowContractUpsert {
+	u.Set(workflowcontract.FieldScopedResourceType, v)
+	return u
+}
+
+// UpdateScopedResourceType sets the "scoped_resource_type" field to the value that was provided on create.
+func (u *WorkflowContractUpsert) UpdateScopedResourceType() *WorkflowContractUpsert {
+	u.SetExcluded(workflowcontract.FieldScopedResourceType)
+	return u
+}
+
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (u *WorkflowContractUpsert) ClearScopedResourceType() *WorkflowContractUpsert {
+	u.SetNull(workflowcontract.FieldScopedResourceType)
+	return u
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (u *WorkflowContractUpsert) SetScopedResourceID(v uuid.UUID) *WorkflowContractUpsert {
+	u.Set(workflowcontract.FieldScopedResourceID, v)
+	return u
+}
+
+// UpdateScopedResourceID sets the "scoped_resource_id" field to the value that was provided on create.
+func (u *WorkflowContractUpsert) UpdateScopedResourceID() *WorkflowContractUpsert {
+	u.SetExcluded(workflowcontract.FieldScopedResourceID)
+	return u
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (u *WorkflowContractUpsert) ClearScopedResourceID() *WorkflowContractUpsert {
+	u.SetNull(workflowcontract.FieldScopedResourceID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -473,6 +551,48 @@ func (u *WorkflowContractUpsertOne) UpdateDescription() *WorkflowContractUpsertO
 func (u *WorkflowContractUpsertOne) ClearDescription() *WorkflowContractUpsertOne {
 	return u.Update(func(s *WorkflowContractUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (u *WorkflowContractUpsertOne) SetScopedResourceType(v biz.ContractScope) *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetScopedResourceType(v)
+	})
+}
+
+// UpdateScopedResourceType sets the "scoped_resource_type" field to the value that was provided on create.
+func (u *WorkflowContractUpsertOne) UpdateScopedResourceType() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateScopedResourceType()
+	})
+}
+
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (u *WorkflowContractUpsertOne) ClearScopedResourceType() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.ClearScopedResourceType()
+	})
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (u *WorkflowContractUpsertOne) SetScopedResourceID(v uuid.UUID) *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetScopedResourceID(v)
+	})
+}
+
+// UpdateScopedResourceID sets the "scoped_resource_id" field to the value that was provided on create.
+func (u *WorkflowContractUpsertOne) UpdateScopedResourceID() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateScopedResourceID()
+	})
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (u *WorkflowContractUpsertOne) ClearScopedResourceID() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.ClearScopedResourceID()
 	})
 }
 
@@ -736,6 +856,48 @@ func (u *WorkflowContractUpsertBulk) UpdateDescription() *WorkflowContractUpsert
 func (u *WorkflowContractUpsertBulk) ClearDescription() *WorkflowContractUpsertBulk {
 	return u.Update(func(s *WorkflowContractUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetScopedResourceType sets the "scoped_resource_type" field.
+func (u *WorkflowContractUpsertBulk) SetScopedResourceType(v biz.ContractScope) *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetScopedResourceType(v)
+	})
+}
+
+// UpdateScopedResourceType sets the "scoped_resource_type" field to the value that was provided on create.
+func (u *WorkflowContractUpsertBulk) UpdateScopedResourceType() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateScopedResourceType()
+	})
+}
+
+// ClearScopedResourceType clears the value of the "scoped_resource_type" field.
+func (u *WorkflowContractUpsertBulk) ClearScopedResourceType() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.ClearScopedResourceType()
+	})
+}
+
+// SetScopedResourceID sets the "scoped_resource_id" field.
+func (u *WorkflowContractUpsertBulk) SetScopedResourceID(v uuid.UUID) *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetScopedResourceID(v)
+	})
+}
+
+// UpdateScopedResourceID sets the "scoped_resource_id" field to the value that was provided on create.
+func (u *WorkflowContractUpsertBulk) UpdateScopedResourceID() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateScopedResourceID()
+	})
+}
+
+// ClearScopedResourceID clears the value of the "scoped_resource_id" field.
+func (u *WorkflowContractUpsertBulk) ClearScopedResourceID() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.ClearScopedResourceID()
 	})
 }
 

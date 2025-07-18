@@ -200,9 +200,10 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		}
 	}
 
+	var defaultMessage = fmt.Sprintf("you do not have permissions to access to the %s associated with this resource", resourceType)
 	// If no matching resources were found, return forbidden error
 	if len(matchingResources) == 0 {
-		return errors.Forbidden("forbidden", "operation not allowed")
+		return errors.Forbidden("forbidden", defaultMessage)
 	}
 
 	// Try to enforce the policy with each matching role
@@ -220,7 +221,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	}
 
 	// If none of the roles pass, return forbidden error
-	return errors.Forbidden("forbidden", "operation not allowed")
+	return errors.Forbidden("forbidden", defaultMessage)
 }
 
 // userHasPermissionOnProject is a helper method that checks if a policy can be applied to a project. It looks for a project
@@ -250,74 +251,6 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 	}
 
 	return p, nil
-}
-
-// userHasPermissionToAddGroupMember checks if the user has permission to add members to a group
-func (s *service) userHasPermissionToAddGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
-	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupAddMemberships)
-}
-
-// userHasPermissionToRemoveGroupMember checks if the user has permission to remove members from a group
-func (s *service) userHasPermissionToRemoveGroupMember(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
-	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupRemoveMemberships)
-}
-
-// userHasPermissionToListPendingGroupInvitations checks if the user has permission to list pending group invitations
-func (s *service) userHasPermissionToListPendingGroupInvitations(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
-	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupListPendingInvitations)
-}
-
-// userHasPermissionToUpdateMembership checks if the user has permission to remove members from a group
-func (s *service) userHasPermissionToUpdateMembership(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference) error {
-	return s.userHasPermissionOnGroupMembershipsWithPolicy(ctx, orgID, groupIdentifier, authz.PolicyGroupUpdateMemberships)
-}
-
-// userHasPermissionOnGroupMembershipsWithPolicy is the core implementation that checks if a user has permission on a group
-// with an optional specific policy check. If the policy is nil, it falls back to the basic permission check.
-func (s *service) userHasPermissionOnGroupMembershipsWithPolicy(ctx context.Context, orgID string, groupIdentifier *pb.IdentityReference, policy *authz.Policy) error {
-	// Check if the user has admin or owner role in the organization
-	userRole := usercontext.CurrentAuthzSubject(ctx)
-	if userRole == "" {
-		return errors.NotFound("not found", "current membership not found")
-	}
-
-	// Allow if user has admin or owner role
-	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
-		return nil
-	}
-
-	groupID, groupName, err := groupIdentifier.Parse()
-	if err != nil {
-		return errors.BadRequest("invalid", fmt.Sprintf("invalid project reference: %s", err.Error()))
-	}
-
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return errors.BadRequest("invalid", "invalid organization ID")
-	}
-
-	// Resolve the group identifier to a valid group ID
-	resolvedGroupID, err := s.groupUseCase.ValidateGroupIdentifier(ctx, orgUUID, groupID, groupName)
-	if err != nil {
-		return handleUseCaseErr(err, s.log)
-	}
-
-	// Check the user's membership in the organization
-	m := entities.CurrentMembership(ctx)
-	for _, rm := range m.Resources {
-		if rm.ResourceType == authz.ResourceTypeGroup && rm.ResourceID == resolvedGroupID {
-			pass, err := s.enforcer.Enforce(string(rm.Role), policy)
-			if err != nil {
-				return handleUseCaseErr(err, s.log)
-			}
-			if pass {
-				return nil
-			}
-		}
-	}
-
-	// If neither a maintainer nor admin/owner, nor has specific policy permission, forbid the operation
-	return errors.Forbidden("forbidden", "operation not allowed")
 }
 
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)

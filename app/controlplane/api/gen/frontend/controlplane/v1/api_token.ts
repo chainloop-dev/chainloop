@@ -4,12 +4,17 @@ import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../../google/protobuf/duration";
 import { APITokenItem } from "./response_messages";
+import { IdentityReference } from "./shared_message";
 
 export const protobufPackage = "controlplane.v1";
 
 export interface APITokenServiceCreateRequest {
   name: string;
-  description?: string | undefined;
+  description?:
+    | string
+    | undefined;
+  /** You might need to specify a project reference if you want/need to create a token scoped to a project */
+  projectReference?: IdentityReference;
   expiresIn?: Duration | undefined;
 }
 
@@ -23,7 +28,7 @@ export interface APITokenServiceCreateResponse_APITokenFull {
 }
 
 export interface APITokenServiceRevokeRequest {
-  name: string;
+  id: string;
 }
 
 export interface APITokenServiceRevokeResponse {
@@ -31,6 +36,49 @@ export interface APITokenServiceRevokeResponse {
 
 export interface APITokenServiceListRequest {
   includeRevoked: boolean;
+  /** optional project reference to filter by */
+  project?: IdentityReference;
+  /** filter by the scope of the token */
+  scope: APITokenServiceListRequest_Scope;
+}
+
+export enum APITokenServiceListRequest_Scope {
+  SCOPE_UNSPECIFIED = 0,
+  SCOPE_PROJECT = 1,
+  SCOPE_GLOBAL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function aPITokenServiceListRequest_ScopeFromJSON(object: any): APITokenServiceListRequest_Scope {
+  switch (object) {
+    case 0:
+    case "SCOPE_UNSPECIFIED":
+      return APITokenServiceListRequest_Scope.SCOPE_UNSPECIFIED;
+    case 1:
+    case "SCOPE_PROJECT":
+      return APITokenServiceListRequest_Scope.SCOPE_PROJECT;
+    case 2:
+    case "SCOPE_GLOBAL":
+      return APITokenServiceListRequest_Scope.SCOPE_GLOBAL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return APITokenServiceListRequest_Scope.UNRECOGNIZED;
+  }
+}
+
+export function aPITokenServiceListRequest_ScopeToJSON(object: APITokenServiceListRequest_Scope): string {
+  switch (object) {
+    case APITokenServiceListRequest_Scope.SCOPE_UNSPECIFIED:
+      return "SCOPE_UNSPECIFIED";
+    case APITokenServiceListRequest_Scope.SCOPE_PROJECT:
+      return "SCOPE_PROJECT";
+    case APITokenServiceListRequest_Scope.SCOPE_GLOBAL:
+      return "SCOPE_GLOBAL";
+    case APITokenServiceListRequest_Scope.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface APITokenServiceListResponse {
@@ -38,7 +86,7 @@ export interface APITokenServiceListResponse {
 }
 
 function createBaseAPITokenServiceCreateRequest(): APITokenServiceCreateRequest {
-  return { name: "", description: undefined, expiresIn: undefined };
+  return { name: "", description: undefined, projectReference: undefined, expiresIn: undefined };
 }
 
 export const APITokenServiceCreateRequest = {
@@ -48,6 +96,9 @@ export const APITokenServiceCreateRequest = {
     }
     if (message.description !== undefined) {
       writer.uint32(10).string(message.description);
+    }
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(34).fork()).ldelim();
     }
     if (message.expiresIn !== undefined) {
       Duration.encode(message.expiresIn, writer.uint32(18).fork()).ldelim();
@@ -76,6 +127,13 @@ export const APITokenServiceCreateRequest = {
 
           message.description = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -96,6 +154,9 @@ export const APITokenServiceCreateRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : undefined,
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
       expiresIn: isSet(object.expiresIn) ? Duration.fromJSON(object.expiresIn) : undefined,
     };
   },
@@ -104,6 +165,10 @@ export const APITokenServiceCreateRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
     message.expiresIn !== undefined &&
       (obj.expiresIn = message.expiresIn ? Duration.toJSON(message.expiresIn) : undefined);
     return obj;
@@ -117,6 +182,9 @@ export const APITokenServiceCreateRequest = {
     const message = createBaseAPITokenServiceCreateRequest();
     message.name = object.name ?? "";
     message.description = object.description ?? undefined;
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
     message.expiresIn = (object.expiresIn !== undefined && object.expiresIn !== null)
       ? Duration.fromPartial(object.expiresIn)
       : undefined;
@@ -265,13 +333,13 @@ export const APITokenServiceCreateResponse_APITokenFull = {
 };
 
 function createBaseAPITokenServiceRevokeRequest(): APITokenServiceRevokeRequest {
-  return { name: "" };
+  return { id: "" };
 }
 
 export const APITokenServiceRevokeRequest = {
   encode(message: APITokenServiceRevokeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
     return writer;
   },
@@ -288,7 +356,7 @@ export const APITokenServiceRevokeRequest = {
             break;
           }
 
-          message.name = reader.string();
+          message.id = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -300,12 +368,12 @@ export const APITokenServiceRevokeRequest = {
   },
 
   fromJSON(object: any): APITokenServiceRevokeRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { id: isSet(object.id) ? String(object.id) : "" };
   },
 
   toJSON(message: APITokenServiceRevokeRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    message.id !== undefined && (obj.id = message.id);
     return obj;
   },
 
@@ -315,7 +383,7 @@ export const APITokenServiceRevokeRequest = {
 
   fromPartial<I extends Exact<DeepPartial<APITokenServiceRevokeRequest>, I>>(object: I): APITokenServiceRevokeRequest {
     const message = createBaseAPITokenServiceRevokeRequest();
-    message.name = object.name ?? "";
+    message.id = object.id ?? "";
     return message;
   },
 };
@@ -365,13 +433,19 @@ export const APITokenServiceRevokeResponse = {
 };
 
 function createBaseAPITokenServiceListRequest(): APITokenServiceListRequest {
-  return { includeRevoked: false };
+  return { includeRevoked: false, project: undefined, scope: 0 };
 }
 
 export const APITokenServiceListRequest = {
   encode(message: APITokenServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.includeRevoked === true) {
       writer.uint32(8).bool(message.includeRevoked);
+    }
+    if (message.project !== undefined) {
+      IdentityReference.encode(message.project, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.scope !== 0) {
+      writer.uint32(16).int32(message.scope);
     }
     return writer;
   },
@@ -390,6 +464,20 @@ export const APITokenServiceListRequest = {
 
           message.includeRevoked = reader.bool();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.project = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.scope = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -400,12 +488,19 @@ export const APITokenServiceListRequest = {
   },
 
   fromJSON(object: any): APITokenServiceListRequest {
-    return { includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false };
+    return {
+      includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
+      project: isSet(object.project) ? IdentityReference.fromJSON(object.project) : undefined,
+      scope: isSet(object.scope) ? aPITokenServiceListRequest_ScopeFromJSON(object.scope) : 0,
+    };
   },
 
   toJSON(message: APITokenServiceListRequest): unknown {
     const obj: any = {};
     message.includeRevoked !== undefined && (obj.includeRevoked = message.includeRevoked);
+    message.project !== undefined &&
+      (obj.project = message.project ? IdentityReference.toJSON(message.project) : undefined);
+    message.scope !== undefined && (obj.scope = aPITokenServiceListRequest_ScopeToJSON(message.scope));
     return obj;
   },
 
@@ -416,6 +511,10 @@ export const APITokenServiceListRequest = {
   fromPartial<I extends Exact<DeepPartial<APITokenServiceListRequest>, I>>(object: I): APITokenServiceListRequest {
     const message = createBaseAPITokenServiceListRequest();
     message.includeRevoked = object.includeRevoked ?? false;
+    message.project = (object.project !== undefined && object.project !== null)
+      ? IdentityReference.fromPartial(object.project)
+      : undefined;
+    message.scope = object.scope ?? 0;
     return message;
   },
 };

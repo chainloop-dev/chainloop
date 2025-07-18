@@ -21,6 +21,8 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+
+	"github.com/google/uuid"
 )
 
 type OrganizationService struct {
@@ -73,13 +75,38 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
 }
 
-func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
+func (s *OrganizationService) ListMemberships(ctx context.Context, req *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	memberships, err := s.membershipUC.ByOrg(ctx, currentOrg.ID)
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	opts := &biz.ListByOrgOpts{
+		Name:  req.Name,
+		Email: req.Email,
+	}
+
+	if req.MembershipId != nil {
+		membershipUUID, err := uuid.Parse(req.GetMembershipId())
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		opts.MembershipID = &membershipUUID
+	}
+
+	if req.Role != nil {
+		castedRole := biz.PbRoleToBiz(req.GetRole())
+		opts.Role = &castedRole
+	}
+
+	memberships, count, err := s.membershipUC.ByOrg(ctx, currentOrg.ID, opts, paginationOpts)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -89,7 +116,10 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, _ *pb.Organiz
 		result = append(result, bizMembershipToPb(m))
 	}
 
-	return &pb.OrganizationServiceListMembershipsResponse{Result: result}, nil
+	return &pb.OrganizationServiceListMembershipsResponse{
+		Result:     result,
+		Pagination: paginationToPb(count, paginationOpts.Offset(), paginationOpts.Limit()),
+	}, nil
 }
 
 func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.OrganizationServiceDeleteMembershipRequest) (*pb.OrganizationServiceDeleteMembershipResponse, error) {

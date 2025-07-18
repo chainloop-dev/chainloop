@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -44,6 +45,9 @@ func (WorkflowContract) Fields() []ent.Field {
 			}),
 		field.Time("deleted_at").Optional(),
 		field.String("description").Optional(),
+		// If this value is set, the contract is scoped to a resource
+		field.Enum("scoped_resource_type").GoType(biz.ContractScope("")).Optional(),
+		field.UUID("scoped_resource_id", uuid.UUID{}).Optional(),
 	}
 }
 
@@ -51,6 +55,8 @@ func (WorkflowContract) Fields() []ent.Field {
 func (WorkflowContract) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("versions", WorkflowContractVersion.Type),
+		// We keep the organization edge to be able to easily list all the contracts
+		// regardless of the scope
 		edge.From("organization", Organization.Type).
 			Ref("workflow_contracts").
 			Unique(),
@@ -61,7 +67,8 @@ func (WorkflowContract) Edges() []ent.Edge {
 
 func (WorkflowContract) Indexes() []ent.Index {
 	return []ent.Index{
-		// names are unique within a organization and affects only to non-deleted items
+		// TODO: add a unique index on name and scoped_resource_type and scoped_resource_id
+		// for now keeping a global one for backward compatibility
 		index.Fields("name").Edges("organization").Unique().Annotations(
 			entsql.IndexWhere("deleted_at IS NULL"),
 		),

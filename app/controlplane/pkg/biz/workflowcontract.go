@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,6 +41,17 @@ type WorkflowContract struct {
 	CreatedAt               *time.Time
 	// WorkflowRefs is the list of workflows associated with this contract
 	WorkflowRefs []*WorkflowRef
+	// entity the contract is scoped to, if not set it's scoped to the organization
+	ScopedEntity *ScopedEntity
+}
+
+type ScopedEntity struct {
+	// Type is the type of the scoped entity i.e project or org
+	Type string
+	// ID is the id of the scoped entity
+	ID uuid.UUID
+	// Name is the name of the scoped entity
+	Name string
 }
 
 type WorkflowContractVersion struct {
@@ -67,7 +78,7 @@ type WorkflowContractWithVersion struct {
 
 type WorkflowContractRepo interface {
 	Create(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error)
-	List(ctx context.Context, orgID uuid.UUID) ([]*WorkflowContract, error)
+	List(ctx context.Context, orgID uuid.UUID, filter *WorkflowContractListFilters) ([]*WorkflowContract, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
@@ -96,6 +107,8 @@ type ContractCreateOpts struct {
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
 	Contract *Contract
+	// ProjectID indicates the project to be scoped to
+	ProjectID *uuid.UUID
 }
 
 type ContractUpdateOpts struct {
@@ -115,13 +128,32 @@ func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *polic
 	return &WorkflowContractUseCase{repo: repo, policyRegistry: policyRegistry, auditorUC: auditorUC, logger: log.NewHelper(logger)}
 }
 
-func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string) ([]*WorkflowContract, error) {
+type WorkflowContractListFilters struct {
+	// FilterByProjects is used to filter the result by a project list
+	// If it's empty, no filter will be applied
+	FilterByProjects []uuid.UUID
+}
+
+type WorkflowListOpt func(opts *WorkflowContractListFilters)
+
+func WithProjectFilter(projectIDs []uuid.UUID) WorkflowListOpt {
+	return func(opts *WorkflowContractListFilters) {
+		opts.FilterByProjects = projectIDs
+	}
+}
+
+func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string, opts ...WorkflowListOpt) ([]*WorkflowContract, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.List(ctx, orgUUID)
+	filters := &WorkflowContractListFilters{}
+	for _, opt := range opts {
+		opt(filters)
+	}
+
+	return uc.repo.List(ctx, orgUUID, filters)
 }
 
 func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, contractID string) (*WorkflowContract, error) {
@@ -147,10 +179,19 @@ func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, n
 	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)
 }
 
+func (c *WorkflowContract) IsGlobalScoped() bool {
+	return c.ScopedEntity == nil
+}
+
+func (c *WorkflowContract) IsProjectScoped() bool {
+	return c.ScopedEntity != nil && c.ScopedEntity.Type == string(ContractScopeProject)
+}
+
 type WorkflowContractCreateOpts struct {
 	OrgID, Name string
 	RawSchema   []byte
 	Description *string
+	ProjectID   *uuid.UUID
 	// Make sure that the name is unique in the organization
 	AddUniquePrefix bool
 }
@@ -190,8 +231,11 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 
 	// Create a workflow with a unique name if needed
 	args := &ContractCreateOpts{
-		OrgID: orgUUID, Name: opts.Name, Description: opts.Description,
-		Contract: contract,
+		OrgID:       orgUUID,
+		Name:        opts.Name,
+		Description: opts.Description,
+		Contract:    contract,
+		ProjectID:   opts.ProjectID,
 	}
 
 	var c *WorkflowContract
@@ -593,4 +637,22 @@ func SchemaToRawContract(contract *schemav1.CraftingSchema) (*Contract, error) {
 	}
 
 	return &Contract{Raw: r, Format: unmarshal.RawFormatJSON, Schema: contract}, nil
+}
+
+// ContractScope represents a polymorphic relationship between a contract and a project or organization
+type ContractScope string
+
+const (
+	ContractScopeProject ContractScope = "project"
+	ContractScopeOrg     ContractScope = "org"
+)
+
+// Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
+func (ContractScope) Values() (values []string) {
+	values = append(values,
+		string(ContractScopeProject),
+		string(ContractScopeOrg),
+	)
+
+	return
 }

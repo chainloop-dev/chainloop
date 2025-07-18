@@ -25,7 +25,6 @@ import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -37,379 +36,6 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
-
-// ProjectMemberRole defines the roles a member can have in a project
-type ProjectMemberRole int32
-
-const (
-	// Default role for a project member
-	ProjectMemberRole_PROJECT_MEMBER_ROLE_UNSPECIFIED ProjectMemberRole = 0
-	// Admin role for a project member
-	ProjectMemberRole_PROJECT_MEMBER_ROLE_ADMIN ProjectMemberRole = 1
-	// Viewer role for a project member
-	ProjectMemberRole_PROJECT_MEMBER_ROLE_VIEWER ProjectMemberRole = 2
-)
-
-// Enum value maps for ProjectMemberRole.
-var (
-	ProjectMemberRole_name = map[int32]string{
-		0: "PROJECT_MEMBER_ROLE_UNSPECIFIED",
-		1: "PROJECT_MEMBER_ROLE_ADMIN",
-		2: "PROJECT_MEMBER_ROLE_VIEWER",
-	}
-	ProjectMemberRole_value = map[string]int32{
-		"PROJECT_MEMBER_ROLE_UNSPECIFIED": 0,
-		"PROJECT_MEMBER_ROLE_ADMIN":       1,
-		"PROJECT_MEMBER_ROLE_VIEWER":      2,
-	}
-)
-
-func (x ProjectMemberRole) Enum() *ProjectMemberRole {
-	p := new(ProjectMemberRole)
-	*p = x
-	return p
-}
-
-func (x ProjectMemberRole) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ProjectMemberRole) Descriptor() protoreflect.EnumDescriptor {
-	return file_controlplane_v1_project_proto_enumTypes[0].Descriptor()
-}
-
-func (ProjectMemberRole) Type() protoreflect.EnumType {
-	return &file_controlplane_v1_project_proto_enumTypes[0]
-}
-
-func (x ProjectMemberRole) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ProjectMemberRole.Descriptor instead.
-func (ProjectMemberRole) EnumDescriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{0}
-}
-
-type ProjectServiceAPITokenCreateRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Name        string               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	ProjectName string               `protobuf:"bytes,2,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
-	Description *string              `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	ExpiresIn   *durationpb.Duration `protobuf:"bytes,4,opt,name=expires_in,json=expiresIn,proto3,oneof" json:"expires_in,omitempty"`
-}
-
-func (x *ProjectServiceAPITokenCreateRequest) Reset() {
-	*x = ProjectServiceAPITokenCreateRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenCreateRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenCreateRequest) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenCreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenCreateRequest.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenCreateRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *ProjectServiceAPITokenCreateRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ProjectServiceAPITokenCreateRequest) GetProjectName() string {
-	if x != nil {
-		return x.ProjectName
-	}
-	return ""
-}
-
-func (x *ProjectServiceAPITokenCreateRequest) GetDescription() string {
-	if x != nil && x.Description != nil {
-		return *x.Description
-	}
-	return ""
-}
-
-func (x *ProjectServiceAPITokenCreateRequest) GetExpiresIn() *durationpb.Duration {
-	if x != nil {
-		return x.ExpiresIn
-	}
-	return nil
-}
-
-type ProjectServiceAPITokenCreateResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Result *ProjectServiceAPITokenCreateResponse_APITokenFull `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
-}
-
-func (x *ProjectServiceAPITokenCreateResponse) Reset() {
-	*x = ProjectServiceAPITokenCreateResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenCreateResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenCreateResponse) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenCreateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenCreateResponse.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenCreateResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ProjectServiceAPITokenCreateResponse) GetResult() *ProjectServiceAPITokenCreateResponse_APITokenFull {
-	if x != nil {
-		return x.Result
-	}
-	return nil
-}
-
-// ProjectServiceAPITokenRevokeRequest contains the information needed to revoke an API token for a project
-type ProjectServiceAPITokenRevokeRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// The name of the API token to revoke
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// IdentityReference is used to specify the project by either its ID or name
-	ProjectReference *IdentityReference `protobuf:"bytes,2,opt,name=project_reference,json=projectReference,proto3" json:"project_reference,omitempty"`
-}
-
-func (x *ProjectServiceAPITokenRevokeRequest) Reset() {
-	*x = ProjectServiceAPITokenRevokeRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenRevokeRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenRevokeRequest) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenRevokeRequest.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenRevokeRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *ProjectServiceAPITokenRevokeRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ProjectServiceAPITokenRevokeRequest) GetProjectReference() *IdentityReference {
-	if x != nil {
-		return x.ProjectReference
-	}
-	return nil
-}
-
-// ProjectServiceAPITokenRevokeResponse is returned upon successful revocation of an API token
-type ProjectServiceAPITokenRevokeResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *ProjectServiceAPITokenRevokeResponse) Reset() {
-	*x = ProjectServiceAPITokenRevokeResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenRevokeResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenRevokeResponse) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenRevokeResponse.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenRevokeResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{3}
-}
-
-// ProjectServiceAPITokenListRequest contains the information needed to list API tokens for a project
-type ProjectServiceAPITokenListRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// IdentityReference is used to specify the project by either its ID or name
-	ProjectReference *IdentityReference `protobuf:"bytes,1,opt,name=project_reference,json=projectReference,proto3" json:"project_reference,omitempty"`
-	// Flag to include revoked tokens in the list
-	IncludeRevoked bool `protobuf:"varint,2,opt,name=include_revoked,json=includeRevoked,proto3" json:"include_revoked,omitempty"`
-}
-
-func (x *ProjectServiceAPITokenListRequest) Reset() {
-	*x = ProjectServiceAPITokenListRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenListRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenListRequest) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenListRequest.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenListRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ProjectServiceAPITokenListRequest) GetProjectReference() *IdentityReference {
-	if x != nil {
-		return x.ProjectReference
-	}
-	return nil
-}
-
-func (x *ProjectServiceAPITokenListRequest) GetIncludeRevoked() bool {
-	if x != nil {
-		return x.IncludeRevoked
-	}
-	return false
-}
-
-type ProjectServiceAPITokenListResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Result []*APITokenItem `protobuf:"bytes,1,rep,name=result,proto3" json:"result,omitempty"`
-}
-
-func (x *ProjectServiceAPITokenListResponse) Reset() {
-	*x = ProjectServiceAPITokenListResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenListResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenListResponse) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenListResponse.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenListResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *ProjectServiceAPITokenListResponse) GetResult() []*APITokenItem {
-	if x != nil {
-		return x.Result
-	}
-	return nil
-}
 
 // ProjectServiceListMembersRequest contains the information needed to list members of a project
 type ProjectServiceListMembersRequest struct {
@@ -426,7 +52,7 @@ type ProjectServiceListMembersRequest struct {
 func (x *ProjectServiceListMembersRequest) Reset() {
 	*x = ProjectServiceListMembersRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[6]
+		mi := &file_controlplane_v1_project_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -439,7 +65,7 @@ func (x *ProjectServiceListMembersRequest) String() string {
 func (*ProjectServiceListMembersRequest) ProtoMessage() {}
 
 func (x *ProjectServiceListMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[6]
+	mi := &file_controlplane_v1_project_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -452,7 +78,7 @@ func (x *ProjectServiceListMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectServiceListMembersRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListMembersRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{6}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ProjectServiceListMembersRequest) GetProjectReference() *IdentityReference {
@@ -484,7 +110,7 @@ type ProjectServiceListMembersResponse struct {
 func (x *ProjectServiceListMembersResponse) Reset() {
 	*x = ProjectServiceListMembersResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[7]
+		mi := &file_controlplane_v1_project_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -497,7 +123,7 @@ func (x *ProjectServiceListMembersResponse) String() string {
 func (*ProjectServiceListMembersResponse) ProtoMessage() {}
 
 func (x *ProjectServiceListMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[7]
+	mi := &file_controlplane_v1_project_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -510,7 +136,7 @@ func (x *ProjectServiceListMembersResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ProjectServiceListMembersResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListMembersResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{7}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ProjectServiceListMembersResponse) GetMembers() []*ProjectMember {
@@ -546,12 +172,14 @@ type ProjectMember struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// Timestamp when the project membership was last modified
 	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// The ID of latest project version this member is associated with
+	LatestProjectVersionId string `protobuf:"bytes,6,opt,name=latest_project_version_id,json=latestProjectVersionId,proto3" json:"latest_project_version_id,omitempty"`
 }
 
 func (x *ProjectMember) Reset() {
 	*x = ProjectMember{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[8]
+		mi := &file_controlplane_v1_project_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -564,7 +192,7 @@ func (x *ProjectMember) String() string {
 func (*ProjectMember) ProtoMessage() {}
 
 func (x *ProjectMember) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[8]
+	mi := &file_controlplane_v1_project_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +205,7 @@ func (x *ProjectMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectMember.ProtoReflect.Descriptor instead.
 func (*ProjectMember) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{8}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{2}
 }
 
 func (m *ProjectMember) GetSubject() isProjectMember_Subject {
@@ -622,6 +250,13 @@ func (x *ProjectMember) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ProjectMember) GetLatestProjectVersionId() string {
+	if x != nil {
+		return x.LatestProjectVersionId
+	}
+	return ""
+}
+
 type isProjectMember_Subject interface {
 	isProjectMember_Subject()
 }
@@ -657,7 +292,7 @@ type ProjectServiceAddMemberRequest struct {
 func (x *ProjectServiceAddMemberRequest) Reset() {
 	*x = ProjectServiceAddMemberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[9]
+		mi := &file_controlplane_v1_project_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -670,7 +305,7 @@ func (x *ProjectServiceAddMemberRequest) String() string {
 func (*ProjectServiceAddMemberRequest) ProtoMessage() {}
 
 func (x *ProjectServiceAddMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[9]
+	mi := &file_controlplane_v1_project_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,7 +318,7 @@ func (x *ProjectServiceAddMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectServiceAddMemberRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceAddMemberRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{9}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ProjectServiceAddMemberRequest) GetProjectReference() *IdentityReference {
@@ -717,7 +352,7 @@ type ProjectServiceAddMemberResponse struct {
 func (x *ProjectServiceAddMemberResponse) Reset() {
 	*x = ProjectServiceAddMemberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[10]
+		mi := &file_controlplane_v1_project_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -730,7 +365,7 @@ func (x *ProjectServiceAddMemberResponse) String() string {
 func (*ProjectServiceAddMemberResponse) ProtoMessage() {}
 
 func (x *ProjectServiceAddMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[10]
+	mi := &file_controlplane_v1_project_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -743,7 +378,7 @@ func (x *ProjectServiceAddMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectServiceAddMemberResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceAddMemberResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{10}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{4}
 }
 
 type ProjectServiceRemoveMemberRequest struct {
@@ -760,7 +395,7 @@ type ProjectServiceRemoveMemberRequest struct {
 func (x *ProjectServiceRemoveMemberRequest) Reset() {
 	*x = ProjectServiceRemoveMemberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[11]
+		mi := &file_controlplane_v1_project_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -773,7 +408,7 @@ func (x *ProjectServiceRemoveMemberRequest) String() string {
 func (*ProjectServiceRemoveMemberRequest) ProtoMessage() {}
 
 func (x *ProjectServiceRemoveMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[11]
+	mi := &file_controlplane_v1_project_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -786,7 +421,7 @@ func (x *ProjectServiceRemoveMemberRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ProjectServiceRemoveMemberRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceRemoveMemberRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{11}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ProjectServiceRemoveMemberRequest) GetProjectReference() *IdentityReference {
@@ -813,7 +448,7 @@ type ProjectServiceRemoveMemberResponse struct {
 func (x *ProjectServiceRemoveMemberResponse) Reset() {
 	*x = ProjectServiceRemoveMemberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[12]
+		mi := &file_controlplane_v1_project_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -826,7 +461,7 @@ func (x *ProjectServiceRemoveMemberResponse) String() string {
 func (*ProjectServiceRemoveMemberResponse) ProtoMessage() {}
 
 func (x *ProjectServiceRemoveMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[12]
+	mi := &file_controlplane_v1_project_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -839,7 +474,7 @@ func (x *ProjectServiceRemoveMemberResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ProjectServiceRemoveMemberResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceRemoveMemberResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{12}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{6}
 }
 
 // ProjectMembershipReference is used to reference a user or group in the context of project membership
@@ -860,7 +495,7 @@ type ProjectMembershipReference struct {
 func (x *ProjectMembershipReference) Reset() {
 	*x = ProjectMembershipReference{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[13]
+		mi := &file_controlplane_v1_project_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -873,7 +508,7 @@ func (x *ProjectMembershipReference) String() string {
 func (*ProjectMembershipReference) ProtoMessage() {}
 
 func (x *ProjectMembershipReference) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[13]
+	mi := &file_controlplane_v1_project_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -886,7 +521,7 @@ func (x *ProjectMembershipReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectMembershipReference.ProtoReflect.Descriptor instead.
 func (*ProjectMembershipReference) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{13}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{7}
 }
 
 func (m *ProjectMembershipReference) GetMembershipReference() isProjectMembershipReference_MembershipReference {
@@ -946,7 +581,7 @@ type ProjectServiceUpdateMemberRoleRequest struct {
 func (x *ProjectServiceUpdateMemberRoleRequest) Reset() {
 	*x = ProjectServiceUpdateMemberRoleRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[14]
+		mi := &file_controlplane_v1_project_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -959,7 +594,7 @@ func (x *ProjectServiceUpdateMemberRoleRequest) String() string {
 func (*ProjectServiceUpdateMemberRoleRequest) ProtoMessage() {}
 
 func (x *ProjectServiceUpdateMemberRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[14]
+	mi := &file_controlplane_v1_project_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -972,7 +607,7 @@ func (x *ProjectServiceUpdateMemberRoleRequest) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use ProjectServiceUpdateMemberRoleRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceUpdateMemberRoleRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{14}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ProjectServiceUpdateMemberRoleRequest) GetProjectReference() *IdentityReference {
@@ -1006,7 +641,7 @@ type ProjectServiceUpdateMemberRoleResponse struct {
 func (x *ProjectServiceUpdateMemberRoleResponse) Reset() {
 	*x = ProjectServiceUpdateMemberRoleResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[15]
+		mi := &file_controlplane_v1_project_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1019,7 +654,7 @@ func (x *ProjectServiceUpdateMemberRoleResponse) String() string {
 func (*ProjectServiceUpdateMemberRoleResponse) ProtoMessage() {}
 
 func (x *ProjectServiceUpdateMemberRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[15]
+	mi := &file_controlplane_v1_project_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1032,7 +667,7 @@ func (x *ProjectServiceUpdateMemberRoleResponse) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use ProjectServiceUpdateMemberRoleResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceUpdateMemberRoleResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{15}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{9}
 }
 
 type ProjectServiceListPendingInvitationsRequest struct {
@@ -1049,7 +684,7 @@ type ProjectServiceListPendingInvitationsRequest struct {
 func (x *ProjectServiceListPendingInvitationsRequest) Reset() {
 	*x = ProjectServiceListPendingInvitationsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[16]
+		mi := &file_controlplane_v1_project_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1062,7 +697,7 @@ func (x *ProjectServiceListPendingInvitationsRequest) String() string {
 func (*ProjectServiceListPendingInvitationsRequest) ProtoMessage() {}
 
 func (x *ProjectServiceListPendingInvitationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[16]
+	mi := &file_controlplane_v1_project_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1075,7 +710,7 @@ func (x *ProjectServiceListPendingInvitationsRequest) ProtoReflect() protoreflec
 
 // Deprecated: Use ProjectServiceListPendingInvitationsRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListPendingInvitationsRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{16}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ProjectServiceListPendingInvitationsRequest) GetProjectReference() *IdentityReference {
@@ -1107,7 +742,7 @@ type ProjectServiceListPendingInvitationsResponse struct {
 func (x *ProjectServiceListPendingInvitationsResponse) Reset() {
 	*x = ProjectServiceListPendingInvitationsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[17]
+		mi := &file_controlplane_v1_project_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1120,7 +755,7 @@ func (x *ProjectServiceListPendingInvitationsResponse) String() string {
 func (*ProjectServiceListPendingInvitationsResponse) ProtoMessage() {}
 
 func (x *ProjectServiceListPendingInvitationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[17]
+	mi := &file_controlplane_v1_project_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1133,7 +768,7 @@ func (x *ProjectServiceListPendingInvitationsResponse) ProtoReflect() protorefle
 
 // Deprecated: Use ProjectServiceListPendingInvitationsResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListPendingInvitationsResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{17}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ProjectServiceListPendingInvitationsResponse) GetInvitations() []*PendingProjectInvitation {
@@ -1169,7 +804,7 @@ type PendingProjectInvitation struct {
 func (x *PendingProjectInvitation) Reset() {
 	*x = PendingProjectInvitation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[18]
+		mi := &file_controlplane_v1_project_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1182,7 +817,7 @@ func (x *PendingProjectInvitation) String() string {
 func (*PendingProjectInvitation) ProtoMessage() {}
 
 func (x *PendingProjectInvitation) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[18]
+	mi := &file_controlplane_v1_project_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1195,7 +830,7 @@ func (x *PendingProjectInvitation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingProjectInvitation.ProtoReflect.Descriptor instead.
 func (*PendingProjectInvitation) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{18}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PendingProjectInvitation) GetUserEmail() string {
@@ -1226,61 +861,6 @@ func (x *PendingProjectInvitation) GetInvitationId() string {
 	return ""
 }
 
-type ProjectServiceAPITokenCreateResponse_APITokenFull struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Item *APITokenItem `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
-	Jwt  string        `protobuf:"bytes,2,opt,name=jwt,proto3" json:"jwt,omitempty"`
-}
-
-func (x *ProjectServiceAPITokenCreateResponse_APITokenFull) Reset() {
-	*x = ProjectServiceAPITokenCreateResponse_APITokenFull{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_controlplane_v1_project_proto_msgTypes[19]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ProjectServiceAPITokenCreateResponse_APITokenFull) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProjectServiceAPITokenCreateResponse_APITokenFull) ProtoMessage() {}
-
-func (x *ProjectServiceAPITokenCreateResponse_APITokenFull) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[19]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProjectServiceAPITokenCreateResponse_APITokenFull.ProtoReflect.Descriptor instead.
-func (*ProjectServiceAPITokenCreateResponse_APITokenFull) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{1, 0}
-}
-
-func (x *ProjectServiceAPITokenCreateResponse_APITokenFull) GetItem() *APITokenItem {
-	if x != nil {
-		return x.Item
-	}
-	return nil
-}
-
-func (x *ProjectServiceAPITokenCreateResponse_APITokenFull) GetJwt() string {
-	if x != nil {
-		return x.Jwt
-	}
-	return ""
-}
-
 var File_controlplane_v1_project_proto protoreflect.FileDescriptor
 
 var file_controlplane_v1_project_proto_rawDesc = []byte{
@@ -1297,110 +877,54 @@ var file_controlplane_v1_project_proto_rawDesc = []byte{
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x24, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c,
 	0x61, 0x6e, 0x65, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x68, 0x61, 0x72, 0x65, 0x64, 0x5f, 0x6d, 0x65,
-	0x73, 0x73, 0x61, 0x67, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f,
-	0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x64, 0x75, 0x72,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1f, 0x67, 0x6f, 0x6f,
+	0x73, 0x73, 0x61, 0x67, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1f, 0x67, 0x6f, 0x6f,
 	0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d,
-	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xf3, 0x01, 0x0a,
-	0x23, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41,
-	0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x12, 0x2a, 0x0a, 0x0c, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x6e, 0x61, 0x6d,
-	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x10, 0x01,
-	0x52, 0x0b, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x25, 0x0a,
-	0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x09, 0x48, 0x00, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x88, 0x01, 0x01, 0x12, 0x3d, 0x0a, 0x0a, 0x65, 0x78, 0x70, 0x69, 0x72, 0x65, 0x73, 0x5f,
-	0x69, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
-	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x44, 0x75, 0x72, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x48, 0x01, 0x52, 0x09, 0x65, 0x78, 0x70, 0x69, 0x72, 0x65, 0x73, 0x49, 0x6e,
-	0x88, 0x01, 0x01, 0x42, 0x0e, 0x0a, 0x0c, 0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x65, 0x78, 0x70, 0x69, 0x72, 0x65, 0x73, 0x5f,
-	0x69, 0x6e, 0x22, 0xd7, 0x01, 0x0a, 0x24, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x43, 0x72, 0x65,
-	0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5a, 0x0a, 0x06, 0x72,
-	0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x42, 0x2e, 0x63, 0x6f,
-	0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54,
-	0x6f, 0x6b, 0x65, 0x6e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x2e, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x46, 0x75, 0x6c, 0x6c, 0x52,
-	0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x1a, 0x53, 0x0a, 0x0c, 0x41, 0x50, 0x49, 0x54, 0x6f,
-	0x6b, 0x65, 0x6e, 0x46, 0x75, 0x6c, 0x6c, 0x12, 0x31, 0x0a, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70,
-	0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e,
-	0x49, 0x74, 0x65, 0x6d, 0x52, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x12, 0x10, 0x0a, 0x03, 0x6a, 0x77,
-	0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6a, 0x77, 0x74, 0x22, 0x9b, 0x01, 0x0a,
-	0x23, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41,
-	0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x52, 0x65, 0x76, 0x6f, 0x6b, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x42, 0x07, 0xba, 0x48, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x12, 0x57, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x72, 0x65, 0x66,
-	0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x63,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xc5, 0x01, 0x0a,
+	0x20, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4c,
+	0x69, 0x73, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x57, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x72, 0x65, 0x66,
+	0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x63,
 	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49,
 	0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65,
 	0x42, 0x06, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x10, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
-	0x74, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x22, 0x26, 0x0a, 0x24, 0x50, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54,
-	0x6f, 0x6b, 0x65, 0x6e, 0x52, 0x65, 0x76, 0x6f, 0x6b, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0xa5, 0x01, 0x0a, 0x21, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x4c, 0x69, 0x73,
-	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x57, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x6a,
-	0x65, 0x63, 0x74, 0x5f, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x52, 0x65,
-	0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x42, 0x06, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52,
-	0x10, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63,
-	0x65, 0x12, 0x27, 0x0a, 0x0f, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x5f, 0x72, 0x65, 0x76,
-	0x6f, 0x6b, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0e, 0x69, 0x6e, 0x63, 0x6c,
-	0x75, 0x64, 0x65, 0x52, 0x65, 0x76, 0x6f, 0x6b, 0x65, 0x64, 0x22, 0x5b, 0x0a, 0x22, 0x50, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54,
-	0x6f, 0x6b, 0x65, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x35, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x1d, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e,
-	0x76, 0x31, 0x2e, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x49, 0x74, 0x65, 0x6d, 0x52,
-	0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0xc5, 0x01, 0x0a, 0x20, 0x50, 0x72, 0x6f, 0x6a,
-	0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65,
-	0x6d, 0x62, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x57, 0x0a, 0x11,
-	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f,
-	0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69,
-	0x74, 0x79, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x42, 0x06, 0xba, 0x48, 0x03,
-	0xc8, 0x01, 0x01, 0x52, 0x10, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x52, 0x65, 0x66, 0x65,
-	0x72, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x48, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x63, 0x6f, 0x6e, 0x74,
-	0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x66, 0x66, 0x73,
-	0x65, 0x74, 0x50, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22,
-	0xa8, 0x01, 0x0a, 0x21, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69,
-	0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x07, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73,
-	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
-	0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x07, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x12,
-	0x49, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x50, 0x61, 0x67, 0x69,
-	0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x0a,
-	0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xa5, 0x02, 0x0a, 0x0d, 0x50,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x2b, 0x0a, 0x04,
-	0x75, 0x73, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x63, 0x6f, 0x6e,
-	0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x73, 0x65,
-	0x72, 0x48, 0x00, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x12, 0x2e, 0x0a, 0x05, 0x67, 0x72, 0x6f,
-	0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72,
-	0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x72, 0x6f, 0x75, 0x70,
-	0x48, 0x00, 0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x36, 0x0a, 0x04, 0x72, 0x6f, 0x6c,
-	0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x22, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f,
-	0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63,
-	0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x04, 0x72, 0x6f, 0x6c,
-	0x65, 0x12, 0x39, 0x0a, 0x0a, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x74, 0x18,
-	0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
+	0x74, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x48, 0x0a, 0x0a, 0x70, 0x61,
+	0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28,
+	0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x4f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x50, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x22, 0xa8, 0x01, 0x0a, 0x21, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65,
+	0x72, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x07, 0x6d, 0x65,
+	0x6d, 0x62, 0x65, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x63, 0x6f,
+	0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x07, 0x6d, 0x65, 0x6d,
+	0x62, 0x65, 0x72, 0x73, 0x12, 0x49, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72,
+	0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x66, 0x66, 0x73, 0x65,
+	0x74, 0x50, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22,
+	0xe0, 0x02, 0x0a, 0x0d, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65,
+	0x72, 0x12, 0x2b, 0x0a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x15, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x48, 0x00, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x12, 0x2e,
+	0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e,
+	0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x47, 0x72, 0x6f, 0x75, 0x70, 0x48, 0x00, 0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x36,
+	0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x22, 0x2e, 0x63,
+	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50,
+	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x6f, 0x6c, 0x65,
+	0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x39, 0x0a, 0x0a, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65,
+	0x64, 0x5f, 0x61, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x41,
+	0x74, 0x12, 0x39, 0x0a, 0x0a, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x74, 0x18,
+	0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
-	0x70, 0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12, 0x39, 0x0a, 0x0a,
-	0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
-	0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x75, 0x70,
-	0x64, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x42, 0x09, 0x0a, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65,
+	0x70, 0x52, 0x09, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12, 0x39, 0x0a, 0x19,
+	0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x76,
+	0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x16, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x65,
+	0x72, 0x73, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x42, 0x09, 0x0a, 0x07, 0x73, 0x75, 0x62, 0x6a, 0x65,
 	0x63, 0x74, 0x22, 0xa1, 0x02, 0x0a, 0x1e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65,
 	0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x64, 0x64, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x65,
 	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x57, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
@@ -1510,39 +1034,8 @@ var file_controlplane_v1_project_proto_rawDesc = []byte{
 	0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12, 0x23, 0x0a, 0x0d, 0x69, 0x6e, 0x76,
 	0x69, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x0c, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x42, 0x0d,
-	0x0a, 0x0b, 0x5f, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x64, 0x5f, 0x62, 0x79, 0x2a, 0x77, 0x0a,
-	0x11, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x6f,
-	0x6c, 0x65, 0x12, 0x23, 0x0a, 0x1f, 0x50, 0x52, 0x4f, 0x4a, 0x45, 0x43, 0x54, 0x5f, 0x4d, 0x45,
-	0x4d, 0x42, 0x45, 0x52, 0x5f, 0x52, 0x4f, 0x4c, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43,
-	0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x1d, 0x0a, 0x19, 0x50, 0x52, 0x4f, 0x4a, 0x45,
-	0x43, 0x54, 0x5f, 0x4d, 0x45, 0x4d, 0x42, 0x45, 0x52, 0x5f, 0x52, 0x4f, 0x4c, 0x45, 0x5f, 0x41,
-	0x44, 0x4d, 0x49, 0x4e, 0x10, 0x01, 0x12, 0x1e, 0x0a, 0x1a, 0x50, 0x52, 0x4f, 0x4a, 0x45, 0x43,
-	0x54, 0x5f, 0x4d, 0x45, 0x4d, 0x42, 0x45, 0x52, 0x5f, 0x52, 0x4f, 0x4c, 0x45, 0x5f, 0x56, 0x49,
-	0x45, 0x57, 0x45, 0x52, 0x10, 0x02, 0x32, 0x86, 0x08, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a, 0x65,
-	0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x7d, 0x0a, 0x0e, 0x41, 0x50, 0x49,
-	0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x12, 0x34, 0x2e, 0x63, 0x6f,
-	0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54,
-	0x6f, 0x6b, 0x65, 0x6e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69,
-	0x63, 0x65, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x77, 0x0a, 0x0c, 0x41, 0x50, 0x49, 0x54,
-	0x6f, 0x6b, 0x65, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x32, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72,
-	0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65,
-	0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65,
-	0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x63,
-	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49,
-	0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x7d, 0x0a, 0x0e, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x52, 0x65, 0x76,
-	0x6f, 0x6b, 0x65, 0x12, 0x34, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x52, 0x65, 0x76, 0x6f,
-	0x6b, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x74,
-	0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a,
-	0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x50, 0x49, 0x54, 0x6f, 0x6b,
-	0x65, 0x6e, 0x52, 0x65, 0x76, 0x6f, 0x6b, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x0a, 0x0b, 0x5f, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x64, 0x5f, 0x62, 0x79, 0x32, 0x8f, 0x05,
+	0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
 	0x12, 0x74, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x12,
 	0x31, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
 	0x31, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
@@ -1603,91 +1096,69 @@ func file_controlplane_v1_project_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_project_proto_rawDescData
 }
 
-var file_controlplane_v1_project_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_controlplane_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_controlplane_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_controlplane_v1_project_proto_goTypes = []interface{}{
-	(ProjectMemberRole)(0),                                    // 0: controlplane.v1.ProjectMemberRole
-	(*ProjectServiceAPITokenCreateRequest)(nil),               // 1: controlplane.v1.ProjectServiceAPITokenCreateRequest
-	(*ProjectServiceAPITokenCreateResponse)(nil),              // 2: controlplane.v1.ProjectServiceAPITokenCreateResponse
-	(*ProjectServiceAPITokenRevokeRequest)(nil),               // 3: controlplane.v1.ProjectServiceAPITokenRevokeRequest
-	(*ProjectServiceAPITokenRevokeResponse)(nil),              // 4: controlplane.v1.ProjectServiceAPITokenRevokeResponse
-	(*ProjectServiceAPITokenListRequest)(nil),                 // 5: controlplane.v1.ProjectServiceAPITokenListRequest
-	(*ProjectServiceAPITokenListResponse)(nil),                // 6: controlplane.v1.ProjectServiceAPITokenListResponse
-	(*ProjectServiceListMembersRequest)(nil),                  // 7: controlplane.v1.ProjectServiceListMembersRequest
-	(*ProjectServiceListMembersResponse)(nil),                 // 8: controlplane.v1.ProjectServiceListMembersResponse
-	(*ProjectMember)(nil),                                     // 9: controlplane.v1.ProjectMember
-	(*ProjectServiceAddMemberRequest)(nil),                    // 10: controlplane.v1.ProjectServiceAddMemberRequest
-	(*ProjectServiceAddMemberResponse)(nil),                   // 11: controlplane.v1.ProjectServiceAddMemberResponse
-	(*ProjectServiceRemoveMemberRequest)(nil),                 // 12: controlplane.v1.ProjectServiceRemoveMemberRequest
-	(*ProjectServiceRemoveMemberResponse)(nil),                // 13: controlplane.v1.ProjectServiceRemoveMemberResponse
-	(*ProjectMembershipReference)(nil),                        // 14: controlplane.v1.ProjectMembershipReference
-	(*ProjectServiceUpdateMemberRoleRequest)(nil),             // 15: controlplane.v1.ProjectServiceUpdateMemberRoleRequest
-	(*ProjectServiceUpdateMemberRoleResponse)(nil),            // 16: controlplane.v1.ProjectServiceUpdateMemberRoleResponse
-	(*ProjectServiceListPendingInvitationsRequest)(nil),       // 17: controlplane.v1.ProjectServiceListPendingInvitationsRequest
-	(*ProjectServiceListPendingInvitationsResponse)(nil),      // 18: controlplane.v1.ProjectServiceListPendingInvitationsResponse
-	(*PendingProjectInvitation)(nil),                          // 19: controlplane.v1.PendingProjectInvitation
-	(*ProjectServiceAPITokenCreateResponse_APITokenFull)(nil), // 20: controlplane.v1.ProjectServiceAPITokenCreateResponse.APITokenFull
-	(*durationpb.Duration)(nil),                               // 21: google.protobuf.Duration
-	(*IdentityReference)(nil),                                 // 22: controlplane.v1.IdentityReference
-	(*APITokenItem)(nil),                                      // 23: controlplane.v1.APITokenItem
-	(*OffsetPaginationRequest)(nil),                           // 24: controlplane.v1.OffsetPaginationRequest
-	(*OffsetPaginationResponse)(nil),                          // 25: controlplane.v1.OffsetPaginationResponse
-	(*User)(nil),                                              // 26: controlplane.v1.User
-	(*Group)(nil),                                             // 27: controlplane.v1.Group
-	(*timestamppb.Timestamp)(nil),                             // 28: google.protobuf.Timestamp
+	(*ProjectServiceListMembersRequest)(nil),             // 0: controlplane.v1.ProjectServiceListMembersRequest
+	(*ProjectServiceListMembersResponse)(nil),            // 1: controlplane.v1.ProjectServiceListMembersResponse
+	(*ProjectMember)(nil),                                // 2: controlplane.v1.ProjectMember
+	(*ProjectServiceAddMemberRequest)(nil),               // 3: controlplane.v1.ProjectServiceAddMemberRequest
+	(*ProjectServiceAddMemberResponse)(nil),              // 4: controlplane.v1.ProjectServiceAddMemberResponse
+	(*ProjectServiceRemoveMemberRequest)(nil),            // 5: controlplane.v1.ProjectServiceRemoveMemberRequest
+	(*ProjectServiceRemoveMemberResponse)(nil),           // 6: controlplane.v1.ProjectServiceRemoveMemberResponse
+	(*ProjectMembershipReference)(nil),                   // 7: controlplane.v1.ProjectMembershipReference
+	(*ProjectServiceUpdateMemberRoleRequest)(nil),        // 8: controlplane.v1.ProjectServiceUpdateMemberRoleRequest
+	(*ProjectServiceUpdateMemberRoleResponse)(nil),       // 9: controlplane.v1.ProjectServiceUpdateMemberRoleResponse
+	(*ProjectServiceListPendingInvitationsRequest)(nil),  // 10: controlplane.v1.ProjectServiceListPendingInvitationsRequest
+	(*ProjectServiceListPendingInvitationsResponse)(nil), // 11: controlplane.v1.ProjectServiceListPendingInvitationsResponse
+	(*PendingProjectInvitation)(nil),                     // 12: controlplane.v1.PendingProjectInvitation
+	(*IdentityReference)(nil),                            // 13: controlplane.v1.IdentityReference
+	(*OffsetPaginationRequest)(nil),                      // 14: controlplane.v1.OffsetPaginationRequest
+	(*OffsetPaginationResponse)(nil),                     // 15: controlplane.v1.OffsetPaginationResponse
+	(*User)(nil),                                         // 16: controlplane.v1.User
+	(*Group)(nil),                                        // 17: controlplane.v1.Group
+	(ProjectMemberRole)(0),                               // 18: controlplane.v1.ProjectMemberRole
+	(*timestamppb.Timestamp)(nil),                        // 19: google.protobuf.Timestamp
 }
 var file_controlplane_v1_project_proto_depIdxs = []int32{
-	21, // 0: controlplane.v1.ProjectServiceAPITokenCreateRequest.expires_in:type_name -> google.protobuf.Duration
-	20, // 1: controlplane.v1.ProjectServiceAPITokenCreateResponse.result:type_name -> controlplane.v1.ProjectServiceAPITokenCreateResponse.APITokenFull
-	22, // 2: controlplane.v1.ProjectServiceAPITokenRevokeRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	22, // 3: controlplane.v1.ProjectServiceAPITokenListRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	23, // 4: controlplane.v1.ProjectServiceAPITokenListResponse.result:type_name -> controlplane.v1.APITokenItem
-	22, // 5: controlplane.v1.ProjectServiceListMembersRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	24, // 6: controlplane.v1.ProjectServiceListMembersRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
-	9,  // 7: controlplane.v1.ProjectServiceListMembersResponse.members:type_name -> controlplane.v1.ProjectMember
-	25, // 8: controlplane.v1.ProjectServiceListMembersResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
-	26, // 9: controlplane.v1.ProjectMember.user:type_name -> controlplane.v1.User
-	27, // 10: controlplane.v1.ProjectMember.group:type_name -> controlplane.v1.Group
-	0,  // 11: controlplane.v1.ProjectMember.role:type_name -> controlplane.v1.ProjectMemberRole
-	28, // 12: controlplane.v1.ProjectMember.created_at:type_name -> google.protobuf.Timestamp
-	28, // 13: controlplane.v1.ProjectMember.updated_at:type_name -> google.protobuf.Timestamp
-	22, // 14: controlplane.v1.ProjectServiceAddMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 15: controlplane.v1.ProjectServiceAddMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	0,  // 16: controlplane.v1.ProjectServiceAddMemberRequest.role:type_name -> controlplane.v1.ProjectMemberRole
-	22, // 17: controlplane.v1.ProjectServiceRemoveMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 18: controlplane.v1.ProjectServiceRemoveMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	22, // 19: controlplane.v1.ProjectMembershipReference.group_reference:type_name -> controlplane.v1.IdentityReference
-	22, // 20: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 21: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	0,  // 22: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.new_role:type_name -> controlplane.v1.ProjectMemberRole
-	22, // 23: controlplane.v1.ProjectServiceListPendingInvitationsRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	24, // 24: controlplane.v1.ProjectServiceListPendingInvitationsRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
-	19, // 25: controlplane.v1.ProjectServiceListPendingInvitationsResponse.invitations:type_name -> controlplane.v1.PendingProjectInvitation
-	25, // 26: controlplane.v1.ProjectServiceListPendingInvitationsResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
-	26, // 27: controlplane.v1.PendingProjectInvitation.invited_by:type_name -> controlplane.v1.User
-	28, // 28: controlplane.v1.PendingProjectInvitation.created_at:type_name -> google.protobuf.Timestamp
-	23, // 29: controlplane.v1.ProjectServiceAPITokenCreateResponse.APITokenFull.item:type_name -> controlplane.v1.APITokenItem
-	1,  // 30: controlplane.v1.ProjectService.APITokenCreate:input_type -> controlplane.v1.ProjectServiceAPITokenCreateRequest
-	5,  // 31: controlplane.v1.ProjectService.APITokenList:input_type -> controlplane.v1.ProjectServiceAPITokenListRequest
-	3,  // 32: controlplane.v1.ProjectService.APITokenRevoke:input_type -> controlplane.v1.ProjectServiceAPITokenRevokeRequest
-	7,  // 33: controlplane.v1.ProjectService.ListMembers:input_type -> controlplane.v1.ProjectServiceListMembersRequest
-	10, // 34: controlplane.v1.ProjectService.AddMember:input_type -> controlplane.v1.ProjectServiceAddMemberRequest
-	12, // 35: controlplane.v1.ProjectService.RemoveMember:input_type -> controlplane.v1.ProjectServiceRemoveMemberRequest
-	15, // 36: controlplane.v1.ProjectService.UpdateMemberRole:input_type -> controlplane.v1.ProjectServiceUpdateMemberRoleRequest
-	17, // 37: controlplane.v1.ProjectService.ListPendingInvitations:input_type -> controlplane.v1.ProjectServiceListPendingInvitationsRequest
-	2,  // 38: controlplane.v1.ProjectService.APITokenCreate:output_type -> controlplane.v1.ProjectServiceAPITokenCreateResponse
-	6,  // 39: controlplane.v1.ProjectService.APITokenList:output_type -> controlplane.v1.ProjectServiceAPITokenListResponse
-	4,  // 40: controlplane.v1.ProjectService.APITokenRevoke:output_type -> controlplane.v1.ProjectServiceAPITokenRevokeResponse
-	8,  // 41: controlplane.v1.ProjectService.ListMembers:output_type -> controlplane.v1.ProjectServiceListMembersResponse
-	11, // 42: controlplane.v1.ProjectService.AddMember:output_type -> controlplane.v1.ProjectServiceAddMemberResponse
-	13, // 43: controlplane.v1.ProjectService.RemoveMember:output_type -> controlplane.v1.ProjectServiceRemoveMemberResponse
-	16, // 44: controlplane.v1.ProjectService.UpdateMemberRole:output_type -> controlplane.v1.ProjectServiceUpdateMemberRoleResponse
-	18, // 45: controlplane.v1.ProjectService.ListPendingInvitations:output_type -> controlplane.v1.ProjectServiceListPendingInvitationsResponse
-	38, // [38:46] is the sub-list for method output_type
-	30, // [30:38] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	13, // 0: controlplane.v1.ProjectServiceListMembersRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	14, // 1: controlplane.v1.ProjectServiceListMembersRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
+	2,  // 2: controlplane.v1.ProjectServiceListMembersResponse.members:type_name -> controlplane.v1.ProjectMember
+	15, // 3: controlplane.v1.ProjectServiceListMembersResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
+	16, // 4: controlplane.v1.ProjectMember.user:type_name -> controlplane.v1.User
+	17, // 5: controlplane.v1.ProjectMember.group:type_name -> controlplane.v1.Group
+	18, // 6: controlplane.v1.ProjectMember.role:type_name -> controlplane.v1.ProjectMemberRole
+	19, // 7: controlplane.v1.ProjectMember.created_at:type_name -> google.protobuf.Timestamp
+	19, // 8: controlplane.v1.ProjectMember.updated_at:type_name -> google.protobuf.Timestamp
+	13, // 9: controlplane.v1.ProjectServiceAddMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	7,  // 10: controlplane.v1.ProjectServiceAddMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
+	18, // 11: controlplane.v1.ProjectServiceAddMemberRequest.role:type_name -> controlplane.v1.ProjectMemberRole
+	13, // 12: controlplane.v1.ProjectServiceRemoveMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	7,  // 13: controlplane.v1.ProjectServiceRemoveMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
+	13, // 14: controlplane.v1.ProjectMembershipReference.group_reference:type_name -> controlplane.v1.IdentityReference
+	13, // 15: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	7,  // 16: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
+	18, // 17: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.new_role:type_name -> controlplane.v1.ProjectMemberRole
+	13, // 18: controlplane.v1.ProjectServiceListPendingInvitationsRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	14, // 19: controlplane.v1.ProjectServiceListPendingInvitationsRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
+	12, // 20: controlplane.v1.ProjectServiceListPendingInvitationsResponse.invitations:type_name -> controlplane.v1.PendingProjectInvitation
+	15, // 21: controlplane.v1.ProjectServiceListPendingInvitationsResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
+	16, // 22: controlplane.v1.PendingProjectInvitation.invited_by:type_name -> controlplane.v1.User
+	19, // 23: controlplane.v1.PendingProjectInvitation.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 24: controlplane.v1.ProjectService.ListMembers:input_type -> controlplane.v1.ProjectServiceListMembersRequest
+	3,  // 25: controlplane.v1.ProjectService.AddMember:input_type -> controlplane.v1.ProjectServiceAddMemberRequest
+	5,  // 26: controlplane.v1.ProjectService.RemoveMember:input_type -> controlplane.v1.ProjectServiceRemoveMemberRequest
+	8,  // 27: controlplane.v1.ProjectService.UpdateMemberRole:input_type -> controlplane.v1.ProjectServiceUpdateMemberRoleRequest
+	10, // 28: controlplane.v1.ProjectService.ListPendingInvitations:input_type -> controlplane.v1.ProjectServiceListPendingInvitationsRequest
+	1,  // 29: controlplane.v1.ProjectService.ListMembers:output_type -> controlplane.v1.ProjectServiceListMembersResponse
+	4,  // 30: controlplane.v1.ProjectService.AddMember:output_type -> controlplane.v1.ProjectServiceAddMemberResponse
+	6,  // 31: controlplane.v1.ProjectService.RemoveMember:output_type -> controlplane.v1.ProjectServiceRemoveMemberResponse
+	9,  // 32: controlplane.v1.ProjectService.UpdateMemberRole:output_type -> controlplane.v1.ProjectServiceUpdateMemberRoleResponse
+	11, // 33: controlplane.v1.ProjectService.ListPendingInvitations:output_type -> controlplane.v1.ProjectServiceListPendingInvitationsResponse
+	29, // [29:34] is the sub-list for method output_type
+	24, // [24:29] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_project_proto_init() }
@@ -1701,78 +1172,6 @@ func file_controlplane_v1_project_proto_init() {
 	file_controlplane_v1_shared_message_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_controlplane_v1_project_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenCreateRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_controlplane_v1_project_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenCreateResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_controlplane_v1_project_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenRevokeRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_controlplane_v1_project_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenRevokeResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_controlplane_v1_project_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenListRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_controlplane_v1_project_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenListResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_controlplane_v1_project_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceListMembersRequest); i {
 			case 0:
 				return &v.state
@@ -1784,7 +1183,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceListMembersResponse); i {
 			case 0:
 				return &v.state
@@ -1796,7 +1195,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectMember); i {
 			case 0:
 				return &v.state
@@ -1808,7 +1207,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceAddMemberRequest); i {
 			case 0:
 				return &v.state
@@ -1820,7 +1219,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceAddMemberResponse); i {
 			case 0:
 				return &v.state
@@ -1832,7 +1231,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceRemoveMemberRequest); i {
 			case 0:
 				return &v.state
@@ -1844,7 +1243,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceRemoveMemberResponse); i {
 			case 0:
 				return &v.state
@@ -1856,7 +1255,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectMembershipReference); i {
 			case 0:
 				return &v.state
@@ -1868,7 +1267,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceUpdateMemberRoleRequest); i {
 			case 0:
 				return &v.state
@@ -1880,7 +1279,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceUpdateMemberRoleResponse); i {
 			case 0:
 				return &v.state
@@ -1892,7 +1291,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceListPendingInvitationsRequest); i {
 			case 0:
 				return &v.state
@@ -1904,7 +1303,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProjectServiceListPendingInvitationsResponse); i {
 			case 0:
 				return &v.state
@@ -1916,7 +1315,7 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+		file_controlplane_v1_project_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PendingProjectInvitation); i {
 			case 0:
 				return &v.state
@@ -1928,42 +1327,28 @@ func file_controlplane_v1_project_proto_init() {
 				return nil
 			}
 		}
-		file_controlplane_v1_project_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectServiceAPITokenCreateResponse_APITokenFull); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
-	file_controlplane_v1_project_proto_msgTypes[0].OneofWrappers = []interface{}{}
-	file_controlplane_v1_project_proto_msgTypes[8].OneofWrappers = []interface{}{
+	file_controlplane_v1_project_proto_msgTypes[2].OneofWrappers = []interface{}{
 		(*ProjectMember_User)(nil),
 		(*ProjectMember_Group)(nil),
 	}
-	file_controlplane_v1_project_proto_msgTypes[13].OneofWrappers = []interface{}{
+	file_controlplane_v1_project_proto_msgTypes[7].OneofWrappers = []interface{}{
 		(*ProjectMembershipReference_UserEmail)(nil),
 		(*ProjectMembershipReference_GroupReference)(nil),
 	}
-	file_controlplane_v1_project_proto_msgTypes[18].OneofWrappers = []interface{}{}
+	file_controlplane_v1_project_proto_msgTypes[12].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_controlplane_v1_project_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   20,
+			NumEnums:      0,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_controlplane_v1_project_proto_goTypes,
 		DependencyIndexes: file_controlplane_v1_project_proto_depIdxs,
-		EnumInfos:         file_controlplane_v1_project_proto_enumTypes,
 		MessageInfos:      file_controlplane_v1_project_proto_msgTypes,
 	}.Build()
 	File_controlplane_v1_project_proto = out.File

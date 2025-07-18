@@ -62,6 +62,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		return nil, fmt.Errorf("contract name and ID cannot be provided at the same time")
 	}
 
+	// Load an existing contract reference if provided
 	var contractUUID uuid.UUID
 	if opts.ContractID != "" {
 		contractUUID, err = uuid.Parse(opts.ContractID)
@@ -97,6 +98,17 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			return fmt.Errorf("creating project: %w", err)
 		}
 
+		// Find or create the default project version
+		if _, err := findProjectVersionWithClient(ctx, tx.Client(), projectID, ""); err != nil {
+			if !ent.IsNotFound(err) {
+				return fmt.Errorf("finding project version: %w", err)
+			}
+
+			if _, err := createProjectVersionWithTx(ctx, tx, projectID, "", false); err != nil {
+				return fmt.Errorf("creating project version: %w", err)
+			}
+		}
+
 		// We do not have an explicit contract
 		// 1 - try to find it with the default name
 		// 2 - if not found, create it with the default name
@@ -107,11 +119,11 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			if err != nil {
 				if ent.IsNotFound(err) {
 					// Create a new contract associated with the workflow
-					// TODO: associate it with the project soon
 					contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
-						OrgID:    orgUUID,
-						Name:     defaultContractName,
-						Contract: opts.DetectedContract,
+						OrgID:     orgUUID,
+						Name:      defaultContractName,
+						Contract:  opts.DetectedContract,
+						ProjectID: &projectID,
 					})
 					if err != nil {
 						return fmt.Errorf("creating contract: %w", err)
@@ -122,6 +134,17 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			}
 
 			contractUUID = contract.ID
+		} else {
+			// We want to use an existing contract, let's make sure it's scoped to the project or org
+			existingContract, err := contractInOrg(ctx, r.data.DB, orgUUID, &contractUUID, nil)
+			if err != nil {
+				return err
+			}
+
+			// Fail if it's scoped to a different project
+			if existingContract.ScopedResourceID != uuid.Nil && existingContract.ScopedResourceID != projectID && existingContract.ScopedResourceType == biz.ContractScopeProject {
+				return biz.NewErrUnauthorizedStr(fmt.Sprintf("contract %q is scoped to a different project", opts.ContractName))
+			}
 		}
 
 		entwf, err = tx.Workflow.Create().

@@ -259,9 +259,10 @@ type upstreamOIDCclaims struct {
 	// It might show the user's proxy email used during login
 	// https://learn.microsoft.com/en-us/entra/identity/authentication/howto-authentication-use-email-signin
 	// https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference
-	PreferredUsername string `json:"preferred_username"`
-	FamilyName        string `json:"family_name"`
-	GivenName         string `json:"given_name"`
+	PreferredUsername string   `json:"preferred_username"`
+	FamilyName        string   `json:"family_name"`
+	GivenName         string   `json:"given_name"`
+	Groups            []string `json:"groups"`
 }
 
 // Will retrieve the email from the preferred username if it's a valid email
@@ -309,6 +310,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	u, err := svc.userUseCase.UpsertByEmail(ctx, claims.preferredEmail(), &biz.UpsertByEmailOpts{
 		FirstName: &claims.GivenName,
 		LastName:  &claims.FamilyName,
+		SSOGroups: claims.Groups,
 	})
 	if err != nil {
 		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to find or create user: %w", err), false)

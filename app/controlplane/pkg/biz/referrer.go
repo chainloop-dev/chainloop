@@ -35,15 +35,14 @@ import (
 )
 
 type ReferrerUseCase struct {
-	repo           ReferrerRepo
-	membershipRepo MembershipRepo
-	workflowRepo   WorkflowRepo
-	projectsRepo   ProjectsRepo
-	logger         *log.Helper
-	indexConfig    *conf.ReferrerSharedIndex
+	repo              ReferrerRepo
+	membershipUseCase *MembershipUseCase
+	workflowRepo      WorkflowRepo
+	logger            *log.Helper
+	indexConfig       *conf.ReferrerSharedIndex
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo MembershipRepo, projectsRepo ProjectsRepo, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -60,12 +59,11 @@ func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, mRepo Membership
 	}
 
 	return &ReferrerUseCase{
-		repo:           repo,
-		membershipRepo: mRepo,
-		indexConfig:    indexCfg,
-		workflowRepo:   wfRepo,
-		projectsRepo:   projectsRepo,
-		logger:         logger,
+		repo:              repo,
+		membershipUseCase: membershipUseCase,
+		indexConfig:       indexCfg,
+		workflowRepo:      wfRepo,
+		logger:            logger,
 	}, nil
 }
 
@@ -172,7 +170,7 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	userOrgs, projectIDs, err := getOrgsAndRBACInfoForUser(ctx, userUUID, s.membershipRepo, s.projectsRepo)
+	userOrgs, projectIDs, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
 		return nil, err
 	}
