@@ -705,7 +705,7 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 	// Add users to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
 
 	s.Run("add member using group ID", func() {
@@ -945,11 +945,11 @@ func (s *groupMembersIntegrationTestSuite) TestRemoveMemberFromGroup() {
 	require.NoError(s.T(), err)
 
 	// Add users to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user4.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user4.ID)
 	require.NoError(s.T(), err)
 
 	// Add users to the group
@@ -1175,9 +1175,9 @@ func (s *groupMembersIntegrationTestSuite) TestGroupMemberCount() {
 	require.NoError(s.T(), err)
 
 	// Add users to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
 
 	// Check initial member count
@@ -1278,9 +1278,9 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 	require.NoError(s.T(), err)
 
 	// Add users to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
 
 	// Add users to the group (user2 as a regular member, user3 as a maintainer)
@@ -1705,7 +1705,7 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroupSystemCall() {
 	require.NoError(s.T(), err)
 
 	// Add user to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID)
 	require.NoError(s.T(), err)
 
 	// Add the user to the group without a requester ID (system call)
@@ -1753,7 +1753,7 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatusSyste
 	require.NoError(s.T(), err)
 
 	// Add user to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID)
 	require.NoError(s.T(), err)
 
 	// First add the user to the group (with requester ID for this setup step)
