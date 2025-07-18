@@ -17,6 +17,7 @@ package policydevel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ import (
 	"github.com/styrainc/regal/pkg/rules"
 )
 
-type Policy struct {
+type PolicyToLint struct {
 	Path      string
 	YAMLFiles []*File
 	RegoFiles []*File
@@ -45,23 +46,26 @@ type File struct {
 }
 
 // Read policy files from the given directory or file
-func Read(absPath string, format bool) (*Policy, error) {
+func Lookup(absPath string, format bool) (*PolicyToLint, error) {
 	fileInfo, err := os.Stat(absPath)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("path does not exist: %s", absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("path does not exist: %s", absPath)
+		}
+		return nil, fmt.Errorf("failed to stat path %q: %w", absPath, err)
 	}
 
-	policy := &Policy{
+	policy := &PolicyToLint{
 		Path:   absPath,
 		Format: format,
 	}
 
 	if fileInfo.IsDir() {
-		if err := readDirectory(policy, absPath); err != nil {
+		if err := scanDirectory(policy, absPath); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := readSingleFile(policy, absPath); err != nil {
+		if err := processFile(policy, absPath); err != nil {
 			return nil, err
 		}
 	}
@@ -74,7 +78,8 @@ func Read(absPath string, format bool) (*Policy, error) {
 	return policy, nil
 }
 
-func readDirectory(policy *Policy, dirPath string) error {
+// Performs a one-level directory lookup to find .yaml/.yml or .rego files.
+func scanDirectory(policy *PolicyToLint, dirPath string) error {
 	files, err := os.ReadDir(dirPath)
 	if err != nil {
 		return fmt.Errorf("reading directory: %w", err)
@@ -101,11 +106,7 @@ func readDirectory(policy *Policy, dirPath string) error {
 	return nil
 }
 
-func readSingleFile(policy *Policy, filePath string) error {
-	return processFile(policy, filePath)
-}
-
-func processFile(policy *Policy, filePath string) error {
+func processFile(policy *PolicyToLint, filePath string) error {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", filepath.Base(filePath), err)
@@ -130,33 +131,39 @@ func processFile(policy *Policy, filePath string) error {
 	return nil
 }
 
-func (p *Policy) Validate() []error {
-	var allErrors []error
+func (p *PolicyToLint) Validate() error {
+	var errs []error
 
 	// Validate all YAML files (including their embedded policies)
 	for _, yamlFile := range p.YAMLFiles {
-		if yamlErrs := p.validateYAMLFile(yamlFile); len(yamlErrs) > 0 {
-			allErrors = append(allErrors, yamlErrs...)
+		err := p.validateYAMLFile(yamlFile)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
 	// Validate standalone rego files
 	for _, regoFile := range p.RegoFiles {
-		if regoErrs := p.validateRegoFile(regoFile); len(regoErrs) > 0 {
-			allErrors = append(allErrors, regoErrs...)
+		err := p.validateRegoFile(regoFile)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
-	return allErrors
+	return errors.Join(errs...)
 }
 
-func (p *Policy) validateYAMLFile(file *File) []error {
+func (p *PolicyToLint) validateYAMLFile(file *File) error {
 	var policy v1.Policy
 	if err := unmarshal.FromRaw(file.Content, unmarshal.RawFormatYAML, &policy, true); err != nil {
-		return []error{fmt.Errorf("%s: failed to parse/validate: %w", file.Path, err)}
+		return fmt.Errorf("%s: failed to parse/validate: %w", file.Path, err)
 	}
 
-	errs := p.processEmbeddedPolicies(&policy, file)
+	var errs []error
+	err := p.processEmbeddedPolicies(&policy, file)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	// Update policy file with formatted content
 	if p.Format {
@@ -170,19 +177,19 @@ func (p *Policy) validateYAMLFile(file *File) []error {
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
-func (p *Policy) processEmbeddedPolicies(pa *v1.Policy, file *File) []error {
+func (p *PolicyToLint) processEmbeddedPolicies(pa *v1.Policy, file *File) error {
 	var errs []error
 
 	for idx, spec := range pa.Spec.Policies {
 		if regoSrc := spec.GetEmbedded(); regoSrc != "" {
-			formatted, reErrs := p.validateAndFormatRego(
+			formatted, err := p.validateAndFormatRego(
 				regoSrc,
 				fmt.Sprintf("%s:(embedded #%d)", file.Path, idx+1),
 			)
-			errs = append(errs, reErrs...)
+			errs = append(errs, err)
 
 			if p.Format && formatted != regoSrc {
 				spec.Source = &v1.PolicySpecV2_Embedded{Embedded: formatted}
@@ -190,52 +197,54 @@ func (p *Policy) processEmbeddedPolicies(pa *v1.Policy, file *File) []error {
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
-func (p *Policy) validateRegoFile(file *File) []error {
-	var errors []error
+func (p *PolicyToLint) validateRegoFile(file *File) error {
+	var errs []error
 	original := string(file.Content)
 
-	formatted, errs := p.validateAndFormatRego(original, file.Path)
-	errors = append(errors, errs...)
+	formatted, err := p.validateAndFormatRego(original, file.Path)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	if p.Format && formatted != original {
 		if err := os.WriteFile(file.Path, []byte(formatted), 0600); err != nil {
-			errors = append(errors, fmt.Errorf("%s: failed to auto-format: %w", file.Path, err))
+			errs = append(errs, fmt.Errorf("%s: failed to auto-format: %w", file.Path, err))
 		} else {
 			file.Content = []byte(formatted)
 		}
 	}
 
-	return errors
+	return errors.Join(errs...)
 }
 
 // Runs the Regal linter on the given rego content and returns any violations as errors
-func (p *Policy) runRegalLinter(filePath, content string) []error {
+func (p *PolicyToLint) runRegalLinter(filePath, content string) error {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
-		return []error{err}
+		return err
 	}
 
 	lntr := linter.NewLinter().WithInputModules(&inputModules)
 	report, err := lntr.Lint(context.Background())
 	if err != nil {
-		return []error{err}
+		return err
 	}
 
-	errors := make([]error, 0, len(report.Violations))
+	errs := make([]error, 0, len(report.Violations))
 	for _, v := range report.Violations {
-		errors = append(errors, fmt.Errorf("%d: %s",
+		errs = append(errs, fmt.Errorf("%d: %s",
 			v.Location.Row,
 			v.Description,
 		))
 	}
 
-	return errors
+	return errors.Join(errs...)
 }
 
-func (p *Policy) validateAndFormatRego(content, path string) (string, []error) {
+func (p *PolicyToLint) validateAndFormatRego(content, path string) (string, error) {
 	var errs []error
 
 	// 1. Optionally format
@@ -252,14 +261,15 @@ func (p *Policy) validateAndFormatRego(content, path string) (string, []error) {
 	errs = append(errs, checkResultStructure(content, path, []string{"skipped", "violations", "skip_reason"})...)
 
 	// 3. Run Regal linter
-	rawErrs := p.runRegalLinter(path, content)
+	err := p.runRegalLinter(path, content)
+	if err != nil {
+		errs = append(errs, p.remapOPAfmtErrors(err, path))
+	}
 
-	errs = append(errs, p.remapOPAfmtErrors(rawErrs, path)...)
-
-	return content, errs
+	return content, errors.Join(errs...)
 }
 
-func (p *Policy) applyOPAFmt(content, file string) (string, error) {
+func (p *PolicyToLint) applyOPAFmt(content, file string) (string, error) {
 	formatted, err := format.SourceWithOpts(file, []byte(content), format.Opts{})
 	if err != nil {
 		// formatting failed, keep original
@@ -297,12 +307,24 @@ func checkResultStructure(content, path string, keys []string) []error {
 // Processes raw errors from OPA fmt ran by Regal and:
 // 1. Splits grouped errors into individual errors
 // 2. Adjusts line numbers for embedded rego scripts
-func (p *Policy) remapOPAfmtErrors(rawErrs []error, path string) []error {
+func (p *PolicyToLint) remapOPAfmtErrors(rawErr error, path string) error {
+	if rawErr == nil {
+		return nil
+	}
+
 	var errs []error
 	// Regex matches file path, line number and error message like: /path/file:line: message
 	errorRegex := regexp.MustCompile(`^` + regexp.QuoteMeta(path) + `:(\d+):\s*(.+)$`)
 
-	for _, err := range rawErrs {
+	// Unwrap errors if rawErr is a joined error or has multiple wrapped errors
+	var list []error
+	if errsList, ok := rawErr.(interface{ Unwrap() []error }); ok {
+		list = errsList.Unwrap()
+	} else {
+		list = []error{rawErr}
+	}
+
+	for _, err := range list {
 		errorStr := err.Error()
 
 		// Split by newlines to handle both single and multi-line errors
@@ -331,5 +353,5 @@ func (p *Policy) remapOPAfmtErrors(rawErrs []error, path string) []error {
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }

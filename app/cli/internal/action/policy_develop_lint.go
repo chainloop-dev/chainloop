@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -51,23 +52,30 @@ func (action *PolicyLint) Run(_ context.Context, opts *PolicyLintOpts) (*PolicyL
 	}
 
 	// Read policies
-	policy, err := policydevel.Read(absPath, opts.Format)
+	policy, err := policydevel.Lookup(absPath, opts.Format)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy: %w", err)
 	}
 
 	// Run all validations
-	validationErrors := policy.Validate()
+	validationErr := policy.Validate()
 
 	// Convert errors to strings
-	errorStrings := make([]string, 0, len(validationErrors))
-	for _, err := range validationErrors {
-		errorStrings = append(errorStrings, err.Error())
+	var errorStrings []string
+	if validationErr != nil {
+		var errs interface{ Unwrap() []error }
+		if errors.As(validationErr, &errs) {
+			for _, e := range errs.Unwrap() {
+				errorStrings = append(errorStrings, e.Error())
+			}
+		} else {
+			errorStrings = append(errorStrings, validationErr.Error())
+		}
 	}
 
 	// Prepare result
 	result := &PolicyLintResult{
-		Valid:  len(validationErrors) == 0,
+		Valid:  validationErr == nil,
 		Errors: errorStrings,
 	}
 
