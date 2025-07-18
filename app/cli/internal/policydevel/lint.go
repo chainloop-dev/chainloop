@@ -28,6 +28,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/open-policy-agent/opa/v1/format"
+	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
 	"github.com/styrainc/regal/pkg/rules"
 )
@@ -37,6 +38,7 @@ type PolicyToLint struct {
 	YAMLFiles []*File
 	RegoFiles []*File
 	Format    bool
+	Config    string
 	Errors    []ValidationError
 }
 
@@ -73,7 +75,7 @@ func (p *PolicyToLint) AddError(path, message string, line int) {
 }
 
 // Read policy files from the given directory or file
-func Lookup(absPath string, format bool) (*PolicyToLint, error) {
+func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	fileInfo, err := os.Stat(absPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -85,6 +87,7 @@ func Lookup(absPath string, format bool) (*PolicyToLint, error) {
 	policy := &PolicyToLint{
 		Path:   absPath,
 		Format: format,
+		Config: config,
 	}
 
 	if fileInfo.IsDir() {
@@ -274,10 +277,24 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
 		p.AddError(filePath, fmt.Sprintf("failed to prepare for linting: %v", err), 0)
-		return
 	}
 
+	// Initialize linter with default or custom config
 	lntr := linter.NewLinter().WithInputModules(&inputModules)
+
+	// Handle config loading
+	if p.Config != "" {
+		userCfg, err := config.FromPath(p.Config)
+		if err != nil {
+			// If config fails to load add error and continue with default
+			p.AddError(filePath,
+				fmt.Sprintf("failed to load user Regal config from %q: %v (using default config)",
+					p.Config, err), 0)
+		} else {
+			lntr = lntr.WithUserConfig(userCfg)
+		}
+	}
+
 	report, err := lntr.Lint(context.Background())
 	if err != nil {
 		p.AddError(filePath, fmt.Sprintf("linting failed: %v", err), 0)

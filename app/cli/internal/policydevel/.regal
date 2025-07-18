@@ -1,0 +1,13 @@
+rules:
+  idiomatic:
+    directory-package-mismatch:
+      level: warning
+    no-defined-entrypoint:
+      level: warning
+  style:
+    todo-comment:
+      level: ignore
+    line-length:
+      level: ignore
+    rule-length:
+      level: ignore

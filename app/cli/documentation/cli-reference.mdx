@@ -2887,6 +2887,7 @@ chainloop policy develop lint [flags]
 Options
 
 ```
+-c, --config string   Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal)
 --format          Auto-format file with opa fmt
 -h, --help            help for lint
 -p, --policy string   Path to policy directory (default ".")
@@ -2897,7 +2898,6 @@ Options inherited from parent commands
 ```
 --artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode

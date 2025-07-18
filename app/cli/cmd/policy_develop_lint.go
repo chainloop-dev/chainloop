@@ -26,6 +26,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	var (
 		policyPath string
 		format     bool
+		config     string
 	)
 
 	cmd := &cobra.Command{
@@ -43,6 +44,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 			result, err := a.Run(cmd.Context(), &action.PolicyLintOpts{
 				PolicyPath: policyPath,
 				Format:     format,
+				Config:     config,
 			})
 			if err != nil {
 				return fmt.Errorf("linting failed: %w", err)
@@ -63,5 +65,6 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", ".", "Path to policy directory")
 	cmd.Flags().BoolVar(&format, "format", false, "Auto-format file with opa fmt")
+	cmd.Flags().StringVarP(&config, "config", "c", "", "Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal)")
 	return cmd
 }
