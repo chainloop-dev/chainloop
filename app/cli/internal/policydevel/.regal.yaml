@@ -1,0 +1,14 @@
+# Default config
+rules:
+  idiomatic:
+    directory-package-mismatch:
+      level: ignore
+    no-defined-entrypoint:
+      level: warning
+  style:
+    todo-comment:
+      level: ignore
+    line-length:
+      level: ignore
+    rule-length:
+      level: ignore

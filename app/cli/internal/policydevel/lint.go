@@ -17,6 +17,7 @@ package policydevel
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,15 +29,21 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/open-policy-agent/opa/v1/format"
+	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
 	"github.com/styrainc/regal/pkg/rules"
+	"gopkg.in/yaml.v2"
 )
+
+//go:embed .regal.yaml
+var regalConfigFS embed.FS
 
 type PolicyToLint struct {
 	Path      string
 	YAMLFiles []*File
 	RegoFiles []*File
 	Format    bool
+	Config    string
 	Errors    []ValidationError
 }
 
@@ -73,7 +80,7 @@ func (p *PolicyToLint) AddError(path, message string, line int) {
 }
 
 // Read policy files from the given directory or file
-func Lookup(absPath string, format bool) (*PolicyToLint, error) {
+func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	fileInfo, err := os.Stat(absPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -85,6 +92,7 @@ func Lookup(absPath string, format bool) (*PolicyToLint, error) {
 	policy := &PolicyToLint{
 		Path:   absPath,
 		Format: format,
+		Config: config,
 	}
 
 	if fileInfo.IsDir() {
@@ -277,7 +285,18 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 		return
 	}
 
+	// Initialize linter with input modules
 	lntr := linter.NewLinter().WithInputModules(&inputModules)
+
+	// Load and apply configuration
+	cfg, err := p.loadConfig()
+	if err != nil {
+		p.AddError(filePath, fmt.Sprintf("%s", err), 0)
+	}
+	if cfg != nil {
+		lntr = lntr.WithUserConfig(*cfg)
+	}
+
 	report, err := lntr.Lint(context.Background())
 	if err != nil {
 		p.AddError(filePath, fmt.Sprintf("linting failed: %v", err), 0)
@@ -288,6 +307,51 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	for _, v := range report.Violations {
 		p.processRegalViolation(fmt.Errorf("%s:%d: %s", filePath, v.Location.Row, v.Description), filePath)
 	}
+}
+
+// Attempts to load configuration in this order:
+// 1. User-specified config
+// 2. Default config
+// Returns nil config if no config found at all
+func (p *PolicyToLint) loadConfig() (*config.Config, error) {
+	// 1. Try user-specified config first
+	if p.Config != "" {
+		userCfg, err := config.FromPath(p.Config)
+		if err == nil {
+			return &userCfg, nil
+		}
+		// If user config fails, we'll fall through to default config
+		userErr := fmt.Errorf("failed to load user config from %q: %w (using default config)", p.Config, err)
+
+		// Continue to try default config
+		defaultCfg, defaultErr := p.loadDefaultConfig()
+		if defaultErr == nil {
+			return defaultCfg, userErr
+		}
+		return nil, fmt.Errorf("%w; also %w", userErr, defaultErr)
+	}
+
+	// 2. No user config specified - try default config
+	return p.loadDefaultConfig()
+}
+
+func (p *PolicyToLint) loadDefaultConfig() (*config.Config, error) {
+	cfgData, err := regalConfigFS.ReadFile(".regal.yaml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read default config: %w", err)
+	}
+
+	var configMap map[string]interface{}
+	if err := yaml.Unmarshal(cfgData, &configMap); err != nil {
+		return nil, fmt.Errorf("failed to parse default config: %w", err)
+	}
+
+	cfg, err := config.FromMap(configMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert default config: %w", err)
+	}
+
+	return &cfg, nil
 }
 
 // Splits grouped errors into individual errors
