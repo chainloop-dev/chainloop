@@ -17,7 +17,6 @@ package action
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -58,25 +57,17 @@ func (action *PolicyLint) Run(_ context.Context, opts *PolicyLintOpts) (*PolicyL
 	}
 
 	// Run all validations
-	validationErr := policy.Validate()
-
-	// Convert errors to strings
-	var errorStrings []string
-	if validationErr != nil {
-		var errs interface{ Unwrap() []error }
-		if errors.As(validationErr, &errs) {
-			for _, e := range errs.Unwrap() {
-				errorStrings = append(errorStrings, e.Error())
-			}
-		} else {
-			errorStrings = append(errorStrings, validationErr.Error())
-		}
-	}
+	policy.Validate()
 
 	// Prepare result
 	result := &PolicyLintResult{
-		Valid:  validationErr == nil,
-		Errors: errorStrings,
+		Valid:  !policy.HasErrors(),
+		Errors: make([]string, 0, len(policy.Errors)),
+	}
+
+	// Convert validation errors to strings
+	for _, err := range policy.Errors {
+		result.Errors = append(result.Errors, err.Error())
 	}
 
 	return result, nil

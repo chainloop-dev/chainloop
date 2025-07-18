@@ -17,7 +17,6 @@ package policydevel
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,11 +37,39 @@ type PolicyToLint struct {
 	YAMLFiles []*File
 	RegoFiles []*File
 	Format    bool
+	Errors    []ValidationError
 }
 
 type File struct {
 	Path    string
 	Content []byte
+}
+
+type ValidationError struct {
+	Path    string
+	Line    int
+	Message string
+}
+
+func (e ValidationError) Error() string {
+	if e.Line > 0 {
+		return fmt.Sprintf("%s:%d: %s", e.Path, e.Line, e.Message)
+	}
+	return fmt.Sprintf("%s: %s", e.Path, e.Message)
+}
+
+// Returns true if any validation errors were found
+func (p *PolicyToLint) HasErrors() bool {
+	return len(p.Errors) > 0
+}
+
+// Adds a new validation error
+func (p *PolicyToLint) AddError(path, message string, line int) {
+	p.Errors = append(p.Errors, ValidationError{
+		Path:    path,
+		Message: message,
+		Line:    line,
+	})
 }
 
 // Read policy files from the given directory or file
@@ -131,161 +158,100 @@ func processFile(policy *PolicyToLint, filePath string) error {
 	return nil
 }
 
-func (p *PolicyToLint) Validate() error {
-	var errs []error
-
+func (p *PolicyToLint) Validate() {
 	// Validate all YAML files (including their embedded policies)
 	for _, yamlFile := range p.YAMLFiles {
-		err := p.validateYAMLFile(yamlFile)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		p.validateYAMLFile(yamlFile)
 	}
 
 	// Validate standalone rego files
 	for _, regoFile := range p.RegoFiles {
-		err := p.validateRegoFile(regoFile)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		p.validateRegoFile(regoFile)
 	}
-
-	return errors.Join(errs...)
 }
 
-func (p *PolicyToLint) validateYAMLFile(file *File) error {
+func (p *PolicyToLint) validateYAMLFile(file *File) {
 	var policy v1.Policy
 	if err := unmarshal.FromRaw(file.Content, unmarshal.RawFormatYAML, &policy, true); err != nil {
-		return fmt.Errorf("%s: failed to parse/validate: %w", file.Path, err)
+		p.AddError(file.Path, fmt.Sprintf("failed to parse/validate: %v", err), 0)
+		return
 	}
 
-	var errs []error
-	err := p.processEmbeddedPolicies(&policy, file)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	p.processEmbeddedPolicies(&policy, file)
 
 	// Update policy file with formatted content
 	if p.Format {
 		outYAML, err := protoyaml.Marshal(&policy)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%s: failed to marshal updated YAML: %w", file.Path, err))
+			p.AddError(file.Path, fmt.Sprintf("failed to marshal updated YAML: %v", err), 0)
 		} else if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
-			errs = append(errs, fmt.Errorf("%s: failed to save updated file: %w", file.Path, err))
+			p.AddError(file.Path, fmt.Sprintf("failed to save updated file: %v", err), 0)
 		} else {
 			file.Content = outYAML
 		}
 	}
-
-	return errors.Join(errs...)
 }
 
-func (p *PolicyToLint) processEmbeddedPolicies(pa *v1.Policy, file *File) error {
-	var errs []error
-
+func (p *PolicyToLint) processEmbeddedPolicies(pa *v1.Policy, file *File) {
 	for idx, spec := range pa.Spec.Policies {
 		if regoSrc := spec.GetEmbedded(); regoSrc != "" {
-			formatted, err := p.validateAndFormatRego(
+			formatted := p.validateAndFormatRego(
 				regoSrc,
 				fmt.Sprintf("%s:(embedded #%d)", file.Path, idx+1),
 			)
-			errs = append(errs, err)
 
 			if p.Format && formatted != regoSrc {
 				spec.Source = &v1.PolicySpecV2_Embedded{Embedded: formatted}
 			}
 		}
 	}
-
-	return errors.Join(errs...)
 }
 
-func (p *PolicyToLint) validateRegoFile(file *File) error {
-	var errs []error
+func (p *PolicyToLint) validateRegoFile(file *File) {
 	original := string(file.Content)
-
-	formatted, err := p.validateAndFormatRego(original, file.Path)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	formatted := p.validateAndFormatRego(original, file.Path)
 
 	if p.Format && formatted != original {
 		if err := os.WriteFile(file.Path, []byte(formatted), 0600); err != nil {
-			errs = append(errs, fmt.Errorf("%s: failed to auto-format: %w", file.Path, err))
+			p.AddError(file.Path, fmt.Sprintf("failed to auto-format: %v", err), 0)
 		} else {
 			file.Content = []byte(formatted)
 		}
 	}
-
-	return errors.Join(errs...)
 }
 
-// Runs the Regal linter on the given rego content and returns any violations as errors
-func (p *PolicyToLint) runRegalLinter(filePath, content string) error {
-	inputModules, err := rules.InputFromText(filePath, content)
-	if err != nil {
-		return err
-	}
-
-	lntr := linter.NewLinter().WithInputModules(&inputModules)
-	report, err := lntr.Lint(context.Background())
-	if err != nil {
-		return err
-	}
-
-	errs := make([]error, 0, len(report.Violations))
-	for _, v := range report.Violations {
-		errs = append(errs, fmt.Errorf("%d: %s",
-			v.Location.Row,
-			v.Description,
-		))
-	}
-
-	return errors.Join(errs...)
-}
-
-func (p *PolicyToLint) validateAndFormatRego(content, path string) (string, error) {
-	var errs []error
-
+func (p *PolicyToLint) validateAndFormatRego(content, path string) string {
 	// 1. Optionally format
 	if p.Format {
-		formatted, err := p.applyOPAFmt(content, path)
-		if err != nil {
-			errs = append(errs, err)
-		} else {
-			content = formatted
-		}
+		formatted := p.applyOPAFmt(content, path)
+		content = formatted
 	}
 
 	// 2. Structural validation
-	errs = append(errs, checkResultStructure(content, path, []string{"skipped", "violations", "skip_reason"})...)
+	p.checkResultStructure(content, path, []string{"skipped", "violations", "skip_reason"})
 
 	// 3. Run Regal linter
-	err := p.runRegalLinter(path, content)
-	if err != nil {
-		errs = append(errs, p.remapOPAfmtErrors(err, path))
-	}
+	p.runRegalLinter(path, content)
 
-	return content, errors.Join(errs...)
+	return content
 }
 
-func (p *PolicyToLint) applyOPAFmt(content, file string) (string, error) {
+func (p *PolicyToLint) applyOPAFmt(content, file string) string {
 	formatted, err := format.SourceWithOpts(file, []byte(content), format.Opts{})
 	if err != nil {
-		// formatting failed, keep original
-		return content, fmt.Errorf("%s: Auto-formatting failed", file)
+		p.AddError(file, "Auto-formatting failed", 0)
+		return content
 	}
-	return string(formatted), nil
+	return string(formatted)
 }
 
-func checkResultStructure(content, path string, keys []string) []error {
-	var errs []error
-
+func (p *PolicyToLint) checkResultStructure(content, path string, keys []string) {
 	// Regex to capture result := { ... } including multiline
 	re := regexp.MustCompile(`(?s)result\s*:=\s*\{(.+?)\}`)
 	match := re.FindStringSubmatch(content)
 	if match == nil {
-		return append(errs, fmt.Errorf("%s: no result literal found", path))
+		p.AddError(path, "no result literal found", 0)
+		return
 	}
 
 	body := match[1]
@@ -298,60 +264,64 @@ func checkResultStructure(content, path string, keys []string) []error {
 
 	for _, want := range keys {
 		if !found[want] {
-			errs = append(errs, fmt.Errorf("%s: missing %q key in result", path, want))
+			p.AddError(path, fmt.Sprintf("missing %q key in result", want), 0)
 		}
 	}
-	return errs
 }
 
-// Processes raw errors from OPA fmt ran by Regal and:
-// 1. Splits grouped errors into individual errors
-// 2. Adjusts line numbers for embedded rego scripts
-func (p *PolicyToLint) remapOPAfmtErrors(rawErr error, path string) error {
-	if rawErr == nil {
-		return nil
+// Runs the Regal linter on the given rego content and records any violations
+func (p *PolicyToLint) runRegalLinter(filePath, content string) {
+	inputModules, err := rules.InputFromText(filePath, content)
+	if err != nil {
+		p.AddError(filePath, fmt.Sprintf("failed to prepare for linting: %v", err), 0)
+		return
 	}
 
-	var errs []error
+	lntr := linter.NewLinter().WithInputModules(&inputModules)
+	report, err := lntr.Lint(context.Background())
+	if err != nil {
+		p.AddError(filePath, fmt.Sprintf("linting failed: %v", err), 0)
+		return
+	}
+
+	// Handle Regal violations by formatting
+	for _, v := range report.Violations {
+		p.processRegalViolation(fmt.Errorf("%s:%d: %s", filePath, v.Location.Row, v.Description), filePath)
+	}
+}
+
+// Splits grouped errors into individual errors
+func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
+	if rawErr == nil {
+		return
+	}
+
+	errorStr := rawErr.Error()
 	// Regex matches file path, line number and error message like: /path/file:line: message
 	errorRegex := regexp.MustCompile(`^` + regexp.QuoteMeta(path) + `:(\d+):\s*(.+)$`)
 
-	// Unwrap errors if rawErr is a joined error or has multiple wrapped errors
-	var list []error
-	if errsList, ok := rawErr.(interface{ Unwrap() []error }); ok {
-		list = errsList.Unwrap()
-	} else {
-		list = []error{rawErr}
-	}
-
-	for _, err := range list {
-		errorStr := err.Error()
-
-		// Split by newlines to handle both single and multi-line errors
-		lines := strings.Split(errorStr, "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" {
-				continue
-			}
-
-			// Skip the "N errors occurred" header
-			if strings.Contains(line, "errors occurred:") {
-				continue
-			}
-
-			// Try to match the standard error format
-			if matches := errorRegex.FindStringSubmatch(line); len(matches) == 3 {
-				if lineNum, convErr := strconv.Atoi(matches[1]); convErr == nil {
-					errs = append(errs, fmt.Errorf("%s:%d: %s", path, lineNum, matches[2]))
-					continue
-				}
-			}
-
-			// If we didn't match the standard format, preserve the original error
-			errs = append(errs, fmt.Errorf("%s: %s", path, line))
+	// Split by newlines to handle both single and multi-line errors
+	lines := strings.Split(errorStr, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
-	}
 
-	return errors.Join(errs...)
+		// Skip the "N errors occurred" header
+		if strings.Contains(line, "errors occurred:") {
+			continue
+		}
+
+		// Try to match the standard error format
+		if matches := errorRegex.FindStringSubmatch(line); len(matches) == 3 {
+			if lineNum, convErr := strconv.Atoi(matches[1]); convErr == nil {
+				p.AddError(path, matches[2], lineNum)
+				continue
+			}
+		}
+
+		// If we didn't match the standard format, preserve the original error
+		p.AddError(path, line, 0)
+	}
 }
