@@ -689,6 +689,189 @@ func (s *groupMembersIntegrationTestSuite) TestListMembers() {
 		s.Equal(1, count)
 		s.Equal(s.user.ID, members[0].User.ID)
 	})
+
+	s.Run("authorization tests for listing members", func() {
+		// Create additional users with different roles
+		regularUser, err := s.User.UpsertByEmail(ctx, "regular-user@example.com", nil)
+		require.NoError(s.T(), err)
+
+		viewerUser, err := s.User.UpsertByEmail(ctx, "viewer-user@example.com", nil)
+		require.NoError(s.T(), err)
+
+		adminUser, err := s.User.UpsertByEmail(ctx, "admin-user@example.com", nil)
+		require.NoError(s.T(), err)
+
+		ownerUser, err := s.User.UpsertByEmail(ctx, "owner-user@example.com", nil)
+		require.NoError(s.T(), err)
+
+		maintainerUser, err := s.User.UpsertByEmail(ctx, "maintainer-user@example.com", nil)
+		require.NoError(s.T(), err)
+
+		// Add users to organization with different roles
+		_, err = s.Membership.Create(ctx, s.org.ID, regularUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+		require.NoError(s.T(), err)
+
+		_, err = s.Membership.Create(ctx, s.org.ID, viewerUser.ID, biz.WithMembershipRole(authz.RoleViewer))
+		require.NoError(s.T(), err)
+
+		_, err = s.Membership.Create(ctx, s.org.ID, adminUser.ID, biz.WithMembershipRole(authz.RoleAdmin))
+		require.NoError(s.T(), err)
+
+		_, err = s.Membership.Create(ctx, s.org.ID, ownerUser.ID, biz.WithMembershipRole(authz.RoleOwner))
+		require.NoError(s.T(), err)
+
+		_, err = s.Membership.Create(ctx, s.org.ID, maintainerUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+		require.NoError(s.T(), err)
+
+		// Create a second group and make maintainerUser a maintainer of it
+		maintainerUserUUID := uuid.MustParse(maintainerUser.ID)
+		secondGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "second-test-group", "Second group for testing", &maintainerUserUUID)
+		require.NoError(s.T(), err)
+
+		// Add maintainerUser as a maintainer to the original test group
+		addMemberOpts := &biz.AddMemberToGroupOpts{
+			IdentityReference: &biz.IdentityReference{
+				ID: &s.group.ID,
+			},
+			UserEmail:   maintainerUser.Email,
+			RequesterID: uuid.MustParse(s.user.ID), // Original creator (admin) adds the maintainer
+			Maintainer:  true,
+		}
+		_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), addMemberOpts)
+		require.NoError(s.T(), err)
+
+		s.Run("org admin can list members", func() {
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(adminUser.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.NoError(err)
+			s.Greater(count, 0)
+			s.Len(members, count)
+		})
+
+		s.Run("org owner can list members", func() {
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(ownerUser.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.NoError(err)
+			s.Greater(count, 0)
+			s.Len(members, count)
+		})
+
+		s.Run("group maintainer can list members", func() {
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(maintainerUser.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.NoError(err)
+			s.Greater(count, 0)
+			s.Len(members, count)
+		})
+
+		s.Run("regular org member cannot list members", func() {
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(regularUser.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.Error(err)
+			s.Contains(err.Error(), "requester does not have permission")
+			s.Nil(members)
+			s.Equal(0, count)
+		})
+
+		s.Run("org viewer cannot list members", func() {
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(viewerUser.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.Error(err)
+			s.Contains(err.Error(), "requester does not have permission")
+			s.Nil(members)
+			s.Equal(0, count)
+		})
+
+		s.Run("non-org member cannot list members", func() {
+			nonOrgUser, err := s.User.UpsertByEmail(ctx, "non-org-user@example.com", nil)
+			require.NoError(s.T(), err)
+
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(nonOrgUser.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.Error(err)
+			s.Contains(err.Error(), "requester is not a member of the organization")
+			s.Nil(members)
+			s.Equal(0, count)
+		})
+
+		s.Run("maintainer of different group cannot list members", func() {
+			// maintainerUser is a maintainer of secondGroup but not the original group (except we added them above)
+			// Let's create a third user who is maintainer of only the second group
+			thirdGroupMaintainer, err := s.User.UpsertByEmail(ctx, "third-group-maintainer@example.com", nil)
+			require.NoError(s.T(), err)
+
+			_, err = s.Membership.Create(ctx, s.org.ID, thirdGroupMaintainer.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+			require.NoError(s.T(), err)
+
+			// Add as maintainer to the second group only
+			addToSecondGroupOpts := &biz.AddMemberToGroupOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &secondGroup.ID,
+				},
+				UserEmail:   thirdGroupMaintainer.Email,
+				RequesterID: uuid.MustParse(maintainerUser.ID), // maintainerUser is the creator of secondGroup
+				Maintainer:  true,
+			}
+			_, err = s.Group.AddMemberToGroup(ctx, uuid.MustParse(s.org.ID), addToSecondGroupOpts)
+			require.NoError(s.T(), err)
+
+			// Try to list members of the original group (should fail)
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				RequesterID: uuid.MustParse(thirdGroupMaintainer.ID),
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.Error(err)
+			s.Contains(err.Error(), "requester does not have permission")
+			s.Nil(members)
+			s.Equal(0, count)
+		})
+
+		s.Run("listing members without requester ID works (backwards compatibility)", func() {
+			opts := &biz.ListMembersOpts{
+				IdentityReference: &biz.IdentityReference{
+					ID: &s.group.ID,
+				},
+				// No RequesterID provided
+			}
+			members, count, err := s.Group.ListMembers(ctx, uuid.MustParse(s.org.ID), opts, nil)
+			s.NoError(err)
+			s.Greater(count, 0)
+			s.Len(members, count)
+		})
+	})
 }
 
 // Test adding members to groups
@@ -705,7 +888,7 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroup() {
 	// Add users to organization
 	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
 
 	s.Run("add member using group ID", func() {
@@ -945,11 +1128,11 @@ func (s *groupMembersIntegrationTestSuite) TestRemoveMemberFromGroup() {
 	require.NoError(s.T(), err)
 
 	// Add users to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user4.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user4.ID)
 	require.NoError(s.T(), err)
 
 	// Add users to the group
@@ -1175,9 +1358,9 @@ func (s *groupMembersIntegrationTestSuite) TestGroupMemberCount() {
 	require.NoError(s.T(), err)
 
 	// Add users to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
 
 	// Check initial member count
@@ -1278,9 +1461,9 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatus() {
 	require.NoError(s.T(), err)
 
 	// Add users to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
 	require.NoError(s.T(), err)
-	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, user3.ID)
 	require.NoError(s.T(), err)
 
 	// Add users to the group (user2 as a regular member, user3 as a maintainer)
@@ -1705,7 +1888,7 @@ func (s *groupMembersIntegrationTestSuite) TestAddMemberToGroupSystemCall() {
 	require.NoError(s.T(), err)
 
 	// Add user to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID)
 	require.NoError(s.T(), err)
 
 	// Add the user to the group without a requester ID (system call)
@@ -1753,7 +1936,7 @@ func (s *groupMembersIntegrationTestSuite) TestUpdateMemberMaintainerStatusSyste
 	require.NoError(s.T(), err)
 
 	// Add user to organization
-	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	_, err = s.Membership.Create(ctx, s.org.ID, systemUser.ID)
 	require.NoError(s.T(), err)
 
 	// First add the user to the group (with requester ID for this setup step)
