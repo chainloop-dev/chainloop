@@ -172,7 +172,6 @@ var (
 	PolicyGroupAddMemberships         = &Policy{ResourceGroupMembership, ActionCreate}
 	PolicyGroupRemoveMemberships      = &Policy{ResourceGroupMembership, ActionDelete}
 	PolicyGroupUpdateMemberships      = &Policy{ResourceGroupMembership, ActionUpdate}
-	PolicyGroupListProjects           = &Policy{ResourceGroupProjects, ActionList}
 
 	// API Token
 	PolicyAPITokenList   = &Policy{ResourceAPIToken, ActionList}
@@ -337,7 +336,6 @@ var RolesMap = map[Role][]*Policy{
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
 		PolicyGroupUpdateMemberships,
-		PolicyGroupListProjects,
 	},
 }
 
