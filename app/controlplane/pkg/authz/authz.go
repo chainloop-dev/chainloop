@@ -332,7 +332,6 @@ var RolesMap = map[Role][]*Policy{
 		// Group Memberships
 		PolicyGroupListMemberships,
 		PolicyGroupListPendingInvitations,
-		PolicyGroupListMemberships,
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
 		PolicyGroupUpdateMemberships,
