@@ -411,10 +411,6 @@ var ServerOperationsMap = map[string][]*Policy{
 
 	// Projects: Check happen at service level
 
-	// Project API Token
-	"/controlplane.v1.ProjectService/APITokenCreate": {},
-	"/controlplane.v1.ProjectService/APITokenList":   {},
-	"/controlplane.v1.ProjectService/APITokenRevoke": {},
 	// Project Memberships
 	"/controlplane.v1.ProjectService/ListMembers":            {},
 	"/controlplane.v1.ProjectService/AddMember":              {},
@@ -423,9 +419,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ProjectService/ListPendingInvitations": {},
 
 	// API tokens RBAC are handled at the service level
-	"/controlplane.v1.APITokenService/List":   {},
-	"/controlplane.v1.APITokenService/Create": {},
-	"/controlplane.v1.APITokenService/Revoke": {},
+	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
+	"/controlplane.v1.APITokenService/Create": {PolicyAPITokenCreate},
+	"/controlplane.v1.APITokenService/Revoke": {PolicyAPITokenRevoke},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
