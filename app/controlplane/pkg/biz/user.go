@@ -248,6 +248,8 @@ func PbRoleToBiz(r pb.MembershipRole) authz.Role {
 		return authz.RoleViewer
 	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_MEMBER:
 		return authz.RoleOrgMember
+	case pb.MembershipRole_MEMBERSHIP_ROLE_ORG_CONTRIBUTOR:
+		return authz.RoleOrgContributor
 	default:
 		return ""
 	}

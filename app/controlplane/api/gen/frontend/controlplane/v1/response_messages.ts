@@ -74,6 +74,7 @@ export enum MembershipRole {
   MEMBERSHIP_ROLE_ORG_ADMIN = 2,
   MEMBERSHIP_ROLE_ORG_OWNER = 3,
   MEMBERSHIP_ROLE_ORG_MEMBER = 4,
+  MEMBERSHIP_ROLE_ORG_CONTRIBUTOR = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -94,6 +95,9 @@ export function membershipRoleFromJSON(object: any): MembershipRole {
     case 4:
     case "MEMBERSHIP_ROLE_ORG_MEMBER":
       return MembershipRole.MEMBERSHIP_ROLE_ORG_MEMBER;
+    case 5:
+    case "MEMBERSHIP_ROLE_ORG_CONTRIBUTOR":
+      return MembershipRole.MEMBERSHIP_ROLE_ORG_CONTRIBUTOR;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -113,6 +117,8 @@ export function membershipRoleToJSON(object: MembershipRole): string {
       return "MEMBERSHIP_ROLE_ORG_OWNER";
     case MembershipRole.MEMBERSHIP_ROLE_ORG_MEMBER:
       return "MEMBERSHIP_ROLE_ORG_MEMBER";
+    case MembershipRole.MEMBERSHIP_ROLE_ORG_CONTRIBUTOR:
+      return "MEMBERSHIP_ROLE_ORG_CONTRIBUTOR";
     case MembershipRole.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

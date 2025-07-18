@@ -57,7 +57,7 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 			// We do not have all the policies related to an admin user defined yet
 			// so for now we skip the authorization check for admin users since they are allowed to do anything
 			// TODO: fill out the rest of the policies in authz.ServerOperationsMap and remove this check
-			if subject == string(authz.RoleAdmin) || subject == string(authz.RoleOwner) {
+			if authz.Role(subject).IsAdmin() {
 				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation)
 				return handler(ctx, req)
 			}

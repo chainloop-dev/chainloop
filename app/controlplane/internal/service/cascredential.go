@@ -128,7 +128,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 
 		if mapping != nil {
 			backend = mapping.CASBackend
-		} else if currentAuthzSubject == string(authz.RoleAdmin) || currentAuthzSubject == string(authz.RoleOwner) {
+		} else if authz.Role(currentAuthzSubject).IsAdmin() {
 			// fallback to default mapping for admins
 			backend = defaultBackend
 		}

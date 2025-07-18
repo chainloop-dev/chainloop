@@ -253,6 +253,32 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 	return p, nil
 }
 
+func (s *service) userCanCreateProject(ctx context.Context) error {
+	// admins always can create projects
+	if !rbacEnabled(ctx) {
+		return nil
+	}
+
+	// Only org tokens can create projects
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		if token.ProjectID != nil {
+			return errors.Forbidden("unauthorized", "you are not allowed to create projects")
+		}
+	}
+
+	orgRole := usercontext.CurrentAuthzSubject(ctx)
+	pass, err := s.enforcer.Enforce(orgRole, authz.PolicyProjectCreate)
+	if err != nil {
+		return handleUseCaseErr(err, s.log)
+	}
+
+	if !pass {
+		return errors.Forbidden("unauthorized", "you are not allowed to create projects")
+	}
+
+	return nil
+}
+
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
 func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	if !rbacEnabled(ctx) {
@@ -312,7 +338,7 @@ func rbacEnabled(ctx context.Context) bool {
 
 	// we have an user
 	currentSubject := usercontext.CurrentAuthzSubject(ctx)
-	return currentSubject == string(authz.RoleOrgMember)
+	return authz.Role(currentSubject).RBACEnabled()
 }
 
 // NOTE: some of these http errors get automatically translated to gRPC status codes
