@@ -417,7 +417,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/RemoveMember":                 {},
 	"/controlplane.v1.GroupService/ListPendingInvitations":       {},
 	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
-	
+
 	// Project Memberships
 	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
 	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
