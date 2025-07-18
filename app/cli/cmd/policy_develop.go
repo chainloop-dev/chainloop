@@ -28,6 +28,6 @@ Refer to https://docs.chainloop.dev/guides/custom-policies
 `,
 	}
 
-	cmd.AddCommand(newPolicyDevelopEvalCmd())
+	cmd.AddCommand(newPolicyDevelopInitCmd(), newPolicyDevelopEvalCmd())
 	return cmd
 }

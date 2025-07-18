@@ -46,7 +46,7 @@ func newOrganizationMemberUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput([]*action.MembershipItem{res}, orgMembershipsTableOutput)
+			return encodeOutput(&action.ListMembershipResult{Memberships: []*action.MembershipItem{res}}, orgMembershipsTableOutput)
 		},
 	}
 

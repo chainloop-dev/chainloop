@@ -11,7 +11,7 @@
     "projects": {
       "description": "List of projects memberships matching the request criteria",
       "items": {
-        "$ref": "controlplane.v1.ProjectInfo.jsonschema.json"
+        "$ref": "controlplane.v1.GroupServiceListProjectsResponse.ProjectInfo.jsonschema.json"
       },
       "type": "array"
     }

@@ -1,21 +1,21 @@
 {
-  "$id": "controlplane.v1.ProjectInfo.schema.json",
+  "$id": "controlplane.v1.GroupServiceListProjectsResponse.ProjectInfo.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "ProjectInfo represents detailed information about a project that a group is a member of",
   "patternProperties": {
-    "^(createdAt)$": {
-      "$ref": "google.protobuf.Timestamp.schema.json",
+    "^(created_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the membership was created"
     },
-    "^(latestVersionId)$": {
+    "^(latest_version_id)$": {
       "description": "The latest version ID of the project, if available",
       "type": "string"
     }
   },
   "properties": {
-    "created_at": {
-      "$ref": "google.protobuf.Timestamp.schema.json",
+    "createdAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the membership was created"
     },
     "description": {
@@ -26,7 +26,7 @@
       "description": "Unique identifier of the project",
       "type": "string"
     },
-    "latest_version_id": {
+    "latestVersionId": {
       "description": "The latest version ID of the project, if available",
       "type": "string"
     },

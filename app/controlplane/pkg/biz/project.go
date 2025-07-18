@@ -108,7 +108,7 @@ type GroupProjectInfo struct {
 	Role authz.Role
 	// LatestVersionID is the ID of the latest version of the project, if available
 	LatestVersionID *uuid.UUID
-	// CreatedAt is the timestamp when the project was created
+	// CreatedAt is the timestamp when the membership was created
 	CreatedAt *time.Time
 }
 
@@ -321,11 +321,6 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 	// If the user is not in the organization, handle invitation flow
 	if userMembership == nil {
 		return uc.handleNonExistingUser(ctx, orgID, projectID, opts)
-	}
-
-	// Org viewers cannot be added as project admin, since they cannot perform updates on resources
-	if opts.Role == authz.RoleProjectAdmin && userMembership.Role == authz.RoleViewer {
-		return nil, NewErrValidationStr("users with org role Org Viewer cannot be Project Admins")
 	}
 
 	userUUID := uuid.MustParse(userMembership.User.ID)
