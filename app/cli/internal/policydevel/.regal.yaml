@@ -1,7 +1,8 @@
+# Default config
 rules:
   idiomatic:
     directory-package-mismatch:
-      level: warning
+      level: ignore
     no-defined-entrypoint:
       level: warning
   style:
