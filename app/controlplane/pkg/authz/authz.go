@@ -159,12 +159,7 @@ var (
 	// Projects
 	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
 	// User Membership
-	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
-	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
-
-	// Groups
-	PolicyGroupList = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead = &Policy{ResourceGroup, ActionRead}
+	PolicyOrganizationRead = &Policy{Organization, ActionRead}
 
 	// Group Memberships
 	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
