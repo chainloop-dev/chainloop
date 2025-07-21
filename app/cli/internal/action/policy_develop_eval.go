@@ -20,7 +20,6 @@ import (
 	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 type PolicyEvalOpts struct {
@@ -48,12 +47,6 @@ func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, 
 }
 
 func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
-	// Validate material
-	materialKind, ok := schemaapi.CraftingSchema_Material_MaterialType_value[action.opts.Kind]
-	if !ok {
-		return nil, fmt.Errorf("invalid material kind: %s", action.opts.Kind)
-	}
-
 	// Read material file
 	materialContent, err := os.ReadFile(action.opts.MaterialFile)
 	if err != nil {
@@ -64,8 +57,9 @@ func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
 	evalOpts := &policydevel.EvalOptions{
 		PolicyPath:   action.opts.PolicyPath,
 		Material:     materialContent,
-		MaterialKind: schemaapi.CraftingSchema_Material_MaterialType(materialKind),
+		MaterialKind: action.opts.Kind,
 		Annotations:  action.opts.Annotations,
+		MaterialFile: action.opts.MaterialFile,
 	}
 
 	// Evaluate policy
