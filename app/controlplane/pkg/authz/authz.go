@@ -158,8 +158,10 @@ var (
 	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
 	// Projects
 	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
+
 	// User Membership
-	PolicyOrganizationRead = &Policy{Organization, ActionRead}
+	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
+	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
 
 	// Group Memberships
 	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
@@ -215,6 +217,9 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowRead,
 		// Organization
 		PolicyOrganizationRead,
+
+		// List organization memberships
+		PolicyOrganizationListMemberships,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
@@ -385,6 +390,10 @@ var ServerOperationsMap = map[string][]*Policy{
 	// since all the permissions here are in the context of an organization
 	// Create new organization
 	"/controlplane.v1.OrganizationService/Create": {},
+
+	// List global memberships
+	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
+
 	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
 	"/controlplane.v1.UserService/ListMemberships": {},
 	// Set the current organization for the current user
