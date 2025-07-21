@@ -393,14 +393,11 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.UserService/DeleteMembership": {},
 	"/controlplane.v1.AuthService/DeleteAccount":    {},
 
-	// org memberships onnly available to admins
-	// "/controlplane.v1.OrganizationService/ListMemberships"
-
 	// Groups (everyone see groups)
 	"/controlplane.v1.GroupService/List": {},
 	"/controlplane.v1.GroupService/Get":  {},
 
-	// For the following endpoints, we rely on the service layer to check the permissions
+	// For the following endpoints, we rely on the service layer to check the permissions.
 	// That's why we let everyone access them (empty policies).
 	// Group Memberships are only available to org admins or maintainers
 	"/controlplane.v1.GroupService/ListMembers":                  {},
