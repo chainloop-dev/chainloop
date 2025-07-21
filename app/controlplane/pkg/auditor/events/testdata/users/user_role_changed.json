@@ -1,0 +1,21 @@
+{
+  "ActionType": "RoleChanged",
+  "TargetType": "User",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "john@cyberdyne.io role changed from 'role:org:owner' to 'role:org:member'",
+  "Info": {
+    "user_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "email": "john@cyberdyne.io",
+    "sso_groups": [
+      "group1",
+      "group2"
+    ],
+    "old_role": "role:org:owner",
+    "new_role": "role:org:member"
+  },
+  "Digest": "sha256:80bfd69a13fe4736ad2642ec20eaecc8f002e1774089d75d3c9fcee421af4247"
+}
