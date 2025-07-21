@@ -236,8 +236,14 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		return nil, err
 	}
 
-	if err := g.userHasPermissionToListGroupMember(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
-		return nil, err
+	orgRole := usercontext.CurrentAuthzSubject(ctx)
+
+	// Viewers can see group memberships
+	// TODO: replace this with enforcer check once group_memberships and memberships are merged
+	if authz.Role(orgRole) != authz.RoleViewer {
+		if err := g.userHasPermissionToListGroupMember(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
+			return nil, err
+		}
 	}
 
 	currentUser, err := requireCurrentUser(ctx)
