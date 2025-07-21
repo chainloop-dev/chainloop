@@ -24,6 +24,15 @@ type Policy struct {
 
 type Role string
 
+// RBACEnabled returns whether an org-scoped role has RBAC enabled and needs resource-scoped enforcement.
+func (r Role) RBACEnabled() bool {
+	return r == RoleOrgMember || r == RoleOrgContributor
+}
+
+func (r Role) IsAdmin() bool {
+	return r == RoleAdmin || r == RoleOwner
+}
+
 const (
 	// Actions
 
@@ -46,6 +55,7 @@ const (
 	ResourceRobotAccount            = "robot_account"
 	ResourceWorkflowRun             = "workflow_run"
 	ResourceWorkflow                = "workflow"
+	ResourceProject                 = "project"
 	Organization                    = "organization"
 	OrganizationMemberships         = "organization_memberships"
 	ResourceGroup                   = "group"
@@ -67,11 +77,13 @@ const (
 
 	// New RBAC roles
 
-	// RoleOrgMember is the role that users get by default when they join an organization.
-	// They cannot see projects until they are invited. However, they are able to create their own projects,
+	// RoleOrgMember cannot see projects until they are invited. However, they are able to create their own projects,
 	// so Casbin rules (role, resource-type, action) are NOT enough to check for permission, since we must check for ownership as well.
 	// That last check will be done at the service level.
 	RoleOrgMember Role = "role:org:member"
+
+	// RoleOrgContributor can work on projects they are invited to with scoped role ProjectAdmin or ProjectViewer, but they cannot create their own projects.
+	RoleOrgContributor Role = "role:org:contributor"
 
 	RoleProjectAdmin  Role = "role:project:admin"
 	RoleProjectViewer Role = "role:project:viewer"
@@ -93,6 +105,7 @@ var ManagedResources = []string{
 	ResourceRobotAccount,
 	ResourceWorkflowRun,
 	ResourceWorkflow,
+	ResourceProject,
 	Organization,
 	OrganizationMemberships,
 	ResourceGroup,
@@ -143,20 +156,18 @@ var (
 	PolicyWorkflowCreate = &Policy{ResourceWorkflow, ActionCreate}
 	PolicyWorkflowUpdate = &Policy{ResourceWorkflow, ActionUpdate}
 	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
+	// Projects
+	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
 	// User Membership
-	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
-	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
-	// Groups
-	PolicyGroupList                   = &Policy{ResourceGroup, ActionList}
-	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
-	PolicyGroupRead                   = &Policy{ResourceGroup, ActionRead}
+	PolicyOrganizationRead = &Policy{Organization, ActionRead}
+
 	// Group Memberships
-	PolicyGroupListMemberships   = &Policy{ResourceGroupMembership, ActionList}
-	PolicyGroupAddMemberships    = &Policy{ResourceGroupMembership, ActionCreate}
-	PolicyGroupRemoveMemberships = &Policy{ResourceGroupMembership, ActionDelete}
-	PolicyGroupUpdateMemberships = &Policy{ResourceGroupMembership, ActionUpdate}
-	// Group-Projects
-	PolicyGroupListProjects = &Policy{ResourceGroupProjects, ActionList}
+	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
+	PolicyGroupListMemberships        = &Policy{ResourceGroupMembership, ActionList}
+	PolicyGroupAddMemberships         = &Policy{ResourceGroupMembership, ActionCreate}
+	PolicyGroupRemoveMemberships      = &Policy{ResourceGroupMembership, ActionDelete}
+	PolicyGroupUpdateMemberships      = &Policy{ResourceGroupMembership, ActionUpdate}
+
 	// API Token
 	PolicyAPITokenList   = &Policy{ResourceAPIToken, ActionList}
 	PolicyAPITokenCreate = &Policy{ResourceAPIToken, ActionCreate}
@@ -214,9 +225,10 @@ var RolesMap = map[Role][]*Policy{
 		PolicyOrganizationInvitationsCreate,
 		// + all the policies from the viewer role inherited automatically
 	},
+
 	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at
 	// the organization level will need specific project roles to access their contents
-	RoleOrgMember: {
+	RoleOrgContributor: {
 		// Allowed endpoints. RBAC will be applied where needed
 		PolicyWorkflowRead,
 		PolicyWorkflowContractList,
@@ -253,30 +265,23 @@ var RolesMap = map[Role][]*Policy{
 		PolicyOrgMetricsRead,
 		PolicyReferrerRead,
 
-		// Groups
-		PolicyGroupList,
-		PolicyGroupRead,
-
-		// Group Projects
-		PolicyGroupListProjects,
-
-		// Group Memberships
-		PolicyGroupListMemberships,
-
 		// Additional check for API tokens is done at the service level
 		PolicyAPITokenList,
 		PolicyAPITokenCreate,
 		PolicyAPITokenRevoke,
 
-		// Project Memberships
+		// Project Memberships available to contributors if they are project admins
 		PolicyProjectListMemberships,
 		PolicyProjectAddMemberships,
 		PolicyProjectRemoveMemberships,
 		PolicyProjectUpdateMemberships,
-
-		// Org memberships
-		PolicyOrganizationListMemberships,
 	},
+
+	// RoleOrgMember inherits from RoleOrgContributor and can also create their own projects
+	RoleOrgMember: {
+		PolicyProjectCreate,
+	},
+
 	// RoleProjectViewer: has read-only permissions on a project
 	RoleProjectViewer: {
 		PolicyWorkflowRead,
@@ -287,18 +292,14 @@ var RolesMap = map[Role][]*Policy{
 		// Project API Token
 		PolicyAPITokenList,
 	},
-	// RoleProjectAdmin: represents a project administrator. It's the higher role in project resources,
-	// and it's only considered when the org-level role is `RoleOrgMember`
+	// RoleProjectAdmin: inherits from ProjectViewer and represents a project administrator.
 	RoleProjectAdmin: {
 		// workflow contracts
-		PolicyWorkflowContractList,
-		PolicyWorkflowContractRead,
 		PolicyWorkflowContractCreate,
 		PolicyWorkflowContractUpdate,
 		PolicyWorkflowContractDelete,
 
 		// attestations
-		PolicyWorkflowRead,
 		PolicyWorkflowCreate,
 		PolicyWorkflowRunCreate,
 		PolicyWorkflowRunUpdate, // to reset attestations
@@ -307,15 +308,11 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowUpdate,
 		PolicyWorkflowDelete,
 
-		// workflow runs
-		PolicyWorkflowRunRead,
-
 		// integrations
 		PolicyAttachedIntegrationAttach,
 		PolicyAttachedIntegrationDetach,
 
 		// Project API Token
-		PolicyAPITokenList,
 		PolicyAPITokenCreate,
 		PolicyAPITokenRevoke,
 
@@ -327,8 +324,9 @@ var RolesMap = map[Role][]*Policy{
 	},
 	// RoleGroupMaintainer: represents a group maintainer role.
 	RoleGroupMaintainer: {
-		PolicyGroupListPendingInvitations,
+		// Group Memberships
 		PolicyGroupListMemberships,
+		PolicyGroupListPendingInvitations,
 		PolicyGroupAddMemberships,
 		PolicyGroupRemoveMemberships,
 		PolicyGroupUpdateMemberships,
@@ -395,28 +393,26 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.UserService/DeleteMembership": {},
 	"/controlplane.v1.AuthService/DeleteAccount":    {},
 
-	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
-	// Groups
-	"/controlplane.v1.GroupService/List": {PolicyGroupList},
-	"/controlplane.v1.GroupService/Get":  {PolicyGroupRead},
-	// Group Memberships
-	"/controlplane.v1.GroupService/ListProjects": {PolicyGroupListProjects},
-	// For the following endpoints, we rely on the service layer to check the permissions
-	// That's why we let everyone access them (empty policies)
+	// Groups (everyone see groups)
+	"/controlplane.v1.GroupService/List": {},
+	"/controlplane.v1.GroupService/Get":  {},
+
+	// For the following endpoints, we rely on the service layer to check the permissions.
+	// That's why we let everyone access them (empty policies).
+	// Group Memberships are only available to org admins or maintainers
 	"/controlplane.v1.GroupService/ListMembers":                  {},
+	"/controlplane.v1.GroupService/ListProjects":                 {},
 	"/controlplane.v1.GroupService/AddMember":                    {},
 	"/controlplane.v1.GroupService/RemoveMember":                 {},
 	"/controlplane.v1.GroupService/ListPendingInvitations":       {},
 	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
 
-	// Projects: Check happen at service level
-
 	// Project Memberships
-	"/controlplane.v1.ProjectService/ListMembers":            {},
-	"/controlplane.v1.ProjectService/AddMember":              {},
-	"/controlplane.v1.ProjectService/RemoveMember":           {},
-	"/controlplane.v1.ProjectService/UpdateMemberRole":       {},
-	"/controlplane.v1.ProjectService/ListPendingInvitations": {},
+	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
+	"/controlplane.v1.ProjectService/RemoveMember":           {PolicyProjectRemoveMemberships},
+	"/controlplane.v1.ProjectService/UpdateMemberRole":       {PolicyProjectUpdateMemberships},
+	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListMemberships},
 
 	// API tokens RBAC are handled at the service level
 	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
@@ -434,6 +430,7 @@ func (Role) Values() (roles []string) {
 
 		// RBAC roles
 		RoleOrgMember,
+		RoleOrgContributor,
 		RoleProjectAdmin,
 		RoleProjectViewer,
 		RoleGroupMaintainer,

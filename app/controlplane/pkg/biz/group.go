@@ -509,8 +509,7 @@ func (uc *GroupUseCase) validateRequesterPermissions(ctx context.Context, orgID,
 	}
 
 	// Allow if the requester is an org owner or admin
-	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
-	if isAdminOrOwner {
+	if requesterMembership.Role.IsAdmin() {
 		return nil
 	}
 
@@ -563,7 +562,7 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 	}
 
 	// Create an invitation for the user to join the organization
-	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleOrgMember), WithInvitationContext(invitationContext)); err != nil {
+	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleOrgContributor), WithInvitationContext(invitationContext)); err != nil {
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
 	}
 
@@ -726,10 +725,8 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 
 		// Check if the requester has sufficient permissions
 		// Allow if the requester is an org owner or admin
-		isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
-
 		// If not an admin/owner, check if the requester is a maintainer of this group
-		if !isAdminOrOwner {
+		if !requesterMembership.Role.IsAdmin() {
 			// Check if the requester is a maintainer of this group
 			requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
 			if err != nil && !IsNotFound(err) {

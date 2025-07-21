@@ -265,6 +265,10 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		RequesterID:       requesterUUID,
 	}
 
+	if err = g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, currentOrg.ID, req.GetGroupReference(), authz.PolicyGroupListMemberships); err != nil {
+		return nil, err
+	}
+
 	// Parse groupID and groupName from the request
 	opts.ID, opts.Name, err = req.GetGroupReference().Parse()
 	if err != nil {
@@ -509,6 +513,7 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
+
 	}
 
 	// Parse groupID and groupName from the request
@@ -585,7 +590,7 @@ func (g *GroupService) userHasPermissionOnGroupMembershipsWithPolicy(ctx context
 	}
 
 	// Allow if user has admin or owner role
-	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
+	if authz.Role(userRole).IsAdmin() {
 		return nil
 	}
 
