@@ -17,6 +17,7 @@ package policydevel
 import (
 	"context"
 	"fmt"
+	"os"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -112,6 +113,9 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 }
 
 func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
+	if fileNotExists(materialPath) {
+		return nil, fmt.Errorf("%s: does not exists", materialPath)
+	}
 	backend := &casclient.CASBackend{
 		Name:     "backend",
 		MaxSize:  0,
@@ -149,4 +153,9 @@ func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, na
 		return nil, fmt.Errorf("failed to craft material (kind=%s): %w", kind.String(), err)
 	}
 	return m, nil
+}
+
+func fileNotExists(path string) bool {
+	_, err := os.Stat(path)
+	return os.IsNotExist(err)
 }
