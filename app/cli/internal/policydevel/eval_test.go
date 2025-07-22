@@ -46,7 +46,7 @@ func TestEvaluate(t *testing.T) {
 	})
 
 	t.Run("evaluation with auto-detected SBOM CYCLONEDX kind", func(t *testing.T) {
-		materialPath := "/testdata/sbom_cyclonedx.json"
+		materialPath := "testdata/sbom_cyclonedx.json"
 
 		opts := &EvalOptions{
 			PolicyPath:   policyPath,
@@ -69,7 +69,7 @@ func TestEvaluate(t *testing.T) {
 	})
 
 	t.Run("evaluation with auto-detected ATTESTATION kind", func(t *testing.T) {
-		materialPath := "/testdata/attestation.json"
+		materialPath := "testdata/attestation.json"
 
 		opts := &EvalOptions{
 			PolicyPath:   policyPath,
@@ -110,10 +110,13 @@ func TestEvaluate(t *testing.T) {
 	})
 
 	t.Run("invalid material kind", func(t *testing.T) {
+		testFile := filepath.Join(tempDir, "test.txt")
+		require.NoError(t, os.WriteFile(testFile, []byte("test content"), 0600))
+
 		opts := &EvalOptions{
 			PolicyPath:   policyPath,
 			MaterialKind: "INVALID_KIND",
-			MaterialPath: "test.txt",
+			MaterialPath: testFile,
 		}
 
 		_, err := Evaluate(opts, logger)
