@@ -82,14 +82,17 @@ type MembershipsRBAC interface {
 }
 
 type MembershipUseCase struct {
-	repo       MembershipRepo
+	logger *log.Helper
+	// Repositories
+	repo     MembershipRepo
+	userRepo UserRepo
+	// Use Cases
 	orgUseCase *OrganizationUseCase
-	logger     *log.Helper
 	auditor    *AuditorUseCase
 }
 
-func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, logger log.Logger) *MembershipUseCase {
-	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), auditor: auditor}
+func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, userRepo UserRepo, logger log.Logger) *MembershipUseCase {
+	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), userRepo: userRepo, auditor: auditor}
 }
 
 // LeaveAndDeleteOrg deletes a membership (and the org i) from the database associated with the current user
@@ -197,7 +200,9 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 	m, err := uc.repo.FindByIDInOrg(ctx, orgUUID, membershipUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find membership: %w", err)
-	} else if m == nil {
+	}
+
+	if m == nil {
 		return nil, NewErrNotFound("membership")
 	}
 
@@ -205,7 +210,31 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 		return nil, NewErrValidationStr("cannot update yourself")
 	}
 
-	return uc.repo.SetRole(ctx, membershipUUID, role)
+	userUUID, err := uuid.Parse(m.User.ID)
+	if err != nil {
+		return nil, NewErrInvalidUUID(err)
+	}
+
+	user, err := uc.userRepo.FindByID(ctx, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	updatedMembership, err := uc.repo.SetRole(ctx, membershipUUID, role)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update membership role: %w", err)
+	}
+
+	uc.auditor.Dispatch(ctx, &events.UserRoleChanged{
+		UserBase: &events.UserBase{
+			UserID: &userUUID,
+			Email:  user.Email,
+		},
+		OldRole: string(m.Role),
+		NewRole: string(role),
+	}, &m.OrganizationID)
+
+	return updatedMembership, nil
 }
 
 type membershipCreateOpts struct {

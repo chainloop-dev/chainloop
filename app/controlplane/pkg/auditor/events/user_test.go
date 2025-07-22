@@ -24,6 +24,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,6 +63,19 @@ func TestUserEvents(t *testing.T) {
 				LoggedIn: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
 			expected: "testdata/users/user_logs_in.json",
+		},
+		{
+			name: "User role changed",
+			event: &events.UserRoleChanged{
+				UserBase: &events.UserBase{
+					UserID:    uuidPtr(userUUID),
+					Email:     testEmail,
+					SSOGroups: []string{"group1", "group2"},
+				},
+				OldRole: string(authz.RoleOwner),
+				NewRole: string(authz.RoleOrgMember),
+			},
+			expected: "testdata/users/user_role_changed.json",
 		},
 	}
 

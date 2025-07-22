@@ -75,7 +75,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
 	v := bootstrap.Onboarding
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, v, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, userRepo, logger)
 	allowList := newAuthAllowList(bootstrap)
 	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, allowList)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{
