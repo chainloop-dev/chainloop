@@ -71,7 +71,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, arg, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, logger)
+	userRepo := data.NewUserRepo(dataData, logger)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, userRepo, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v := NewPolicyProviderConfig(bootstrap)
 	registry, err := policies.NewRegistry(logger, v...)
@@ -101,7 +102,6 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v2, organizationUseCase, orgMetricsUseCase, logger)
-	userRepo := data.NewUserRepo(dataData, logger)
 	allowList := newAuthAllowList(bootstrap)
 	userAccessSyncerUseCase := biz.NewUserAccessSyncerUseCase(logger, userRepo, allowList)
 	newUserUseCaseParams := &biz.NewUserUseCaseParams{

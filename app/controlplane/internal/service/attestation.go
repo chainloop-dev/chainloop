@@ -126,6 +126,12 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
+	// If contract is private, check we have permissions on the project
+	scopedEntity := contractVersion.Contract.ScopedEntity
+	if rbacEnabled(ctx) && contractVersion.Contract.IsProjectScoped() && scopedEntity.ID != wf.ProjectID {
+		return nil, errors.NotFound("not found", "contract not found")
+	}
+
 	resp := &cpAPI.AttestationServiceGetContractResponse_Result{
 		Workflow: bizWorkflowToPb(wf),
 		Contract: bizWorkFlowContractVersionToPb(contractVersion.Version),
@@ -674,8 +680,12 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 
 	// try to load project and apply RBAC if needed
 	if _, err := s.userHasPermissionOnProject(ctx, apiToken.OrgID, &cpAPI.IdentityReference{Name: &req.ProjectName}, authz.PolicyWorkflowCreate); err != nil {
-		// if the project is not found, we ignore the error, since we'll create the project in this call
+		// if the project is not found, check if user can create projects
 		if !errors.IsNotFound(err) {
+			return nil, err
+		}
+
+		if err = s.userCanCreateProject(ctx); err != nil {
 			return nil, err
 		}
 	}

@@ -236,8 +236,14 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		return nil, err
 	}
 
-	if err := g.userHasPermissionToListGroupMember(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
-		return nil, err
+	orgRole := usercontext.CurrentAuthzSubject(ctx)
+
+	// Viewers can see group memberships
+	// TODO: replace this with enforcer check once group_memberships and memberships are merged
+	if authz.Role(orgRole) != authz.RoleViewer {
+		if err := g.userHasPermissionToListGroupMember(ctx, currentOrg.ID, req.GetGroupReference()); err != nil {
+			return nil, err
+		}
 	}
 
 	currentUser, err := requireCurrentUser(ctx)
@@ -263,6 +269,10 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 		Maintainers:       req.Maintainers,
 		MemberEmail:       req.MemberEmail,
 		RequesterID:       requesterUUID,
+	}
+
+	if err = g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, currentOrg.ID, req.GetGroupReference(), authz.PolicyGroupListMemberships); err != nil {
+		return nil, err
 	}
 
 	// Parse groupID and groupName from the request
@@ -509,6 +519,7 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
 		return nil, errors.BadRequest("invalid", "invalid organization ID")
+
 	}
 
 	// Parse groupID and groupName from the request
@@ -585,7 +596,7 @@ func (g *GroupService) userHasPermissionOnGroupMembershipsWithPolicy(ctx context
 	}
 
 	// Allow if user has admin or owner role
-	if userRole == string(authz.RoleAdmin) || userRole == string(authz.RoleOwner) {
+	if authz.Role(userRole).IsAdmin() {
 		return nil
 	}
 

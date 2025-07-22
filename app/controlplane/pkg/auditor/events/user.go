@@ -31,9 +31,10 @@ var (
 )
 
 const (
-	UserType               auditor.TargetType = "User"
-	UserSignedUpActionType string             = "SignedUp"
-	UserLoggedInActionType string             = "LoggedIn"
+	UserType                  auditor.TargetType = "User"
+	UserSignedUpActionType    string             = "SignedUp"
+	UserLoggedInActionType    string             = "LoggedIn"
+	UserRoleChangedActionType string             = "RoleChanged"
 )
 
 // UserBase is the base struct for policy events
@@ -92,6 +93,28 @@ func (p *UserLoggedIn) Description() string {
 func (p *UserLoggedIn) ActionInfo() (json.RawMessage, error) {
 	if p.UserID == nil || p.Email == "" || p.LoggedIn.IsZero() {
 		return nil, errors.New("user id and email are required")
+	}
+
+	return json.Marshal(&p)
+}
+
+type UserRoleChanged struct {
+	*UserBase
+	OldRole string `json:"old_role,omitempty"`
+	NewRole string `json:"new_role,omitempty"`
+}
+
+func (p *UserRoleChanged) ActionType() string {
+	return UserRoleChangedActionType
+}
+
+func (p *UserRoleChanged) Description() string {
+	return fmt.Sprintf("%s role changed from '%s' to '%s'", p.Email, p.OldRole, p.NewRole)
+}
+
+func (p *UserRoleChanged) ActionInfo() (json.RawMessage, error) {
+	if p.UserID == nil || p.Email == "" || p.OldRole == "" || p.NewRole == "" {
+		return nil, errors.New("user id, email, old role and new role are required")
 	}
 
 	return json.Marshal(&p)

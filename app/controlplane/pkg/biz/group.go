@@ -509,8 +509,7 @@ func (uc *GroupUseCase) validateRequesterPermissions(ctx context.Context, orgID,
 	}
 
 	// Allow if the requester is an org owner or admin
-	isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
-	if isAdminOrOwner {
+	if requesterMembership.Role.IsAdmin() {
 		return nil
 	}
 
@@ -563,7 +562,7 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 	}
 
 	// Create an invitation for the user to join the organization
-	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleOrgMember), WithInvitationContext(invitationContext)); err != nil {
+	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.RequesterID.String(), opts.UserEmail, WithInvitationRole(authz.RoleOrgContributor), WithInvitationContext(invitationContext)); err != nil {
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
 	}
 
@@ -587,11 +586,6 @@ func (uc *GroupUseCase) addExistingUserToGroup(ctx context.Context, orgID, group
 	}
 	if existingGroupMembership != nil {
 		return nil, NewErrAlreadyExistsStr("user is already a member of this group")
-	}
-
-	// If trying to make the user a maintainer, verify they don't have the org viewer role
-	if opts.Maintainer && userMembership.Role == authz.RoleViewer {
-		return nil, NewErrValidationStr("users with organization viewer role cannot be group maintainers")
 	}
 
 	// Add the user to the group
@@ -731,10 +725,8 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 
 		// Check if the requester has sufficient permissions
 		// Allow if the requester is an org owner or admin
-		isAdminOrOwner := requesterMembership.Role == authz.RoleOwner || requesterMembership.Role == authz.RoleAdmin
-
 		// If not an admin/owner, check if the requester is a maintainer of this group
-		if !isAdminOrOwner {
+		if !requesterMembership.Role.IsAdmin() {
 			// Check if the requester is a maintainer of this group
 			requesterGroupMembership, err := uc.membershipRepo.FindByUserAndResourceID(ctx, opts.RequesterID, resolvedGroupID)
 			if err != nil && !IsNotFound(err) {
@@ -798,20 +790,6 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 	}
 	if existingMembership == nil {
 		return NewErrValidationStr("user is not a member of this group")
-	}
-
-	// If trying to make the user a maintainer, verify they don't have the org viewer role
-	if opts.IsMaintainer {
-		// Check the user's org role
-		userOrgMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, userUUID)
-		if err != nil {
-			return fmt.Errorf("failed to check user's organization role: %w", err)
-		}
-
-		// Prevent org viewers from becoming maintainers
-		if userOrgMembership.Role == authz.RoleViewer {
-			return NewErrValidationStr("users with organization viewer role cannot be group maintainers")
-		}
 	}
 
 	// Update the member's maintainer status

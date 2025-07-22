@@ -21,7 +21,8 @@
             "MEMBERSHIP_ROLE_ORG_VIEWER",
             "MEMBERSHIP_ROLE_ORG_ADMIN",
             "MEMBERSHIP_ROLE_ORG_OWNER",
-            "MEMBERSHIP_ROLE_ORG_MEMBER"
+            "MEMBERSHIP_ROLE_ORG_MEMBER",
+            "MEMBERSHIP_ROLE_ORG_CONTRIBUTOR"
           ],
           "title": "Membership Role",
           "type": "string"
