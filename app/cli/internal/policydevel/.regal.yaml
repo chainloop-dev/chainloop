@@ -1,3 +1,4 @@
+# based from https://github.com/spacelift-io/spacelift-policies-example-library/blob/main/.regal/config.yaml
 # Default config
 rules:
   idiomatic:
