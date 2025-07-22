@@ -17,21 +17,22 @@ package action
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
 type PolicyEvalOpts struct {
-	MaterialFile string
+	MaterialPath string
 	Kind         string
 	Annotations  map[string]string
 	PolicyPath   string
 }
 
 type PolicyEvalResult struct {
-	Passed     bool
-	Violations []string
+	NoPolicies  bool
+	Skipped     bool
+	SkipReasons []string
+	Violations  []string
 }
 
 type PolicyEval struct {
@@ -47,35 +48,23 @@ func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, 
 }
 
 func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
-	// Read material file
-	materialContent, err := os.ReadFile(action.opts.MaterialFile)
-	if err != nil {
-		return nil, fmt.Errorf("reading material file: %w", err)
-	}
-
-	// Create evaluation options
 	evalOpts := &policydevel.EvalOptions{
 		PolicyPath:   action.opts.PolicyPath,
-		Material:     materialContent,
 		MaterialKind: action.opts.Kind,
 		Annotations:  action.opts.Annotations,
-		MaterialFile: action.opts.MaterialFile,
+		MaterialPath: action.opts.MaterialPath,
 	}
 
 	// Evaluate policy
-	result, err := policydevel.Evaluate(evalOpts)
+	result, err := policydevel.Evaluate(evalOpts, action.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("evaluating policy: %w", err)
 	}
 
-	// Convert violations to strings
-	violations := make([]string, 0, len(result.Violations))
-	for _, v := range result.Violations {
-		violations = append(violations, v.Message)
-	}
-
 	return &PolicyEvalResult{
-		Passed:     result.Passed,
-		Violations: violations,
+		NoPolicies:  result.NoPolicies,
+		Skipped:     result.Skipped,
+		SkipReasons: result.SkipReasons,
+		Violations:  result.Violations,
 	}, nil
 }

@@ -26,7 +26,7 @@ import (
 
 func newPolicyDevelopEvalCmd() *cobra.Command {
 	var (
-		materialFile string
+		materialPath string
 		kind         string
 		annotations  []string
 		policyPath   string
@@ -43,7 +43,7 @@ evaluates the policy against the provided material or attestation.`,
   chainloop policy eval --material sbom.json --kind SBOM_CYCLONEDX_JSON --annotations key1=value1,key2=value2`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			opts := &action.PolicyEvalOpts{
-				MaterialFile: materialFile,
+				MaterialPath: materialPath,
 				Kind:         kind,
 				Annotations:  parseAnnotations(annotations),
 				PolicyPath:   policyPath,
@@ -59,25 +59,35 @@ evaluates the policy against the provided material or attestation.`,
 				return newGracefulError(err)
 			}
 
-			if result.Passed {
-				logger.Info().Msg("Policy evaluation passed")
-			} else {
+			switch {
+			case result.Skipped:
+				logger.Info().Msg("policy evaluation skipped")
+				for _, reason := range result.SkipReasons {
+					logger.Info().Msgf("%s", reason)
+				}
+
+			case len(result.Violations) > 0:
 				for _, violation := range result.Violations {
 					logger.Error().Msgf("- %s", violation)
 				}
-				logger.Error().Msg("Policy evaluation failed")
+				logger.Error().Msg("policy evaluation failed")
+
+			default:
+				if result.NoPolicies {
+					logger.Info().Msg("no policies apply to the material")
+				}
+				logger.Info().Msg("policy evaluation passed")
 			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&materialFile, "material", "", "path to material or attestation file")
+	cmd.Flags().StringVar(&materialPath, "material", "", "path to material or attestation file")
 	cobra.CheckErr(cmd.MarkFlagRequired("material"))
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material: %q", schemaapi.ListAvailableMaterialKind()))
-	cobra.CheckErr(cmd.MarkFlagRequired("kind"))
 	cmd.Flags().StringSliceVar(&annotations, "annotations", []string{}, "key-value pairs of annotations (key=value)")
-	cmd.Flags().StringVar(&policyPath, "policy", "", "path to custom policy file (defaults to policy.yaml)")
+	cmd.Flags().StringVar(&policyPath, "policy", "", "path to custom policy file")
 	cobra.CheckErr(cmd.MarkFlagRequired("policy"))
 
 	return cmd
