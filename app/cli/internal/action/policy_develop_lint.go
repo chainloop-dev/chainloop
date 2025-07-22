@@ -24,8 +24,9 @@ import (
 )
 
 type PolicyLintOpts struct {
-	PolicyPath string
-	Format     bool
+	PolicyPath  string
+	Format      bool
+	RegalConfig string
 }
 
 type PolicyLintResult struct {
@@ -51,7 +52,7 @@ func (action *PolicyLint) Run(_ context.Context, opts *PolicyLintOpts) (*PolicyL
 	}
 
 	// Read policies
-	policy, err := policydevel.Lookup(absPath, opts.Format)
+	policy, err := policydevel.Lookup(absPath, opts.RegalConfig, opts.Format)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy: %w", err)
 	}
