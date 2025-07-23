@@ -30,6 +30,7 @@ func newPolicyDevelopEvalCmd() *cobra.Command {
 		kind         string
 		annotations  []string
 		policyPath   string
+		inputs       []string
 	)
 
 	cmd := &cobra.Command{
@@ -40,13 +41,14 @@ The command checks if there is a path in the policy for the specified kind and
 evaluates the policy against the provided material or attestation.`,
 		Example: `  
   # Evaluate policy against a material file
-  chainloop policy eval --material sbom.json --kind SBOM_CYCLONEDX_JSON --annotations key1=value1,key2=value2`,
+  chainloop policy eval --policy policy.yaml --material sbom.json --kind SBOM_CYCLONEDX_JSON --annotation key1=value1,key2=value2 --input key3=value3`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			opts := &action.PolicyEvalOpts{
 				MaterialPath: materialPath,
 				Kind:         kind,
-				Annotations:  parseAnnotations(annotations),
+				Annotations:  parseKeyValue(annotations),
 				PolicyPath:   policyPath,
+				Inputs:       parseKeyValue(inputs),
 			}
 
 			policyEval, err := action.NewPolicyEval(opts, actionOpts)
@@ -86,19 +88,20 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringVar(&materialPath, "material", "", "path to material or attestation file")
 	cobra.CheckErr(cmd.MarkFlagRequired("material"))
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material: %q", schemaapi.ListAvailableMaterialKind()))
-	cmd.Flags().StringSliceVar(&annotations, "annotations", []string{}, "key-value pairs of annotations (key=value)")
+	cmd.Flags().StringSliceVar(&annotations, "annotation", []string{}, "key-value pairs of material annotations (key=value)")
 	cmd.Flags().StringVar(&policyPath, "policy", "", "path to custom policy file")
 	cobra.CheckErr(cmd.MarkFlagRequired("policy"))
+	cmd.Flags().StringSliceVar(&inputs, "input", []string{}, "key-value pairs of policy inputs (key=value)")
 
 	return cmd
 }
 
-func parseAnnotations(raw []string) map[string]string {
-	annotations := make(map[string]string)
+func parseKeyValue(raw []string) map[string]string {
+	parsed := make(map[string]string)
 	for _, a := range raw {
 		if key, val, ok := strings.Cut(a, "="); ok {
-			annotations[key] = val
+			parsed[key] = val
 		}
 	}
-	return annotations
+	return parsed
 }

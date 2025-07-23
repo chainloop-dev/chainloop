@@ -26,6 +26,7 @@ type PolicyEvalOpts struct {
 	Kind         string
 	Annotations  map[string]string
 	PolicyPath   string
+	Inputs       map[string]string
 }
 
 type PolicyEvalResult struct {
@@ -53,6 +54,7 @@ func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
 		MaterialKind: action.opts.Kind,
 		Annotations:  action.opts.Annotations,
 		MaterialPath: action.opts.MaterialPath,
+		Inputs:       action.opts.Inputs,
 	}
 
 	// Evaluate policy

@@ -33,6 +33,7 @@ type EvalOptions struct {
 	MaterialKind string
 	Annotations  map[string]string
 	MaterialPath string
+	Inputs       map[string]string
 }
 
 type EvalResult struct {
@@ -44,7 +45,7 @@ type EvalResult struct {
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalResult, error) {
 	// 1. Create crafting schema
-	schema, err := createCraftingSchema(opts.PolicyPath)
+	schema, err := createCraftingSchema(opts.PolicyPath, opts.Inputs)
 	if err != nil {
 		return nil, fmt.Errorf("creating crafting schema: %w", err)
 	}
@@ -65,13 +66,13 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalResult, error) {
 	return result, nil
 }
 
-func createCraftingSchema(policyPath string) (*v1.CraftingSchema, error) {
+func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.CraftingSchema, error) {
 	return &v1.CraftingSchema{
 		Policies: &v1.Policies{
 			Materials: []*v1.PolicyAttachment{
 				{
 					Policy: &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("file://%s", policyPath)},
-					With:   nil,
+					With:   inputs,
 				},
 			},
 			Attestation: nil,
