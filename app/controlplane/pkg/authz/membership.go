@@ -27,6 +27,7 @@ const (
 
 	ResourceTypeOrganization ResourceType = "organization"
 	ResourceTypeProject      ResourceType = "project"
+	ResourceTypeProduct      ResourceType = "product"
 	ResourceTypeGroup        ResourceType = "group"
 )
 
@@ -46,6 +47,7 @@ func (ResourceType) Values() (values []string) {
 		string(ResourceTypeOrganization),
 		string(ResourceTypeProject),
 		string(ResourceTypeGroup),
+		string(ResourceTypeProduct),
 	)
 
 	return
