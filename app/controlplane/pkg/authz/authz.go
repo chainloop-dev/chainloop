@@ -90,6 +90,11 @@ const (
 
 	// RoleGroupMaintainer is a role that can manage groups in an organization.
 	RoleGroupMaintainer Role = "role:group:maintainer"
+
+	// Product roles
+
+	RoleProductViewer Role = "role:product:viewer"
+	RoleProductAdmin  Role = "role:product:admin"
 )
 
 // ManagedResources are the resources that are managed by Chainloop, considered during permissions sync
@@ -443,6 +448,8 @@ func (Role) Values() (roles []string) {
 		RoleProjectAdmin,
 		RoleProjectViewer,
 		RoleGroupMaintainer,
+		RoleProductAdmin,
+		RoleProductViewer,
 	} {
 		roles = append(roles, string(s))
 	}
