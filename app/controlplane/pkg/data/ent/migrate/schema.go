@@ -325,6 +325,7 @@ var (
 		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project", "group"}},
 		{Name: "resource_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "parent_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_memberships", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_memberships", Type: field.TypeUUID, Nullable: true},
 	}
@@ -335,14 +336,20 @@ var (
 		PrimaryKey: []*schema.Column{MembershipsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "memberships_organizations_memberships",
+				Symbol:     "memberships_memberships_children",
 				Columns:    []*schema.Column{MembershipsColumns[9]},
+				RefColumns: []*schema.Column{MembershipsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "memberships_organizations_memberships",
+				Columns:    []*schema.Column{MembershipsColumns[10]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "memberships_users_memberships",
-				Columns:    []*schema.Column{MembershipsColumns[10]},
+				Columns:    []*schema.Column{MembershipsColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -351,7 +358,7 @@ var (
 			{
 				Name:    "membership_organization_memberships_user_memberships",
 				Unique:  false,
-				Columns: []*schema.Column{MembershipsColumns[9], MembershipsColumns[10]},
+				Columns: []*schema.Column{MembershipsColumns[10], MembershipsColumns[11]},
 			},
 			{
 				Name:    "membership_membership_type_member_id_resource_type_resource_id",
@@ -923,8 +930,9 @@ func init() {
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable
-	MembershipsTable.ForeignKeys[0].RefTable = OrganizationsTable
-	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
+	MembershipsTable.ForeignKeys[0].RefTable = MembershipsTable
+	MembershipsTable.ForeignKeys[1].RefTable = OrganizationsTable
+	MembershipsTable.ForeignKeys[2].RefTable = UsersTable
 	OrgInvitationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
 	ProjectsTable.ForeignKeys[0].RefTable = OrganizationsTable

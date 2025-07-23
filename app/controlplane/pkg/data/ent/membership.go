@@ -37,6 +37,8 @@ type Membership struct {
 	ResourceType authz.ResourceType `json:"resource_type,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID uuid.UUID `json:"resource_id,omitempty"`
+	// ParentID holds the value of the "parent_id" field.
+	ParentID uuid.UUID `json:"parent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MembershipQuery when eager-loading is set.
 	Edges                    MembershipEdges `json:"edges"`
@@ -51,9 +53,13 @@ type MembershipEdges struct {
 	Organization *Organization `json:"organization,omitempty"`
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// Children holds the value of the children edge.
+	Children []*Membership `json:"children,omitempty"`
+	// Parent holds the value of the parent edge.
+	Parent *Membership `json:"parent,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -78,6 +84,26 @@ func (e MembershipEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
+// ChildrenOrErr returns the Children value or an error if the edge
+// was not loaded in eager-loading.
+func (e MembershipEdges) ChildrenOrErr() ([]*Membership, error) {
+	if e.loadedTypes[2] {
+		return e.Children, nil
+	}
+	return nil, &NotLoadedError{edge: "children"}
+}
+
+// ParentOrErr returns the Parent value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MembershipEdges) ParentOrErr() (*Membership, error) {
+	if e.Parent != nil {
+		return e.Parent, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: membership.Label}
+	}
+	return nil, &NotLoadedError{edge: "parent"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Membership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -89,7 +115,7 @@ func (*Membership) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case membership.FieldCreatedAt, membership.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case membership.FieldID, membership.FieldMemberID, membership.FieldResourceID:
+		case membership.FieldID, membership.FieldMemberID, membership.FieldResourceID, membership.FieldParentID:
 			values[i] = new(uuid.UUID)
 		case membership.ForeignKeys[0]: // organization_memberships
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -164,6 +190,12 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				m.ResourceID = *value
 			}
+		case membership.FieldParentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
+			} else if value != nil {
+				m.ParentID = *value
+			}
 		case membership.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_memberships", values[i])
@@ -199,6 +231,16 @@ func (m *Membership) QueryOrganization() *OrganizationQuery {
 // QueryUser queries the "user" edge of the Membership entity.
 func (m *Membership) QueryUser() *UserQuery {
 	return NewMembershipClient(m.config).QueryUser(m)
+}
+
+// QueryChildren queries the "children" edge of the Membership entity.
+func (m *Membership) QueryChildren() *MembershipQuery {
+	return NewMembershipClient(m.config).QueryChildren(m)
+}
+
+// QueryParent queries the "parent" edge of the Membership entity.
+func (m *Membership) QueryParent() *MembershipQuery {
+	return NewMembershipClient(m.config).QueryParent(m)
 }
 
 // Update returns a builder for updating this Membership.
@@ -247,6 +289,9 @@ func (m *Membership) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("resource_id=")
 	builder.WriteString(fmt.Sprintf("%v", m.ResourceID))
+	builder.WriteString(", ")
+	builder.WriteString("parent_id=")
+	builder.WriteString(fmt.Sprintf("%v", m.ParentID))
 	builder.WriteByte(')')
 	return builder.String()
 }

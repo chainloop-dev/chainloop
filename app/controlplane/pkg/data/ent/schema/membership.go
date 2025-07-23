@@ -56,15 +56,20 @@ func (Membership) Fields() []ent.Field {
 
 		field.Enum("resource_type").GoType(authz.ResourceType("")).Optional(),
 		field.UUID("resource_id", uuid.UUID{}).Optional(),
+
+		// Optional role inheritance
+		field.UUID("parent_id", uuid.UUID{}).Optional(),
 	}
 }
 
 func (Membership) Edges() []ent.Edge {
 	return []ent.Edge{
-		// Deprecated: use polymorphic membership instead
 		edge.From("organization", Organization.Type).Ref("memberships").Unique(),
-		// Deprecated: use polymorphic membership instead
 		edge.From("user", User.Type).Ref("memberships").Unique(),
+
+		// inheritance
+		edge.To("children", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.From("parent", Membership.Type).Field("parent_id").Ref("children").Unique(),
 	}
 }
 
