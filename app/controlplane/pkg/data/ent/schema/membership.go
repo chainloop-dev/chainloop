@@ -58,7 +58,7 @@ func (Membership) Fields() []ent.Field {
 		field.UUID("resource_id", uuid.UUID{}).Optional(),
 
 		// Optional role inheritance
-		field.UUID("parent_id", uuid.UUID{}).Optional(),
+		field.UUID("parent_id", uuid.UUID{}).Optional().Nillable(),
 	}
 }
 

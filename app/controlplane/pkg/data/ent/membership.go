@@ -38,7 +38,7 @@ type Membership struct {
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID uuid.UUID `json:"resource_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
-	ParentID uuid.UUID `json:"parent_id,omitempty"`
+	ParentID *uuid.UUID `json:"parent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MembershipQuery when eager-loading is set.
 	Edges                    MembershipEdges `json:"edges"`
@@ -109,13 +109,15 @@ func (*Membership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case membership.FieldParentID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case membership.FieldCurrent:
 			values[i] = new(sql.NullBool)
 		case membership.FieldRole, membership.FieldMembershipType, membership.FieldResourceType:
 			values[i] = new(sql.NullString)
 		case membership.FieldCreatedAt, membership.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case membership.FieldID, membership.FieldMemberID, membership.FieldResourceID, membership.FieldParentID:
+		case membership.FieldID, membership.FieldMemberID, membership.FieldResourceID:
 			values[i] = new(uuid.UUID)
 		case membership.ForeignKeys[0]: // organization_memberships
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -191,10 +193,11 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 				m.ResourceID = *value
 			}
 		case membership.FieldParentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
-			} else if value != nil {
-				m.ParentID = *value
+			} else if value.Valid {
+				m.ParentID = new(uuid.UUID)
+				*m.ParentID = *value.S.(*uuid.UUID)
 			}
 		case membership.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -290,8 +293,10 @@ func (m *Membership) String() string {
 	builder.WriteString("resource_id=")
 	builder.WriteString(fmt.Sprintf("%v", m.ResourceID))
 	builder.WriteString(", ")
-	builder.WriteString("parent_id=")
-	builder.WriteString(fmt.Sprintf("%v", m.ParentID))
+	if v := m.ParentID; v != nil {
+		builder.WriteString("parent_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -555,6 +555,7 @@ func entMembershipToBiz(m *ent.Membership) *biz.Membership {
 	res.MemberID = m.MemberID
 	res.ResourceType = m.ResourceType
 	res.ResourceID = m.ResourceID
+	res.ParentID = m.ParentID
 
 	return res
 }

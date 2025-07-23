@@ -40,6 +40,7 @@ type Membership struct {
 	MemberID       uuid.UUID
 	ResourceType   authz.ResourceType
 	ResourceID     uuid.UUID
+	ParentID       *uuid.UUID
 }
 
 // ListByOrgOpts are the options to filter memberships of an organization

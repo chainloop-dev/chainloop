@@ -7060,7 +7060,7 @@ func (m *MembershipMutation) ParentID() (r uuid.UUID, exists bool) {
 // OldParentID returns the old "parent_id" field's value of the Membership entity.
 // If the Membership object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MembershipMutation) OldParentID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *MembershipMutation) OldParentID(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldParentID is only allowed on UpdateOne operations")
 	}
