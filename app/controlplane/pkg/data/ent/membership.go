@@ -53,10 +53,10 @@ type MembershipEdges struct {
 	Organization *Organization `json:"organization,omitempty"`
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
-	// Children holds the value of the children edge.
-	Children []*Membership `json:"children,omitempty"`
 	// Parent holds the value of the parent edge.
 	Parent *Membership `json:"parent,omitempty"`
+	// Children holds the value of the children edge.
+	Children []*Membership `json:"children,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [4]bool
@@ -84,24 +84,24 @@ func (e MembershipEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
-// ChildrenOrErr returns the Children value or an error if the edge
-// was not loaded in eager-loading.
-func (e MembershipEdges) ChildrenOrErr() ([]*Membership, error) {
-	if e.loadedTypes[2] {
-		return e.Children, nil
-	}
-	return nil, &NotLoadedError{edge: "children"}
-}
-
 // ParentOrErr returns the Parent value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e MembershipEdges) ParentOrErr() (*Membership, error) {
 	if e.Parent != nil {
 		return e.Parent, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: membership.Label}
 	}
 	return nil, &NotLoadedError{edge: "parent"}
+}
+
+// ChildrenOrErr returns the Children value or an error if the edge
+// was not loaded in eager-loading.
+func (e MembershipEdges) ChildrenOrErr() ([]*Membership, error) {
+	if e.loadedTypes[3] {
+		return e.Children, nil
+	}
+	return nil, &NotLoadedError{edge: "children"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -236,14 +236,14 @@ func (m *Membership) QueryUser() *UserQuery {
 	return NewMembershipClient(m.config).QueryUser(m)
 }
 
-// QueryChildren queries the "children" edge of the Membership entity.
-func (m *Membership) QueryChildren() *MembershipQuery {
-	return NewMembershipClient(m.config).QueryChildren(m)
-}
-
 // QueryParent queries the "parent" edge of the Membership entity.
 func (m *Membership) QueryParent() *MembershipQuery {
 	return NewMembershipClient(m.config).QueryParent(m)
+}
+
+// QueryChildren queries the "children" edge of the Membership entity.
+func (m *Membership) QueryChildren() *MembershipQuery {
+	return NewMembershipClient(m.config).QueryChildren(m)
 }
 
 // Update returns a builder for updating this Membership.

@@ -1842,22 +1842,6 @@ func (c *MembershipClient) QueryUser(m *Membership) *UserQuery {
 	return query
 }
 
-// QueryChildren queries the children edge of a Membership.
-func (c *MembershipClient) QueryChildren(m *Membership) *MembershipQuery {
-	query := (&MembershipClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(membership.Table, membership.FieldID, id),
-			sqlgraph.To(membership.Table, membership.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, membership.ChildrenTable, membership.ChildrenColumn),
-		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryParent queries the parent edge of a Membership.
 func (c *MembershipClient) QueryParent(m *Membership) *MembershipQuery {
 	query := (&MembershipClient{config: c.config}).Query()
@@ -1867,6 +1851,22 @@ func (c *MembershipClient) QueryParent(m *Membership) *MembershipQuery {
 			sqlgraph.From(membership.Table, membership.FieldID, id),
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.ParentTable, membership.ParentColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryChildren queries the children edge of a Membership.
+func (c *MembershipClient) QueryChildren(m *Membership) *MembershipQuery {
+	query := (&MembershipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(membership.Table, membership.FieldID, id),
+			sqlgraph.To(membership.Table, membership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, membership.ChildrenTable, membership.ChildrenColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil

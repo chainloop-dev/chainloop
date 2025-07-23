@@ -197,6 +197,11 @@ func (mc *MembershipCreate) SetUser(u *User) *MembershipCreate {
 	return mc.SetUserID(u.ID)
 }
 
+// SetParent sets the "parent" edge to the Membership entity.
+func (mc *MembershipCreate) SetParent(m *Membership) *MembershipCreate {
+	return mc.SetParentID(m.ID)
+}
+
 // AddChildIDs adds the "children" edge to the Membership entity by IDs.
 func (mc *MembershipCreate) AddChildIDs(ids ...uuid.UUID) *MembershipCreate {
 	mc.mutation.AddChildIDs(ids...)
@@ -210,11 +215,6 @@ func (mc *MembershipCreate) AddChildren(m ...*Membership) *MembershipCreate {
 		ids[i] = m[i].ID
 	}
 	return mc.AddChildIDs(ids...)
-}
-
-// SetParent sets the "parent" edge to the Membership entity.
-func (mc *MembershipCreate) SetParent(m *Membership) *MembershipCreate {
-	return mc.SetParentID(m.ID)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
@@ -401,22 +401,6 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		_node.user_memberships = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := mc.mutation.ChildrenIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := mc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -432,6 +416,22 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.ParentID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

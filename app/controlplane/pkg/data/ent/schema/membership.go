@@ -69,8 +69,7 @@ func (Membership) Edges() []ent.Edge {
 		edge.From("user", User.Type).Ref("memberships").Unique(),
 
 		// inheritance
-		edge.To("children", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.From("parent", Membership.Type).Field("parent_id").Ref("children").Unique(),
+		edge.To("children", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}).From("parent").Field("parent_id").Unique(),
 	}
 }
 

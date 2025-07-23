@@ -213,6 +213,11 @@ func (mu *MembershipUpdate) SetUser(u *User) *MembershipUpdate {
 	return mu.SetUserID(u.ID)
 }
 
+// SetParent sets the "parent" edge to the Membership entity.
+func (mu *MembershipUpdate) SetParent(m *Membership) *MembershipUpdate {
+	return mu.SetParentID(m.ID)
+}
+
 // AddChildIDs adds the "children" edge to the Membership entity by IDs.
 func (mu *MembershipUpdate) AddChildIDs(ids ...uuid.UUID) *MembershipUpdate {
 	mu.mutation.AddChildIDs(ids...)
@@ -226,11 +231,6 @@ func (mu *MembershipUpdate) AddChildren(m ...*Membership) *MembershipUpdate {
 		ids[i] = m[i].ID
 	}
 	return mu.AddChildIDs(ids...)
-}
-
-// SetParent sets the "parent" edge to the Membership entity.
-func (mu *MembershipUpdate) SetParent(m *Membership) *MembershipUpdate {
-	return mu.SetParentID(m.ID)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
@@ -247,6 +247,12 @@ func (mu *MembershipUpdate) ClearOrganization() *MembershipUpdate {
 // ClearUser clears the "user" edge to the User entity.
 func (mu *MembershipUpdate) ClearUser() *MembershipUpdate {
 	mu.mutation.ClearUser()
+	return mu
+}
+
+// ClearParent clears the "parent" edge to the Membership entity.
+func (mu *MembershipUpdate) ClearParent() *MembershipUpdate {
+	mu.mutation.ClearParent()
 	return mu
 }
 
@@ -269,12 +275,6 @@ func (mu *MembershipUpdate) RemoveChildren(m ...*Membership) *MembershipUpdate {
 		ids[i] = m[i].ID
 	}
 	return mu.RemoveChildIDs(ids...)
-}
-
-// ClearParent clears the "parent" edge to the Membership entity.
-func (mu *MembershipUpdate) ClearParent() *MembershipUpdate {
-	mu.mutation.ClearParent()
-	return mu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -433,51 +433,6 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if mu.mutation.ChildrenCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := mu.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !mu.mutation.ChildrenCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := mu.mutation.ChildrenIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if mu.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -497,6 +452,51 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Inverse: true,
 			Table:   membership.ParentTable,
 			Columns: []string{membership.ParentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if mu.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !mu.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
@@ -709,6 +709,11 @@ func (muo *MembershipUpdateOne) SetUser(u *User) *MembershipUpdateOne {
 	return muo.SetUserID(u.ID)
 }
 
+// SetParent sets the "parent" edge to the Membership entity.
+func (muo *MembershipUpdateOne) SetParent(m *Membership) *MembershipUpdateOne {
+	return muo.SetParentID(m.ID)
+}
+
 // AddChildIDs adds the "children" edge to the Membership entity by IDs.
 func (muo *MembershipUpdateOne) AddChildIDs(ids ...uuid.UUID) *MembershipUpdateOne {
 	muo.mutation.AddChildIDs(ids...)
@@ -722,11 +727,6 @@ func (muo *MembershipUpdateOne) AddChildren(m ...*Membership) *MembershipUpdateO
 		ids[i] = m[i].ID
 	}
 	return muo.AddChildIDs(ids...)
-}
-
-// SetParent sets the "parent" edge to the Membership entity.
-func (muo *MembershipUpdateOne) SetParent(m *Membership) *MembershipUpdateOne {
-	return muo.SetParentID(m.ID)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
@@ -743,6 +743,12 @@ func (muo *MembershipUpdateOne) ClearOrganization() *MembershipUpdateOne {
 // ClearUser clears the "user" edge to the User entity.
 func (muo *MembershipUpdateOne) ClearUser() *MembershipUpdateOne {
 	muo.mutation.ClearUser()
+	return muo
+}
+
+// ClearParent clears the "parent" edge to the Membership entity.
+func (muo *MembershipUpdateOne) ClearParent() *MembershipUpdateOne {
+	muo.mutation.ClearParent()
 	return muo
 }
 
@@ -765,12 +771,6 @@ func (muo *MembershipUpdateOne) RemoveChildren(m ...*Membership) *MembershipUpda
 		ids[i] = m[i].ID
 	}
 	return muo.RemoveChildIDs(ids...)
-}
-
-// ClearParent clears the "parent" edge to the Membership entity.
-func (muo *MembershipUpdateOne) ClearParent() *MembershipUpdateOne {
-	muo.mutation.ClearParent()
-	return muo
 }
 
 // Where appends a list predicates to the MembershipUpdate builder.
@@ -959,51 +959,6 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if muo.mutation.ChildrenCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := muo.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !muo.mutation.ChildrenCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := muo.mutation.ChildrenIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   membership.ChildrenTable,
-			Columns: []string{membership.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if muo.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1023,6 +978,51 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 			Inverse: true,
 			Table:   membership.ParentTable,
 			Columns: []string{membership.ParentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if muo.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !muo.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
