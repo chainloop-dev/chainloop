@@ -30,15 +30,14 @@ default ignore := false
 # EO Common section, custom code below #
 ########################################
 # Validates if the input is valid and can be understood by this policy
-valid_input if {
-	true
-	# insert code here
-}
+valid_input := true
+
+# insert code here
 
 # If the input is valid, check for any policy violation here
 default violations := []
-#violations contains msg if {
-#	valid_input
-	# insert code here
-#}
 
+# violations contains msg if {
+#	valid_input
+# insert code here
+# }
