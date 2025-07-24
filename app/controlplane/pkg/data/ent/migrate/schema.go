@@ -320,11 +320,12 @@ var (
 		{Name: "current", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer"}},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer", "role:product:admin", "role:product:viewer"}},
 		{Name: "membership_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"user", "group"}},
 		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project", "group"}},
+		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"organization", "project", "group", "product"}},
 		{Name: "resource_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "parent_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_memberships", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_memberships", Type: field.TypeUUID, Nullable: true},
 	}
@@ -335,14 +336,20 @@ var (
 		PrimaryKey: []*schema.Column{MembershipsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "memberships_organizations_memberships",
+				Symbol:     "memberships_memberships_children",
 				Columns:    []*schema.Column{MembershipsColumns[9]},
+				RefColumns: []*schema.Column{MembershipsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "memberships_organizations_memberships",
+				Columns:    []*schema.Column{MembershipsColumns[10]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "memberships_users_memberships",
-				Columns:    []*schema.Column{MembershipsColumns[10]},
+				Columns:    []*schema.Column{MembershipsColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -351,12 +358,23 @@ var (
 			{
 				Name:    "membership_organization_memberships_user_memberships",
 				Unique:  false,
-				Columns: []*schema.Column{MembershipsColumns[9], MembershipsColumns[10]},
+				Columns: []*schema.Column{MembershipsColumns[10], MembershipsColumns[11]},
 			},
 			{
-				Name:    "membership_membership_type_member_id_resource_type_resource_id",
+				Name:    "membership_membership_type_member_id_resource_type_resource_id_role_parent_id",
 				Unique:  true,
-				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8]},
+				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8], MembershipsColumns[4], MembershipsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "parent_id IS NOT NULL",
+				},
+			},
+			{
+				Name:    "membership_membership_type_member_id_resource_type_resource_id_role",
+				Unique:  true,
+				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8], MembershipsColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "parent_id IS NULL",
+				},
 			},
 		},
 	}
@@ -367,7 +385,7 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"accepted", "pending"}, Default: "pending"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer"}},
+		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer", "role:product:admin", "role:product:viewer"}},
 		{Name: "context", Type: field.TypeJSON, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "sender_id", Type: field.TypeUUID},
@@ -923,8 +941,9 @@ func init() {
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable
-	MembershipsTable.ForeignKeys[0].RefTable = OrganizationsTable
-	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
+	MembershipsTable.ForeignKeys[0].RefTable = MembershipsTable
+	MembershipsTable.ForeignKeys[1].RefTable = OrganizationsTable
+	MembershipsTable.ForeignKeys[2].RefTable = UsersTable
 	OrgInvitationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
 	ProjectsTable.ForeignKeys[0].RefTable = OrganizationsTable

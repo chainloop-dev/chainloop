@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -28,6 +29,8 @@ type MembershipQuery struct {
 	predicates       []predicate.Membership
 	withOrganization *OrganizationQuery
 	withUser         *UserQuery
+	withParent       *MembershipQuery
+	withChildren     *MembershipQuery
 	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -103,6 +106,50 @@ func (mq *MembershipQuery) QueryUser() *UserQuery {
 			sqlgraph.From(membership.Table, membership.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.UserTable, membership.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryParent chains the current query on the "parent" edge.
+func (mq *MembershipQuery) QueryParent() *MembershipQuery {
+	query := (&MembershipClient{config: mq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(membership.Table, membership.FieldID, selector),
+			sqlgraph.To(membership.Table, membership.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, membership.ParentTable, membership.ParentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryChildren chains the current query on the "children" edge.
+func (mq *MembershipQuery) QueryChildren() *MembershipQuery {
+	query := (&MembershipClient{config: mq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(membership.Table, membership.FieldID, selector),
+			sqlgraph.To(membership.Table, membership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, membership.ChildrenTable, membership.ChildrenColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -304,6 +351,8 @@ func (mq *MembershipQuery) Clone() *MembershipQuery {
 		predicates:       append([]predicate.Membership{}, mq.predicates...),
 		withOrganization: mq.withOrganization.Clone(),
 		withUser:         mq.withUser.Clone(),
+		withParent:       mq.withParent.Clone(),
+		withChildren:     mq.withChildren.Clone(),
 		// clone intermediate query.
 		sql:       mq.sql.Clone(),
 		path:      mq.path,
@@ -330,6 +379,28 @@ func (mq *MembershipQuery) WithUser(opts ...func(*UserQuery)) *MembershipQuery {
 		opt(query)
 	}
 	mq.withUser = query
+	return mq
+}
+
+// WithParent tells the query-builder to eager-load the nodes that are connected to
+// the "parent" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MembershipQuery) WithParent(opts ...func(*MembershipQuery)) *MembershipQuery {
+	query := (&MembershipClient{config: mq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withParent = query
+	return mq
+}
+
+// WithChildren tells the query-builder to eager-load the nodes that are connected to
+// the "children" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MembershipQuery) WithChildren(opts ...func(*MembershipQuery)) *MembershipQuery {
+	query := (&MembershipClient{config: mq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withChildren = query
 	return mq
 }
 
@@ -412,9 +483,11 @@ func (mq *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*M
 		nodes       = []*Membership{}
 		withFKs     = mq.withFKs
 		_spec       = mq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			mq.withOrganization != nil,
 			mq.withUser != nil,
+			mq.withParent != nil,
+			mq.withChildren != nil,
 		}
 	)
 	if mq.withOrganization != nil || mq.withUser != nil {
@@ -453,6 +526,19 @@ func (mq *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*M
 	if query := mq.withUser; query != nil {
 		if err := mq.loadUser(ctx, query, nodes, nil,
 			func(n *Membership, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := mq.withParent; query != nil {
+		if err := mq.loadParent(ctx, query, nodes, nil,
+			func(n *Membership, e *Membership) { n.Edges.Parent = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := mq.withChildren; query != nil {
+		if err := mq.loadChildren(ctx, query, nodes,
+			func(n *Membership) { n.Edges.Children = []*Membership{} },
+			func(n *Membership, e *Membership) { n.Edges.Children = append(n.Edges.Children, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -523,6 +609,72 @@ func (mq *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	}
 	return nil
 }
+func (mq *MembershipQuery) loadParent(ctx context.Context, query *MembershipQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Membership)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Membership)
+	for i := range nodes {
+		if nodes[i].ParentID == nil {
+			continue
+		}
+		fk := *nodes[i].ParentID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(membership.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "parent_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (mq *MembershipQuery) loadChildren(ctx context.Context, query *MembershipQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Membership)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Membership)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(membership.FieldParentID)
+	}
+	query.Where(predicate.Membership(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(membership.ChildrenColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ParentID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "parent_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "parent_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (mq *MembershipQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := mq.querySpec()
@@ -551,6 +703,9 @@ func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != membership.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if mq.withParent != nil {
+			_spec.Node.AddColumnOnce(membership.FieldParentID)
 		}
 	}
 	if ps := mq.predicates; len(ps) > 0 {

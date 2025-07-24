@@ -56,21 +56,33 @@ func (Membership) Fields() []ent.Field {
 
 		field.Enum("resource_type").GoType(authz.ResourceType("")).Optional(),
 		field.UUID("resource_id", uuid.UUID{}).Optional(),
+
+		// Optional role inheritance
+		// foreign key points to the parent membership ID
+		field.UUID("parent_id", uuid.UUID{}).Optional().Nillable(),
 	}
 }
 
 func (Membership) Edges() []ent.Edge {
 	return []ent.Edge{
-		// Deprecated: use polymorphic membership instead
 		edge.From("organization", Organization.Type).Ref("memberships").Unique(),
-		// Deprecated: use polymorphic membership instead
 		edge.From("user", User.Type).Ref("memberships").Unique(),
+
+		// inheritance
+		edge.To("children", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}).From("parent").Field("parent_id").Unique(),
 	}
 }
 
 func (Membership) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("organization", "user"),
-		index.Fields("membership_type", "member_id", "resource_type", "resource_id").Unique(),
+		// only one inherited role
+		index.Fields("membership_type", "member_id", "resource_type", "resource_id", "role", "parent_id").Unique().Annotations(
+			entsql.IndexWhere("parent_id IS NOT NULL"),
+		),
+		// only one explicit role
+		index.Fields("membership_type", "member_id", "resource_type", "resource_id", "role").Unique().Annotations(
+			entsql.IndexWhere("parent_id IS NULL"),
+		),
 	}
 }

@@ -40,6 +40,7 @@ type Membership struct {
 	MemberID       uuid.UUID
 	ResourceType   authz.ResourceType
 	ResourceID     uuid.UUID
+	ParentID       *uuid.UUID
 }
 
 // ListByOrgOpts are the options to filter memberships of an organization
@@ -74,7 +75,7 @@ type MembershipRepo interface {
 	// ListGroupMembershipsByUser returns all memberships of the users inherited from groups
 	ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*Membership, error)
-	AddResourceRole(ctx context.Context, orgID uuid.UUID, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role) error
+	AddResourceRole(ctx context.Context, orgID uuid.UUID, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role, parentID *uuid.UUID) error
 }
 
 type MembershipsRBAC interface {
@@ -409,7 +410,7 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, project
 		}
 	}
 
-	if err = uc.repo.AddResourceRole(ctx, orgID, authz.ResourceTypeProject, projectID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin); err != nil {
+	if err = uc.repo.AddResourceRole(ctx, orgID, authz.ResourceTypeProject, projectID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin, nil); err != nil {
 		return fmt.Errorf("failed to set project owner: %w", err)
 	}
 

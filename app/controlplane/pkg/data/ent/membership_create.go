@@ -131,6 +131,20 @@ func (mc *MembershipCreate) SetNillableResourceID(u *uuid.UUID) *MembershipCreat
 	return mc
 }
 
+// SetParentID sets the "parent_id" field.
+func (mc *MembershipCreate) SetParentID(u uuid.UUID) *MembershipCreate {
+	mc.mutation.SetParentID(u)
+	return mc
+}
+
+// SetNillableParentID sets the "parent_id" field if the given value is not nil.
+func (mc *MembershipCreate) SetNillableParentID(u *uuid.UUID) *MembershipCreate {
+	if u != nil {
+		mc.SetParentID(*u)
+	}
+	return mc
+}
+
 // SetID sets the "id" field.
 func (mc *MembershipCreate) SetID(u uuid.UUID) *MembershipCreate {
 	mc.mutation.SetID(u)
@@ -181,6 +195,26 @@ func (mc *MembershipCreate) SetNillableUserID(id *uuid.UUID) *MembershipCreate {
 // SetUser sets the "user" edge to the User entity.
 func (mc *MembershipCreate) SetUser(u *User) *MembershipCreate {
 	return mc.SetUserID(u.ID)
+}
+
+// SetParent sets the "parent" edge to the Membership entity.
+func (mc *MembershipCreate) SetParent(m *Membership) *MembershipCreate {
+	return mc.SetParentID(m.ID)
+}
+
+// AddChildIDs adds the "children" edge to the Membership entity by IDs.
+func (mc *MembershipCreate) AddChildIDs(ids ...uuid.UUID) *MembershipCreate {
+	mc.mutation.AddChildIDs(ids...)
+	return mc
+}
+
+// AddChildren adds the "children" edges to the Membership entity.
+func (mc *MembershipCreate) AddChildren(m ...*Membership) *MembershipCreate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return mc.AddChildIDs(ids...)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
@@ -367,6 +401,39 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		_node.user_memberships = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := mc.mutation.ParentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   membership.ParentTable,
+			Columns: []string{membership.ParentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ParentID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   membership.ChildrenTable,
+			Columns: []string{membership.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -524,6 +591,24 @@ func (u *MembershipUpsert) UpdateResourceID() *MembershipUpsert {
 // ClearResourceID clears the value of the "resource_id" field.
 func (u *MembershipUpsert) ClearResourceID() *MembershipUpsert {
 	u.SetNull(membership.FieldResourceID)
+	return u
+}
+
+// SetParentID sets the "parent_id" field.
+func (u *MembershipUpsert) SetParentID(v uuid.UUID) *MembershipUpsert {
+	u.Set(membership.FieldParentID, v)
+	return u
+}
+
+// UpdateParentID sets the "parent_id" field to the value that was provided on create.
+func (u *MembershipUpsert) UpdateParentID() *MembershipUpsert {
+	u.SetExcluded(membership.FieldParentID)
+	return u
+}
+
+// ClearParentID clears the value of the "parent_id" field.
+func (u *MembershipUpsert) ClearParentID() *MembershipUpsert {
+	u.SetNull(membership.FieldParentID)
 	return u
 }
 
@@ -701,6 +786,27 @@ func (u *MembershipUpsertOne) UpdateResourceID() *MembershipUpsertOne {
 func (u *MembershipUpsertOne) ClearResourceID() *MembershipUpsertOne {
 	return u.Update(func(s *MembershipUpsert) {
 		s.ClearResourceID()
+	})
+}
+
+// SetParentID sets the "parent_id" field.
+func (u *MembershipUpsertOne) SetParentID(v uuid.UUID) *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetParentID(v)
+	})
+}
+
+// UpdateParentID sets the "parent_id" field to the value that was provided on create.
+func (u *MembershipUpsertOne) UpdateParentID() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateParentID()
+	})
+}
+
+// ClearParentID clears the value of the "parent_id" field.
+func (u *MembershipUpsertOne) ClearParentID() *MembershipUpsertOne {
+	return u.Update(func(s *MembershipUpsert) {
+		s.ClearParentID()
 	})
 }
 
@@ -1045,6 +1151,27 @@ func (u *MembershipUpsertBulk) UpdateResourceID() *MembershipUpsertBulk {
 func (u *MembershipUpsertBulk) ClearResourceID() *MembershipUpsertBulk {
 	return u.Update(func(s *MembershipUpsert) {
 		s.ClearResourceID()
+	})
+}
+
+// SetParentID sets the "parent_id" field.
+func (u *MembershipUpsertBulk) SetParentID(v uuid.UUID) *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.SetParentID(v)
+	})
+}
+
+// UpdateParentID sets the "parent_id" field to the value that was provided on create.
+func (u *MembershipUpsertBulk) UpdateParentID() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.UpdateParentID()
+	})
+}
+
+// ClearParentID clears the value of the "parent_id" field.
+func (u *MembershipUpsertBulk) ClearParentID() *MembershipUpsertBulk {
+	return u.Update(func(s *MembershipUpsert) {
+		s.ClearParentID()
 	})
 }
 
