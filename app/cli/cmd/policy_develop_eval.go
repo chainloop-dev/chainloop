@@ -70,13 +70,13 @@ evaluates the policy against the provided material or attestation.`,
 
 			case len(result.Violations) > 0:
 				for _, violation := range result.Violations {
-					logger.Error().Msgf("- %s", violation)
+					logger.Info().Msgf("- %s", violation)
 				}
-				logger.Error().Msg("policy evaluation failed")
+				logger.Info().Msg("policy evaluation failed")
 
 			default:
-				if result.NoPolicies {
-					logger.Info().Msg("no policies apply to the material")
+				if result.Ignored {
+					logger.Info().Msg("policy was ignored")
 				}
 				logger.Info().Msg("policy evaluation passed")
 			}

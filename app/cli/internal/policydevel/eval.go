@@ -37,10 +37,10 @@ type EvalOptions struct {
 }
 
 type EvalResult struct {
-	NoPolicies  bool
 	Skipped     bool
 	SkipReasons []string
 	Violations  []string
+	Ignored     bool
 }
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalResult, error) {
@@ -89,17 +89,17 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	}
 
 	result := &EvalResult{
-		NoPolicies:  true,
 		Skipped:     false,
 		SkipReasons: []string{},
 		Violations:  []string{},
+		Ignored:     true,
 	}
 
 	if len(evs) == 0 {
 		return result, nil
 	}
 
-	result.NoPolicies = false
+	result.Ignored = false
 	result.Skipped = evs[0].GetSkipped()
 	result.SkipReasons = evs[0].SkipReasons
 	result.Violations = make([]string, 0, len(evs[0].Violations))

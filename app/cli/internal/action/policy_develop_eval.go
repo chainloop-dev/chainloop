@@ -30,10 +30,10 @@ type PolicyEvalOpts struct {
 }
 
 type PolicyEvalResult struct {
-	NoPolicies  bool
 	Skipped     bool
 	SkipReasons []string
 	Violations  []string
+	Ignored     bool
 }
 
 type PolicyEval struct {
@@ -64,7 +64,7 @@ func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
 	}
 
 	return &PolicyEvalResult{
-		NoPolicies:  result.NoPolicies,
+		Ignored:     result.Ignored,
 		Skipped:     result.Skipped,
 		SkipReasons: result.SkipReasons,
 		Violations:  result.Violations,
