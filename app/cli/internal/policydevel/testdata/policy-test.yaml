@@ -1,0 +1,91 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: policy-test
+  description: Chainloop validation policy
+spec:
+  policies:
+    - embedded: |
+        package chainloop
+
+        import rego.v1
+
+        ################################
+        # Common section do NOT change #
+        ################################
+
+        # Main evaluation result
+        result := {
+            "skipped": skipped,
+            "violations": violations,
+            "skip_reason": skip_reason,
+        } 
+
+        default skip_reason := ""
+
+        skip_reason := m if {
+            not valid_input
+            m := "invalid input"
+        }
+
+        default skipped := true
+
+        skipped := false if valid_input
+
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+
+        # Validates if the input is valid and can be understood by this policy
+        valid_input if {
+            true  # Replace with actual validation logic
+        }
+
+        # If the input is valid, check for any policy violation here
+        violations contains msg if {
+            valid_input
+            msg := "example violation"  # Replace with actual violation checks
+        }
+      kind: ATTESTATION
+    - embedded: |
+        package chainloop.material
+
+        import rego.v1
+
+        ################################
+        # Common section do NOT change #
+        ################################
+
+        # Main evaluation result
+        result := {
+            "skipped": skipped,
+            "violations": violations,
+            "skip_reason": skip_reason,
+        } 
+
+        default skip_reason := ""
+
+        skip_reason := m if {
+            not valid_input
+            m := "invalid input"
+        }
+
+        default skipped := true
+
+        skipped := false if valid_input
+
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+
+        # Validates if the input is valid and can be understood by this policy
+        valid_input if {
+            true  # Replace with actual validation logic
+        }
+
+        # If the input is valid, check for any policy violation here
+        violations contains msg if {
+            valid_input
+            msg := "example violation"  # Replace with actual violation checks
+        }
+      kind: SBOM_CYCLONEDX_JSON

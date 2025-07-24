@@ -10,6 +10,7 @@ result := {
 	"skipped": skipped,
 	"violations": violations,
 	"skip_reason": skip_reason,
+	"ignore": ignore,
 }
 
 default skip_reason := ""
@@ -23,17 +24,21 @@ default skipped := true
 
 skipped := false if valid_input
 
+default ignore := false
+
 ########################################
 # EO Common section, custom code below #
 ########################################
-
 # Validates if the input is valid and can be understood by this policy
 valid_input if {
-    # insert code here
+	true
+	# insert code here
 }
 
 # If the input is valid, check for any policy violation here
-violations contains msg if {
-    valid_input
-    # insert code here
-}
+default violations := []
+#violations contains msg if {
+#	valid_input
+	# insert code here
+#}
+
