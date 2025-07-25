@@ -263,7 +263,7 @@ func ComputeArguments(name string, inputs []*v1.PolicyInput, args map[string]str
 			return input.Name == k
 		})
 		if !expected {
-			logger.Warn().Msgf("argument %q will be ignored by policy %s", k, name)
+			logger.Warn().Msgf("argument %q not defined in policy %q spec, ignoring it", k, name)
 			continue
 		}
 		value, err := templates.ApplyBinding(v, bindings)
