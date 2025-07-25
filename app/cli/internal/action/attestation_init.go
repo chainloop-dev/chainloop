@@ -316,7 +316,7 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachme
 // translates materials and interpolates material names
 func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachment, logger *zerolog.Logger) (*v1.CraftingSchema_Material, error) {
 	// Validates and computes arguments
-	args, err := policies.ComputeArguments(group.GetSpec().GetInputs(), pgAtt.GetWith(), nil, logger)
+	args, err := policies.ComputeArguments(group.GetMetadata().GetName(), group.GetSpec().GetInputs(), pgAtt.GetWith(), nil, logger)
 	if err != nil {
 		return nil, err
 	}
