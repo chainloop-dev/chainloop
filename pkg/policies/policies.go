@@ -140,7 +140,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Debug().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	args, err := ComputeArguments(policy.Metadata.Name, policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings, pv.logger)
+	args, err := ComputeArguments(policy.GetMetadata().GetName(), policy.GetSpec().GetInputs(), attachment.GetWith(), opts.bindings, pv.logger)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
