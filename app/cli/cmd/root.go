@@ -245,8 +245,8 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		newReferrerDiscoverCmd(), newPolicyCmd(),
 	)
 
-	// Load plugins if we are not running a subcommand
-	if len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help" {
+	// Load plugins for root command and subcommands (except completion and help)
+	if len(os.Args) == 1 || (len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help") {
 		pluginManager = plugins.NewManager(&logger)
 		if err := loadAllPlugins(rootCmd); err != nil {
 			logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
