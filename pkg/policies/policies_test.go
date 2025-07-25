@@ -814,22 +814,25 @@ func (s *testSuite) TestGetInputArguments() {
 
 func (s *testSuite) TestComputePolicyArguments() {
 	cases := []struct {
-		name      string
-		inputs    []*v12.PolicyInput
-		args      map[string]string
-		bindings  map[string]string
-		expected  map[string]string
-		expectErr bool
-		errMsg    string
+		name       string
+		policyName string
+		inputs     []*v12.PolicyInput
+		args       map[string]string
+		bindings   map[string]string
+		expected   map[string]string
+		expectErr  bool
+		errMsg     string
 	}{
 		{
-			name:     "all args passed when no inputs present",
-			inputs:   nil,
-			args:     map[string]string{"arg1": "value1", "arg2": "value2"},
-			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
+			name:       "all args passed when no inputs present",
+			policyName: "test-policy",
+			inputs:     nil,
+			args:       map[string]string{"arg1": "value1", "arg2": "value2"},
+			expected:   map[string]string{"arg1": "value1", "arg2": "value2"},
 		},
 		{
-			name: "required inputs",
+			name:       "required inputs",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name:     "arg1",
 				Required: true,
@@ -839,7 +842,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			errMsg:    "missing required input \"arg1\"",
 		},
 		{
-			name: "default values are set",
+			name:       "default values are set",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name:    "arg1",
 				Default: "value1",
@@ -851,7 +855,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
 		},
 		{
-			name: "unexpected arguments are ignored",
+			name:       "unexpected arguments are ignored",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name:    "arg1",
 				Default: "value1",
@@ -862,7 +867,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "value1"},
 		},
 		{
-			name: "expected arguments with values are respected",
+			name:       "expected arguments with values are respected",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name:    "arg1",
 				Default: "value1",
@@ -873,7 +879,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "value1", "arg2": "value2"},
 		},
 		{
-			name: "simple bindings",
+			name:       "simple bindings",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}},
@@ -882,7 +889,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "Hello world"},
 		},
 		{
-			name: "multiple bindings",
+			name:       "multiple bindings",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}, {
@@ -893,7 +901,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},
 		{
-			name: "no variable found in bindings, renders zero value",
+			name:       "no variable found in bindings, renders zero value",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}},
@@ -902,7 +911,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "Hello "},
 		},
 		{
-			name: "no interpolation needed",
+			name:       "no interpolation needed",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}},
@@ -911,7 +921,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "Hello world"},
 		},
 		{
-			name: "required and default is illegal",
+			name:       "required and default is illegal",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name:     "arg1",
 				Required: true,
@@ -922,7 +933,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			errMsg:    "input arg1 can not be required and have a default at the same time",
 		},
 		{
-			name: "inputs prefix without dot",
+			name:       "inputs prefix without dot",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name: "arg1",
 			}, {
@@ -933,7 +945,8 @@ func (s *testSuite) TestComputePolicyArguments() {
 			expected: map[string]string{"arg1": "Hello world template", "arg2": "Bye template"},
 		},
 		{
-			name: "required input with missing binding",
+			name:       "required input with missing binding",
+			policyName: "test-policy",
 			inputs: []*v12.PolicyInput{{
 				Name:     "arg1",
 				Required: true,
@@ -945,7 +958,7 @@ func (s *testSuite) TestComputePolicyArguments() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			computed, err := ComputeArguments(tc.inputs, tc.args, tc.bindings, &s.logger)
+			computed, err := ComputeArguments(tc.policyName, tc.inputs, tc.args, tc.bindings, &s.logger)
 			if tc.expectErr {
 				s.Error(err)
 				s.Contains(err.Error(), tc.errMsg)
