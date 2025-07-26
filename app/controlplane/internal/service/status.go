@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"os"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/errors"
 )
@@ -28,10 +29,11 @@ type StatusService struct {
 	loginURL, version string
 	pb.UnimplementedStatusServiceServer
 	casClient *biz.CASClientUseCase
+	bootstrap *conf.Bootstrap
 }
 
-func NewStatusService(logingURL, version string, casClient *biz.CASClientUseCase) *StatusService {
-	return &StatusService{loginURL: logingURL, version: version, casClient: casClient}
+func NewStatusService(logingURL, version string, casClient *biz.CASClientUseCase, bootstrap *conf.Bootstrap) *StatusService {
+	return &StatusService{loginURL: logingURL, version: version, casClient: casClient, bootstrap: bootstrap}
 }
 
 // Only on readiness probes we check this service external dependencies
@@ -46,8 +48,9 @@ func (s *StatusService) Statusz(ctx context.Context, r *pb.StatuszRequest) (*pb.
 
 func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozResponse, error) {
 	return &pb.InfozResponse{
-		LoginUrl:     s.loginURL,
-		Version:      s.version,
-		ChartVersion: os.Getenv("CHART_VERSION"),
+		LoginUrl:              s.loginURL,
+		Version:               s.version,
+		ChartVersion:          os.Getenv("CHART_VERSION"),
+		RestrictedOrgCreation: s.bootstrap.RestrictOrgCreation,
 	}, nil
 }

@@ -19,6 +19,9 @@ server:
 # nats_server:
 #  uri: nats://0.0.0.0:4222
 
+# Restrict organization creation to role:instance:admin
+restrict_org_creation: false
+
 certificate_authorities:
   - issuer: true
     file_ca:

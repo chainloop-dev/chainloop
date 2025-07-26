@@ -9,6 +9,10 @@
     },
     "^(login_url)$": {
       "type": "string"
+    },
+    "^(restricted_org_creation)$": {
+      "description": "Whether organization creation is restricted to admins",
+      "type": "boolean"
     }
   },
   "properties": {
@@ -18,6 +22,10 @@
     },
     "loginURL": {
       "type": "string"
+    },
+    "restrictedOrgCreation": {
+      "description": "Whether organization creation is restricted to admins",
+      "type": "boolean"
     },
     "version": {
       "type": "string"

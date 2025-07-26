@@ -89,6 +89,7 @@ type Opts struct {
 	ServerConfig    *conf.Server
 	AuthConfig      *conf.Auth
 	FederatedConfig *conf.FederatedAuthentication
+	BootstrapConfig *conf.Bootstrap
 	Credentials     credentials.ReaderWriter
 	Enforcer        *authz.Enforcer
 	Validator       *protovalidate.Validator
@@ -134,7 +135,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 
 	srv := grpc.NewServer(serverOpts...)
 	v1.RegisterWorkflowServiceServer(srv, opts.WorkflowSvc)
-	v1.RegisterStatusServiceServer(srv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase))
+	v1.RegisterStatusServiceServer(srv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase, opts.BootstrapConfig))
 	v1.RegisterRobotAccountServiceServer(srv, opts.RobotAccountSvc)
 	v1.RegisterWorkflowRunServiceServer(srv, opts.WorkflowRunSvc)
 	v1.RegisterAttestationServiceServer(srv, opts.AttestationSvc)
@@ -282,7 +283,7 @@ func requireRobotAccountMatcher() selector.MatchFunc {
 
 // Matches all operations that require to have a current organization
 func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
-	const skipRegexp = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
+	const skipRegexp = "/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)

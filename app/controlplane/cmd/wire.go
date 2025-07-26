@@ -69,8 +69,8 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 	)
 }
 
-func authzConfig() *authz.Config {
-	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+func authzConfig(conf *conf.Bootstrap) *authz.Config {
+	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap, RestrictOrgCreation: conf.RestrictOrgCreation}
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
