@@ -177,6 +177,9 @@ controlplane:
     enabled: false
     url: ""
   
+  ## @skip controlplane.restrictOrgCreation Restrict organization creation to instance admins
+  restrictOrgCreation: false
+  
   ## @extra controlplane.nats optional NATS configuration for events publishing.
   ## @param controlplane.nats.enabled Enable events publishing through a Nats stream
   ## @param controlplane.nats.host NATS Host
