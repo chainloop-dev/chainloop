@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,27 @@ import (
 // membershipsCache caches user memberships to save some database queries during intensive sessions
 var membershipsCache = expirable.NewLRU[string, *entities.Membership](0, nil, time.Second*1)
 
+func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC) middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			// Get the current user and return if not found, meaning we are probably coming from an API Token
+			u := entities.CurrentUser(ctx)
+			if u == nil {
+				return handler(ctx, req)
+			}
+
+			var err error
+			// Let's store all memberships in the context.
+			ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC)
+			if err != nil {
+				return nil, fmt.Errorf("error setting current org membership: %w", err)
+			}
+
+			return handler(ctx, req)
+		}
+	}
+}
+
 func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membershipUC biz.MembershipsRBAC, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -59,12 +80,6 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membership
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org: %w", err)
 				}
-			}
-
-			// Let's store all memberships in the context.
-			ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC)
-			if err != nil {
-				return nil, fmt.Errorf("error setting current org membership: %w", err)
 			}
 
 			org := entities.CurrentOrg(ctx)

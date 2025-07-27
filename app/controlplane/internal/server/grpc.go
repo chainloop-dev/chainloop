@@ -200,6 +200,8 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				// 3 - Check user/token authorization
 				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
 			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
+			// Store all memberships in the context
+			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
 			// 4 - Make sure the account is fully functional
 			selector.Server(
 				usercontext.CheckUserHasAccess(opts.AuthConfig.AllowList, opts.UserUseCase),
@@ -283,7 +285,7 @@ func requireRobotAccountMatcher() selector.MatchFunc {
 
 // Matches all operations that require to have a current organization
 func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
-	const skipRegexp = "/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
+	const skipRegexp = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
