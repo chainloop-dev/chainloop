@@ -446,6 +446,8 @@ var ServerOperationsMap = map[string][]*Policy{
 // so they can be added to the database schema
 func (Role) Values() (roles []string) {
 	for _, s := range []Role{
+		RoleInstanceAdmin,
+
 		RoleOwner,
 		RoleAdmin,
 		RoleViewer,
