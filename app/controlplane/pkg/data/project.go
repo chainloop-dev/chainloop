@@ -359,6 +359,7 @@ func entProjectMembershipToBiz(m *ent.Membership, u *ent.User, g *ent.Group) *bi
 		Role:           m.Role,
 		CreatedAt:      &m.CreatedAt,
 		UpdatedAt:      &m.UpdatedAt,
+		ParentID:       m.ParentID,
 	}
 
 	if u != nil {
