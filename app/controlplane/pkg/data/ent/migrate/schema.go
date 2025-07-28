@@ -361,17 +361,17 @@ var (
 				Columns: []*schema.Column{MembershipsColumns[10], MembershipsColumns[11]},
 			},
 			{
-				Name:    "membership_membership_type_member_id_resource_type_resource_id_role_parent_id",
+				Name:    "membership_membership_type_member_id_resource_type_resource_id_parent_id",
 				Unique:  true,
-				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8], MembershipsColumns[4], MembershipsColumns[9]},
+				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8], MembershipsColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "parent_id IS NOT NULL",
 				},
 			},
 			{
-				Name:    "membership_membership_type_member_id_resource_type_resource_id_role",
+				Name:    "membership_membership_type_member_id_resource_type_resource_id",
 				Unique:  true,
-				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8], MembershipsColumns[4]},
+				Columns: []*schema.Column{MembershipsColumns[5], MembershipsColumns[6], MembershipsColumns[7], MembershipsColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "parent_id IS NULL",
 				},
