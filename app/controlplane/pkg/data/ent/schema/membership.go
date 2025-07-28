@@ -77,11 +77,11 @@ func (Membership) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("organization", "user"),
 		// only one inherited role
-		index.Fields("membership_type", "member_id", "resource_type", "resource_id", "role", "parent_id").Unique().Annotations(
+		index.Fields("membership_type", "member_id", "resource_type", "resource_id", "parent_id").Unique().Annotations(
 			entsql.IndexWhere("parent_id IS NOT NULL"),
 		),
 		// only one explicit role
-		index.Fields("membership_type", "member_id", "resource_type", "resource_id", "role").Unique().Annotations(
+		index.Fields("membership_type", "member_id", "resource_type", "resource_id").Unique().Annotations(
 			entsql.IndexWhere("parent_id IS NULL"),
 		),
 	}
