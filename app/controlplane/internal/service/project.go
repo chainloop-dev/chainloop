@@ -382,13 +382,14 @@ func mapProjectMemberRoleToAuthzRole(role pb.ProjectMemberRole) authz.Role {
 
 // bizProjectMembershipToPb converts a biz.ProjectMembership to a pb.ProjectMember
 func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
-	var role pb.ProjectMemberRole
-
-	// Map the role string back to a protobuf enum
-	role = mapAuthzRoleToProjectMemberRole(m.Role)
+	role := mapAuthzRoleToProjectMemberRole(m.Role)
 
 	pbMember := &pb.ProjectMember{
 		Role: role,
+	}
+
+	if m.ParentID != nil {
+		pbMember.ParentId = biz.ToPtr(m.ParentID.String())
 	}
 
 	if m.User != nil {

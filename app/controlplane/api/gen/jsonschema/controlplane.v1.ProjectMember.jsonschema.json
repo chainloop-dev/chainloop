@@ -12,6 +12,10 @@
       "description": "The ID of latest project version this member is associated with",
       "type": "string"
     },
+    "^(parent_id)$": {
+      "description": "Optional parent ID for nested project memberships",
+      "type": "string"
+    },
     "^(updated_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the project membership was last modified"
@@ -28,6 +32,10 @@
     },
     "latestProjectVersionId": {
       "description": "The ID of latest project version this member is associated with",
+      "type": "string"
+    },
+    "parentId": {
+      "description": "Optional parent ID for nested project memberships",
       "type": "string"
     },
     "role": {
