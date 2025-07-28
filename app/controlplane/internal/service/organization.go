@@ -178,6 +178,10 @@ func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, 
 
 	m := entities.CurrentMembership(ctx)
 	for _, rm := range m.Resources {
+		if rm.ResourceType != authz.ResourceTypeInstance {
+			continue
+		}
+
 		pass, err := s.enforcer.Enforce(string(rm.Role), authz.PolicyOrganizationCreate)
 		if err != nil {
 			return false, handleUseCaseErr(err, s.log)

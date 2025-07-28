@@ -25,6 +25,7 @@ const (
 	MembershipTypeUser  MembershipType = "user"
 	MembershipTypeGroup MembershipType = "group"
 
+	ResourceTypeInstance     ResourceType = "instance"
 	ResourceTypeOrganization ResourceType = "organization"
 	ResourceTypeProject      ResourceType = "project"
 	ResourceTypeProduct      ResourceType = "product"
@@ -44,6 +45,7 @@ func (MembershipType) Values() (values []string) {
 // Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (ResourceType) Values() (values []string) {
 	values = append(values,
+		string(ResourceTypeInstance),
 		string(ResourceTypeOrganization),
 		string(ResourceTypeProject),
 		string(ResourceTypeGroup),

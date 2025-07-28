@@ -196,7 +196,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
 			selector.Server(
 				// 2.d- Set its organization
-				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.MembershipUseCase, logHelper),
+				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, logHelper),
 				// 3 - Check user/token authorization
 				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
 			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
@@ -212,7 +212,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 		).Match(requireCurrentUserMatcher()).Build(),
 	)
 
-	// attestation robot account authentication
+	// attestation branch
 	middlewares = append(middlewares,
 		// if we require a robot account
 		selector.Server(
@@ -233,7 +233,9 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.b - Set its API token and Robot Account as alternative to the user
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.c - Set Attestation context from user token
-			usercontext.WithAttestationContextFromUser(opts.UserUseCase, opts.MembershipUseCase, logHelper),
+			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
+			// Store all memberships in the context
+			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
 			// 2.d - Set its robot account from federated delegation
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 			// 3 - Update API Token last usage

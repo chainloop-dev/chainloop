@@ -139,7 +139,7 @@ func MembershipTypeValidator(mt authz.MembershipType) error {
 // ResourceTypeValidator is a validator for the "resource_type" field enum values. It is called by the builders before save.
 func ResourceTypeValidator(rt authz.ResourceType) error {
 	switch rt {
-	case "organization", "project", "group", "product":
+	case "instance", "organization", "project", "group", "product":
 		return nil
 	default:
 		return fmt.Errorf("membership: invalid enum value for resource_type field: %q", rt)

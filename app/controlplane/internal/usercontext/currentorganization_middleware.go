@@ -54,7 +54,7 @@ func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC) middlewa
 	}
 }
 
-func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, membershipUC biz.MembershipsRBAC, logger *log.Helper) middleware.Middleware {
+func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
