@@ -19,8 +19,10 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	errors "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/google/uuid"
 )
@@ -46,6 +48,15 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 	currentUser, err := requireCurrentUser(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	canCreate, err := s.canCreateOrganization(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !canCreate {
+		return nil, errors.Forbidden("forbidden", "creation of organizations is restricted to instance admins")
 	}
 
 	// Create an organization with an associated inline CAS backend
@@ -157,4 +168,28 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 	}
 
 	return &pb.OrganizationServiceUpdateMembershipResponse{Result: bizMembershipToPb(m)}, nil
+}
+
+func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, error) {
+	// Restricted org creation is disabled, allow creation
+	if !s.enforcer.RestrictOrgCreation {
+		return true, nil
+	}
+
+	m := entities.CurrentMembership(ctx)
+	for _, rm := range m.Resources {
+		if rm.ResourceType != authz.ResourceTypeInstance {
+			continue
+		}
+
+		pass, err := s.enforcer.Enforce(string(rm.Role), authz.PolicyOrganizationCreate)
+		if err != nil {
+			return false, handleUseCaseErr(err, s.log)
+		}
+		if pass {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

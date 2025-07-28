@@ -22,6 +22,8 @@ export interface InfozResponse {
   version: string;
   /** Version of the helm chart used during deployment */
   chartVersion: string;
+  /** Whether organization creation is restricted to admins */
+  restrictedOrgCreation: boolean;
 }
 
 export interface StatuszResponse {
@@ -128,7 +130,7 @@ export const StatuszRequest = {
 };
 
 function createBaseInfozResponse(): InfozResponse {
-  return { loginUrl: "", version: "", chartVersion: "" };
+  return { loginUrl: "", version: "", chartVersion: "", restrictedOrgCreation: false };
 }
 
 export const InfozResponse = {
@@ -141,6 +143,9 @@ export const InfozResponse = {
     }
     if (message.chartVersion !== "") {
       writer.uint32(26).string(message.chartVersion);
+    }
+    if (message.restrictedOrgCreation === true) {
+      writer.uint32(32).bool(message.restrictedOrgCreation);
     }
     return writer;
   },
@@ -173,6 +178,13 @@ export const InfozResponse = {
 
           message.chartVersion = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.restrictedOrgCreation = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -187,6 +199,7 @@ export const InfozResponse = {
       loginUrl: isSet(object.loginURL) ? String(object.loginURL) : "",
       version: isSet(object.version) ? String(object.version) : "",
       chartVersion: isSet(object.chartVersion) ? String(object.chartVersion) : "",
+      restrictedOrgCreation: isSet(object.restrictedOrgCreation) ? Boolean(object.restrictedOrgCreation) : false,
     };
   },
 
@@ -195,6 +208,7 @@ export const InfozResponse = {
     message.loginUrl !== undefined && (obj.loginURL = message.loginUrl);
     message.version !== undefined && (obj.version = message.version);
     message.chartVersion !== undefined && (obj.chartVersion = message.chartVersion);
+    message.restrictedOrgCreation !== undefined && (obj.restrictedOrgCreation = message.restrictedOrgCreation);
     return obj;
   },
 
@@ -207,6 +221,7 @@ export const InfozResponse = {
     message.loginUrl = object.loginUrl ?? "";
     message.version = object.version ?? "";
     message.chartVersion = object.chartVersion ?? "";
+    message.restrictedOrgCreation = object.restrictedOrgCreation ?? false;
     return message;
   },
 };

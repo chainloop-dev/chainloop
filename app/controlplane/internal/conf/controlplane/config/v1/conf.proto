@@ -91,6 +91,9 @@ message Bootstrap {
   // For example, we can forward Gitlab or Github API tokens
   FederatedAuthentication federated_authentication = 16;
 
+  // Restrict organization creation to admins
+  bool restrict_org_creation = 18;
+
   message NatsServer {
     // Connection URI
     string uri = 1 [(buf.validate.field).string.min_len = 1];

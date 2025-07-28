@@ -119,7 +119,7 @@ var (
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r authz.Role) error {
 	switch r {
-	case "role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer", "role:product:admin", "role:product:viewer":
+	case "role:instance:admin", "role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer", "role:product:admin", "role:product:viewer":
 		return nil
 	default:
 		return fmt.Errorf("membership: invalid enum value for role field: %q", r)
@@ -139,7 +139,7 @@ func MembershipTypeValidator(mt authz.MembershipType) error {
 // ResourceTypeValidator is a validator for the "resource_type" field enum values. It is called by the builders before save.
 func ResourceTypeValidator(rt authz.ResourceType) error {
 	switch rt {
-	case "organization", "project", "group", "product":
+	case "instance", "organization", "project", "group", "product":
 		return nil
 	default:
 		return fmt.Errorf("membership: invalid enum value for resource_type field: %q", rt)

@@ -88,7 +88,7 @@ func setCurrentUser(ctx context.Context, userUC biz.UserOrgFinder, userID string
 // WithAttestationContextFromUser injects the current user + organization to the context during the attestation process
 // it leverages the existing middlewares to set the current user and organization
 // but with a skipping behavior since that's the one required by the attMiddleware multi-selector
-func WithAttestationContextFromUser(userUC *biz.UserUseCase, membershipUC *biz.MembershipUseCase, logger *log.Helper) middleware.Middleware {
+func WithAttestationContextFromUser(userUC *biz.UserUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// If the token is not an user token, we don't need to do anything
@@ -114,7 +114,7 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, membershipUC *biz.M
 			// NOTE: we reuse the existing middlewares to set the current user and organization by wrapping the call
 			// Now we can load the organization using the other middleware we have set
 			return WithCurrentUserMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
-				return WithCurrentOrganizationMiddleware(userUC, membershipUC, logger)(func(ctx context.Context, req any) (any, error) {
+				return WithCurrentOrganizationMiddleware(userUC, logger)(func(ctx context.Context, req any) (any, error) {
 					org := entities.CurrentOrg(ctx)
 					if org == nil {
 						return nil, errors.New("organization not found")

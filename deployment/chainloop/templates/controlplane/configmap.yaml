@@ -45,6 +45,7 @@ data:
       default_entry_max_size: {{ .Values.cas.defaultMaxEntrySize | quote }}
       {{- end }}
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
+    restrict_org_creation: {{ .Values.controlplane.restrictOrgCreation }}
     referrer_shared_index:
       {{- toYaml .Values.controlplane.referrerSharedIndex | nindent 6 }}
     {{ if .Values.controlplane.onboarding }}

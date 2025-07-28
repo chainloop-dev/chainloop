@@ -65,6 +65,9 @@ const (
 	ResourceOrganizationInvitations = "organization_invitations"
 	ResourceGroupProjects           = "group_projects"
 
+	// Top level instance admin role
+	// this is used to know if an user is a super admin of the chainloop instance
+	RoleInstanceAdmin Role = "role:instance:admin"
 	// We have for now three roles, viewer, admin and owner
 	// The owner of an org
 	// The administrator of an org
@@ -164,6 +167,7 @@ var (
 	// Projects
 	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
 
+	PolicyOrganizationCreate = &Policy{Organization, ActionCreate}
 	// User Membership
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
@@ -192,6 +196,10 @@ var (
 // NOTE: roles are not necessarily hierarchical, however the Admin Role inherits all the policies from the Viewer Role
 // so we do not need to add them as well.
 var RolesMap = map[Role][]*Policy{
+	// Organizations in chainloop might be restricted to instance admins
+	RoleInstanceAdmin: {
+		PolicyOrganizationCreate,
+	},
 	// RoleViewer is an org-scoped role that provides read-only access to all resources
 	RoleViewer: {
 		// Referrer
@@ -438,6 +446,8 @@ var ServerOperationsMap = map[string][]*Policy{
 // so they can be added to the database schema
 func (Role) Values() (roles []string) {
 	for _, s := range []Role{
+		RoleInstanceAdmin,
+
 		RoleOwner,
 		RoleAdmin,
 		RoleViewer,

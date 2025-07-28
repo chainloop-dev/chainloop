@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestWithCurrentOrganizationMiddleware(t *testing.T) {
@@ -67,7 +66,6 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			usecase := bizMocks.NewUserOrgFinder(t)
-			msMock := bizMocks.NewMembershipsRBAC(t)
 			ctx := context.Background()
 			if tc.loggedIn {
 				ctx = entities.WithCurrentUser(ctx, &entities.User{ID: wantUser.ID})
@@ -76,12 +74,11 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 
 			if tc.orgExist {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Return(wantMembership, nil)
-				msMock.On("ListAllMembershipsForUser", mock.Anything, mock.Anything).Return([]*biz.Membership{wantMembership}, nil)
 			} else if tc.loggedIn {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
-			m := WithCurrentOrganizationMiddleware(usecase, msMock, logger)
+			m := WithCurrentOrganizationMiddleware(usecase, logger)
 			_, err := m(
 				func(ctx context.Context, _ interface{}) (interface{}, error) {
 					if tc.wantErr {

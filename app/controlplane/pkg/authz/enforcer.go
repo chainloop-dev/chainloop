@@ -43,14 +43,16 @@ func (t *SubjectAPIToken) String() string {
 var modelFile []byte
 
 type Config struct {
-	ManagedResources []string
-	RolesMap         map[Role][]*Policy
+	ManagedResources    []string
+	RolesMap            map[Role][]*Policy
+	RestrictOrgCreation bool
 }
 
 type Enforcer struct {
 	*casbin.Enforcer
 
-	config *Config
+	config              *Config
+	RestrictOrgCreation bool
 }
 
 func (e *Enforcer) AddPolicies(sub *SubjectAPIToken, policies ...*Policy) error {
@@ -161,7 +163,7 @@ func newEnforcer(a persist.Adapter, config *Config) (*Enforcer, error) {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
 
-	e := &Enforcer{enforcer, config}
+	e := &Enforcer{enforcer, config, config.RestrictOrgCreation}
 
 	// Initialize the enforcer with the roles map
 	if err := syncRBACRoles(e, config); err != nil {
