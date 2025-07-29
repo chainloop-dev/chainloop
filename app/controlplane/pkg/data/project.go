@@ -128,7 +128,7 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 		Where(
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
 			membership.ResourceID(projectID),
-		)
+		).WithParent()
 
 	// Get total count before applying pagination
 	totalCount, err := query.Count(ctx)
@@ -360,6 +360,11 @@ func entProjectMembershipToBiz(m *ent.Membership, u *ent.User, g *ent.Group) *bi
 		CreatedAt:      &m.CreatedAt,
 		UpdatedAt:      &m.UpdatedAt,
 		ParentID:       m.ParentID,
+	}
+
+	// Add the parent resource ID if it exists
+	if m.Edges.Parent != nil {
+		mem.ParentResourceID = &m.Edges.Parent.ResourceID
 	}
 
 	if u != nil {

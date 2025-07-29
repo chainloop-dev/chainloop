@@ -94,8 +94,10 @@ type ProjectMembership struct {
 	CreatedAt *time.Time
 	// UpdatedAt is the timestamp when the membership was last updated.
 	UpdatedAt *time.Time
-	// ParentID is used for nested memberships, if applicable
+	// ParentID is the parent membership object used for nested memberships, if applicable
 	ParentID *uuid.UUID
+	// ParentResourceID identifies the parent resource of this membership, if applicable
+	ParentResourceID *uuid.UUID
 }
 
 // GroupProjectInfo represents detailed information about a project that a group is a member of

@@ -174,7 +174,7 @@ type ProjectMember struct {
 	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// The ID of latest project version this member is associated with
 	LatestProjectVersionId string `protobuf:"bytes,6,opt,name=latest_project_version_id,json=latestProjectVersionId,proto3" json:"latest_project_version_id,omitempty"`
-	// Optional parent ID for nested project memberships
+	// Optional parent resource ID for nested project memberships
 	ParentId *string `protobuf:"bytes,7,opt,name=parent_id,json=parentId,proto3,oneof" json:"parent_id,omitempty"`
 }
 

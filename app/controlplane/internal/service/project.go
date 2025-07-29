@@ -388,8 +388,8 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 		Role: role,
 	}
 
-	if m.ParentID != nil {
-		pbMember.ParentId = biz.ToPtr(m.ParentID.String())
+	if m.ParentResourceID != nil {
+		pbMember.ParentId = biz.ToPtr(m.ParentResourceID.String())
 	}
 
 	if m.User != nil {

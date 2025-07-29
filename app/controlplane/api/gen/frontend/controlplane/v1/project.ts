@@ -49,7 +49,7 @@ export interface ProjectMember {
   updatedAt?: Date;
   /** The ID of latest project version this member is associated with */
   latestProjectVersionId: string;
-  /** Optional parent ID for nested project memberships */
+  /** Optional parent resource ID for nested project memberships */
   parentId?: string | undefined;
 }
 
