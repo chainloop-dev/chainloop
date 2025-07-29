@@ -68,8 +68,10 @@ message ProjectMember {
   google.protobuf.Timestamp updated_at = 5;
   // The ID of latest project version this member is associated with
   string latest_project_version_id = 6;
-  // Optional parent ID for nested project memberships
+  // Optional parent membership ID for nested project memberships
   optional string parent_id = 7;
+  // Optional parent resource ID for nested project memberships
+  optional string parent_resource_id = 8;
 }
 
 // ProjectServiceAddMemberRequest contains the information needed to add a user to a project

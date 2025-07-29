@@ -392,6 +392,10 @@ func bizProjectMembershipToPb(m *biz.ProjectMembership) *pb.ProjectMember {
 		pbMember.ParentId = biz.ToPtr(m.ParentID.String())
 	}
 
+	if m.ParentResourceID != nil {
+		pbMember.ParentResourceId = biz.ToPtr(m.ParentResourceID.String())
+	}
+
 	if m.User != nil {
 		pbMember.Subject = &pb.ProjectMember_User{
 			User: bizUserToPb(m.User),

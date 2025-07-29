@@ -49,8 +49,12 @@ export interface ProjectMember {
   updatedAt?: Date;
   /** The ID of latest project version this member is associated with */
   latestProjectVersionId: string;
-  /** Optional parent ID for nested project memberships */
-  parentId?: string | undefined;
+  /** Optional parent membership ID for nested project memberships */
+  parentId?:
+    | string
+    | undefined;
+  /** Optional parent resource ID for nested project memberships */
+  parentResourceId?: string | undefined;
 }
 
 /** ProjectServiceAddMemberRequest contains the information needed to add a user to a project */
@@ -307,6 +311,7 @@ function createBaseProjectMember(): ProjectMember {
     updatedAt: undefined,
     latestProjectVersionId: "",
     parentId: undefined,
+    parentResourceId: undefined,
   };
 }
 
@@ -332,6 +337,9 @@ export const ProjectMember = {
     }
     if (message.parentId !== undefined) {
       writer.uint32(58).string(message.parentId);
+    }
+    if (message.parentResourceId !== undefined) {
+      writer.uint32(66).string(message.parentResourceId);
     }
     return writer;
   },
@@ -392,6 +400,13 @@ export const ProjectMember = {
 
           message.parentId = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.parentResourceId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -410,6 +425,7 @@ export const ProjectMember = {
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       latestProjectVersionId: isSet(object.latestProjectVersionId) ? String(object.latestProjectVersionId) : "",
       parentId: isSet(object.parentId) ? String(object.parentId) : undefined,
+      parentResourceId: isSet(object.parentResourceId) ? String(object.parentResourceId) : undefined,
     };
   },
 
@@ -422,6 +438,7 @@ export const ProjectMember = {
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.latestProjectVersionId !== undefined && (obj.latestProjectVersionId = message.latestProjectVersionId);
     message.parentId !== undefined && (obj.parentId = message.parentId);
+    message.parentResourceId !== undefined && (obj.parentResourceId = message.parentResourceId);
     return obj;
   },
 
@@ -438,6 +455,7 @@ export const ProjectMember = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.latestProjectVersionId = object.latestProjectVersionId ?? "";
     message.parentId = object.parentId ?? undefined;
+    message.parentResourceId = object.parentResourceId ?? undefined;
     return message;
   },
 };

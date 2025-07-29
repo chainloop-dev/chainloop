@@ -13,7 +13,11 @@
       "type": "string"
     },
     "^(parentId)$": {
-      "description": "Optional parent ID for nested project memberships",
+      "description": "Optional parent membership ID for nested project memberships",
+      "type": "string"
+    },
+    "^(parentResourceId)$": {
+      "description": "Optional parent resource ID for nested project memberships",
       "type": "string"
     },
     "^(updatedAt)$": {
@@ -35,7 +39,11 @@
       "type": "string"
     },
     "parent_id": {
-      "description": "Optional parent ID for nested project memberships",
+      "description": "Optional parent membership ID for nested project memberships",
+      "type": "string"
+    },
+    "parent_resource_id": {
+      "description": "Optional parent resource ID for nested project memberships",
       "type": "string"
     },
     "role": {
