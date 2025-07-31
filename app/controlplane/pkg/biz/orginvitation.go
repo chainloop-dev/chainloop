@@ -59,11 +59,11 @@ type OrgInvitation struct {
 // OrgInvitationContext is used to pass additional context when accepting an invitation
 type OrgInvitationContext struct {
 	// GroupIDToJoin is the ID of the group to join when accepting the invitation
-	GroupIDToJoin uuid.UUID `json:"group_id_to_join,omitempty"`
+	GroupIDToJoin *uuid.UUID `json:"group_id_to_join,omitempty"`
 	// GroupMaintainer indicates if the user should be added as a maintainer of the group
 	GroupMaintainer bool `json:"group_maintainer,omitempty"`
 	// ProjectIDToJoin is the ID of the project to join when accepting the invitation
-	ProjectIDToJoin uuid.UUID `json:"project_id_to_join,omitempty"`
+	ProjectIDToJoin *uuid.UUID `json:"project_id_to_join,omitempty"`
 	// ProjectRole is the role to assign to the user in the project
 	ProjectRole authz.Role `json:"project_role,omitempty"`
 	// ExternalMetadata can be used to store additional information
@@ -341,7 +341,7 @@ func (uc *OrgInvitationUseCase) FindByID(ctx context.Context, invitationID strin
 // processGroupMembership adds a user to a group if the invitation context contains a group to join
 func (uc *OrgInvitationUseCase) processGroupMembership(ctx context.Context, invitation *OrgInvitation, orgUUID uuid.UUID, userUUID uuid.UUID) error {
 	// Skip if there's no group to join in the invitation context
-	if invitation.Context == nil || invitation.Context.GroupIDToJoin == uuid.Nil {
+	if invitation.Context == nil || invitation.Context.GroupIDToJoin == nil || *invitation.Context.GroupIDToJoin == uuid.Nil {
 		return nil
 	}
 
@@ -349,12 +349,12 @@ func (uc *OrgInvitationUseCase) processGroupMembership(ctx context.Context, invi
 	uc.logger.Infow("msg", "Adding user to group", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID, "group_id", groupID)
 
 	// Check if the group exists
-	gr, err := uc.groupRepo.FindByOrgAndID(ctx, orgUUID, groupID)
+	gr, err := uc.groupRepo.FindByOrgAndID(ctx, orgUUID, *groupID)
 	if err != nil {
 		return fmt.Errorf("error finding group %s: %w", groupID.String(), err)
 	}
 
-	if _, err := uc.groupRepo.AddMemberToGroup(ctx, orgUUID, groupID, userUUID, invitation.Context.GroupMaintainer); err != nil {
+	if _, err := uc.groupRepo.AddMemberToGroup(ctx, orgUUID, *groupID, userUUID, invitation.Context.GroupMaintainer); err != nil {
 		if IsErrAlreadyExists(err) {
 			// User is already a member of the group, nothing to do
 			uc.logger.Infow("msg", "User already in group", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID.String(), "group_id", groupID.String())
@@ -367,7 +367,7 @@ func (uc *OrgInvitationUseCase) processGroupMembership(ctx context.Context, invi
 	// Dispatch event to the audit log for group membership addition
 	uc.auditor.Dispatch(ctx, &events.GroupMemberAdded{
 		GroupBase: &events.GroupBase{
-			GroupID:   &groupID,
+			GroupID:   groupID,
 			GroupName: gr.Name,
 		},
 		UserID:     &userUUID,
@@ -383,7 +383,7 @@ func (uc *OrgInvitationUseCase) processGroupMembership(ctx context.Context, invi
 // processProjectMembership adds a user to a project if the invitation context contains a project to join
 func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, invitation *OrgInvitation, orgUUID uuid.UUID, userUUID uuid.UUID) error {
 	// Skip if there's no group to join in the invitation context
-	if invitation.Context == nil || invitation.Context.ProjectIDToJoin == uuid.Nil {
+	if invitation.Context == nil || invitation.Context.ProjectIDToJoin == nil || *invitation.Context.ProjectIDToJoin == uuid.Nil {
 		return nil
 	}
 
@@ -391,7 +391,7 @@ func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, in
 	uc.logger.Infow("msg", "Adding user to project", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID, "project_id", projectID)
 
 	// Check if the project exists
-	project, err := uc.projectRepo.FindProjectByOrgIDAndID(ctx, orgUUID, projectID)
+	project, err := uc.projectRepo.FindProjectByOrgIDAndID(ctx, orgUUID, *projectID)
 	if err != nil {
 		return fmt.Errorf("error finding project %s: %w", projectID.String(), err)
 	}
@@ -409,7 +409,7 @@ func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, in
 	}
 
 	// Check if the user is already a member of the project
-	existingMembership, err := uc.projectRepo.FindProjectMembershipByProjectAndID(ctx, orgUUID, projectID, userUUID, authz.MembershipTypeUser)
+	existingMembership, err := uc.projectRepo.FindProjectMembershipByProjectAndID(ctx, orgUUID, *projectID, userUUID, authz.MembershipTypeUser)
 	if err != nil && !IsNotFound(err) {
 		return fmt.Errorf("error checking project membership for user %s: %w", userUUID, err)
 	}
@@ -421,14 +421,14 @@ func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, in
 	}
 
 	// Add the user to the project
-	if _, err := uc.projectRepo.AddMemberToProject(ctx, orgUUID, projectID, userUUID, authz.MembershipTypeUser, role); err != nil {
+	if _, err := uc.projectRepo.AddMemberToProject(ctx, orgUUID, *projectID, userUUID, authz.MembershipTypeUser, role); err != nil {
 		return fmt.Errorf("error adding user %s to project %s: %w", userUUID, projectID.String(), err)
 	}
 
 	// Dispatch event to the audit log for project membership addition
 	uc.auditor.Dispatch(ctx, &events.ProjectMembershipAdded{
 		ProjectBase: &events.ProjectBase{
-			ProjectID:   &projectID,
+			ProjectID:   projectID,
 			ProjectName: project.Name,
 		},
 		UserID:    &userUUID,

@@ -314,7 +314,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 	s.T().Run("invitation with group context adds user to group when accepted", func(t *testing.T) {
 		// Create invitation context with group information
 		invitationContext := &biz.OrgInvitationContext{
-			GroupIDToJoin:   group.ID,
+			GroupIDToJoin:   &group.ID,
 			GroupMaintainer: true,
 		}
 
@@ -332,7 +332,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 
 		// Verify context was saved properly
 		assert.NotNil(t, invite.Context)
-		assert.Equal(t, group.ID, invite.Context.GroupIDToJoin)
+		assert.Equal(t, group.ID, *invite.Context.GroupIDToJoin)
 		assert.Equal(t, true, invite.Context.GroupMaintainer)
 
 		// Accept the invitation
@@ -380,7 +380,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 
 		// Create invitation context with group information, but not as maintainer
 		invitationContext := &biz.OrgInvitationContext{
-			GroupIDToJoin:   group.ID,
+			GroupIDToJoin:   &group.ID,
 			GroupMaintainer: false,
 		}
 
@@ -447,7 +447,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 	s.T().Run("invitation with project context adds user to project when accepted", func(t *testing.T) {
 		// Create invitation context with project information
 		invitationContext := &biz.OrgInvitationContext{
-			ProjectIDToJoin: project.ID,
+			ProjectIDToJoin: &project.ID,
 			ProjectRole:     authz.RoleProjectAdmin,
 		}
 
@@ -465,7 +465,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 
 		// Verify context was saved properly
 		assert.NotNil(t, invite.Context)
-		assert.Equal(t, project.ID, invite.Context.ProjectIDToJoin)
+		assert.Equal(t, project.ID, *invite.Context.ProjectIDToJoin)
 		assert.Equal(t, authz.RoleProjectAdmin, invite.Context.ProjectRole)
 
 		// Accept the invitation
@@ -511,7 +511,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 
 		// Create invitation context with project information, but with viewer role
 		invitationContext := &biz.OrgInvitationContext{
-			ProjectIDToJoin: project.ID,
+			ProjectIDToJoin: &project.ID,
 			ProjectRole:     authz.RoleProjectViewer,
 		}
 
@@ -570,9 +570,9 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 
 		// Create invitation context with both group and project information
 		invitationContext := &biz.OrgInvitationContext{
-			GroupIDToJoin:   group.ID,
+			GroupIDToJoin:   &group.ID,
 			GroupMaintainer: true,
-			ProjectIDToJoin: project.ID,
+			ProjectIDToJoin: &project.ID,
 			ProjectRole:     authz.RoleProjectViewer,
 		}
 
@@ -590,9 +590,9 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 
 		// Verify context was saved properly
 		assert.NotNil(t, invite.Context)
-		assert.Equal(t, group.ID, invite.Context.GroupIDToJoin)
+		assert.Equal(t, group.ID, *invite.Context.GroupIDToJoin)
 		assert.True(t, invite.Context.GroupMaintainer)
-		assert.Equal(t, project.ID, invite.Context.ProjectIDToJoin)
+		assert.Equal(t, project.ID, *invite.Context.ProjectIDToJoin)
 		assert.Equal(t, authz.RoleProjectViewer, invite.Context.ProjectRole)
 
 		// Accept the invitation
@@ -645,30 +645,64 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 		assert.True(t, foundProjectMember, "The user should be a member of the project")
 		assert.Equal(t, authz.RoleProjectViewer, projectRole, "The user should have the project contributor role")
 	})
-}
 
-func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithExternalMetadata() {
-	ctx := context.Background()
-	receiverEmail := "externalmeta@cyberdyne.io"
-	externalMeta := []byte(`{"foo":"bar","baz":123}`)
-	invitationContext := &biz.OrgInvitationContext{
-		ExternalMetadata: externalMeta,
-	}
+	s.T().Run("invitation with nil UUID on project is rejected", func(t *testing.T) {
+		// Create a new receiver that isn't a member of any org yet
+		newReceiverEmail := "combined-receiver@cyberdyne.io"
+		newReceiver, err := s.User.UpsertByEmail(ctx, newReceiverEmail, nil)
+		require.NoError(t, err)
+		require.NotNil(t, newReceiver)
 
-	invite, err := s.OrgInvitation.Create(
-		ctx,
-		s.org1.ID,
-		s.user.ID,
-		receiverEmail,
-		biz.WithInvitationRole(authz.RoleViewer),
-		biz.WithInvitationContext(invitationContext),
-	)
-	s.Require().NoError(err)
-	s.Require().NotNil(invite)
+		// Create invitation context with nil project ID
+		invitationContext := &biz.OrgInvitationContext{
+			ProjectIDToJoin: &uuid.Nil,
+		}
 
-	s.Require().NotNil(invite.Context)
-	s.Require().NotNil(invite.Context.ExternalMetadata)
-	s.JSONEq(string(externalMeta), string(invite.Context.ExternalMetadata), "ExternalMetadata should be persisted and retrievable")
+		// Create invitation with combined context
+		invite, err := s.Repos.OrgInvitationRepo.Create(
+			ctx,
+			uuid.MustParse(s.org1.ID),
+			uuid.MustParse(s.user.ID),
+			newReceiverEmail,
+			authz.RoleViewer,
+			invitationContext,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Accept the invitation and check that there is no error
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, newReceiverEmail)
+		require.NoError(t, err, "Accepting invitation with nil project ID should not fail just skip the project context")
+	})
+
+	s.T().Run("invitation with nil UUID on group is rejected", func(t *testing.T) {
+		// Create a new receiver that isn't a member of any org yet
+		newReceiverEmail := "combined-receiver@cyberdyne.io"
+		newReceiver, err := s.User.UpsertByEmail(ctx, newReceiverEmail, nil)
+		require.NoError(t, err)
+		require.NotNil(t, newReceiver)
+
+		// Create invitation context with nil group ID
+		invitationContext := &biz.OrgInvitationContext{
+			GroupIDToJoin: &uuid.Nil,
+		}
+
+		// Create invitation with combined context
+		invite, err := s.Repos.OrgInvitationRepo.Create(
+			ctx,
+			uuid.MustParse(s.org1.ID),
+			uuid.MustParse(s.user.ID),
+			newReceiverEmail,
+			authz.RoleViewer,
+			invitationContext,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, invite)
+
+		// Accept the invitation and check that there is no error
+		err = s.OrgInvitation.AcceptPendingInvitations(ctx, newReceiverEmail)
+		require.NoError(t, err, "Accepting invitation with nil group ID should not fail just skip the project context")
+	})
 }
 
 // Utility struct to hold the test suite

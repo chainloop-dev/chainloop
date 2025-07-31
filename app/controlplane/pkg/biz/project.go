@@ -392,7 +392,7 @@ func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, proj
 
 	// Create an organization invitation with project context
 	invitationContext := &OrgInvitationContext{
-		ProjectIDToJoin: projectID,
+		ProjectIDToJoin: &projectID,
 		ProjectRole:     opts.Role,
 	}
 
