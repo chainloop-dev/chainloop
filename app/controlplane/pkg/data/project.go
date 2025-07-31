@@ -337,6 +337,7 @@ func (r *ProjectRepo) queryMembership(orgID uuid.UUID, projectID uuid.UUID, memb
 			membership.MemberID(memberID),
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
 			membership.ResourceID(projectID),
+			membership.ParentIDIsNil(), // Only top-level memberships
 		).WithOrganization()
 }
 
