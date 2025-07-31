@@ -17,6 +17,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -65,6 +66,8 @@ type OrgInvitationContext struct {
 	ProjectIDToJoin uuid.UUID `json:"project_id_to_join,omitempty"`
 	// ProjectRole is the role to assign to the user in the project
 	ProjectRole authz.Role `json:"project_role,omitempty"`
+	// ExternalMetadata can be used to store additional information
+	ExternalMetadata json.RawMessage `json:"external_metadata,omitempty"`
 }
 
 type OrgInvitationRepo interface {
