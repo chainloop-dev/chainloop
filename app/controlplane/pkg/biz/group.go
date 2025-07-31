@@ -557,7 +557,7 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 
 	// Create an organization invitation with group context
 	invitationContext := &OrgInvitationContext{
-		GroupIDToJoin:   groupID,
+		GroupIDToJoin:   &groupID,
 		GroupMaintainer: opts.Maintainer,
 	}
 
