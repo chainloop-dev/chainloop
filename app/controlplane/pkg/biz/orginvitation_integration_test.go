@@ -647,6 +647,30 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 	})
 }
 
+func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithExternalMetadata() {
+	ctx := context.Background()
+	receiverEmail := "externalmeta@cyberdyne.io"
+	externalMeta := []byte(`{"foo":"bar","baz":123}`)
+	invitationContext := &biz.OrgInvitationContext{
+		ExternalMetadata: externalMeta,
+	}
+
+	invite, err := s.OrgInvitation.Create(
+		ctx,
+		s.org1.ID,
+		s.user.ID,
+		receiverEmail,
+		biz.WithInvitationRole(authz.RoleViewer),
+		biz.WithInvitationContext(invitationContext),
+	)
+	s.Require().NoError(err)
+	s.Require().NotNil(invite)
+
+	s.Require().NotNil(invite.Context)
+	s.Require().NotNil(invite.Context.ExternalMetadata)
+	s.JSONEq(string(externalMeta), string(invite.Context.ExternalMetadata), "ExternalMetadata should be persisted and retrievable")
+}
+
 // Utility struct to hold the test suite
 type OrgInvitationIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
