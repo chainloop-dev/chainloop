@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -27,8 +28,12 @@ import (
 )
 
 const (
-	streamName  = "chainloop-audit"
+	streamName = "chainloop-audit"
+	// subjectName is the base subject for the stream to listen to.
 	subjectName = "audit.>"
+	// baseSubjectName is the base subject for audit logs for the publisher to publish to.
+	// The pattern for the specific subjects is "audit.<target_type>.<action_type>"
+	baseSubjectName = "audit"
 )
 
 type AuditLogPublisher struct {
@@ -74,5 +79,7 @@ func (n *AuditLogPublisher) Publish(data *EventPayload) error {
 		return fmt.Errorf("failed to marshal event payload: %w", err)
 	}
 
-	return n.conn.Publish(subjectName, jsonPayload)
+	// Send the event to the specific subject based on the event type "audit.<target_type>.<action_type>"
+	specificSubject := fmt.Sprintf("%s.%s.%s", baseSubjectName, strings.ToLower(string(data.Data.TargetType)), strings.ToLower(data.Data.ActionType))
+	return n.conn.Publish(specificSubject, jsonPayload)
 }

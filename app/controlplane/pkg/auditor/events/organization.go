@@ -57,7 +57,7 @@ func (p *OrgBase) TargetID() *uuid.UUID {
 
 func (p *OrgBase) ActionInfo() (json.RawMessage, error) {
 	if p.OrgName == "" || p.OrgID == nil {
-		return nil, errors.New("user id and org name are required")
+		return nil, errors.New("org name and org id are required")
 	}
 
 	return json.Marshal(&p)
@@ -79,6 +79,10 @@ func (p *OrgCreated) Description() string {
 // user joined the organization
 type OrgUserJoined struct {
 	*OrgBase
+	// UserID of the user that joined the organization
+	UserID uuid.UUID `json:"user_id,omitempty"`
+	// UserEmail of the user that joined the organization
+	UserEmail string `json:"user_email,omitempty"`
 }
 
 func (p *OrgUserJoined) ActionType() string {
@@ -87,6 +91,14 @@ func (p *OrgUserJoined) ActionType() string {
 
 func (p *OrgUserJoined) Description() string {
 	return fmt.Sprintf("{{ .ActorEmail }} has joined the organization %s", p.OrgName)
+}
+
+func (p *OrgUserJoined) ActionInfo() (json.RawMessage, error) {
+	if p.OrgName == "" || p.OrgID == nil || p.UserID == uuid.Nil || p.UserEmail == "" {
+		return nil, errors.New("org name, org id, user id and user email are required")
+	}
+
+	return json.Marshal(&p)
 }
 
 // user left the organization
