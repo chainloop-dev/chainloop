@@ -290,8 +290,9 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 					OrgID:   &orgUUID,
 					OrgName: invitation.Org.Name,
 				},
-				UserID:    userUUID,
-				UserEmail: user.Email,
+				UserID:       userUUID,
+				UserEmail:    user.Email,
+				InvitationID: invitation.ID,
 			}, &orgUUID)
 		}
 
