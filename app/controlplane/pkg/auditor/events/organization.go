@@ -83,6 +83,8 @@ type OrgUserJoined struct {
 	UserID uuid.UUID `json:"user_id,omitempty"`
 	// UserEmail of the user that joined the organization
 	UserEmail string `json:"user_email,omitempty"`
+	// InvitationID is the ID of the invitation that was used to join the organization
+	InvitationID uuid.UUID `json:"invitation_id,omitempty"`
 }
 
 func (p *OrgUserJoined) ActionType() string {
@@ -94,8 +96,8 @@ func (p *OrgUserJoined) Description() string {
 }
 
 func (p *OrgUserJoined) ActionInfo() (json.RawMessage, error) {
-	if p.OrgName == "" || p.OrgID == nil || p.UserID == uuid.Nil || p.UserEmail == "" {
-		return nil, errors.New("org name, org id, user id and user email are required")
+	if p.OrgName == "" || p.OrgID == nil || p.UserID == uuid.Nil || p.UserEmail == "" || p.InvitationID == uuid.Nil {
+		return nil, errors.New("org name, org id, user id, user email and invitation id are required")
 	}
 
 	return json.Marshal(&p)
