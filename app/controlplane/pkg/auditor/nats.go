@@ -29,7 +29,7 @@ import (
 
 const (
 	streamName = "chainloop-audit"
-	// subjectName is the base subject for audit logs for the consumer to subscribe to.
+	// subjectName is the base subject for the stream to listen to.
 	subjectName = "audit.>"
 	// baseSubjectName is the base subject for audit logs for the publisher to publish to.
 	// The pattern for the specific subjects is "audit.<target_type>.<action_type>"
