@@ -249,12 +249,12 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 		// Only add memberships if userID is not nil
 		if opts.UserID != nil {
 			// Set user as group maintainer
-			if _, grUerr := tx.GroupMembership.Create().
+			if _, err = tx.GroupMembership.Create().
 				SetGroupID(gr.ID).
 				SetUserID(*opts.UserID).
 				SetMaintainer(true).
-				Save(ctx); grUerr != nil {
-				return grUerr
+				Save(ctx); err != nil {
+				return err
 			}
 
 			// Update the user membership with the role of maintainer
