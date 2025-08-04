@@ -392,6 +392,7 @@ func (s *groupListIntegrationTestSuite) TearDownSubTest() {
 	ctx := context.Background()
 	// Clean up the database after each test
 	_, _ = s.Data.DB.Group.Delete().Exec(ctx)
+	_, _ = s.Data.DB.Membership.Delete().Exec(ctx)
 }
 
 // Test listing groups with various filters
@@ -513,6 +514,35 @@ func (s *groupListIntegrationTestSuite) TestList() {
 
 		// Filter by member email
 		filterOpts := &biz.ListGroupOpts{MemberEmail: "user2@example.com"}
+		groups, count, err := s.Group.List(ctx, uuid.MustParse(s.org.ID), filterOpts, nil)
+		s.NoError(err)
+		s.Equal(1, len(groups))
+		s.Equal(1, count)
+		s.Equal(group2.ID, groups[0].ID)
+	})
+
+	s.Run("list groups with member ID", func() {
+		// Create a second user
+		user2, err := s.User.UpsertByEmail(ctx, "user2@example.com", nil)
+		require.NoError(s.T(), err)
+
+		// Add user2 to organization
+		_, err = s.Membership.Create(ctx, s.org.ID, user2.ID)
+		require.NoError(s.T(), err)
+
+		// Create a group with user as maintainer
+		groupWithUser1 := "Group with user 1"
+		_, err = s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-with-user1", groupWithUser1, s.userUUID)
+		require.NoError(s.T(), err)
+
+		// Create a group with user2 as maintainer
+		groupWithUser2 := "Group with user 2"
+		user2UUID := uuid.MustParse(user2.ID)
+		group2, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "group-with-user2", groupWithUser2, &user2UUID)
+		require.NoError(s.T(), err)
+
+		// Filter by member ID
+		filterOpts := &biz.ListGroupOpts{UserID: &user2UUID}
 		groups, count, err := s.Group.List(ctx, uuid.MustParse(s.org.ID), filterOpts, nil)
 		s.NoError(err)
 		s.Equal(1, len(groups))

@@ -41,24 +41,22 @@ type Group struct {
 
 // GroupEdges holds the relations/edges for other nodes in the graph.
 type GroupEdges struct {
-	// Members holds the value of the members edge.
-	Members []*User `json:"members,omitempty"`
+	// GroupMemberships holds the value of the group_memberships edge.
+	GroupMemberships []*GroupMembership `json:"group_memberships,omitempty"`
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
-	// GroupUsers holds the value of the group_users edge.
-	GroupUsers []*GroupMembership `json:"group_users,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
-// MembersOrErr returns the Members value or an error if the edge
+// GroupMembershipsOrErr returns the GroupMemberships value or an error if the edge
 // was not loaded in eager-loading.
-func (e GroupEdges) MembersOrErr() ([]*User, error) {
+func (e GroupEdges) GroupMembershipsOrErr() ([]*GroupMembership, error) {
 	if e.loadedTypes[0] {
-		return e.Members, nil
+		return e.GroupMemberships, nil
 	}
-	return nil, &NotLoadedError{edge: "members"}
+	return nil, &NotLoadedError{edge: "group_memberships"}
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -70,15 +68,6 @@ func (e GroupEdges) OrganizationOrErr() (*Organization, error) {
 		return nil, &NotFoundError{label: organization.Label}
 	}
 	return nil, &NotLoadedError{edge: "organization"}
-}
-
-// GroupUsersOrErr returns the GroupUsers value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupEdges) GroupUsersOrErr() ([]*GroupMembership, error) {
-	if e.loadedTypes[2] {
-		return e.GroupUsers, nil
-	}
-	return nil, &NotLoadedError{edge: "group_users"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -170,19 +159,14 @@ func (gr *Group) Value(name string) (ent.Value, error) {
 	return gr.selectValues.Get(name)
 }
 
-// QueryMembers queries the "members" edge of the Group entity.
-func (gr *Group) QueryMembers() *UserQuery {
-	return NewGroupClient(gr.config).QueryMembers(gr)
+// QueryGroupMemberships queries the "group_memberships" edge of the Group entity.
+func (gr *Group) QueryGroupMemberships() *GroupMembershipQuery {
+	return NewGroupClient(gr.config).QueryGroupMemberships(gr)
 }
 
 // QueryOrganization queries the "organization" edge of the Group entity.
 func (gr *Group) QueryOrganization() *OrganizationQuery {
 	return NewGroupClient(gr.config).QueryOrganization(gr)
-}
-
-// QueryGroupUsers queries the "group_users" edge of the Group entity.
-func (gr *Group) QueryGroupUsers() *GroupMembershipQuery {
-	return NewGroupClient(gr.config).QueryGroupUsers(gr)
 }
 
 // Update returns a builder for updating this Group.

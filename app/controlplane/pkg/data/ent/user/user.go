@@ -27,10 +27,8 @@ const (
 	FieldLastName = "last_name"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
-	// EdgeGroup holds the string denoting the group edge name in mutations.
-	EdgeGroup = "group"
-	// EdgeGroupUsers holds the string denoting the group_users edge name in mutations.
-	EdgeGroupUsers = "group_users"
+	// EdgeGroupMemberships holds the string denoting the group_memberships edge name in mutations.
+	EdgeGroupMemberships = "group_memberships"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// MembershipsTable is the table that holds the memberships relation/edge.
@@ -40,18 +38,13 @@ const (
 	MembershipsInverseTable = "memberships"
 	// MembershipsColumn is the table column denoting the memberships relation/edge.
 	MembershipsColumn = "user_memberships"
-	// GroupTable is the table that holds the group relation/edge. The primary key declared below.
-	GroupTable = "group_memberships"
-	// GroupInverseTable is the table name for the Group entity.
-	// It exists in this package in order to avoid circular dependency with the "group" package.
-	GroupInverseTable = "groups"
-	// GroupUsersTable is the table that holds the group_users relation/edge.
-	GroupUsersTable = "group_memberships"
-	// GroupUsersInverseTable is the table name for the GroupMembership entity.
+	// GroupMembershipsTable is the table that holds the group_memberships relation/edge.
+	GroupMembershipsTable = "group_memberships"
+	// GroupMembershipsInverseTable is the table name for the GroupMembership entity.
 	// It exists in this package in order to avoid circular dependency with the "groupmembership" package.
-	GroupUsersInverseTable = "group_memberships"
-	// GroupUsersColumn is the table column denoting the group_users relation/edge.
-	GroupUsersColumn = "user_id"
+	GroupMembershipsInverseTable = "group_memberships"
+	// GroupMembershipsColumn is the table column denoting the group_memberships relation/edge.
+	GroupMembershipsColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -63,12 +56,6 @@ var Columns = []string{
 	FieldFirstName,
 	FieldLastName,
 }
-
-var (
-	// GroupPrimaryKey and GroupColumn2 are the table columns denoting the
-	// primary key for the group relation (M2M).
-	GroupPrimaryKey = []string{"group_id", "user_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -136,31 +123,17 @@ func ByMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByGroupCount orders the results by group count.
-func ByGroupCount(opts ...sql.OrderTermOption) OrderOption {
+// ByGroupMembershipsCount orders the results by group_memberships count.
+func ByGroupMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newGroupStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newGroupMembershipsStep(), opts...)
 	}
 }
 
-// ByGroup orders the results by group terms.
-func ByGroup(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByGroupMemberships orders the results by group_memberships terms.
+func ByGroupMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByGroupUsersCount orders the results by group_users count.
-func ByGroupUsersCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newGroupUsersStep(), opts...)
-	}
-}
-
-// ByGroupUsers orders the results by group_users terms.
-func ByGroupUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGroupUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newGroupMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newMembershipsStep() *sqlgraph.Step {
@@ -170,17 +143,10 @@ func newMembershipsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, MembershipsTable, MembershipsColumn),
 	)
 }
-func newGroupStep() *sqlgraph.Step {
+func newGroupMembershipsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GroupInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, GroupTable, GroupPrimaryKey...),
-	)
-}
-func newGroupUsersStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GroupUsersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, GroupUsersTable, GroupUsersColumn),
+		sqlgraph.To(GroupMembershipsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, GroupMembershipsTable, GroupMembershipsColumn),
 	)
 }

@@ -1134,15 +1134,15 @@ func (c *GroupClient) GetX(ctx context.Context, id uuid.UUID) *Group {
 	return obj
 }
 
-// QueryMembers queries the members edge of a Group.
-func (c *GroupClient) QueryMembers(gr *Group) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
+// QueryGroupMemberships queries the group_memberships edge of a Group.
+func (c *GroupClient) QueryGroupMemberships(gr *Group) *GroupMembershipQuery {
+	query := (&GroupMembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, group.MembersTable, group.MembersPrimaryKey...),
+			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, group.GroupMembershipsTable, group.GroupMembershipsColumn),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -1159,22 +1159,6 @@ func (c *GroupClient) QueryOrganization(gr *Group) *OrganizationQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, group.OrganizationTable, group.OrganizationColumn),
-		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryGroupUsers queries the group_users edge of a Group.
-func (c *GroupClient) QueryGroupUsers(gr *Group) *GroupMembershipQuery {
-	query := (&GroupMembershipClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, group.GroupUsersTable, group.GroupUsersColumn),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -3125,31 +3109,15 @@ func (c *UserClient) QueryMemberships(u *User) *MembershipQuery {
 	return query
 }
 
-// QueryGroup queries the group edge of a User.
-func (c *UserClient) QueryGroup(u *User) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.GroupTable, user.GroupPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryGroupUsers queries the group_users edge of a User.
-func (c *UserClient) QueryGroupUsers(u *User) *GroupMembershipQuery {
+// QueryGroupMemberships queries the group_memberships edge of a User.
+func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
 	query := (&GroupMembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, user.GroupUsersTable, user.GroupUsersColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.GroupMembershipsTable, user.GroupMembershipsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

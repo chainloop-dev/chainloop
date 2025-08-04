@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
@@ -118,34 +117,19 @@ func (uc *UserCreate) AddMemberships(m ...*Membership) *UserCreate {
 	return uc.AddMembershipIDs(ids...)
 }
 
-// AddGroupIDs adds the "group" edge to the Group entity by IDs.
-func (uc *UserCreate) AddGroupIDs(ids ...uuid.UUID) *UserCreate {
-	uc.mutation.AddGroupIDs(ids...)
+// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
+func (uc *UserCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddGroupMembershipIDs(ids...)
 	return uc
 }
 
-// AddGroup adds the "group" edges to the Group entity.
-func (uc *UserCreate) AddGroup(g ...*Group) *UserCreate {
+// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
+func (uc *UserCreate) AddGroupMemberships(g ...*GroupMembership) *UserCreate {
 	ids := make([]uuid.UUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
-	return uc.AddGroupIDs(ids...)
-}
-
-// AddGroupUserIDs adds the "group_users" edge to the GroupMembership entity by IDs.
-func (uc *UserCreate) AddGroupUserIDs(ids ...uuid.UUID) *UserCreate {
-	uc.mutation.AddGroupUserIDs(ids...)
-	return uc
-}
-
-// AddGroupUsers adds the "group_users" edges to the GroupMembership entity.
-func (uc *UserCreate) AddGroupUsers(g ...*GroupMembership) *UserCreate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return uc.AddGroupUserIDs(ids...)
+	return uc.AddGroupMembershipIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -278,35 +262,12 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := uc.mutation.GroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.GroupTable,
-			Columns: user.GroupPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		createE := &GroupMembershipCreate{config: uc.config, mutation: newGroupMembershipMutation(uc.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := uc.mutation.GroupUsersIDs(); len(nodes) > 0 {
+	if nodes := uc.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   user.GroupUsersTable,
-			Columns: []string{user.GroupUsersColumn},
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),

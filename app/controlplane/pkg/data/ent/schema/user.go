@@ -59,7 +59,7 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("memberships", Membership.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.From("group", Group.Type).Ref("members").Through("group_users", GroupMembership.Type),
+		edge.From("group_memberships", GroupMembership.Type).Ref("user"),
 	}
 }
 

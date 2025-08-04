@@ -379,44 +379,21 @@ func HasMembershipsWith(preds ...predicate.Membership) predicate.User {
 	})
 }
 
-// HasGroup applies the HasEdge predicate on the "group" edge.
-func HasGroup() predicate.User {
+// HasGroupMemberships applies the HasEdge predicate on the "group_memberships" edge.
+func HasGroupMemberships() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, GroupTable, GroupPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, GroupMembershipsTable, GroupMembershipsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasGroupWith applies the HasEdge predicate on the "group" edge with a given conditions (other predicates).
-func HasGroupWith(preds ...predicate.Group) predicate.User {
+// HasGroupMembershipsWith applies the HasEdge predicate on the "group_memberships" edge with a given conditions (other predicates).
+func HasGroupMembershipsWith(preds ...predicate.GroupMembership) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
-		step := newGroupStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasGroupUsers applies the HasEdge predicate on the "group_users" edge.
-func HasGroupUsers() predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, GroupUsersTable, GroupUsersColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasGroupUsersWith applies the HasEdge predicate on the "group_users" edge with a given conditions (other predicates).
-func HasGroupUsersWith(preds ...predicate.GroupMembership) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		step := newGroupUsersStep()
+		step := newGroupMembershipsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

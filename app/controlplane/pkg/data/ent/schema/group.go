@@ -52,7 +52,7 @@ func (Group) Fields() []ent.Field {
 func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
 		// The members of the group
-		edge.To("members", User.Type).Through("group_users", GroupMembership.Type),
+		edge.From("group_memberships", GroupMembership.Type).Ref("group"),
 		// The organization this group belongs to
 		edge.From("organization", Organization.Type).
 			Field("organization_id").
