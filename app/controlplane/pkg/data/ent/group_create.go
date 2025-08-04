@@ -15,7 +15,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -123,39 +122,24 @@ func (gc *GroupCreate) SetNillableID(u *uuid.UUID) *GroupCreate {
 	return gc
 }
 
-// AddMemberIDs adds the "members" edge to the User entity by IDs.
-func (gc *GroupCreate) AddMemberIDs(ids ...uuid.UUID) *GroupCreate {
-	gc.mutation.AddMemberIDs(ids...)
+// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
+func (gc *GroupCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupCreate {
+	gc.mutation.AddGroupMembershipIDs(ids...)
 	return gc
 }
 
-// AddMembers adds the "members" edges to the User entity.
-func (gc *GroupCreate) AddMembers(u ...*User) *GroupCreate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
+func (gc *GroupCreate) AddGroupMemberships(g ...*GroupMembership) *GroupCreate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
 	}
-	return gc.AddMemberIDs(ids...)
+	return gc.AddGroupMembershipIDs(ids...)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (gc *GroupCreate) SetOrganization(o *Organization) *GroupCreate {
 	return gc.SetOrganizationID(o.ID)
-}
-
-// AddGroupUserIDs adds the "group_users" edge to the GroupMembership entity by IDs.
-func (gc *GroupCreate) AddGroupUserIDs(ids ...uuid.UUID) *GroupCreate {
-	gc.mutation.AddGroupUserIDs(ids...)
-	return gc
-}
-
-// AddGroupUsers adds the "group_users" edges to the GroupMembership entity.
-func (gc *GroupCreate) AddGroupUsers(g ...*GroupMembership) *GroupCreate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return gc.AddGroupUserIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -296,26 +280,19 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
 		_node.MemberCount = value
 	}
-	if nodes := gc.mutation.MembersIDs(); len(nodes) > 0 {
+	if nodes := gc.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.MembersTable,
-			Columns: group.MembersPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   group.GroupMembershipsTable,
+			Columns: []string{group.GroupMembershipsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		createE := &GroupMembershipCreate{config: gc.config, mutation: newGroupMembershipMutation(gc.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
@@ -334,22 +311,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.OrganizationID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.GroupUsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.GroupUsersTable,
-			Columns: []string{group.GroupUsersColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

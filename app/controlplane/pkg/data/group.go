@@ -60,7 +60,7 @@ func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.Li
 
 	query := g.data.DB.Group.Query().
 		Where(group.DeletedAtIsNil(), group.OrganizationIDEQ(orgID)).
-		WithMembers().WithOrganization()
+		WithGroupMemberships().WithOrganization()
 
 	// Apply filters as ORs if any filter is provided
 	var predicates []predicate.Group
@@ -72,8 +72,20 @@ func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.Li
 		predicates = append(predicates, group.DescriptionContains(filterOpts.Description))
 	}
 
+	if filterOpts.UserID != nil {
+		predicates = append(predicates, group.HasGroupMembershipsWith(
+			groupmembership.UserID(*filterOpts.UserID),
+			groupmembership.DeletedAtIsNil(),
+		))
+	}
+
 	if filterOpts.MemberEmail != "" {
-		predicates = append(predicates, group.HasMembersWith(user.EmailContains(filterOpts.MemberEmail)))
+		predicates = append(predicates,
+			group.HasGroupMembershipsWith(
+				groupmembership.DeletedAtIsNil(),
+				groupmembership.HasUserWith(user.EmailContains(filterOpts.MemberEmail)),
+			),
+		)
 	}
 
 	// Apply OR predicates if any exist
@@ -223,17 +235,10 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 
 	err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		// Create the group with the provided options
-		builder := tx.Group.Create().
+		gr, err := tx.Group.Create().
 			SetName(opts.Name).
 			SetDescription(opts.Description).
-			SetOrganizationID(orgID)
-
-		// Add member if userID is provided
-		if opts.UserID != nil {
-			builder = builder.AddMemberIDs(*opts.UserID)
-		}
-
-		gr, err := builder.Save(ctx)
+			SetOrganizationID(orgID).Save(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {
 				return biz.NewErrAlreadyExistsStr("group with the same name already exists")
@@ -243,17 +248,12 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 
 		// Only add memberships if userID is not nil
 		if opts.UserID != nil {
-			// Update the group-user member to set it's a group maintainer
-			if _, grUerr := tx.GroupMembership.Update().
-				Where(
-					groupmembership.GroupIDEQ(gr.ID),
-					groupmembership.UserIDEQ(*opts.UserID),
-				).
+			// Set user as group maintainer
+			if _, grUerr := tx.GroupMembership.Create().
+				SetGroupID(gr.ID).
+				SetUserID(*opts.UserID).
 				SetMaintainer(true).
 				Save(ctx); grUerr != nil {
-				if ent.IsNotFound(grUerr) {
-					return biz.NewErrNotFound("group user")
-				}
 				return grUerr
 			}
 

@@ -38,13 +38,11 @@ type User struct {
 type UserEdges struct {
 	// Memberships holds the value of the memberships edge.
 	Memberships []*Membership `json:"memberships,omitempty"`
-	// Group holds the value of the group edge.
-	Group []*Group `json:"group,omitempty"`
-	// GroupUsers holds the value of the group_users edge.
-	GroupUsers []*GroupMembership `json:"group_users,omitempty"`
+	// GroupMemberships holds the value of the group_memberships edge.
+	GroupMemberships []*GroupMembership `json:"group_memberships,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // MembershipsOrErr returns the Memberships value or an error if the edge
@@ -56,22 +54,13 @@ func (e UserEdges) MembershipsOrErr() ([]*Membership, error) {
 	return nil, &NotLoadedError{edge: "memberships"}
 }
 
-// GroupOrErr returns the Group value or an error if the edge
+// GroupMembershipsOrErr returns the GroupMemberships value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) GroupOrErr() ([]*Group, error) {
+func (e UserEdges) GroupMembershipsOrErr() ([]*GroupMembership, error) {
 	if e.loadedTypes[1] {
-		return e.Group, nil
+		return e.GroupMemberships, nil
 	}
-	return nil, &NotLoadedError{edge: "group"}
-}
-
-// GroupUsersOrErr returns the GroupUsers value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) GroupUsersOrErr() ([]*GroupMembership, error) {
-	if e.loadedTypes[2] {
-		return e.GroupUsers, nil
-	}
-	return nil, &NotLoadedError{edge: "group_users"}
+	return nil, &NotLoadedError{edge: "group_memberships"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -157,14 +146,9 @@ func (u *User) QueryMemberships() *MembershipQuery {
 	return NewUserClient(u.config).QueryMemberships(u)
 }
 
-// QueryGroup queries the "group" edge of the User entity.
-func (u *User) QueryGroup() *GroupQuery {
-	return NewUserClient(u.config).QueryGroup(u)
-}
-
-// QueryGroupUsers queries the "group_users" edge of the User entity.
-func (u *User) QueryGroupUsers() *GroupMembershipQuery {
-	return NewUserClient(u.config).QueryGroupUsers(u)
+// QueryGroupMemberships queries the "group_memberships" edge of the User entity.
+func (u *User) QueryGroupMemberships() *GroupMembershipQuery {
+	return NewUserClient(u.config).QueryGroupMemberships(u)
 }
 
 // Update returns a builder for updating this User.

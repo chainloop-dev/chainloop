@@ -119,6 +119,8 @@ type ListGroupOpts struct {
 	Description string
 	// MemberEmail is the email of the member to filter by.
 	MemberEmail string
+	// UserID is the ID of the user to filter by.
+	UserID *uuid.UUID
 }
 
 // ListMembersOpts defines options for listing members of a group.
