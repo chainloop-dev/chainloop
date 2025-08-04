@@ -62,7 +62,15 @@ func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.Li
 		Where(group.DeletedAtIsNil(), group.OrganizationIDEQ(orgID)).
 		WithGroupMemberships().WithOrganization()
 
-	// Apply filters as ORs if any filter is provided
+	// filter by UserID if provided. It will be applied on top of rest of filters
+	if filterOpts.UserID != nil {
+		query.Where(group.HasGroupMembershipsWith(
+			groupmembership.UserID(*filterOpts.UserID),
+			groupmembership.DeletedAtIsNil(),
+		))
+	}
+
+	// Apply filters as ORs if any additional filter is provided
 	var predicates []predicate.Group
 	if filterOpts.Name != "" {
 		predicates = append(predicates, group.NameContains(filterOpts.Name))
@@ -70,13 +78,6 @@ func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.Li
 
 	if filterOpts.Description != "" {
 		predicates = append(predicates, group.DescriptionContains(filterOpts.Description))
-	}
-
-	if filterOpts.UserID != nil {
-		predicates = append(predicates, group.HasGroupMembershipsWith(
-			groupmembership.UserID(*filterOpts.UserID),
-			groupmembership.DeletedAtIsNil(),
-		))
 	}
 
 	if filterOpts.MemberEmail != "" {
