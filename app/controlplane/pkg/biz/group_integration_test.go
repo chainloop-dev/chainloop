@@ -392,6 +392,7 @@ func (s *groupListIntegrationTestSuite) TearDownSubTest() {
 	ctx := context.Background()
 	// Clean up the database after each test
 	_, _ = s.Data.DB.Group.Delete().Exec(ctx)
+	_, _ = s.Data.DB.Membership.Delete().Exec(ctx)
 }
 
 // Test listing groups with various filters
