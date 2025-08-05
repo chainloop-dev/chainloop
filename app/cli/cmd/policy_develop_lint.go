@@ -56,7 +56,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeResults(result)
+			return encodeResult(result)
 		},
 	}
 
@@ -66,16 +66,18 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	return cmd
 }
 
-func encodeResults(result *action.PolicyLintResult) error {
+func encodeResult(result *action.PolicyLintResult) error {
 	if result == nil {
 		return nil
 	}
 
-	fmt.Fprintf(os.Stdout, "Found %d issues:\n", len(result.Errors))
+	output := fmt.Sprintf("Found %d issues:\n", len(result.Errors))
 
 	for i, err := range result.Errors {
-		fmt.Fprintf(os.Stdout, "  %d. %s\n", i+1, err)
+		output += fmt.Sprintf("  %d. %s\n", i+1, err)
 	}
+
+	fmt.Print(output)
 
 	return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
 }
