@@ -61,27 +61,7 @@ evaluates the policy against the provided material or attestation.`,
 				return newGracefulError(err)
 			}
 
-			switch {
-			case result.Skipped:
-				logger.Info().Msg("policy evaluation skipped")
-				for _, reason := range result.SkipReasons {
-					logger.Info().Msgf("%s", reason)
-				}
-
-			case len(result.Violations) > 0:
-				for _, violation := range result.Violations {
-					logger.Info().Msgf("- %s", violation)
-				}
-				logger.Info().Msg("policy evaluation failed")
-
-			default:
-				if result.Ignored {
-					logger.Info().Msg("policy was ignored")
-				}
-				logger.Info().Msg("policy evaluation passed")
-			}
-
-			return nil
+			return encodeJSON(result)
 		},
 	}
 

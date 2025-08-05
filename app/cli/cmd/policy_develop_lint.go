@@ -55,11 +55,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			// Print all validation errors
-			for _, err := range result.Errors {
-				logger.Error().Msg(err)
-			}
-			return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
+			return encodeResult(result)
 		},
 	}
 
@@ -67,4 +63,20 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&format, "format", false, "Auto-format file with opa fmt")
 	cmd.Flags().StringVar(&regalConfig, "regal-config", "", "Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal.yaml)")
 	return cmd
+}
+
+func encodeResult(result *action.PolicyLintResult) error {
+	if result == nil {
+		return nil
+	}
+
+	output := fmt.Sprintf("Found %d issues:\n", len(result.Errors))
+
+	for i, err := range result.Errors {
+		output += fmt.Sprintf("  %d. %s\n", i+1, err)
+	}
+
+	fmt.Print(output)
+
+	return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
 }

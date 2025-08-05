@@ -30,10 +30,10 @@ type PolicyEvalOpts struct {
 }
 
 type PolicyEvalResult struct {
-	Skipped     bool
-	SkipReasons []string
-	Violations  []string
-	Ignored     bool
+	Violations  []string `json:"violations"`
+	SkipReasons []string `json:"skip_reasons"`
+	Skipped     bool     `json:"skipped"`
+	Ignored     bool     `json:"ignored,omitempty"`
 }
 
 type PolicyEval struct {
@@ -48,7 +48,7 @@ func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, 
 	}, nil
 }
 
-func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
+func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 	evalOpts := &policydevel.EvalOptions{
 		PolicyPath:   action.opts.PolicyPath,
 		MaterialKind: action.opts.Kind,
@@ -58,15 +58,20 @@ func (action *PolicyEval) Run() (*PolicyEvalResult, error) {
 	}
 
 	// Evaluate policy
-	result, err := policydevel.Evaluate(evalOpts, action.Logger)
+	resp, err := policydevel.Evaluate(evalOpts, action.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("evaluating policy: %w", err)
 	}
 
-	return &PolicyEvalResult{
-		Ignored:     result.Ignored,
-		Skipped:     result.Skipped,
-		SkipReasons: result.SkipReasons,
-		Violations:  result.Violations,
-	}, nil
+	results := make([]*PolicyEvalResult, 0, len(resp))
+	for _, r := range resp {
+		results = append(results, &PolicyEvalResult{
+			Violations:  r.Violations,
+			SkipReasons: r.SkipReasons,
+			Skipped:     r.Skipped,
+			Ignored:     r.Ignored,
+		})
+	}
+
+	return results, nil
 }

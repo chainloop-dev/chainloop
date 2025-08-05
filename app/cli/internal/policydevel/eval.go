@@ -43,7 +43,7 @@ type EvalResult struct {
 	Ignored     bool
 }
 
-func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalResult, error) {
+func Evaluate(opts *EvalOptions, logger zerolog.Logger) ([]*EvalResult, error) {
 	// 1. Create crafting schema
 	schema, err := createCraftingSchema(opts.PolicyPath, opts.Inputs)
 	if err != nil {
@@ -81,36 +81,44 @@ func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.Craf
 	}, nil
 }
 
-func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, logger *zerolog.Logger) (*EvalResult, error) {
+func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, logger *zerolog.Logger) ([]*EvalResult, error) {
 	v := policies.NewPolicyVerifier(schema, nil, logger)
-	evs, err := v.VerifyMaterial(context.Background(), material, materialPath)
+	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &EvalResult{
-		Skipped:     false,
-		SkipReasons: []string{},
-		Violations:  []string{},
-		Ignored:     true,
+	// no evaluations were returned
+	if len(policyEvs) == 0 {
+		return []*EvalResult{
+			{
+				Ignored:     true,
+				Skipped:     false,
+				SkipReasons: []string{},
+				Violations:  []string{},
+			},
+		}, nil
 	}
 
-	if len(evs) == 0 {
-		return result, nil
-	}
-
-	result.Ignored = false
-	result.Skipped = evs[0].GetSkipped()
-	result.SkipReasons = evs[0].SkipReasons
-	result.Violations = make([]string, 0, len(evs[0].Violations))
-
-	for _, e := range evs {
-		for _, v := range e.Violations {
-			result.Violations = append(result.Violations, fmt.Sprintf("%s: %s", v.Subject, v.Message))
+	results := make([]*EvalResult, 0, len(policyEvs))
+	for _, policyEv := range policyEvs {
+		result := &EvalResult{
+			Skipped:     policyEv.GetSkipped(),
+			SkipReasons: policyEv.SkipReasons,
+			Ignored:     false,
 		}
+
+		// Collect all violation messages
+		violations := make([]string, 0, len(policyEv.Violations))
+		for _, v := range policyEv.Violations {
+			violations = append(violations, v.Message)
+		}
+		result.Violations = violations
+
+		results = append(results, result)
 	}
 
-	return result, nil
+	return results, nil
 }
 
 func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
