@@ -773,6 +773,11 @@ func (s *testSuite) TestGetInputArguments() {
 			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
 		},
 		{
+			name:     "csv input with escaped comma",
+			inputs:   map[string]string{"foo": "bar1\\,bar2,bar3"},
+			expected: map[string]any{"foo": []string{"bar1,bar2", "bar3"}},
+		},
+		{
 			name:     "csv input with empty slots",
 			inputs:   map[string]string{"foo": ",bar1,,,bar2,bar3,,"},
 			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},

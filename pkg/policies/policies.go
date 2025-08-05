@@ -393,8 +393,8 @@ func getInputArguments(inputs map[string]string) map[string]any {
 			args[k] = value
 		}
 
-		// Single string, let's check for CSV
-		lines = strings.Split(s, ",")
+		// Single string, let's check for CSV and escaped commas `\,`
+		lines = splitArgs(s)
 		value = getValue(lines)
 		if value == nil {
 			continue
@@ -423,6 +423,42 @@ func getValue(values []string) any {
 	}
 	// nolint: gosec
 	return lines[0]
+}
+
+func splitArgs(s string) []string {
+	var result []string
+	var current strings.Builder
+	escaped := false
+
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+
+		if escaped {
+			current.WriteByte(c)
+			escaped = false
+			continue
+		}
+
+		if c == '\\' {
+			escaped = true
+			continue
+		}
+
+		if c == ',' {
+			// Unescaped comma: split here
+			result = append(result, strings.TrimSpace(current.String()))
+			current.Reset()
+		} else {
+			current.WriteByte(c)
+		}
+	}
+
+	// Add the final part
+	if current.Len() > 0 {
+		result = append(result, strings.TrimSpace(current.String()))
+	}
+
+	return result
 }
 
 func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult) []*v12.PolicyEvaluation_Violation {
