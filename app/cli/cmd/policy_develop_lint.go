@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
@@ -55,11 +56,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			// Print all validation errors
-			for _, err := range result.Errors {
-				logger.Error().Msg(err)
-			}
-			return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
+			return encodeResults(result)
 		},
 	}
 
@@ -67,4 +64,18 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&format, "format", false, "Auto-format file with opa fmt")
 	cmd.Flags().StringVar(&regalConfig, "regal-config", "", "Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal.yaml)")
 	return cmd
+}
+
+func encodeResults(result *action.PolicyLintResult) error {
+	if result == nil {
+		return nil
+	}
+
+	fmt.Fprintf(os.Stdout, "Found %d issues:\n", len(result.Errors))
+
+	for i, err := range result.Errors {
+		fmt.Fprintf(os.Stdout, "  %d. %s\n", i+1, err)
+	}
+
+	return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
 }

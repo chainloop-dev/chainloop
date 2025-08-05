@@ -40,9 +40,10 @@ func TestEvaluate(t *testing.T) {
 			Annotations:  map[string]string{"key": "value"},
 		}
 
-		result, err := Evaluate(opts, logger)
+		results, err := Evaluate(opts, logger)
 		require.NoError(t, err)
-		assert.NotNil(t, result)
+		require.NotEmpty(t, results)
+		assert.NotNil(t, results[0])
 	})
 
 	t.Run("evaluation with auto-detected SBOM CYCLONEDX kind", func(t *testing.T) {
@@ -55,14 +56,14 @@ func TestEvaluate(t *testing.T) {
 			Annotations:  map[string]string{"key": "value"},
 		}
 
-		result, err := Evaluate(opts, logger)
+		results, err := Evaluate(opts, logger)
 		require.NoError(t, err)
-		assert.NotNil(t, result)
+		require.NotEmpty(t, results)
 
-		if len(result.Violations) == 0 {
+		if len(results[0].Violations) == 0 {
 			t.Log("Policy evaluation passed (no violations)")
 		} else {
-			for _, violation := range result.Violations {
+			for _, violation := range results[0].Violations {
 				t.Logf("Violation: %s", violation)
 			}
 		}
@@ -78,14 +79,14 @@ func TestEvaluate(t *testing.T) {
 			Annotations:  map[string]string{"key": "value"},
 		}
 
-		result, err := Evaluate(opts, logger)
+		results, err := Evaluate(opts, logger)
 		require.NoError(t, err)
-		assert.NotNil(t, result)
+		require.NotEmpty(t, results)
 
-		if len(result.Violations) == 0 {
+		if len(results[0].Violations) == 0 {
 			t.Log("Policy evaluation passed (no violations)")
 		} else {
-			for _, violation := range result.Violations {
+			for _, violation := range results[0].Violations {
 				t.Logf("Violation: %s", violation)
 			}
 		}
