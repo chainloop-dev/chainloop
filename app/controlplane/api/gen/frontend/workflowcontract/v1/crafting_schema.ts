@@ -438,8 +438,7 @@ export interface PolicySpecV2 {
     | undefined;
   /**
    * if set, it will match any material supported by Chainloop
-   * except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
-   * CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
+   * CONTAINER, HELM_CHART are excluded, but we might implement custom policies for them in the future.
    */
   kind: CraftingSchema_Material_MaterialType;
 }
