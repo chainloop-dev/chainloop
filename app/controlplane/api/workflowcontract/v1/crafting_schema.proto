@@ -280,8 +280,11 @@ message PolicySpecV2 {
   }
 
   // if set, it will match any material supported by Chainloop
-  // CONTAINER, HELM_CHART are excluded, but we might implement custom policies for them in the future.
-  CraftingSchema.Material.MaterialType kind = 3;
+  CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
+    not_in: [
+      3
+    ]
+  }];
 }
 
 // Represents a group attachment in a contract

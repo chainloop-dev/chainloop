@@ -47,7 +47,7 @@
           "type": "integer"
         }
       ],
-      "description": "if set, it will match any material supported by Chainloop\n CONTAINER, HELM_CHART are excluded, but we might implement custom policies for them in the future."
+      "description": "if set, it will match any material supported by Chainloop"
     },
     "path": {
       "description": "path to a policy script. It might consist of a URI reference",

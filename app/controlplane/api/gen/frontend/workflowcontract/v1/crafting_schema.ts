@@ -436,10 +436,7 @@ export interface PolicySpecV2 {
   embedded?:
     | string
     | undefined;
-  /**
-   * if set, it will match any material supported by Chainloop
-   * CONTAINER, HELM_CHART are excluded, but we might implement custom policies for them in the future.
-   */
+  /** if set, it will match any material supported by Chainloop */
   kind: CraftingSchema_Material_MaterialType;
 }
 
