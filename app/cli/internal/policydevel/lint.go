@@ -134,8 +134,14 @@ func loadReferencedRegoFiles(policy *PolicyToLint) error {
 		}
 		dir := filepath.Dir(yamlFile.Path)
 		for _, spec := range parsed.Spec.Policies {
-			if spec.GetPath() != "" {
-				absRegoPath := filepath.Join(dir, spec.GetPath())
+			regoPath := spec.GetPath()
+			if regoPath != "" {
+				var absRegoPath string
+				if filepath.IsAbs(regoPath) {
+					absRegoPath = regoPath
+				} else {
+					absRegoPath = filepath.Join(dir, regoPath)
+				}
 				if _, ok := seen[absRegoPath]; ok {
 					continue // avoid duplicates
 				}
