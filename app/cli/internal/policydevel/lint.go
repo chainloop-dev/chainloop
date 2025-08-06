@@ -96,13 +96,23 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	}
 
 	if fileInfo.IsDir() {
-		if err := scanDirectory(policy, absPath); err != nil {
-			return nil, err
+		// If it's a directory, look for policy.yaml
+		policyYamlPath := filepath.Join(absPath, "policy.yaml")
+		if err := processFile(policy, policyYamlPath); err != nil {
+			if os.IsNotExist(err) {
+				return nil, fmt.Errorf("policy.yaml not found in directory: %s", absPath)
+			}
+			return nil, fmt.Errorf("failed to read policy.yaml: %w", err)
 		}
 	} else {
 		if err := processFile(policy, absPath); err != nil {
 			return nil, err
 		}
+	}
+
+	// Load referenced rego files from all YAML files
+	if err := loadReferencedRegoFiles(policy); err != nil {
+		return nil, err
 	}
 
 	// Verify we found at least one valid file
@@ -113,31 +123,29 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	return policy, nil
 }
 
-// Performs a one-level directory lookup to find .yaml/.yml or .rego files.
-func scanDirectory(policy *PolicyToLint, dirPath string) error {
-	files, err := os.ReadDir(dirPath)
-	if err != nil {
-		return fmt.Errorf("reading directory: %w", err)
-	}
-
-	var foundValidFile bool
-	for _, file := range files {
-		if file.IsDir() {
+// Loads referenced rego files from all YAML files in the policy
+func loadReferencedRegoFiles(policy *PolicyToLint) error {
+	seen := make(map[string]struct{})
+	for _, yamlFile := range policy.YAMLFiles {
+		var parsed v1.Policy
+		if err := unmarshal.FromRaw(yamlFile.Content, unmarshal.RawFormatYAML, &parsed, true); err != nil {
+			// Ignore parse errors here; they'll be caught in validation
 			continue
 		}
-
-		filePath := filepath.Join(dirPath, file.Name())
-		if err := processFile(policy, filePath); err != nil {
-			// Skip unsupported files but continue processing others
-			continue
+		dir := filepath.Dir(yamlFile.Path)
+		for _, spec := range parsed.Spec.Policies {
+			if spec.GetPath() != "" {
+				absRegoPath := filepath.Join(dir, spec.GetPath())
+				if _, ok := seen[absRegoPath]; ok {
+					continue // avoid duplicates
+				}
+				seen[absRegoPath] = struct{}{}
+				if err := processFile(policy, absRegoPath); err != nil {
+					return fmt.Errorf("failed to load referenced rego file %q: %w", absRegoPath, err)
+				}
+			}
 		}
-		foundValidFile = true
 	}
-
-	if !foundValidFile {
-		return fmt.Errorf("no valid .yaml/.yml or .rego files found in directory")
-	}
-
 	return nil
 }
 
