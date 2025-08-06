@@ -232,7 +232,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo:                   workflowMeta,
+		WfInfo: workflowMeta,
+		//nolint:staticcheck // TODO: Migrate to new contract version API
 		SchemaV1:                 contractVersion.GetV1(),
 		DryRun:                   action.dryRun,
 		AttestationID:            attestationID,
