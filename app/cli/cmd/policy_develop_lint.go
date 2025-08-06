@@ -17,8 +17,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +58,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeResult(result)
+			return encodeOutput(result, policyLintTable)
 		},
 	}
 
@@ -65,18 +68,31 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	return cmd
 }
 
-func encodeResult(result *action.PolicyLintResult) error {
-	if result == nil {
-		return nil
-	}
-
-	output := fmt.Sprintf("Found %d issues:\n", len(result.Errors))
+// Table rendering function for policy lint results
+func policyLintTable(result *action.PolicyLintResult) error {
+	tw := table.NewWriter()
+	tw.SetOutputMirror(os.Stdout)
+	tw.AppendHeader(table.Row{"#", "File", "Line", "Message"})
 
 	for i, err := range result.Errors {
-		output += fmt.Sprintf("  %d. %s\n", i+1, err)
+		file, line, msg := parseLintError(err)
+		tw.AppendRow(table.Row{i + 1, file, line, msg})
 	}
 
-	fmt.Print(output)
+	tw.Render()
+	return nil
+}
 
-	return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
+// Helper to parse error string into file, line, message
+func parseLintError(err string) (file, line, msg string) {
+	parts := strings.SplitN(err, ":", 3)
+	if len(parts) == 3 {
+		file = strings.TrimSpace(parts[0])
+		line = strings.TrimSpace(parts[1])
+		msg = strings.TrimSpace(parts[2])
+	} else if len(parts) == 2 {
+		file = strings.TrimSpace(parts[0])
+		msg = strings.TrimSpace(parts[1])
+	}
+	return
 }

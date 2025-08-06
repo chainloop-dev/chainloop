@@ -55,7 +55,8 @@ type tabulatedData interface {
 		[]*action.APITokenItem |
 		*action.AttestationStatusMaterial |
 		*action.ListMembershipResult |
-		*action.PolicyEvalResult
+		*action.PolicyEvalResult |
+		*action.PolicyLintResult
 }
 
 var ErrOutputFormatNotImplemented = errors.New("format not implemented")
