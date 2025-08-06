@@ -276,11 +276,11 @@ func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, o
 
 // Capabilities returns the capabilities of the environment based on the mode of operation
 // defaulting to EnvironmentModeRestrictive if not provided.
-func (e *Engine) Capabilities() *ast.Capabilities {
+func (r *Engine) Capabilities() *ast.Capabilities {
 	capabilities := ast.CapabilitiesForThisVersion()
 	var enabledBuiltin []*ast.Builtin
 
-	switch e.operatingMode {
+	switch r.operatingMode {
 	case EnvironmentModeRestrictive:
 		// Copy all builtins functions
 		localBuiltIns := make(map[string]*ast.Builtin, len(ast.BuiltinMap))
@@ -298,7 +298,7 @@ func (e *Engine) Capabilities() *ast.Capabilities {
 		}
 
 		// Allow specific network domains
-		capabilities.AllowNet = e.allowedNetworkDomains
+		capabilities.AllowNet = r.allowedNetworkDomains
 
 	case EnvironmentModePermissive:
 		enabledBuiltin = capabilities.Builtins
