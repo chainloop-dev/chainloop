@@ -200,6 +200,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		WorkflowRun:            wRun,
 		Organization:           org.Name,
 		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
+		PoliciesAllowedDomains: org.PoliciesAllowedDomains,
 	}
 
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}

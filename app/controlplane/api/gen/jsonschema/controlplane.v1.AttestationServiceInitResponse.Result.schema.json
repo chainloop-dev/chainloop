@@ -7,6 +7,13 @@
       "description": "fail the attestation if there is a violation in any policy",
       "type": "boolean"
     },
+    "^(policiesAllowedDomains)$": {
+      "description": "array of domains that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(signingOptions)$": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
       "description": "Signing options"
@@ -23,6 +30,13 @@
     "organization": {
       "description": "organization name",
       "type": "string"
+    },
+    "policies_allowed_domains": {
+      "description": "array of domains that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     },
     "signing_options": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",

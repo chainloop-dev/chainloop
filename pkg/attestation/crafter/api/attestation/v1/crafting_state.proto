@@ -156,6 +156,9 @@ message Attestation {
   // Authentication information used during attestation
   Auth auth = 17;
 
+  // array of domains that are allowed to be used in the policies
+  repeated string policies_allowed_domains = 18;
+
   message Auth {
     AuthType type = 1 [(buf.validate.field).enum = {
       not_in: [0]

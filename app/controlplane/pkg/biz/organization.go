@@ -36,6 +36,8 @@ type Organization struct {
 	CreatedAt *time.Time
 	// BlockOnPolicyViolation blocks the workflow run if policy evaluation fails
 	BlockOnPolicyViolation bool
+	// PoliciesAllowedDomains is an array of domains that are allowed to be used in the policies
+	PoliciesAllowedDomains []string
 }
 
 type OrganizationRepo interface {

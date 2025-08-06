@@ -81,7 +81,7 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 			attestationStatePath = path
 		}
 
-		c.Logger.Debug().Str("path", attestationStatePath).Msg("using local state")
+		c.Logger.Debug().Str("path", fmt.Sprintf("file:%s", attestationStatePath)).Msg("using local state")
 		stateManager, err = filesystem.New(attestationStatePath)
 	}
 

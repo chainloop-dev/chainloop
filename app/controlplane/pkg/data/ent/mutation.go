@@ -8479,40 +8479,42 @@ func (m *OrgInvitationMutation) ResetEdge(name string) error {
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *uuid.UUID
-	name                      *string
-	created_at                *time.Time
-	block_on_policy_violation *bool
-	clearedFields             map[string]struct{}
-	memberships               map[uuid.UUID]struct{}
-	removedmemberships        map[uuid.UUID]struct{}
-	clearedmemberships        bool
-	workflow_contracts        map[uuid.UUID]struct{}
-	removedworkflow_contracts map[uuid.UUID]struct{}
-	clearedworkflow_contracts bool
-	workflows                 map[uuid.UUID]struct{}
-	removedworkflows          map[uuid.UUID]struct{}
-	clearedworkflows          bool
-	cas_backends              map[uuid.UUID]struct{}
-	removedcas_backends       map[uuid.UUID]struct{}
-	clearedcas_backends       bool
-	integrations              map[uuid.UUID]struct{}
-	removedintegrations       map[uuid.UUID]struct{}
-	clearedintegrations       bool
-	api_tokens                map[uuid.UUID]struct{}
-	removedapi_tokens         map[uuid.UUID]struct{}
-	clearedapi_tokens         bool
-	projects                  map[uuid.UUID]struct{}
-	removedprojects           map[uuid.UUID]struct{}
-	clearedprojects           bool
-	groups                    map[uuid.UUID]struct{}
-	removedgroups             map[uuid.UUID]struct{}
-	clearedgroups             bool
-	done                      bool
-	oldValue                  func(context.Context) (*Organization, error)
-	predicates                []predicate.Organization
+	op                             Op
+	typ                            string
+	id                             *uuid.UUID
+	name                           *string
+	created_at                     *time.Time
+	block_on_policy_violation      *bool
+	policies_allowed_domains       *[]string
+	appendpolicies_allowed_domains []string
+	clearedFields                  map[string]struct{}
+	memberships                    map[uuid.UUID]struct{}
+	removedmemberships             map[uuid.UUID]struct{}
+	clearedmemberships             bool
+	workflow_contracts             map[uuid.UUID]struct{}
+	removedworkflow_contracts      map[uuid.UUID]struct{}
+	clearedworkflow_contracts      bool
+	workflows                      map[uuid.UUID]struct{}
+	removedworkflows               map[uuid.UUID]struct{}
+	clearedworkflows               bool
+	cas_backends                   map[uuid.UUID]struct{}
+	removedcas_backends            map[uuid.UUID]struct{}
+	clearedcas_backends            bool
+	integrations                   map[uuid.UUID]struct{}
+	removedintegrations            map[uuid.UUID]struct{}
+	clearedintegrations            bool
+	api_tokens                     map[uuid.UUID]struct{}
+	removedapi_tokens              map[uuid.UUID]struct{}
+	clearedapi_tokens              bool
+	projects                       map[uuid.UUID]struct{}
+	removedprojects                map[uuid.UUID]struct{}
+	clearedprojects                bool
+	groups                         map[uuid.UUID]struct{}
+	removedgroups                  map[uuid.UUID]struct{}
+	clearedgroups                  bool
+	done                           bool
+	oldValue                       func(context.Context) (*Organization, error)
+	predicates                     []predicate.Organization
 }
 
 var _ ent.Mutation = (*OrganizationMutation)(nil)
@@ -8725,6 +8727,71 @@ func (m *OrganizationMutation) OldBlockOnPolicyViolation(ctx context.Context) (v
 // ResetBlockOnPolicyViolation resets all changes to the "block_on_policy_violation" field.
 func (m *OrganizationMutation) ResetBlockOnPolicyViolation() {
 	m.block_on_policy_violation = nil
+}
+
+// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
+func (m *OrganizationMutation) SetPoliciesAllowedDomains(s []string) {
+	m.policies_allowed_domains = &s
+	m.appendpolicies_allowed_domains = nil
+}
+
+// PoliciesAllowedDomains returns the value of the "policies_allowed_domains" field in the mutation.
+func (m *OrganizationMutation) PoliciesAllowedDomains() (r []string, exists bool) {
+	v := m.policies_allowed_domains
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPoliciesAllowedDomains returns the old "policies_allowed_domains" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldPoliciesAllowedDomains(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPoliciesAllowedDomains is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPoliciesAllowedDomains requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPoliciesAllowedDomains: %w", err)
+	}
+	return oldValue.PoliciesAllowedDomains, nil
+}
+
+// AppendPoliciesAllowedDomains adds s to the "policies_allowed_domains" field.
+func (m *OrganizationMutation) AppendPoliciesAllowedDomains(s []string) {
+	m.appendpolicies_allowed_domains = append(m.appendpolicies_allowed_domains, s...)
+}
+
+// AppendedPoliciesAllowedDomains returns the list of values that were appended to the "policies_allowed_domains" field in this mutation.
+func (m *OrganizationMutation) AppendedPoliciesAllowedDomains() ([]string, bool) {
+	if len(m.appendpolicies_allowed_domains) == 0 {
+		return nil, false
+	}
+	return m.appendpolicies_allowed_domains, true
+}
+
+// ClearPoliciesAllowedDomains clears the value of the "policies_allowed_domains" field.
+func (m *OrganizationMutation) ClearPoliciesAllowedDomains() {
+	m.policies_allowed_domains = nil
+	m.appendpolicies_allowed_domains = nil
+	m.clearedFields[organization.FieldPoliciesAllowedDomains] = struct{}{}
+}
+
+// PoliciesAllowedDomainsCleared returns if the "policies_allowed_domains" field was cleared in this mutation.
+func (m *OrganizationMutation) PoliciesAllowedDomainsCleared() bool {
+	_, ok := m.clearedFields[organization.FieldPoliciesAllowedDomains]
+	return ok
+}
+
+// ResetPoliciesAllowedDomains resets all changes to the "policies_allowed_domains" field.
+func (m *OrganizationMutation) ResetPoliciesAllowedDomains() {
+	m.policies_allowed_domains = nil
+	m.appendpolicies_allowed_domains = nil
+	delete(m.clearedFields, organization.FieldPoliciesAllowedDomains)
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9193,7 +9260,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9202,6 +9269,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.block_on_policy_violation != nil {
 		fields = append(fields, organization.FieldBlockOnPolicyViolation)
+	}
+	if m.policies_allowed_domains != nil {
+		fields = append(fields, organization.FieldPoliciesAllowedDomains)
 	}
 	return fields
 }
@@ -9217,6 +9287,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case organization.FieldBlockOnPolicyViolation:
 		return m.BlockOnPolicyViolation()
+	case organization.FieldPoliciesAllowedDomains:
+		return m.PoliciesAllowedDomains()
 	}
 	return nil, false
 }
@@ -9232,6 +9304,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldCreatedAt(ctx)
 	case organization.FieldBlockOnPolicyViolation:
 		return m.OldBlockOnPolicyViolation(ctx)
+	case organization.FieldPoliciesAllowedDomains:
+		return m.OldPoliciesAllowedDomains(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9262,6 +9336,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetBlockOnPolicyViolation(v)
 		return nil
+	case organization.FieldPoliciesAllowedDomains:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPoliciesAllowedDomains(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9291,7 +9372,11 @@ func (m *OrganizationMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *OrganizationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(organization.FieldPoliciesAllowedDomains) {
+		fields = append(fields, organization.FieldPoliciesAllowedDomains)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -9304,6 +9389,11 @@ func (m *OrganizationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *OrganizationMutation) ClearField(name string) error {
+	switch name {
+	case organization.FieldPoliciesAllowedDomains:
+		m.ClearPoliciesAllowedDomains()
+		return nil
+	}
 	return fmt.Errorf("unknown Organization nullable field %s", name)
 }
 
@@ -9319,6 +9409,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldBlockOnPolicyViolation:
 		m.ResetBlockOnPolicyViolation()
+		return nil
+	case organization.FieldPoliciesAllowedDomains:
+		m.ResetPoliciesAllowedDomains()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

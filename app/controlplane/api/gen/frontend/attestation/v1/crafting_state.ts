@@ -40,6 +40,8 @@ export interface Attestation {
   runnerEnvironment?: RunnerEnvironment;
   /** Authentication information used during attestation */
   auth?: Attestation_Auth;
+  /** array of domains that are allowed to be used in the policies */
+  policiesAllowedDomains: string[];
 }
 
 export interface Attestation_MaterialsEntry {
@@ -399,6 +401,7 @@ function createBaseAttestation(): Attestation {
     signingOptions: undefined,
     runnerEnvironment: undefined,
     auth: undefined,
+    policiesAllowedDomains: [],
   };
 }
 
@@ -448,6 +451,9 @@ export const Attestation = {
     }
     if (message.auth !== undefined) {
       Attestation_Auth.encode(message.auth, writer.uint32(138).fork()).ldelim();
+    }
+    for (const v of message.policiesAllowedDomains) {
+      writer.uint32(146).string(v!);
     }
     return writer;
   },
@@ -573,6 +579,13 @@ export const Attestation = {
 
           message.auth = Attestation_Auth.decode(reader, reader.uint32());
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.policiesAllowedDomains.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -620,6 +633,9 @@ export const Attestation = {
         ? RunnerEnvironment.fromJSON(object.runnerEnvironment)
         : undefined,
       auth: isSet(object.auth) ? Attestation_Auth.fromJSON(object.auth) : undefined,
+      policiesAllowedDomains: Array.isArray(object?.policiesAllowedDomains)
+        ? object.policiesAllowedDomains.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -664,6 +680,11 @@ export const Attestation = {
       ? RunnerEnvironment.toJSON(message.runnerEnvironment)
       : undefined);
     message.auth !== undefined && (obj.auth = message.auth ? Attestation_Auth.toJSON(message.auth) : undefined);
+    if (message.policiesAllowedDomains) {
+      obj.policiesAllowedDomains = message.policiesAllowedDomains.map((e) => e);
+    } else {
+      obj.policiesAllowedDomains = [];
+    }
     return obj;
   },
 
@@ -717,6 +738,7 @@ export const Attestation = {
     message.auth = (object.auth !== undefined && object.auth !== null)
       ? Attestation_Auth.fromPartial(object.auth)
       : undefined;
+    message.policiesAllowedDomains = object.policiesAllowedDomains?.map((e) => e) || [];
     return message;
   },
 };

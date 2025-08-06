@@ -175,6 +175,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		// Identifier of this attestation instance
 		attestationID          string
 		blockOnPolicyViolation bool
+		policiesAllowedDomains []string
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
 	)
@@ -197,14 +198,21 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			return "", err
 		}
 
-		workflowRun := runResp.GetResult().GetWorkflowRun()
+		result := runResp.GetResult()
+		workflowRun := result.GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
-		workflowMeta.Organization = runResp.GetResult().GetOrganization()
-		blockOnPolicyViolation = runResp.GetResult().GetBlockOnPolicyViolation()
-		timestampAuthorityURL = runResp.GetResult().GetSigningOptions().GetTimestampAuthorityUrl()
-		signingCAName = runResp.GetResult().GetSigningOptions().GetSigningCa()
-		if v := workflowMeta.Version; v != nil {
-			workflowMeta.Version.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
+		workflowMeta.Organization = result.GetOrganization()
+		blockOnPolicyViolation = result.GetBlockOnPolicyViolation()
+		policiesAllowedDomains = result.GetPoliciesAllowedDomains()
+
+		signingOpts := result.GetSigningOptions()
+		if signingOpts != nil {
+			timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
+			signingCAName = signingOpts.GetSigningCa()
+		}
+
+		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
+			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
 		}
 
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
@@ -230,6 +238,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		AttestationID:          attestationID,
 		Runner:                 discoveredRunner,
 		BlockOnPolicyViolation: blockOnPolicyViolation,
+		PoliciesAllowedDomains: policiesAllowedDomains,
 		SigningOptions: &crafter.SigningOpts{
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,

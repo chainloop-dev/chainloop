@@ -66,6 +66,12 @@ func (oc *OrganizationCreate) SetNillableBlockOnPolicyViolation(b *bool) *Organi
 	return oc
 }
 
+// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
+func (oc *OrganizationCreate) SetPoliciesAllowedDomains(s []string) *OrganizationCreate {
+	oc.mutation.SetPoliciesAllowedDomains(s)
+	return oc
+}
+
 // SetID sets the "id" field.
 func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
 	oc.mutation.SetID(u)
@@ -308,6 +314,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 		_node.BlockOnPolicyViolation = value
 	}
+	if value, ok := oc.mutation.PoliciesAllowedDomains(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedDomains, field.TypeJSON, value)
+		_node.PoliciesAllowedDomains = value
+	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -512,6 +522,24 @@ func (u *OrganizationUpsert) UpdateBlockOnPolicyViolation() *OrganizationUpsert 
 	return u
 }
 
+// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
+func (u *OrganizationUpsert) SetPoliciesAllowedDomains(v []string) *OrganizationUpsert {
+	u.Set(organization.FieldPoliciesAllowedDomains, v)
+	return u
+}
+
+// UpdatePoliciesAllowedDomains sets the "policies_allowed_domains" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdatePoliciesAllowedDomains() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldPoliciesAllowedDomains)
+	return u
+}
+
+// ClearPoliciesAllowedDomains clears the value of the "policies_allowed_domains" field.
+func (u *OrganizationUpsert) ClearPoliciesAllowedDomains() *OrganizationUpsert {
+	u.SetNull(organization.FieldPoliciesAllowedDomains)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -588,6 +616,27 @@ func (u *OrganizationUpsertOne) SetBlockOnPolicyViolation(v bool) *OrganizationU
 func (u *OrganizationUpsertOne) UpdateBlockOnPolicyViolation() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockOnPolicyViolation()
+	})
+}
+
+// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
+func (u *OrganizationUpsertOne) SetPoliciesAllowedDomains(v []string) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPoliciesAllowedDomains(v)
+	})
+}
+
+// UpdatePoliciesAllowedDomains sets the "policies_allowed_domains" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdatePoliciesAllowedDomains() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePoliciesAllowedDomains()
+	})
+}
+
+// ClearPoliciesAllowedDomains clears the value of the "policies_allowed_domains" field.
+func (u *OrganizationUpsertOne) ClearPoliciesAllowedDomains() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearPoliciesAllowedDomains()
 	})
 }
 
@@ -834,6 +883,27 @@ func (u *OrganizationUpsertBulk) SetBlockOnPolicyViolation(v bool) *Organization
 func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyViolation() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockOnPolicyViolation()
+	})
+}
+
+// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
+func (u *OrganizationUpsertBulk) SetPoliciesAllowedDomains(v []string) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPoliciesAllowedDomains(v)
+	})
+}
+
+// UpdatePoliciesAllowedDomains sets the "policies_allowed_domains" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdatePoliciesAllowedDomains() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePoliciesAllowedDomains()
+	})
+}
+
+// ClearPoliciesAllowedDomains clears the value of the "policies_allowed_domains" field.
+func (u *OrganizationUpsertBulk) ClearPoliciesAllowedDomains() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearPoliciesAllowedDomains()
 	})
 }
 
