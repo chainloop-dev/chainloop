@@ -104,12 +104,12 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 		Config: config,
 	}
 
-	if err := processFile(policy, resolvedPath); err != nil {
+	if err := policy.processFile(resolvedPath); err != nil {
 		return nil, err
 	}
 
 	// Load referenced rego files from all YAML files
-	if err := loadReferencedRegoFiles(policy); err != nil {
+	if err := policy.loadReferencedRegoFiles(); err != nil {
 		return nil, err
 	}
 
@@ -122,9 +122,9 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 }
 
 // Loads referenced rego files from all YAML files in the policy
-func loadReferencedRegoFiles(policy *PolicyToLint) error {
+func (p *PolicyToLint) loadReferencedRegoFiles() error {
 	seen := make(map[string]struct{})
-	for _, yamlFile := range policy.YAMLFiles {
+	for _, yamlFile := range p.YAMLFiles {
 		var parsed v1.Policy
 		if err := unmarshal.FromRaw(yamlFile.Content, unmarshal.RawFormatYAML, &parsed, true); err != nil {
 			// Ignore parse errors here; they'll be caught in validation
@@ -141,7 +141,7 @@ func loadReferencedRegoFiles(policy *PolicyToLint) error {
 					continue // avoid duplicates
 				}
 				seen[resolvedPath] = struct{}{}
-				if err := processFile(policy, resolvedPath); err != nil {
+				if err := p.processFile(resolvedPath); err != nil {
 					return fmt.Errorf("failed to load referenced rego file %q: %w", resolvedPath, err)
 				}
 			}
@@ -150,7 +150,7 @@ func loadReferencedRegoFiles(policy *PolicyToLint) error {
 	return nil
 }
 
-func processFile(policy *PolicyToLint, filePath string) error {
+func (p *PolicyToLint) processFile(filePath string) error {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", filepath.Base(filePath), err)
@@ -159,12 +159,12 @@ func processFile(policy *PolicyToLint, filePath string) error {
 	ext := strings.ToLower(filepath.Ext(filePath))
 	switch ext {
 	case ".yaml", ".yml":
-		policy.YAMLFiles = append(policy.YAMLFiles, &File{
+		p.YAMLFiles = append(p.YAMLFiles, &File{
 			Path:    filePath,
 			Content: content,
 		})
 	case ".rego":
-		policy.RegoFiles = append(policy.RegoFiles, &File{
+		p.RegoFiles = append(p.RegoFiles, &File{
 			Path:    filePath,
 			Content: content,
 		})
