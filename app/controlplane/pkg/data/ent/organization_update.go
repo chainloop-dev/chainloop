@@ -66,21 +66,21 @@ func (ou *OrganizationUpdate) SetNillableBlockOnPolicyViolation(b *bool) *Organi
 	return ou
 }
 
-// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
-func (ou *OrganizationUpdate) SetPoliciesAllowedDomains(s []string) *OrganizationUpdate {
-	ou.mutation.SetPoliciesAllowedDomains(s)
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (ou *OrganizationUpdate) SetPoliciesAllowedHostnames(s []string) *OrganizationUpdate {
+	ou.mutation.SetPoliciesAllowedHostnames(s)
 	return ou
 }
 
-// AppendPoliciesAllowedDomains appends s to the "policies_allowed_domains" field.
-func (ou *OrganizationUpdate) AppendPoliciesAllowedDomains(s []string) *OrganizationUpdate {
-	ou.mutation.AppendPoliciesAllowedDomains(s)
+// AppendPoliciesAllowedHostnames appends s to the "policies_allowed_hostnames" field.
+func (ou *OrganizationUpdate) AppendPoliciesAllowedHostnames(s []string) *OrganizationUpdate {
+	ou.mutation.AppendPoliciesAllowedHostnames(s)
 	return ou
 }
 
-// ClearPoliciesAllowedDomains clears the value of the "policies_allowed_domains" field.
-func (ou *OrganizationUpdate) ClearPoliciesAllowedDomains() *OrganizationUpdate {
-	ou.mutation.ClearPoliciesAllowedDomains()
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (ou *OrganizationUpdate) ClearPoliciesAllowedHostnames() *OrganizationUpdate {
+	ou.mutation.ClearPoliciesAllowedHostnames()
 	return ou
 }
 
@@ -425,16 +425,16 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ou.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 	}
-	if value, ok := ou.mutation.PoliciesAllowedDomains(); ok {
-		_spec.SetField(organization.FieldPoliciesAllowedDomains, field.TypeJSON, value)
+	if value, ok := ou.mutation.PoliciesAllowedHostnames(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
 	}
-	if value, ok := ou.mutation.AppendedPoliciesAllowedDomains(); ok {
+	if value, ok := ou.mutation.AppendedPoliciesAllowedHostnames(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, organization.FieldPoliciesAllowedDomains, value)
+			sqljson.Append(u, organization.FieldPoliciesAllowedHostnames, value)
 		})
 	}
-	if ou.mutation.PoliciesAllowedDomainsCleared() {
-		_spec.ClearField(organization.FieldPoliciesAllowedDomains, field.TypeJSON)
+	if ou.mutation.PoliciesAllowedHostnamesCleared() {
+		_spec.ClearField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -846,21 +846,21 @@ func (ouo *OrganizationUpdateOne) SetNillableBlockOnPolicyViolation(b *bool) *Or
 	return ouo
 }
 
-// SetPoliciesAllowedDomains sets the "policies_allowed_domains" field.
-func (ouo *OrganizationUpdateOne) SetPoliciesAllowedDomains(s []string) *OrganizationUpdateOne {
-	ouo.mutation.SetPoliciesAllowedDomains(s)
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (ouo *OrganizationUpdateOne) SetPoliciesAllowedHostnames(s []string) *OrganizationUpdateOne {
+	ouo.mutation.SetPoliciesAllowedHostnames(s)
 	return ouo
 }
 
-// AppendPoliciesAllowedDomains appends s to the "policies_allowed_domains" field.
-func (ouo *OrganizationUpdateOne) AppendPoliciesAllowedDomains(s []string) *OrganizationUpdateOne {
-	ouo.mutation.AppendPoliciesAllowedDomains(s)
+// AppendPoliciesAllowedHostnames appends s to the "policies_allowed_hostnames" field.
+func (ouo *OrganizationUpdateOne) AppendPoliciesAllowedHostnames(s []string) *OrganizationUpdateOne {
+	ouo.mutation.AppendPoliciesAllowedHostnames(s)
 	return ouo
 }
 
-// ClearPoliciesAllowedDomains clears the value of the "policies_allowed_domains" field.
-func (ouo *OrganizationUpdateOne) ClearPoliciesAllowedDomains() *OrganizationUpdateOne {
-	ouo.mutation.ClearPoliciesAllowedDomains()
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (ouo *OrganizationUpdateOne) ClearPoliciesAllowedHostnames() *OrganizationUpdateOne {
+	ouo.mutation.ClearPoliciesAllowedHostnames()
 	return ouo
 }
 
@@ -1235,16 +1235,16 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	if value, ok := ouo.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 	}
-	if value, ok := ouo.mutation.PoliciesAllowedDomains(); ok {
-		_spec.SetField(organization.FieldPoliciesAllowedDomains, field.TypeJSON, value)
+	if value, ok := ouo.mutation.PoliciesAllowedHostnames(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
 	}
-	if value, ok := ouo.mutation.AppendedPoliciesAllowedDomains(); ok {
+	if value, ok := ouo.mutation.AppendedPoliciesAllowedHostnames(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, organization.FieldPoliciesAllowedDomains, value)
+			sqljson.Append(u, organization.FieldPoliciesAllowedHostnames, value)
 		})
 	}
-	if ouo.mutation.PoliciesAllowedDomainsCleared() {
-		_spec.ClearField(organization.FieldPoliciesAllowedDomains, field.TypeJSON)
+	if ouo.mutation.PoliciesAllowedHostnamesCleared() {
+		_spec.ClearField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

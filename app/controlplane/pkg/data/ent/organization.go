@@ -25,8 +25,8 @@ type Organization struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// BlockOnPolicyViolation holds the value of the "block_on_policy_violation" field.
 	BlockOnPolicyViolation bool `json:"block_on_policy_violation,omitempty"`
-	// PoliciesAllowedDomains holds the value of the "policies_allowed_domains" field.
-	PoliciesAllowedDomains []string `json:"policies_allowed_domains,omitempty"`
+	// PoliciesAllowedHostnames holds the value of the "policies_allowed_hostnames" field.
+	PoliciesAllowedHostnames []string `json:"policies_allowed_hostnames,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -133,7 +133,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case organization.FieldPoliciesAllowedDomains:
+		case organization.FieldPoliciesAllowedHostnames:
 			values[i] = new([]byte)
 		case organization.FieldBlockOnPolicyViolation:
 			values[i] = new(sql.NullBool)
@@ -182,12 +182,12 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				o.BlockOnPolicyViolation = value.Bool
 			}
-		case organization.FieldPoliciesAllowedDomains:
+		case organization.FieldPoliciesAllowedHostnames:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field policies_allowed_domains", values[i])
+				return fmt.Errorf("unexpected type %T for field policies_allowed_hostnames", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &o.PoliciesAllowedDomains); err != nil {
-					return fmt.Errorf("unmarshal field policies_allowed_domains: %w", err)
+				if err := json.Unmarshal(*value, &o.PoliciesAllowedHostnames); err != nil {
+					return fmt.Errorf("unmarshal field policies_allowed_hostnames: %w", err)
 				}
 			}
 		default:
@@ -275,8 +275,8 @@ func (o *Organization) String() string {
 	builder.WriteString("block_on_policy_violation=")
 	builder.WriteString(fmt.Sprintf("%v", o.BlockOnPolicyViolation))
 	builder.WriteString(", ")
-	builder.WriteString("policies_allowed_domains=")
-	builder.WriteString(fmt.Sprintf("%v", o.PoliciesAllowedDomains))
+	builder.WriteString("policies_allowed_hostnames=")
+	builder.WriteString(fmt.Sprintf("%v", o.PoliciesAllowedHostnames))
 	builder.WriteByte(')')
 	return builder.String()
 }

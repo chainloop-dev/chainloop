@@ -117,7 +117,10 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 }
 
 func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
-	return &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt), DefaultPolicyViolationStrategy: bizPolicyViolationBlockingStrategyToPb(m.BlockOnPolicyViolation)}
+	return &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt),
+		DefaultPolicyViolationStrategy: bizPolicyViolationBlockingStrategyToPb(m.BlockOnPolicyViolation),
+		PolicyAllowedHostnames:         m.PoliciesAllowedHostnames,
+	}
 }
 
 func bizUserToPb(u *biz.User) *pb.User {

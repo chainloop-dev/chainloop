@@ -27,8 +27,8 @@
     "^(initialized_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
-    "^(policies_allowed_domains)$": {
-      "description": "array of domains that are allowed to be used in the policies",
+    "^(policies_allowed_hostnames)$": {
+      "description": "array of hostnames that are allowed to be used in the policies",
       "items": {
         "type": "string"
       },
@@ -129,8 +129,8 @@
       },
       "type": "object"
     },
-    "policiesAllowedDomains": {
-      "description": "array of domains that are allowed to be used in the policies",
+    "policiesAllowedHostnames": {
+      "description": "array of hostnames that are allowed to be used in the policies",
       "items": {
         "type": "string"
       },

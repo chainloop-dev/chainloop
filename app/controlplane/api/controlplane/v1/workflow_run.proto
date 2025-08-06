@@ -135,8 +135,8 @@ message AttestationServiceInitResponse {
     bool block_on_policy_violation = 4;
     // Signing options
     SigningOptions signing_options = 5;
-    // array of domains that are allowed to be used in the policies
-    repeated string policies_allowed_domains = 6;
+    // array of hostnames that are allowed to be used in the policies
+    repeated string policies_allowed_hostnames = 6;
   }
 
   message SigningOptions {

@@ -262,6 +262,7 @@ message OrgItem {
   string name = 2;
   google.protobuf.Timestamp created_at = 3;
   PolicyViolationBlockingStrategy default_policy_violation_strategy = 4;
+  repeated string policy_allowed_hostnames = 5;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

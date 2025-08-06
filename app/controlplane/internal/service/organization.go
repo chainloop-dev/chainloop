@@ -78,7 +78,12 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		return nil, err
 	}
 
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation)
+	var policiesAllowedHostnames *[]string
+	if req.UpdatePoliciesAllowedHostnames {
+		policiesAllowedHostnames = &req.PoliciesAllowedHostnames
+	}
+
+	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

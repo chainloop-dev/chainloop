@@ -125,9 +125,9 @@ func (_m *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.O
 	return r0, r1
 }
 
-// Update provides a mock function with given fields: ctx, id, blockOnPolicyViolation
-func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*biz.Organization, error) {
-	ret := _m.Called(ctx, id, blockOnPolicyViolation)
+// Update provides a mock function with given fields: ctx, id, blockOnPolicyViolation, policiesAllowedHostnames
+func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames *[]string) (*biz.Organization, error) {
+	ret := _m.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -135,19 +135,19 @@ func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPol
 
 	var r0 *biz.Organization
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool) (*biz.Organization, error)); ok {
-		return rf(ctx, id, blockOnPolicyViolation)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, *[]string) (*biz.Organization, error)); ok {
+		return rf(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool) *biz.Organization); ok {
-		r0 = rf(ctx, id, blockOnPolicyViolation)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, *[]string) *biz.Organization); ok {
+		r0 = rf(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.Organization)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool) error); ok {
-		r1 = rf(ctx, id, blockOnPolicyViolation)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, *[]string) error); ok {
+		r1 = rf(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 	} else {
 		r1 = ret.Error(1)
 	}

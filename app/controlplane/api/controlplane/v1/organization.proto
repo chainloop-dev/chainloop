@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -84,6 +84,12 @@ message OrganizationServiceUpdateRequest {
   string name = 1 [(buf.validate.field).string.min_len = 1];
   // "optional" allow us to detect if the value is explicitly set
   optional bool block_on_policy_violation = 2;
+
+  // array of hostnames that are allowed to be used in the policies
+  repeated string policies_allowed_hostnames = 3;
+  // flag that allows us to detect if the value is explicitly set
+  // since repeated fields can not be optional
+  bool update_policies_allowed_hostnames = 4;
 }
 
 message OrganizationServiceUpdateResponse {

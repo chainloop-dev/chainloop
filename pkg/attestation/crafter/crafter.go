@@ -160,8 +160,8 @@ type InitOpts struct {
 	SigningOptions *SigningOpts
 	// Authentication token
 	Auth *api.Attestation_Auth
-	// array of domains that are allowed to be used in the policies
-	PoliciesAllowedDomains []string
+	// array of hostnames that are allowed to be used in the policies
+	PoliciesAllowedHostnames []string
 }
 
 type SigningOpts struct {
@@ -395,8 +395,8 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 				Type:             opts.Runner.ID(),
 				Url:              opts.Runner.RunURI(),
 			},
-			Auth:                   opts.Auth,
-			PoliciesAllowedDomains: opts.PoliciesAllowedDomains,
+			Auth:                     opts.Auth,
+			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
 		},
 		DryRun: opts.DryRun,
 	}, nil

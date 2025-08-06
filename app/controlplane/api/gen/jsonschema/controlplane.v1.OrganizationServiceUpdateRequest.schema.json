@@ -6,6 +6,17 @@
     "^(blockOnPolicyViolation)$": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",
       "type": "boolean"
+    },
+    "^(policiesAllowedHostnames)$": {
+      "description": "array of hostnames that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(updatePoliciesAllowedHostnames)$": {
+      "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",
+      "type": "boolean"
     }
   },
   "properties": {
@@ -16,6 +27,17 @@
     "name": {
       "minLength": 1,
       "type": "string"
+    },
+    "policies_allowed_hostnames": {
+      "description": "array of hostnames that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "update_policies_allowed_hostnames": {
+      "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",
+      "type": "boolean"
     }
   },
   "title": "Organization Service Update Request",

@@ -173,9 +173,9 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	var (
 		// Identifier of this attestation instance
-		attestationID          string
-		blockOnPolicyViolation bool
-		policiesAllowedDomains []string
+		attestationID            string
+		blockOnPolicyViolation   bool
+		policiesAllowedHostnames []string
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
 	)
@@ -203,7 +203,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
 		workflowMeta.Organization = result.GetOrganization()
 		blockOnPolicyViolation = result.GetBlockOnPolicyViolation()
-		policiesAllowedDomains = result.GetPoliciesAllowedDomains()
+		policiesAllowedHostnames = result.GetPoliciesAllowedHostnames()
 
 		signingOpts := result.GetSigningOptions()
 		if signingOpts != nil {
@@ -232,13 +232,13 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo:                 workflowMeta,
-		SchemaV1:               contractVersion.GetV1(),
-		DryRun:                 action.dryRun,
-		AttestationID:          attestationID,
-		Runner:                 discoveredRunner,
-		BlockOnPolicyViolation: blockOnPolicyViolation,
-		PoliciesAllowedDomains: policiesAllowedDomains,
+		WfInfo:                   workflowMeta,
+		SchemaV1:                 contractVersion.GetV1(),
+		DryRun:                   action.dryRun,
+		AttestationID:            attestationID,
+		Runner:                   discoveredRunner,
+		BlockOnPolicyViolation:   blockOnPolicyViolation,
+		PoliciesAllowedHostnames: policiesAllowedHostnames,
 		SigningOptions: &crafter.SigningOpts{
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,

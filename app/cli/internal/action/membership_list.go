@@ -32,6 +32,7 @@ type OrgItem struct {
 	ID, Name                        string
 	CreatedAt                       *time.Time
 	PolicyViolationBlockingStrategy string
+	PolicyAllowedHostnames          []string `json:"policyAllowedHostnames,omitempty"`
 }
 
 type MembershipItem struct {
@@ -129,9 +130,10 @@ func (action *MembershipList) ListMembers(ctx context.Context, page int, pageSiz
 
 func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 	i := &OrgItem{
-		ID:        in.Id,
-		Name:      in.Name,
-		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
+		ID:                     in.Id,
+		Name:                   in.Name,
+		CreatedAt:              toTimePtr(in.CreatedAt.AsTime()),
+		PolicyAllowedHostnames: in.PolicyAllowedHostnames,
 	}
 
 	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {
