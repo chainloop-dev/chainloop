@@ -2809,12 +2809,12 @@ chainloop policy eval --policy policy.yaml --material sbom.json --kind SBOM_CYCL
 Options
 
 ```
---annotation strings   key-value pairs of material annotations (key=value)
+--annotation strings   Key-value pairs of material annotations (key=value)
 -h, --help                 help for eval
---input strings        key-value pairs of policy inputs (key=value)
---kind string          kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
---material string      path to material or attestation file
---policy string        path to custom policy file
+--input strings        Key-value pairs of policy inputs (key=value)
+--kind string          Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--material string      Path to material or attestation file
+-p, --policy string        Path to custom policy file (default "policy.yaml")
 ```
 
 Options inherited from parent commands
