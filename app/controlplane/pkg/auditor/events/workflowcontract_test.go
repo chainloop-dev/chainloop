@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,9 +196,9 @@ func TestWorkflowContractEvents(t *testing.T) {
 				auditor.WithOrgID(orgUUID),
 			}
 			if tt.actor == auditor.ActorTypeAPIToken {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, ""))
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, "", testAPITokenName))
 			} else {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail))
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail, testName))
 			}
 
 			eventPayload, err := auditor.GenerateAuditEvent(tt.event, opts...)

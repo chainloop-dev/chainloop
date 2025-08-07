@@ -5,6 +5,7 @@
   "ActorType": "API_TOKEN",
   "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
   "ActorEmail": "",
+  "ActorName": "test-token",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "Description": "API Token 2089bb36-e27b-428b-8009-d015c8737c55 has updated the workflow contract test-contract",
   "Info": {

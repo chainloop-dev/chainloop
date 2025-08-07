@@ -191,9 +191,9 @@ func TestWorkflowEvents(t *testing.T) {
 				auditor.WithOrgID(orgUUID),
 			}
 			if tt.actor == auditor.ActorTypeAPIToken {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, ""))
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, "", testAPITokenName))
 			} else {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail))
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail, testName))
 			}
 
 			eventPayload, err := auditor.GenerateAuditEvent(tt.event, opts...)
