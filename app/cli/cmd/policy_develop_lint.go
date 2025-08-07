@@ -18,7 +18,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -50,7 +49,9 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				RegalConfig: regalConfig,
 			})
 			if err != nil {
-				return fmt.Errorf("linting failed: %w", err)
+				fmt.Errorf("linting failed: %w", err)
+				os.Exit(1)
+				return nil
 			}
 
 			if result.Valid {
@@ -58,7 +59,9 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput(result, policyLintTable)
+			encodeOutput(result, policyLintTable)
+			os.Exit(1)
+			return nil
 		},
 	}
 
@@ -72,27 +75,12 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 func policyLintTable(result *action.PolicyLintResult) error {
 	tw := table.NewWriter()
 	tw.SetOutputMirror(os.Stdout)
-	tw.AppendHeader(table.Row{"#", "File", "Line", "Message"})
+	tw.AppendHeader(table.Row{"#", "Error"})
 
 	for i, err := range result.Errors {
-		file, line, msg := parseLintError(err)
-		tw.AppendRow(table.Row{i + 1, file, line, msg})
+		tw.AppendRow(table.Row{i + 1, err})
 	}
 
 	tw.Render()
 	return nil
-}
-
-// Helper to parse error string into file, line, message
-func parseLintError(err string) (file, line, msg string) {
-	parts := strings.SplitN(err, ":", 3)
-	if len(parts) == 3 {
-		file = strings.TrimSpace(parts[0])
-		line = strings.TrimSpace(parts[1])
-		msg = strings.TrimSpace(parts[2])
-	} else if len(parts) == 2 {
-		file = strings.TrimSpace(parts[0])
-		msg = strings.TrimSpace(parts[1])
-	}
-	return
 }
