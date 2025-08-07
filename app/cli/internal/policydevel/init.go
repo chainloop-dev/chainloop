@@ -31,7 +31,7 @@ var templateFS embed.FS
 const (
 	policyTemplateRegoPath   = "templates/example-policy.rego"
 	policyTemplatePath       = "templates/example-policy.yaml"
-	defaultPolicyName        = "chainloop-policy"
+	defaultPolicyName        = "policy"
 	defaultPolicyDescription = "Chainloop validation policy"
 	defaultMaterialKind      = "SBOM_CYCLONEDX_JSON"
 )
