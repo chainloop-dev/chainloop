@@ -49,9 +49,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				RegalConfig: regalConfig,
 			})
 			if err != nil {
-				fmt.Errorf("linting failed: %w", err)
-				os.Exit(1)
-				return nil
+				return fmt.Errorf("linting policy: %w", err)
 			}
 
 			if result.Valid {
@@ -59,9 +57,10 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			encodeOutput(result, policyLintTable)
-			os.Exit(1)
-			return nil
+			if err := encodeOutput(result, policyLintTable); err != nil {
+				return fmt.Errorf("failed to encode output: %w", err)
+			}
+			return fmt.Errorf("%d issues found", len(result.Errors))
 		},
 	}
 
@@ -75,7 +74,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 func policyLintTable(result *action.PolicyLintResult) error {
 	tw := table.NewWriter()
 	tw.SetOutputMirror(os.Stdout)
-	tw.AppendHeader(table.Row{"#", "Error"})
+	tw.AppendHeader(table.Row{"#", "Issue"})
 
 	for i, err := range result.Errors {
 		tw.AppendRow(table.Row{i + 1, err})

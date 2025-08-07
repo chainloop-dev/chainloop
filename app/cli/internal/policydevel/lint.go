@@ -369,7 +369,7 @@ func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
 
 	// Replace "opa fmt" with "--format" in error messages
 	errorStr = strings.ReplaceAll(errorStr, "`opa fmt`", "`--format`")
-	//Regex matches file path, line number and error message like: /path/file:line: message
+	// Regex matches file path, line number and error message like: /path/file:line: message
 	re := regexp.MustCompile(`^(.*\.rego):(\d+):\s*(.+)$`)
 
 	// Handle the special case: "1 error occurred:"
