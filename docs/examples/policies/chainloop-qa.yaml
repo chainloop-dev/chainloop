@@ -61,9 +61,8 @@ spec:
           msg:= "Container image is not approved"
         }
         
-        is_approved {
+        is_approved if {
+          input.predicate.annotations.approval == "true"
           some material in input.predicate.materials
           material.annotations["chainloop.material.type"] == "CONTAINER_IMAGE"
-          
-          input.predicate.annotations.approval == "true"
         }

@@ -57,7 +57,7 @@ spec:
           msg := "missing commit in attestation material"
         }
         
-        has_commit {
+        has_commit if {
           some sub in input.subject
           sub.name == "git.head"
           sub.digest.sha1
