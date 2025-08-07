@@ -55,7 +55,7 @@ func main() {
 
 	var builder strings.Builder
 	for _, subCmd := range command.Commands() {
-		if !subCmd.Hidden {
+		if !subCmd.Hidden && !isPluginCommand(subCmd) {
 			// Start depth at 0 for subcommands
 			generateCommandDocs(subCmd, &builder, 0)
 		}
@@ -82,7 +82,7 @@ func generateCommandDocs(cmd *cobra.Command, builder *strings.Builder, currentDe
 
 	// Recursively process subcommands with increased depth
 	for _, subCmd := range cmd.Commands() {
-		if !subCmd.Hidden {
+		if !subCmd.Hidden && !isPluginCommand(subCmd) {
 			generateCommandDocs(subCmd, builder, currentDepth+1)
 		}
 	}
@@ -146,6 +146,11 @@ func processCommand(content string, depth int) string {
 // isUnderlineHeader checks if a line is an underline-style header (--- or ===).
 func isUnderlineHeader(line string) bool {
 	return regexp.MustCompile(`^[-=]+$`).MatchString(line)
+}
+
+// isPluginCommand checks if a command is from a plugin by looking for the plugin signature in the Long description
+func isPluginCommand(cmd *cobra.Command) bool {
+	return strings.Contains(cmd.Long, "Provided by plugin:")
 }
 
 // processFinalDocument cleans up the final document by removing excessive newlines and headers.
