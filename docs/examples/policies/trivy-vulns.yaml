@@ -59,7 +59,7 @@ spec:
           msg := "CVE report has vulnerabilities with severity MEDIUM or HIGH"
         }
         
-        has_vulnerabilities {
+        has_vulnerabilities if {
           severities := ["HIGH", "MEDIUM"]
           some result in input.Results
           some vuln in result.Vulnerabilities

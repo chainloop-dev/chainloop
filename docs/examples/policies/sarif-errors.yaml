@@ -58,7 +58,7 @@ spec:
           msg := "There are errors in the SARIF report"
         }
         
-        has_errors {
+        has_errors if {
           some run in input.runs
           some result in run.results
           result.level == "error"
