@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/check_qa.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "check approval",
 		Source: regoContent,
@@ -71,7 +71,7 @@ func TestRego_VerifyWithInputArray(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/arrays.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "foobar",
 		Source: regoContent,
@@ -88,7 +88,7 @@ func TestRego_VerifyWithArguments(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/arguments.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "foobar",
 		Source: regoContent,
@@ -123,7 +123,7 @@ func TestRego_VerifyWithComplexArguments(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/arguments_array.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "foobar",
 		Source: regoContent,
@@ -160,7 +160,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/policy_without_violations.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "invalid",
 		Source: regoContent,
@@ -177,7 +177,7 @@ func TestRego_ResultFormat(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/result_format.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "result-output",
 		Source: regoContent,
@@ -227,7 +227,7 @@ func TestRego_ResultFormatWithoutIgnoreValue(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/result_format_without_ignore.rego")
 	require.NoError(t, err)
 
-	r := &Rego{}
+	r := NewEngine()
 	policy := &engine.Policy{
 		Name:   "result-output",
 		Source: regoContent,
@@ -245,7 +245,7 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 		regoContent, err := os.ReadFile("testfiles/restrictive_mode.rego")
 		require.NoError(t, err)
 
-		r := &Rego{}
+		r := NewEngine()
 		policy := &engine.Policy{
 			Name:   "policy",
 			Source: regoContent,
@@ -262,7 +262,7 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 		regoContent, err := os.ReadFile("testfiles/restrictive_mode_networking.rego")
 		require.NoError(t, err)
 
-		r := &Rego{}
+		r := NewEngine()
 		policy := &engine.Policy{
 			Name:   "policy",
 			Source: regoContent,
@@ -270,17 +270,41 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 
 		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: unallowed host: example.com")
+		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: unallowed host: github.com")
 	})
 
-	t.Run("allowed network requests", func(t *testing.T) {
+	t.Run("allowed network requests from defaults", func(t *testing.T) {
 		regoContent, err := os.ReadFile("testfiles/restricted_mode_networking_allowed_host.rego")
 		require.NoError(t, err)
 
-		r := &Rego{}
+		r := NewEngine()
 		policy := &engine.Policy{
 			Name:   "policy",
 			Source: regoContent,
+		}
+
+		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+		assert.NoError(t, err)
+	})
+
+	t.Run("allowed network requests from defaults plus custom domains", func(t *testing.T) {
+		defaultHosts, err := os.ReadFile("testfiles/restricted_mode_networking_allowed_host.rego")
+		require.NoError(t, err)
+		customHosts, err := os.ReadFile("testfiles/restrictive_mode_networking.rego")
+		require.NoError(t, err)
+
+		r := NewEngine(WithAllowedNetworkDomains("github.com"))
+		policy := &engine.Policy{
+			Name:   "policy",
+			Source: defaultHosts,
+		}
+
+		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+		assert.NoError(t, err)
+
+		policy = &engine.Policy{
+			Name:   "policy",
+			Source: customHosts,
 		}
 
 		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
@@ -292,9 +316,7 @@ func TestRego_WithPermissiveMode(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/permissive_mode.rego")
 	require.NoError(t, err)
 
-	r := &Rego{
-		OperatingMode: EnvironmentModePermissive,
-	}
+	r := NewEngine(WithOperatingMode(EnvironmentModePermissive))
 	policy := &engine.Policy{
 		Name:   "policy",
 		Source: regoContent,

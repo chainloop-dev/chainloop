@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,11 +27,58 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// Rego policy checker for chainloop attestations and materials
-type Rego struct {
-	// OperatingMode defines the mode of running the policy engine
+// Engine policy checker for chainloop attestations and materials
+type Engine struct {
+	// operatingMode defines the mode of running the policy engine
 	// by restricting or not the operations allowed by the compiler
-	OperatingMode EnvironmentMode
+	operatingMode EnvironmentMode
+	// allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
+	// when using http.send built-in function
+	allowedNetworkDomains []string
+}
+
+type EngineOption func(*newEngineOptions)
+
+func WithOperatingMode(mode EnvironmentMode) EngineOption {
+	return func(e *newEngineOptions) {
+		e.operatingMode = mode
+	}
+}
+
+func WithAllowedNetworkDomains(domains ...string) EngineOption {
+	return func(e *newEngineOptions) {
+		e.allowedNetworkDomains = domains
+	}
+}
+
+type newEngineOptions struct {
+	operatingMode         EnvironmentMode
+	allowedNetworkDomains []string
+}
+
+// NewEngine creates a new policy engine with the given options
+// default operating mode is EnvironmentModeRestrictive
+// default allowed network domains are www.chainloop.dev and www.cisa.gov
+// user provided allowed network domains are appended to the base ones
+func NewEngine(opts ...EngineOption) *Engine {
+	options := &newEngineOptions{
+		operatingMode: EnvironmentModeRestrictive,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	var baseAllowedNetworkDomains = []string{
+		"www.chainloop.dev",
+		"www.cisa.gov",
+	}
+
+	return &Engine{
+		operatingMode: options.operatingMode,
+		// append base allowed network domains to the user provided ones
+		allowedNetworkDomains: append(baseAllowedNetworkDomains, options.allowedNetworkDomains...),
+	}
 }
 
 // EnvironmentMode defines the mode of running the policy engine
@@ -55,17 +102,10 @@ var builtinFuncNotAllowed = []*ast.Builtin{
 	ast.Trace,
 }
 
-// allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
-// when using http.send built-in function
-var allowedNetworkDomains = []string{
-	"www.chainloop.dev",
-	"www.cisa.gov",
-}
-
 // Force interface
-var _ engine.PolicyEngine = (*Rego)(nil)
+var _ engine.PolicyEngine = (*Engine)(nil)
 
-func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
+func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -107,15 +147,15 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	// Function to execute the query with appropriate parameters
 	executeQuery := func(rule string, strict bool) error {
 		if strict {
-			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()), rego.StrictBuiltinErrors(true))
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()), rego.StrictBuiltinErrors(true))
 		} else {
-			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.OperatingMode.Capabilities()))
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()))
 		}
 		return err
 	}
 
 	// Try the main rule first
-	if err := executeQuery(mainRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(mainRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -123,7 +163,7 @@ func (r *Rego) Verify(ctx context.Context, policy *engine.Policy, input []byte, 
 	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(deprecatedRule, r.OperatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(deprecatedRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
@@ -230,11 +270,11 @@ func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, o
 
 // Capabilities returns the capabilities of the environment based on the mode of operation
 // defaulting to EnvironmentModeRestrictive if not provided.
-func (em EnvironmentMode) Capabilities() *ast.Capabilities {
+func (r *Engine) Capabilities() *ast.Capabilities {
 	capabilities := ast.CapabilitiesForThisVersion()
 	var enabledBuiltin []*ast.Builtin
 
-	switch em {
+	switch r.operatingMode {
 	case EnvironmentModeRestrictive:
 		// Copy all builtins functions
 		localBuiltIns := make(map[string]*ast.Builtin, len(ast.BuiltinMap))
@@ -252,7 +292,7 @@ func (em EnvironmentMode) Capabilities() *ast.Capabilities {
 		}
 
 		// Allow specific network domains
-		capabilities.AllowNet = allowedNetworkDomains
+		capabilities.AllowNet = r.allowedNetworkDomains
 
 	case EnvironmentModePermissive:
 		enabledBuiltin = capabilities.Builtins
