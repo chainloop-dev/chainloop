@@ -49,13 +49,26 @@ chainloop policy develop eval --policy cdx-fresh.yaml --material cdx-fresh.json 
 
 **Old SBOM (should fail):**
 ```
-INF - cdx-fresh: SBOM created at: 2024-06-15T10:30:00Z which is too old (freshness limit set to 30 days)
-INF policy evaluation failed
+[
+   {
+      "violations": [
+         "SBOM created at: 2024-06-15T10:30:00Z which is too old (freshness limit set to 30 days)"
+      ],
+      "skip_reasons": [],
+      "skipped": false
+   }
+]
 ```
 
 **Fresh SBOM (should pass):**
 ```
-INF policy evaluation passed
+[
+   {
+      "violations": [],
+      "skip_reasons": [],
+      "skipped": false
+   }
+]
 ```
 
 ## Create Your Own Policy
@@ -68,7 +81,7 @@ Create a new policy with the embedded format (single YAML file):
 chainloop policy develop init --embedded --name my-policy --description "My custom policy description"
 ```
 
-**Note**: This creates a file named `my-policy.yaml` (based on the `--name` parameter). Without `--embedded`, it creates separate `chainloop-policy.yaml` and `chainloop-policy.rego` files.
+**Note**: This creates a file named `my-policy.yaml` (based on the `--name` parameter). Without `--embedded` and `--name`, it creates separate `policy.yaml` and `policy.rego` files.
 
 ### Step 2: Write Your Policy Rules
 
