@@ -56,12 +56,6 @@ type newEngineOptions struct {
 	allowedNetworkDomains []string
 }
 
-func WithBaseAllowedNetworkDomains(domains ...string) EngineOption {
-	return func(e *newEngineOptions) {
-		e.allowedNetworkDomains = domains
-	}
-}
-
 // NewEngine creates a new policy engine with the given options
 // default operating mode is EnvironmentModeRestrictive
 // default allowed network domains are www.chainloop.dev and www.cisa.gov
