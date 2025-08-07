@@ -52,6 +52,20 @@ func (pu *ProjectUpdate) ClearDescription() *ProjectUpdate {
 	return pu
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (pu *ProjectUpdate) SetUpdatedAt(t time.Time) *ProjectUpdate {
+	pu.mutation.SetUpdatedAt(t)
+	return pu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableUpdatedAt(t *time.Time) *ProjectUpdate {
+	if t != nil {
+		pu.SetUpdatedAt(*t)
+	}
+	return pu
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (pu *ProjectUpdate) SetDeletedAt(t time.Time) *ProjectUpdate {
 	pu.mutation.SetDeletedAt(t)
@@ -208,6 +222,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if pu.mutation.DescriptionCleared() {
 		_spec.ClearField(project.FieldDescription, field.TypeString)
 	}
+	if value, ok := pu.mutation.UpdatedAt(); ok {
+		_spec.SetField(project.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := pu.mutation.DeletedAt(); ok {
 		_spec.SetField(project.FieldDeletedAt, field.TypeTime, value)
 	}
@@ -343,6 +360,20 @@ func (puo *ProjectUpdateOne) SetNillableDescription(s *string) *ProjectUpdateOne
 // ClearDescription clears the value of the "description" field.
 func (puo *ProjectUpdateOne) ClearDescription() *ProjectUpdateOne {
 	puo.mutation.ClearDescription()
+	return puo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (puo *ProjectUpdateOne) SetUpdatedAt(t time.Time) *ProjectUpdateOne {
+	puo.mutation.SetUpdatedAt(t)
+	return puo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableUpdatedAt(t *time.Time) *ProjectUpdateOne {
+	if t != nil {
+		puo.SetUpdatedAt(*t)
+	}
 	return puo
 }
 
@@ -531,6 +562,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	}
 	if puo.mutation.DescriptionCleared() {
 		_spec.ClearField(project.FieldDescription, field.TypeString)
+	}
+	if value, ok := puo.mutation.UpdatedAt(); ok {
+		_spec.SetField(project.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := puo.mutation.DeletedAt(); ok {
 		_spec.SetField(project.FieldDeletedAt, field.TypeTime, value)
