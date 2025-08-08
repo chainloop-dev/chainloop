@@ -73,7 +73,7 @@ func (p *UserSignedUp) ActionType() string {
 }
 
 func (p *UserSignedUp) Description() string {
-	return fmt.Sprintf("%s has signed up", p.Email)
+	return fmt.Sprintf("%s has signed up", auditor.GetActorIdentifier())
 }
 
 type UserLoggedIn struct {
@@ -87,7 +87,7 @@ func (p *UserLoggedIn) ActionType() string {
 }
 
 func (p *UserLoggedIn) Description() string {
-	return fmt.Sprintf("%s has logged in", p.Email)
+	return fmt.Sprintf("%s has logged in", auditor.GetActorIdentifier())
 }
 
 func (p *UserLoggedIn) ActionInfo() (json.RawMessage, error) {
