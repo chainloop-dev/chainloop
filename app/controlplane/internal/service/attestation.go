@@ -197,9 +197,10 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	wRun := bizWorkFlowRunToPb(run)
 	wRun.Workflow = bizWorkflowToPb(wf)
 	resp := &cpAPI.AttestationServiceInitResponse_Result{
-		WorkflowRun:            wRun,
-		Organization:           org.Name,
-		BlockOnPolicyViolation: org.BlockOnPolicyViolation,
+		WorkflowRun:              wRun,
+		Organization:             org.Name,
+		BlockOnPolicyViolation:   org.BlockOnPolicyViolation,
+		PoliciesAllowedHostnames: org.PoliciesAllowedHostnames,
 	}
 
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}

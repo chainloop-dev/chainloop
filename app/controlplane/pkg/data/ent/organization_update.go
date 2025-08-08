@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
@@ -62,6 +63,24 @@ func (ou *OrganizationUpdate) SetNillableBlockOnPolicyViolation(b *bool) *Organi
 	if b != nil {
 		ou.SetBlockOnPolicyViolation(*b)
 	}
+	return ou
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (ou *OrganizationUpdate) SetPoliciesAllowedHostnames(s []string) *OrganizationUpdate {
+	ou.mutation.SetPoliciesAllowedHostnames(s)
+	return ou
+}
+
+// AppendPoliciesAllowedHostnames appends s to the "policies_allowed_hostnames" field.
+func (ou *OrganizationUpdate) AppendPoliciesAllowedHostnames(s []string) *OrganizationUpdate {
+	ou.mutation.AppendPoliciesAllowedHostnames(s)
+	return ou
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (ou *OrganizationUpdate) ClearPoliciesAllowedHostnames() *OrganizationUpdate {
+	ou.mutation.ClearPoliciesAllowedHostnames()
 	return ou
 }
 
@@ -405,6 +424,17 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ou.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
+	}
+	if value, ok := ou.mutation.PoliciesAllowedHostnames(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
+	}
+	if value, ok := ou.mutation.AppendedPoliciesAllowedHostnames(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, organization.FieldPoliciesAllowedHostnames, value)
+		})
+	}
+	if ou.mutation.PoliciesAllowedHostnamesCleared() {
+		_spec.ClearField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -816,6 +846,24 @@ func (ouo *OrganizationUpdateOne) SetNillableBlockOnPolicyViolation(b *bool) *Or
 	return ouo
 }
 
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (ouo *OrganizationUpdateOne) SetPoliciesAllowedHostnames(s []string) *OrganizationUpdateOne {
+	ouo.mutation.SetPoliciesAllowedHostnames(s)
+	return ouo
+}
+
+// AppendPoliciesAllowedHostnames appends s to the "policies_allowed_hostnames" field.
+func (ouo *OrganizationUpdateOne) AppendPoliciesAllowedHostnames(s []string) *OrganizationUpdateOne {
+	ouo.mutation.AppendPoliciesAllowedHostnames(s)
+	return ouo
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (ouo *OrganizationUpdateOne) ClearPoliciesAllowedHostnames() *OrganizationUpdateOne {
+	ouo.mutation.ClearPoliciesAllowedHostnames()
+	return ouo
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ouo *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	ouo.mutation.AddMembershipIDs(ids...)
@@ -1186,6 +1234,17 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	}
 	if value, ok := ouo.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
+	}
+	if value, ok := ouo.mutation.PoliciesAllowedHostnames(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
+	}
+	if value, ok := ouo.mutation.AppendedPoliciesAllowedHostnames(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, organization.FieldPoliciesAllowedHostnames, value)
+		})
+	}
+	if ouo.mutation.PoliciesAllowedHostnamesCleared() {
+		_spec.ClearField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

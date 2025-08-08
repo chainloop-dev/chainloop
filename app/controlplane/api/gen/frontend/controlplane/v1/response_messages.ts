@@ -554,6 +554,7 @@ export interface OrgItem {
   name: string;
   createdAt?: Date;
   defaultPolicyViolationStrategy: OrgItem_PolicyViolationBlockingStrategy;
+  policyAllowedHostnames: string[];
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3629,7 +3630,7 @@ export const OrgMembershipItem = {
 };
 
 function createBaseOrgItem(): OrgItem {
-  return { id: "", name: "", createdAt: undefined, defaultPolicyViolationStrategy: 0 };
+  return { id: "", name: "", createdAt: undefined, defaultPolicyViolationStrategy: 0, policyAllowedHostnames: [] };
 }
 
 export const OrgItem = {
@@ -3645,6 +3646,9 @@ export const OrgItem = {
     }
     if (message.defaultPolicyViolationStrategy !== 0) {
       writer.uint32(32).int32(message.defaultPolicyViolationStrategy);
+    }
+    for (const v of message.policyAllowedHostnames) {
+      writer.uint32(42).string(v!);
     }
     return writer;
   },
@@ -3684,6 +3688,13 @@ export const OrgItem = {
 
           message.defaultPolicyViolationStrategy = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.policyAllowedHostnames.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3701,6 +3712,9 @@ export const OrgItem = {
       defaultPolicyViolationStrategy: isSet(object.defaultPolicyViolationStrategy)
         ? orgItem_PolicyViolationBlockingStrategyFromJSON(object.defaultPolicyViolationStrategy)
         : 0,
+      policyAllowedHostnames: Array.isArray(object?.policyAllowedHostnames)
+        ? object.policyAllowedHostnames.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -3713,6 +3727,11 @@ export const OrgItem = {
       (obj.defaultPolicyViolationStrategy = orgItem_PolicyViolationBlockingStrategyToJSON(
         message.defaultPolicyViolationStrategy,
       ));
+    if (message.policyAllowedHostnames) {
+      obj.policyAllowedHostnames = message.policyAllowedHostnames.map((e) => e);
+    } else {
+      obj.policyAllowedHostnames = [];
+    }
     return obj;
   },
 
@@ -3726,6 +3745,7 @@ export const OrgItem = {
     message.name = object.name ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.defaultPolicyViolationStrategy = object.defaultPolicyViolationStrategy ?? 0;
+    message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
     return message;
   },
 };

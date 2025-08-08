@@ -16,16 +16,15 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
 
 func newOrganizationUpdateCmd() *cobra.Command {
 	var (
-		orgName                string
-		blockOnPolicyViolation bool
+		orgName                  string
+		blockOnPolicyViolation   bool
+		policiesAllowedHostnames []string
 	)
 
 	cmd := &cobra.Command{
@@ -37,7 +36,11 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.BlockOnPolicyViolation = &blockOnPolicyViolation
 			}
 
-			_, err := action.NewOrgUpdate(actionOpts).Run(context.Background(), orgName, opts)
+			if cmd.Flags().Changed("policies-allowed-hostnames") {
+				opts.PoliciesAllowedHostnames = &policiesAllowedHostnames
+			}
+
+			_, err := action.NewOrgUpdate(actionOpts).Run(cmd.Context(), orgName, opts)
 			if err != nil {
 				return err
 			}
@@ -52,5 +55,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().BoolVar(&blockOnPolicyViolation, "block", false, "set the default policy violation blocking strategy")
+	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
 	return cmd
 }

@@ -118,7 +118,7 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 
 	s.Run("org non existent", func() {
 		// org not found
-		_, err := s.Organization.Update(ctx, s.user.ID, uuid.NewString(), nil)
+		_, err := s.Organization.Update(ctx, s.user.ID, uuid.NewString(), nil, nil)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
@@ -126,15 +126,37 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 	s.Run("org not accessible to user", func() {
 		org2, err := s.Organization.CreateWithRandomName(ctx)
 		require.NoError(s.T(), err)
-		_, err = s.Organization.Update(ctx, s.user.ID, org2.Name, nil)
+		_, err = s.Organization.Update(ctx, s.user.ID, org2.Name, nil, nil)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.Run("valid block on policy violation update", func() {
-		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, toPtrBool(true))
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, toPtrBool(true), nil)
 		s.NoError(err)
 		s.True(got.BlockOnPolicyViolation)
+	})
+
+	s.Run("valid policy allowed hostnames update", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{"foo.com", "bar.com"})
+		s.NoError(err)
+		s.Equal([]string{"foo.com", "bar.com"}, got.PoliciesAllowedHostnames)
+	})
+
+	s.Run("clear policy allowed hostnames", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{})
+		s.NoError(err)
+		s.Equal([]string{}, got.PoliciesAllowedHostnames)
+	})
+
+	s.Run("but not passing a value doesn't clear the hostnames value", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{"foo.com", "bar.com"})
+		s.NoError(err)
+		s.Equal([]string{"foo.com", "bar.com"}, got.PoliciesAllowedHostnames)
+
+		got, err = s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, nil)
+		s.NoError(err)
+		s.Equal([]string{"foo.com", "bar.com"}, got.PoliciesAllowedHostnames)
 	})
 }
 

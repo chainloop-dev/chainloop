@@ -23,6 +23,12 @@
           "type": "integer"
         }
       ]
+    },
+    "^(policy_allowed_hostnames)$": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     }
   },
   "properties": {
@@ -52,6 +58,12 @@
     },
     "name": {
       "type": "string"
+    },
+    "policyAllowedHostnames": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     }
   },
   "title": "Org Item",

@@ -186,6 +186,16 @@ func BlockOnPolicyViolationNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldBlockOnPolicyViolation, v))
 }
 
+// PoliciesAllowedHostnamesIsNil applies the IsNil predicate on the "policies_allowed_hostnames" field.
+func PoliciesAllowedHostnamesIsNil() predicate.Organization {
+	return predicate.Organization(sql.FieldIsNull(FieldPoliciesAllowedHostnames))
+}
+
+// PoliciesAllowedHostnamesNotNil applies the NotNil predicate on the "policies_allowed_hostnames" field.
+func PoliciesAllowedHostnamesNotNil() predicate.Organization {
+	return predicate.Organization(sql.FieldNotNull(FieldPoliciesAllowedHostnames))
+}
+
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.
 func HasMemberships() predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {

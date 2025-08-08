@@ -66,6 +66,12 @@ func (oc *OrganizationCreate) SetNillableBlockOnPolicyViolation(b *bool) *Organi
 	return oc
 }
 
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (oc *OrganizationCreate) SetPoliciesAllowedHostnames(s []string) *OrganizationCreate {
+	oc.mutation.SetPoliciesAllowedHostnames(s)
+	return oc
+}
+
 // SetID sets the "id" field.
 func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
 	oc.mutation.SetID(u)
@@ -308,6 +314,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 		_node.BlockOnPolicyViolation = value
 	}
+	if value, ok := oc.mutation.PoliciesAllowedHostnames(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
+		_node.PoliciesAllowedHostnames = value
+	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -512,6 +522,24 @@ func (u *OrganizationUpsert) UpdateBlockOnPolicyViolation() *OrganizationUpsert 
 	return u
 }
 
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsert) SetPoliciesAllowedHostnames(v []string) *OrganizationUpsert {
+	u.Set(organization.FieldPoliciesAllowedHostnames, v)
+	return u
+}
+
+// UpdatePoliciesAllowedHostnames sets the "policies_allowed_hostnames" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdatePoliciesAllowedHostnames() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldPoliciesAllowedHostnames)
+	return u
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsert) ClearPoliciesAllowedHostnames() *OrganizationUpsert {
+	u.SetNull(organization.FieldPoliciesAllowedHostnames)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -588,6 +616,27 @@ func (u *OrganizationUpsertOne) SetBlockOnPolicyViolation(v bool) *OrganizationU
 func (u *OrganizationUpsertOne) UpdateBlockOnPolicyViolation() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockOnPolicyViolation()
+	})
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertOne) SetPoliciesAllowedHostnames(v []string) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPoliciesAllowedHostnames(v)
+	})
+}
+
+// UpdatePoliciesAllowedHostnames sets the "policies_allowed_hostnames" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdatePoliciesAllowedHostnames() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePoliciesAllowedHostnames()
+	})
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertOne) ClearPoliciesAllowedHostnames() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearPoliciesAllowedHostnames()
 	})
 }
 
@@ -834,6 +883,27 @@ func (u *OrganizationUpsertBulk) SetBlockOnPolicyViolation(v bool) *Organization
 func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyViolation() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockOnPolicyViolation()
+	})
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertBulk) SetPoliciesAllowedHostnames(v []string) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPoliciesAllowedHostnames(v)
+	})
+}
+
+// UpdatePoliciesAllowedHostnames sets the "policies_allowed_hostnames" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdatePoliciesAllowedHostnames() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePoliciesAllowedHostnames()
+	})
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertBulk) ClearPoliciesAllowedHostnames() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearPoliciesAllowedHostnames()
 	})
 }
 

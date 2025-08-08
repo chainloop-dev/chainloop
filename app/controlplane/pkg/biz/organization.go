@@ -36,13 +36,15 @@ type Organization struct {
 	CreatedAt *time.Time
 	// BlockOnPolicyViolation blocks the workflow run if policy evaluation fails
 	BlockOnPolicyViolation bool
+	// PoliciesAllowedHostnames is an array of hostnames that are allowed to be used in the policies
+	PoliciesAllowedHostnames []string
 }
 
 type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
-	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -182,7 +184,7 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool) (*Organization, error) {
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -202,7 +204,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 	}
 
 	// Perform the update
-	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation)
+	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	} else if org == nil {

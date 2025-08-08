@@ -61,15 +61,33 @@ type Verifier interface {
 }
 
 type PolicyVerifier struct {
-	schema *v1.CraftingSchema
-	logger *zerolog.Logger
-	client v13.AttestationServiceClient
+	schema           *v1.CraftingSchema
+	logger           *zerolog.Logger
+	client           v13.AttestationServiceClient
+	allowedHostnames []string
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
 
-func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger) *PolicyVerifier {
-	return &PolicyVerifier{schema: schema, client: client, logger: logger}
+type PolicyVerifierOptions struct {
+	AllowedHostnames []string
+}
+
+type PolicyVerifierOption func(*PolicyVerifierOptions)
+
+func WithAllowedHostnames(hostnames ...string) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.AllowedHostnames = hostnames
+	}
+}
+
+func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
+	options := &PolicyVerifierOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return &PolicyVerifier{schema: schema, client: client, logger: logger, allowedHostnames: options.AllowedHostnames}
 }
 
 // VerifyMaterial applies all required policies to a material
@@ -300,8 +318,15 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 }
 
 func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
+	engineOpts := []rego.EngineOption{}
+
+	if pv.allowedHostnames != nil {
+		pv.logger.Debug().Strs("hostnames", pv.allowedHostnames).Msg("adding additional allowed hostnames")
+		engineOpts = append(engineOpts, rego.WithAllowedNetworkDomains(pv.allowedHostnames...))
+	}
+
 	// verify the policy
-	ng := rego.NewEngine()
+	ng := rego.NewEngine(engineOpts...)
 	res, err := ng.Verify(ctx, script, material, getInputArguments(args))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute policy : %w", err)

@@ -173,8 +173,9 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	var (
 		// Identifier of this attestation instance
-		attestationID          string
-		blockOnPolicyViolation bool
+		attestationID            string
+		blockOnPolicyViolation   bool
+		policiesAllowedHostnames []string
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
 	)
@@ -197,14 +198,18 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			return "", err
 		}
 
-		workflowRun := runResp.GetResult().GetWorkflowRun()
+		result := runResp.GetResult()
+		workflowRun := result.GetWorkflowRun()
 		workflowMeta.WorkflowRunId = workflowRun.GetId()
-		workflowMeta.Organization = runResp.GetResult().GetOrganization()
-		blockOnPolicyViolation = runResp.GetResult().GetBlockOnPolicyViolation()
-		timestampAuthorityURL = runResp.GetResult().GetSigningOptions().GetTimestampAuthorityUrl()
-		signingCAName = runResp.GetResult().GetSigningOptions().GetSigningCa()
-		if v := workflowMeta.Version; v != nil {
-			workflowMeta.Version.Prerelease = runResp.GetResult().GetWorkflowRun().Version.GetPrerelease()
+		workflowMeta.Organization = result.GetOrganization()
+		blockOnPolicyViolation = result.GetBlockOnPolicyViolation()
+		policiesAllowedHostnames = result.GetPoliciesAllowedHostnames()
+		signingOpts := result.GetSigningOptions()
+		timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
+		signingCAName = signingOpts.GetSigningCa()
+
+		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
+			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
 		}
 
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
@@ -224,12 +229,14 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
 	initOpts := &crafter.InitOpts{
-		WfInfo:                 workflowMeta,
-		SchemaV1:               contractVersion.GetV1(),
-		DryRun:                 action.dryRun,
-		AttestationID:          attestationID,
-		Runner:                 discoveredRunner,
-		BlockOnPolicyViolation: blockOnPolicyViolation,
+		WfInfo: workflowMeta,
+		//nolint:staticcheck // TODO: Migrate to new contract version API
+		SchemaV1:                 contractVersion.GetV1(),
+		DryRun:                   action.dryRun,
+		AttestationID:            attestationID,
+		Runner:                   discoveredRunner,
+		BlockOnPolicyViolation:   blockOnPolicyViolation,
+		PoliciesAllowedHostnames: policiesAllowedHostnames,
 		SigningOptions: &crafter.SigningOpts{
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,

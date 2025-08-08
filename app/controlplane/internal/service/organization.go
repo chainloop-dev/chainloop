@@ -78,7 +78,18 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		return nil, err
 	}
 
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation)
+	// we want to differentiate between setting the value to empty or not setting it at all
+	// to do that we will use a nil slice to represent not setting it at all
+	var policiesAllowedHostnames []string
+	if req.UpdatePoliciesAllowedHostnames {
+		policiesAllowedHostnames = req.PoliciesAllowedHostnames
+		// explicitly set the slice so we can differentiate between an empty slice and a nil slice
+		if len(policiesAllowedHostnames) == 0 {
+			policiesAllowedHostnames = []string{}
+		}
+	}
+
+	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

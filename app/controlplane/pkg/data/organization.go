@@ -76,13 +76,19 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool) (*biz.Organization, error) {
-	org, err := r.data.DB.Organization.UpdateOneID(id).SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).Save(ctx)
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error) {
+	opts := r.data.DB.Organization.UpdateOneID(id).
+		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation)
+
+	if policiesAllowedHostnames != nil {
+		opts.SetPoliciesAllowedHostnames(policiesAllowedHostnames)
+	}
+
+	org, err := opts.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	// Reload the object to include the relations
 	return r.FindByID(ctx, org.ID)
 }
 
@@ -92,5 +98,10 @@ func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
-	return &biz.Organization{Name: eu.Name, ID: eu.ID.String(), CreatedAt: toTimePtr(eu.CreatedAt), BlockOnPolicyViolation: eu.BlockOnPolicyViolation}
+	return &biz.Organization{
+		Name: eu.Name, ID: eu.ID.String(),
+		CreatedAt:                toTimePtr(eu.CreatedAt),
+		BlockOnPolicyViolation:   eu.BlockOnPolicyViolation,
+		PoliciesAllowedHostnames: eu.PoliciesAllowedHostnames,
+	}
 }

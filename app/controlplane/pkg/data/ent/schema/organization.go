@@ -42,6 +42,8 @@ func (Organization) Fields() []ent.Field {
 				Default: "CURRENT_TIMESTAMP",
 			}),
 		field.Bool("block_on_policy_violation").Default(false),
+		// array of hostnames that are allowed to be used in the policies
+		field.Strings("policies_allowed_hostnames").Optional(),
 	}
 }
 

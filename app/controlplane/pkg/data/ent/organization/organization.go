@@ -21,6 +21,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldBlockOnPolicyViolation holds the string denoting the block_on_policy_violation field in the database.
 	FieldBlockOnPolicyViolation = "block_on_policy_violation"
+	// FieldPoliciesAllowedHostnames holds the string denoting the policies_allowed_hostnames field in the database.
+	FieldPoliciesAllowedHostnames = "policies_allowed_hostnames"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -103,6 +105,7 @@ var Columns = []string{
 	FieldName,
 	FieldCreatedAt,
 	FieldBlockOnPolicyViolation,
+	FieldPoliciesAllowedHostnames,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

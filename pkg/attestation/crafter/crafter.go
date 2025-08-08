@@ -160,6 +160,8 @@ type InitOpts struct {
 	SigningOptions *SigningOpts
 	// Authentication token
 	Auth *api.Attestation_Auth
+	// array of hostnames that are allowed to be used in the policies
+	PoliciesAllowedHostnames []string
 }
 
 type SigningOpts struct {
@@ -393,7 +395,8 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 				Type:             opts.Runner.ID(),
 				Url:              opts.Runner.RunURI(),
 			},
-			Auth: opts.Auth,
+			Auth:                     opts.Auth,
+			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
 		},
 		DryRun: opts.DryRun,
 	}, nil
@@ -624,7 +627,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	policies.LogPolicyEvaluations(policyGroupResults, c.Logger)
 
 	// Validate policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policies to material: %w", err)
