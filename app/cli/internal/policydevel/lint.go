@@ -204,13 +204,15 @@ func (p *PolicyToLint) validateYAMLFile(file *File) {
 
 	// Update policy file with formatted content
 	if p.Format {
-		outYAML, err := protoyaml.Marshal(&policy)
+		outYAML, err := protoyaml.MarshalOptions{Indent: 2}.Marshal(&policy)
 		if err != nil {
 			p.AddError(file.Path, fmt.Sprintf("failed to marshal updated YAML: %v", err), 0)
-		} else if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to save updated file: %v", err), 0)
 		} else {
-			file.Content = outYAML
+			if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
+				p.AddError(file.Path, fmt.Sprintf("failed to save updated file: %v", err), 0)
+			} else {
+				file.Content = outYAML
+			}
 		}
 	}
 }
@@ -296,7 +298,7 @@ func (p *PolicyToLint) checkResultStructure(content, path string, keys []string)
 func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
-		p.AddError(filePath, fmt.Sprintf("failed to prepare for linting: %v", err), 0)
+		p.processRegalViolation(fmt.Errorf("%s: %w", filePath, err), filePath)
 		return
 	}
 
@@ -369,38 +371,79 @@ func (p *PolicyToLint) loadDefaultConfig() (*config.Config, error) {
 	return &cfg, nil
 }
 
-// Splits grouped errors into individual errors
+// Formats regal violation errors
 func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
 	if rawErr == nil {
 		return
 	}
 
 	errorStr := rawErr.Error()
-	// Regex matches file path, line number and error message like: /path/file:line: message
-	errorRegex := regexp.MustCompile(`^` + regexp.QuoteMeta(path) + `:(\d+):\s*(.+)$`)
 
-	// Split by newlines to handle both single and multi-line errors
+	// Replace "opa fmt" with "--format" in error messages
+	errorStr = strings.ReplaceAll(errorStr, "`opa fmt`", "`--format`")
+	// Regex matches file path, line number and error message like: /path/file:line: message
+	re := regexp.MustCompile(`^(.*\.rego):(\d+):\s*(.+)$`)
+
+	// Handle the special case of error summary: "1 error occurred:"
+	// Example: <file>: failed to parse module: failed to parse module: 1 errors occurred: <followed by error message>
+	if strings.Contains(errorStr, "error occurred:") && !strings.Contains(errorStr, "\n") {
+		parts := strings.Split(errorStr, "error occurred:")
+		if len(parts) == 2 {
+			errDetail := strings.TrimSpace(parts[1])
+			if matches := re.FindStringSubmatch(errDetail); len(matches) == 4 {
+				if lineNum, err := strconv.Atoi(matches[2]); err == nil {
+					p.AddError(matches[1], matches[3], lineNum)
+					return
+				}
+			}
+			p.AddError(path, errDetail, 0)
+			return
+		}
+	}
+
+	// Split the error summary into lines and process each line skipping summary lines
+	// Example: <file>: failed to parse module: failed to parse module: 2 errors occurred: <errors split by new lines>
 	lines := strings.Split(errorStr, "\n")
+	var afterSummary []string
+	foundSummary := false
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-
-		// Skip the "N errors occurred" header
+		if foundSummary {
+			afterSummary = append(afterSummary, line)
+		}
 		if strings.Contains(line, "errors occurred:") {
+			foundSummary = true
+		}
+	}
+
+	if foundSummary && len(afterSummary) > 0 {
+		for _, line := range afterSummary {
+			if matches := re.FindStringSubmatch(line); len(matches) == 4 {
+				if lineNum, err := strconv.Atoi(matches[2]); err == nil {
+					p.AddError(matches[1], matches[3], lineNum)
+					continue
+				}
+			}
+			p.AddError(path, line, 0)
+		}
+		return
+	}
+
+	// If no summary, try regex on each line, fallback if not matched
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
 			continue
 		}
-
-		// Try to match the standard error format
-		if matches := errorRegex.FindStringSubmatch(line); len(matches) == 3 {
-			if lineNum, convErr := strconv.Atoi(matches[1]); convErr == nil {
-				p.AddError(path, matches[2], lineNum)
+		if matches := re.FindStringSubmatch(line); len(matches) == 4 {
+			if lineNum, err := strconv.Atoi(matches[2]); err == nil {
+				p.AddError(matches[1], matches[3], lineNum)
 				continue
 			}
 		}
-
-		// If we didn't match the standard format, preserve the original error
 		p.AddError(path, line, 0)
 	}
 }
