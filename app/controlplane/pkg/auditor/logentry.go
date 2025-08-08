@@ -62,6 +62,7 @@ type DescriptionVariables struct {
 	ActorType  ActorType
 	ActorID    *uuid.UUID
 	ActorEmail string
+	ActorName  string
 	OrgID      *uuid.UUID
 }
 
@@ -79,6 +80,7 @@ type AuditEventPayload struct {
 	ActorType   ActorType
 	ActorID     *uuid.UUID
 	ActorEmail  string
+	ActorName   string
 	OrgID       *uuid.UUID
 	Description string
 	Info        json.RawMessage
@@ -135,6 +137,7 @@ func GenerateAuditEvent(entry LogEntry, opts ...GeneratorOption) (*EventPayload,
 			Info:        actionInfo,
 			ActorType:   options.ActorType,
 			ActorID:     options.ActorID,
+			ActorName:   options.ActorName,
 			ActorEmail:  options.ActorEmail,
 			OrgID:       options.OrgID,
 			Digest:      digest,
@@ -161,6 +164,7 @@ func interpolateDescription(tmplStr string, variables *GeneratorOptions) (string
 	if err = tmpl.Execute(description, &DescriptionVariables{
 		ActorType:  variables.ActorType,
 		ActorID:    variables.ActorID,
+		ActorName:  variables.ActorName,
 		ActorEmail: variables.ActorEmail,
 		OrgID:      variables.OrgID,
 	}); err != nil {
@@ -175,10 +179,11 @@ type GeneratorOptions struct {
 	ActorType  ActorType
 	ActorID    *uuid.UUID
 	ActorEmail string
+	ActorName  string
 	OrgID      *uuid.UUID
 }
 
-func WithActor(actorType ActorType, actorID uuid.UUID, email string) GeneratorOption {
+func WithActor(actorType ActorType, actorID uuid.UUID, email, name string) GeneratorOption {
 	return func(a *GeneratorOptions) error {
 		if actorType == "" {
 			return errors.New("actor type is required")
@@ -196,6 +201,10 @@ func WithActor(actorType ActorType, actorID uuid.UUID, email string) GeneratorOp
 		// Only set email if it is not empty
 		if email != "" {
 			a.ActorEmail = email
+		}
+
+		if name != "" {
+			a.ActorName = name
 		}
 
 		return nil

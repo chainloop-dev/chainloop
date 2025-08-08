@@ -162,9 +162,9 @@ func TestProjectEvents(t *testing.T) {
 				auditor.WithOrgID(orgUUID),
 			}
 			if tt.actor == auditor.ActorTypeUser {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail))
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail, testName))
 			} else {
-				opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, ""))
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, "", testAPITokenName))
 			}
 
 			eventPayload, err := auditor.GenerateAuditEvent(tt.event, opts...)

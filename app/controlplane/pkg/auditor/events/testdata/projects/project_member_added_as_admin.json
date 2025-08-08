@@ -5,6 +5,7 @@
   "ActorType": "USER",
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Doe",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "Description": "john@cyberdyne.io has added user 'test@example.com' to the project 'test-project' with role 'admin'",
   "Info": {
