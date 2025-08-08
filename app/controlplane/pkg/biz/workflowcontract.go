@@ -39,6 +39,7 @@ type WorkflowContract struct {
 	LatestRevision          int
 	LatestRevisionCreatedAt *time.Time
 	CreatedAt               *time.Time
+	UpdatedAt               *time.Time
 	// WorkflowRefs is the list of workflows associated with this contract
 	WorkflowRefs []*WorkflowRef
 	// entity the contract is scoped to, if not set it's scoped to the organization

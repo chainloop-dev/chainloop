@@ -99,6 +99,7 @@ func bizMembershipToPb(m *biz.Membership) *pb.OrgMembershipItem {
 	item := &pb.OrgMembershipItem{
 		Id: m.ID.String(), Current: m.Current,
 		CreatedAt: timestamppb.New(*m.CreatedAt),
+		UpdatedAt: timestamppb.New(*m.UpdatedAt),
 		Org:       bizOrgToPb(m.Org),
 		Role:      bizRoleToPb(m.Role),
 	}

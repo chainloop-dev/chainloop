@@ -38,6 +38,7 @@ type User struct {
 	LastName            string
 	Email               string
 	CreatedAt           *time.Time
+	UpdatedAt           *time.Time
 	HasRestrictedAccess *bool
 }
 

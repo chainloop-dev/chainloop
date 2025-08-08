@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -78,7 +79,8 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 
 func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
-		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation)
+		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
+		SetUpdatedAt(time.Now())
 
 	if policiesAllowedHostnames != nil {
 		opts.SetPoliciesAllowedHostnames(policiesAllowedHostnames)
@@ -101,6 +103,7 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 	return &biz.Organization{
 		Name: eu.Name, ID: eu.ID.String(),
 		CreatedAt:                toTimePtr(eu.CreatedAt),
+		UpdatedAt:                toTimePtr(eu.UpdatedAt),
 		BlockOnPolicyViolation:   eu.BlockOnPolicyViolation,
 		PoliciesAllowedHostnames: eu.PoliciesAllowedHostnames,
 	}

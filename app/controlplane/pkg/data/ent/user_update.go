@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -41,6 +42,20 @@ func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
 func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetEmail(*s)
+	}
+	return uu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
+	uu.mutation.SetUpdatedAt(t)
+	return uu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableUpdatedAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetUpdatedAt(*t)
 	}
 	return uu
 }
@@ -240,6 +255,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
+	if value, ok := uu.mutation.UpdatedAt(); ok {
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := uu.mutation.HasRestrictedAccess(); ok {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
 	}
@@ -380,6 +398,20 @@ func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
 func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetEmail(*s)
+	}
+	return uuo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetUpdatedAt(t)
+	return uuo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableUpdatedAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetUpdatedAt(*t)
 	}
 	return uuo
 }
@@ -608,6 +640,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := uuo.mutation.HasRestrictedAccess(); ok {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)

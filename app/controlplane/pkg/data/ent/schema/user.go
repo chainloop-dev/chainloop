@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,6 +46,11 @@ func (User) Fields() []ent.Field {
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
+			Annotations(&entsql.Annotation{
+				Default: "CURRENT_TIMESTAMP",
+			}),
+		field.Time("updated_at").
+			Default(time.Now).
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),

@@ -55,7 +55,7 @@ func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *
 		updates = &biz.ProjectVersionUpdateOpts{}
 	}
 
-	q := r.data.DB.ProjectVersion.UpdateOneID(id).SetNillablePrerelease(updates.Prerelease)
+	q := r.data.DB.ProjectVersion.UpdateOneID(id).SetNillablePrerelease(updates.Prerelease).SetUpdatedAt(time.Now())
 	// we are setting the value either false or true
 	if updates.Prerelease != nil {
 		// We are marking it as a release

@@ -229,6 +229,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 	result := &pb.WorkflowContractItem{
 		Id:                      schema.ID.String(),
 		CreatedAt:               timestamppb.New(*schema.CreatedAt),
+		UpdatedAt:               timestamppb.New(*schema.UpdatedAt),
 		Name:                    schema.Name,
 		LatestRevision:          int32(schema.LatestRevision),
 		LatestRevisionCreatedAt: timestamppb.New(*schema.LatestRevisionCreatedAt),

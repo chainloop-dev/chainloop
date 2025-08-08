@@ -24,6 +24,8 @@ type WorkflowContract struct {
 	Name string `json:"name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Description holds the value of the "description" field.
@@ -88,7 +90,7 @@ func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowcontract.FieldName, workflowcontract.FieldDescription, workflowcontract.FieldScopedResourceType:
 			values[i] = new(sql.NullString)
-		case workflowcontract.FieldCreatedAt, workflowcontract.FieldDeletedAt:
+		case workflowcontract.FieldCreatedAt, workflowcontract.FieldUpdatedAt, workflowcontract.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case workflowcontract.FieldID, workflowcontract.FieldScopedResourceID:
 			values[i] = new(uuid.UUID)
@@ -126,6 +128,12 @@ func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				wc.CreatedAt = value.Time
+			}
+		case workflowcontract.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				wc.UpdatedAt = value.Time
 			}
 		case workflowcontract.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -214,6 +222,9 @@ func (wc *WorkflowContract) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(wc.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(wc.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(wc.DeletedAt.Format(time.ANSIC))

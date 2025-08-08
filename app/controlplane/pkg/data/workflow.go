@@ -180,7 +180,8 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 	req := r.data.DB.Workflow.UpdateOneID(id).
 		SetNillableTeam(opts.Team).
 		SetNillablePublic(opts.Public).
-		SetNillableDescription(opts.Description)
+		SetNillableDescription(opts.Description).
+		SetUpdatedAt(time.Now())
 
 	// Update the contract if provided
 	if opts.ContractID != nil {

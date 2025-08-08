@@ -46,6 +46,20 @@ func (uc *UserCreate) SetNillableCreatedAt(t *time.Time) *UserCreate {
 	return uc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (uc *UserCreate) SetUpdatedAt(t time.Time) *UserCreate {
+	uc.mutation.SetUpdatedAt(t)
+	return uc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (uc *UserCreate) SetNillableUpdatedAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetUpdatedAt(*t)
+	}
+	return uc
+}
+
 // SetHasRestrictedAccess sets the "has_restricted_access" field.
 func (uc *UserCreate) SetHasRestrictedAccess(b bool) *UserCreate {
 	uc.mutation.SetHasRestrictedAccess(b)
@@ -171,6 +185,10 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := uc.mutation.UpdatedAt(); !ok {
+		v := user.DefaultUpdatedAt()
+		uc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := uc.mutation.ID(); !ok {
 		v := user.DefaultID()
 		uc.mutation.SetID(v)
@@ -189,6 +207,9 @@ func (uc *UserCreate) check() error {
 	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
+	}
+	if _, ok := uc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "User.updated_at"`)}
 	}
 	return nil
 }
@@ -233,6 +254,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := uc.mutation.UpdatedAt(); ok {
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := uc.mutation.HasRestrictedAccess(); ok {
 		_spec.SetField(user.FieldHasRestrictedAccess, field.TypeBool, value)
@@ -339,6 +364,18 @@ func (u *UserUpsert) SetEmail(v string) *UserUpsert {
 // UpdateEmail sets the "email" field to the value that was provided on create.
 func (u *UserUpsert) UpdateEmail() *UserUpsert {
 	u.SetExcluded(user.FieldEmail)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *UserUpsert) SetUpdatedAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateUpdatedAt() *UserUpsert {
+	u.SetExcluded(user.FieldUpdatedAt)
 	return u
 }
 
@@ -458,6 +495,20 @@ func (u *UserUpsertOne) SetEmail(v string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateEmail() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateEmail()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *UserUpsertOne) SetUpdatedAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateUpdatedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 
@@ -753,6 +804,20 @@ func (u *UserUpsertBulk) SetEmail(v string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateEmail() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateEmail()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *UserUpsertBulk) SetUpdatedAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateUpdatedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 

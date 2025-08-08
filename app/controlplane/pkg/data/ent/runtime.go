@@ -191,8 +191,12 @@ func init() {
 	organizationDescCreatedAt := organizationFields[2].Descriptor()
 	// organization.DefaultCreatedAt holds the default value on creation for the created_at field.
 	organization.DefaultCreatedAt = organizationDescCreatedAt.Default.(func() time.Time)
+	// organizationDescUpdatedAt is the schema descriptor for updated_at field.
+	organizationDescUpdatedAt := organizationFields[3].Descriptor()
+	// organization.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	organization.DefaultUpdatedAt = organizationDescUpdatedAt.Default.(func() time.Time)
 	// organizationDescBlockOnPolicyViolation is the schema descriptor for block_on_policy_violation field.
-	organizationDescBlockOnPolicyViolation := organizationFields[3].Descriptor()
+	organizationDescBlockOnPolicyViolation := organizationFields[4].Descriptor()
 	// organization.DefaultBlockOnPolicyViolation holds the default value on creation for the block_on_policy_violation field.
 	organization.DefaultBlockOnPolicyViolation = organizationDescBlockOnPolicyViolation.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
@@ -279,6 +283,10 @@ func init() {
 	userDescCreatedAt := userFields[2].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
+	// userDescUpdatedAt is the schema descriptor for updated_at field.
+	userDescUpdatedAt := userFields[3].Descriptor()
+	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
 	// userDescID is the schema descriptor for id field.
 	userDescID := userFields[1].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.
@@ -311,6 +319,10 @@ func init() {
 	workflowcontractDescCreatedAt := workflowcontractFields[2].Descriptor()
 	// workflowcontract.DefaultCreatedAt holds the default value on creation for the created_at field.
 	workflowcontract.DefaultCreatedAt = workflowcontractDescCreatedAt.Default.(func() time.Time)
+	// workflowcontractDescUpdatedAt is the schema descriptor for updated_at field.
+	workflowcontractDescUpdatedAt := workflowcontractFields[3].Descriptor()
+	// workflowcontract.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	workflowcontract.DefaultUpdatedAt = workflowcontractDescUpdatedAt.Default.(func() time.Time)
 	// workflowcontractDescID is the schema descriptor for id field.
 	workflowcontractDescID := workflowcontractFields[0].Descriptor()
 	// workflowcontract.DefaultID holds the default value on creation for the id field.

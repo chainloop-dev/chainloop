@@ -415,6 +415,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "block_on_policy_violation", Type: field.TypeBool, Default: false},
 		{Name: "policies_allowed_hostnames", Type: field.TypeJSON, Nullable: true},
 	}
@@ -553,6 +554,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "has_restricted_access", Type: field.TypeBool, Nullable: true},
 		{Name: "first_name", Type: field.TypeString, Nullable: true},
 		{Name: "last_name", Type: field.TypeString, Nullable: true},
@@ -566,7 +568,7 @@ var (
 			{
 				Name:    "user_has_restricted_access",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[3]},
+				Columns: []*schema.Column{UsersColumns[4]},
 			},
 		},
 	}
@@ -659,6 +661,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "scoped_resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"project", "org"}},
@@ -673,7 +676,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_contracts_organizations_workflow_contracts",
-				Columns:    []*schema.Column{WorkflowContractsColumns[7]},
+				Columns:    []*schema.Column{WorkflowContractsColumns[8]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -682,7 +685,7 @@ var (
 			{
 				Name:    "workflowcontract_name_organization_workflow_contracts",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[7]},
+				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

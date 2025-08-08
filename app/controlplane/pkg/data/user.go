@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -66,7 +67,7 @@ func (r *userRepo) CreateByEmail(ctx context.Context, email string, firstName, l
 
 // UpdateNameAndLastName updates the first and last name of a user
 func (r *userRepo) UpdateNameAndLastName(ctx context.Context, userID uuid.UUID, firstName, lastName *string) (*biz.User, error) {
-	u, err := r.data.DB.User.UpdateOneID(userID).SetNillableFirstName(firstName).SetNillableLastName(lastName).Save(ctx)
+	u, err := r.data.DB.User.UpdateOneID(userID).SetNillableFirstName(firstName).SetNillableLastName(lastName).SetUpdatedAt(time.Now()).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error updating user name: %w", err)
 	}
@@ -92,7 +93,7 @@ func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
 
 // UpdateAccess updates the access restriction for a user
 func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*biz.User, error) {
-	u, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).Save(ctx)
+	u, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).SetUpdatedAt(time.Now()).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error updating user access: %w", err)
 	}
@@ -156,6 +157,7 @@ func entUserToBizUser(eu *ent.User) *biz.User {
 		FirstName: eu.FirstName,
 		LastName:  eu.LastName,
 		CreatedAt: toTimePtr(eu.CreatedAt),
+		UpdatedAt: toTimePtr(eu.UpdatedAt),
 	}
 
 	if eu.HasRestrictedAccess != nil {

@@ -29,6 +29,9 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "^(updated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
   },
   "properties": {
@@ -64,6 +67,9 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "updatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
   },
   "title": "Org Item",

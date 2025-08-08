@@ -19,6 +19,8 @@ const (
 	FieldEmail = "email"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldHasRestrictedAccess holds the string denoting the has_restricted_access field in the database.
 	FieldHasRestrictedAccess = "has_restricted_access"
 	// FieldFirstName holds the string denoting the first_name field in the database.
@@ -52,6 +54,7 @@ var Columns = []string{
 	FieldID,
 	FieldEmail,
 	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldHasRestrictedAccess,
 	FieldFirstName,
 	FieldLastName,
@@ -72,6 +75,8 @@ var (
 	EmailValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -92,6 +97,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByHasRestrictedAccess orders the results by the has_restricted_access field.
