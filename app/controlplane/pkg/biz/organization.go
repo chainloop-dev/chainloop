@@ -44,7 +44,7 @@ type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
-	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames *[]string) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -184,7 +184,7 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames *[]string) (*Organization, error) {
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

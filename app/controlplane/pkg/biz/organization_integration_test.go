@@ -138,19 +138,19 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 	})
 
 	s.Run("valid policy allowed hostnames update", func() {
-		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, biz.ToPtr([]string{"foo.com", "bar.com"}))
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{"foo.com", "bar.com"})
 		s.NoError(err)
 		s.Equal([]string{"foo.com", "bar.com"}, got.PoliciesAllowedHostnames)
 	})
 
 	s.Run("clear policy allowed hostnames", func() {
-		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, biz.ToPtr([]string{}))
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{})
 		s.NoError(err)
 		s.Equal([]string{}, got.PoliciesAllowedHostnames)
 	})
 
 	s.Run("but not passing a value doesn't clear the hostnames value", func() {
-		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, biz.ToPtr([]string{"foo.com", "bar.com"}))
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{"foo.com", "bar.com"})
 		s.NoError(err)
 		s.Equal([]string{"foo.com", "bar.com"}, got.PoliciesAllowedHostnames)
 

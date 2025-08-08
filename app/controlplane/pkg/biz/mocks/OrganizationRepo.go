@@ -126,7 +126,7 @@ func (_m *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.O
 }
 
 // Update provides a mock function with given fields: ctx, id, blockOnPolicyViolation, policiesAllowedHostnames
-func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames *[]string) (*biz.Organization, error) {
+func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error) {
 	ret := _m.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 
 	if len(ret) == 0 {
@@ -135,10 +135,10 @@ func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPol
 
 	var r0 *biz.Organization
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, *[]string) (*biz.Organization, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string) (*biz.Organization, error)); ok {
 		return rf(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, *[]string) *biz.Organization); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string) *biz.Organization); ok {
 		r0 = rf(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 	} else {
 		if ret.Get(0) != nil {
@@ -146,7 +146,7 @@ func (_m *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPol
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, *[]string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, []string) error); ok {
 		r1 = rf(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
 	} else {
 		r1 = ret.Error(1)

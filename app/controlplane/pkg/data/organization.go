@@ -76,12 +76,12 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames *[]string) (*biz.Organization, error) {
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
 		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation)
 
 	if policiesAllowedHostnames != nil {
-		opts.SetPoliciesAllowedHostnames(*policiesAllowedHostnames)
+		opts.SetPoliciesAllowedHostnames(policiesAllowedHostnames)
 	}
 
 	org, err := opts.Save(ctx)
