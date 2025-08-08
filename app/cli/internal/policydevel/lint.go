@@ -28,6 +28,7 @@ import (
 	"github.com/bufbuild/protoyaml-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
@@ -79,30 +80,37 @@ func (p *PolicyToLint) AddError(path, message string, line int) {
 	})
 }
 
-// Read policy files from the given directory or file
+// Read policy files
 func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
-	fileInfo, err := os.Stat(absPath)
+	resolvedPath, err := resourceloader.GetPathForResource(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve policy file: %w", err)
+	}
+
+	fileInfo, err := os.Stat(resolvedPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("path does not exist: %s", absPath)
+			return nil, fmt.Errorf("policy file does not exist: %s", resolvedPath)
 		}
-		return nil, fmt.Errorf("failed to stat path %q: %w", absPath, err)
+		return nil, fmt.Errorf("failed to stat file %q: %w", resolvedPath, err)
+	}
+	if fileInfo.IsDir() {
+		return nil, fmt.Errorf("expected a file but got a directory: %s", resolvedPath)
 	}
 
 	policy := &PolicyToLint{
-		Path:   absPath,
+		Path:   resolvedPath,
 		Format: format,
 		Config: config,
 	}
 
-	if fileInfo.IsDir() {
-		if err := scanDirectory(policy, absPath); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := processFile(policy, absPath); err != nil {
-			return nil, err
-		}
+	if err := policy.processFile(resolvedPath); err != nil {
+		return nil, err
+	}
+
+	// Load referenced rego files from all YAML files
+	if err := policy.loadReferencedRegoFiles(filepath.Dir(resolvedPath)); err != nil {
+		return nil, err
 	}
 
 	// Verify we found at least one valid file
@@ -113,35 +121,42 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	return policy, nil
 }
 
-// Performs a one-level directory lookup to find .yaml/.yml or .rego files.
-func scanDirectory(policy *PolicyToLint, dirPath string) error {
-	files, err := os.ReadDir(dirPath)
-	if err != nil {
-		return fmt.Errorf("reading directory: %w", err)
-	}
-
-	var foundValidFile bool
-	for _, file := range files {
-		if file.IsDir() {
+// Loads referenced rego files from all YAML files in the policy
+// Loads referenced rego files from all YAML files in the policy
+func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
+	seen := make(map[string]struct{})
+	for _, yamlFile := range p.YAMLFiles {
+		var parsed v1.Policy
+		if err := unmarshal.FromRaw(yamlFile.Content, unmarshal.RawFormatYAML, &parsed, true); err != nil {
+			// Ignore parse errors here; they'll be caught in validation
 			continue
 		}
+		for _, spec := range parsed.Spec.Policies {
+			regoPath := spec.GetPath()
+			if regoPath != "" {
+				// If path is relative, make it relative to the YAML file's directory
+				if !filepath.IsAbs(regoPath) {
+					regoPath = filepath.Join(baseDir, regoPath)
+				}
 
-		filePath := filepath.Join(dirPath, file.Name())
-		if err := processFile(policy, filePath); err != nil {
-			// Skip unsupported files but continue processing others
-			continue
+				resolvedPath, err := resourceloader.GetPathForResource(regoPath)
+				if err != nil {
+					return fmt.Errorf("failed to resolve rego file %q: %w", regoPath, err)
+				}
+				if _, ok := seen[resolvedPath]; ok {
+					continue // avoid duplicates
+				}
+				seen[resolvedPath] = struct{}{}
+				if err := p.processFile(resolvedPath); err != nil {
+					return fmt.Errorf("failed to load referenced rego file %q: %w", resolvedPath, err)
+				}
+			}
 		}
-		foundValidFile = true
 	}
-
-	if !foundValidFile {
-		return fmt.Errorf("no valid .yaml/.yml or .rego files found in directory")
-	}
-
 	return nil
 }
 
-func processFile(policy *PolicyToLint, filePath string) error {
+func (p *PolicyToLint) processFile(filePath string) error {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", filepath.Base(filePath), err)
@@ -150,12 +165,12 @@ func processFile(policy *PolicyToLint, filePath string) error {
 	ext := strings.ToLower(filepath.Ext(filePath))
 	switch ext {
 	case ".yaml", ".yml":
-		policy.YAMLFiles = append(policy.YAMLFiles, &File{
+		p.YAMLFiles = append(p.YAMLFiles, &File{
 			Path:    filePath,
 			Content: content,
 		})
 	case ".rego":
-		policy.RegoFiles = append(policy.RegoFiles, &File{
+		p.RegoFiles = append(p.RegoFiles, &File{
 			Path:    filePath,
 			Content: content,
 		})

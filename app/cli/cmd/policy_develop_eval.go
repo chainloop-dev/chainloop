@@ -65,13 +65,12 @@ evaluates the policy against the provided material or attestation.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&materialPath, "material", "", "path to material or attestation file")
+	cmd.Flags().StringVar(&materialPath, "material", "", "Path to material or attestation file")
 	cobra.CheckErr(cmd.MarkFlagRequired("material"))
-	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material: %q", schemaapi.ListAvailableMaterialKind()))
-	cmd.Flags().StringSliceVar(&annotations, "annotation", []string{}, "key-value pairs of material annotations (key=value)")
-	cmd.Flags().StringVar(&policyPath, "policy", "", "path to custom policy file")
-	cobra.CheckErr(cmd.MarkFlagRequired("policy"))
-	cmd.Flags().StringSliceVar(&inputs, "input", []string{}, "key-value pairs of policy inputs (key=value)")
+	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("Kind of the material: %q", schemaapi.ListAvailableMaterialKind()))
+	cmd.Flags().StringSliceVar(&annotations, "annotation", []string{}, "Key-value pairs of material annotations (key=value)")
+	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Path to custom policy file")
+	cmd.Flags().StringSliceVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
 
 	return cmd
 }
