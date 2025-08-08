@@ -25,14 +25,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bufbuild/protoyaml-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
 	"github.com/styrainc/regal/pkg/rules"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed .regal.yaml
@@ -189,11 +188,25 @@ func (p *PolicyToLint) validateYAMLFile(file *File) {
 
 	// Update policy file with formatted content
 	if p.Format {
-		outYAML, err := protoyaml.Marshal(&policy)
+		var root yaml.Node
+		if err := yaml.Unmarshal(file.Content, &root); err != nil {
+			p.AddError(file.Path, fmt.Sprintf("failed to parse YAML: %v", err), 0)
+			return
+		}
+
+		if err := p.updateEmbeddedRegoInYAML(file, &root); err != nil {
+			p.AddError(file.Path, fmt.Sprintf("failed to update embedded Rego: %v", err), 0)
+			return
+		}
+
+		outYAML, err := yaml.Marshal(&root)
 		if err != nil {
 			p.AddError(file.Path, fmt.Sprintf("failed to marshal updated YAML: %v", err), 0)
-		} else if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to save updated file: %v", err), 0)
+			return
+		}
+
+		if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
+			p.AddError(file.Path, fmt.Sprintf("failed to write updated file: %v", err), 0)
 		} else {
 			file.Content = outYAML
 		}
@@ -388,4 +401,62 @@ func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
 		// If we didn't match the standard format, preserve the original error
 		p.AddError(path, line, 0)
 	}
+}
+
+// Updates the embedded rego policies in a YAML file
+// Manual update required due to yaml.marshal limitations
+func (p *PolicyToLint) updateEmbeddedRegoInYAML(file *File, rootNode *yaml.Node) error {
+	if rootNode.Kind != yaml.DocumentNode || len(rootNode.Content) == 0 {
+		return fmt.Errorf("unexpected YAML root structure")
+	}
+
+	doc := rootNode.Content[0]
+	if doc.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected mapping node at document root")
+	}
+
+	// Locate spec policy node
+	var specNode *yaml.Node
+	for i := 0; i < len(doc.Content)-1; i += 2 {
+		if doc.Content[i].Value == "spec" && doc.Content[i+1].Kind == yaml.MappingNode {
+			specNode = doc.Content[i+1]
+			break
+		}
+	}
+	if specNode == nil {
+		return fmt.Errorf("spec node not found")
+	}
+
+	// Locate policies node within spec
+	var policiesNode *yaml.Node
+	for i := 0; i < len(specNode.Content)-1; i += 2 {
+		if specNode.Content[i].Value == "policies" && specNode.Content[i+1].Kind == yaml.SequenceNode {
+			policiesNode = specNode.Content[i+1]
+			break
+		}
+	}
+	if policiesNode == nil {
+		return fmt.Errorf("spec.policies node not found")
+	}
+
+	// Iterate over and update each rego policy
+	for _, policy := range policiesNode.Content {
+		if policy.Kind != yaml.MappingNode {
+			continue
+		}
+
+		for i := 0; i < len(policy.Content)-1; i += 2 {
+			key := policy.Content[i]
+			val := policy.Content[i+1]
+
+			if key.Value == "embedded" && val.Kind == yaml.ScalarNode {
+				formatted := p.validateAndFormatRego(val.Value, file.Path)
+				if formatted != val.Value {
+					val.Value = formatted
+				}
+			}
+		}
+	}
+
+	return nil
 }
