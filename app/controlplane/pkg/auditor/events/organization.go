@@ -73,7 +73,7 @@ func (p *OrgCreated) ActionType() string {
 }
 
 func (p *OrgCreated) Description() string {
-	return fmt.Sprintf("{{ .ActorEmail }} has created the organization %s", p.OrgName)
+	return fmt.Sprintf("%s has created the organization %s", auditor.GetActorIdentifier(), p.OrgName)
 }
 
 // user joined the organization
@@ -92,7 +92,7 @@ func (p *OrgUserJoined) ActionType() string {
 }
 
 func (p *OrgUserJoined) Description() string {
-	return fmt.Sprintf("{{ .ActorEmail }} has joined the organization %s", p.OrgName)
+	return fmt.Sprintf("%s has joined the organization %s", auditor.GetActorIdentifier(), p.OrgName)
 }
 
 func (p *OrgUserJoined) ActionInfo() (json.RawMessage, error) {
@@ -113,7 +113,7 @@ func (p *OrgUserLeft) ActionType() string {
 }
 
 func (p *OrgUserLeft) Description() string {
-	return fmt.Sprintf("{{ .ActorEmail }} has left the organization %s", p.OrgName)
+	return fmt.Sprintf("%s has left the organization %s", auditor.GetActorIdentifier(), p.OrgName)
 }
 
 // user got invited to the organization
@@ -128,7 +128,7 @@ func (p *OrgUserInvited) ActionType() string {
 }
 
 func (p *OrgUserInvited) Description() string {
-	return fmt.Sprintf("{{ .ActorEmail }} has invited %s to the organization %s with role %s", p.ReceiverEmail, p.OrgName, p.Role)
+	return fmt.Sprintf("%s has invited %s to the organization %s with role %s", auditor.GetActorIdentifier(), p.ReceiverEmail, p.OrgName, p.Role)
 }
 
 func (p *OrgUserInvited) ActionInfo() (json.RawMessage, error) {

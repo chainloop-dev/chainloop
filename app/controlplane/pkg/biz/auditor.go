@@ -18,6 +18,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
@@ -49,7 +50,7 @@ func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, 
 	case entities.CurrentUser(ctx) != nil:
 		user := entities.CurrentUser(ctx)
 		parsedUUID, _ := uuid.Parse(user.ID)
-		fullName := fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+		fullName := strings.TrimSpace(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
 		opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, parsedUUID, user.Email, fullName))
 		gotActor = true
 	case entities.CurrentAPIToken(ctx) != nil:

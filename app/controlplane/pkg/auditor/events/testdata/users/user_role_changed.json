@@ -5,9 +5,9 @@
   "ActorType": "USER",
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "john@cyberdyne.io",
-  "ActorName": "John Doe",
+  "ActorName": "John Connor",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "john@cyberdyne.io role changed from 'role:org:owner' to 'role:org:member'",
+  "Description": "John Connor has changed john@cyberdyne.io role from 'role:org:owner' to 'role:org:member'",
   "Info": {
     "user_id": "1089bb36-e27b-428b-8009-d015c8737c54",
     "email": "john@cyberdyne.io",

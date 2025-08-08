@@ -25,7 +25,7 @@ var updateGolden bool
 
 const (
 	testEmail        = "john@cyberdyne.io"
-	testName         = "John Doe"
+	testName         = "John Connor"
 	testAPITokenName = "test-token"
 )
 

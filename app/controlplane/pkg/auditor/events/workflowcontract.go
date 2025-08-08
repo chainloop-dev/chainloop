@@ -78,7 +78,7 @@ func (w *WorkflowContractCreated) TargetID() *uuid.UUID {
 
 func (w *WorkflowContractCreated) Description() string {
 	wfContractName := w.WorkflowContractName
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has created the workflow contract %s", wfContractName)
+	return fmt.Sprintf("%s has created the workflow contract %s", auditor.GetActorIdentifier(), wfContractName)
 }
 
 func (w *WorkflowContractCreated) ActionType() string {
@@ -114,7 +114,7 @@ func (w *WorkflowContractUpdated) ActionInfo() (json.RawMessage, error) {
 
 func (w *WorkflowContractUpdated) Description() string {
 	wfContractName := w.WorkflowContractName
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated the workflow contract %s", wfContractName)
+	return fmt.Sprintf("%s has updated the workflow contract %s", auditor.GetActorIdentifier(), wfContractName)
 }
 
 type WorkflowContractDeleted struct {
@@ -135,7 +135,7 @@ func (w *WorkflowContractDeleted) ActionInfo() (json.RawMessage, error) {
 
 func (w *WorkflowContractDeleted) Description() string {
 	wfContractName := w.WorkflowContractName
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has deleted the workflow contract %s", wfContractName)
+	return fmt.Sprintf("%s has deleted the workflow contract %s", auditor.GetActorIdentifier(), wfContractName)
 }
 
 type WorkflowContractAttached struct {
@@ -157,7 +157,7 @@ func (w *WorkflowContractAttached) ActionInfo() (json.RawMessage, error) {
 }
 
 func (w *WorkflowContractAttached) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has attached the workflow %s to the workflow contract %s", w.WorkflowName, w.WorkflowContractName)
+	return fmt.Sprintf("%s has attached the workflow %s to the workflow contract %s", auditor.GetActorIdentifier(), w.WorkflowName, w.WorkflowContractName)
 }
 
 type WorkflowContractDetached struct {
@@ -179,5 +179,5 @@ func (w *WorkflowContractDetached) ActionInfo() (json.RawMessage, error) {
 }
 
 func (w *WorkflowContractDetached) Description() string {
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has detached the workflow %s from the workflow contract %s", w.WorkflowName, w.WorkflowContractName)
+	return fmt.Sprintf("%s has detached the workflow %s from the workflow contract %s", auditor.GetActorIdentifier(), w.WorkflowName, w.WorkflowContractName)
 }
