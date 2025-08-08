@@ -16,7 +16,6 @@
 package policydevel
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -190,12 +189,10 @@ func (p *PolicyToLint) validateYAMLFile(file *File) {
 
 	// Update policy file with formatted content
 	if p.Format {
-		outYAML, err := protoyaml.Marshal(&policy)
+		outYAML, err := protoyaml.MarshalOptions{Indent: 2}.Marshal(&policy)
 		if err != nil {
 			p.AddError(file.Path, fmt.Sprintf("failed to marshal updated YAML: %v", err), 0)
 		} else {
-			// Force 2-space indentation, protoyaml.Marshal uses 4 spaces by default and lacks
-			outYAML = bytes.ReplaceAll(outYAML, []byte("    "), []byte("  "))
 			if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
 				p.AddError(file.Path, fmt.Sprintf("failed to save updated file: %v", err), 0)
 			} else {
@@ -372,7 +369,8 @@ func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
 	// Regex matches file path, line number and error message like: /path/file:line: message
 	re := regexp.MustCompile(`^(.*\.rego):(\d+):\s*(.+)$`)
 
-	// Handle the special case: "1 error occurred:"
+	// Handle the special case of error summary: "1 error occurred:"
+	// Example: <file>: failed to parse module: failed to parse module: 1 errors occurred: <followed by error message>
 	if strings.Contains(errorStr, "error occurred:") && !strings.Contains(errorStr, "\n") {
 		parts := strings.Split(errorStr, "error occurred:")
 		if len(parts) == 2 {
@@ -388,7 +386,8 @@ func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
 		}
 	}
 
-	// Split the error into lines and process each line skipping summary lines
+	// Split the error summary into lines and process each line skipping summary lines
+	// Example: <file>: failed to parse module: failed to parse module: 2 errors occurred: <errors split by new lines>
 	lines := strings.Split(errorStr, "\n")
 	var afterSummary []string
 	foundSummary := false
