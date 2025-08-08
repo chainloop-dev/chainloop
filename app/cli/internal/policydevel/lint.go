@@ -109,7 +109,7 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	}
 
 	// Load referenced rego files from all YAML files
-	if err := policy.loadReferencedRegoFiles(); err != nil {
+	if err := policy.loadReferencedRegoFiles(filepath.Dir(resolvedPath)); err != nil {
 		return nil, err
 	}
 
@@ -122,7 +122,8 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 }
 
 // Loads referenced rego files from all YAML files in the policy
-func (p *PolicyToLint) loadReferencedRegoFiles() error {
+// Loads referenced rego files from all YAML files in the policy
+func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 	seen := make(map[string]struct{})
 	for _, yamlFile := range p.YAMLFiles {
 		var parsed v1.Policy
@@ -133,6 +134,11 @@ func (p *PolicyToLint) loadReferencedRegoFiles() error {
 		for _, spec := range parsed.Spec.Policies {
 			regoPath := spec.GetPath()
 			if regoPath != "" {
+				// If path is relative, make it relative to the YAML file's directory
+				if !filepath.IsAbs(regoPath) {
+					regoPath = filepath.Join(baseDir, regoPath)
+				}
+
 				resolvedPath, err := resourceloader.GetPathForResource(regoPath)
 				if err != nil {
 					return fmt.Errorf("failed to resolve rego file %q: %w", regoPath, err)
