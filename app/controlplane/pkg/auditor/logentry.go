@@ -254,3 +254,11 @@ func digest(entry LogEntry, orgID *uuid.UUID, userID *uuid.UUID) (*cr_v1.Hash, e
 
 	return &h, nil
 }
+
+// GetActorIdentifier returns the actor identifier for audit log descriptions.
+// It prioritizes ActorName, then ActorEmail, and finally falls back to system@chainloop.dev.
+const ActorSystemIdentifier = "system@chainloop.dev"
+
+func GetActorIdentifier() string {
+	return fmt.Sprintf("{{ if .ActorName }}{{ .ActorName }}{{ else if .ActorEmail }}{{ .ActorEmail }}{{ else }}%s{{ end }}", ActorSystemIdentifier)
+}

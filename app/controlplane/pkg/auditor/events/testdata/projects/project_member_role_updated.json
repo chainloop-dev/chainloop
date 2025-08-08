@@ -7,7 +7,7 @@
   "ActorEmail": "john@cyberdyne.io",
   "ActorName": "John Doe",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "john@cyberdyne.io has updated user 'test@example.com' role in project 'test-project' from 'viewer' to 'admin'",
+  "Description": "John Doe has updated user 'test@example.com' role in project 'test-project' from 'viewer' to 'admin'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",

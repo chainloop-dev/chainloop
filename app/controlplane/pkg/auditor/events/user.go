@@ -109,7 +109,7 @@ func (p *UserRoleChanged) ActionType() string {
 }
 
 func (p *UserRoleChanged) Description() string {
-	return fmt.Sprintf("%s role changed from '%s' to '%s'", p.Email, p.OldRole, p.NewRole)
+	return fmt.Sprintf("%s has changed %s role from '%s' to '%s'", auditor.GetActorIdentifier(), p.Email, p.OldRole, p.NewRole)
 }
 
 func (p *UserRoleChanged) ActionInfo() (json.RawMessage, error) {
