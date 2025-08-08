@@ -5,9 +5,9 @@
   "ActorType": "USER",
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "john@cyberdyne.io",
-  "ActorName": "John Doe",
+  "ActorName": "John Connor",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "John Doe has created the API token test-token",
+  "Description": "John Connor has created the API token test-token",
   "Info": {
     "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
     "api_token_name": "test-token"

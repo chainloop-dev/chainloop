@@ -24,10 +24,10 @@ func TestGetActorIdentifier(t *testing.T) {
 		{
 			name: "ActorName present - should use ActorName",
 			data: TemplateData{
-				ActorName:  "John Doe",
+				ActorName:  "John Connor",
 				ActorEmail: "john.doe@example.com",
 			},
-			expected: "John Doe",
+			expected: "John Connor",
 		},
 		{
 			name: "ActorName empty, ActorEmail present - should use ActorEmail",

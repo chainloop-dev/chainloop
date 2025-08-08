@@ -5,9 +5,9 @@
   "ActorType": "USER",
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "john@cyberdyne.io",
-  "ActorName": "John Doe",
+  "ActorName": "John Connor",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "John Doe has removed user test@example.com from the group test-group",
+  "Description": "John Connor has removed user test@example.com from the group test-group",
   "Info": {
     "group_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "group_name": "test-group",

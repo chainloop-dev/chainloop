@@ -5,9 +5,9 @@
   "ActorType": "USER",
   "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
   "ActorEmail": "john@cyberdyne.io",
-  "ActorName": "John Doe",
+  "ActorName": "John Connor",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "John Doe has deleted the workflow test-contract",
+  "Description": "John Connor has deleted the workflow test-contract",
   "Info": {
     "workflow_id": "1089bb36-e27b-428b-8009-d015c8737c54",
     "workflow_name": "test-contract",
