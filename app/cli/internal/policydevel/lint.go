@@ -16,6 +16,7 @@
 package policydevel
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -199,12 +200,17 @@ func (p *PolicyToLint) validateYAMLFile(file *File) {
 			return
 		}
 
-		outYAML, err := yaml.Marshal(&root)
-		if err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to marshal updated YAML: %v", err), 0)
+		var buf bytes.Buffer
+		enc := yaml.NewEncoder(&buf)
+		enc.SetIndent(2)
+		defer enc.Close()
+
+		if err := enc.Encode(&root); err != nil {
+			p.AddError(file.Path, fmt.Sprintf("failed to encode YAML: %v", err), 0)
 			return
 		}
 
+		outYAML := buf.Bytes()
 		if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
 			p.AddError(file.Path, fmt.Sprintf("failed to write updated file: %v", err), 0)
 		} else {
