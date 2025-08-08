@@ -406,21 +406,11 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error)
 		}
 
 		// Soft delete workflow
-		wf, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Save(ctx)
+		_, err := tx.Workflow.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Save(ctx)
 		if err != nil {
 			return err
 		}
 
-		// Soft delete project if it has no more workflows
-		// TODO: in the future, we'll handle this separately through explicit user action
-		if wfTotal, err := wf.QueryProject().QueryWorkflows().Where(workflow.DeletedAtIsNil()).Count(ctx); err != nil {
-			return err
-		} else if wfTotal == 0 {
-			// soft deleted project if it has no more workflows
-			if err := tx.Project.UpdateOneID(wf.ProjectID).SetDeletedAt(time.Now()).Exec(ctx); err != nil {
-				return err
-			}
-		}
 		return nil
 	})
 }

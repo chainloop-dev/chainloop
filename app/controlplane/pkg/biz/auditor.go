@@ -49,15 +49,16 @@ func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, 
 	case entities.CurrentUser(ctx) != nil:
 		user := entities.CurrentUser(ctx)
 		parsedUUID, _ := uuid.Parse(user.ID)
-		opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, parsedUUID, user.Email))
+		fullName := fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+		opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, parsedUUID, user.Email, fullName))
 		gotActor = true
 	case entities.CurrentAPIToken(ctx) != nil:
 		apiToken := entities.CurrentAPIToken(ctx)
 		parsedUUID, _ := uuid.Parse(apiToken.ID)
-		opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, parsedUUID, ""))
+		opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, parsedUUID, "", apiToken.Name))
 		gotActor = true
 	default:
-		opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, ""))
+		opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, "", ""))
 	}
 
 	if !gotActor && entry.RequiresActor() {
