@@ -616,7 +616,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	})
 
 	// Validate policy groups
-	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
+	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policy groups to material: %w", err)
@@ -657,13 +657,13 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 // EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state
 func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement) error {
 	// evaluate attestation-level policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
+	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return fmt.Errorf("evaluating policies in statement: %w", err)
 	}
 
-	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger)
+	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return fmt.Errorf("evaluating policy groups in statement: %w", err)
