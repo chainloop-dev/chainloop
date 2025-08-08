@@ -204,12 +204,9 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowMeta.Organization = result.GetOrganization()
 		blockOnPolicyViolation = result.GetBlockOnPolicyViolation()
 		policiesAllowedHostnames = result.GetPoliciesAllowedHostnames()
-
 		signingOpts := result.GetSigningOptions()
-		if signingOpts != nil {
-			timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
-			signingCAName = signingOpts.GetSigningCa()
-		}
+		timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
+		signingCAName = signingOpts.GetSigningCa()
 
 		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
 			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
