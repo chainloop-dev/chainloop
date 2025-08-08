@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -48,6 +49,20 @@ func (ou *OrganizationUpdate) SetName(s string) *OrganizationUpdate {
 func (ou *OrganizationUpdate) SetNillableName(s *string) *OrganizationUpdate {
 	if s != nil {
 		ou.SetName(*s)
+	}
+	return ou
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ou *OrganizationUpdate) SetUpdatedAt(t time.Time) *OrganizationUpdate {
+	ou.mutation.SetUpdatedAt(t)
+	return ou
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableUpdatedAt(t *time.Time) *OrganizationUpdate {
+	if t != nil {
+		ou.SetUpdatedAt(*t)
 	}
 	return ou
 }
@@ -421,6 +436,9 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ou.mutation.Name(); ok {
 		_spec.SetField(organization.FieldName, field.TypeString, value)
+	}
+	if value, ok := ou.mutation.UpdatedAt(); ok {
+		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := ou.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
@@ -832,6 +850,20 @@ func (ouo *OrganizationUpdateOne) SetNillableName(s *string) *OrganizationUpdate
 	return ouo
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (ouo *OrganizationUpdateOne) SetUpdatedAt(t time.Time) *OrganizationUpdateOne {
+	ouo.mutation.SetUpdatedAt(t)
+	return ouo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableUpdatedAt(t *time.Time) *OrganizationUpdateOne {
+	if t != nil {
+		ouo.SetUpdatedAt(*t)
+	}
+	return ouo
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (ouo *OrganizationUpdateOne) SetBlockOnPolicyViolation(b bool) *OrganizationUpdateOne {
 	ouo.mutation.SetBlockOnPolicyViolation(b)
@@ -1231,6 +1263,9 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	}
 	if value, ok := ouo.mutation.Name(); ok {
 		_spec.SetField(organization.FieldName, field.TypeString, value)
+	}
+	if value, ok := ouo.mutation.UpdatedAt(); ok {
+		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := ouo.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
