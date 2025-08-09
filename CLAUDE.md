@@ -135,7 +135,7 @@ make migration_lint         # Lint migration files
 
 ## Key Technologies
 
-- **Language**: Go 1.24.4
+- **Language**: Go 1.24.6 (see [Go upgrade process](./.claude/golang-upgrade-process.md))
 - **API**: gRPC with HTTP/JSON gateway, Protocol Buffers with buf
 - **Database**: PostgreSQL with Ent ORM, Atlas for migrations
 - **Authentication**: OIDC, JWT tokens
@@ -252,3 +252,4 @@ All commits must meet these criteria:
 - **Example**: `git commit -S -s -m "feat: add new material type"`
 
 Code reviews are required for all submissions via GitHub pull requests.
+- make sure golang code is always formatted and golang-ci-lint is run

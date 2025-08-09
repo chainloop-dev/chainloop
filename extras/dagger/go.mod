@@ -1,6 +1,6 @@
 module main
 
-go 1.23.6
+go 1.24.6
 
 require github.com/Khan/genqlient v0.8.0
 
