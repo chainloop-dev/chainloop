@@ -1,0 +1,17 @@
+{
+  "application": {
+    "name": "web-service",
+    "version": "2.1.0",
+    "environment": "production"
+  },
+  "security": {
+    "enabled": true,
+    "tls_version": "1.3",
+    "auth_method": "oauth2"
+  },
+  "features": {
+    "analytics": "on",
+    "debug": "OFF",
+    "maintenance_mode": "disabled"
+  }
+}

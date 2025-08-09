@@ -1,0 +1,66 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+    name: sbom-freshness
+    description: Validates that SBOM timestamp is within acceptable age limit
+spec:
+    policies:
+        - embedded: |
+            package main
+
+            import rego.v1
+
+            result := {
+            	"skipped": skipped,
+            	"violations": violations,
+            	"skip_reason": skip_reason,
+            	"ignore": ignore,
+            }
+
+            default skip_reason := ""
+
+            skip_reason := m if {
+            	not valid_input
+            	m := "invalid input"
+            }
+
+            default skipped := true
+
+            skipped := false if valid_input
+
+            default ignore := false
+
+            # Valid if SBOM_CYCLONEDX_JSON material is provided
+            valid_input if {
+            	input.chainloop_metadata.annotations["chainloop.material.type"] == "SBOM_CYCLONEDX_JSON"
+            }
+
+            # Default freshness limit (30 days)
+            default freshness_days := 30
+
+            # Policy inputs - convert string to number
+            freshness_days := to_number(input.args.freshness_days) if input.args.freshness_days
+
+            # Time calculations
+            nanosecs_per_second := (1000 * 1000) * 1000
+            nanosecs_per_day := ((24 * 60) * 60) * nanosecs_per_second
+            maximum_age := freshness_days * nanosecs_per_day
+
+            # SBOM freshness validation
+            violations contains msg if {
+            	input.metadata.timestamp
+            	sbom_ns := time.parse_rfc3339_ns(input.metadata.timestamp)
+            	exceeding := time.now_ns() - (sbom_ns + maximum_age)
+            	exceeding > 0
+            	msg := sprintf("SBOM created at %s is too old (age limit: %d days)", [input.metadata.timestamp, freshness_days])
+            }
+
+            # Missing timestamp validation
+            violations contains msg if {
+            	not input.metadata.timestamp
+            	msg := "SBOM metadata.timestamp field is missing or null"
+            }
+          kind: SBOM_CYCLONEDX_JSON
+    inputs:
+        - name: freshness_days
+          description: Maximum age for SBOM in days
