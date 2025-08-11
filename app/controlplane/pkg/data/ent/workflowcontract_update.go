@@ -34,6 +34,20 @@ func (wcu *WorkflowContractUpdate) Where(ps ...predicate.WorkflowContract) *Work
 	return wcu
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (wcu *WorkflowContractUpdate) SetUpdatedAt(t time.Time) *WorkflowContractUpdate {
+	wcu.mutation.SetUpdatedAt(t)
+	return wcu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (wcu *WorkflowContractUpdate) SetNillableUpdatedAt(t *time.Time) *WorkflowContractUpdate {
+	if t != nil {
+		wcu.SetUpdatedAt(*t)
+	}
+	return wcu
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (wcu *WorkflowContractUpdate) SetDeletedAt(t time.Time) *WorkflowContractUpdate {
 	wcu.mutation.SetDeletedAt(t)
@@ -271,6 +285,9 @@ func (wcu *WorkflowContractUpdate) sqlSave(ctx context.Context) (n int, err erro
 			}
 		}
 	}
+	if value, ok := wcu.mutation.UpdatedAt(); ok {
+		_spec.SetField(workflowcontract.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := wcu.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)
 	}
@@ -434,6 +451,20 @@ type WorkflowContractUpdateOne struct {
 	hooks     []Hook
 	mutation  *WorkflowContractMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (wcuo *WorkflowContractUpdateOne) SetUpdatedAt(t time.Time) *WorkflowContractUpdateOne {
+	wcuo.mutation.SetUpdatedAt(t)
+	return wcuo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (wcuo *WorkflowContractUpdateOne) SetNillableUpdatedAt(t *time.Time) *WorkflowContractUpdateOne {
+	if t != nil {
+		wcuo.SetUpdatedAt(*t)
+	}
+	return wcuo
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -702,6 +733,9 @@ func (wcuo *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Work
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := wcuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(workflowcontract.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := wcuo.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)

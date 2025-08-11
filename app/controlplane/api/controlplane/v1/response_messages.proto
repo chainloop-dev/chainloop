@@ -171,6 +171,7 @@ message WorkflowContractItem {
   string name = 2;
   string description = 6;
   google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 10;
   int32 latest_revision = 4;
   google.protobuf.Timestamp latest_revision_created_at = 8;
   // Workflows associated with this contract
@@ -234,6 +235,7 @@ message User {
   string id = 1;
   string email = 2;
   google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 6;
   string first_name = 4;
   string last_name = 5;
 }
@@ -261,6 +263,7 @@ message OrgItem {
   string id = 1;
   string name = 2;
   google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 6;
   PolicyViolationBlockingStrategy default_policy_violation_strategy = 4;
   repeated string policy_allowed_hostnames = 5;
 

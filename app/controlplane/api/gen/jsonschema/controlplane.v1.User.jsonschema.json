@@ -11,6 +11,9 @@
     },
     "^(last_name)$": {
       "type": "string"
+    },
+    "^(updated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
   },
   "properties": {
@@ -28,6 +31,9 @@
     },
     "lastName": {
       "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
   },
   "title": "User",

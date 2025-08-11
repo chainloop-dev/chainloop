@@ -34,6 +34,7 @@ import (
 type Organization struct {
 	ID, Name  string
 	CreatedAt *time.Time
+	UpdatedAt *time.Time
 	// BlockOnPolicyViolation blocks the workflow run if policy evaluation fails
 	BlockOnPolicyViolation bool
 	// PoliciesAllowedHostnames is an array of hostnames that are allowed to be used in the policies

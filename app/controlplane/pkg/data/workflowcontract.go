@@ -236,7 +236,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	)
 
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		contract, err = contract.Update().SetNillableDescription(opts.Description).Save(ctx)
+		contract, err = contract.Update().SetNillableDescription(opts.Description).SetUpdatedAt(time.Now()).Save(ctx)
 		if err != nil {
 			return handleError(err)
 		}
@@ -329,7 +329,7 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
-	return r.data.DB.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
+	return r.data.DB.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Exec(ctx)
 }
 
 func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*biz.WorkflowContractVersion, error) {
@@ -427,6 +427,7 @@ func (r *WorkflowContractRepo) entContractToBizContract(ctx context.Context, w *
 		Name:                    w.Name,
 		ID:                      w.ID,
 		CreatedAt:               toTimePtr(w.CreatedAt),
+		UpdatedAt:               toTimePtr(w.UpdatedAt),
 		LatestRevisionCreatedAt: toTimePtr(version.CreatedAt),
 		WorkflowRefs:            workflowReferences,
 		Description:             w.Description,

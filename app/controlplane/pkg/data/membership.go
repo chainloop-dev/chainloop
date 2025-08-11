@@ -297,7 +297,7 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 		}
 
 		// 2 - Set the referenced membership to current=true
-		if err = tx.Membership.UpdateOneID(membershipID).SetCurrent(true).Exec(ctx); err != nil {
+		if err = tx.Membership.UpdateOneID(membershipID).SetCurrent(true).SetUpdatedAt(time.Now()).Exec(ctx); err != nil {
 			return err
 		}
 		return nil
@@ -315,7 +315,7 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 }
 
 func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, role authz.Role) (*biz.Membership, error) {
-	if err := r.data.DB.Membership.UpdateOneID(membershipID).SetRole(role).Exec(ctx); err != nil {
+	if err := r.data.DB.Membership.UpdateOneID(membershipID).SetRole(role).SetUpdatedAt(time.Now()).Exec(ctx); err != nil {
 		return nil, fmt.Errorf("failed to update membership: %w", err)
 	}
 

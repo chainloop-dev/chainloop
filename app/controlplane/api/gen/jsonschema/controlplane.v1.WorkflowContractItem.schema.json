@@ -18,6 +18,9 @@
       "$ref": "controlplane.v1.ScopedEntity.schema.json",
       "description": "wether the contract is scoped to an entity in the organization"
     },
+    "^(updatedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
     "^(workflowNames)$": {
       "description": "Workflows associated with this contract",
       "items": {
@@ -56,6 +59,9 @@
     "scoped_entity": {
       "$ref": "controlplane.v1.ScopedEntity.schema.json",
       "description": "wether the contract is scoped to an entity in the organization"
+    },
+    "updated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
     },
     "workflow_names": {
       "description": "Workflows associated with this contract",
