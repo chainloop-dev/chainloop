@@ -26,6 +26,9 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/con
 service OrganizationService {
   rpc Create(OrganizationServiceCreateRequest) returns (OrganizationServiceCreateResponse);
   rpc Update(OrganizationServiceUpdateRequest) returns (OrganizationServiceUpdateResponse);
+  // Delete an organization
+  // Only organization owners can delete the organization
+  rpc Delete(OrganizationServiceDeleteRequest) returns (OrganizationServiceDeleteResponse);
 
   // List members in the organization
   rpc ListMemberships(OrganizationServiceListMembershipsRequest) returns (OrganizationServiceListMembershipsResponse);
@@ -95,3 +98,9 @@ message OrganizationServiceUpdateRequest {
 message OrganizationServiceUpdateResponse {
   OrgItem result = 1;
 }
+
+message OrganizationServiceDeleteRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message OrganizationServiceDeleteResponse {}

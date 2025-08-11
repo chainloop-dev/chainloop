@@ -93,23 +93,42 @@ func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
 }
 
 // DeleteUser deletes the user, related memberships and organization if needed
+// Safe approach: blocks deletion if user is sole owner of any organizations
 func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
 	uc.logger.Infow("msg", "Deleting Account", "user_id", userID)
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
 	memberships, err := uc.membershipUseCase.ByUser(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	// Iterate on user memberships, delete org if the user is the only member
+	// Check if user is the sole owner of any organizations
+	soleOwnerOrgs := []string{}
 	for _, m := range memberships {
-		if err := uc.membershipUseCase.LeaveAndDeleteOrg(ctx, userID, m.ID.String()); err != nil {
-			return fmt.Errorf("failed to delete membership: %w", err)
+		isSoleOwner, err := uc.membershipUseCase.isUserSoleOwner(ctx, m.OrganizationID, userUUID)
+		if err != nil {
+			return fmt.Errorf("failed to check ownership for org %s: %w", m.Org.Name, err)
+		}
+		if isSoleOwner {
+			soleOwnerOrgs = append(soleOwnerOrgs, m.Org.Name)
 		}
 	}
 
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
+	// Block deletion if user is sole owner of any organizations
+	if len(soleOwnerOrgs) > 0 {
+		return NewErrValidationStr(fmt.Sprintf("cannot delete account: you are the sole owner of organizations (%s). Please transfer ownership or delete these organizations first", strings.Join(soleOwnerOrgs, ", ")))
+	}
+
+	// Safely leave all organizations (user is not sole owner of any)
+	for _, m := range memberships {
+		if err := uc.membershipUseCase.Leave(ctx, userID, m.ID.String()); err != nil {
+			return fmt.Errorf("failed to leave organization %s: %w", m.Org.Name, err)
+		}
 	}
 
 	uc.logger.Infow("msg", "User deleted", "user_id", userID)

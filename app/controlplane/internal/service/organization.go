@@ -97,6 +97,19 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
 }
 
+func (s *OrganizationService) Delete(ctx context.Context, req *pb.OrganizationServiceDeleteRequest) (*pb.OrganizationServiceDeleteResponse, error) {
+	currentUser, err := requireCurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.orgUC.DeleteByUser(ctx, req.Name, currentUser.ID); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.OrganizationServiceDeleteResponse{}, nil
+}
+
 func (s *OrganizationService) ListMemberships(ctx context.Context, req *pb.OrganizationServiceListMembershipsRequest) (*pb.OrganizationServiceListMembershipsResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {

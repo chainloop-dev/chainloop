@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -288,6 +289,49 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 
 	// Delete the organization
 	return uc.orgRepo.Delete(ctx, orgUUID)
+}
+
+// DeleteByUser deletes an organization initiated by a user with owner validation
+// Only organization owners can delete an organization
+func (uc *OrganizationUseCase) DeleteByUser(ctx context.Context, orgName, userID string) error {
+	// Find organization by name
+	org, err := uc.orgRepo.FindByName(ctx, orgName)
+	if err != nil {
+		return err
+	} else if org == nil {
+		return NewErrNotFound("organization")
+	}
+
+	orgUUID, err := uuid.Parse(org.ID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	// Check if user is an owner of the organization
+	ownerRole := authz.RoleOwner
+	owners, _, err := uc.membershipRepo.FindByOrg(ctx, orgUUID, &ListByOrgOpts{
+		Role: &ownerRole,
+	}, &pagination.OffsetPaginationOpts{}) // Use default pagination for owners
+	if err != nil {
+		return fmt.Errorf("failed to find owners: %w", err)
+	}
+
+	userIsOwner := false
+	for _, owner := range owners {
+		if owner.User != nil && owner.User.ID == userID {
+			userIsOwner = true
+			break
+		}
+	}
+
+	if !userIsOwner {
+		return NewErrValidationStr("only organization owners can delete the organization")
+	}
+
+	uc.logger.Infow("msg", "User deleting organization", "user_id", userID, "organization_id", org.ID)
+
+	// Use the existing Delete method to handle the actual deletion
+	return uc.Delete(ctx, org.ID)
 }
 
 // AutoOnboardOrganizations creates the organizations specified in the onboarding config and assigns the user to them
