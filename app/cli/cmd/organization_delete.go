@@ -28,7 +28,7 @@ func newOrganizationDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete an organization",
 		Long:  "Delete an organization. Only organization owners can delete an organization.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
 			fmt.Printf("You are about to delete the organization %q\n", orgName)

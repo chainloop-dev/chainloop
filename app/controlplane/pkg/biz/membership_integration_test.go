@@ -117,7 +117,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		s.NoError(err)
 	})
 
-	s.T().Run("can leave when there are more than 1 member", func(t *testing.T) {
+	s.Run("can leave when there are more than 1 member", func() {
 		err := s.Membership.Leave(ctx, user.ID, mUserSharedOrg.ID.String())
 		s.NoError(err)
 		// The org should not be deleted
@@ -132,7 +132,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		s.Equal(user2.ID, members[0].User.ID)
 	})
 
-	s.T().Run("cannot leave when would become sole owner", func(t *testing.T) {
+	s.Run("cannot leave when would become sole owner", func() {
 		err := s.Membership.Leave(ctx, user2.ID, mUser2SharedOrg.ID.String())
 		s.Error(err)
 		s.True(biz.IsErrValidation(err))
