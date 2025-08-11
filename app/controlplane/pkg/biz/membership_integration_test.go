@@ -107,7 +107,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("cannot leave when the only member (sole owner)", func(t *testing.T) {
+	s.Run("cannot leave when the only member (sole owner)", func() {
 		err := s.Membership.Leave(ctx, user.ID, mUser.ID.String())
 		s.Require().Error(err)
 		s.True(biz.IsErrValidation(err))
@@ -168,7 +168,7 @@ func (s *membershipIntegrationTestSuite) TestLeaveHappyPath() {
 	s.Len(members, 2)
 	s.Equal(2, count)
 
-	s.T().Run("owner can leave when another owner remains", func(t *testing.T) {
+	s.Run("owner can leave when another owner remains", func() {
 		// user1 can leave because user2 will still be an owner
 		err := s.Membership.Leave(ctx, user1.ID, membership1.ID.String())
 		s.NoError(err)
@@ -192,7 +192,7 @@ func (s *membershipIntegrationTestSuite) TestLeaveHappyPath() {
 		s.Empty(user1Memberships) // user1 should have no memberships left
 	})
 
-	s.T().Run("last remaining owner cannot leave", func(t *testing.T) {
+	s.Run("last remaining owner cannot leave", func() {
 		// user2 is now the sole owner and cannot leave
 		err := s.Membership.Leave(ctx, user2.ID, membership2.ID.String())
 		s.Error(err)
