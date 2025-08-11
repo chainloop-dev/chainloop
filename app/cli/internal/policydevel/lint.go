@@ -84,7 +84,7 @@ func (p *PolicyToLint) AddError(path, message string, line int) {
 func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	resolvedPath, err := resourceloader.GetPathForResource(absPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve policy file: %w", err)
+		return nil, err
 	}
 
 	fileInfo, err := os.Stat(resolvedPath)
@@ -92,7 +92,7 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("policy file does not exist: %s", resolvedPath)
 		}
-		return nil, fmt.Errorf("failed to stat file %q: %w", resolvedPath, err)
+		return nil, err
 	}
 	if fileInfo.IsDir() {
 		return nil, fmt.Errorf("expected a file but got a directory: %s", resolvedPath)
@@ -141,14 +141,14 @@ func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 
 				resolvedPath, err := resourceloader.GetPathForResource(regoPath)
 				if err != nil {
-					return fmt.Errorf("failed to resolve rego file %q: %w", regoPath, err)
+					return err
 				}
 				if _, ok := seen[resolvedPath]; ok {
 					continue // avoid duplicates
 				}
 				seen[resolvedPath] = struct{}{}
 				if err := p.processFile(resolvedPath); err != nil {
-					return fmt.Errorf("failed to load referenced rego file %q: %w", resolvedPath, err)
+					return err
 				}
 			}
 		}
@@ -159,7 +159,7 @@ func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 func (p *PolicyToLint) processFile(filePath string) error {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("reading %s: %w", filepath.Base(filePath), err)
+		return err
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
@@ -196,7 +196,7 @@ func (p *PolicyToLint) Validate() {
 func (p *PolicyToLint) validateYAMLFile(file *File) {
 	var policy v1.Policy
 	if err := unmarshal.FromRaw(file.Content, unmarshal.RawFormatYAML, &policy, true); err != nil {
-		p.AddError(file.Path, fmt.Sprintf("failed to parse/validate: %v", err), 0)
+		p.AddError(file.Path, "failed to parse/validate policy", 0)
 		return
 	}
 
@@ -206,7 +206,7 @@ func (p *PolicyToLint) validateYAMLFile(file *File) {
 	if p.Format {
 		var root yaml.Node
 		if err := yaml.Unmarshal(file.Content, &root); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to parse YAML: %v", err), 0)
+			p.AddError(file.Path, "failed to parse YAML", 0)
 			return
 		}
 
@@ -221,13 +221,13 @@ func (p *PolicyToLint) validateYAMLFile(file *File) {
 		defer enc.Close()
 
 		if err := enc.Encode(&root); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to encode YAML: %v", err), 0)
+			p.AddError(file.Path, err.Error(), 0)
 			return
 		}
 
 		outYAML := buf.Bytes()
 		if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to write updated file: %v", err), 0)
+			p.AddError(file.Path, err.Error(), 0)
 		} else {
 			file.Content = outYAML
 		}
@@ -255,7 +255,7 @@ func (p *PolicyToLint) validateRegoFile(file *File) {
 
 	if p.Format && formatted != original {
 		if err := os.WriteFile(file.Path, []byte(formatted), 0600); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to auto-format: %v", err), 0)
+			p.AddError(file.Path, err.Error(), 0)
 		} else {
 			file.Content = []byte(formatted)
 		}
@@ -281,7 +281,7 @@ func (p *PolicyToLint) validateAndFormatRego(content, path string) string {
 func (p *PolicyToLint) applyOPAFmt(content, file string) string {
 	formatted, err := format.SourceWithOpts(file, []byte(content), format.Opts{})
 	if err != nil {
-		p.AddError(file, "Auto-formatting failed", 0)
+		p.AddError(file, "auto-formatting failed", 0)
 		return content
 	}
 	return string(formatted)
@@ -315,7 +315,7 @@ func (p *PolicyToLint) checkResultStructure(content, path string, keys []string)
 func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
-		p.AddError(filePath, fmt.Sprintf("failed to prepare for linting: %v", err), 0)
+		p.AddError(filePath, err.Error(), 0)
 		return
 	}
 
@@ -333,7 +333,7 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 
 	report, err := lntr.Lint(context.Background())
 	if err != nil {
-		p.AddError(filePath, fmt.Sprintf("linting failed: %v", err), 0)
+		p.AddError(filePath, err.Error(), 0)
 		return
 	}
 

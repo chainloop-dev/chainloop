@@ -55,7 +55,7 @@ evaluates the policy against the provided material or attestation.`,
 
 			policyEval, err := action.NewPolicyEval(opts, actionOpts)
 			if err != nil {
-				return fmt.Errorf("failed to initialize policy evaluation: %w", err)
+				return err
 			}
 
 			result, err := policyEval.Run()

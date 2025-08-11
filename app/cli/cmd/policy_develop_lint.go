@@ -38,7 +38,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewPolicyLint(actionOpts)
 			if err != nil {
-				return fmt.Errorf("failed to initialize linter: %w", err)
+				return err
 			}
 
 			result, err := a.Run(cmd.Context(), &action.PolicyLintOpts{
@@ -47,7 +47,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				RegalConfig: regalConfig,
 			})
 			if err != nil {
-				return fmt.Errorf("linting failed: %w", err)
+				return err
 			}
 
 			if result.Valid {

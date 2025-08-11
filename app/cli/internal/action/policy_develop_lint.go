@@ -17,7 +17,6 @@ package action
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
@@ -47,7 +46,7 @@ func (action *PolicyLint) Run(_ context.Context, opts *PolicyLintOpts) (*PolicyL
 	// Read policies
 	policy, err := policydevel.Lookup(opts.PolicyPath, opts.RegalConfig, opts.Format)
 	if err != nil {
-		return nil, fmt.Errorf("loading policy: %w", err)
+		return nil, err
 	}
 
 	// Run all validations

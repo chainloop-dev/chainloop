@@ -48,13 +48,13 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) ([]*EvalResult, error) {
 	// 1. Create crafting schema
 	schema, err := createCraftingSchema(opts.PolicyPath, opts.Inputs)
 	if err != nil {
-		return nil, fmt.Errorf("creating crafting schema: %w", err)
+		return nil, err
 	}
 
 	// 2. Craft material with annotations
 	material, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
 	if err != nil {
-		return nil, fmt.Errorf("material crafting: %w", err)
+		return nil, err
 	}
 	material.Annotations = opts.Annotations
 
