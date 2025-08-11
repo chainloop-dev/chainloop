@@ -254,3 +254,6 @@ All commits must meet these criteria:
 Code reviews are required for all submissions via GitHub pull requests.
 - make sure golang code is always formatted and golang-ci-lint is run
 
+
+- I do not want you to be in the co-author signoff
+- make sure all go code is go-fmt

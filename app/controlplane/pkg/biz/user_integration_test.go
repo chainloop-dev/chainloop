@@ -174,15 +174,15 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 		// Create a test user who is not an owner so they can leave
 		testUser, err := s.User.UpsertByEmail(ctx, "test-no-membership@test.com", nil)
 		s.NoError(err)
-		
+
 		// Create a new org and make both testUser and userOne owners
 		testOrg, err := s.Organization.CreateWithRandomName(ctx)
 		s.NoError(err)
-		
+
 		// Add testUser as owner
 		_, err = s.Membership.Create(ctx, testOrg.ID, testUser.ID, biz.WithMembershipRole(authz.RoleOwner))
 		s.NoError(err)
-		
+
 		// Add userOne as viewer (so they can leave)
 		_, err = s.Membership.Create(ctx, testOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleViewer))
 		s.NoError(err)
@@ -198,18 +198,18 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 			}
 		}
 		s.NotNil(testOrgMembership)
-		
+
 		// userOne leaves testOrg (allowed because testUser is still owner)
 		err = s.Membership.Leave(ctx, s.userOne.ID, testOrgMembership.ID.String())
 		s.NoError(err)
-		
+
 		// Now userOne leaves their original organizations by deleting them directly
 		// since they are sole owners, they can delete the orgs instead of leaving
 		err = s.Organization.Delete(ctx, s.userOneOrg.ID)
 		s.NoError(err)
-		err = s.Organization.Delete(ctx, s.sharedOrg.ID) 
+		err = s.Organization.Delete(ctx, s.sharedOrg.ID)
 		s.NoError(err)
-		
+
 		// Verify userOne has no memberships left
 		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
 		s.Len(mems, 0)
