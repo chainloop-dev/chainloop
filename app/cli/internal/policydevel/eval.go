@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	DefaultMaterialName = "material"
+	defaultMaterialName = "material"
 )
 
 type EvalOptions struct {
