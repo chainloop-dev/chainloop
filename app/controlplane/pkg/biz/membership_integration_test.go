@@ -143,6 +143,76 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	})
 }
 
+func (s *membershipIntegrationTestSuite) TestLeaveHappyPath() {
+	ctx := context.Background()
+
+	// Create users
+	user1, err := s.User.UpsertByEmail(ctx, "owner1@test.com", nil)
+	s.NoError(err)
+	user2, err := s.User.UpsertByEmail(ctx, "owner2@test.com", nil)
+	s.NoError(err)
+
+	// Create organization with multiple owners
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	// Add both users as owners
+	membership1, err := s.Membership.Create(ctx, org.ID, user1.ID, biz.WithMembershipRole(authz.RoleOwner))
+	s.NoError(err)
+	membership2, err := s.Membership.Create(ctx, org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
+	s.NoError(err)
+
+	// Verify initial state - both users are owners
+	members, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+	s.NoError(err)
+	s.Len(members, 2)
+	s.Equal(2, count)
+
+	s.T().Run("owner can leave when another owner remains", func(t *testing.T) {
+		// user1 can leave because user2 will still be an owner
+		err := s.Membership.Leave(ctx, user1.ID, membership1.ID.String())
+		s.NoError(err)
+
+		// Organization should still exist
+		gotOrg, err := s.Organization.FindByID(ctx, org.ID)
+		s.NoError(err)
+		s.NotNil(gotOrg)
+
+		// Only user2 should remain as member
+		members, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+		s.NoError(err)
+		s.Len(members, 1)
+		s.Equal(1, count)
+		s.Equal(user2.ID, members[0].User.ID)
+		s.Equal(authz.RoleOwner, members[0].Role)
+
+		// user1 should no longer have any memberships in this org
+		user1Memberships, err := s.Membership.ByUser(ctx, user1.ID)
+		s.NoError(err)
+		s.Empty(user1Memberships) // user1 should have no memberships left
+	})
+
+	s.T().Run("last remaining owner cannot leave", func(t *testing.T) {
+		// user2 is now the sole owner and cannot leave
+		err := s.Membership.Leave(ctx, user2.ID, membership2.ID.String())
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
+
+		// Organization should still exist
+		gotOrg, err := s.Organization.FindByID(ctx, org.ID)
+		s.NoError(err)
+		s.NotNil(gotOrg)
+
+		// user2 should still be the only member
+		members, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+		s.NoError(err)
+		s.Len(members, 1)
+		s.Equal(1, count)
+		s.Equal(user2.ID, members[0].User.ID)
+	})
+}
+
 func (s *membershipIntegrationTestSuite) TestDeleteOther() {
 	ctx := context.Background()
 
