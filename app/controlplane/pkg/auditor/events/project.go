@@ -27,6 +27,7 @@ import (
 )
 
 var (
+	_ auditor.LogEntry = (*ProjectCreated)(nil)
 	_ auditor.LogEntry = (*ProjectMembershipAdded)(nil)
 	_ auditor.LogEntry = (*ProjectMembershipRemoved)(nil)
 	_ auditor.LogEntry = (*ProjectMemberRoleUpdated)(nil)
@@ -34,6 +35,7 @@ var (
 
 const (
 	ProjectType                        auditor.TargetType = "Project"
+	ProjectCreatedActionType           string             = "ProjectCreated"
 	ProjectMembershipAddedActionType   string             = "ProjectMembershipAdded"
 	ProjectMembershipRemovedActionType string             = "ProjectMembershipRemoved"
 	ProjectMemberRoleUpdatedType       string             = "ProjectMemberRoleUpdated"
@@ -63,6 +65,27 @@ func (p *ProjectBase) ActionInfo() (json.RawMessage, error) {
 	}
 
 	return json.Marshal(&p)
+}
+
+// ProjectCreated represents the creation of a project
+type ProjectCreated struct {
+	*ProjectBase
+}
+
+func (p *ProjectCreated) ActionType() string {
+	return ProjectCreatedActionType
+}
+
+func (p *ProjectCreated) ActionInfo() (json.RawMessage, error) {
+	if _, err := p.ProjectBase.ActionInfo(); err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(&p)
+}
+
+func (p *ProjectCreated) Description() string {
+	return fmt.Sprintf("%s has created the project '%s'", auditor.GetActorIdentifier(), p.ProjectName)
 }
 
 // Helper function to make role names more user-friendly

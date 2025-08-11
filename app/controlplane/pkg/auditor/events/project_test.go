@@ -50,6 +50,18 @@ func TestProjectEvents(t *testing.T) {
 		actorID  uuid.UUID
 	}{
 		{
+			name: "ProjectCreated",
+			event: &events.ProjectCreated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+			},
+			expected: "testdata/projects/project_created.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
 			name: "ProjectMembershipAdded",
 			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{

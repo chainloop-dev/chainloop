@@ -78,8 +78,8 @@ func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, versio
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	preRelease := !isRelease
-	return uc.projectRepo.Update(ctx, versionUUID, &ProjectVersionUpdateOpts{Prerelease: &preRelease})
+	preReleaseValue := !isRelease
+	return uc.projectRepo.Update(ctx, versionUUID, &ProjectVersionUpdateOpts{Prerelease: &preReleaseValue})
 }
 
 func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version string, prerelease bool) (*ProjectVersion, error) {
