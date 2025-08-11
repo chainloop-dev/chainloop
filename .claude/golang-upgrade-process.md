@@ -2,6 +2,10 @@
 
 This document outlines the comprehensive process for upgrading Go versions across the Chainloop project.
 
+NOTE
+
+- do not upgrade dagger module
+
 ## Overview
 
 The Chainloop project uses Go in multiple components requiring updates across:
@@ -90,7 +94,6 @@ make lint    # Check code quality
 
 ### Source Code
 - `./go.mod`
-- `./extras/dagger/go.mod`
 
 ### Docker Images
 - `./app/artifact-cas/Dockerfile`
