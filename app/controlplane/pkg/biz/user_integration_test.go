@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,28 +80,30 @@ User mapping:
 func (s *userIntegrationTestSuite) TestDeleteUser() {
 	ctx := context.Background()
 
+	// User deletion should be blocked because userOne is sole owner of userOneOrg
 	err := s.User.DeleteUser(ctx, s.userOne.ID)
-	s.NoError(err)
-
-	// Organization where the user is the only member got deleted
-	gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
 	s.Error(err)
-	s.True(biz.IsNotFound(err))
-	s.Nil(gotOrgOne)
+	s.True(biz.IsErrValidation(err))
+	s.Contains(err.Error(), "sole owner")
 
-	// Organization that it's shared with another user is still present
+	// Both organizations should still exist since deletion was blocked
+	gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
+	s.NoError(err)
+	s.NotNil(gotOrgOne)
+
 	gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
 	s.NoError(err)
 	s.NotNil(gotSharedOrg)
 
-	// user and associated memberships have been deleted
+	// User should still exist since deletion was blocked
 	gotUser, err := s.User.FindByID(ctx, s.userOne.ID)
 	s.NoError(err)
-	s.Nil(gotUser)
+	s.NotNil(gotUser)
 
+	// Memberships should still exist since deletion was blocked
 	gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
 	s.NoError(err)
-	s.Empty(gotMembership)
+	s.NotEmpty(gotMembership)
 }
 
 func (s *userIntegrationTestSuite) TestCurrentMembership() {
@@ -224,15 +226,15 @@ func (s *userIntegrationTestSuite) SetupTest() {
 	// Create User 1
 	s.userOne, err = s.User.UpsertByEmail(ctx, "user-1@test.com", nil)
 	assert.NoError(err)
-	// Attach both orgs
-	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID)
+	// Attach both orgs - make user owner of userOneOrg and owner of sharedOrg  
+	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleOwner))
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	assert.NoError(err)
 
-	// Create User 2 and attach shared org
+	// Create User 2 and attach shared org as owner too
 	s.userTwo, err = s.User.UpsertByEmail(ctx, "user-2@test.com", nil)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	assert.NoError(err)
 }

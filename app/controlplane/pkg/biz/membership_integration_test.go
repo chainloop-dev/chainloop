@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -419,7 +419,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 	orgUUID := uuid.MustParse(org.ID)
 
 	// Add user to organization
-	membershipUser, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
+	membershipUser, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	s.NoError(err)
 
 	// Create multiple groups with the user as maintainer
@@ -480,25 +480,25 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 		_, err = s.Organization.FindByID(ctx, org.ID)
 		s.NoError(err)
 
-		// Groups should still exist since user couldn't leave
+		// Groups should still exist since user couldn't leave (no cleanup happened)
 		_, err = s.Group.Get(ctx, orgUUID, &biz.IdentityReference{ID: &group1.ID})
 		s.NoError(err, "Group 1 should still exist")
 
 		_, err = s.Group.Get(ctx, orgUUID, &biz.IdentityReference{ID: &group2.ID})
-		s.True(biz.IsNotFound(err), "Group 2 should be deleted")
+		s.NoError(err, "Group 2 should still exist since user couldn't leave")
 
-		// The project should be deleted
+		// The project should still exist since no cleanup happened
 		_, err = s.Project.FindProjectByReference(ctx, org.ID, &biz.IdentityReference{ID: projectRef.ID})
-		s.True(biz.IsNotFound(err), "Project should be deleted")
+		s.NoError(err, "Project should still exist since user couldn't leave")
 
-		// Verify group memberships are marked as deleted
+		// Verify group memberships still exist since user couldn't leave
 		group1Mem, group1Err := s.Repos.GroupRepo.FindGroupMembershipByGroupAndID(ctx, group1.ID, userUUID)
-		s.True(biz.IsNotFound(group1Err))
-		s.Nil(group1Mem)
+		s.NoError(group1Err)
+		s.NotNil(group1Mem)
 
 		group2Mem, group2Err := s.Repos.GroupRepo.FindGroupMembershipByGroupAndID(ctx, group2.ID, userUUID)
-		s.True(biz.IsNotFound(group2Err))
-		s.Nil(group2Mem)
+		s.NoError(group2Err)
+		s.NotNil(group2Mem)
 	})
 }
 
