@@ -1,0 +1,66 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: http-hostname-validation
+  description: Validates Chainloop platform version by making HTTP requests to external APIs
+spec:
+  inputs:
+    - name: expected_version
+      description: Expected platform version to validate against
+      default: "1.2.3"
+  policies:
+    - kind: EVIDENCE
+      embedded: |
+        package main
+
+        import rego.v1
+
+        ################################
+        # Common section do NOT change #
+        ################################
+
+        result := {
+        	"skipped": skipped,
+        	"violations": violations,
+        	"skip_reason": skip_reason,
+        	"ignore": ignore,
+        }
+
+        default skip_reason := ""
+
+        skip_reason := m if {
+        	not valid_input
+        	m := "invalid input"
+        }
+
+        default skipped := true
+
+        skipped := false if valid_input
+
+        default ignore := false
+
+        ########################################
+        # EO Common section, custom code below #
+        ########################################
+        # Validates if the input is valid and can be understood by this policy
+        valid_input := true
+
+        # Make HTTP request to Chainloop API
+        api_response := http.send({
+        	"method": "GET",
+        	"url": "https://app.chainloop.dev/api/info",
+        	"cache": true,
+        })
+
+        # Extract platform version from API response
+        platform_version := api_response.body.platform.version
+
+        # Get expected version from input (default handled by engine)
+        expected_version := input.args.expected_version
+
+        violations contains msg if {
+        	valid_input
+        	api_response.status_code == 200
+        	platform_version != expected_version
+        	msg := sprintf("Platform version violation: expected '%s', got '%s'", [expected_version, platform_version])
+        }

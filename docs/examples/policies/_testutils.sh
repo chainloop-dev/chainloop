@@ -151,23 +151,35 @@ test_policy_eval() {
             actual_result="pass"  # No violations = test should pass
         fi
     else
-        actual_result="fail"  # Command failed
+        actual_result="failed_eval"  # Command failed to execute
     fi
     
     # Compare with expected result
     if [ "$actual_result" = "$expected_result" ]; then
-        if [ "$expected_result" = "pass" ]; then
-            echo -e "${GREEN}✓ PASSED${NC}"
-        else
-            echo -e "${GREEN}✓ FAILED (as expected)${NC}"
-        fi
+        case "$expected_result" in
+            "pass")
+                echo -e "${GREEN}✓ PASSED${NC}"
+                ;;
+            "fail")
+                echo -e "${GREEN}✓ FAILED (as expected)${NC}"
+                ;;
+            "failed_eval")
+                echo -e "${GREEN}✓ EVAL FAILED (as expected)${NC}"
+                ;;
+        esac
         ((TESTS_PASSED++))
     else
-        if [ "$expected_result" = "pass" ]; then
-            echo -e "${RED}✗ FAILED (expected to pass but failed)${NC}"
-        else
-            echo -e "${RED}✗ PASSED (expected to fail but passed)${NC}"
-        fi
+        case "$expected_result" in
+            "pass")
+                echo -e "${RED}✗ FAILED (expected to pass but $actual_result)${NC}"
+                ;;
+            "fail")
+                echo -e "${RED}✗ PASSED (expected to fail but $actual_result)${NC}"
+                ;;
+            "failed_eval")
+                echo -e "${RED}✗ PASSED (expected eval failure but $actual_result)${NC}"
+                ;;
+        esac
         
         # Show skip reason if policy wasn't executed
         if [ -n "${skip_reason:-}" ]; then
