@@ -283,7 +283,7 @@ func (p *PolicyToLint) checkResultStructure(content, path string, keys []string)
 func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
-		p.processRegalViolation(fmt.Errorf("%s: %w", filePath, err), filePath)
+		p.processRegalViolation(fmt.Sprintf("%s: %w", filePath, err), filePath)
 		return
 	}
 
@@ -307,7 +307,7 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 
 	// Handle Regal violations by formatting
 	for _, v := range report.Violations {
-		p.processRegalViolation(fmt.Errorf("%s:%d: %s", filePath, v.Location.Row, v.Description), filePath)
+		p.processRegalViolation(fmt.Sprintf("%s:%d: %s", filePath, v.Location.Row, v.Description), filePath)
 	}
 }
 
@@ -357,12 +357,10 @@ func (p *PolicyToLint) loadDefaultConfig() (*config.Config, error) {
 }
 
 // Formats regal violation errors
-func (p *PolicyToLint) processRegalViolation(rawErr error, path string) {
-	if rawErr == nil {
+func (p *PolicyToLint) processRegalViolation(errorStr, path string) {
+	if errorStr == "" {
 		return
 	}
-
-	errorStr := rawErr.Error()
 
 	// Replace "opa fmt" with "--format" in error messages
 	errorStr = strings.ReplaceAll(errorStr, "`opa fmt`", "`--format`")
