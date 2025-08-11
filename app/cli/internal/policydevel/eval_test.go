@@ -28,6 +28,8 @@ func TestEvaluate(t *testing.T) {
 	tempDir := t.TempDir()
 	logger := zerolog.New(os.Stderr)
 	policyPath := "testdata/policy-test.yaml"
+	policyWithoutKind := "testdata/policy-without-kind.yaml"
+	policyWithAndWithoutKind := "testdata/policy-with-and-without-kind.yaml"
 
 	t.Run("evaluation with explicit kind", func(t *testing.T) {
 		testFile := filepath.Join(tempDir, "test.txt")
@@ -124,4 +126,63 @@ func TestEvaluate(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid material kind")
 	})
+
+	t.Run("evaulation for policy without specified kind", func(t *testing.T) {
+		materialPath := "testdata/sbom_cyclonedx.json"
+
+		opts := &EvalOptions{
+			PolicyPath:   policyWithoutKind,
+			MaterialKind: "",
+			MaterialPath: materialPath,
+			Annotations:  map[string]string{"key": "value"},
+		}
+
+		results, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotEmpty(t, results)
+
+		// Check that at least one violation was returned
+		foundViolations := false
+		for _, r := range results {
+			if len(r.Violations) > 0 {
+				foundViolations = true
+				break
+			}
+		}
+
+		require.True(t, foundViolations, "expected at least one violation in the results")
+	})
+
+	t.Run("evaluation for policy with not matching kind and without kind", func(t *testing.T) {
+		materialPath := "testdata/sbom_cyclonedx.json"
+
+		opts := &EvalOptions{
+			PolicyPath:   policyWithAndWithoutKind,
+			MaterialKind: "",
+			MaterialPath: materialPath,
+			Annotations:  map[string]string{"key": "value"},
+		}
+
+		results, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotEmpty(t, results)
+
+		foundWithoutKind := false
+		foundEvidenceKid := false
+
+		for _, r := range results {
+			for _, v := range r.Violations {
+				if v == "without kind" {
+					foundWithoutKind = true
+				}
+				if v == "evidence kind" {
+					foundEvidenceKid = true
+				}
+			}
+		}
+
+		require.True(t, foundWithoutKind, "expected violation 'without kind'")
+		require.False(t, foundEvidenceKid, "did not expect violation 'evidence kind'")
+	})
+
 }

@@ -28,6 +28,10 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 )
 
+const (
+	DefaultMaterialName = "material"
+)
+
 type EvalOptions struct {
 	PolicyPath       string
 	MaterialKind     string
@@ -72,8 +76,9 @@ func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.Craf
 		Policies: &v1.Policies{
 			Materials: []*v1.PolicyAttachment{
 				{
-					Policy: &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("file://%s", policyPath)},
-					With:   inputs,
+					Policy:   &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("file://%s", policyPath)},
+					With:     inputs,
+					Selector: &v1.PolicyAttachment_MaterialSelector{Name: DefaultMaterialName},
 				},
 			},
 			Attestation: nil,
@@ -142,12 +147,12 @@ func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*
 		if !ok {
 			return nil, fmt.Errorf("invalid material kind: %s", materialKind)
 		}
-		return craft(materialPath, v1.CraftingSchema_Material_MaterialType(kind), "material", backend, logger)
+		return craft(materialPath, v1.CraftingSchema_Material_MaterialType(kind), DefaultMaterialName, backend, logger)
 	}
 
 	// Auto-detect kind
 	for _, kind := range v1.CraftingMaterialInValidationOrder {
-		m, err := craft(materialPath, kind, "auto-detected-material", backend, logger)
+		m, err := craft(materialPath, kind, DefaultMaterialName, backend, logger)
 		if err == nil {
 			return m, nil
 		}
