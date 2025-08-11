@@ -283,7 +283,7 @@ func (p *PolicyToLint) checkResultStructure(content, path string, keys []string)
 func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
-		p.processRegalViolation(fmt.Sprintf("%s: %w", filePath, err), filePath)
+		p.processRegalViolation(fmt.Sprintf("%s: %v", filePath, err), filePath)
 		return
 	}
 
