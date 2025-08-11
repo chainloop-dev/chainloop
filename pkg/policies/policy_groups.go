@@ -40,9 +40,9 @@ type PolicyGroupVerifier struct {
 
 var _ Verifier = (*PolicyGroupVerifier)(nil)
 
-func NewPolicyGroupVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger) *PolicyGroupVerifier {
+func NewPolicyGroupVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyGroupVerifier {
 	return &PolicyGroupVerifier{schema: schema, client: client, logger: logger,
-		PolicyVerifier: NewPolicyVerifier(schema, client, logger)}
+		PolicyVerifier: NewPolicyVerifier(schema, client, logger, opts...)}
 }
 
 // VerifyMaterial evaluates a material against groups of policies defined in the schema
