@@ -63,6 +63,13 @@ evaluates the policy against the provided material or attestation.`,
 				return newGracefulError(err)
 			}
 
+			// Check if any result was ignored
+			for _, res := range result {
+				if res.Ignored {
+					return fmt.Errorf("policy evaluation failed: no execution branch matched")
+				}
+			}
+
 			return encodeJSON(result)
 		},
 	}
