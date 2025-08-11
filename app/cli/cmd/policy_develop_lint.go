@@ -17,8 +17,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +57,10 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeResult(result)
+			if err := encodeOutput(result, policyLintTable); err != nil {
+				return fmt.Errorf("failed to encode output: %w", err)
+			}
+			return fmt.Errorf("%d issues found", len(result.Errors))
 		},
 	}
 
@@ -65,18 +70,16 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	return cmd
 }
 
-func encodeResult(result *action.PolicyLintResult) error {
-	if result == nil {
-		return nil
-	}
-
-	output := fmt.Sprintf("Found %d issues:\n", len(result.Errors))
+// Table rendering function for policy lint results
+func policyLintTable(result *action.PolicyLintResult) error {
+	tw := table.NewWriter()
+	tw.SetOutputMirror(os.Stdout)
+	tw.AppendHeader(table.Row{"#", "Issue"})
 
 	for i, err := range result.Errors {
-		output += fmt.Sprintf("  %d. %s\n", i+1, err)
+		tw.AppendRow(table.Row{i + 1, err})
 	}
 
-	fmt.Print(output)
-
-	return fmt.Errorf("policy validation failed with %d issues", len(result.Errors))
+	tw.Render()
+	return nil
 }

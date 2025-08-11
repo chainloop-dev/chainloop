@@ -23,6 +23,8 @@ type Organization struct {
 	Name string `json:"name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// BlockOnPolicyViolation holds the value of the "block_on_policy_violation" field.
 	BlockOnPolicyViolation bool `json:"block_on_policy_violation,omitempty"`
 	// PoliciesAllowedHostnames holds the value of the "policies_allowed_hostnames" field.
@@ -139,7 +141,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case organization.FieldName:
 			values[i] = new(sql.NullString)
-		case organization.FieldCreatedAt:
+		case organization.FieldCreatedAt, organization.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case organization.FieldID:
 			values[i] = new(uuid.UUID)
@@ -175,6 +177,12 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				o.CreatedAt = value.Time
+			}
+		case organization.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				o.UpdatedAt = value.Time
 			}
 		case organization.FieldBlockOnPolicyViolation:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -271,6 +279,9 @@ func (o *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(o.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(o.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("block_on_policy_violation=")
 	builder.WriteString(fmt.Sprintf("%v", o.BlockOnPolicyViolation))

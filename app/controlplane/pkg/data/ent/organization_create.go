@@ -52,6 +52,20 @@ func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (oc *OrganizationCreate) SetUpdatedAt(t time.Time) *OrganizationCreate {
+	oc.mutation.SetUpdatedAt(t)
+	return oc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableUpdatedAt(t *time.Time) *OrganizationCreate {
+	if t != nil {
+		oc.SetUpdatedAt(*t)
+	}
+	return oc
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (oc *OrganizationCreate) SetBlockOnPolicyViolation(b bool) *OrganizationCreate {
 	oc.mutation.SetBlockOnPolicyViolation(b)
@@ -245,6 +259,10 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := oc.mutation.UpdatedAt(); !ok {
+		v := organization.DefaultUpdatedAt()
+		oc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
 		v := organization.DefaultBlockOnPolicyViolation
 		oc.mutation.SetBlockOnPolicyViolation(v)
@@ -262,6 +280,9 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
+	}
+	if _, ok := oc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Organization.updated_at"`)}
 	}
 	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
 		return &ValidationError{Name: "block_on_policy_violation", err: errors.New(`ent: missing required field "Organization.block_on_policy_violation"`)}
@@ -309,6 +330,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := oc.mutation.CreatedAt(); ok {
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := oc.mutation.UpdatedAt(); ok {
+		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := oc.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
@@ -510,6 +535,18 @@ func (u *OrganizationUpsert) UpdateName() *OrganizationUpsert {
 	return u
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *OrganizationUpsert) SetUpdatedAt(v time.Time) *OrganizationUpsert {
+	u.Set(organization.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateUpdatedAt() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldUpdatedAt)
+	return u
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldBlockOnPolicyViolation, v)
@@ -602,6 +639,20 @@ func (u *OrganizationUpsertOne) SetName(v string) *OrganizationUpsertOne {
 func (u *OrganizationUpsertOne) UpdateName() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *OrganizationUpsertOne) SetUpdatedAt(v time.Time) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateUpdatedAt() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 
@@ -869,6 +920,20 @@ func (u *OrganizationUpsertBulk) SetName(v string) *OrganizationUpsertBulk {
 func (u *OrganizationUpsertBulk) UpdateName() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *OrganizationUpsertBulk) SetUpdatedAt(v time.Time) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateUpdatedAt() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 

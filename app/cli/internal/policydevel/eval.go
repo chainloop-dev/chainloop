@@ -95,14 +95,7 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 
 	// no evaluations were returned
 	if len(policyEvs) == 0 {
-		return []*EvalResult{
-			{
-				Ignored:     true,
-				Skipped:     false,
-				SkipReasons: []string{},
-				Violations:  []string{},
-			},
-		}, nil
+		return nil, fmt.Errorf("no execution branch matched for kind %s", material.MaterialType.String())
 	}
 
 	results := make([]*EvalResult, 0, len(policyEvs))

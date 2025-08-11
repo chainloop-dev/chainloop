@@ -48,6 +48,20 @@ func (wcc *WorkflowContractCreate) SetNillableCreatedAt(t *time.Time) *WorkflowC
 	return wcc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (wcc *WorkflowContractCreate) SetUpdatedAt(t time.Time) *WorkflowContractCreate {
+	wcc.mutation.SetUpdatedAt(t)
+	return wcc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (wcc *WorkflowContractCreate) SetNillableUpdatedAt(t *time.Time) *WorkflowContractCreate {
+	if t != nil {
+		wcc.SetUpdatedAt(*t)
+	}
+	return wcc
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (wcc *WorkflowContractCreate) SetDeletedAt(t time.Time) *WorkflowContractCreate {
 	wcc.mutation.SetDeletedAt(t)
@@ -206,6 +220,10 @@ func (wcc *WorkflowContractCreate) defaults() {
 		v := workflowcontract.DefaultCreatedAt()
 		wcc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := wcc.mutation.UpdatedAt(); !ok {
+		v := workflowcontract.DefaultUpdatedAt()
+		wcc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := wcc.mutation.ID(); !ok {
 		v := workflowcontract.DefaultID()
 		wcc.mutation.SetID(v)
@@ -219,6 +237,9 @@ func (wcc *WorkflowContractCreate) check() error {
 	}
 	if _, ok := wcc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkflowContract.created_at"`)}
+	}
+	if _, ok := wcc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "WorkflowContract.updated_at"`)}
 	}
 	if v, ok := wcc.mutation.ScopedResourceType(); ok {
 		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
@@ -268,6 +289,10 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 	if value, ok := wcc.mutation.CreatedAt(); ok {
 		_spec.SetField(workflowcontract.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := wcc.mutation.UpdatedAt(); ok {
+		_spec.SetField(workflowcontract.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := wcc.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)
@@ -385,6 +410,18 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *WorkflowContractUpsert) SetUpdatedAt(v time.Time) *WorkflowContractUpsert {
+	u.Set(workflowcontract.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *WorkflowContractUpsert) UpdateUpdatedAt() *WorkflowContractUpsert {
+	u.SetExcluded(workflowcontract.FieldUpdatedAt)
+	return u
+}
 
 // SetDeletedAt sets the "deleted_at" field.
 func (u *WorkflowContractUpsert) SetDeletedAt(v time.Time) *WorkflowContractUpsert {
@@ -510,6 +547,20 @@ func (u *WorkflowContractUpsertOne) Update(set func(*WorkflowContractUpsert)) *W
 		set(&WorkflowContractUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *WorkflowContractUpsertOne) SetUpdatedAt(v time.Time) *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *WorkflowContractUpsertOne) UpdateUpdatedAt() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateUpdatedAt()
+	})
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -815,6 +866,20 @@ func (u *WorkflowContractUpsertBulk) Update(set func(*WorkflowContractUpsert)) *
 		set(&WorkflowContractUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *WorkflowContractUpsertBulk) SetUpdatedAt(v time.Time) *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *WorkflowContractUpsertBulk) UpdateUpdatedAt() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateUpdatedAt()
+	})
 }
 
 // SetDeletedAt sets the "deleted_at" field.

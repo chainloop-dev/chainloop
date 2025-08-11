@@ -60,7 +60,7 @@ evaluates the policy against the provided material or attestation.`,
 
 			result, err := policyEval.Run()
 			if err != nil {
-				return newGracefulError(err)
+				return err
 			}
 
 			return encodeJSON(result)

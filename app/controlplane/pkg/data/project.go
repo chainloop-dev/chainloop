@@ -348,7 +348,7 @@ func entProjectToBiz(pro *ent.Project) *biz.Project {
 		Name:      pro.Name,
 		OrgID:     pro.OrganizationID,
 		CreatedAt: &pro.CreatedAt,
-		UpdatedAt: &pro.CreatedAt,
+		UpdatedAt: &pro.UpdatedAt,
 	}
 }
 
