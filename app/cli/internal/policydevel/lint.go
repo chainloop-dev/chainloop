@@ -18,16 +18,17 @@ package policydevel
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/bufbuild/protoyaml-go"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	opaAst "github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
@@ -283,7 +284,21 @@ func (p *PolicyToLint) checkResultStructure(content, path string, keys []string)
 func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 	inputModules, err := rules.InputFromText(filePath, content)
 	if err != nil {
-		p.processRegalViolation(fmt.Sprintf("%s: %v", filePath, err), filePath)
+		// Cast to OPA AST errors for better formatting
+		var astErrs opaAst.Errors
+		if errors.As(err, &astErrs) {
+			for _, e := range astErrs {
+				line := 0
+				if e.Location != nil {
+					line = e.Location.Row
+				}
+
+				p.AddError(filePath, e.Message, line)
+			}
+			return
+		}
+		// Fallback if it's not an ast.Errors type
+		p.AddError(filePath, err.Error(), 0)
 		return
 	}
 
@@ -305,9 +320,10 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 		return
 	}
 
-	// Handle Regal violations by formatting
+	// Add any violations to the policy errors
 	for _, v := range report.Violations {
-		p.processRegalViolation(fmt.Sprintf("%s:%d: %s", filePath, v.Location.Row, v.Description), filePath)
+		errorStr := strings.ReplaceAll(v.Description, "`opa fmt`", "`--format`")
+		p.AddError(filePath, errorStr, v.Location.Row)
 	}
 }
 
@@ -354,79 +370,4 @@ func (p *PolicyToLint) loadDefaultConfig() (*config.Config, error) {
 	}
 
 	return &cfg, nil
-}
-
-// Formats regal violation errors
-func (p *PolicyToLint) processRegalViolation(errorStr, path string) {
-	if errorStr == "" {
-		return
-	}
-
-	// Replace "opa fmt" with "--format" in error messages
-	errorStr = strings.ReplaceAll(errorStr, "`opa fmt`", "`--format`")
-	// Regex matches file path, line number and error message like: /path/file:line: message
-	re := regexp.MustCompile(`^(.*\.rego):(\d+):\s*(.+)$`)
-
-	// Handle the special case of error summary: "1 error occurred:"
-	// Example: <file>: failed to parse module: failed to parse module: 1 errors occurred: <followed by error message>
-	if strings.Contains(errorStr, "error occurred:") && !strings.Contains(errorStr, "\n") {
-		parts := strings.Split(errorStr, "error occurred:")
-		if len(parts) == 2 {
-			errDetail := strings.TrimSpace(parts[1])
-			if matches := re.FindStringSubmatch(errDetail); len(matches) == 4 {
-				if lineNum, err := strconv.Atoi(matches[2]); err == nil {
-					p.AddError(matches[1], matches[3], lineNum)
-					return
-				}
-			}
-			p.AddError(path, errDetail, 0)
-			return
-		}
-	}
-
-	// Split the error summary into lines and process each line skipping summary lines
-	// Example: <file>: failed to parse module: failed to parse module: 2 errors occurred: <errors split by new lines>
-	lines := strings.Split(errorStr, "\n")
-	var afterSummary []string
-	foundSummary := false
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if foundSummary {
-			afterSummary = append(afterSummary, line)
-		}
-		if strings.Contains(line, "errors occurred:") {
-			foundSummary = true
-		}
-	}
-
-	if foundSummary && len(afterSummary) > 0 {
-		for _, line := range afterSummary {
-			if matches := re.FindStringSubmatch(line); len(matches) == 4 {
-				if lineNum, err := strconv.Atoi(matches[2]); err == nil {
-					p.AddError(matches[1], matches[3], lineNum)
-					continue
-				}
-			}
-			p.AddError(path, line, 0)
-		}
-		return
-	}
-
-	// If no summary, try regex on each line, fallback if not matched
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if matches := re.FindStringSubmatch(line); len(matches) == 4 {
-			if lineNum, err := strconv.Atoi(matches[2]); err == nil {
-				p.AddError(matches[1], matches[3], lineNum)
-				continue
-			}
-		}
-		p.AddError(path, line, 0)
-	}
 }
