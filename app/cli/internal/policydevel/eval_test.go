@@ -127,7 +127,7 @@ func TestEvaluate(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid material kind")
 	})
 
-	t.Run("evaulation for policy without specified kind", func(t *testing.T) {
+	t.Run("evaluation for policy without specified kind", func(t *testing.T) {
 		materialPath := "testdata/sbom_cyclonedx.json"
 
 		opts := &EvalOptions{
