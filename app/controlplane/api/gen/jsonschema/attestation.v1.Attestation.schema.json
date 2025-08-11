@@ -27,6 +27,13 @@
     "^(initializedAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
+    "^(policiesAllowedHostnames)$": {
+      "description": "array of hostnames that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(policyEvaluations)$": {
       "description": "Policies that materials in this attestation were validated against",
       "items": {
@@ -121,6 +128,13 @@
         "type": "string"
       },
       "type": "object"
+    },
+    "policies_allowed_hostnames": {
+      "description": "array of hostnames that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     },
     "policy_evaluations": {
       "description": "Policies that materials in this attestation were validated against",

@@ -44,6 +44,9 @@ func (Project) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
+		field.Time("updated_at").
+			Default(time.Now).
+			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Time("deleted_at").Optional(),
 		field.UUID("organization_id", uuid.UUID{}).Immutable(),
 	}

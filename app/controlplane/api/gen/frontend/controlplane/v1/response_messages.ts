@@ -434,6 +434,7 @@ export interface WorkflowContractItem {
   name: string;
   description: string;
   createdAt?: Date;
+  updatedAt?: Date;
   latestRevision: number;
   latestRevisionCreatedAt?: Date;
   /**
@@ -535,6 +536,7 @@ export interface User {
   id: string;
   email: string;
   createdAt?: Date;
+  updatedAt?: Date;
   firstName: string;
   lastName: string;
 }
@@ -553,7 +555,9 @@ export interface OrgItem {
   id: string;
   name: string;
   createdAt?: Date;
+  updatedAt?: Date;
   defaultPolicyViolationStrategy: OrgItem_PolicyViolationBlockingStrategy;
+  policyAllowedHostnames: string[];
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -2819,6 +2823,7 @@ function createBaseWorkflowContractItem(): WorkflowContractItem {
     name: "",
     description: "",
     createdAt: undefined,
+    updatedAt: undefined,
     latestRevision: 0,
     latestRevisionCreatedAt: undefined,
     workflowNames: [],
@@ -2840,6 +2845,9 @@ export const WorkflowContractItem = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(82).fork()).ldelim();
     }
     if (message.latestRevision !== 0) {
       writer.uint32(32).int32(message.latestRevision);
@@ -2894,6 +2902,13 @@ export const WorkflowContractItem = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
         case 4:
           if (tag !== 32) {
             break;
@@ -2944,6 +2959,7 @@ export const WorkflowContractItem = {
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       latestRevision: isSet(object.latestRevision) ? Number(object.latestRevision) : 0,
       latestRevisionCreatedAt: isSet(object.latestRevisionCreatedAt)
         ? fromJsonTimestamp(object.latestRevisionCreatedAt)
@@ -2962,6 +2978,7 @@ export const WorkflowContractItem = {
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.latestRevision !== undefined && (obj.latestRevision = Math.round(message.latestRevision));
     message.latestRevisionCreatedAt !== undefined &&
       (obj.latestRevisionCreatedAt = message.latestRevisionCreatedAt.toISOString());
@@ -2990,6 +3007,7 @@ export const WorkflowContractItem = {
     message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     message.latestRevision = object.latestRevision ?? 0;
     message.latestRevisionCreatedAt = object.latestRevisionCreatedAt ?? undefined;
     message.workflowNames = object.workflowNames?.map((e) => e) || [];
@@ -3375,7 +3393,7 @@ export const WorkflowContractVersionItem_RawBody = {
 };
 
 function createBaseUser(): User {
-  return { id: "", email: "", createdAt: undefined, firstName: "", lastName: "" };
+  return { id: "", email: "", createdAt: undefined, updatedAt: undefined, firstName: "", lastName: "" };
 }
 
 export const User = {
@@ -3388,6 +3406,9 @@ export const User = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(50).fork()).ldelim();
     }
     if (message.firstName !== "") {
       writer.uint32(34).string(message.firstName);
@@ -3426,6 +3447,13 @@ export const User = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -3454,6 +3482,7 @@ export const User = {
       id: isSet(object.id) ? String(object.id) : "",
       email: isSet(object.email) ? String(object.email) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       firstName: isSet(object.firstName) ? String(object.firstName) : "",
       lastName: isSet(object.lastName) ? String(object.lastName) : "",
     };
@@ -3464,6 +3493,7 @@ export const User = {
     message.id !== undefined && (obj.id = message.id);
     message.email !== undefined && (obj.email = message.email);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.firstName !== undefined && (obj.firstName = message.firstName);
     message.lastName !== undefined && (obj.lastName = message.lastName);
     return obj;
@@ -3478,6 +3508,7 @@ export const User = {
     message.id = object.id ?? "";
     message.email = object.email ?? "";
     message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     message.firstName = object.firstName ?? "";
     message.lastName = object.lastName ?? "";
     return message;
@@ -3629,7 +3660,14 @@ export const OrgMembershipItem = {
 };
 
 function createBaseOrgItem(): OrgItem {
-  return { id: "", name: "", createdAt: undefined, defaultPolicyViolationStrategy: 0 };
+  return {
+    id: "",
+    name: "",
+    createdAt: undefined,
+    updatedAt: undefined,
+    defaultPolicyViolationStrategy: 0,
+    policyAllowedHostnames: [],
+  };
 }
 
 export const OrgItem = {
@@ -3643,8 +3681,14 @@ export const OrgItem = {
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
     }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(50).fork()).ldelim();
+    }
     if (message.defaultPolicyViolationStrategy !== 0) {
       writer.uint32(32).int32(message.defaultPolicyViolationStrategy);
+    }
+    for (const v of message.policyAllowedHostnames) {
+      writer.uint32(42).string(v!);
     }
     return writer;
   },
@@ -3677,12 +3721,26 @@ export const OrgItem = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
         case 4:
           if (tag !== 32) {
             break;
           }
 
           message.defaultPolicyViolationStrategy = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.policyAllowedHostnames.push(reader.string());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3698,9 +3756,13 @@ export const OrgItem = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       defaultPolicyViolationStrategy: isSet(object.defaultPolicyViolationStrategy)
         ? orgItem_PolicyViolationBlockingStrategyFromJSON(object.defaultPolicyViolationStrategy)
         : 0,
+      policyAllowedHostnames: Array.isArray(object?.policyAllowedHostnames)
+        ? object.policyAllowedHostnames.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -3709,10 +3771,16 @@ export const OrgItem = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.defaultPolicyViolationStrategy !== undefined &&
       (obj.defaultPolicyViolationStrategy = orgItem_PolicyViolationBlockingStrategyToJSON(
         message.defaultPolicyViolationStrategy,
       ));
+    if (message.policyAllowedHostnames) {
+      obj.policyAllowedHostnames = message.policyAllowedHostnames.map((e) => e);
+    } else {
+      obj.policyAllowedHostnames = [];
+    }
     return obj;
   },
 
@@ -3725,7 +3793,9 @@ export const OrgItem = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     message.defaultPolicyViolationStrategy = object.defaultPolicyViolationStrategy ?? 0;
+    message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
     return message;
   },
 };

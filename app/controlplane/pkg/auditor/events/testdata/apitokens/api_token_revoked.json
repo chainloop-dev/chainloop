@@ -5,8 +5,9 @@
   "ActorType": "API_TOKEN",
   "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
   "ActorEmail": "",
+  "ActorName": "test-token",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": " has revoked the API token test-token",
+  "Description": "test-token has revoked the API token test-token",
   "Info": {
     "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
     "api_token_name": "test-token"

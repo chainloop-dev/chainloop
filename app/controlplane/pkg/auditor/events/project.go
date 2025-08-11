@@ -109,13 +109,13 @@ func (p *ProjectMemberRoleUpdated) ActionInfo() (json.RawMessage, error) {
 func (p *ProjectMemberRoleUpdated) Description() string {
 	if p.UserID != nil {
 		// User role update
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has updated user '%s' role in project '%s' from '%s' to '%s'",
-			p.UserEmail, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
+		return fmt.Sprintf("%s has updated user '%s' role in project '%s' from '%s' to '%s'",
+			auditor.GetActorIdentifier(), p.UserEmail, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
 	}
 
 	// Group role update
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has updated group '%s' role in project '%s' from '%s' to '%s'",
-		p.GroupName, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
+	return fmt.Sprintf("%s has updated group '%s' role in project '%s' from '%s' to '%s'",
+		auditor.GetActorIdentifier(), p.GroupName, p.ProjectName, prettyRole(p.OldRole), prettyRole(p.NewRole))
 }
 
 // ProjectMembershipAdded represents the addition of a member (user or group) to a project
@@ -156,13 +156,13 @@ func (p *ProjectMembershipAdded) Description() string {
 
 	if p.UserID != nil {
 		// User addition
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has added user '%s' to the project '%s'%s",
-			p.UserEmail, p.ProjectName, roleDesc)
+		return fmt.Sprintf("%s has added user '%s' to the project '%s'%s",
+			auditor.GetActorIdentifier(), p.UserEmail, p.ProjectName, roleDesc)
 	}
 
 	// Group addition
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has added group '%s' to the project '%s'%s",
-		p.GroupName, p.ProjectName, roleDesc)
+	return fmt.Sprintf("%s has added group '%s' to the project '%s'%s",
+		auditor.GetActorIdentifier(), p.GroupName, p.ProjectName, roleDesc)
 }
 
 // ProjectMembershipRemoved represents the removal of a member (user or group) from a project
@@ -196,11 +196,11 @@ func (p *ProjectMembershipRemoved) ActionInfo() (json.RawMessage, error) {
 func (p *ProjectMembershipRemoved) Description() string {
 	if p.UserID != nil {
 		// User removal
-		return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has removed user '%s' from the project '%s'",
-			p.UserEmail, p.ProjectName)
+		return fmt.Sprintf("%s has removed user '%s' from the project '%s'",
+			auditor.GetActorIdentifier(), p.UserEmail, p.ProjectName)
 	}
 
 	// Group removal
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}system@chainloop.dev{{ end }} has removed group '%s' from the project '%s'",
-		p.GroupName, p.ProjectName)
+	return fmt.Sprintf("%s has removed group '%s' from the project '%s'",
+		auditor.GetActorIdentifier(), p.GroupName, p.ProjectName)
 }

@@ -66,7 +66,16 @@ export interface OrganizationServiceCreateResponse {
 export interface OrganizationServiceUpdateRequest {
   name: string;
   /** "optional" allow us to detect if the value is explicitly set */
-  blockOnPolicyViolation?: boolean | undefined;
+  blockOnPolicyViolation?:
+    | boolean
+    | undefined;
+  /** array of hostnames that are allowed to be used in the policies */
+  policiesAllowedHostnames: string[];
+  /**
+   * flag that allows us to detect if the value is explicitly set
+   * since repeated fields can not be optional
+   */
+  updatePoliciesAllowedHostnames: boolean;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -642,7 +651,12 @@ export const OrganizationServiceCreateResponse = {
 };
 
 function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdateRequest {
-  return { name: "", blockOnPolicyViolation: undefined };
+  return {
+    name: "",
+    blockOnPolicyViolation: undefined,
+    policiesAllowedHostnames: [],
+    updatePoliciesAllowedHostnames: false,
+  };
 }
 
 export const OrganizationServiceUpdateRequest = {
@@ -652,6 +666,12 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.blockOnPolicyViolation !== undefined) {
       writer.uint32(16).bool(message.blockOnPolicyViolation);
+    }
+    for (const v of message.policiesAllowedHostnames) {
+      writer.uint32(26).string(v!);
+    }
+    if (message.updatePoliciesAllowedHostnames === true) {
+      writer.uint32(32).bool(message.updatePoliciesAllowedHostnames);
     }
     return writer;
   },
@@ -677,6 +697,20 @@ export const OrganizationServiceUpdateRequest = {
 
           message.blockOnPolicyViolation = reader.bool();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.policiesAllowedHostnames.push(reader.string());
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.updatePoliciesAllowedHostnames = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -690,6 +724,12 @@ export const OrganizationServiceUpdateRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : undefined,
+      policiesAllowedHostnames: Array.isArray(object?.policiesAllowedHostnames)
+        ? object.policiesAllowedHostnames.map((e: any) => String(e))
+        : [],
+      updatePoliciesAllowedHostnames: isSet(object.updatePoliciesAllowedHostnames)
+        ? Boolean(object.updatePoliciesAllowedHostnames)
+        : false,
     };
   },
 
@@ -697,6 +737,13 @@ export const OrganizationServiceUpdateRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
+    if (message.policiesAllowedHostnames) {
+      obj.policiesAllowedHostnames = message.policiesAllowedHostnames.map((e) => e);
+    } else {
+      obj.policiesAllowedHostnames = [];
+    }
+    message.updatePoliciesAllowedHostnames !== undefined &&
+      (obj.updatePoliciesAllowedHostnames = message.updatePoliciesAllowedHostnames);
     return obj;
   },
 
@@ -712,6 +759,8 @@ export const OrganizationServiceUpdateRequest = {
     const message = createBaseOrganizationServiceUpdateRequest();
     message.name = object.name ?? "";
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? undefined;
+    message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
+    message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
     return message;
   },
 };

@@ -80,7 +80,7 @@ func (w *WorkflowCreated) Description() string {
 	workflowName := w.WorkflowName
 	projectName := w.ProjectName
 	workflowContractName := w.WorkflowContractName
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has created the workflow %s on project %s with the contract %s", workflowName, projectName, workflowContractName)
+	return fmt.Sprintf("%s has created the workflow %s on project %s with the contract %s", auditor.GetActorIdentifier(), workflowName, projectName, workflowContractName)
 }
 
 func (w *WorkflowCreated) ActionType() string {
@@ -119,7 +119,7 @@ func (w *WorkflowUpdated) ActionInfo() (json.RawMessage, error) {
 func (w *WorkflowUpdated) Description() string {
 	workflowName := w.WorkflowName
 	projectName := w.ProjectName
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has updated the workflow %s on project %s", workflowName, projectName)
+	return fmt.Sprintf("%s has updated the workflow %s on project %s", auditor.GetActorIdentifier(), workflowName, projectName)
 }
 
 type WorkflowDeleted struct {
@@ -140,5 +140,5 @@ func (w *WorkflowDeleted) ActionInfo() (json.RawMessage, error) {
 
 func (w *WorkflowDeleted) Description() string {
 	wfName := w.WorkflowName
-	return fmt.Sprintf("{{ if .ActorEmail }}{{ .ActorEmail }}{{ else }}API Token {{ .ActorID }}{{ end }} has deleted the workflow %s", wfName)
+	return fmt.Sprintf("%s has deleted the workflow %s", auditor.GetActorIdentifier(), wfName)
 }

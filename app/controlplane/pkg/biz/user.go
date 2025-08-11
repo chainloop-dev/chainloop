@@ -38,6 +38,7 @@ type User struct {
 	LastName            string
 	Email               string
 	CreatedAt           *time.Time
+	UpdatedAt           *time.Time
 	HasRestrictedAccess *bool
 }
 
@@ -145,7 +146,7 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 		}
 
 		// set the context user so it can be used in the auditor
-		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, FirstName: u.FirstName, LastName: u.LastName})
 		uc.auditorUC.Dispatch(ctx, &events.UserSignedUp{
 			UserBase: &events.UserBase{
 				UserID:    ToPtr(uuid.MustParse(u.ID)),
@@ -155,7 +156,7 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 		}, nil)
 	} else {
 		// Login case
-		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID})
+		ctx = entities.WithCurrentUser(ctx, &entities.User{Email: u.Email, ID: u.ID, FirstName: u.FirstName, LastName: u.LastName})
 		uc.auditorUC.Dispatch(ctx, &events.UserLoggedIn{
 			UserBase: &events.UserBase{
 				UserID:    ToPtr(uuid.MustParse(u.ID)),

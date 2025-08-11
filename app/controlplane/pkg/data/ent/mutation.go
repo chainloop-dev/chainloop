@@ -8479,40 +8479,43 @@ func (m *OrgInvitationMutation) ResetEdge(name string) error {
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *uuid.UUID
-	name                      *string
-	created_at                *time.Time
-	block_on_policy_violation *bool
-	clearedFields             map[string]struct{}
-	memberships               map[uuid.UUID]struct{}
-	removedmemberships        map[uuid.UUID]struct{}
-	clearedmemberships        bool
-	workflow_contracts        map[uuid.UUID]struct{}
-	removedworkflow_contracts map[uuid.UUID]struct{}
-	clearedworkflow_contracts bool
-	workflows                 map[uuid.UUID]struct{}
-	removedworkflows          map[uuid.UUID]struct{}
-	clearedworkflows          bool
-	cas_backends              map[uuid.UUID]struct{}
-	removedcas_backends       map[uuid.UUID]struct{}
-	clearedcas_backends       bool
-	integrations              map[uuid.UUID]struct{}
-	removedintegrations       map[uuid.UUID]struct{}
-	clearedintegrations       bool
-	api_tokens                map[uuid.UUID]struct{}
-	removedapi_tokens         map[uuid.UUID]struct{}
-	clearedapi_tokens         bool
-	projects                  map[uuid.UUID]struct{}
-	removedprojects           map[uuid.UUID]struct{}
-	clearedprojects           bool
-	groups                    map[uuid.UUID]struct{}
-	removedgroups             map[uuid.UUID]struct{}
-	clearedgroups             bool
-	done                      bool
-	oldValue                  func(context.Context) (*Organization, error)
-	predicates                []predicate.Organization
+	op                               Op
+	typ                              string
+	id                               *uuid.UUID
+	name                             *string
+	created_at                       *time.Time
+	updated_at                       *time.Time
+	block_on_policy_violation        *bool
+	policies_allowed_hostnames       *[]string
+	appendpolicies_allowed_hostnames []string
+	clearedFields                    map[string]struct{}
+	memberships                      map[uuid.UUID]struct{}
+	removedmemberships               map[uuid.UUID]struct{}
+	clearedmemberships               bool
+	workflow_contracts               map[uuid.UUID]struct{}
+	removedworkflow_contracts        map[uuid.UUID]struct{}
+	clearedworkflow_contracts        bool
+	workflows                        map[uuid.UUID]struct{}
+	removedworkflows                 map[uuid.UUID]struct{}
+	clearedworkflows                 bool
+	cas_backends                     map[uuid.UUID]struct{}
+	removedcas_backends              map[uuid.UUID]struct{}
+	clearedcas_backends              bool
+	integrations                     map[uuid.UUID]struct{}
+	removedintegrations              map[uuid.UUID]struct{}
+	clearedintegrations              bool
+	api_tokens                       map[uuid.UUID]struct{}
+	removedapi_tokens                map[uuid.UUID]struct{}
+	clearedapi_tokens                bool
+	projects                         map[uuid.UUID]struct{}
+	removedprojects                  map[uuid.UUID]struct{}
+	clearedprojects                  bool
+	groups                           map[uuid.UUID]struct{}
+	removedgroups                    map[uuid.UUID]struct{}
+	clearedgroups                    bool
+	done                             bool
+	oldValue                         func(context.Context) (*Organization, error)
+	predicates                       []predicate.Organization
 }
 
 var _ ent.Mutation = (*OrganizationMutation)(nil)
@@ -8691,6 +8694,42 @@ func (m *OrganizationMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (m *OrganizationMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *OrganizationMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *OrganizationMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (m *OrganizationMutation) SetBlockOnPolicyViolation(b bool) {
 	m.block_on_policy_violation = &b
@@ -8725,6 +8764,71 @@ func (m *OrganizationMutation) OldBlockOnPolicyViolation(ctx context.Context) (v
 // ResetBlockOnPolicyViolation resets all changes to the "block_on_policy_violation" field.
 func (m *OrganizationMutation) ResetBlockOnPolicyViolation() {
 	m.block_on_policy_violation = nil
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (m *OrganizationMutation) SetPoliciesAllowedHostnames(s []string) {
+	m.policies_allowed_hostnames = &s
+	m.appendpolicies_allowed_hostnames = nil
+}
+
+// PoliciesAllowedHostnames returns the value of the "policies_allowed_hostnames" field in the mutation.
+func (m *OrganizationMutation) PoliciesAllowedHostnames() (r []string, exists bool) {
+	v := m.policies_allowed_hostnames
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPoliciesAllowedHostnames returns the old "policies_allowed_hostnames" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldPoliciesAllowedHostnames(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPoliciesAllowedHostnames is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPoliciesAllowedHostnames requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPoliciesAllowedHostnames: %w", err)
+	}
+	return oldValue.PoliciesAllowedHostnames, nil
+}
+
+// AppendPoliciesAllowedHostnames adds s to the "policies_allowed_hostnames" field.
+func (m *OrganizationMutation) AppendPoliciesAllowedHostnames(s []string) {
+	m.appendpolicies_allowed_hostnames = append(m.appendpolicies_allowed_hostnames, s...)
+}
+
+// AppendedPoliciesAllowedHostnames returns the list of values that were appended to the "policies_allowed_hostnames" field in this mutation.
+func (m *OrganizationMutation) AppendedPoliciesAllowedHostnames() ([]string, bool) {
+	if len(m.appendpolicies_allowed_hostnames) == 0 {
+		return nil, false
+	}
+	return m.appendpolicies_allowed_hostnames, true
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (m *OrganizationMutation) ClearPoliciesAllowedHostnames() {
+	m.policies_allowed_hostnames = nil
+	m.appendpolicies_allowed_hostnames = nil
+	m.clearedFields[organization.FieldPoliciesAllowedHostnames] = struct{}{}
+}
+
+// PoliciesAllowedHostnamesCleared returns if the "policies_allowed_hostnames" field was cleared in this mutation.
+func (m *OrganizationMutation) PoliciesAllowedHostnamesCleared() bool {
+	_, ok := m.clearedFields[organization.FieldPoliciesAllowedHostnames]
+	return ok
+}
+
+// ResetPoliciesAllowedHostnames resets all changes to the "policies_allowed_hostnames" field.
+func (m *OrganizationMutation) ResetPoliciesAllowedHostnames() {
+	m.policies_allowed_hostnames = nil
+	m.appendpolicies_allowed_hostnames = nil
+	delete(m.clearedFields, organization.FieldPoliciesAllowedHostnames)
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9193,15 +9297,21 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
 	if m.created_at != nil {
 		fields = append(fields, organization.FieldCreatedAt)
 	}
+	if m.updated_at != nil {
+		fields = append(fields, organization.FieldUpdatedAt)
+	}
 	if m.block_on_policy_violation != nil {
 		fields = append(fields, organization.FieldBlockOnPolicyViolation)
+	}
+	if m.policies_allowed_hostnames != nil {
+		fields = append(fields, organization.FieldPoliciesAllowedHostnames)
 	}
 	return fields
 }
@@ -9215,8 +9325,12 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case organization.FieldCreatedAt:
 		return m.CreatedAt()
+	case organization.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case organization.FieldBlockOnPolicyViolation:
 		return m.BlockOnPolicyViolation()
+	case organization.FieldPoliciesAllowedHostnames:
+		return m.PoliciesAllowedHostnames()
 	}
 	return nil, false
 }
@@ -9230,8 +9344,12 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldName(ctx)
 	case organization.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case organization.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case organization.FieldBlockOnPolicyViolation:
 		return m.OldBlockOnPolicyViolation(ctx)
+	case organization.FieldPoliciesAllowedHostnames:
+		return m.OldPoliciesAllowedHostnames(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9255,12 +9373,26 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedAt(v)
 		return nil
+	case organization.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
 	case organization.FieldBlockOnPolicyViolation:
 		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBlockOnPolicyViolation(v)
+		return nil
+	case organization.FieldPoliciesAllowedHostnames:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPoliciesAllowedHostnames(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -9291,7 +9423,11 @@ func (m *OrganizationMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *OrganizationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(organization.FieldPoliciesAllowedHostnames) {
+		fields = append(fields, organization.FieldPoliciesAllowedHostnames)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -9304,6 +9440,11 @@ func (m *OrganizationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *OrganizationMutation) ClearField(name string) error {
+	switch name {
+	case organization.FieldPoliciesAllowedHostnames:
+		m.ClearPoliciesAllowedHostnames()
+		return nil
+	}
 	return fmt.Errorf("unknown Organization nullable field %s", name)
 }
 
@@ -9317,8 +9458,14 @@ func (m *OrganizationMutation) ResetField(name string) error {
 	case organization.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
+	case organization.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
 	case organization.FieldBlockOnPolicyViolation:
 		m.ResetBlockOnPolicyViolation()
+		return nil
+	case organization.FieldPoliciesAllowedHostnames:
+		m.ResetPoliciesAllowedHostnames()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -9599,6 +9746,7 @@ type ProjectMutation struct {
 	name                *string
 	description         *string
 	created_at          *time.Time
+	updated_at          *time.Time
 	deleted_at          *time.Time
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
@@ -9837,6 +9985,42 @@ func (m *ProjectMutation) OldCreatedAt(ctx context.Context) (v time.Time, err er
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ProjectMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ProjectMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ProjectMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -10093,7 +10277,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, project.FieldName)
 	}
@@ -10102,6 +10286,9 @@ func (m *ProjectMutation) Fields() []string {
 	}
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, project.FieldUpdatedAt)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, project.FieldDeletedAt)
@@ -10123,6 +10310,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case project.FieldCreatedAt:
 		return m.CreatedAt()
+	case project.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case project.FieldDeletedAt:
 		return m.DeletedAt()
 	case project.FieldOrganizationID:
@@ -10142,6 +10331,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDescription(ctx)
 	case project.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case project.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case project.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	case project.FieldOrganizationID:
@@ -10175,6 +10366,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case project.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	case project.FieldDeletedAt:
 		v, ok := value.(time.Time)
@@ -10262,6 +10460,9 @@ func (m *ProjectMutation) ResetField(name string) error {
 		return nil
 	case project.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case project.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	case project.FieldDeletedAt:
 		m.ResetDeletedAt()
@@ -12820,6 +13021,7 @@ type UserMutation struct {
 	id                       *uuid.UUID
 	email                    *string
 	created_at               *time.Time
+	updated_at               *time.Time
 	has_restricted_access    *bool
 	first_name               *string
 	last_name                *string
@@ -13009,6 +13211,42 @@ func (m *UserMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *UserMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetHasRestrictedAccess sets the "has_restricted_access" field.
@@ -13300,12 +13538,15 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.email != nil {
 		fields = append(fields, user.FieldEmail)
 	}
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, user.FieldUpdatedAt)
 	}
 	if m.has_restricted_access != nil {
 		fields = append(fields, user.FieldHasRestrictedAccess)
@@ -13328,6 +13569,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Email()
 	case user.FieldCreatedAt:
 		return m.CreatedAt()
+	case user.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case user.FieldHasRestrictedAccess:
 		return m.HasRestrictedAccess()
 	case user.FieldFirstName:
@@ -13347,6 +13590,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldEmail(ctx)
 	case user.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case user.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case user.FieldHasRestrictedAccess:
 		return m.OldHasRestrictedAccess(ctx)
 	case user.FieldFirstName:
@@ -13375,6 +13620,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case user.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	case user.FieldHasRestrictedAccess:
 		v, ok := value.(bool)
@@ -13472,6 +13724,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case user.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	case user.FieldHasRestrictedAccess:
 		m.ResetHasRestrictedAccess()
@@ -15289,6 +15544,7 @@ type WorkflowContractMutation struct {
 	id                   *uuid.UUID
 	name                 *string
 	created_at           *time.Time
+	updated_at           *time.Time
 	deleted_at           *time.Time
 	description          *string
 	scoped_resource_type *biz.ContractScope
@@ -15481,6 +15737,42 @@ func (m *WorkflowContractMutation) OldCreatedAt(ctx context.Context) (v time.Tim
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *WorkflowContractMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *WorkflowContractMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *WorkflowContractMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the WorkflowContract entity.
+// If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *WorkflowContractMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -15860,12 +16152,15 @@ func (m *WorkflowContractMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.name != nil {
 		fields = append(fields, workflowcontract.FieldName)
 	}
 	if m.created_at != nil {
 		fields = append(fields, workflowcontract.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, workflowcontract.FieldUpdatedAt)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, workflowcontract.FieldDeletedAt)
@@ -15891,6 +16186,8 @@ func (m *WorkflowContractMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case workflowcontract.FieldCreatedAt:
 		return m.CreatedAt()
+	case workflowcontract.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case workflowcontract.FieldDeletedAt:
 		return m.DeletedAt()
 	case workflowcontract.FieldDescription:
@@ -15912,6 +16209,8 @@ func (m *WorkflowContractMutation) OldField(ctx context.Context, name string) (e
 		return m.OldName(ctx)
 	case workflowcontract.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case workflowcontract.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case workflowcontract.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	case workflowcontract.FieldDescription:
@@ -15942,6 +16241,13 @@ func (m *WorkflowContractMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case workflowcontract.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	case workflowcontract.FieldDeletedAt:
 		v, ok := value.(time.Time)
@@ -16052,6 +16358,9 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 		return nil
 	case workflowcontract.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case workflowcontract.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	case workflowcontract.FieldDeletedAt:
 		m.ResetDeletedAt()

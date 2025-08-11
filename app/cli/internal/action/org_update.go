@@ -30,14 +30,24 @@ func NewOrgUpdate(cfg *ActionsOpts) *OrgUpdate {
 }
 
 type NewOrgUpdateOpts struct {
-	BlockOnPolicyViolation *bool
+	BlockOnPolicyViolation   *bool
+	PoliciesAllowedHostnames *[]string
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
 	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
-	resp, err := client.Update(ctx, &pb.OrganizationServiceUpdateRequest{
-		Name: name, BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
-	})
+
+	payload := &pb.OrganizationServiceUpdateRequest{
+		Name:                   name,
+		BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
+	}
+
+	if opts.PoliciesAllowedHostnames != nil {
+		payload.PoliciesAllowedHostnames = *opts.PoliciesAllowedHostnames
+		payload.UpdatePoliciesAllowedHostnames = true
+	}
+
+	resp, err := client.Update(ctx, payload)
 	if err != nil {
 		return nil, err
 	}

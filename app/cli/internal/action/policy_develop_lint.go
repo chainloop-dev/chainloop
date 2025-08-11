@@ -18,7 +18,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
@@ -45,14 +44,8 @@ func NewPolicyLint(actionOpts *ActionsOpts) (*PolicyLint, error) {
 }
 
 func (action *PolicyLint) Run(_ context.Context, opts *PolicyLintOpts) (*PolicyLintResult, error) {
-	// Resolve absolute path to policy directory
-	absPath, err := filepath.Abs(opts.PolicyPath)
-	if err != nil {
-		return nil, fmt.Errorf("resolving absolute path: %w", err)
-	}
-
 	// Read policies
-	policy, err := policydevel.Lookup(absPath, opts.RegalConfig, opts.Format)
+	policy, err := policydevel.Lookup(opts.PolicyPath, opts.RegalConfig, opts.Format)
 	if err != nil {
 		return nil, fmt.Errorf("loading policy: %w", err)
 	}

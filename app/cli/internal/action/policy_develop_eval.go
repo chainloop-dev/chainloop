@@ -22,11 +22,12 @@ import (
 )
 
 type PolicyEvalOpts struct {
-	MaterialPath string
-	Kind         string
-	Annotations  map[string]string
-	PolicyPath   string
-	Inputs       map[string]string
+	MaterialPath     string
+	Kind             string
+	Annotations      map[string]string
+	PolicyPath       string
+	Inputs           map[string]string
+	AllowedHostnames []string
 }
 
 type PolicyEvalResult struct {
@@ -50,11 +51,12 @@ func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, 
 
 func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 	evalOpts := &policydevel.EvalOptions{
-		PolicyPath:   action.opts.PolicyPath,
-		MaterialKind: action.opts.Kind,
-		Annotations:  action.opts.Annotations,
-		MaterialPath: action.opts.MaterialPath,
-		Inputs:       action.opts.Inputs,
+		PolicyPath:       action.opts.PolicyPath,
+		MaterialKind:     action.opts.Kind,
+		Annotations:      action.opts.Annotations,
+		MaterialPath:     action.opts.MaterialPath,
+		Inputs:           action.opts.Inputs,
+		AllowedHostnames: action.opts.AllowedHostnames,
 	}
 
 	// Evaluate policy

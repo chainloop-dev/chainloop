@@ -23,6 +23,15 @@
           "type": "integer"
         }
       ]
+    },
+    "^(policyAllowedHostnames)$": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(updatedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
     }
   },
   "properties": {
@@ -52,6 +61,15 @@
     },
     "name": {
       "type": "string"
+    },
+    "policy_allowed_hostnames": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "updated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
     }
   },
   "title": "Org Item",

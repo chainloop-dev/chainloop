@@ -2710,9 +2710,10 @@ chainloop organization update [flags]
 Options
 
 ```
---block         set the default policy violation blocking strategy
--h, --help          help for update
---name string   organization name
+--block                                set the default policy violation blocking strategy
+-h, --help                                 help for update
+--name string                          organization name
+--policies-allowed-hostnames strings   set the allowed hostnames for the policy engine
 ```
 
 Options inherited from parent commands
@@ -2809,12 +2810,13 @@ chainloop policy eval --policy policy.yaml --material sbom.json --kind SBOM_CYCL
 Options
 
 ```
---annotation strings   key-value pairs of material annotations (key=value)
--h, --help                 help for eval
---input strings        key-value pairs of policy inputs (key=value)
---kind string          kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
---material string      path to material or attestation file
---policy string        path to custom policy file
+--allowed-hostnames strings   Additional hostnames allowed for http.send requests in policies
+--annotation strings          Key-value pairs of material annotations (key=value)
+-h, --help                        help for eval
+--input strings               Key-value pairs of policy inputs (key=value)
+--kind string                 Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--material string             Path to material or attestation file
+-p, --policy string               Path to custom policy file (default "policy.yaml")
 ```
 
 Options inherited from parent commands
@@ -2938,7 +2940,7 @@ Options
 ```
 --format                Auto-format file with opa fmt
 -h, --help                  help for lint
--p, --policy string         Path to policy directory (default ".")
+-p, --policy string         Path to policy file (default "policy.yaml")
 --regal-config string   Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal.yaml)
 ```
 

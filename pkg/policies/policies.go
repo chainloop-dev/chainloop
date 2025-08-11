@@ -61,15 +61,33 @@ type Verifier interface {
 }
 
 type PolicyVerifier struct {
-	schema *v1.CraftingSchema
-	logger *zerolog.Logger
-	client v13.AttestationServiceClient
+	schema           *v1.CraftingSchema
+	logger           *zerolog.Logger
+	client           v13.AttestationServiceClient
+	allowedHostnames []string
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
 
-func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger) *PolicyVerifier {
-	return &PolicyVerifier{schema: schema, client: client, logger: logger}
+type PolicyVerifierOptions struct {
+	AllowedHostnames []string
+}
+
+type PolicyVerifierOption func(*PolicyVerifierOptions)
+
+func WithAllowedHostnames(hostnames ...string) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.AllowedHostnames = hostnames
+	}
+}
+
+func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
+	options := &PolicyVerifierOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return &PolicyVerifier{schema: schema, client: client, logger: logger, allowedHostnames: options.AllowedHostnames}
 }
 
 // VerifyMaterial applies all required policies to a material
@@ -150,7 +168,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	skipped := true
 	reasons := make([]string, 0)
 	for _, script := range scripts {
-		r, err := pv.executeScript(ctx, policy, script, material, args)
+		r, err := pv.executeScript(ctx, script, material, args)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -299,9 +317,16 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	return result, nil
 }
 
-func (pv *PolicyVerifier) executeScript(ctx context.Context, policy *v1.Policy, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
+func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
+	engineOpts := []rego.EngineOption{}
+
+	if pv.allowedHostnames != nil {
+		pv.logger.Debug().Strs("hostnames", pv.allowedHostnames).Msg("adding additional allowed hostnames")
+		engineOpts = append(engineOpts, rego.WithAllowedNetworkDomains(pv.allowedHostnames...))
+	}
+
 	// verify the policy
-	ng := getPolicyEngine(policy)
+	ng := rego.NewEngine(engineOpts...)
 	res, err := ng.Verify(ctx, script, material, getInputArguments(args))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute policy : %w", err)
@@ -544,15 +569,6 @@ func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
 		}
 	}
 	return policyTypes
-}
-
-// getPolicyEngine returns a PolicyEngine implementation to evaluate a given policy.
-func getPolicyEngine(_ *v1.Policy) engine.PolicyEngine {
-	// Currently, only Rego is supported
-	return &rego.Rego{
-		// Set the default operating mode to restrictive
-		OperatingMode: rego.EnvironmentModeRestrictive,
-	}
 }
 
 // LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:

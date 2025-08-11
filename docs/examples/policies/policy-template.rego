@@ -30,12 +30,13 @@ skipped := false if valid_input
 ########################################
 
 # Validates if the input is valid and can be understood by this policy (3)
-valid_input if {
-    # insert code here
-}
+valid_input := true
+
+# insert code here
 
 # If the input is valid, check for any policy violation here (4)
 violations contains msg if {
-    valid_input
-    # insert code here
+	valid_input
 }
+
+# insert code here

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ type DescriptionVariables struct {
 	ActorType  ActorType
 	ActorID    *uuid.UUID
 	ActorEmail string
+	ActorName  string
 	OrgID      *uuid.UUID
 }
 
@@ -79,6 +80,7 @@ type AuditEventPayload struct {
 	ActorType   ActorType
 	ActorID     *uuid.UUID
 	ActorEmail  string
+	ActorName   string
 	OrgID       *uuid.UUID
 	Description string
 	Info        json.RawMessage
@@ -135,6 +137,7 @@ func GenerateAuditEvent(entry LogEntry, opts ...GeneratorOption) (*EventPayload,
 			Info:        actionInfo,
 			ActorType:   options.ActorType,
 			ActorID:     options.ActorID,
+			ActorName:   options.ActorName,
 			ActorEmail:  options.ActorEmail,
 			OrgID:       options.OrgID,
 			Digest:      digest,
@@ -161,6 +164,7 @@ func interpolateDescription(tmplStr string, variables *GeneratorOptions) (string
 	if err = tmpl.Execute(description, &DescriptionVariables{
 		ActorType:  variables.ActorType,
 		ActorID:    variables.ActorID,
+		ActorName:  variables.ActorName,
 		ActorEmail: variables.ActorEmail,
 		OrgID:      variables.OrgID,
 	}); err != nil {
@@ -175,10 +179,11 @@ type GeneratorOptions struct {
 	ActorType  ActorType
 	ActorID    *uuid.UUID
 	ActorEmail string
+	ActorName  string
 	OrgID      *uuid.UUID
 }
 
-func WithActor(actorType ActorType, actorID uuid.UUID, email string) GeneratorOption {
+func WithActor(actorType ActorType, actorID uuid.UUID, email, name string) GeneratorOption {
 	return func(a *GeneratorOptions) error {
 		if actorType == "" {
 			return errors.New("actor type is required")
@@ -196,6 +201,10 @@ func WithActor(actorType ActorType, actorID uuid.UUID, email string) GeneratorOp
 		// Only set email if it is not empty
 		if email != "" {
 			a.ActorEmail = email
+		}
+
+		if name != "" {
+			a.ActorName = name
 		}
 
 		return nil
@@ -244,4 +253,12 @@ func digest(entry LogEntry, orgID *uuid.UUID, userID *uuid.UUID) (*cr_v1.Hash, e
 	}
 
 	return &h, nil
+}
+
+// GetActorIdentifier returns the actor identifier for audit log descriptions.
+// It prioritizes ActorName, then ActorEmail, and finally falls back to system@chainloop.dev.
+const ActorSystemIdentifier = "system@chainloop.dev"
+
+func GetActorIdentifier() string {
+	return fmt.Sprintf("{{ if .ActorName }}{{ .ActorName }}{{ else if .ActorEmail }}{{ .ActorEmail }}{{ else }}%s{{ end }}", ActorSystemIdentifier)
 }

@@ -1,6 +1,6 @@
 module github.com/chainloop-dev/chainloop
 
-go 1.24.4
+go 1.24.6
 
 require (
 	cloud.google.com/go/secretmanager v1.14.2
@@ -382,7 +382,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.28.6 // indirect
 	k8s.io/apimachinery v0.28.6
 	k8s.io/client-go v0.28.6 // indirect

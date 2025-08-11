@@ -1,0 +1,21 @@
+{
+  "assessment": {
+    "date": "2025-07-28",
+    "version": "1.2",
+    "controls": {
+      "encryption_at_rest": "TRUE",
+      "multi_factor_auth": "yes", 
+      "vulnerability_scanning": "true",
+      "backup_tested": "1",
+      "incident_response_plan": "True",
+      "access_logging": "false",
+      "data_classification": "No",
+      "security_training": "enabled"
+    },
+    "metadata": {
+      "environment": "production",
+      "team": "security",
+      "compliance_framework": "SOC2"
+    }
+  }
+}

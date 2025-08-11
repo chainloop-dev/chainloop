@@ -52,6 +52,20 @@ func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (oc *OrganizationCreate) SetUpdatedAt(t time.Time) *OrganizationCreate {
+	oc.mutation.SetUpdatedAt(t)
+	return oc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableUpdatedAt(t *time.Time) *OrganizationCreate {
+	if t != nil {
+		oc.SetUpdatedAt(*t)
+	}
+	return oc
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (oc *OrganizationCreate) SetBlockOnPolicyViolation(b bool) *OrganizationCreate {
 	oc.mutation.SetBlockOnPolicyViolation(b)
@@ -63,6 +77,12 @@ func (oc *OrganizationCreate) SetNillableBlockOnPolicyViolation(b *bool) *Organi
 	if b != nil {
 		oc.SetBlockOnPolicyViolation(*b)
 	}
+	return oc
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (oc *OrganizationCreate) SetPoliciesAllowedHostnames(s []string) *OrganizationCreate {
+	oc.mutation.SetPoliciesAllowedHostnames(s)
 	return oc
 }
 
@@ -239,6 +259,10 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := oc.mutation.UpdatedAt(); !ok {
+		v := organization.DefaultUpdatedAt()
+		oc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
 		v := organization.DefaultBlockOnPolicyViolation
 		oc.mutation.SetBlockOnPolicyViolation(v)
@@ -256,6 +280,9 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
+	}
+	if _, ok := oc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Organization.updated_at"`)}
 	}
 	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
 		return &ValidationError{Name: "block_on_policy_violation", err: errors.New(`ent: missing required field "Organization.block_on_policy_violation"`)}
@@ -304,9 +331,17 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
+	if value, ok := oc.mutation.UpdatedAt(); ok {
+		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := oc.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 		_node.BlockOnPolicyViolation = value
+	}
+	if value, ok := oc.mutation.PoliciesAllowedHostnames(); ok {
+		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
+		_node.PoliciesAllowedHostnames = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -500,6 +535,18 @@ func (u *OrganizationUpsert) UpdateName() *OrganizationUpsert {
 	return u
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *OrganizationUpsert) SetUpdatedAt(v time.Time) *OrganizationUpsert {
+	u.Set(organization.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateUpdatedAt() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldUpdatedAt)
+	return u
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldBlockOnPolicyViolation, v)
@@ -509,6 +556,24 @@ func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpse
 // UpdateBlockOnPolicyViolation sets the "block_on_policy_violation" field to the value that was provided on create.
 func (u *OrganizationUpsert) UpdateBlockOnPolicyViolation() *OrganizationUpsert {
 	u.SetExcluded(organization.FieldBlockOnPolicyViolation)
+	return u
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsert) SetPoliciesAllowedHostnames(v []string) *OrganizationUpsert {
+	u.Set(organization.FieldPoliciesAllowedHostnames, v)
+	return u
+}
+
+// UpdatePoliciesAllowedHostnames sets the "policies_allowed_hostnames" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdatePoliciesAllowedHostnames() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldPoliciesAllowedHostnames)
+	return u
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsert) ClearPoliciesAllowedHostnames() *OrganizationUpsert {
+	u.SetNull(organization.FieldPoliciesAllowedHostnames)
 	return u
 }
 
@@ -577,6 +642,20 @@ func (u *OrganizationUpsertOne) UpdateName() *OrganizationUpsertOne {
 	})
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *OrganizationUpsertOne) SetUpdatedAt(v time.Time) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateUpdatedAt() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (u *OrganizationUpsertOne) SetBlockOnPolicyViolation(v bool) *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
@@ -588,6 +667,27 @@ func (u *OrganizationUpsertOne) SetBlockOnPolicyViolation(v bool) *OrganizationU
 func (u *OrganizationUpsertOne) UpdateBlockOnPolicyViolation() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockOnPolicyViolation()
+	})
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertOne) SetPoliciesAllowedHostnames(v []string) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPoliciesAllowedHostnames(v)
+	})
+}
+
+// UpdatePoliciesAllowedHostnames sets the "policies_allowed_hostnames" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdatePoliciesAllowedHostnames() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePoliciesAllowedHostnames()
+	})
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertOne) ClearPoliciesAllowedHostnames() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearPoliciesAllowedHostnames()
 	})
 }
 
@@ -823,6 +923,20 @@ func (u *OrganizationUpsertBulk) UpdateName() *OrganizationUpsertBulk {
 	})
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (u *OrganizationUpsertBulk) SetUpdatedAt(v time.Time) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateUpdatedAt() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (u *OrganizationUpsertBulk) SetBlockOnPolicyViolation(v bool) *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
@@ -834,6 +948,27 @@ func (u *OrganizationUpsertBulk) SetBlockOnPolicyViolation(v bool) *Organization
 func (u *OrganizationUpsertBulk) UpdateBlockOnPolicyViolation() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockOnPolicyViolation()
+	})
+}
+
+// SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertBulk) SetPoliciesAllowedHostnames(v []string) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPoliciesAllowedHostnames(v)
+	})
+}
+
+// UpdatePoliciesAllowedHostnames sets the "policies_allowed_hostnames" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdatePoliciesAllowedHostnames() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePoliciesAllowedHostnames()
+	})
+}
+
+// ClearPoliciesAllowedHostnames clears the value of the "policies_allowed_hostnames" field.
+func (u *OrganizationUpsertBulk) ClearPoliciesAllowedHostnames() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearPoliciesAllowedHostnames()
 	})
 }
 

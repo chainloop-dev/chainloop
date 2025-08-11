@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,11 @@ import (
 
 var updateGolden bool
 
-const testEmail = "john@cyberdyne.io"
+const (
+	testEmail        = "john@cyberdyne.io"
+	testName         = "John Connor"
+	testAPITokenName = "test-token"
+)
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&updateGolden, "update-golden", false, "update the expected golden files")

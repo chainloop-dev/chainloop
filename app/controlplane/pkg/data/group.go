@@ -351,6 +351,7 @@ func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUI
 	entGroup, err := g.data.DB.Group.UpdateOneID(groupID).
 		SetNillableName(opts.NewName).
 		SetNillableDescription(opts.NewDescription).
+		SetUpdatedAt(time.Now()).
 		Where(group.OrganizationIDEQ(orgID), group.DeletedAtIsNil()).
 		Save(ctx)
 	if err != nil {

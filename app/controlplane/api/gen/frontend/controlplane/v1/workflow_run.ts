@@ -108,6 +108,8 @@ export interface AttestationServiceInitResponse_Result {
   blockOnPolicyViolation: boolean;
   /** Signing options */
   signingOptions?: AttestationServiceInitResponse_SigningOptions;
+  /** array of hostnames that are allowed to be used in the policies */
+  policiesAllowedHostnames: string[];
 }
 
 export interface AttestationServiceInitResponse_SigningOptions {
@@ -1245,7 +1247,13 @@ export const AttestationServiceInitResponse = {
 };
 
 function createBaseAttestationServiceInitResponse_Result(): AttestationServiceInitResponse_Result {
-  return { workflowRun: undefined, organization: "", blockOnPolicyViolation: false, signingOptions: undefined };
+  return {
+    workflowRun: undefined,
+    organization: "",
+    blockOnPolicyViolation: false,
+    signingOptions: undefined,
+    policiesAllowedHostnames: [],
+  };
 }
 
 export const AttestationServiceInitResponse_Result = {
@@ -1261,6 +1269,9 @@ export const AttestationServiceInitResponse_Result = {
     }
     if (message.signingOptions !== undefined) {
       AttestationServiceInitResponse_SigningOptions.encode(message.signingOptions, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.policiesAllowedHostnames) {
+      writer.uint32(50).string(v!);
     }
     return writer;
   },
@@ -1300,6 +1311,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.signingOptions = AttestationServiceInitResponse_SigningOptions.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.policiesAllowedHostnames.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1317,6 +1335,9 @@ export const AttestationServiceInitResponse_Result = {
       signingOptions: isSet(object.signingOptions)
         ? AttestationServiceInitResponse_SigningOptions.fromJSON(object.signingOptions)
         : undefined,
+      policiesAllowedHostnames: Array.isArray(object?.policiesAllowedHostnames)
+        ? object.policiesAllowedHostnames.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -1329,6 +1350,11 @@ export const AttestationServiceInitResponse_Result = {
     message.signingOptions !== undefined && (obj.signingOptions = message.signingOptions
       ? AttestationServiceInitResponse_SigningOptions.toJSON(message.signingOptions)
       : undefined);
+    if (message.policiesAllowedHostnames) {
+      obj.policiesAllowedHostnames = message.policiesAllowedHostnames.map((e) => e);
+    } else {
+      obj.policiesAllowedHostnames = [];
+    }
     return obj;
   },
 
@@ -1350,6 +1376,7 @@ export const AttestationServiceInitResponse_Result = {
     message.signingOptions = (object.signingOptions !== undefined && object.signingOptions !== null)
       ? AttestationServiceInitResponse_SigningOptions.fromPartial(object.signingOptions)
       : undefined;
+    message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
     return message;
   },
 };
