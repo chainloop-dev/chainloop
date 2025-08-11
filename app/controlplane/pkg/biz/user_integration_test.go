@@ -80,30 +80,53 @@ User mapping:
 func (s *userIntegrationTestSuite) TestDeleteUser() {
 	ctx := context.Background()
 
-	// User deletion should be blocked because userOne is sole owner of userOneOrg
-	err := s.User.DeleteUser(ctx, s.userOne.ID)
-	s.Error(err)
-	s.True(biz.IsErrValidation(err))
-	s.Contains(err.Error(), "sole owner")
+	s.Run("cannot delete user when sole owner", func() {
+		// User deletion should be blocked because userOne is sole owner of userOneOrg
+		err := s.User.DeleteUser(ctx, s.userOne.ID)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
 
-	// Both organizations should still exist since deletion was blocked
-	gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
-	s.NoError(err)
-	s.NotNil(gotOrgOne)
+		// Both organizations should still exist since deletion was blocked
+		gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
+		s.NoError(err)
+		s.NotNil(gotOrgOne)
 
-	gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
-	s.NoError(err)
-	s.NotNil(gotSharedOrg)
+		gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
+		s.NoError(err)
+		s.NotNil(gotSharedOrg)
 
-	// User should still exist since deletion was blocked
-	gotUser, err := s.User.FindByID(ctx, s.userOne.ID)
-	s.NoError(err)
-	s.NotNil(gotUser)
+		// User should still exist since deletion was blocked
+		gotUser, err := s.User.FindByID(ctx, s.userOne.ID)
+		s.NoError(err)
+		s.NotNil(gotUser)
 
-	// Memberships should still exist since deletion was blocked
-	gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
-	s.NoError(err)
-	s.NotEmpty(gotMembership)
+		// Memberships should still exist since deletion was blocked
+		gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
+		s.NoError(err)
+		s.NotEmpty(gotMembership)
+	})
+
+	s.Run("can delete user when not sole owner", func() {
+		// userTwo is an owner but not sole owner (userOne is also owner of sharedOrg)
+		err := s.User.DeleteUser(ctx, s.userTwo.ID)
+		s.NoError(err)
+
+		// sharedOrg should still exist since userOne is still an owner
+		gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
+		s.NoError(err)
+		s.NotNil(gotSharedOrg)
+
+		// userTwo should be deleted
+		gotUser, err := s.User.FindByID(ctx, s.userTwo.ID)
+		s.NoError(err)
+		s.Nil(gotUser)
+
+		// userTwo's memberships should be gone
+		gotMembership, err := s.Membership.ByUser(ctx, s.userTwo.ID)
+		s.NoError(err)
+		s.Empty(gotMembership)
+	})
 }
 
 func (s *userIntegrationTestSuite) TestCurrentMembership() {
