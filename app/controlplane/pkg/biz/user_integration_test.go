@@ -249,7 +249,7 @@ func (s *userIntegrationTestSuite) SetupTest() {
 	// Create User 1
 	s.userOne, err = s.User.UpsertByEmail(ctx, "user-1@test.com", nil)
 	assert.NoError(err)
-	// Attach both orgs - make user owner of userOneOrg and owner of sharedOrg  
+	// Attach both orgs - make user owner of userOneOrg and owner of sharedOrg
 	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleOwner))
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
