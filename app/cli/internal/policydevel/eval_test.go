@@ -184,5 +184,4 @@ func TestEvaluate(t *testing.T) {
 		require.True(t, foundWithoutKind, "expected violation 'without kind'")
 		require.False(t, foundEvidenceKid, "did not expect violation 'evidence kind'")
 	})
-
 }
