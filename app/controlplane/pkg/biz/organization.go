@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -307,24 +306,18 @@ func (uc *OrganizationUseCase) DeleteByUser(ctx context.Context, orgName, userID
 		return NewErrInvalidUUID(err)
 	}
 
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
 	// Check if user is an owner of the organization
-	ownerRole := authz.RoleOwner
-	owners, _, err := uc.membershipRepo.FindByOrg(ctx, orgUUID, &ListByOrgOpts{
-		Role: &ownerRole,
-	}, &pagination.OffsetPaginationOpts{}) // Use default pagination for owners
+	m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
 	if err != nil {
 		return fmt.Errorf("failed to find owners: %w", err)
 	}
 
-	userIsOwner := false
-	for _, owner := range owners {
-		if owner.User != nil && owner.User.ID == userID {
-			userIsOwner = true
-			break
-		}
-	}
-
-	if !userIsOwner {
+	if m == nil || m.Role != authz.RoleOwner {
 		return NewErrValidationStr("only organization owners can delete the organization")
 	}
 
