@@ -29,11 +29,12 @@ import (
 )
 
 type EvalOptions struct {
-	PolicyPath   string
-	MaterialKind string
-	Annotations  map[string]string
-	MaterialPath string
-	Inputs       map[string]string
+	PolicyPath       string
+	MaterialKind     string
+	Annotations      map[string]string
+	MaterialPath     string
+	Inputs           map[string]string
+	AllowedHostnames []string
 }
 
 type EvalResult struct {
@@ -58,7 +59,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) ([]*EvalResult, error) {
 	material.Annotations = opts.Annotations
 
 	// 3. Verify material against policy
-	result, err := verifyMaterial(schema, material, opts.MaterialPath, &logger)
+	result, err := verifyMaterial(schema, material, opts.MaterialPath, opts.AllowedHostnames, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +82,12 @@ func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.Craf
 	}, nil
 }
 
-func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, logger *zerolog.Logger) ([]*EvalResult, error) {
-	v := policies.NewPolicyVerifier(schema, nil, logger)
+func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, allowedHostnames []string, logger *zerolog.Logger) ([]*EvalResult, error) {
+	var opts []policies.PolicyVerifierOption
+	if len(allowedHostnames) > 0 {
+		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
+	}
+	v := policies.NewPolicyVerifier(schema, nil, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
 	if err != nil {
 		return nil, err

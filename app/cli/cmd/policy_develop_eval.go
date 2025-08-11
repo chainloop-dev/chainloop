@@ -26,11 +26,12 @@ import (
 
 func newPolicyDevelopEvalCmd() *cobra.Command {
 	var (
-		materialPath string
-		kind         string
-		annotations  []string
-		policyPath   string
-		inputs       []string
+		materialPath     string
+		kind             string
+		annotations      []string
+		policyPath       string
+		inputs           []string
+		allowedHostnames []string
 	)
 
 	cmd := &cobra.Command{
@@ -44,11 +45,12 @@ evaluates the policy against the provided material or attestation.`,
   chainloop policy eval --policy policy.yaml --material sbom.json --kind SBOM_CYCLONEDX_JSON --annotation key1=value1,key2=value2 --input key3=value3`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			opts := &action.PolicyEvalOpts{
-				MaterialPath: materialPath,
-				Kind:         kind,
-				Annotations:  parseKeyValue(annotations),
-				PolicyPath:   policyPath,
-				Inputs:       parseKeyValue(inputs),
+				MaterialPath:     materialPath,
+				Kind:             kind,
+				Annotations:      parseKeyValue(annotations),
+				PolicyPath:       policyPath,
+				Inputs:           parseKeyValue(inputs),
+				AllowedHostnames: allowedHostnames,
 			}
 
 			policyEval, err := action.NewPolicyEval(opts, actionOpts)
@@ -71,6 +73,7 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringSliceVar(&annotations, "annotation", []string{}, "Key-value pairs of material annotations (key=value)")
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Path to custom policy file")
 	cmd.Flags().StringSliceVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
+	cmd.Flags().StringSliceVar(&allowedHostnames, "allowed-hostnames", []string{}, "Additional hostnames allowed for http.send requests in policies")
 
 	return cmd
 }
