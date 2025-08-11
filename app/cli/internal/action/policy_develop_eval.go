@@ -16,8 +16,6 @@
 package action
 
 import (
-	"fmt"
-
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
@@ -62,7 +60,7 @@ func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 	// Evaluate policy
 	resp, err := policydevel.Evaluate(evalOpts, action.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("evaluating policy: %w", err)
+		return nil, err
 	}
 
 	results := make([]*PolicyEvalResult, 0, len(resp))
