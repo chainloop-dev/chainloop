@@ -41,9 +41,8 @@ func TestEvaluate(t *testing.T) {
 		}
 
 		results, err := Evaluate(opts, logger)
-		require.NoError(t, err)
-		require.NotEmpty(t, results)
-		assert.NotNil(t, results[0])
+		require.Error(t, err)
+		assert.Empty(t, results)
 	})
 
 	t.Run("evaluation with auto-detected SBOM CYCLONEDX kind", func(t *testing.T) {
