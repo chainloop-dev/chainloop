@@ -73,7 +73,7 @@ func (WorkflowRun) Edges() []ent.Edge {
 		edge.To("cas_backends", CASBackend.Type),
 		// not required since we have old data
 		edge.From("version", ProjectVersion.Type).Field("version_id").Ref("runs").Unique().Required(),
-		edge.To("attestation_bundle", Attestation.Type).Unique(),
+		edge.To("attestation_bundle", Attestation.Type).Unique().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 

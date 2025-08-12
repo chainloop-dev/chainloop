@@ -76,7 +76,7 @@ var (
 				Symbol:     "attestations_workflow_runs_attestation_bundle",
 				Columns:    []*schema.Column{AttestationsColumns[3]},
 				RefColumns: []*schema.Column{WorkflowRunsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
