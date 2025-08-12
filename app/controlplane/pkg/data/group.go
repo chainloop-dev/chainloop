@@ -458,6 +458,13 @@ func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupI
 			return fmt.Errorf("failed to add user to group: %w", err)
 		}
 
+		// Update the group's updated_at timestamp
+		if _, err := tx.Group.UpdateOneID(groupID).
+			SetUpdatedAt(time.Now()).
+			Save(ctx); err != nil {
+			return fmt.Errorf("failed to update group timestamp: %w", err)
+		}
+
 		// Update the user membership with the role of maintainer
 		if maintainer {
 			_, err = tx.Membership.Create().
@@ -511,6 +518,13 @@ func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, g
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to remove user from group: %w", err)
+		}
+
+		// Update the group's updated_at timestamp
+		if _, err := tx.Group.UpdateOneID(groupID).
+			SetUpdatedAt(now).
+			Save(ctx); err != nil {
+			return fmt.Errorf("failed to update group timestamp: %w", err)
 		}
 
 		if existingMembership.Maintainer {
@@ -569,12 +583,20 @@ func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.
 		}
 
 		// Update the group membership with the new maintainer status
+		now := time.Now()
 		_, err = tx.GroupMembership.UpdateOne(existingMembership).
 			SetMaintainer(isMaintainer).
-			SetUpdatedAt(time.Now()).
+			SetUpdatedAt(now).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to update group membership maintainer status: %w", err)
+		}
+
+		// Update the group's updated_at timestamp
+		if _, err := tx.Group.UpdateOneID(groupID).
+			SetUpdatedAt(now).
+			Save(ctx); err != nil {
+			return fmt.Errorf("failed to update group timestamp: %w", err)
 		}
 
 		// Update the membership table as well
