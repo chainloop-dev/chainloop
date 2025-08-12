@@ -16,11 +16,11 @@ server:
     #   certificate: "../../devel/devkeys/selfsigned/controlplane.crt"
     #   private_key: "../../devel/devkeys/selfsigned/controlplane.key"
 
-#nats_server:
-# uri: nats://0.0.0.0:4222
+nats_server:
+  uri: nats://0.0.0.0:4222
 
 # Restrict organization creation to role:instance:admin
-restrict_org_creation: true
+restrict_org_creation: false
 
 certificate_authorities:
   - issuer: true
@@ -83,10 +83,10 @@ auth:
   # Private key used to sign the JWTs meant to be consumed by the CAS
   cas_robot_account_private_key_path: ${CAS_KEY_PATH:../../devel/devkeys/cas.pem}
   # allow_list:
-    # rules: ["@chainloop.local"]
-    # selected_routes: ["/controlplane.v1.WorkflowRunService/List"]
-    # custom_message: "you need to require access here http://foo.com"
-    # allow_db_overrides: true # if false, the user access flag in the DB will mirror the allowlist, otherwise it will be respected
+  # rules: ["@chainloop.local"]
+  # selected_routes: ["/controlplane.v1.WorkflowRunService/List"]
+  # custom_message: "you need to require access here http://foo.com"
+  # allow_db_overrides: true # if false, the user access flag in the DB will mirror the allowlist, otherwise it will be respected
 
 # referrer_shared_index:
 #   enabled: true
@@ -104,7 +104,6 @@ prometheus_integration:
 #     url: http://localhost:8002/v1
 
 enable_profiler: true
-
 # federated_authentication:
 #   enabled: true
 #   url: http://localhost:8002/machine-identity/verify-token
