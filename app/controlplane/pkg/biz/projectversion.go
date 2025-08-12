@@ -38,6 +38,7 @@ type ProjectVersion struct {
 	CreatedAt *time.Time
 	// ReleasedAt is the time when the version was released.
 	ReleasedAt *time.Time
+	ProjectID  uuid.UUID
 }
 
 type ProjectVersionRepo interface {

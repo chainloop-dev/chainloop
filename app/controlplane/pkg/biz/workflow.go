@@ -161,6 +161,8 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, fmt.Errorf("failed to parse org ID %q: %w", opts.OrgID, err)
 	}
 
+	existingProject, _ := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, opts.Project)
+
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
@@ -175,11 +177,6 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		if err = uc.membershipUC.SetProjectOwner(ctx, orgUUID, wf.ProjectID, *opts.Owner); err != nil {
 			return nil, fmt.Errorf("failed to set project owner: %w", err)
 		}
-	}
-
-	existingProject, err := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, opts.Project)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find project: %w", err)
 	}
 
 	// Dispatch audit event for project creation if a new project was created

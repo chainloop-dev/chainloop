@@ -126,6 +126,7 @@ func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
 		TotalWorkflowRuns: v.WorkflowRunCount,
 		CreatedAt:         toTimePtr(v.CreatedAt),
 		ReleasedAt:        toTimePtr(v.ReleasedAt),
+		ProjectID:         v.ProjectID,
 	}
 
 	return pv

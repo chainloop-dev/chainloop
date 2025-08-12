@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -124,9 +125,15 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("reloading project version: %w", err)
 	}
 
+	project, err := r.data.DB.Project.Query().Where(project.ID(wf.ProjectID)).First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reloading project: %w", err)
+	}
+
 	run.ProjectVersion = entProjectVersionToBiz(version)
 
 	return &biz.WorkflowRunRepoCreateResult{
+		Project:        entProjectToBiz(project),
 		Run:            run,
 		VersionCreated: versionCreated,
 	}, nil

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ const (
 
 type WorkflowRunRepoCreateResult struct {
 	Run            *WorkflowRun
+	Project        *Project
 	VersionCreated bool
 }
 
@@ -247,16 +248,16 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	}
 
 	// Dispatch audit event for project version creation if a new version was created
-	if result.VersionCreated && result.Run != nil && result.Run.Workflow != nil && uc.auditorUC != nil {
+	if result.VersionCreated && uc.auditorUC != nil && result.Project != nil {
 		uc.auditorUC.Dispatch(ctx, &events.ProjectVersionCreated{
 			ProjectBase: &events.ProjectBase{
-				ProjectID:   &result.Run.Workflow.ProjectID,
-				ProjectName: result.Run.Workflow.Project,
+				ProjectID:   &result.Project.ID,
+				ProjectName: result.Project.Name,
 			},
 			VersionID:  &result.Run.ProjectVersion.ID,
 			Version:    result.Run.ProjectVersion.Version,
 			Prerelease: result.Run.ProjectVersion.Prerelease,
-		}, &result.Run.Workflow.OrgID)
+		}, &result.Project.OrgID)
 	}
 
 	return result.Run, nil
