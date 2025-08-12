@@ -257,3 +257,4 @@ Code reviews are required for all submissions via GitHub pull requests.
 
 - I do not want you to be in the co-author signoff
 - make sure all go code is go-fmt
+- when the schema is changed, run make generate, do not create a migration explicitly
