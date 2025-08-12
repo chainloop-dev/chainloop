@@ -89,7 +89,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
-	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, logger)
+	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

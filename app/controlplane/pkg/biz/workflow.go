@@ -155,6 +155,14 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, NewErrValidation(err)
 	}
 
+	// Check if the project already exists to determine if we need to emit a ProjectCreated event
+	orgUUID, err := uuid.Parse(opts.OrgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse org ID %q: %w", opts.OrgID, err)
+	}
+
+	existingProject, _ := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, opts.Project)
+
 	wf, err := uc.wfRepo.Create(ctx, opts)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
@@ -166,43 +174,44 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 
 	// Set project admin if a new project has been created
 	if opts.Owner != nil {
-		orgUUID, err := uuid.Parse(opts.OrgID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse org ID %q: %w", opts.OrgID, err)
-		}
 		if err = uc.membershipUC.SetProjectOwner(ctx, orgUUID, wf.ProjectID, *opts.Owner); err != nil {
 			return nil, fmt.Errorf("failed to set project owner: %w", err)
 		}
 	}
 
-	orgUUID, err := uuid.Parse(opts.OrgID)
-	if err != nil {
-		uc.logger.Warn("failed to parse org id", "err", err)
-	} else {
-		// Dispatch events to the audit log regarding the workflow
-		uc.auditorUC.Dispatch(ctx, &events.WorkflowCreated{
-			WorkflowBase: &events.WorkflowBase{
-				WorkflowID:   &wf.ID,
-				WorkflowName: wf.Name,
-				ProjectName:  opts.Project,
+	// Dispatch audit event for project creation if a new project was created
+	if existingProject == nil {
+		uc.auditorUC.Dispatch(ctx, &events.ProjectCreated{
+			ProjectBase: &events.ProjectBase{
+				ProjectID:   &wf.ProjectID,
+				ProjectName: opts.Project,
 			},
-			WorkflowContractID:   &wf.ContractID,
-			WorkflowContractName: wf.ContractName,
-			WorkflowDescription:  &opts.Description,
-			Team:                 &opts.Team,
-			Public:               opts.Public,
-		}, &orgUUID)
-
-		// Dispatch events to the audit log regarding the contract
-		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractAttached{
-			WorkflowContractBase: &events.WorkflowContractBase{
-				WorkflowContractID:   &wf.ContractID,
-				WorkflowContractName: wf.ContractName,
-			},
-			WorkflowID:   &wf.ID,
-			WorkflowName: wf.Name,
 		}, &orgUUID)
 	}
+
+	// Dispatch events to the audit log regarding the workflow
+	uc.auditorUC.Dispatch(ctx, &events.WorkflowCreated{
+		WorkflowBase: &events.WorkflowBase{
+			WorkflowID:   &wf.ID,
+			WorkflowName: wf.Name,
+			ProjectName:  opts.Project,
+		},
+		WorkflowContractID:   &wf.ContractID,
+		WorkflowContractName: wf.ContractName,
+		WorkflowDescription:  &opts.Description,
+		Team:                 &opts.Team,
+		Public:               opts.Public,
+	}, &orgUUID)
+
+	// Dispatch events to the audit log regarding the contract
+	uc.auditorUC.Dispatch(ctx, &events.WorkflowContractAttached{
+		WorkflowContractBase: &events.WorkflowContractBase{
+			WorkflowContractID:   &wf.ContractID,
+			WorkflowContractName: wf.ContractName,
+		},
+		WorkflowID:   &wf.ID,
+		WorkflowName: wf.Name,
+	}, &orgUUID)
 
 	return wf, nil
 }

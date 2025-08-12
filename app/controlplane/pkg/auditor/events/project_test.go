@@ -39,6 +39,8 @@ func TestProjectEvents(t *testing.T) {
 	require.NoError(t, err)
 	memberUUID, err := uuid.Parse("4089bb36-e27b-428b-8009-d015c8737c57")
 	require.NoError(t, err)
+	versionUUID, err := uuid.Parse("5089bb36-e27b-428b-8009-d015c8737c58")
+	require.NoError(t, err)
 	projectName := "test-project"
 	userEmail := "test@example.com"
 
@@ -49,6 +51,33 @@ func TestProjectEvents(t *testing.T) {
 		actor    auditor.ActorType
 		actorID  uuid.UUID
 	}{
+		{
+			name: "ProjectCreated",
+			event: &events.ProjectCreated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+			},
+			expected: "testdata/projects/project_created.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "ProjectVersionCreated",
+			event: &events.ProjectVersionCreated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+				VersionID:  &versionUUID,
+				Version:    "v1.0.0",
+				Prerelease: false,
+			},
+			expected: "testdata/projects/project_version_created.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
 		{
 			name: "ProjectMembershipAdded",
 			event: &events.ProjectMembershipAdded{

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -77,8 +78,14 @@ const (
 	WorkflowRunCancelled   WorkflowRunStatus = "canceled"
 )
 
+type WorkflowRunRepoCreateResult struct {
+	Run            *WorkflowRun
+	Project        *Project
+	VersionCreated bool
+}
+
 type WorkflowRunRepo interface {
-	Create(ctx context.Context, opts *WorkflowRunRepoCreateOpts) (*WorkflowRun, error)
+	Create(ctx context.Context, opts *WorkflowRunRepoCreateOpts) (*WorkflowRunRepoCreateResult, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*WorkflowRun, error)
 	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
@@ -97,17 +104,18 @@ type WorkflowRunUseCase struct {
 	wfRunRepo WorkflowRunRepo
 	wfRepo    WorkflowRepo
 	logger    *log.Helper
+	auditorUC *AuditorUseCase
 
 	signingUseCase *SigningUseCase
 }
 
-func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, suc *SigningUseCase, logger log.Logger) (*WorkflowRunUseCase, error) {
+func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, suc *SigningUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*WorkflowRunUseCase, error) {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	return &WorkflowRunUseCase{
-		wfRunRepo: wfrRepo, wfRepo: wfRepo,
+		wfRunRepo: wfrRepo, wfRepo: wfRepo, auditorUC: auditorUC,
 		signingUseCase: suc,
 		logger:         log.NewHelper(logger),
 	}, nil
@@ -224,7 +232,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	// For now we only associate the workflow run to one backend.
 	// This might change in the future so we prepare the data layer to support an array of associated backends
 	backends := []uuid.UUID{opts.CASBackendID}
-	run, err := uc.wfRunRepo.Create(ctx,
+	result, err := uc.wfRunRepo.Create(ctx,
 		&WorkflowRunRepoCreateOpts{
 			WorkflowID:      workflowUUID,
 			SchemaVersionID: contractRevision.Version.ID,
@@ -239,7 +247,20 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, err
 	}
 
-	return run, nil
+	// Dispatch audit event for project version creation if a new version was created
+	if result.VersionCreated && uc.auditorUC != nil && result.Project != nil {
+		uc.auditorUC.Dispatch(ctx, &events.ProjectVersionCreated{
+			ProjectBase: &events.ProjectBase{
+				ProjectID:   &result.Project.ID,
+				ProjectName: result.Project.Name,
+			},
+			VersionID:  &result.Run.ProjectVersion.ID,
+			Version:    result.Run.ProjectVersion.Version,
+			Prerelease: result.Run.ProjectVersion.Prerelease,
+		}, &result.Project.OrgID)
+	}
+
+	return result.Run, nil
 }
 
 // The workflowRun belongs to the provided workflowRun

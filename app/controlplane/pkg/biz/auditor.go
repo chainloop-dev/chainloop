@@ -73,12 +73,14 @@ func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, 
 
 	payload, err := auditor.GenerateAuditEvent(entry, opts...)
 	if err != nil {
+		uc.log.Error("failed to generate audit event", "error", err)
 		sentry.CaptureException(fmt.Errorf("failed to generate audit event: %w", err))
 		return
 	}
 
 	// Send event to event bus
 	if err := uc.publisher.Publish(payload); err != nil {
+		uc.log.Error("failed to publish event", "error", err)
 		sentry.CaptureException(fmt.Errorf("failed to publish event: %w", err))
 	}
 }

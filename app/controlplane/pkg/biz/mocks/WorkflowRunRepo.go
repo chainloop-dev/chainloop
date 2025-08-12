@@ -24,23 +24,23 @@ type WorkflowRunRepo struct {
 }
 
 // Create provides a mock function with given fields: ctx, opts
-func (_m *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRun, error) {
+func (_m *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRunRepoCreateResult, error) {
 	ret := _m.Called(ctx, opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 *biz.WorkflowRun
+	var r0 *biz.WorkflowRunRepoCreateResult
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRun, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRunRepoCreateResult, error)); ok {
 		return rf(ctx, opts)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *biz.WorkflowRunRepoCreateOpts) *biz.WorkflowRun); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *biz.WorkflowRunRepoCreateOpts) *biz.WorkflowRunRepoCreateResult); ok {
 		r0 = rf(ctx, opts)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*biz.WorkflowRun)
+			r0 = ret.Get(0).(*biz.WorkflowRunRepoCreateResult)
 		}
 	}
 

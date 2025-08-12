@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -47,7 +48,7 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 	}
 }
 
-func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (run *biz.WorkflowRun, err error) {
+func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRunRepoCreateResult, error) {
 	// Make this outside of the transaction to reduce the size of the blocking transaction
 	wf, err := r.data.DB.Workflow.Get(ctx, opts.WorkflowID)
 	if err != nil {
@@ -62,6 +63,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	}
 
 	var p *ent.WorkflowRun
+	versionCreated := false
 	// Create version and workflow in a transaction
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		if version == nil {
@@ -69,6 +71,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 			if err != nil {
 				return fmt.Errorf("creating version: %w", err)
 			}
+			versionCreated = true
 		}
 
 		// Create workflow run
@@ -110,7 +113,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, err
 	}
 
-	run, err = entWrToBizWr(ctx, p)
+	run, err := entWrToBizWr(ctx, p)
 	if err != nil {
 		return nil, fmt.Errorf("converting to biz: %w", err)
 	}
@@ -122,8 +125,18 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("reloading project version: %w", err)
 	}
 
+	project, err := r.data.DB.Project.Query().Where(project.ID(wf.ProjectID)).First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reloading project: %w", err)
+	}
+
 	run.ProjectVersion = entProjectVersionToBiz(version)
-	return run, err
+
+	return &biz.WorkflowRunRepoCreateResult{
+		Project:        entProjectToBiz(project),
+		Run:            run,
+		VersionCreated: versionCreated,
+	}, nil
 }
 
 func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {

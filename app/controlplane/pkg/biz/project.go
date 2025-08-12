@@ -208,7 +208,20 @@ func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Proj
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.projectsRepository.Create(ctx, orgUUID, name)
+	project, err := uc.projectsRepository.Create(ctx, orgUUID, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Dispatch audit event for project creation
+	uc.auditorUC.Dispatch(ctx, &events.ProjectCreated{
+		ProjectBase: &events.ProjectBase{
+			ProjectID:   &project.ID,
+			ProjectName: project.Name,
+		},
+	}, &orgUUID)
+
+	return project, nil
 }
 
 // ListMembers lists the members of a project with pagination.
