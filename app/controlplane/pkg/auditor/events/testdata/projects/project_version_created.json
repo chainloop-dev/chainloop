@@ -1,0 +1,19 @@
+{
+  "ActionType": "ProjectVersionCreated",
+  "TargetType": "Project",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has created release version 'v1.0.0' for project 'test-project'",
+  "Info": {
+    "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "project_name": "test-project",
+    "version_id": "5089bb36-e27b-428b-8009-d015c8737c58",
+    "version": "v1.0.0",
+    "prerelease": false
+  },
+  "Digest": "sha256:4cd962168303a29e0a3adb668b37086e50b15a92548d93a569eccf9a63db5122"
+}
