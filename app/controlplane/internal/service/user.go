@@ -85,7 +85,7 @@ func (s *UserService) DeleteMembership(ctx context.Context, req *pb.DeleteMember
 		return nil, err
 	}
 
-	err = s.membershipUC.LeaveAndDeleteOrg(ctx, currentUser.ID, req.MembershipId)
+	err = s.membershipUC.Leave(ctx, currentUser.ID, req.MembershipId)
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {

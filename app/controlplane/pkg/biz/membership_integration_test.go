@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,38 +85,40 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 	sharedOrg, err := s.Organization.CreateWithRandomName(ctx)
 	s.NoError(err)
 
-	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, biz.WithCurrentMembership())
+	mUser, err := s.Membership.Create(ctx, userOrg.ID, user.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	s.NoError(err)
-	mUserSharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user.ID, biz.WithCurrentMembership())
+	mUserSharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	s.NoError(err)
-	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithCurrentMembership())
+	mUser2SharedOrg, err := s.Membership.Create(ctx, sharedOrg.ID, user2.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	s.NoError(err)
 
 	s.T().Run("invalid userID", func(t *testing.T) {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, "invalid", mUser.ID.String())
+		err := s.Membership.Leave(ctx, "invalid", mUser.ID.String())
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
 	s.T().Run("invalid orgID", func(t *testing.T) {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, "invalid")
+		err := s.Membership.Leave(ctx, user.ID, "invalid")
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
 	s.T().Run("membership ID from another user", func(t *testing.T) {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, mUser2SharedOrg.ID.String())
+		err := s.Membership.Leave(ctx, user.ID, mUser2SharedOrg.ID.String())
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("delete the membership when the only member", func(t *testing.T) {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, mUser.ID.String())
-		s.NoError(err)
-		// The org should also be deleted
+	s.Run("cannot leave when the only member (sole owner)", func() {
+		err := s.Membership.Leave(ctx, user.ID, mUser.ID.String())
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
+		// The org should still exist
 		_, err = s.Organization.FindByID(ctx, userOrg.ID)
-		s.True(biz.IsNotFound(err))
+		s.NoError(err)
 	})
 
-	s.T().Run("delete the membership when there are more than 1 member", func(t *testing.T) {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, mUserSharedOrg.ID.String())
+	s.Run("can leave when there are more than 1 member", func() {
+		err := s.Membership.Leave(ctx, user.ID, mUserSharedOrg.ID.String())
 		s.NoError(err)
 		// The org should not be deleted
 		got, err := s.Organization.FindByID(ctx, sharedOrg.ID)
@@ -130,11 +132,84 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithOrg() {
 		s.Equal(user2.ID, members[0].User.ID)
 	})
 
-	s.T().Run("we can remove the latest member", func(t *testing.T) {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user2.ID, mUser2SharedOrg.ID.String())
-		s.NoError(err)
+	s.Run("cannot leave when would become sole owner", func() {
+		err := s.Membership.Leave(ctx, user2.ID, mUser2SharedOrg.ID.String())
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
+		// The org should still exist
 		_, err = s.Organization.FindByID(ctx, sharedOrg.ID)
-		s.True(biz.IsNotFound(err))
+		s.NoError(err)
+	})
+}
+
+func (s *membershipIntegrationTestSuite) TestLeaveHappyPath() {
+	ctx := context.Background()
+
+	// Create users
+	user1, err := s.User.UpsertByEmail(ctx, "owner1@test.com", nil)
+	s.NoError(err)
+	user2, err := s.User.UpsertByEmail(ctx, "owner2@test.com", nil)
+	s.NoError(err)
+
+	// Create organization with multiple owners
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	// Add both users as owners
+	membership1, err := s.Membership.Create(ctx, org.ID, user1.ID, biz.WithMembershipRole(authz.RoleOwner))
+	s.NoError(err)
+	membership2, err := s.Membership.Create(ctx, org.ID, user2.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
+	s.NoError(err)
+
+	// Verify initial state - both users are owners
+	members, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+	s.NoError(err)
+	s.Len(members, 2)
+	s.Equal(2, count)
+
+	s.Run("owner can leave when another owner remains", func() {
+		// user1 can leave because user2 will still be an owner
+		err := s.Membership.Leave(ctx, user1.ID, membership1.ID.String())
+		s.NoError(err)
+
+		// Organization should still exist
+		gotOrg, err := s.Organization.FindByID(ctx, org.ID)
+		s.NoError(err)
+		s.NotNil(gotOrg)
+
+		// Only user2 should remain as member
+		members, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+		s.NoError(err)
+		s.Len(members, 1)
+		s.Equal(1, count)
+		s.Equal(user2.ID, members[0].User.ID)
+		s.Equal(authz.RoleOwner, members[0].Role)
+
+		// user1 should no longer have any memberships in this org
+		user1Memberships, err := s.Membership.ByUser(ctx, user1.ID)
+		s.NoError(err)
+		s.Empty(user1Memberships) // user1 should have no memberships left
+	})
+
+	s.Run("last remaining owner cannot leave", func() {
+		// user2 is now the sole owner and cannot leave
+		err := s.Membership.Leave(ctx, user2.ID, membership2.ID.String())
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
+
+		// Organization should still exist
+		gotOrg, err := s.Organization.FindByID(ctx, org.ID)
+		s.NoError(err)
+		s.NotNil(gotOrg)
+
+		// user2 should still be the only member
+		members, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+		s.NoError(err)
+		s.Len(members, 1)
+		s.Equal(1, count)
+		s.Equal(user2.ID, members[0].User.ID)
 	})
 }
 
@@ -370,7 +445,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteCleanup() {
 
 	// Delete the user's membership
 	s.Run("delete user membership", func() {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, membershipUser.ID.String())
+		err := s.Membership.Leave(ctx, user.ID, membershipUser.ID.String())
 		s.NoError(err)
 
 		// Check that the organization still exists (since there's still admin user)
@@ -414,7 +489,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 	orgUUID := uuid.MustParse(org.ID)
 
 	// Add user to organization
-	membershipUser, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(authz.RoleAdmin), biz.WithCurrentMembership())
+	membershipUser, err := s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	s.NoError(err)
 
 	// Create multiple groups with the user as maintainer
@@ -465,33 +540,35 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 	})
 
 	// Delete the user's membership
-	s.Run("delete user membership with groups", func() {
-		err := s.Membership.LeaveAndDeleteOrg(ctx, user.ID, membershipUser.ID.String())
+	s.Run("cannot delete user membership when sole owner", func() {
+		err := s.Membership.Leave(ctx, user.ID, membershipUser.ID.String())
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
+
+		// The organization should still exist since sole owners cannot leave
+		_, err = s.Organization.FindByID(ctx, org.ID)
 		s.NoError(err)
 
-		// The organization should be deleted since this was the only user
-		_, err = s.Organization.FindByID(ctx, org.ID)
-		s.True(biz.IsNotFound(err), "Organization should be deleted")
-
-		// All groups should be soft-deleted
+		// Groups should still exist since user couldn't leave (no cleanup happened)
 		_, err = s.Group.Get(ctx, orgUUID, &biz.IdentityReference{ID: &group1.ID})
-		s.True(biz.IsNotFound(err), "Group 1 should be deleted")
+		s.NoError(err, "Group 1 should still exist")
 
 		_, err = s.Group.Get(ctx, orgUUID, &biz.IdentityReference{ID: &group2.ID})
-		s.True(biz.IsNotFound(err), "Group 2 should be deleted")
+		s.NoError(err, "Group 2 should still exist since user couldn't leave")
 
-		// The project should be deleted
+		// The project should still exist since no cleanup happened
 		_, err = s.Project.FindProjectByReference(ctx, org.ID, &biz.IdentityReference{ID: projectRef.ID})
-		s.True(biz.IsNotFound(err), "Project should be deleted")
+		s.NoError(err, "Project should still exist since user couldn't leave")
 
-		// Verify group memberships are marked as deleted
+		// Verify group memberships still exist since user couldn't leave
 		group1Mem, group1Err := s.Repos.GroupRepo.FindGroupMembershipByGroupAndID(ctx, group1.ID, userUUID)
-		s.True(biz.IsNotFound(group1Err))
-		s.Nil(group1Mem)
+		s.NoError(group1Err)
+		s.NotNil(group1Mem)
 
 		group2Mem, group2Err := s.Repos.GroupRepo.FindGroupMembershipByGroupAndID(ctx, group2.ID, userUUID)
-		s.True(biz.IsNotFound(group2Err))
-		s.Nil(group2Mem)
+		s.NoError(group2Err)
+		s.NotNil(group2Mem)
 	})
 }
 

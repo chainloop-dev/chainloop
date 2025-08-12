@@ -82,6 +82,13 @@ export interface OrganizationServiceUpdateResponse {
   result?: OrgItem;
 }
 
+export interface OrganizationServiceDeleteRequest {
+  name: string;
+}
+
+export interface OrganizationServiceDeleteResponse {
+}
+
 function createBaseOrganizationServiceListMembershipsRequest(): OrganizationServiceListMembershipsRequest {
   return { membershipId: undefined, name: undefined, email: undefined, role: undefined, pagination: undefined };
 }
@@ -827,6 +834,114 @@ export const OrganizationServiceUpdateResponse = {
   },
 };
 
+function createBaseOrganizationServiceDeleteRequest(): OrganizationServiceDeleteRequest {
+  return { name: "" };
+}
+
+export const OrganizationServiceDeleteRequest = {
+  encode(message: OrganizationServiceDeleteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrganizationServiceDeleteRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrganizationServiceDeleteRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OrganizationServiceDeleteRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: OrganizationServiceDeleteRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrganizationServiceDeleteRequest>, I>>(
+    base?: I,
+  ): OrganizationServiceDeleteRequest {
+    return OrganizationServiceDeleteRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrganizationServiceDeleteRequest>, I>>(
+    object: I,
+  ): OrganizationServiceDeleteRequest {
+    const message = createBaseOrganizationServiceDeleteRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseOrganizationServiceDeleteResponse(): OrganizationServiceDeleteResponse {
+  return {};
+}
+
+export const OrganizationServiceDeleteResponse = {
+  encode(_: OrganizationServiceDeleteResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OrganizationServiceDeleteResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOrganizationServiceDeleteResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): OrganizationServiceDeleteResponse {
+    return {};
+  },
+
+  toJSON(_: OrganizationServiceDeleteResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OrganizationServiceDeleteResponse>, I>>(
+    base?: I,
+  ): OrganizationServiceDeleteResponse {
+    return OrganizationServiceDeleteResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<OrganizationServiceDeleteResponse>, I>>(
+    _: I,
+  ): OrganizationServiceDeleteResponse {
+    const message = createBaseOrganizationServiceDeleteResponse();
+    return message;
+  },
+};
+
 export interface OrganizationService {
   Create(
     request: DeepPartial<OrganizationServiceCreateRequest>,
@@ -836,6 +951,14 @@ export interface OrganizationService {
     request: DeepPartial<OrganizationServiceUpdateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<OrganizationServiceUpdateResponse>;
+  /**
+   * Delete an organization
+   * Only organization owners can delete the organization
+   */
+  Delete(
+    request: DeepPartial<OrganizationServiceDeleteRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrganizationServiceDeleteResponse>;
   /** List members in the organization */
   ListMemberships(
     request: DeepPartial<OrganizationServiceListMembershipsRequest>,
@@ -863,6 +986,7 @@ export class OrganizationServiceClientImpl implements OrganizationService {
     this.rpc = rpc;
     this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
+    this.Delete = this.Delete.bind(this);
     this.ListMemberships = this.ListMemberships.bind(this);
     this.DeleteMembership = this.DeleteMembership.bind(this);
     this.UpdateMembership = this.UpdateMembership.bind(this);
@@ -886,6 +1010,17 @@ export class OrganizationServiceClientImpl implements OrganizationService {
     return this.rpc.unary(
       OrganizationServiceUpdateDesc,
       OrganizationServiceUpdateRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  Delete(
+    request: DeepPartial<OrganizationServiceDeleteRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<OrganizationServiceDeleteResponse> {
+    return this.rpc.unary(
+      OrganizationServiceDeleteDesc,
+      OrganizationServiceDeleteRequest.fromPartial(request),
       metadata,
     );
   }
@@ -962,6 +1097,29 @@ export const OrganizationServiceUpdateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = OrganizationServiceUpdateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const OrganizationServiceDeleteDesc: UnaryMethodDefinitionish = {
+  methodName: "Delete",
+  service: OrganizationServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return OrganizationServiceDeleteRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = OrganizationServiceDeleteResponse.decode(data);
       return {
         ...value,
         toObject() {

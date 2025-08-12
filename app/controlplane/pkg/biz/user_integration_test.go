@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,28 +80,53 @@ User mapping:
 func (s *userIntegrationTestSuite) TestDeleteUser() {
 	ctx := context.Background()
 
-	err := s.User.DeleteUser(ctx, s.userOne.ID)
-	s.NoError(err)
+	s.Run("cannot delete user when sole owner", func() {
+		// User deletion should be blocked because userOne is sole owner of userOneOrg
+		err := s.User.DeleteUser(ctx, s.userOne.ID)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "sole owner")
 
-	// Organization where the user is the only member got deleted
-	gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
-	s.Error(err)
-	s.True(biz.IsNotFound(err))
-	s.Nil(gotOrgOne)
+		// Both organizations should still exist since deletion was blocked
+		gotOrgOne, err := s.Organization.FindByID(ctx, s.userOneOrg.ID)
+		s.NoError(err)
+		s.NotNil(gotOrgOne)
 
-	// Organization that it's shared with another user is still present
-	gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
-	s.NoError(err)
-	s.NotNil(gotSharedOrg)
+		gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
+		s.NoError(err)
+		s.NotNil(gotSharedOrg)
 
-	// user and associated memberships have been deleted
-	gotUser, err := s.User.FindByID(ctx, s.userOne.ID)
-	s.NoError(err)
-	s.Nil(gotUser)
+		// User should still exist since deletion was blocked
+		gotUser, err := s.User.FindByID(ctx, s.userOne.ID)
+		s.NoError(err)
+		s.NotNil(gotUser)
 
-	gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
-	s.NoError(err)
-	s.Empty(gotMembership)
+		// Memberships should still exist since deletion was blocked
+		gotMembership, err := s.Membership.ByUser(ctx, s.userOne.ID)
+		s.NoError(err)
+		s.NotEmpty(gotMembership)
+	})
+
+	s.Run("can delete user when not sole owner", func() {
+		// userTwo is an owner but not sole owner (userOne is also owner of sharedOrg)
+		err := s.User.DeleteUser(ctx, s.userTwo.ID)
+		s.NoError(err)
+
+		// sharedOrg should still exist since userOne is still an owner
+		gotSharedOrg, err := s.Organization.FindByID(ctx, s.sharedOrg.ID)
+		s.NoError(err)
+		s.NotNil(gotSharedOrg)
+
+		// userTwo should be deleted
+		gotUser, err := s.User.FindByID(ctx, s.userTwo.ID)
+		s.NoError(err)
+		s.Nil(gotUser)
+
+		// userTwo's memberships should be gone
+		gotMembership, err := s.Membership.ByUser(ctx, s.userTwo.ID)
+		s.NoError(err)
+		s.Empty(gotMembership)
+	})
 }
 
 func (s *userIntegrationTestSuite) TestCurrentMembership() {
@@ -117,8 +142,8 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 		s.NoError(err)
 		s.Equal(s.sharedOrg, got.Org)
 
-		// and it contains the default role
-		s.Equal(authz.RoleViewer, got.Role)
+		// and it contains the owner role (set in test setup)
+		s.Equal(authz.RoleOwner, got.Role)
 	})
 
 	s.Run("they have more orgs but none of them is the default, it will return the first one as default", func() {
@@ -126,7 +151,7 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 		s.NoError(err)
 		s.True(m.Current)
 		// leave the current org
-		err = s.Membership.LeaveAndDeleteOrg(ctx, s.userOne.ID, m.ID.String())
+		err = s.Membership.Leave(ctx, s.userOne.ID, m.ID.String())
 		s.NoError(err)
 
 		// none of the orgs is marked as current
@@ -146,12 +171,46 @@ func (s *userIntegrationTestSuite) TestCurrentMembership() {
 	})
 
 	s.Run("it will fail if there are no memberships", func() {
-		// none of the orgs is marked as current
-		mems, _ := s.Membership.ByUser(ctx, s.userOne.ID)
-		s.Len(mems, 1)
-		// leave the current org
-		err := s.Membership.LeaveAndDeleteOrg(ctx, s.userOne.ID, mems[0].ID.String())
+		// Create a test user who is not an owner so they can leave
+		testUser, err := s.User.UpsertByEmail(ctx, "test-no-membership@test.com", nil)
 		s.NoError(err)
+
+		// Create a new org and make both testUser and userOne owners
+		testOrg, err := s.Organization.CreateWithRandomName(ctx)
+		s.NoError(err)
+
+		// Add testUser as owner
+		_, err = s.Membership.Create(ctx, testOrg.ID, testUser.ID, biz.WithMembershipRole(authz.RoleOwner))
+		s.NoError(err)
+
+		// Add userOne as viewer (so they can leave)
+		_, err = s.Membership.Create(ctx, testOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleViewer))
+		s.NoError(err)
+
+		// Now userOne can leave because testUser is also an owner
+		mems, _ := s.Membership.ByUser(ctx, s.userOne.ID)
+		// Find the membership for testOrg
+		var testOrgMembership *biz.Membership
+		for _, m := range mems {
+			if m.OrganizationID.String() == testOrg.ID {
+				testOrgMembership = m
+				break
+			}
+		}
+		s.NotNil(testOrgMembership)
+
+		// userOne leaves testOrg (allowed because testUser is still owner)
+		err = s.Membership.Leave(ctx, s.userOne.ID, testOrgMembership.ID.String())
+		s.NoError(err)
+
+		// Now userOne leaves their original organizations by deleting them directly
+		// since they are sole owners, they can delete the orgs instead of leaving
+		err = s.Organization.Delete(ctx, s.userOneOrg.ID)
+		s.NoError(err)
+		err = s.Organization.Delete(ctx, s.sharedOrg.ID)
+		s.NoError(err)
+
+		// Verify userOne has no memberships left
 		mems, _ = s.Membership.ByUser(ctx, s.userOne.ID)
 		s.Len(mems, 0)
 
@@ -224,15 +283,15 @@ func (s *userIntegrationTestSuite) SetupTest() {
 	// Create User 1
 	s.userOne, err = s.User.UpsertByEmail(ctx, "user-1@test.com", nil)
 	assert.NoError(err)
-	// Attach both orgs
-	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID)
+	// Attach both orgs - make user owner of userOneOrg and owner of sharedOrg
+	_, err = s.Membership.Create(ctx, s.userOneOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleOwner))
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userOne.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	assert.NoError(err)
 
-	// Create User 2 and attach shared org
+	// Create User 2 and attach shared org as owner too
 	s.userTwo, err = s.User.UpsertByEmail(ctx, "user-2@test.com", nil)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.sharedOrg.ID, s.userTwo.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	assert.NoError(err)
 }

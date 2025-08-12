@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,57 +94,6 @@ type MembershipUseCase struct {
 
 func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, userRepo UserRepo, logger log.Logger) *MembershipUseCase {
 	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), userRepo: userRepo, auditor: auditor}
-}
-
-// LeaveAndDeleteOrg deletes a membership (and the org i) from the database associated with the current user
-// and the associated org if the user is the only member
-func (uc *MembershipUseCase) LeaveAndDeleteOrg(ctx context.Context, userID, membershipID string) error {
-	membershipUUID, err := uuid.Parse(membershipID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
-	// Check that the provided membershipID in fact belongs to a membership from the user
-	m, err := uc.repo.FindByIDInUser(ctx, userUUID, membershipUUID)
-	if err != nil {
-		return fmt.Errorf("failed to find membership: %w", err)
-	} else if m == nil {
-		return NewErrNotFound("membership")
-	}
-
-	uc.logger.Infow("msg", "Deleting membership", "user_id", userID, "membership_id", m.ID.String())
-	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
-		return fmt.Errorf("failed to delete membership: %w", err)
-	}
-
-	uc.auditor.Dispatch(ctx, &events.OrgUserLeft{
-		OrgBase: &events.OrgBase{
-			OrgID:   &m.OrganizationID,
-			OrgName: m.Org.Name,
-		},
-	}, &m.OrganizationID)
-
-	// Check number of members in the org
-	// If it's the only one, delete the org
-	_, membershipCount, err := uc.repo.FindByOrg(ctx, m.OrganizationID, &ListByOrgOpts{}, pagination.NewDefaultOffsetPaginationOpts())
-	if err != nil {
-		return fmt.Errorf("failed to find memberships in org: %w", err)
-	}
-
-	if membershipCount == 0 {
-		// Delete the org
-		uc.logger.Infow("msg", "Deleting organization", "organization_id", m.OrganizationID.String())
-		if err := uc.orgUseCase.Delete(ctx, m.OrganizationID.String()); err != nil {
-			return fmt.Errorf("failed to delete org: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // DeleteOther just deletes a membership from the database
@@ -440,4 +389,80 @@ func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, user
 	}
 
 	return userOrgs, projectIDs, nil
+}
+
+// isUserSoleOwner checks if the user is the only owner in the organization
+func (uc *MembershipUseCase) isUserSoleOwner(ctx context.Context, orgID uuid.UUID, userID uuid.UUID) (bool, error) {
+	// Get all memberships in the organization with owner role
+	ownerRole := authz.RoleOwner
+	owners, _, err := uc.repo.FindByOrg(ctx, orgID, &ListByOrgOpts{
+		Role: &ownerRole,
+	}, pagination.NewDefaultOffsetPaginationOpts())
+	if err != nil {
+		return false, fmt.Errorf("failed to find owners: %w", err)
+	}
+
+	// Check if user is an owner and count total owners
+	userIsOwner := false
+	for _, owner := range owners {
+		if owner.User != nil && owner.User.ID == userID.String() {
+			userIsOwner = true
+		}
+	}
+
+	// If user is not an owner, they can leave freely
+	if !userIsOwner {
+		return false, nil
+	}
+
+	// If user is an owner and there's only one owner (them), they are the sole owner
+	return len(owners) == 1, nil
+}
+
+// Leave allows a user to leave an organization with proper owner validation
+// This function never automatically deletes organizations
+func (uc *MembershipUseCase) Leave(ctx context.Context, userID, membershipID string) error {
+	membershipUUID, err := uuid.Parse(membershipID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	// Check that the provided membershipID belongs to this user
+	m, err := uc.repo.FindByIDInUser(ctx, userUUID, membershipUUID)
+	if err != nil {
+		return fmt.Errorf("failed to find membership: %w", err)
+	} else if m == nil {
+		return NewErrNotFound("membership")
+	}
+
+	// Check if the user is the sole owner
+	isSoleOwner, err := uc.isUserSoleOwner(ctx, m.OrganizationID, userUUID)
+	if err != nil {
+		return fmt.Errorf("failed to check ownership: %w", err)
+	}
+
+	if isSoleOwner {
+		return NewErrValidationStr("cannot leave organization as the sole owner. Please add another owner or delete the organization instead")
+	}
+
+	uc.logger.Infow("msg", "User leaving organization", "user_id", userID, "membership_id", m.ID.String())
+
+	// Delete the membership
+	if err := uc.repo.Delete(ctx, membershipUUID); err != nil {
+		return fmt.Errorf("failed to delete membership: %w", err)
+	}
+
+	uc.auditor.Dispatch(ctx, &events.OrgUserLeft{
+		OrgBase: &events.OrgBase{
+			OrgID:   &m.OrganizationID,
+			OrgName: m.Org.Name,
+		},
+	}, &m.OrganizationID)
+
+	return nil
 }

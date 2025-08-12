@@ -36,6 +36,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	OrganizationService_Create_FullMethodName           = "/controlplane.v1.OrganizationService/Create"
 	OrganizationService_Update_FullMethodName           = "/controlplane.v1.OrganizationService/Update"
+	OrganizationService_Delete_FullMethodName           = "/controlplane.v1.OrganizationService/Delete"
 	OrganizationService_ListMemberships_FullMethodName  = "/controlplane.v1.OrganizationService/ListMemberships"
 	OrganizationService_DeleteMembership_FullMethodName = "/controlplane.v1.OrganizationService/DeleteMembership"
 	OrganizationService_UpdateMembership_FullMethodName = "/controlplane.v1.OrganizationService/UpdateMembership"
@@ -47,6 +48,9 @@ const (
 type OrganizationServiceClient interface {
 	Create(ctx context.Context, in *OrganizationServiceCreateRequest, opts ...grpc.CallOption) (*OrganizationServiceCreateResponse, error)
 	Update(ctx context.Context, in *OrganizationServiceUpdateRequest, opts ...grpc.CallOption) (*OrganizationServiceUpdateResponse, error)
+	// Delete an organization
+	// Only organization owners can delete the organization
+	Delete(ctx context.Context, in *OrganizationServiceDeleteRequest, opts ...grpc.CallOption) (*OrganizationServiceDeleteResponse, error)
 	// List members in the organization
 	ListMemberships(ctx context.Context, in *OrganizationServiceListMembershipsRequest, opts ...grpc.CallOption) (*OrganizationServiceListMembershipsResponse, error)
 	// Delete member from the organization
@@ -76,6 +80,15 @@ func (c *organizationServiceClient) Create(ctx context.Context, in *Organization
 func (c *organizationServiceClient) Update(ctx context.Context, in *OrganizationServiceUpdateRequest, opts ...grpc.CallOption) (*OrganizationServiceUpdateResponse, error) {
 	out := new(OrganizationServiceUpdateResponse)
 	err := c.cc.Invoke(ctx, OrganizationService_Update_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *organizationServiceClient) Delete(ctx context.Context, in *OrganizationServiceDeleteRequest, opts ...grpc.CallOption) (*OrganizationServiceDeleteResponse, error) {
+	out := new(OrganizationServiceDeleteResponse)
+	err := c.cc.Invoke(ctx, OrganizationService_Delete_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +128,9 @@ func (c *organizationServiceClient) UpdateMembership(ctx context.Context, in *Or
 type OrganizationServiceServer interface {
 	Create(context.Context, *OrganizationServiceCreateRequest) (*OrganizationServiceCreateResponse, error)
 	Update(context.Context, *OrganizationServiceUpdateRequest) (*OrganizationServiceUpdateResponse, error)
+	// Delete an organization
+	// Only organization owners can delete the organization
+	Delete(context.Context, *OrganizationServiceDeleteRequest) (*OrganizationServiceDeleteResponse, error)
 	// List members in the organization
 	ListMemberships(context.Context, *OrganizationServiceListMembershipsRequest) (*OrganizationServiceListMembershipsResponse, error)
 	// Delete member from the organization
@@ -134,6 +150,9 @@ func (UnimplementedOrganizationServiceServer) Create(context.Context, *Organizat
 }
 func (UnimplementedOrganizationServiceServer) Update(context.Context, *OrganizationServiceUpdateRequest) (*OrganizationServiceUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedOrganizationServiceServer) Delete(context.Context, *OrganizationServiceDeleteRequest) (*OrganizationServiceDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedOrganizationServiceServer) ListMemberships(context.Context, *OrganizationServiceListMembershipsRequest) (*OrganizationServiceListMembershipsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMemberships not implemented")
@@ -189,6 +208,24 @@ func _OrganizationService_Update_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OrganizationServiceServer).Update(ctx, req.(*OrganizationServiceUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrganizationService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OrganizationServiceDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrganizationServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrganizationService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrganizationServiceServer).Delete(ctx, req.(*OrganizationServiceDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -261,6 +298,10 @@ var OrganizationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _OrganizationService_Update_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _OrganizationService_Delete_Handler,
 		},
 		{
 			MethodName: "ListMemberships",

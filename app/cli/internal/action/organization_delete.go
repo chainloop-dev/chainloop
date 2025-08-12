@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,29 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package action
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-func newOrganizationCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "organization",
-		Aliases: []string{"org"},
-		Short:   "Organizations management",
-	}
+type OrganizationDelete struct {
+	cfg *ActionsOpts
+}
 
-	cmd.AddCommand(
-		newOrganizationList(),
-		newOrganizationCreateCmd(),
-		newOrganizationUpdateCmd(),
-		newOrganizationSet(),
-		newOrganizationLeaveCmd(),
-		newOrganizationDeleteCmd(),
-		newOrganizationDescribeCmd(),
-		newOrganizationAPITokenCmd(),
-		newOrganizationMemberCmd(),
-	)
-	return cmd
+func NewOrganizationDelete(cfg *ActionsOpts) *OrganizationDelete {
+	return &OrganizationDelete{cfg}
+}
+
+func (action *OrganizationDelete) Run(ctx context.Context, orgName string) error {
+	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
+	_, err := client.Delete(ctx, &pb.OrganizationServiceDeleteRequest{Name: orgName})
+	return err
 }

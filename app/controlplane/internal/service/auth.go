@@ -464,7 +464,7 @@ func (svc *AuthService) DeleteAccount(ctx context.Context, _ *pb.AuthServiceDele
 	}
 
 	if err := svc.userUseCase.DeleteUser(ctx, user.ID); err != nil {
-		return nil, sl.LogAndMaskErr(err, svc.log)
+		return nil, handleUseCaseErr(err, svc.log)
 	}
 
 	return &pb.AuthServiceDeleteAccountResponse{}, nil
