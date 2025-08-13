@@ -72,7 +72,7 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("Kind of the material: %q", schemaapi.ListAvailableMaterialKind()))
 	cmd.Flags().StringSliceVar(&annotations, "annotation", []string{}, "Key-value pairs of material annotations (key=value)")
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Path to custom policy file")
-	cmd.Flags().StringSliceVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
+	cmd.Flags().StringArrayVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
 	cmd.Flags().StringSliceVar(&allowedHostnames, "allowed-hostnames", []string{}, "Additional hostnames allowed for http.send requests in policies")
 
 	return cmd
