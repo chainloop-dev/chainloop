@@ -30,6 +30,8 @@ type EvaluationResult struct {
 	Skipped    bool
 	SkipReason string
 	Ignore     bool
+	// contains the raw results from the policy engine
+	RawResults []map[string]interface{}
 }
 
 // PolicyViolation represents a policy failure

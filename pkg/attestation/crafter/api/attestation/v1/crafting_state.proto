@@ -271,6 +271,8 @@ message PolicyEvaluation {
     string uri = 3 [(buf.validate.field).string.min_len = 1];
     string org_name = 4;
   }
+
+    repeated google.protobuf.Struct raw_results = 19;
 }
 
 message Commit {

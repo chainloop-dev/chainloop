@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -42,6 +43,7 @@ type EvalResult struct {
 	SkipReasons []string
 	Violations  []string
 	Ignored     bool
+	RawResults  []map[string]interface{}
 }
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) ([]*EvalResult, error) {
@@ -104,6 +106,7 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 			Skipped:     policyEv.GetSkipped(),
 			SkipReasons: policyEv.SkipReasons,
 			Ignored:     false,
+			RawResults:  apiRawResultsToEngineRawResults(policyEv.RawResults),
 		}
 
 		// Collect all violation messages
@@ -165,4 +168,16 @@ func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, na
 func fileNotExists(path string) bool {
 	_, err := os.Stat(path)
 	return os.IsNotExist(err)
+}
+
+func apiRawResultsToEngineRawResults(apiResults []*structpb.Struct) []map[string]any {
+	res := make([]map[string]any, 0)
+	for _, s := range apiResults {
+		if s == nil {
+			continue
+		}
+		m := s.AsMap()
+		res = append(res, m)
+	}
+	return res
 }

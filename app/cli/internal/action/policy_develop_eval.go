@@ -29,10 +29,11 @@ type PolicyEvalOpts struct {
 }
 
 type PolicyEvalResult struct {
-	Violations  []string `json:"violations"`
-	SkipReasons []string `json:"skip_reasons"`
-	Skipped     bool     `json:"skipped"`
-	Ignored     bool     `json:"ignored,omitempty"`
+	Violations  []string                 `json:"violations"`
+	SkipReasons []string                 `json:"skip_reasons"`
+	Skipped     bool                     `json:"skipped"`
+	Ignored     bool                     `json:"ignored,omitempty"`
+	RawResults  []map[string]interface{} `json:"raw_results,omitempty"`
 }
 
 type PolicyEval struct {
@@ -70,6 +71,7 @@ func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 			SkipReasons: r.SkipReasons,
 			Skipped:     r.Skipped,
 			Ignored:     r.Ignored,
+			RawResults:  r.RawResults,
 		})
 	}
 

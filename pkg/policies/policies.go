@@ -32,6 +32,7 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -165,6 +166,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
+	rawResults := make([]map[string]interface{}, 0)
 	skipped := true
 	reasons := make([]string, 0)
 	for _, script := range scripts {
@@ -172,6 +174,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
+
+		rawResults = append(rawResults, r.RawResults...)
 
 		// Skip if the script explicitly instructs us to ignore it, effectively preventing it from being added to the evaluation results
 		if r.Ignore {
@@ -229,6 +233,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		// Merged "skip_reason"
 		SkipReasons:  reasons,
 		Requirements: attachment.Requirements,
+		RawResults:   engineRawResultsToAPIRawResults(rawResults),
 	}, nil
 }
 
@@ -658,4 +663,17 @@ func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.L
 			}
 		}
 	}
+}
+
+func engineRawResultsToAPIRawResults(rawResults []map[string]interface{}) []*structpb.Struct {
+	res := make([]*structpb.Struct, 0)
+	for _, r := range rawResults {
+		s, err := structpb.NewStruct(r)
+		if err != nil {
+			// Skip invalid entries
+			continue
+		}
+		res = append(res, s)
+	}
+	return res
 }
