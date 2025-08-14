@@ -91,8 +91,8 @@ const (
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
 	inputElements                             = "elements"
-	deprecatedRule                            = ".violations"
-	mainRule                                  = ".result"
+	deprecatedRule                            = "violations"
+	mainRule                                  = "result"
 )
 
 // builtinFuncNotAllowed is a list of builtin functions that are not allowed in the compiler
@@ -155,7 +155,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 
 	// Get raw results first
-	if err := executeQuery("", r.operatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(fmt.Sprintf("%s\n", parsedModule.Package.Path), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -165,7 +165,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 
 	// Try the main rule first
-	if err := executeQuery(mainRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, mainRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -173,7 +173,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(deprecatedRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, deprecatedRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
@@ -269,8 +269,8 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 	return result, nil
 }
 
-func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
-	query := rego.Query(fmt.Sprintf("%v%s\n", parsedModule.Package.Path, ruleName))
+func queryRego(ctx context.Context, fullRuleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fullRuleName)
 	regoEval := rego.New(append(options, query)...)
 	res, err := regoEval.Eval(ctx)
 	if err != nil {
