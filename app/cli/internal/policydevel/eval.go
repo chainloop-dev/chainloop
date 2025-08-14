@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -35,16 +36,26 @@ type EvalOptions struct {
 	MaterialPath     string
 	Inputs           map[string]string
 	AllowedHostnames []string
+	Debug            bool
 }
 
 type EvalResult struct {
 	Skipped     bool
 	SkipReasons []string
 	Violations  []string
-	Ignored     bool
 }
 
-func Evaluate(opts *EvalOptions, logger zerolog.Logger) ([]*EvalResult, error) {
+type EvalSummary struct {
+	Result    EvalResult           `json:"result"`
+	DebugInfo EvalSummaryDebugInfo `json:"debug_info"`
+}
+
+type EvalSummaryDebugInfo struct {
+	Inputs     []map[string]interface{} `json:"inputs"`
+	RawResults []map[string]interface{} `json:"raw_results"`
+}
+
+func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	// 1. Create crafting schema
 	schema, err := createCraftingSchema(opts.PolicyPath, opts.Inputs)
 	if err != nil {
@@ -59,12 +70,12 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) ([]*EvalResult, error) {
 	material.Annotations = opts.Annotations
 
 	// 3. Verify material against policy
-	result, err := verifyMaterial(schema, material, opts.MaterialPath, opts.AllowedHostnames, &logger)
+	summary, err := verifyMaterial(schema, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, &logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return summary, nil
 }
 
 func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.CraftingSchema, error) {
@@ -82,7 +93,7 @@ func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.Craf
 	}, nil
 }
 
-func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, allowedHostnames []string, logger *zerolog.Logger) ([]*EvalResult, error) {
+func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
@@ -93,30 +104,43 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 		return nil, err
 	}
 
-	// no evaluations were returned
 	if len(policyEvs) == 0 {
 		return nil, fmt.Errorf("no execution branch matched for kind %s", material.MaterialType.String())
 	}
 
-	results := make([]*EvalResult, 0, len(policyEvs))
-	for _, policyEv := range policyEvs {
-		result := &EvalResult{
+	// Only one evaluation expected for a single policy attachment
+	policyEv := policyEvs[0]
+
+	summary := &EvalSummary{
+		Result: EvalResult{
 			Skipped:     policyEv.GetSkipped(),
 			SkipReasons: policyEv.SkipReasons,
-			Ignored:     false,
-		}
-
-		// Collect all violation messages
-		violations := make([]string, 0, len(policyEv.Violations))
-		for _, v := range policyEv.Violations {
-			violations = append(violations, v.Message)
-		}
-		result.Violations = violations
-
-		results = append(results, result)
+			Violations:  make([]string, 0, len(policyEv.Violations)),
+		},
+		DebugInfo: EvalSummaryDebugInfo{
+			Inputs:     []map[string]interface{}{},
+			RawResults: []map[string]interface{}{},
+		},
 	}
 
-	return results, nil
+	// Collect violation messages
+	for _, v := range policyEv.Violations {
+		summary.Result.Violations = append(summary.Result.Violations, v.Message)
+	}
+
+	// Include raw debug info if requested
+	if debug {
+		for _, rr := range apiRawResultsToEngineRawResults(policyEv.RawResults) {
+			if in, ok := rr["input"].(map[string]interface{}); ok {
+				summary.DebugInfo.Inputs = append(summary.DebugInfo.Inputs, in)
+			}
+			if out, ok := rr["output"].(map[string]interface{}); ok {
+				summary.DebugInfo.RawResults = append(summary.DebugInfo.RawResults, out)
+			}
+		}
+	}
+
+	return summary, nil
 }
 
 func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
@@ -165,4 +189,16 @@ func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, na
 func fileNotExists(path string) bool {
 	_, err := os.Stat(path)
 	return os.IsNotExist(err)
+}
+
+func apiRawResultsToEngineRawResults(apiResults []*structpb.Struct) []map[string]any {
+	res := make([]map[string]any, 0)
+	for _, s := range apiResults {
+		if s == nil {
+			continue
+		}
+		m := s.AsMap()
+		res = append(res, m)
+	}
+	return res
 }

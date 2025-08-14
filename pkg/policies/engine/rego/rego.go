@@ -154,8 +154,18 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		return err
 	}
 
+	// Get raw results first
+	if err := executeQuery(fmt.Sprintf("%s\n", parsedModule.Package.Path), r.operatingMode == EnvironmentModeRestrictive); err != nil {
+		return nil, err
+	}
+
+	rawData := &engine.RawData{
+		Input:  decodedInput,
+		Output: regoResultSetToRawResults(res),
+	}
+
 	// Try the main rule first
-	if err := executeQuery(mainRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, mainRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -163,7 +173,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(deprecatedRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, deprecatedRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
@@ -171,15 +181,15 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", mainRule, deprecatedRule)
 		}
 
-		return parseViolationsRule(res, policy)
+		return parseViolationsRule(res, policy, rawData)
 	}
 
-	return parseResultRule(res, policy)
+	return parseResultRule(res, policy, rawData)
 }
 
 // Parse deprecated list of violations.
 // TODO: Remove this path once `result` rule is consolidated
-func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+func parseViolationsRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
@@ -207,12 +217,14 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 		Skipped:    false, // best effort
 		SkipReason: "",
 		Ignore:     false, // Assume old rules should not be ignored
+		RawData:    rawData,
 	}, nil
 }
 
 // parse `result` rule
-func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
 	result := &engine.EvaluationResult{Violations: make([]*engine.PolicyViolation, 0)}
+	result.RawData = rawData
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
 			ruleResult, ok := val.Value.(map[string]any)
@@ -257,8 +269,8 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 	return result, nil
 }
 
-func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
-	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, ruleName))
+func queryRego(ctx context.Context, fullRuleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fullRuleName)
 	regoEval := rego.New(append(options, query)...)
 	res, err := regoEval.Eval(ctx)
 	if err != nil {
@@ -300,4 +312,16 @@ func (r *Engine) Capabilities() *ast.Capabilities {
 
 	capabilities.Builtins = enabledBuiltin
 	return capabilities
+}
+
+func regoResultSetToRawResults(res rego.ResultSet) map[string]interface{} {
+	raw := make(map[string]interface{})
+	for _, r := range res {
+		entry := make(map[string]interface{})
+		for _, exp := range r.Expressions {
+			entry[exp.Text] = exp.Value
+		}
+		raw = entry
+	}
+	return raw
 }

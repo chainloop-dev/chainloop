@@ -280,6 +280,7 @@ export interface PolicyEvaluation {
   groupReference?: PolicyEvaluation_Reference;
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
+  rawResults: { [key: string]: any }[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -2096,6 +2097,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     policyReference: undefined,
     groupReference: undefined,
     requirements: [],
+    rawResults: [],
   };
 }
 
@@ -2148,6 +2150,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.requirements) {
       writer.uint32(138).string(v!);
+    }
+    for (const v of message.rawResults) {
+      Struct.encode(Struct.wrap(v!), writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -2277,6 +2282,13 @@ export const PolicyEvaluation = {
 
           message.requirements.push(reader.string());
           continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.rawResults.push(Struct.unwrap(Struct.decode(reader, reader.uint32())));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2322,6 +2334,7 @@ export const PolicyEvaluation = {
       requirements: Array.isArray(object?.requirements)
         ? object.requirements.map((e: any) => String(e))
         : [],
+      rawResults: Array.isArray(object?.rawResults) ? [...object.rawResults] : [],
     };
   },
 
@@ -2373,6 +2386,11 @@ export const PolicyEvaluation = {
     } else {
       obj.requirements = [];
     }
+    if (message.rawResults) {
+      obj.rawResults = message.rawResults.map((e) => e);
+    } else {
+      obj.rawResults = [];
+    }
     return obj;
   },
 
@@ -2415,6 +2433,7 @@ export const PolicyEvaluation = {
       ? PolicyEvaluation_Reference.fromPartial(object.groupReference)
       : undefined;
     message.requirements = object.requirements?.map((e) => e) || [];
+    message.rawResults = object.rawResults?.map((e) => e) || [];
     return message;
   },
 };

@@ -14,6 +14,12 @@
       "$ref": "attestation.v1.PolicyEvaluation.Reference.schema.json",
       "description": "Group this evaluated policy belongs to, if any"
     },
+    "^(rawResults)$": {
+      "items": {
+        "$ref": "google.protobuf.Struct.schema.json"
+      },
+      "type": "array"
+    },
     "^(referenceDigest)$": {
       "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference\n Deprecated: use policy_reference instead",
       "type": "string"
@@ -59,6 +65,12 @@
     "policy_reference": {
       "$ref": "attestation.v1.PolicyEvaluation.Reference.schema.json",
       "description": "Group this evaluated policy belongs to, if any"
+    },
+    "raw_results": {
+      "items": {
+        "$ref": "google.protobuf.Struct.schema.json"
+      },
+      "type": "array"
     },
     "reference_digest": {
       "description": "fully qualified reference to the policy\n i.e\n http://my-domain.com/foo.yaml\n file://foo.yaml\n chainloop://my-provider.com/foo@sha256:1234\n NOTE: embedded policies will not have a reference\n Deprecated: use policy_reference instead",
