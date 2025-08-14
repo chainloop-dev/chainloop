@@ -26,7 +26,7 @@ type PolicyEvalOpts struct {
 	PolicyPath       string
 	Inputs           map[string]string
 	AllowedHostnames []string
-	Raw              bool
+	Debug            bool
 }
 
 type PolicyEvalResult struct {
@@ -49,7 +49,7 @@ func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, 
 	}, nil
 }
 
-func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
+func (action *PolicyEval) Run() (*policydevel.EvalSummary, error) {
 	evalOpts := &policydevel.EvalOptions{
 		PolicyPath:       action.opts.PolicyPath,
 		MaterialKind:     action.opts.Kind,
@@ -57,7 +57,7 @@ func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 		MaterialPath:     action.opts.MaterialPath,
 		Inputs:           action.opts.Inputs,
 		AllowedHostnames: action.opts.AllowedHostnames,
-		Raw:              action.opts.Raw,
+		Debug:            action.opts.Debug,
 	}
 
 	// Evaluate policy
@@ -66,16 +66,5 @@ func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 		return nil, err
 	}
 
-	results := make([]*PolicyEvalResult, 0, len(resp))
-	for _, r := range resp {
-		results = append(results, &PolicyEvalResult{
-			Violations:  r.Violations,
-			SkipReasons: r.SkipReasons,
-			Skipped:     r.Skipped,
-			Ignored:     r.Ignored,
-			RawResults:  r.RawResults,
-		})
-	}
-
-	return results, nil
+	return resp, nil
 }
