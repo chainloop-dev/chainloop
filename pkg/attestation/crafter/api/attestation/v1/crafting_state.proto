@@ -272,7 +272,7 @@ message PolicyEvaluation {
     string org_name = 4;
   }
 
-    repeated google.protobuf.Struct raw_results = 19;
+  repeated google.protobuf.Struct raw_results = 19;
 }
 
 message Commit {
