@@ -26,6 +26,7 @@ type PolicyEvalOpts struct {
 	PolicyPath       string
 	Inputs           map[string]string
 	AllowedHostnames []string
+	Raw              bool
 }
 
 type PolicyEvalResult struct {
@@ -56,6 +57,7 @@ func (action *PolicyEval) Run() ([]*PolicyEvalResult, error) {
 		MaterialPath:     action.opts.MaterialPath,
 		Inputs:           action.opts.Inputs,
 		AllowedHostnames: action.opts.AllowedHostnames,
+		Raw:              action.opts.Raw,
 	}
 
 	// Evaluate policy

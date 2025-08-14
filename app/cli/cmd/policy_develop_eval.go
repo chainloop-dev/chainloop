@@ -52,6 +52,7 @@ evaluates the policy against the provided material or attestation.`,
 				PolicyPath:       policyPath,
 				Inputs:           parseKeyValue(inputs),
 				AllowedHostnames: allowedHostnames,
+				Raw:              raw,
 			}
 
 			policyEval, err := action.NewPolicyEval(opts, actionOpts)
@@ -63,13 +64,6 @@ evaluates the policy against the provided material or attestation.`,
 			if err != nil {
 				return err
 			}
-
-			if raw {
-				return encodeJSON(result[0].RawResults)
-			}
-
-			// Hide skip reasons in non-verbose mode
-			result[0].RawResults = nil
 
 			return encodeJSON(result)
 		},

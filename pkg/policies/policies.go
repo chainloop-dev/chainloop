@@ -166,7 +166,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
-	rawResults := make([]map[string]interface{}, 0)
+	rawResults := make([]*engine.RawData, 0)
 	skipped := true
 	reasons := make([]string, 0)
 	for _, script := range scripts {
@@ -175,7 +175,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 			return nil, NewPolicyError(err)
 		}
 
-		rawResults = append(rawResults, r.RawResults...)
+		rawResults = append(rawResults, r.RawData)
 
 		// Skip if the script explicitly instructs us to ignore it, effectively preventing it from being added to the evaluation results
 		if r.Ignore {
@@ -665,12 +665,17 @@ func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.L
 	}
 }
 
-func engineRawResultsToAPIRawResults(rawResults []map[string]interface{}) []*structpb.Struct {
+func engineRawResultsToAPIRawResults(rawResults []*engine.RawData) []*structpb.Struct {
 	res := make([]*structpb.Struct, 0)
 	for _, r := range rawResults {
-		s, err := structpb.NewStruct(r)
+		// Convert RawData to map
+		m := map[string]interface{}{
+			"input":  r.Input,
+			"output": r.Output,
+		}
+
+		s, err := structpb.NewStruct(m)
 		if err != nil {
-			// Skip invalid entries
 			continue
 		}
 		res = append(res, s)
