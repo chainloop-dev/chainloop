@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/open-policy-agent/opa/ast"
@@ -92,8 +91,8 @@ const (
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
 	inputElements                             = "elements"
-	deprecatedRule                            = "violations"
-	mainRule                                  = "result"
+	deprecatedRule                            = ".violations"
+	mainRule                                  = ".result"
 )
 
 // builtinFuncNotAllowed is a list of builtin functions that are not allowed in the compiler
@@ -113,12 +112,6 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		return nil, fmt.Errorf("failed to parse rego policy: %w", err)
 	}
 
-	// Extract package name
-	pkgPath := parsedModule.Package.Path.String()
-	if pkgPath == "" {
-		return nil, fmt.Errorf("policy has no package declaration")
-	}
-
 	// Decode input as json
 	decoder := json.NewDecoder(bytes.NewReader(input))
 	decoder.UseNumber()
@@ -134,7 +127,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		decodedInput = inputMap
 	}
 
-	// put arguments embedded in the input
+	// put arguments embedded in the input object
 	if args != nil {
 		inputMap, ok := decodedInput.(map[string]interface{})
 		if !ok {
@@ -144,72 +137,59 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		decodedInput = inputMap
 	}
 
-	// Prepare rego options
-	options := []func(*rego.Rego){
-		rego.ParsedModule(parsedModule),
-		rego.Input(decodedInput),
-		rego.Capabilities(r.Capabilities()),
+	// add input
+	regoInput := rego.Input(decodedInput)
+
+	// add module
+	regoFunc := rego.ParsedModule(parsedModule)
+
+	var res rego.ResultSet
+	// Function to execute the query with appropriate parameters
+	executeQuery := func(rule string, strict bool) error {
+		if strict {
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()), rego.StrictBuiltinErrors(true))
+		} else {
+			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()))
+		}
+		return err
 	}
 
-	if r.operatingMode == EnvironmentModeRestrictive {
-		options = append(options, rego.StrictBuiltinErrors(true))
-	}
-
-	// First try evaluating the entire package
-	res, err := r.evaluatePackage(ctx, pkgPath, options)
-	if err != nil {
+	// Get raw results first
+	if err := executeQuery("", r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
-	// If we got results, parse them
-	if res != nil {
-		return parseResultRule(res, policy, decodedInput)
+	rawData := &engine.RawData{
+		Input:  decodedInput,
+		Output: regoResultSetToRawResults(res),
 	}
 
-	// Fallback to evaluating specific rules if package evaluation returned nothing
-	return r.evaluateSpecificRules(ctx, parsedModule, options, policy, decodedInput)
-}
-
-// Evaluate the entire package by querying data.<package>
-func (r *Engine) evaluatePackage(ctx context.Context, pkgPath string, options []func(*rego.Rego)) (rego.ResultSet, error) {
-	query := fmt.Sprintf("data.%s", strings.TrimPrefix(pkgPath, "data."))
-	regoEval := rego.New(append(options, rego.Query(query))...)
-	return regoEval.Eval(ctx)
-}
-
-func (r *Engine) evaluateSpecificRules(ctx context.Context, module *ast.Module, options []func(*rego.Rego), policy *engine.Policy, decodedInput interface{}) (*engine.EvaluationResult, error) {
-	// Try the result rule first
-	res, err := queryRego(ctx, mainRule, module, options...)
-	if err != nil {
+	// Try the main rule first
+	if err := executeQuery(mainRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
-	if res != nil {
-		return parseResultRule(res, policy, decodedInput)
+	// If res is nil, it means that the rule hasn't been found
+	// TODO: Remove when this deprecated rule is not used anymore
+	if res == nil {
+		// Try with the deprecated main rule
+		if err := executeQuery(deprecatedRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+			return nil, err
+		}
+
+		if res == nil {
+			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", mainRule, deprecatedRule)
+		}
+
+		return parseViolationsRule(res, policy, rawData)
 	}
 
-	// Fallback to deprecated violations rule
-	res, err = queryRego(ctx, deprecatedRule, module, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	if res != nil {
-		return parseViolationsRule(res, policy, decodedInput)
-	}
-
-	return nil, fmt.Errorf("failed to evaluate policy: no results from package or rule evaluation")
-}
-
-func queryRego(ctx context.Context, ruleName string, module *ast.Module, options ...func(*rego.Rego)) (rego.ResultSet, error) {
-	query := fmt.Sprintf("data.%s.%s", strings.TrimPrefix(module.Package.Path.String(), "data."), ruleName)
-	regoEval := rego.New(append(options, rego.Query(query))...)
-	return regoEval.Eval(ctx)
+	return parseResultRule(res, policy, rawData)
 }
 
 // Parse deprecated list of violations.
 // TODO: Remove this path once `result` rule is consolidated
-func parseViolationsRule(res rego.ResultSet, policy *engine.Policy, decodedInput interface{}) (*engine.EvaluationResult, error) {
+func parseViolationsRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
@@ -237,20 +217,14 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy, decodedInput
 		Skipped:    false, // best effort
 		SkipReason: "",
 		Ignore:     false, // Assume old rules should not be ignored
-		RawData: &engine.RawData{
-			Input:  decodedInput,
-			Output: regoResultSetToRawResults(res),
-		},
+		RawData:    rawData,
 	}, nil
 }
 
 // parse `result` rule
-func parseResultRule(res rego.ResultSet, policy *engine.Policy, decodedInput interface{}) (*engine.EvaluationResult, error) {
+func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
 	result := &engine.EvaluationResult{Violations: make([]*engine.PolicyViolation, 0)}
-	result.RawData = &engine.RawData{
-		Input:  decodedInput,
-		Output: regoResultSetToRawResults(res),
-	}
+	result.RawData = rawData
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
 			ruleResult, ok := val.Value.(map[string]any)
@@ -293,6 +267,17 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, decodedInput int
 	}
 
 	return result, nil
+}
+
+func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fmt.Sprintf("%v%s\n", parsedModule.Package.Path, ruleName))
+	regoEval := rego.New(append(options, query)...)
+	res, err := regoEval.Eval(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate policy: %w", err)
+	}
+
+	return res, nil
 }
 
 // Capabilities returns the capabilities of the environment based on the mode of operation
