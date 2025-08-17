@@ -67,6 +67,26 @@ func (ou *OrganizationUpdate) SetNillableUpdatedAt(t *time.Time) *OrganizationUp
 	return ou
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (ou *OrganizationUpdate) SetDeletedAt(t time.Time) *OrganizationUpdate {
+	ou.mutation.SetDeletedAt(t)
+	return ou
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableDeletedAt(t *time.Time) *OrganizationUpdate {
+	if t != nil {
+		ou.SetDeletedAt(*t)
+	}
+	return ou
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (ou *OrganizationUpdate) ClearDeletedAt() *OrganizationUpdate {
+	ou.mutation.ClearDeletedAt()
+	return ou
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (ou *OrganizationUpdate) SetBlockOnPolicyViolation(b bool) *OrganizationUpdate {
 	ou.mutation.SetBlockOnPolicyViolation(b)
@@ -439,6 +459,12 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ou.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := ou.mutation.DeletedAt(); ok {
+		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
+	}
+	if ou.mutation.DeletedAtCleared() {
+		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
 	if value, ok := ou.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
@@ -864,6 +890,26 @@ func (ouo *OrganizationUpdateOne) SetNillableUpdatedAt(t *time.Time) *Organizati
 	return ouo
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (ouo *OrganizationUpdateOne) SetDeletedAt(t time.Time) *OrganizationUpdateOne {
+	ouo.mutation.SetDeletedAt(t)
+	return ouo
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableDeletedAt(t *time.Time) *OrganizationUpdateOne {
+	if t != nil {
+		ouo.SetDeletedAt(*t)
+	}
+	return ouo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (ouo *OrganizationUpdateOne) ClearDeletedAt() *OrganizationUpdateOne {
+	ouo.mutation.ClearDeletedAt()
+	return ouo
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (ouo *OrganizationUpdateOne) SetBlockOnPolicyViolation(b bool) *OrganizationUpdateOne {
 	ouo.mutation.SetBlockOnPolicyViolation(b)
@@ -1266,6 +1312,12 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	}
 	if value, ok := ouo.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := ouo.mutation.DeletedAt(); ok {
+		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
+	}
+	if ouo.mutation.DeletedAtCleared() {
+		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
 	if value, ok := ouo.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)

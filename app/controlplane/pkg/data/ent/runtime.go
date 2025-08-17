@@ -196,7 +196,7 @@ func init() {
 	// organization.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	organization.DefaultUpdatedAt = organizationDescUpdatedAt.Default.(func() time.Time)
 	// organizationDescBlockOnPolicyViolation is the schema descriptor for block_on_policy_violation field.
-	organizationDescBlockOnPolicyViolation := organizationFields[4].Descriptor()
+	organizationDescBlockOnPolicyViolation := organizationFields[5].Descriptor()
 	// organization.DefaultBlockOnPolicyViolation holds the default value on creation for the block_on_policy_violation field.
 	organization.DefaultBlockOnPolicyViolation = organizationDescBlockOnPolicyViolation.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
