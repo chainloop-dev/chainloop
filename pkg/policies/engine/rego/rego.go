@@ -147,9 +147,9 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	// Function to execute the query with appropriate parameters
 	executeQuery := func(rule string, strict bool) error {
 		if strict {
-			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()), rego.StrictBuiltinErrors(true))
+			res, err = queryRego(ctx, rule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()), rego.StrictBuiltinErrors(true))
 		} else {
-			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()))
+			res, err = queryRego(ctx, rule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()))
 		}
 		return err
 	}
@@ -269,7 +269,7 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 	return result, nil
 }
 
-func queryRego(ctx context.Context, fullRuleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+func queryRego(ctx context.Context, fullRuleName string, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
 	query := rego.Query(fullRuleName)
 	regoEval := rego.New(append(options, query)...)
 	res, err := regoEval.Eval(ctx)
