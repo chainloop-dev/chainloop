@@ -98,8 +98,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 }
 
 func (s *OrganizationService) Delete(ctx context.Context, req *pb.OrganizationServiceDeleteRequest) (*pb.OrganizationServiceDeleteResponse, error) {
-	currentUser, err := requireCurrentUser(ctx)
-	if err != nil {
+	if _, err := requireCurrentUser(ctx); err != nil {
 		return nil, err
 	}
 
@@ -120,7 +119,7 @@ func (s *OrganizationService) Delete(ctx context.Context, req *pb.OrganizationSe
 		return nil, err
 	}
 
-	if err := s.orgUC.DeleteByUser(ctx, req.Name, currentUser.ID); err != nil {
+	if err := s.orgUC.Delete(ctx, orgUUID.String()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 

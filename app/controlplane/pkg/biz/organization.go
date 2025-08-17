@@ -290,43 +290,6 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 	return uc.orgRepo.Delete(ctx, orgUUID)
 }
 
-// DeleteByUser deletes an organization initiated by a user with owner validation
-// Only organization owners can delete an organization
-func (uc *OrganizationUseCase) DeleteByUser(ctx context.Context, orgName, userID string) error {
-	// Find organization by name
-	org, err := uc.orgRepo.FindByName(ctx, orgName)
-	if err != nil {
-		return err
-	} else if org == nil {
-		return NewErrNotFound("organization")
-	}
-
-	orgUUID, err := uuid.Parse(org.ID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
-	// Check if user is an owner of the organization
-	m, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgUUID, userUUID)
-	if err != nil {
-		return fmt.Errorf("failed to find owners: %w", err)
-	}
-
-	if m == nil || m.Role != authz.RoleOwner {
-		return NewErrValidationStr("only organization owners can delete the organization")
-	}
-
-	uc.logger.Infow("msg", "User deleting organization", "user_id", userID, "organization_id", org.ID)
-
-	// Use the existing Delete method to handle the actual deletion
-	return uc.Delete(ctx, org.ID)
-}
-
 // AutoOnboardOrganizations creates the organizations specified in the onboarding config and assigns the user to them
 // with the specified role if they are not already a member.
 func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, userID string) error {
