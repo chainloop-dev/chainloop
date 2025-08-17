@@ -224,9 +224,9 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	// If no matching resources were found, return forbidden error
 	if len(matchingResources) == 0 {
 		return errors.Forbidden("forbidden", defaultMessage)
-	} else {
-		defaultMessage = fmt.Sprintf("%s, roles=%v", defaultMessage, foundRoles)
 	}
+
+	defaultMessage = fmt.Sprintf("%s, roles=%v", defaultMessage, foundRoles)
 
 	// Try to enforce the policy with each matching role
 	// If any role passes, authorize the request
