@@ -116,7 +116,7 @@ func (s *OrganizationService) Delete(ctx context.Context, req *pb.OrganizationSe
 	// Check if user has permission to delete this specific organization
 	// Force RBAC to ensure only owners can delete, even if they have admin privileges elsewhere
 	if err := s.authorizeResource(ctx, authz.PolicyOrganizationDelete, authz.ResourceTypeOrganization, orgUUID, withForceRBAC()); err != nil {
-		return nil, err
+		return nil, errors.Forbidden("forbidden", "only organization owners can delete the organization")
 	}
 
 	if err := s.orgUC.Delete(ctx, orgUUID.String()); err != nil {
