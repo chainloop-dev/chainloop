@@ -132,7 +132,10 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	if debug {
 		for _, rr := range apiRawResultsToEngineRawResults(policyEv.RawResults) {
 			if in, ok := rr["input"].(map[string]interface{}); ok {
-				summary.DebugInfo.Inputs = append(summary.DebugInfo.Inputs, in)
+				// Take the first input found, as we only allow one material input
+				if len(summary.DebugInfo.Inputs) == 0 {
+					summary.DebugInfo.Inputs = append(summary.DebugInfo.Inputs, in)
+				}
 			}
 			if out, ok := rr["output"].(map[string]interface{}); ok {
 				summary.DebugInfo.RawResults = append(summary.DebugInfo.RawResults, out)
