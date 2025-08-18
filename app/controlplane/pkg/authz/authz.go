@@ -167,7 +167,9 @@ var (
 	// Projects
 	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
 
+	// Organization
 	PolicyOrganizationCreate = &Policy{Organization, ActionCreate}
+	PolicyOrganizationDelete = &Policy{Organization, ActionDelete}
 	// User Membership
 	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
 	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
@@ -199,6 +201,18 @@ var RolesMap = map[Role][]*Policy{
 	// Organizations in chainloop might be restricted to instance admins
 	RoleInstanceAdmin: {
 		PolicyOrganizationCreate,
+	},
+	RoleOwner: {
+		PolicyOrganizationDelete,
+	},
+	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
+	RoleAdmin: {
+		// We do a manual check in the artifact upload endpoint
+		// so we need the actual policy in place skipping it is not enough
+		PolicyArtifactUpload,
+		// We manually check this policy to be able to know if the user can invite users to the system
+		PolicyOrganizationInvitationsCreate,
+		// + all the policies from the viewer role inherited automatically
 	},
 	// RoleViewer is an org-scoped role that provides read-only access to all resources
 	RoleViewer: {
@@ -234,16 +248,6 @@ var RolesMap = map[Role][]*Policy{
 		// List organization memberships
 		PolicyOrganizationListMemberships,
 	},
-	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
-	RoleAdmin: {
-		// We do a manual check in the artifact upload endpoint
-		// so we need the actual policy in place skipping it is not enough
-		PolicyArtifactUpload,
-		// We manually check this policy to be able to know if the user can invite users to the system
-		PolicyOrganizationInvitationsCreate,
-		// + all the policies from the viewer role inherited automatically
-	},
-
 	// RoleOrgMember is an org-scoped role that enables RBAC in the underlying resources. Users with this role at
 	// the organization level will need specific project roles to access their contents
 	RoleOrgContributor: {
@@ -403,6 +407,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	// since all the permissions here are in the context of an organization
 	// Create new organization
 	"/controlplane.v1.OrganizationService/Create": {},
+	// Delete an organization makes checks at the service level since the
+	// user can explicitly set the org they want to delete and might not be the current one
+	"/controlplane.v1.OrganizationService/Delete": {},
 
 	// List global memberships
 	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
