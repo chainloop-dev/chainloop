@@ -104,6 +104,8 @@ jobs:
 
       - name: Generate SBOMs, upload to release and attest
         id: attest_goreleaser
+        env:
+          SYFT_GOLANG_SEARCH_REMOTE_LICENSES: "true"
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
