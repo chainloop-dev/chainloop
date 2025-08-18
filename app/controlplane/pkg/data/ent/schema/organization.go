@@ -22,6 +22,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -34,7 +35,7 @@ type Organization struct {
 func (Organization) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.String("name").Unique(),
+		field.String("name"),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
@@ -46,6 +47,7 @@ func (Organization) Fields() []ent.Field {
 			Annotations(&entsql.Annotation{
 				Default: "CURRENT_TIMESTAMP",
 			}),
+		field.Time("deleted_at").Optional(),
 		field.Bool("block_on_policy_violation").Default(false),
 		// array of hostnames that are allowed to be used in the policies
 		field.Strings("policies_allowed_hostnames").Optional(),
@@ -64,5 +66,13 @@ func (Organization) Edges() []ent.Edge {
 		edge.To("api_tokens", APIToken.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("projects", Project.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("groups", Group.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+	}
+}
+
+func (Organization) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").Unique().Annotations(
+			entsql.IndexWhere("deleted_at IS NULL"),
+		),
 	}
 }

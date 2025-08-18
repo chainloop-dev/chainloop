@@ -242,14 +242,7 @@ func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Or
 	return org, nil
 }
 
-// Delete deletes an organization and all relevant data
-// This includes:
-// - The organization
-// - The associated repositories
-// - The associated integrations
-// The reason for just deleting these two associated components only is because
-// they have external secrets that need to be deleted as well, and for that we leverage their own delete methods
-// The rest of the data gets removed by the database cascade delete
+// Delete soft-deletes an organization and all relevant data
 func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 	orgUUID, err := uuid.Parse(id)
 	if err != nil {
@@ -263,30 +256,21 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 		return NewErrNotFound("organization")
 	}
 
-	// Delete all the integrations
-	integrations, err := uc.integrationUC.List(ctx, id)
+	// Delete all memberships for this organization
+	// Memberships should be removed when an organization is soft-deleted
+	// since they represent access rights that should be revoked
+	memberships, _, err := uc.membershipRepo.FindByOrg(ctx, orgUUID, nil, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find memberships: %w", err)
 	}
 
-	for _, i := range integrations {
-		if err := uc.integrationUC.Delete(ctx, id, i.ID.String()); err != nil {
-			return err
+	for _, m := range memberships {
+		if err := uc.membershipRepo.Delete(ctx, m.ID); err != nil {
+			return fmt.Errorf("failed to delete membership: %w", err)
 		}
 	}
 
-	backends, err := uc.casBackendUseCase.List(ctx, org.ID)
-	if err != nil {
-		return fmt.Errorf("failed to list backends: %w", err)
-	}
-
-	for _, b := range backends {
-		if err := uc.casBackendUseCase.Delete(ctx, b.ID.String()); err != nil {
-			return fmt.Errorf("failed to delete backend: %w", err)
-		}
-	}
-
-	// Delete the organization
+	// Soft-delete the organization
 	return uc.orgRepo.Delete(ctx, orgUUID)
 }
 

@@ -51,9 +51,7 @@ func NewProjectsRepo(data *Data, logger log.Logger) biz.ProjectsRepo {
 
 // FindProjectByOrgIDAndName gets a project by organization ID and project name
 func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*biz.Project, error) {
-	pro, err := r.data.DB.Organization.Query().Where(
-		organization.ID(orgID),
-	).QueryProjects().Where(
+	pro, err := orgScopedQuery(r.data.DB, orgID).QueryProjects().Where(
 		project.Name(projectName),
 		project.DeletedAtIsNil(),
 	).Only(ctx)
@@ -70,9 +68,7 @@ func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.
 
 // FindProjectByOrgIDAndID gets a project by organization ID and project ID
 func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*biz.Project, error) {
-	pro, err := r.data.DB.Organization.Query().Where(
-		organization.ID(orgID),
-	).QueryProjects().Where(
+	pro, err := orgScopedQuery(r.data.DB, orgID).QueryProjects().Where(
 		project.ID(projectID),
 		project.DeletedAtIsNil(),
 	).Only(ctx)

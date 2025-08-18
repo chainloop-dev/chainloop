@@ -66,6 +66,20 @@ func (oc *OrganizationCreate) SetNillableUpdatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (oc *OrganizationCreate) SetDeletedAt(t time.Time) *OrganizationCreate {
+	oc.mutation.SetDeletedAt(t)
+	return oc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableDeletedAt(t *time.Time) *OrganizationCreate {
+	if t != nil {
+		oc.SetDeletedAt(*t)
+	}
+	return oc
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (oc *OrganizationCreate) SetBlockOnPolicyViolation(b bool) *OrganizationCreate {
 	oc.mutation.SetBlockOnPolicyViolation(b)
@@ -335,6 +349,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
+	if value, ok := oc.mutation.DeletedAt(); ok {
+		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = value
+	}
 	if value, ok := oc.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 		_node.BlockOnPolicyViolation = value
@@ -547,6 +565,24 @@ func (u *OrganizationUpsert) UpdateUpdatedAt() *OrganizationUpsert {
 	return u
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (u *OrganizationUpsert) SetDeletedAt(v time.Time) *OrganizationUpsert {
+	u.Set(organization.FieldDeletedAt, v)
+	return u
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateDeletedAt() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldDeletedAt)
+	return u
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *OrganizationUpsert) ClearDeletedAt() *OrganizationUpsert {
+	u.SetNull(organization.FieldDeletedAt)
+	return u
+}
+
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
 func (u *OrganizationUpsert) SetBlockOnPolicyViolation(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldBlockOnPolicyViolation, v)
@@ -653,6 +689,27 @@ func (u *OrganizationUpsertOne) SetUpdatedAt(v time.Time) *OrganizationUpsertOne
 func (u *OrganizationUpsertOne) UpdateUpdatedAt() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateUpdatedAt()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *OrganizationUpsertOne) SetDeletedAt(v time.Time) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateDeletedAt() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *OrganizationUpsertOne) ClearDeletedAt() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearDeletedAt()
 	})
 }
 
@@ -934,6 +991,27 @@ func (u *OrganizationUpsertBulk) SetUpdatedAt(v time.Time) *OrganizationUpsertBu
 func (u *OrganizationUpsertBulk) UpdateUpdatedAt() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateUpdatedAt()
+	})
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (u *OrganizationUpsertBulk) SetDeletedAt(v time.Time) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetDeletedAt(v)
+	})
+}
+
+// UpdateDeletedAt sets the "deleted_at" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateDeletedAt() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateDeletedAt()
+	})
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (u *OrganizationUpsertBulk) ClearDeletedAt() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearDeletedAt()
 	})
 }
 

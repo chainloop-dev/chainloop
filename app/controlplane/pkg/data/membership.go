@@ -230,7 +230,7 @@ func (r *MembershipRepo) FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid
 }
 
 func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*biz.Membership, error) {
-	org, err := r.data.DB.Organization.Query().Where(organization.Name(orgName)).First(ctx)
+	org, err := r.data.DB.Organization.Query().Where(organization.Name(orgName), organization.DeletedAtIsNil()).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound(fmt.Sprintf("organization %s not found", orgName))

@@ -144,7 +144,7 @@ func toTimePtr(t time.Time) *time.Time {
 }
 
 func orgScopedQuery(client *ent.Client, orgID uuid.UUID) *ent.OrganizationQuery {
-	return client.Organization.Query().Where(organization.ID(orgID))
+	return client.Organization.Query().Where(organization.ID(orgID), organization.DeletedAtIsNil())
 }
 
 // WithTx initiates a transaction and wraps the DB function

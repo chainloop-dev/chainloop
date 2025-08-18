@@ -21,7 +21,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/go-kratos/kratos/v2/log"
@@ -86,7 +85,7 @@ func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Rob
 
 func (r *RobotAccountRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 	// Find a non-revoked robot account in the scope of the organization
-	acc, err := r.data.DB.Organization.Query().Where(organization.ID(orgID)).
+	acc, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		QueryRobotaccounts().Where(robotaccount.ID(id)).Where(robotaccount.RevokedAtIsNil()).
 		First(ctx)

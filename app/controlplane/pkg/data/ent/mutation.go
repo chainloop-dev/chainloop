@@ -8485,6 +8485,7 @@ type OrganizationMutation struct {
 	name                             *string
 	created_at                       *time.Time
 	updated_at                       *time.Time
+	deleted_at                       *time.Time
 	block_on_policy_violation        *bool
 	policies_allowed_hostnames       *[]string
 	appendpolicies_allowed_hostnames []string
@@ -8728,6 +8729,55 @@ func (m *OrganizationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, e
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *OrganizationMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *OrganizationMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *OrganizationMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *OrganizationMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[organization.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *OrganizationMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[organization.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *OrganizationMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, organization.FieldDeletedAt)
 }
 
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
@@ -9297,7 +9347,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9306,6 +9356,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.updated_at != nil {
 		fields = append(fields, organization.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, organization.FieldDeletedAt)
 	}
 	if m.block_on_policy_violation != nil {
 		fields = append(fields, organization.FieldBlockOnPolicyViolation)
@@ -9327,6 +9380,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case organization.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case organization.FieldDeletedAt:
+		return m.DeletedAt()
 	case organization.FieldBlockOnPolicyViolation:
 		return m.BlockOnPolicyViolation()
 	case organization.FieldPoliciesAllowedHostnames:
@@ -9346,6 +9401,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldCreatedAt(ctx)
 	case organization.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case organization.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
 	case organization.FieldBlockOnPolicyViolation:
 		return m.OldBlockOnPolicyViolation(ctx)
 	case organization.FieldPoliciesAllowedHostnames:
@@ -9379,6 +9436,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
+		return nil
+	case organization.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
 		return nil
 	case organization.FieldBlockOnPolicyViolation:
 		v, ok := value.(bool)
@@ -9424,6 +9488,9 @@ func (m *OrganizationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *OrganizationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(organization.FieldDeletedAt) {
+		fields = append(fields, organization.FieldDeletedAt)
+	}
 	if m.FieldCleared(organization.FieldPoliciesAllowedHostnames) {
 		fields = append(fields, organization.FieldPoliciesAllowedHostnames)
 	}
@@ -9441,6 +9508,9 @@ func (m *OrganizationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *OrganizationMutation) ClearField(name string) error {
 	switch name {
+	case organization.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
 	case organization.FieldPoliciesAllowedHostnames:
 		m.ClearPoliciesAllowedHostnames()
 		return nil
@@ -9460,6 +9530,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldUpdatedAt:
 		m.ResetUpdatedAt()
+		return nil
+	case organization.FieldDeletedAt:
+		m.ResetDeletedAt()
 		return nil
 	case organization.FieldBlockOnPolicyViolation:
 		m.ResetBlockOnPolicyViolation()
