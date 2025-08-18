@@ -1,6 +1,6 @@
 module github.com/chainloop-dev/chainloop
 
-go 1.24.6
+go 1.25.0
 
 require (
 	cloud.google.com/go/secretmanager v1.14.2
