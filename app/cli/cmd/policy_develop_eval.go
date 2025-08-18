@@ -64,11 +64,8 @@ evaluates the policy against the provided material or attestation.`,
 			if err != nil {
 				return err
 			}
-			if debug {
-				return encodeJSON(result)
-			}
 
-			return encodeJSON(result.Result)
+			return encodeJSON(result)
 		},
 	}
 

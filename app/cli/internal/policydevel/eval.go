@@ -46,8 +46,8 @@ type EvalResult struct {
 }
 
 type EvalSummary struct {
-	Result    EvalResult           `json:"result"`
-	DebugInfo EvalSummaryDebugInfo `json:"debug_info"`
+	Result    *EvalResult           `json:"result"`
+	DebugInfo *EvalSummaryDebugInfo `json:"debug_info,omitempty"`
 }
 
 type EvalSummaryDebugInfo struct {
@@ -112,14 +112,10 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	policyEv := policyEvs[0]
 
 	summary := &EvalSummary{
-		Result: EvalResult{
+		Result: &EvalResult{
 			Skipped:     policyEv.GetSkipped(),
 			SkipReasons: policyEv.SkipReasons,
 			Violations:  make([]string, 0, len(policyEv.Violations)),
-		},
-		DebugInfo: EvalSummaryDebugInfo{
-			Inputs:     []map[string]interface{}{},
-			RawResults: []map[string]interface{}{},
 		},
 	}
 
@@ -130,6 +126,11 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 
 	// Include raw debug info if requested
 	if debug {
+		summary.DebugInfo = &EvalSummaryDebugInfo{
+			Inputs:     []map[string]interface{}{},
+			RawResults: []map[string]interface{}{},
+		}
+
 		for _, rr := range apiRawResultsToEngineRawResults(policyEv.RawResults) {
 			if in, ok := rr["input"].(map[string]interface{}); ok {
 				// Take the first input found, as we only allow one material input
