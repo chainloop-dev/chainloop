@@ -73,7 +73,7 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(_ *testing.T) {
+		s.Run(tc.name, func() {
 			org, err := s.Organization.Create(ctx, tc.name)
 			if tc.expectedError {
 				s.Error(err)
@@ -166,28 +166,37 @@ func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	s.T().Run("invalid org ID", func(t *testing.T) {
+	s.Run("invalid org ID", func() {
 		// Invalid org ID
 		err := s.Organization.Delete(ctx, "invalid")
 		assert.Error(err)
 		assert.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.T().Run("org non existent", func(t *testing.T) {
+	s.Run("org non existent", func() {
 		// org not found
 		err := s.Organization.Delete(ctx, uuid.NewString())
 		assert.Error(err)
 		assert.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("org, integrations and repositories deletion", func(t *testing.T) {
-		// Mock calls to credentials deletion for both the integration and the OCI repository
-		s.mockedCredsReaderWriter.On("DeleteCredentials", ctx, "stored-OCI-secret").Return(nil)
+	s.Run("org soft deletion and membership cleanup", func() {
+		// With soft-deletion, external credentials are NOT deleted, so no mock expectations
 
 		err := s.Organization.Delete(ctx, s.org.ID)
 		assert.NoError(err)
 
-		// Integrations and repo deleted as well
+		// Org is soft-deleted, so it can't be found
+		org, err := s.Organization.FindByID(ctx, s.org.ID)
+		assert.Nil(org)
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+
+		// Memberships are deleted (hard-deleted)
+		memberships, _, err := s.Membership.ByOrg(ctx, s.org.ID, nil, nil)
+		assert.NoError(err)
+		assert.Empty(memberships)
+
+		// Related resources become inaccessible through org-scoped queries but remain in DB
 		integrations, err := s.Integration.List(ctx, s.org.ID)
 		assert.NoError(err)
 		assert.Empty(integrations)
