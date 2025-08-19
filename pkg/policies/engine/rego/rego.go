@@ -35,6 +35,8 @@ type Engine struct {
 	// allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
 	// when using http.send built-in function
 	allowedNetworkDomains []string
+	// includeRawData determines whether to collect raw evaluation data
+	includeRawData bool
 }
 
 type EngineOption func(*newEngineOptions)
@@ -51,9 +53,16 @@ func WithAllowedNetworkDomains(domains ...string) EngineOption {
 	}
 }
 
+func WithIncludeRawData(include bool) EngineOption {
+	return func(e *newEngineOptions) {
+		e.includeRawData = include
+	}
+}
+
 type newEngineOptions struct {
 	operatingMode         EnvironmentMode
 	allowedNetworkDomains []string
+	includeRawData        bool
 }
 
 // NewEngine creates a new policy engine with the given options
@@ -78,6 +87,7 @@ func NewEngine(opts ...EngineOption) *Engine {
 		operatingMode: options.operatingMode,
 		// append base allowed network domains to the user provided ones
 		allowedNetworkDomains: append(baseAllowedNetworkDomains, options.allowedNetworkDomains...),
+		includeRawData:        options.includeRawData,
 	}
 }
 
@@ -154,14 +164,17 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		return err
 	}
 
-	// Get raw results first
-	if err := executeQuery(getRuleName(parsedModule.Package.Path, ""), r.operatingMode == EnvironmentModeRestrictive); err != nil {
-		return nil, err
-	}
+	var rawData *engine.RawData
+	// Get raw results first if requested
+	if r.includeRawData {
+		if err := executeQuery(getRuleName(parsedModule.Package.Path, ""), r.operatingMode == EnvironmentModeRestrictive); err != nil {
+			return nil, err
+		}
 
-	rawData := &engine.RawData{
-		Input:  decodedInput,
-		Output: regoResultSetToRawResults(res),
+		rawData = &engine.RawData{
+			Input:  decodedInput,
+			Output: regoResultSetToRawResults(res),
+		}
 	}
 
 	// Try the main rule first

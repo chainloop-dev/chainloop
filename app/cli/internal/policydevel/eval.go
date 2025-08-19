@@ -98,6 +98,9 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
 	}
+
+	opts = append(opts, policies.WithIncludeRawData(debug))
+
 	v := policies.NewPolicyVerifier(schema, nil, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
 	if err != nil {
