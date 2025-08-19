@@ -155,7 +155,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 
 	// Get raw results first
-	if err := executeQuery(fmt.Sprintf("%s\n", parsedModule.Package.Path), r.operatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(getRuleName(parsedModule.Package.Path, ""), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -165,7 +165,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 
 	// Try the main rule first
-	if err := executeQuery(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, mainRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(getRuleName(parsedModule.Package.Path, mainRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -173,7 +173,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, deprecatedRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(getRuleName(parsedModule.Package.Path, deprecatedRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
@@ -324,4 +324,11 @@ func regoResultSetToRawResults(res rego.ResultSet) map[string]interface{} {
 		raw = entry
 	}
 	return raw
+}
+
+func getRuleName(packagePath ast.Ref, rule string) string {
+	if rule == "" {
+		return fmt.Sprintf("%s\n", packagePath)
+	}
+	return fmt.Sprintf("%v.%s\n", packagePath, rule)
 }

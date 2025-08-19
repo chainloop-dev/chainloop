@@ -29,14 +29,6 @@ type PolicyEvalOpts struct {
 	Debug            bool
 }
 
-type PolicyEvalResult struct {
-	Violations  []string                 `json:"violations"`
-	SkipReasons []string                 `json:"skip_reasons"`
-	Skipped     bool                     `json:"skipped"`
-	Ignored     bool                     `json:"ignored,omitempty"`
-	RawResults  []map[string]interface{} `json:"raw_results,omitempty"`
-}
-
 type PolicyEval struct {
 	*ActionsOpts
 	opts *PolicyEvalOpts

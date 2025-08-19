@@ -40,9 +40,9 @@ type EvalOptions struct {
 }
 
 type EvalResult struct {
-	Skipped     bool
-	SkipReasons []string
-	Violations  []string
+	Violations  []string `json:"violations"`
+	SkipReasons []string `json:"skip_reasons"`
+	Skipped     bool     `json:"skipped"`
 }
 
 type EvalSummary struct {

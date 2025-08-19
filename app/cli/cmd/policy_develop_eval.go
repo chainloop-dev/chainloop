@@ -76,7 +76,7 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Path to custom policy file")
 	cmd.Flags().StringSliceVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
 	cmd.Flags().StringSliceVar(&allowedHostnames, "allowed-hostnames", []string{}, "Additional hostnames allowed for http.send requests in policies")
-	cmd.Flags().BoolVarP(&debug, "debug", "", false, "Enable debug/verbose output and logging mode")
+	cmd.Flags().BoolVarP(&debug, "debug", "", false, "Include detailed evaluation inputs/outputs in JSON output and enable verbose logging")
 
 	return cmd
 }
