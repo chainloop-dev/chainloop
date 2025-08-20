@@ -45,6 +45,9 @@ type ProjectsRepo interface {
 	UpdateMemberRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, newRole authz.Role) (*ProjectMembership, error)
 	// FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group).
 	FindProjectMembershipByProjectAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*ProjectMembership, error)
+	// ExistsProjectMembershipEffective checks if a project membership by project ID and member ID (user or group).
+	// considering inherited (effective) memberships as well.
+	ExistsProjectMembershipEffective(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (bool, error)
 	// ListPendingInvitationsByProject retrieves a list of pending invitations for a project.
 	ListPendingInvitationsByProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error)
 }
@@ -342,12 +345,13 @@ func (uc *ProjectUseCase) addUserToProject(ctx context.Context, orgID uuid.UUID,
 
 	userUUID := uuid.MustParse(userMembership.User.ID)
 
-	// Check if the user is already a member of the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, userUUID, authz.MembershipTypeUser)
-	if err != nil && !IsNotFound(err) {
+	// Check if the user is already a member of the project (including inherited memberships)
+	membershipExists, err := uc.projectsRepository.ExistsProjectMembershipEffective(ctx, orgID, projectID, userUUID, authz.MembershipTypeUser)
+	if err != nil {
 		return nil, fmt.Errorf("failed to check existing membership: %w", err)
 	}
-	if existingMembership != nil {
+
+	if membershipExists {
 		return nil, NewErrAlreadyExistsStr("user is already a member of this project")
 	}
 
@@ -428,12 +432,13 @@ func (uc *ProjectUseCase) addGroupToProject(ctx context.Context, orgID uuid.UUID
 		return nil, fmt.Errorf("failed to validate group reference: %w", err)
 	}
 
-	// Check if the group already has membership in the project
-	existingMembership, err := uc.projectsRepository.FindProjectMembershipByProjectAndID(ctx, orgID, projectID, resolvedGroupID, authz.MembershipTypeGroup)
-	if err != nil && !IsNotFound(err) {
+	// Check if the group is already a member of the project (including inherited memberships)
+	membershipExists, err := uc.projectsRepository.ExistsProjectMembershipEffective(ctx, orgID, projectID, resolvedGroupID, authz.MembershipTypeGroup)
+	if err != nil {
 		return nil, fmt.Errorf("failed to check existing group membership: %w", err)
 	}
-	if existingMembership != nil {
+
+	if membershipExists {
 		return nil, NewErrAlreadyExistsStr("group is already a member of this project")
 	}
 

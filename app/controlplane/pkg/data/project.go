@@ -229,7 +229,7 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 	}
 
 	// Find the membership to delete
-	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
+	m, err := r.buildMembershipQuery(orgID, projectID, memberID, membershipType, true).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -248,8 +248,8 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 
 // FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group)
 func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*biz.ProjectMembership, error) {
-	// Find the membership
-	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
+	// Find the membership (direct only)
+	m, err := r.buildMembershipQuery(orgID, projectID, memberID, membershipType, true).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -258,17 +258,8 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, o
 		return nil, fmt.Errorf("failed to find membership: %w", err)
 	}
 
-	// Build the membership response based on the membership type
-	projectMembership := &biz.ProjectMembership{
-		MembershipType: m.MembershipType,
-		Role:           m.Role,
-		CreatedAt:      &m.CreatedAt,
-		UpdatedAt:      &m.UpdatedAt,
-	}
-
 	switch membershipType {
 	case authz.MembershipTypeUser:
-		// Fetch the user details for user memberships
 		u, err := r.data.DB.User.Get(ctx, memberID)
 		if err != nil {
 			if ent.IsNotFound(err) {
@@ -276,9 +267,8 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, o
 			}
 			return nil, fmt.Errorf("failed to find user: %w", err)
 		}
-		projectMembership.User = entUserToBizUser(u)
+		return entProjectMembershipToBiz(m, u, nil), nil
 	case authz.MembershipTypeGroup:
-		// Fetch the group details for group memberships
 		g, err := r.data.DB.Group.Query().Where(group.ID(memberID), group.DeletedAtIsNil()).Only(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
@@ -286,10 +276,10 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, o
 			}
 			return nil, fmt.Errorf("failed to find group: %w", err)
 		}
-		projectMembership.Group = entGroupToBiz(g)
+		return entProjectMembershipToBiz(m, nil, g), nil
+	default:
+		return entProjectMembershipToBiz(m, nil, nil), nil
 	}
-
-	return projectMembership, nil
 }
 
 // UpdateMemberRoleInProject updates the role of a member in a project
@@ -308,7 +298,7 @@ func (r *ProjectRepo) UpdateMemberRoleInProject(ctx context.Context, orgID uuid.
 	}
 
 	// Find the membership to update
-	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
+	m, err := r.buildMembershipQuery(orgID, projectID, memberID, membershipType, true).Only(ctx)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -326,9 +316,10 @@ func (r *ProjectRepo) UpdateMemberRoleInProject(ctx context.Context, orgID uuid.
 	return entProjectMembershipToBiz(m, nil, nil), nil
 }
 
-// queryMembership is a helper function to build a common membership query
-func (r *ProjectRepo) queryMembership(orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) *ent.MembershipQuery {
-	return r.data.DB.Membership.Query().
+// buildMembershipQuery constructs a query that can find both direct and inherited memberships
+func (r *ProjectRepo) buildMembershipQuery(orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, directMembershipOnly bool) *ent.MembershipQuery {
+	// By default, all memberships are considered, both direct and inherited.
+	baseQuery := r.data.DB.Membership.Query().
 		Where(
 			membership.HasOrganizationWith(
 				organization.ID(orgID),
@@ -337,8 +328,25 @@ func (r *ProjectRepo) queryMembership(orgID uuid.UUID, projectID uuid.UUID, memb
 			membership.MemberID(memberID),
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
 			membership.ResourceID(projectID),
-			membership.ParentIDIsNil(), // Only top-level memberships
 		).WithOrganization()
+
+	// Only consider direct memberships (parent is nil)
+	if directMembershipOnly {
+		baseQuery = baseQuery.Where(membership.ParentIDIsNil())
+	}
+
+	return baseQuery
+}
+
+// ExistsProjectMembershipEffective checks if a project membership exists considering both direct and inherited
+// memberships for the member on the project.
+func (r *ProjectRepo) ExistsProjectMembershipEffective(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (bool, error) {
+	exists, err := r.buildMembershipQuery(orgID, projectID, memberID, membershipType, false).Exist(ctx)
+	if err != nil {
+		return exists, fmt.Errorf("failed to find membership: %w", err)
+	}
+
+	return exists, nil
 }
 
 // entProjectToBiz converts an ent.Project to a biz.Project

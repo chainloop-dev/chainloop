@@ -411,13 +411,13 @@ func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, in
 		role = authz.RoleProjectViewer
 	}
 
-	// Check if the user is already a member of the project
-	existingMembership, err := uc.projectRepo.FindProjectMembershipByProjectAndID(ctx, orgUUID, *projectID, userUUID, authz.MembershipTypeUser)
-	if err != nil && !IsNotFound(err) {
+	// Check if the user already has membership in the project (consider inherited memberships)
+	membershipExists, err := uc.projectRepo.ExistsProjectMembershipEffective(ctx, orgUUID, *projectID, userUUID, authz.MembershipTypeUser)
+	if err != nil {
 		return fmt.Errorf("error checking project membership for user %s: %w", userUUID, err)
 	}
 
-	if existingMembership != nil {
+	if membershipExists {
 		// User is already a member of the project, nothing to do
 		uc.logger.Infow("msg", "User already in project", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID.String(), "project_id", projectID.String())
 		return nil
