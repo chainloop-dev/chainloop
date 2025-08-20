@@ -15,8 +15,9 @@
       "description": "Group this evaluated policy belongs to, if any"
     },
     "^(rawResults)$": {
+      "description": "Raw inputs and outputs from the policy engine, preserved for debugging.",
       "items": {
-        "$ref": "google.protobuf.Struct.schema.json"
+        "$ref": "attestation.v1.PolicyEvaluation.RawResult.schema.json"
       },
       "type": "array"
     },
@@ -67,8 +68,9 @@
       "description": "Group this evaluated policy belongs to, if any"
     },
     "raw_results": {
+      "description": "Raw inputs and outputs from the policy engine, preserved for debugging.",
       "items": {
-        "$ref": "google.protobuf.Struct.schema.json"
+        "$ref": "attestation.v1.PolicyEvaluation.RawResult.schema.json"
       },
       "type": "array"
     },

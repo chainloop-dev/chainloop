@@ -254,6 +254,9 @@ message PolicyEvaluation {
   // List of requirements this policy contributes to satisfy
   repeated string requirements = 17;
 
+  // Raw inputs and outputs from the policy engine, preserved for debugging.
+  repeated RawResult raw_results = 18;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];
@@ -272,8 +275,12 @@ message PolicyEvaluation {
     string org_name = 4;
   }
 
-  // Raw inputs and outputs from the policy engine, preserved for debugging.
-  repeated google.protobuf.Struct raw_results = 19;
+  message RawResult {
+    // Input data provided to the policy engine
+    bytes input = 1;
+    // Output data returned by the policy engine
+    bytes output = 2;
+  }
 }
 
 message Commit {

@@ -1,0 +1,19 @@
+{
+  "$id": "attestation.v1.PolicyEvaluation.RawResult.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "input": {
+      "description": "Input data provided to the policy engine",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "output": {
+      "description": "Output data returned by the policy engine",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    }
+  },
+  "title": "Raw Result",
+  "type": "object"
+}

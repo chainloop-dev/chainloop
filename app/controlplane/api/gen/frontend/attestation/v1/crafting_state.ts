@@ -280,7 +280,8 @@ export interface PolicyEvaluation {
   groupReference?: PolicyEvaluation_Reference;
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
-  rawResults: { [key: string]: any }[];
+  /** Raw inputs and outputs from the policy engine, preserved for debugging. */
+  rawResults: PolicyEvaluation_RawResult[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -303,6 +304,13 @@ export interface PolicyEvaluation_Reference {
   digest: string;
   uri: string;
   orgName: string;
+}
+
+export interface PolicyEvaluation_RawResult {
+  /** Input data provided to the policy engine */
+  input: Uint8Array;
+  /** Output data returned by the policy engine */
+  output: Uint8Array;
 }
 
 export interface Commit {
@@ -2152,7 +2160,7 @@ export const PolicyEvaluation = {
       writer.uint32(138).string(v!);
     }
     for (const v of message.rawResults) {
-      Struct.encode(Struct.wrap(v!), writer.uint32(154).fork()).ldelim();
+      PolicyEvaluation_RawResult.encode(v!, writer.uint32(146).fork()).ldelim();
     }
     return writer;
   },
@@ -2282,12 +2290,12 @@ export const PolicyEvaluation = {
 
           message.requirements.push(reader.string());
           continue;
-        case 19:
-          if (tag !== 154) {
+        case 18:
+          if (tag !== 146) {
             break;
           }
 
-          message.rawResults.push(Struct.unwrap(Struct.decode(reader, reader.uint32())));
+          message.rawResults.push(PolicyEvaluation_RawResult.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2334,7 +2342,9 @@ export const PolicyEvaluation = {
       requirements: Array.isArray(object?.requirements)
         ? object.requirements.map((e: any) => String(e))
         : [],
-      rawResults: Array.isArray(object?.rawResults) ? [...object.rawResults] : [],
+      rawResults: Array.isArray(object?.rawResults)
+        ? object.rawResults.map((e: any) => PolicyEvaluation_RawResult.fromJSON(e))
+        : [],
     };
   },
 
@@ -2387,7 +2397,7 @@ export const PolicyEvaluation = {
       obj.requirements = [];
     }
     if (message.rawResults) {
-      obj.rawResults = message.rawResults.map((e) => e);
+      obj.rawResults = message.rawResults.map((e) => e ? PolicyEvaluation_RawResult.toJSON(e) : undefined);
     } else {
       obj.rawResults = [];
     }
@@ -2433,7 +2443,7 @@ export const PolicyEvaluation = {
       ? PolicyEvaluation_Reference.fromPartial(object.groupReference)
       : undefined;
     message.requirements = object.requirements?.map((e) => e) || [];
-    message.rawResults = object.rawResults?.map((e) => e) || [];
+    message.rawResults = object.rawResults?.map((e) => PolicyEvaluation_RawResult.fromPartial(e)) || [];
     return message;
   },
 };
@@ -2742,6 +2752,79 @@ export const PolicyEvaluation_Reference = {
     message.digest = object.digest ?? "";
     message.uri = object.uri ?? "";
     message.orgName = object.orgName ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyEvaluation_RawResult(): PolicyEvaluation_RawResult {
+  return { input: new Uint8Array(0), output: new Uint8Array(0) };
+}
+
+export const PolicyEvaluation_RawResult = {
+  encode(message: PolicyEvaluation_RawResult, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.input.length !== 0) {
+      writer.uint32(10).bytes(message.input);
+    }
+    if (message.output.length !== 0) {
+      writer.uint32(18).bytes(message.output);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluation_RawResult {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluation_RawResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.input = reader.bytes();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.output = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluation_RawResult {
+    return {
+      input: isSet(object.input) ? bytesFromBase64(object.input) : new Uint8Array(0),
+      output: isSet(object.output) ? bytesFromBase64(object.output) : new Uint8Array(0),
+    };
+  },
+
+  toJSON(message: PolicyEvaluation_RawResult): unknown {
+    const obj: any = {};
+    message.input !== undefined &&
+      (obj.input = base64FromBytes(message.input !== undefined ? message.input : new Uint8Array(0)));
+    message.output !== undefined &&
+      (obj.output = base64FromBytes(message.output !== undefined ? message.output : new Uint8Array(0)));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluation_RawResult>, I>>(base?: I): PolicyEvaluation_RawResult {
+    return PolicyEvaluation_RawResult.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluation_RawResult>, I>>(object: I): PolicyEvaluation_RawResult {
+    const message = createBasePolicyEvaluation_RawResult();
+    message.input = object.input ?? new Uint8Array(0);
+    message.output = object.output ?? new Uint8Array(0);
     return message;
   },
 };

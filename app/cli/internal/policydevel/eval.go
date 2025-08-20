@@ -16,6 +16,7 @@ package policydevel
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -51,8 +51,8 @@ type EvalSummary struct {
 }
 
 type EvalSummaryDebugInfo struct {
-	Inputs     []map[string]interface{} `json:"inputs"`
-	RawResults []map[string]interface{} `json:"raw_results"`
+	Inputs     []json.RawMessage `json:"inputs"`
+	RawResults []json.RawMessage `json:"raw_results"`
 }
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
@@ -130,19 +130,21 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	// Include raw debug info if requested
 	if debug {
 		summary.DebugInfo = &EvalSummaryDebugInfo{
-			Inputs:     []map[string]interface{}{},
-			RawResults: []map[string]interface{}{},
+			Inputs:     []json.RawMessage{},
+			RawResults: []json.RawMessage{},
 		}
 
-		for _, rr := range apiRawResultsToEngineRawResults(policyEv.RawResults) {
-			if in, ok := rr["input"].(map[string]interface{}); ok {
-				// Take the first input found, as we only allow one material input
-				if len(summary.DebugInfo.Inputs) == 0 {
-					summary.DebugInfo.Inputs = append(summary.DebugInfo.Inputs, in)
-				}
+		for _, rr := range policyEv.RawResults {
+			if rr == nil {
+				continue
 			}
-			if out, ok := rr["output"].(map[string]interface{}); ok {
-				summary.DebugInfo.RawResults = append(summary.DebugInfo.RawResults, out)
+			// Take the first input found, as we only allow one material input
+			if len(summary.DebugInfo.Inputs) == 0 && rr.Input != nil {
+				summary.DebugInfo.Inputs = append(summary.DebugInfo.Inputs, json.RawMessage(rr.Input))
+			}
+			// Collect all output raw results
+			if rr.Output != nil {
+				summary.DebugInfo.RawResults = append(summary.DebugInfo.RawResults, json.RawMessage(rr.Output))
 			}
 		}
 	}
@@ -196,16 +198,4 @@ func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, na
 func fileNotExists(path string) bool {
 	_, err := os.Stat(path)
 	return os.IsNotExist(err)
-}
-
-func apiRawResultsToEngineRawResults(apiResults []*structpb.Struct) []map[string]any {
-	res := make([]map[string]any, 0)
-	for _, s := range apiResults {
-		if s == nil {
-			continue
-		}
-		m := s.AsMap()
-		res = append(res, m)
-	}
-	return res
 }

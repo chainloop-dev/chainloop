@@ -32,7 +32,6 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/blob"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -685,23 +684,16 @@ func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.L
 	}
 }
 
-func engineRawResultsToAPIRawResults(rawResults []*engine.RawData) []*structpb.Struct {
-	res := make([]*structpb.Struct, 0)
+func engineRawResultsToAPIRawResults(rawResults []*engine.RawData) []*v12.PolicyEvaluation_RawResult {
+	res := make([]*v12.PolicyEvaluation_RawResult, 0)
 	for _, r := range rawResults {
 		if r == nil {
 			continue
 		}
-		// Convert RawData to map
-		m := map[string]interface{}{
-			"input":  r.Input,
-			"output": r.Output,
-		}
-
-		s, err := structpb.NewStruct(m)
-		if err != nil {
-			continue
-		}
-		res = append(res, s)
+		res = append(res, &v12.PolicyEvaluation_RawResult{
+			Input:  r.Input,
+			Output: r.Output,
+		})
 	}
 	return res
 }

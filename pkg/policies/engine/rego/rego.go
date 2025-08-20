@@ -171,9 +171,17 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 			return nil, err
 		}
 
+		inputBytes, err := json.Marshal(decodedInput)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal input for raw data: %w", err)
+		}
+		outputBytes, err := json.Marshal(regoResultSetToRawResults(res))
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal output for raw data: %w", err)
+		}
 		rawData = &engine.RawData{
-			Input:  decodedInput,
-			Output: regoResultSetToRawResults(res),
+			Input:  json.RawMessage(inputBytes),
+			Output: json.RawMessage(outputBytes),
 		}
 	}
 

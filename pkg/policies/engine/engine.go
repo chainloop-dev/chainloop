@@ -17,6 +17,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
@@ -33,8 +34,8 @@ type EvaluationResult struct {
 	RawData    *RawData
 }
 type RawData struct {
-	Input  interface{}
-	Output map[string]interface{}
+	Input  json.RawMessage
+	Output json.RawMessage
 }
 
 // PolicyViolation represents a policy failure
