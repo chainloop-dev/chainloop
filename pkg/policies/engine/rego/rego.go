@@ -24,7 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
-	"github.com/open-policy-agent/opa/topdown/print"
+	"github.com/open-policy-agent/opa/v1/topdown/print"
 	"golang.org/x/exp/maps"
 )
 
@@ -125,9 +125,9 @@ var builtinFuncNotAllowed = []*ast.Builtin{
 
 // Implements the OPA print.Hook interface to capture and output
 // print statements from Rego policies during evaluation.
-type printHook struct{}
+type regoOutputHook struct{}
 
-func (p *printHook) Print(ctx print.Context, msg string) error {
+func (p *regoOutputHook) Print(_ print.Context, msg string) error {
 	fmt.Println(msg)
 	return nil
 }
@@ -182,7 +182,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		if r.enablePrint {
 			options = append(options,
 				rego.EnablePrintStatements(true),
-				rego.PrintHook(&printHook{}),
+				rego.PrintHook(&regoOutputHook{}),
 			)
 		}
 
