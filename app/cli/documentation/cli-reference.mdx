@@ -2847,6 +2847,7 @@ Options
 ```
 --allowed-hostnames strings   Additional hostnames allowed for http.send requests in policies
 --annotation strings          Key-value pairs of material annotations (key=value)
+--debug                       Include detailed evaluation inputs/outputs in JSON output and enable verbose logging
 -h, --help                        help for eval
 --input stringArray           Key-value pairs of policy inputs (key=value)
 --kind string                 Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
@@ -2862,7 +2863,6 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")

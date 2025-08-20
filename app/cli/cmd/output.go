@@ -55,7 +55,6 @@ type tabulatedData interface {
 		[]*action.APITokenItem |
 		*action.AttestationStatusMaterial |
 		*action.ListMembershipResult |
-		*action.PolicyEvalResult |
 		*action.PolicyLintResult
 }
 

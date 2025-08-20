@@ -55,14 +55,14 @@ func TestEvaluate(t *testing.T) {
 			Annotations:  map[string]string{"key": "value"},
 		}
 
-		results, err := Evaluate(opts, logger)
+		result, err := Evaluate(opts, logger)
 		require.NoError(t, err)
-		require.NotEmpty(t, results)
+		require.NotNil(t, result)
 
-		if len(results[0].Violations) == 0 {
+		if len(result.Result.Violations) == 0 {
 			t.Log("Policy evaluation passed (no violations)")
 		} else {
-			for _, violation := range results[0].Violations {
+			for _, violation := range result.Result.Violations {
 				t.Logf("Violation: %s", violation)
 			}
 		}
@@ -78,14 +78,14 @@ func TestEvaluate(t *testing.T) {
 			Annotations:  map[string]string{"key": "value"},
 		}
 
-		results, err := Evaluate(opts, logger)
+		result, err := Evaluate(opts, logger)
 		require.NoError(t, err)
-		require.NotEmpty(t, results)
+		require.NotNil(t, result)
 
-		if len(results[0].Violations) == 0 {
+		if len(result.Result.Violations) == 0 {
 			t.Log("Policy evaluation passed (no violations)")
 		} else {
-			for _, violation := range results[0].Violations {
+			for _, violation := range result.Result.Violations {
 				t.Logf("Violation: %s", violation)
 			}
 		}

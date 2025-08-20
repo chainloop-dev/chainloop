@@ -254,6 +254,9 @@ message PolicyEvaluation {
   // List of requirements this policy contributes to satisfy
   repeated string requirements = 17;
 
+  // Raw inputs and outputs from the policy engine, preserved for debugging.
+  repeated RawResult raw_results = 18;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];
@@ -270,6 +273,13 @@ message PolicyEvaluation {
     string digest = 2 [(buf.validate.field).string.min_len = 1];
     string uri = 3 [(buf.validate.field).string.min_len = 1];
     string org_name = 4;
+  }
+
+  message RawResult {
+    // Input data provided to the policy engine
+    bytes input = 1;
+    // Output data returned by the policy engine
+    bytes output = 2;
   }
 }
 

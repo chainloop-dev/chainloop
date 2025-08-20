@@ -17,6 +17,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
@@ -30,6 +31,11 @@ type EvaluationResult struct {
 	Skipped    bool
 	SkipReason string
 	Ignore     bool
+	RawData    *RawData
+}
+type RawData struct {
+	Input  json.RawMessage
+	Output json.RawMessage
 }
 
 // PolicyViolation represents a policy failure
