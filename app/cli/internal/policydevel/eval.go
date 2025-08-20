@@ -107,7 +107,7 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 		return nil, err
 	}
 
-	if len(policyEvs) == 0 {
+	if len(policyEvs) == 0 || policyEvs[0] == nil {
 		return nil, fmt.Errorf("no execution branch matched for kind %s", material.MaterialType.String())
 	}
 

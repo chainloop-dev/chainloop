@@ -272,6 +272,7 @@ message PolicyEvaluation {
     string org_name = 4;
   }
 
+  // Raw inputs and outputs from the policy engine, preserved for debugging.
   repeated google.protobuf.Struct raw_results = 19;
 }
 
