@@ -29,6 +29,7 @@ import (
 var (
 	_ auditor.LogEntry = (*ProjectCreated)(nil)
 	_ auditor.LogEntry = (*ProjectVersionCreated)(nil)
+	_ auditor.LogEntry = (*ProjectVersionDeleted)(nil)
 	_ auditor.LogEntry = (*ProjectMembershipAdded)(nil)
 	_ auditor.LogEntry = (*ProjectMembershipRemoved)(nil)
 	_ auditor.LogEntry = (*ProjectMemberRoleUpdated)(nil)
@@ -38,6 +39,7 @@ const (
 	ProjectType                        auditor.TargetType = "Project"
 	ProjectCreatedActionType           string             = "ProjectCreated"
 	ProjectVersionCreatedActionType    string             = "ProjectVersionCreated"
+	ProjectVersionDeletedActionType    string             = "ProjectVersionDeleted"
 	ProjectMembershipAddedActionType   string             = "ProjectMembershipAdded"
 	ProjectMembershipRemovedActionType string             = "ProjectMembershipRemoved"
 	ProjectMemberRoleUpdatedType       string             = "ProjectMemberRoleUpdated"
@@ -120,6 +122,38 @@ func (p *ProjectVersionCreated) Description() string {
 		releaseType = "prerelease"
 	}
 	return fmt.Sprintf("%s has created %s version '%s' for project '%s'", auditor.GetActorIdentifier(), releaseType, p.Version, p.ProjectName)
+}
+
+// ProjectVersionDeleted represents the deletion of a project version
+type ProjectVersionDeleted struct {
+	*ProjectBase
+	VersionID  *uuid.UUID `json:"version_id,omitempty"`
+	Version    string     `json:"version,omitempty"`
+	Prerelease bool       `json:"prerelease"`
+}
+
+func (p *ProjectVersionDeleted) ActionType() string {
+	return ProjectVersionDeletedActionType
+}
+
+func (p *ProjectVersionDeleted) ActionInfo() (json.RawMessage, error) {
+	if _, err := p.ProjectBase.ActionInfo(); err != nil {
+		return nil, err
+	}
+
+	if p.VersionID == nil || p.Version == "" {
+		return nil, errors.New("version id and version are required")
+	}
+
+	return json.Marshal(&p)
+}
+
+func (p *ProjectVersionDeleted) Description() string {
+	releaseType := "release"
+	if p.Prerelease {
+		releaseType = "prerelease"
+	}
+	return fmt.Sprintf("%s has deleted %s version '%s' for project '%s'", auditor.GetActorIdentifier(), releaseType, p.Version, p.ProjectName)
 }
 
 // Helper function to make role names more user-friendly
