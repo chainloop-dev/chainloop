@@ -127,7 +127,7 @@ var builtinFuncNotAllowed = []*ast.Builtin{
 // print statements from Rego policies during evaluation.
 type regoOutputHook struct{}
 
-func (p *regoOutputHook) Print(_ print.Context, msg string) error {
+func (p *regoOutputHook) Print(_ print.Context, msg string) error { //nolint:forbidigo
 	fmt.Println(msg)
 	return nil
 }
