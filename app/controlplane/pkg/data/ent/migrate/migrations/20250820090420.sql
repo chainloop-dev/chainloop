@@ -4,10 +4,10 @@ SELECT
     gen_random_uuid() as id,
     p.id as project_id,
     '' as version,
-    false as prerelease,
+    true as prerelease,
     true as latest,
-    CURRENT_TIMESTAMP as created_at,
-    CURRENT_TIMESTAMP as updated_at
+    p.created_at as created_at,
+    p.updated_at as updated_at
 FROM "projects" p
 WHERE p.deleted_at IS NULL
   AND NOT EXISTS (
