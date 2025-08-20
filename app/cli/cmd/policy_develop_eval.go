@@ -33,6 +33,7 @@ func newPolicyDevelopEvalCmd() *cobra.Command {
 		inputs           []string
 		allowedHostnames []string
 		debug            bool
+		enablePrint      bool
 	)
 
 	cmd := &cobra.Command{
@@ -53,6 +54,7 @@ evaluates the policy against the provided material or attestation.`,
 				Inputs:           parseKeyValue(inputs),
 				AllowedHostnames: allowedHostnames,
 				Debug:            debug,
+				EnablePrint:      enablePrint,
 			}
 
 			policyEval, err := action.NewPolicyEval(opts, actionOpts)
@@ -77,6 +79,7 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringArrayVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
 	cmd.Flags().StringSliceVar(&allowedHostnames, "allowed-hostnames", []string{}, "Additional hostnames allowed for http.send requests in policies")
 	cmd.Flags().BoolVarP(&debug, "debug", "", false, "Include detailed evaluation inputs/outputs in JSON output and enable verbose logging")
+	cmd.Flags().BoolVar(&enablePrint, "enable-print", false, "Enable print statements in Rego policies")
 
 	return cmd
 }
