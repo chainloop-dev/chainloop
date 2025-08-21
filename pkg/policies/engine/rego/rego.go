@@ -189,6 +189,10 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		return nil, err
 	}
 
+	if res == nil {
+		return nil, fmt.Errorf("failed to evaluate policy: '%s' rule not found", mainRule)
+	}
+
 	return parseResultRule(res, policy, rawData)
 }
 
