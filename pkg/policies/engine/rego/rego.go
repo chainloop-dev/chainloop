@@ -101,7 +101,6 @@ const (
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
 	inputElements                             = "elements"
-	deprecatedRule                            = "violations"
 	mainRule                                  = "result"
 )
 
@@ -185,61 +184,12 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		}
 	}
 
-	// Try the main rule first
+	// Try the main rule
 	if err := executeQuery(getRuleName(parsedModule.Package.Path, mainRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
-	// If res is nil, it means that the rule hasn't been found
-	// TODO: Remove when this deprecated rule is not used anymore
-	if res == nil {
-		// Try with the deprecated main rule
-		if err := executeQuery(getRuleName(parsedModule.Package.Path, deprecatedRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
-			return nil, err
-		}
-
-		if res == nil {
-			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", mainRule, deprecatedRule)
-		}
-
-		return parseViolationsRule(res, policy, rawData)
-	}
-
 	return parseResultRule(res, policy, rawData)
-}
-
-// Parse deprecated list of violations.
-// TODO: Remove this path once `result` rule is consolidated
-func parseViolationsRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
-	violations := make([]*engine.PolicyViolation, 0)
-	for _, exp := range res {
-		for _, val := range exp.Expressions {
-			ruleResults, ok := val.Value.([]interface{})
-			if !ok {
-				return nil, engine.ResultFormatError{Field: deprecatedRule}
-			}
-
-			for _, result := range ruleResults {
-				reasonStr, ok := result.(string)
-				if !ok {
-					return nil, engine.ResultFormatError{Field: deprecatedRule}
-				}
-
-				violations = append(violations, &engine.PolicyViolation{
-					Subject:   policy.Name,
-					Violation: reasonStr,
-				})
-			}
-		}
-	}
-
-	return &engine.EvaluationResult{
-		Violations: violations,
-		Skipped:    false, // best effort
-		SkipReason: "",
-		Ignore:     false, // Assume old rules should not be ignored
-		RawData:    rawData,
-	}, nil
 }
 
 // parse `result` rule
