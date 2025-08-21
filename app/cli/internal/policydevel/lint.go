@@ -304,7 +304,7 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 // Follows format <file>:<line>: [<ruleName>] <errorMsg> - <docLinks>
 func (p *PolicyToLint) formatViolationError(v report.Violation, regoRuleMap map[int]string) string {
 	// Extract resources
-	var resources []string
+	resources := make([]string, 0, len(v.RelatedResources))
 	for _, r := range v.RelatedResources {
 		resources = append(resources, r.Reference)
 	}
@@ -375,7 +375,8 @@ func (p *PolicyToLint) buildRegoRuleMap(regoSrc string) map[int]string {
 	// Parse the Rego source into AST
 	module, err := opaAst.ParseModule("", regoSrc)
 	if err != nil {
-		return ruleMap // Return empty map if parsing fails
+		// Return empty map if parsing fails
+		return ruleMap
 	}
 
 	// Walk through the AST to find rule definitions
@@ -386,7 +387,7 @@ func (p *PolicyToLint) buildRegoRuleMap(regoSrc string) map[int]string {
 			endLine := startLine
 
 			// Try to find the end line of the rule
-			if rule.Body != nil && len(rule.Body) > 0 {
+			if len(rule.Body) > 0 {
 				lastExpr := rule.Body[len(rule.Body)-1]
 				if lastExpr.Location != nil {
 					endLine = lastExpr.Location.Row
