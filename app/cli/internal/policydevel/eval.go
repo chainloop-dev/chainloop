@@ -29,6 +29,10 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 )
 
+const (
+	enablePrint = true
+)
+
 type EvalOptions struct {
 	PolicyPath       string
 	MaterialKind     string
@@ -37,7 +41,6 @@ type EvalOptions struct {
 	Inputs           map[string]string
 	AllowedHostnames []string
 	Debug            bool
-	EnablePrint      bool
 }
 
 type EvalResult struct {
@@ -71,7 +74,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	material.Annotations = opts.Annotations
 
 	// 3. Verify material against policy
-	summary, err := verifyMaterial(schema, material, opts.MaterialPath, opts.Debug, opts.EnablePrint, opts.AllowedHostnames, &logger)
+	summary, err := verifyMaterial(schema, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +97,7 @@ func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.Craf
 	}, nil
 }
 
-func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, debug, enablePrint bool, allowedHostnames []string, logger *zerolog.Logger) (*EvalSummary, error) {
+func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))

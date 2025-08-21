@@ -27,7 +27,6 @@ type PolicyEvalOpts struct {
 	Inputs           map[string]string
 	AllowedHostnames []string
 	Debug            bool
-	EnablePrint      bool
 }
 
 type PolicyEval struct {
@@ -51,7 +50,6 @@ func (action *PolicyEval) Run() (*policydevel.EvalSummary, error) {
 		Inputs:           action.opts.Inputs,
 		AllowedHostnames: action.opts.AllowedHostnames,
 		Debug:            action.opts.Debug,
-		EnablePrint:      action.opts.EnablePrint,
 	}
 
 	// Evaluate policy
