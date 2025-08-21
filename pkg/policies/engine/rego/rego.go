@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/v1/topdown/print"
 	"golang.org/x/exp/maps"
 )
 
@@ -37,6 +38,8 @@ type Engine struct {
 	allowedNetworkDomains []string
 	// includeRawData determines whether to collect raw evaluation data
 	includeRawData bool
+	// enablePrint determines whether to enable print statements in rego policies
+	enablePrint bool
 }
 
 type EngineOption func(*newEngineOptions)
@@ -59,10 +62,17 @@ func WithIncludeRawData(include bool) EngineOption {
 	}
 }
 
+func WithEnablePrint(enable bool) EngineOption {
+	return func(e *newEngineOptions) {
+		e.enablePrint = enable
+	}
+}
+
 type newEngineOptions struct {
 	operatingMode         EnvironmentMode
 	allowedNetworkDomains []string
 	includeRawData        bool
+	enablePrint           bool
 }
 
 // NewEngine creates a new policy engine with the given options
@@ -88,6 +98,7 @@ func NewEngine(opts ...EngineOption) *Engine {
 		// append base allowed network domains to the user provided ones
 		allowedNetworkDomains: append(baseAllowedNetworkDomains, options.allowedNetworkDomains...),
 		includeRawData:        options.includeRawData,
+		enablePrint:           options.enablePrint,
 	}
 }
 
@@ -110,6 +121,15 @@ var builtinFuncNotAllowed = []*ast.Builtin{
 	ast.OPARuntime,
 	ast.RegoParseModule,
 	ast.Trace,
+}
+
+// Implements the OPA print.Hook interface to capture and output
+// print statements from Rego policies during evaluation.
+type regoOutputHook struct{}
+
+func (p *regoOutputHook) Print(_ print.Context, msg string) error { //nolint:forbidigo
+	fmt.Println(msg)
+	return nil
 }
 
 // Force interface
@@ -156,11 +176,21 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	var res rego.ResultSet
 	// Function to execute the query with appropriate parameters
 	executeQuery := func(rule string, strict bool) error {
-		if strict {
-			res, err = queryRego(ctx, rule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()), rego.StrictBuiltinErrors(true))
-		} else {
-			res, err = queryRego(ctx, rule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()))
+		options := []func(r *rego.Rego){regoInput, regoFunc, rego.Capabilities(r.Capabilities())}
+
+		// Add print support if enabled
+		if r.enablePrint {
+			options = append(options,
+				rego.EnablePrintStatements(true),
+				rego.PrintHook(&regoOutputHook{}),
+			)
 		}
+
+		if strict {
+			options = append(options, rego.StrictBuiltinErrors(true))
+		}
+
+		res, err = queryRego(ctx, rule, options...)
 		return err
 	}
 

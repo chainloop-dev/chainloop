@@ -29,6 +29,10 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 )
 
+const (
+	enablePrint = true
+)
+
 type EvalOptions struct {
 	PolicyPath       string
 	MaterialKind     string
@@ -100,6 +104,7 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	}
 
 	opts = append(opts, policies.WithIncludeRawData(debug))
+	opts = append(opts, policies.WithEnablePrint(enablePrint))
 
 	v := policies.NewPolicyVerifier(schema, nil, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
