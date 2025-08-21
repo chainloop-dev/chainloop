@@ -66,6 +66,7 @@ type PolicyVerifier struct {
 	client           v13.AttestationServiceClient
 	allowedHostnames []string
 	includeRawData   bool
+	enablePrint      bool
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -73,6 +74,7 @@ var _ Verifier = (*PolicyVerifier)(nil)
 type PolicyVerifierOptions struct {
 	AllowedHostnames []string
 	IncludeRawData   bool
+	EnablePrint      bool
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -89,6 +91,12 @@ func WithIncludeRawData(include bool) PolicyVerifierOption {
 	}
 }
 
+func WithEnablePrint(enable bool) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.EnablePrint = enable
+	}
+}
+
 func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
@@ -101,6 +109,7 @@ func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceC
 		logger:           logger,
 		allowedHostnames: options.AllowedHostnames,
 		includeRawData:   options.IncludeRawData,
+		enablePrint:      options.EnablePrint,
 	}
 }
 
@@ -347,6 +356,10 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 
 	if pv.includeRawData {
 		engineOpts = append(engineOpts, rego.WithIncludeRawData(true))
+	}
+
+	if pv.enablePrint {
+		engineOpts = append(engineOpts, rego.WithEnablePrint(true))
 	}
 
 	// verify the policy
