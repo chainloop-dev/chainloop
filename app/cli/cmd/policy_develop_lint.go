@@ -65,7 +65,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Path to policy file")
-	cmd.Flags().BoolVar(&format, "format", false, "Auto-format file with opa fmt")
+	cmd.Flags().BoolVar(&format, "format", false, "Auto-format standalone policy rego files with opa fmt (embedded policies not supported)")
 	cmd.Flags().StringVar(&regalConfig, "regal-config", "", "Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal.yaml)")
 	return cmd
 }
