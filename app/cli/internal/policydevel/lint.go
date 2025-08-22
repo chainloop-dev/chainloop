@@ -128,7 +128,7 @@ func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 	for _, yamlFile := range p.YAMLFiles {
 		var parsed v1.Policy
 		if err := unmarshal.FromRaw(yamlFile.Content, unmarshal.RawFormatYAML, &parsed, true); err != nil {
-			// Ignore parse errors here; they'll be caught in validation
+			p.AddError(yamlFile.Path, err.Error(), 0)
 			continue
 		}
 		for _, spec := range parsed.Spec.Policies {
