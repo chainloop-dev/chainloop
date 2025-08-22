@@ -1,91 +1,91 @@
 apiVersion: workflowcontract.chainloop.dev/v1
 kind: Policy
 metadata:
-    name: json-field-validator
-    description: Validates specific fields in JSON evidence
+  name: json-field-validator
+  description: Validates specific fields in JSON evidence
 spec:
-    policies:
-        - embedded: |
-            package main
+  policies:
+    - embedded: |
+        package main
 
-            import rego.v1
+        import rego.v1
 
-            result := {
-            	"skipped": skipped,
-            	"violations": violations,
-            	"skip_reason": skip_reason,
-            	"ignore": ignore,
-            }
+        result := {
+        	"skipped": skipped,
+        	"violations": violations,
+        	"skip_reason": skip_reason,
+        	"ignore": ignore,
+        }
 
-            default skip_reason := ""
+        default skip_reason := ""
 
-            skip_reason := m if {
-            	not valid_input
-            	m := "invalid input"
-            }
+        skip_reason := m if {
+        	not valid_input
+        	m := "invalid input"
+        }
 
-            default skipped := true
+        default skipped := true
 
-            skipped := false if valid_input
+        skipped := false if valid_input
 
-            default ignore := false
+        default ignore := false
 
-            # Valid if EVIDENCE material is provided
-            valid_input if {
-            	input.chainloop_metadata.annotations["chainloop.material.type"] == "EVIDENCE"
-            }
+        # Valid if EVIDENCE material is provided
+        valid_input if {
+        	input.chainloop_metadata.annotations["chainloop.material.type"] == "EVIDENCE"
+        }
 
-            # Policy inputs
-            required_field := input.args.required_field
-            expected_value := input.args.expected_value
-            field_pattern := input.args.field_pattern
+        # Policy inputs
+        required_field := input.args.required_field
+        expected_value := input.args.expected_value
+        field_pattern := input.args.field_pattern
 
-            # Helper function to access nested field value using dot notation
-            field_value(obj, path) := obj if not contains(path, ".")
+        # Helper function to access nested field value using dot notation
+        field_value(obj, path) := obj if not contains(path, ".")
 
-            field_value(obj, path) := result if {
-            	contains(path, ".")
-            	path_parts := split(path, ".")
-            	result := object.get(obj, path_parts, null)
-            }
+        field_value(obj, path) := result if {
+        	contains(path, ".")
+        	path_parts := split(path, ".")
+        	result := object.get(obj, path_parts, null)
+        }
 
-            # Helper function to check if field exists
-            field_exists(obj, path) if field_value(obj, path)
+        # Helper function to check if field exists
+        field_exists(obj, path) if field_value(obj, path)
 
-            field_exists(obj, path) := false if not field_value(obj, path)
+        field_exists(obj, path) := false if not field_value(obj, path)
 
-            # Generic field validation - works with any field path
-            violations contains msg if {
-            	required_field
-            	expected_value
-            	value := field_value(input, required_field)
-            	value
-            	sprintf("%v", [value]) != expected_value
-            	msg := sprintf("Field '%s' is '%v', expected '%s'", [required_field, value, expected_value])
-            }
+        # Generic field validation - works with any field path
+        violations contains msg if {
+        	required_field
+        	expected_value
+        	value := field_value(input, required_field)
+        	value
+        	sprintf("%v", [value]) != expected_value
+        	msg := sprintf("Field '%s' is '%v', expected '%s'", [required_field, value, expected_value])
+        }
 
-            # Pattern validation for any field
-            violations contains msg if {
-            	required_field
-            	field_pattern
-            	value := field_value(input, required_field)
-            	value
-            	not regex.match(field_pattern, sprintf("%v", [value]))
-            	msg := sprintf("Field '%s' value '%v' does not match pattern '%s'", [required_field, value, field_pattern])
-            }
+        # Pattern validation for any field
+        violations contains msg if {
+        	required_field
+        	field_pattern
+        	value := field_value(input, required_field)
+        	value
+        	not regex.match(field_pattern, sprintf("%v", [value]))
+        	msg := sprintf("Field '%s' value '%v' does not match pattern '%s'", [required_field, value, field_pattern])
+        }
 
-            # Required field validation
-            violations contains msg if {
-            	required_field
-            	not field_exists(input, required_field)
-            	msg := sprintf("Required field '%s' is missing or null", [required_field])
-            }
-          kind: EVIDENCE
-    inputs:
-        - name: required_field
-          description: Field to validate (dot notation supported, e.g., 'application.name')
-          required: true
-        - name: expected_value
-          description: Expected value for the field (optional, use with field validation)
-        - name: field_pattern
-          description: Regex pattern to validate field value (optional, use with pattern validation)
+        # Required field validation
+        violations contains msg if {
+        	required_field
+        	not field_exists(input, required_field)
+        	msg := sprintf("Required field '%s' is missing or null", [required_field])
+        }
+      kind: EVIDENCE
+  inputs:
+    - name: required_field
+      description: Field to validate (dot notation supported, e.g., 'application.name')
+      required: true
+    - name: expected_value
+      description: Expected value for the field (optional, use with field validation)
+    - name: field_pattern
+      description: Regex pattern to validate field value (optional, use with pattern validation)

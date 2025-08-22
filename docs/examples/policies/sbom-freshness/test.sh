@@ -52,7 +52,7 @@ test_policy_eval "Fresh SBOM - Strict 1 Day Limit" "fail" \
     --material testdata/sbom-fresh.json \
     --input freshness_days=1
 
-test_policy_eval "Fresh SBOM - Moderate 15 Days Limit" "pass" \
+test_policy_eval "Fresh SBOM - Moderate 15 Days Limit" "fail" \
     --kind SBOM_CYCLONEDX_JSON \
     --material testdata/sbom-fresh.json \
     --input freshness_days=15
