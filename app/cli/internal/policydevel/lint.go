@@ -32,6 +32,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
+	"github.com/styrainc/regal/pkg/report"
 	"github.com/styrainc/regal/pkg/rules"
 	"gopkg.in/yaml.v3"
 )
@@ -289,11 +290,37 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 		return
 	}
 
-	// Add any violations to the policy errors
+	// Parse the Rego AST to map line numbers to rule names
+	regoRuleMap := p.buildRegoRuleMap(content)
+
+	// Add violations to the policy errors
 	for _, v := range report.Violations {
-		errorStr := strings.ReplaceAll(v.Description, "`opa fmt`", "`--format`")
+		errorStr := p.formatViolationError(v, regoRuleMap)
 		p.AddError(filePath, errorStr, v.Location.Row)
 	}
+}
+
+// Creates a formatted error message from a Regal violation
+// Follows format <file>:<line>: [<ruleName>] <errorMsg> - <docLinks>
+func (p *PolicyToLint) formatViolationError(v report.Violation, regoRuleMap map[int]string) string {
+	// Extract resources
+	resources := make([]string, 0, len(v.RelatedResources))
+	for _, r := range v.RelatedResources {
+		resources = append(resources, r.Reference)
+	}
+	resourceStr := strings.Join(resources, ", ")
+
+	// Try to identify which Rego rule contains this violation
+	regoRuleName, exists := regoRuleMap[v.Location.Row]
+	if !exists {
+		regoRuleName = ""
+	} else {
+		regoRuleName = fmt.Sprintf("[%s]", regoRuleName)
+	}
+
+	// Format the error message
+	lintError := fmt.Sprintf("%s: %s - %s", regoRuleName, v.Description, resourceStr)
+	return strings.ReplaceAll(lintError, "`opa fmt`", "`--format`")
 }
 
 // Attempts to load configuration in this order:
@@ -339,4 +366,40 @@ func (p *PolicyToLint) loadDefaultConfig() (*config.Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// Creates a mapping from line numbers to Rego rule names
+func (p *PolicyToLint) buildRegoRuleMap(regoSrc string) map[int]string {
+	ruleMap := make(map[int]string)
+
+	// Parse the Rego source into AST
+	module, err := opaAst.ParseModule("", regoSrc)
+	if err != nil {
+		// Return empty map if parsing fails
+		return ruleMap
+	}
+
+	// Walk through the AST to find rule definitions
+	for _, rule := range module.Rules {
+		if rule.Location != nil {
+			ruleName := string(rule.Head.Name)
+			startLine := rule.Location.Row
+			endLine := startLine
+
+			// Try to find the end line of the rule
+			if len(rule.Body) > 0 {
+				lastExpr := rule.Body[len(rule.Body)-1]
+				if lastExpr.Location != nil {
+					endLine = lastExpr.Location.Row
+				}
+			}
+
+			// Map all lines within this rule to the rule name
+			for line := startLine; line <= endLine; line++ {
+				ruleMap[line] = ruleName
+			}
+		}
+	}
+
+	return ruleMap
 }
