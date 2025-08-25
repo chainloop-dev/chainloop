@@ -1,0 +1,36 @@
+annotations:
+  category: Infrastructure
+  images: |
+    - name: os-shell
+      image: ghcr.io/chainloop-dev/chainloop/os-shell:12
+    - name: vault
+      image: ghcr.io/chainloop-dev/chainloop/vault:1.17.3
+    - name: vault-csi-provider
+      image: ghcr.io/chainloop-dev/chainloop/vault-csi-provider:1.4.3
+    - name: vault-k8s
+      image: ghcr.io/chainloop-dev/chainloop/vault-k8s:1.4.2
+  licenses: Apache-2.0
+apiVersion: v2
+appVersion: 1.17.3
+dependencies:
+- name: common
+  repository: file://charts/common
+  tags:
+  - bitnami-common
+  version: 2.x.x
+description: Vault is a tool for securely managing and accessing secrets using a unified
+  interface. Features secure storage, dynamic secrets, data encryption and revocation.
+home: https://bitnami.com
+icon: https://bitnami.com/assets/stacks/vault/img/vault-stack-220x234.png
+keywords:
+- security
+- secrets
+- injection
+- vault
+maintainers:
+- name: Broadcom, Inc. All Rights Reserved.
+  url: https://github.com/bitnami/charts
+name: vault
+sources:
+- https://github.com/bitnami/charts/tree/main/bitnami/vault
+version: 1.4.18
