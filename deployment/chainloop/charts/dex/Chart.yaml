@@ -13,12 +13,12 @@ appVersion: v0.0.1
 
 dependencies:
   - name: common
-    repository: https://charts.bitnami.com/bitnami
+    repository: file://charts/common
     tags:
       - bitnami-common
     version: 2.x.x
 
 annotations:
   images: |
-    - image: docker.io/bitnami/dex:2.43.1-debian-12-r4
+    - image: ghcr.io/chainloop-dev/chainloop/dex:2.43.1
       name: dex
