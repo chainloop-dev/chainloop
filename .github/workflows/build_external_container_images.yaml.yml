@@ -16,12 +16,12 @@ jobs:
         image:
           # On Ref we use the specific commit SHA to ensure reproducible builds
           # It can be: branch, tag or SHA
-          - name: PostgresSQL
+          - name: PostgreSQL
             image_name: chainloop-dev/chainloop/postgresql
             path: bitnami/postgresql/16/debian-12
             sparse_checkout: bitnami/postgresql/16/debian-12
             ref: 5d351cc8a742d6a6f417f879ba2df9882b617676
-          - name: PostgresSQL Exporter
+          - name: PostgreSQL Exporter
             image_name: chainloop-dev/chainloop/postgres-exporter
             path: bitnami/postgres-exporter/0/debian-12
             sparse_checkout: bitnami/postgres-exporter/0/debian-12
