@@ -169,7 +169,7 @@ func TestRego_VerifyInvalidPolicy(t *testing.T) {
 	t.Run("doesn't eval a main rule", func(t *testing.T) {
 		_, err := r.Verify(context.TODO(), policy, []byte("{\"foo\": \"bar\"}"), nil)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "neither 'result' nor 'violations' rule found")
+		assert.Contains(t, err.Error(), "'result' rule not found")
 	})
 }
 
