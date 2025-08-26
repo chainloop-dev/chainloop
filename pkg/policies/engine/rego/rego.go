@@ -420,7 +420,7 @@ func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, pars
 }
 
 // MatchesParameters evaluates the matches_parameters rule in a rego policy.
-// The function creates an input object with policy inputs and expected inputs.
+// The function creates an input object with policy parameters and expected parameters.
 // Returns true if the policy's matches_parameters rule evaluates to true, false otherwise.
 func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, evaluationParams, expectedParams map[string]string) (bool, error) {
 	policyString := string(policy.Source)
@@ -445,7 +445,7 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 }
 
 // MatchesEvaluation evaluates the matches_evaluation rule in a rego policy.
-// The function creates an input object with policy input and evaluation result.
+// The function creates an input object with policy parameters and evaluation result.
 // Returns true if the policy's matches_evaluation rule evaluates to true, false otherwise.
 // If the rule is not found or evaluation fails, it defaults to true.
 func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, ev *engine.EvaluationResult, evaluationParams map[string]string) (bool, error) {
