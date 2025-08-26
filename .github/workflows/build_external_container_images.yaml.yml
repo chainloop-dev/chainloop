@@ -34,12 +34,12 @@ jobs:
             path: bitnami/os-shell/12/debian-12
             sparse_checkout: bitnami/os-shell/12/debian-12
             ref: dde1f3b2d7b271de64c6ce948a04716cb96199a1
-          # Dex version: 2.40.0
+          # Dex version: 2.43.1
           - name: Dex
             image_name: chainloop-dev/chainloop/dex
             path: bitnami/dex/2/debian-12
             sparse_checkout: bitnami/dex/2/debian-12
-            ref: 19c7a5ade4364ff1b52c65004291203ff2096eb0
+            ref: 227f79559b841357a090fb4500ff3981e5f9c3e3
           # Vault version: 1.17.3
           - name: Vault
             image_name: chainloop-dev/chainloop/vault
