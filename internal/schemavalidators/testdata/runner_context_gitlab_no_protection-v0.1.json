@@ -1,0 +1,61 @@
+{
+    "meta": {
+        "id": "chainloop.dev/runner-context/v0.1"
+    },
+    "data": {
+        "tool": "platform@6df8c658",
+        "provider": "gitlab",
+        "repos": [
+            {
+                "repository": "69340413",
+                "branches": [
+                    {
+                        "name": "main",
+                        "active_rules": [
+                            {
+                                "name": "allow_force_push",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "code_owner_approval_required",
+                                "enabled": "false"
+                            },
+                            {
+                                "name": "push_access_levels",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "access_level",
+                                        "value": "40",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "access_level_description",
+                                        "value": "Maintainers",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "merge_access_levels",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "access_level",
+                                        "value": "40",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "access_level_description",
+                                        "value": "Maintainers",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
