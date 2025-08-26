@@ -429,7 +429,7 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 		return false, fmt.Errorf("failed to parse rego policy: %w", err)
 	}
 
-	// Create input with auto-matching parameters using the same pattern as normal args
+	// Create input with policy and expected parameters
 	inputMap := make(map[string]interface{})
 	inputMap[inputArgs] = evaluationParams
 	inputMap[expectedArgs] = expectedParams
@@ -460,7 +460,7 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, e
 	inputMap[inputArgs] = evaluationParams
 	inputMap[evalResult] = ev
 
-	// Evaluate matches_parameters rule with the evaluation data
+	// Evaluate matches_parameters rule
 	matchesEvaluation, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesEvaluationRule), parsedModule, inputMap)
 	if err != nil {
 		// Defaults to true
