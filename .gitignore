@@ -48,4 +48,4 @@ gha-creds-*.json
 
 # Helm Chart overrides for testing and unwanted files
 values.local.yaml
-deployment/chainloop/charts/*.tgz
+deployment/chainloop/charts/**/*.tgz
