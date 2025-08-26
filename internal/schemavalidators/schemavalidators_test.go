@@ -195,6 +195,10 @@ func TestValidateRunnerContext(t *testing.T) {
 			filePath: "./testdata/runner_context_rulesets-v0.1.json",
 		},
 		{
+			name:     "0.1 GitLab no protection",
+			filePath: "./testdata/runner_context_gitlab_no_protection-v0.1.json",
+		},
+		{
 			name:     "invalid Chainloop runner context - missing meta",
 			filePath: "./testdata/runner_context_missing-meta-v0.1.json",
 			wantErr:  "missing properties: 'meta'",
