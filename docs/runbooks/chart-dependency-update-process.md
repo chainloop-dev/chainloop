@@ -111,7 +111,7 @@ After completing the upgrade process:
 - `deployment/chainloop/Chart.yaml` - Image tag references
 
 ### CI/CD Configuration  
-- `.github/build_external_container_image.md` - External image build references
+- `.github/build_external_container_image.yml` - External image build references
 
 ### Testing
 - Local Docker Compose configurations may need updates for new versions
