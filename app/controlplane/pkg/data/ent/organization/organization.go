@@ -21,6 +21,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
 	// FieldBlockOnPolicyViolation holds the string denoting the block_on_policy_violation field in the database.
 	FieldBlockOnPolicyViolation = "block_on_policy_violation"
 	// FieldPoliciesAllowedHostnames holds the string denoting the policies_allowed_hostnames field in the database.
@@ -107,6 +109,7 @@ var Columns = []string{
 	FieldName,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+	FieldDeletedAt,
 	FieldBlockOnPolicyViolation,
 	FieldPoliciesAllowedHostnames,
 }
@@ -153,6 +156,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
 // ByBlockOnPolicyViolation orders the results by the block_on_policy_violation field.

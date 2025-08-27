@@ -55,7 +55,7 @@ func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organi
 }
 
 func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Organization, error) {
-	org, err := r.data.DB.Organization.Get(ctx, id)
+	org, err := r.data.DB.Organization.Query().Where(organization.ID(id), organization.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if org == nil {
@@ -67,7 +67,7 @@ func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Org
 
 // FindByName finds an organization by name.
 func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Organization, error) {
-	org, err := r.data.DB.Organization.Query().Where(organization.NameEQ(name)).Only(ctx)
+	org, err := r.data.DB.Organization.Query().Where(organization.NameEQ(name), organization.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if org == nil {
@@ -79,6 +79,7 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 
 func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
+		Where(organization.DeletedAtIsNil()).
 		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
 		SetUpdatedAt(time.Now())
 
@@ -94,9 +95,13 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPoli
 	return r.FindByID(ctx, org.ID)
 }
 
-// Delete deletes an organization by ID.
+// Delete soft-deletes an organization by ID.
 func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.data.DB.Organization.DeleteOneID(id).Exec(ctx)
+	return r.data.DB.Organization.UpdateOneID(id).
+		Where(organization.DeletedAtIsNil()).
+		SetDeletedAt(time.Now()).
+		SetUpdatedAt(time.Now()).
+		Exec(ctx)
 }
 
 func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
