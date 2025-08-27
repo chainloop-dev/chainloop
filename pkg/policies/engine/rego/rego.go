@@ -388,37 +388,6 @@ func getRuleName(packagePath ast.Ref, rule string) string {
 	return fmt.Sprintf("%v.%s\n", packagePath, rule)
 }
 
-// Evaluates a single rule and returns its boolean result
-func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, parsedModule *ast.Module, decodedInput interface{}) (bool, error) {
-	// add input
-	regoInput := rego.Input(decodedInput)
-
-	// add module
-	regoFunc := rego.ParsedModule(parsedModule)
-	options := []func(r *rego.Rego){regoInput, regoFunc, rego.Capabilities(r.Capabilities())}
-
-	if r.operatingMode == EnvironmentModeRestrictive {
-		options = append(options, rego.StrictBuiltinErrors(true))
-	}
-
-	res, err := queryRego(ctx, ruleName, options...)
-	if err != nil {
-		return false, nil
-	}
-
-	// Parse the boolean result
-	for _, exp := range res {
-		for _, val := range exp.Expressions {
-			if boolResult, ok := val.Value.(bool); ok {
-				return boolResult, nil
-			}
-		}
-	}
-
-	// No valid boolean result found
-	return false, nil
-}
-
 // MatchesParameters evaluates the matches_parameters rule in a rego policy.
 // The function creates an input object with policy parameters and expected parameters.
 // Returns true if the policy's matches_parameters rule evaluates to true, false otherwise.
@@ -468,4 +437,35 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, e
 	}
 
 	return matchesEvaluation, nil
+}
+
+// Evaluates a single rule and returns its boolean result
+func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, parsedModule *ast.Module, decodedInput interface{}) (bool, error) {
+	// Add input
+	regoInput := rego.Input(decodedInput)
+
+	// Add module
+	regoFunc := rego.ParsedModule(parsedModule)
+	options := []func(r *rego.Rego){regoInput, regoFunc, rego.Capabilities(r.Capabilities())}
+
+	if r.operatingMode == EnvironmentModeRestrictive {
+		options = append(options, rego.StrictBuiltinErrors(true))
+	}
+
+	res, err := queryRego(ctx, ruleName, options...)
+	if err != nil {
+		return false, err
+	}
+
+	// Parse the boolean result
+	for _, exp := range res {
+		for _, val := range exp.Expressions {
+			if boolResult, ok := val.Value.(bool); ok {
+				return boolResult, nil
+			}
+		}
+	}
+
+	// No valid boolean result found
+	return false, nil
 }
