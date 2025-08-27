@@ -26,15 +26,11 @@ This runbook provides step-by-step instructions for upgrading Helm chart depende
 
 ## Upgrade Types
 
-### Type 1: Specific Image Upgrade
-- **Purpose**: Upgrade to a known container image version
-- **Scope**: Keep current chart, update only images
-- **Use Case**: Security patches, specific bug fixes
-
-### Type 2: Latest Minor Version Upgrade
+### Chart Version Upgrade Only
 - **Purpose**: Upgrade chart to latest minor version
 - **Scope**: Update chart version and potentially images
-- **Use Case**: Feature updates, regular maintenance
+- **Use Case**: Feature updates, security patches, regular maintenance
+- **Rule**: Container images are **ONLY** updated as part of chart upgrades, never independently
 
 ---
 
