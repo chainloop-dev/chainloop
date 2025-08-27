@@ -330,3 +330,130 @@ func TestRego_WithPermissiveMode(t *testing.T) {
 		assert.NotContains(t, err.Error(), "rego_type_error: undefined function rego.parse_module")
 	})
 }
+
+func TestRego_MatchesParameters(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/matches_parameters.rego")
+	require.NoError(t, err)
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "matches-parameters-test",
+		Source: regoContent,
+	}
+
+	t.Run("high severity matches medium expectation", func(t *testing.T) {
+		matches, err := r.MatchesParameters(context.TODO(), policy,
+			map[string]string{"severity": "high"},
+			map[string]string{"severity": "medium"})
+		require.NoError(t, err)
+		assert.True(t, matches)
+	})
+
+	t.Run("low severity does not match high expectation", func(t *testing.T) {
+		matches, err := r.MatchesParameters(context.TODO(), policy,
+			map[string]string{"severity": "low"},
+			map[string]string{"severity": "high"})
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+
+	t.Run("critical severity matches critical expectation", func(t *testing.T) {
+		matches, err := r.MatchesParameters(context.TODO(), policy,
+			map[string]string{"severity": "critical"},
+			map[string]string{"severity": "critical"})
+		require.NoError(t, err)
+		assert.True(t, matches)
+	})
+
+	t.Run("unknown severity parameter", func(t *testing.T) {
+		matches, err := r.MatchesParameters(context.TODO(), policy,
+			map[string]string{"severity": "unknown"},
+			map[string]string{"severity": "medium"})
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+
+	t.Run("empty parameters", func(t *testing.T) {
+		matches, err := r.MatchesParameters(context.TODO(), policy,
+			map[string]string{},
+			map[string]string{})
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+}
+
+func TestRego_MatchesEvaluation(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/matches_evaluation.rego")
+	require.NoError(t, err)
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "matches-evaluation-test",
+		Source: regoContent,
+	}
+
+	t.Run("evaluation with violations and high severity matches", func(t *testing.T) {
+		evaluation := &engine.EvaluationResult{
+			Violations: []*engine.PolicyViolation{
+				{Subject: "test", Violation: "test violation"},
+			},
+			Skipped:    false,
+			SkipReason: "",
+			Ignore:     false,
+		}
+		evaluationParams := map[string]string{"severity": "high"}
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		require.NoError(t, err)
+		assert.True(t, matches)
+	})
+
+	t.Run("evaluation without violations does not match", func(t *testing.T) {
+		evaluation := &engine.EvaluationResult{
+			Violations: []*engine.PolicyViolation{},
+			Skipped:    false,
+			SkipReason: "",
+			Ignore:     false,
+		}
+		evaluationParams := map[string]string{"severity": "high"}
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+
+	t.Run("evaluation with violations but wrong severity does not match", func(t *testing.T) {
+		evaluation := &engine.EvaluationResult{
+			Violations: []*engine.PolicyViolation{
+				{Subject: "test", Violation: "test violation"},
+			},
+			Skipped:    false,
+			SkipReason: "",
+			Ignore:     false,
+		}
+		evaluationParams := map[string]string{"severity": "low"}
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+
+	t.Run("nil evaluation does not match", func(t *testing.T) {
+		evaluationParams := map[string]string{"severity": "high"}
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, nil, evaluationParams)
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+
+	t.Run("empty evaluation params", func(t *testing.T) {
+		evaluation := &engine.EvaluationResult{
+			Violations: []*engine.PolicyViolation{
+				{Subject: "test", Violation: "test violation"},
+			},
+			Skipped:    false,
+			SkipReason: "",
+			Ignore:     false,
+		}
+		evaluationParams := map[string]string{}
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		require.NoError(t, err)
+		assert.False(t, matches)
+	})
+}

@@ -24,23 +24,29 @@ import (
 type PolicyEngine interface {
 	// Verify verifies an input against a policy
 	Verify(ctx context.Context, policy *Policy, input []byte, args map[string]any) (*EvaluationResult, error)
+	// MatchesParameters evaluates the matches_parameters rule to determine if evaluation parameters match expected parameters
+	MatchesParameters(ctx context.Context, policy *Policy, evaluationParams, expectedParams map[string]string) (bool, error)
+	// MatchesEvaluation evaluates the matches_evaluation rule using a PolicyEvaluation result and evaluation parameters
+	MatchesEvaluation(ctx context.Context, policy *Policy, evaluation *EvaluationResult, evaluationParams map[string]string) (bool, error)
 }
 
 type EvaluationResult struct {
-	Violations []*PolicyViolation
-	Skipped    bool
-	SkipReason string
-	Ignore     bool
-	RawData    *RawData
+	Violations []*PolicyViolation `json:"violations"`
+	Skipped    bool               `json:"skipped"`
+	SkipReason string             `json:"skipReason"`
+	Ignore     bool               `json:"ignore"`
+	RawData    *RawData           `json:"rawData"`
 }
+
 type RawData struct {
-	Input  json.RawMessage
-	Output json.RawMessage
+	Input  json.RawMessage `json:"input"`
+	Output json.RawMessage `json:"output"`
 }
 
 // PolicyViolation represents a policy failure
 type PolicyViolation struct {
-	Subject, Violation string
+	Subject   string `json:"subject"`
+	Violation string `json:"violation"`
 }
 
 // Policy represents a loaded policy in any of the supported engines.
