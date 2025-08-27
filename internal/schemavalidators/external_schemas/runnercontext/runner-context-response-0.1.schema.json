@@ -7,6 +7,13 @@
                 "id": {
                     "type": "string",
                     "description": "Unique identifier for the runner context schema version"
+                },
+                "errors": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "Array of error messages"
                 }
             },
             "additionalProperties": false,
@@ -319,7 +326,6 @@
                         "additionalProperties": false,
                         "type": "object",
                         "required": [
-                            "owner",
                             "repository"
                         ]
                     },

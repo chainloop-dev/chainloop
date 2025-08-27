@@ -90,11 +90,11 @@ test_policy_lint() {
     
     if output=$($CHAINLOOP_BIN policy develop lint --policy "$policy_file" 2>&1); then
         echo -e "${GREEN}✓ PASSED${NC}"
-        ((TESTS_PASSED++))
+        ((TESTS_PASSED++)) || true
     else
         echo -e "${RED}✗ FAILED${NC}"
         echo "Output: $output"
-        ((TESTS_FAILED++))
+        ((TESTS_FAILED++)) || true
     fi
     echo ""
 }
@@ -167,7 +167,7 @@ test_policy_eval() {
                 echo -e "${GREEN}✓ EVAL FAILED (as expected)${NC}"
                 ;;
         esac
-        ((TESTS_PASSED++))
+        ((TESTS_PASSED++)) || true
     else
         case "$expected_result" in
             "pass")
@@ -186,7 +186,7 @@ test_policy_eval() {
             echo "Reason: $skip_reason"
         fi
         echo "Output: $output"
-        ((TESTS_FAILED++))
+        ((TESTS_FAILED++)) || true
     fi
     echo ""
 }

@@ -104,7 +104,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 				return fmt.Errorf("finding project version: %w", err)
 			}
 
-			if _, err := createProjectVersionWithTx(ctx, tx, projectID, "", false); err != nil {
+			if _, err := createProjectVersionWithTx(ctx, tx, projectID, "", true); err != nil {
 				return fmt.Errorf("creating project version: %w", err)
 			}
 		}

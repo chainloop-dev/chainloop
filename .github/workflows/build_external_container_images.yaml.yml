@@ -1,0 +1,137 @@
+name: Build Bitnami Container Images
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build_and_push_images:
+    name: Build and Push ${{ matrix.image.name }} Image
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          # On Ref we use the specific commit SHA to ensure reproducible builds
+          # It can be: branch, tag or SHA
+          # PostgreSQL version: 16.4.0
+          - name: PostgreSQL
+            image_name: chainloop-dev/chainloop/postgresql
+            path: bitnami/postgresql/16/debian-12
+            sparse_checkout: bitnami/postgresql/16/debian-12
+            ref: 5d351cc8a742d6a6f417f879ba2df9882b617676
+          # PostgreSQL Exporter version: 0.15.0
+          - name: PostgreSQL Exporter
+            image_name: chainloop-dev/chainloop/postgres-exporter
+            path: bitnami/postgres-exporter/0/debian-12
+            sparse_checkout: bitnami/postgres-exporter/0/debian-12
+            ref: 1d0408ccfbdc43b90bc6449227ce731079e42f6b
+          # OS Shell version: 12
+          - name: OS Shell
+            image_name: chainloop-dev/chainloop/os-shell
+            path: bitnami/os-shell/12/debian-12
+            sparse_checkout: bitnami/os-shell/12/debian-12
+            ref: dde1f3b2d7b271de64c6ce948a04716cb96199a1
+          # Dex version: 2.43.1
+          - name: Dex
+            image_name: chainloop-dev/chainloop/dex
+            path: bitnami/dex/2/debian-12
+            sparse_checkout: bitnami/dex/2/debian-12
+            ref: 227f79559b841357a090fb4500ff3981e5f9c3e3
+          # Vault version: 1.17.3
+          - name: Vault
+            image_name: chainloop-dev/chainloop/vault
+            path: bitnami/vault/1/debian-12
+            sparse_checkout: bitnami/vault/1/debian-12
+            ref: 28d8f22ad6b7c3871c2f429c72e5ccf3344ae5bc
+          # Vault CSI Provider version: 1.4.3
+          - name: Vault CSI Provider
+            image_name: chainloop-dev/chainloop/vault-csi-provider
+            path: bitnami/vault-csi-provider/1/debian-12
+            sparse_checkout: bitnami/vault-csi-provider/1/debian-12
+            ref: 673c94210db93a8df808765b6b213661686aeb33
+          # Vault K8s version: 1.4.2
+          - name: Vault K8s
+            image_name: chainloop-dev/chainloop/vault-k8s
+            path: bitnami/vault-k8s/1/debian-12
+            sparse_checkout: bitnami/vault-k8s/1/debian-12
+            ref: 62cb6e1498e873dd9ab92880073a43896b470c4b
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ matrix.image.image_name }}
+      BITNAMI_PATH: bitnami-containers
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Bitnami containers repository
+        uses: actions/checkout@v4
+        with:
+          repository: bitnami/containers
+          path: ${{ env.BITNAMI_PATH }}
+          ref: ${{ matrix.image.ref }}
+          sparse-checkout: ${{ matrix.image.sparse_checkout }}
+          sparse-checkout-cone-mode: false
+
+      - name: Extract version from Bitnami Dockerfile
+        id: extract_version
+        run: |
+          VERSION=$(grep -E 'APP_VERSION=' ${{ env.BITNAMI_PATH }}/${{ matrix.image.path }}/Dockerfile | cut -d'"' -f2)
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from Dockerfile"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted ${{ matrix.image.name }} version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.extract_version.outputs.version }}
+            type=raw,value=latest
+            type=sha,format=long
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.BITNAMI_PATH }}/${{ matrix.image.path }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: "v2.4.1"
+
+      - name: Sign container image
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          cosign sign --tlog-upload=false --key env://COSIGN_PRIVATE_KEY ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+
+      - name: Output build information
+        run: |
+          echo "Successfully built and pushed ${{ matrix.image.name }} image"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "Version: ${{ steps.extract_version.outputs.version }}"
+          echo "Digest: ${{ steps.build.outputs.digest }}"

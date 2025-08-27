@@ -45,6 +45,12 @@ migration_sync: check-atlas-tool migration_hash
 migration_lint: check-atlas-tool migration_hash
 	atlas migrate lint --dir ${local_migrations_dir} --dev-url "docker://postgres/15/test?search_path=public" --latest 1 --config file://atlas.hcl --env dev
 
+.PHONY: migration_rebase
+# rebase migrations
+# example: make migration_rebase 20250327153948
+migration_rebase: check-atlas-tool
+	atlas migrate rebase --dir ${local_migrations_dir} $(filter-out $@,$(MAKECMDGOALS))
+
 .PHONY: migration_new
 # generate an empty migration file
 migration_new: check-atlas-tool migration_hash

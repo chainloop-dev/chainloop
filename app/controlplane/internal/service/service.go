@@ -164,14 +164,32 @@ func WithGroupUseCase(groupUseCase *biz.GroupUseCase) NewOpt {
 	}
 }
 
+type authorizeResourceOpts struct {
+	forceRBAC bool
+}
+
+type AuthorizeResourceOpt func(*authorizeResourceOpts)
+
+// withForceRBAC forces RBAC checks even for admin roles that would normally skip RBAC
+func withForceRBAC() AuthorizeResourceOpt {
+	return func(opts *authorizeResourceOpts) {
+		opts.forceRBAC = true
+	}
+}
+
 // authorizeResource is a helper that checks if the user has a particular `op` permission policy on a particular resource
 // For example: `s.authorizeResource(ctx, authz.PolicyAttachedIntegrationDetach, authz.ResourceTypeProject, projectUUID);`
 // checks if the user has a role in the project that allows to detach integrations on it.
 // This method is available to every service that embeds `service`
 // It goes through all the memberships of the user, direct memberships and indirect memberships (Groups)
 // and checks if the user has any role that allows the operation on the resourceType and resourceID.
-func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resourceType authz.ResourceType, resourceID uuid.UUID) error {
-	if !rbacEnabled(ctx) {
+func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resourceType authz.ResourceType, resourceID uuid.UUID, opts ...AuthorizeResourceOpt) error {
+	options := &authorizeResourceOpts{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	if !options.forceRBAC && !rbacEnabled(ctx) {
 		return nil
 	}
 
@@ -188,23 +206,27 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		return errors.Forbidden("forbidden", fmt.Errorf("operation not allowed: This auth token is valid only with the project %q", *token.ProjectName).Error())
 	}
 
+	var defaultMessage = fmt.Sprintf("you do not have permissions to access the %q with id %q", resourceType, resourceID.String())
 	// 2 - We are a user
 	// find the resource membership that matches the resource type and ID
 	// for example admin in project1, then apply RBAC enforcement
 	m := entities.CurrentMembership(ctx)
 	var matchingResources []*entities.ResourceMembership
+	var foundRoles []string
 	// First, collect all memberships that match the requested resource type and ID
 	for _, rm := range m.Resources {
 		if rm.ResourceType == resourceType && rm.ResourceID == resourceID {
 			matchingResources = append(matchingResources, rm)
+			foundRoles = append(foundRoles, string(rm.Role))
 		}
 	}
 
-	var defaultMessage = fmt.Sprintf("you do not have permissions to access to the %s associated with this resource", resourceType)
 	// If no matching resources were found, return forbidden error
 	if len(matchingResources) == 0 {
 		return errors.Forbidden("forbidden", defaultMessage)
 	}
+
+	defaultMessage = fmt.Sprintf("%s, roles=%v", defaultMessage, foundRoles)
 
 	// Try to enforce the policy with each matching role
 	// If any role passes, authorize the request

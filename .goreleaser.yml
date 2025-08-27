@@ -216,6 +216,12 @@ docker_manifests:
       - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}-amd64"
       - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}-arm64"
 
+# Enable retrieving golang packages license information https://github.com/anchore/syft#configuration
+# https://goreleaser.com/customization/sbom/
+sboms:
+  - env:
+      - SYFT_GOLANG_SEARCH_REMOTE_LICENSES=true
+
 release:
   extra_files:
     - glob: ./.github/workflows/cosign.pub

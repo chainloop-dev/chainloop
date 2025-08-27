@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/v1/topdown/print"
 	"golang.org/x/exp/maps"
 )
 
@@ -35,6 +36,10 @@ type Engine struct {
 	// allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
 	// when using http.send built-in function
 	allowedNetworkDomains []string
+	// includeRawData determines whether to collect raw evaluation data
+	includeRawData bool
+	// enablePrint determines whether to enable print statements in rego policies
+	enablePrint bool
 }
 
 type EngineOption func(*newEngineOptions)
@@ -51,9 +56,23 @@ func WithAllowedNetworkDomains(domains ...string) EngineOption {
 	}
 }
 
+func WithIncludeRawData(include bool) EngineOption {
+	return func(e *newEngineOptions) {
+		e.includeRawData = include
+	}
+}
+
+func WithEnablePrint(enable bool) EngineOption {
+	return func(e *newEngineOptions) {
+		e.enablePrint = enable
+	}
+}
+
 type newEngineOptions struct {
 	operatingMode         EnvironmentMode
 	allowedNetworkDomains []string
+	includeRawData        bool
+	enablePrint           bool
 }
 
 // NewEngine creates a new policy engine with the given options
@@ -78,6 +97,8 @@ func NewEngine(opts ...EngineOption) *Engine {
 		operatingMode: options.operatingMode,
 		// append base allowed network domains to the user provided ones
 		allowedNetworkDomains: append(baseAllowedNetworkDomains, options.allowedNetworkDomains...),
+		includeRawData:        options.includeRawData,
+		enablePrint:           options.enablePrint,
 	}
 }
 
@@ -100,6 +121,15 @@ var builtinFuncNotAllowed = []*ast.Builtin{
 	ast.OPARuntime,
 	ast.RegoParseModule,
 	ast.Trace,
+}
+
+// Implements the OPA print.Hook interface to capture and output
+// print statements from Rego policies during evaluation.
+type regoOutputHook struct{}
+
+func (p *regoOutputHook) Print(_ print.Context, msg string) error { //nolint:forbidigo
+	fmt.Println(msg)
+	return nil
 }
 
 // Force interface
@@ -146,16 +176,47 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	var res rego.ResultSet
 	// Function to execute the query with appropriate parameters
 	executeQuery := func(rule string, strict bool) error {
-		if strict {
-			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()), rego.StrictBuiltinErrors(true))
-		} else {
-			res, err = queryRego(ctx, rule, parsedModule, regoInput, regoFunc, rego.Capabilities(r.Capabilities()))
+		options := []func(r *rego.Rego){regoInput, regoFunc, rego.Capabilities(r.Capabilities())}
+
+		// Add print support if enabled
+		if r.enablePrint {
+			options = append(options,
+				rego.EnablePrintStatements(true),
+				rego.PrintHook(&regoOutputHook{}),
+			)
 		}
+
+		if strict {
+			options = append(options, rego.StrictBuiltinErrors(true))
+		}
+
+		res, err = queryRego(ctx, rule, options...)
 		return err
 	}
 
+	var rawData *engine.RawData
+	// Get raw results first if requested
+	if r.includeRawData {
+		if err := executeQuery(getRuleName(parsedModule.Package.Path, ""), r.operatingMode == EnvironmentModeRestrictive); err != nil {
+			return nil, err
+		}
+
+		inputBytes, err := json.Marshal(decodedInput)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal input for raw data: %w", err)
+		}
+		outputBytes, err := json.Marshal(regoResultSetToRawResults(res))
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal output for raw data: %w", err)
+		}
+		rawData = &engine.RawData{
+			Input:  json.RawMessage(inputBytes),
+			Output: json.RawMessage(outputBytes),
+		}
+	}
+
 	// Try the main rule first
-	if err := executeQuery(mainRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+	if err := executeQuery(getRuleName(parsedModule.Package.Path, mainRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 		return nil, err
 	}
 
@@ -163,7 +224,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	// TODO: Remove when this deprecated rule is not used anymore
 	if res == nil {
 		// Try with the deprecated main rule
-		if err := executeQuery(deprecatedRule, r.operatingMode == EnvironmentModeRestrictive); err != nil {
+		if err := executeQuery(getRuleName(parsedModule.Package.Path, deprecatedRule), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
 
@@ -171,15 +232,15 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 			return nil, fmt.Errorf("failed to evaluate policy: neither '%s' nor '%s' rule found", mainRule, deprecatedRule)
 		}
 
-		return parseViolationsRule(res, policy)
+		return parseViolationsRule(res, policy, rawData)
 	}
 
-	return parseResultRule(res, policy)
+	return parseResultRule(res, policy, rawData)
 }
 
 // Parse deprecated list of violations.
 // TODO: Remove this path once `result` rule is consolidated
-func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+func parseViolationsRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
 	violations := make([]*engine.PolicyViolation, 0)
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
@@ -207,12 +268,14 @@ func parseViolationsRule(res rego.ResultSet, policy *engine.Policy) (*engine.Eva
 		Skipped:    false, // best effort
 		SkipReason: "",
 		Ignore:     false, // Assume old rules should not be ignored
+		RawData:    rawData,
 	}, nil
 }
 
 // parse `result` rule
-func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.EvaluationResult, error) {
+func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.RawData) (*engine.EvaluationResult, error) {
 	result := &engine.EvaluationResult{Violations: make([]*engine.PolicyViolation, 0)}
+	result.RawData = rawData
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
 			ruleResult, ok := val.Value.(map[string]any)
@@ -257,8 +320,8 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy) (*engine.Evaluat
 	return result, nil
 }
 
-func queryRego(ctx context.Context, ruleName string, parsedModule *ast.Module, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
-	query := rego.Query(fmt.Sprintf("%v.%s\n", parsedModule.Package.Path, ruleName))
+func queryRego(ctx context.Context, fullRuleName string, options ...func(r *rego.Rego)) (rego.ResultSet, error) {
+	query := rego.Query(fullRuleName)
 	regoEval := rego.New(append(options, query)...)
 	res, err := regoEval.Eval(ctx)
 	if err != nil {
@@ -300,4 +363,23 @@ func (r *Engine) Capabilities() *ast.Capabilities {
 
 	capabilities.Builtins = enabledBuiltin
 	return capabilities
+}
+
+func regoResultSetToRawResults(res rego.ResultSet) map[string]interface{} {
+	raw := make(map[string]interface{})
+	for _, r := range res {
+		entry := make(map[string]interface{})
+		for _, exp := range r.Expressions {
+			entry[exp.Text] = exp.Value
+		}
+		raw = entry
+	}
+	return raw
+}
+
+func getRuleName(packagePath ast.Ref, rule string) string {
+	if rule == "" {
+		return fmt.Sprintf("%s\n", packagePath)
+	}
+	return fmt.Sprintf("%v.%s\n", packagePath, rule)
 }

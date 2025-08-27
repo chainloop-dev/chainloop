@@ -135,7 +135,7 @@ make migration_lint         # Lint migration files
 
 ## Key Technologies
 
-- **Language**: Go 1.24.6. To know how to upgrade go version, see @.claude/golang-upgrade-process.md
+- **Language**: Go 1.25.0. To know how to upgrade go version, see docs/runbooks
 - **API**: gRPC with HTTP/JSON gateway, Protocol Buffers with buf
 - **Database**: PostgreSQL with Ent ORM, Atlas for migrations
 - **Authentication**: OIDC, JWT tokens
@@ -253,8 +253,5 @@ All commits must meet these criteria:
 
 Code reviews are required for all submissions via GitHub pull requests.
 - make sure golang code is always formatted and golang-ci-lint is run
-
-
 - I do not want you to be in the co-author signoff
-- make sure all go code is go-fmt
 - when the schema is changed, run make generate, do not create a migration explicitly

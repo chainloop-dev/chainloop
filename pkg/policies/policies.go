@@ -65,12 +65,16 @@ type PolicyVerifier struct {
 	logger           *zerolog.Logger
 	client           v13.AttestationServiceClient
 	allowedHostnames []string
+	includeRawData   bool
+	enablePrint      bool
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
 
 type PolicyVerifierOptions struct {
 	AllowedHostnames []string
+	IncludeRawData   bool
+	EnablePrint      bool
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -81,13 +85,32 @@ func WithAllowedHostnames(hostnames ...string) PolicyVerifierOption {
 	}
 }
 
+func WithIncludeRawData(include bool) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.IncludeRawData = include
+	}
+}
+
+func WithEnablePrint(enable bool) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.EnablePrint = enable
+	}
+}
+
 func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	return &PolicyVerifier{schema: schema, client: client, logger: logger, allowedHostnames: options.AllowedHostnames}
+	return &PolicyVerifier{
+		schema:           schema,
+		client:           client,
+		logger:           logger,
+		allowedHostnames: options.AllowedHostnames,
+		includeRawData:   options.IncludeRawData,
+		enablePrint:      options.EnablePrint,
+	}
 }
 
 // VerifyMaterial applies all required policies to a material
@@ -165,12 +188,17 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
+	rawResults := make([]*engine.RawData, 0)
 	skipped := true
 	reasons := make([]string, 0)
 	for _, script := range scripts {
 		r, err := pv.executeScript(ctx, script, material, args)
 		if err != nil {
 			return nil, NewPolicyError(err)
+		}
+
+		if r.RawData != nil {
+			rawResults = append(rawResults, r.RawData)
 		}
 
 		// Skip if the script explicitly instructs us to ignore it, effectively preventing it from being added to the evaluation results
@@ -229,6 +257,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		// Merged "skip_reason"
 		SkipReasons:  reasons,
 		Requirements: attachment.Requirements,
+		RawResults:   engineRawResultsToAPIRawResults(rawResults),
 	}, nil
 }
 
@@ -323,6 +352,14 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 	if pv.allowedHostnames != nil {
 		pv.logger.Debug().Strs("hostnames", pv.allowedHostnames).Msg("adding additional allowed hostnames")
 		engineOpts = append(engineOpts, rego.WithAllowedNetworkDomains(pv.allowedHostnames...))
+	}
+
+	if pv.includeRawData {
+		engineOpts = append(engineOpts, rego.WithIncludeRawData(true))
+	}
+
+	if pv.enablePrint {
+		engineOpts = append(engineOpts, rego.WithEnablePrint(true))
 	}
 
 	// verify the policy
@@ -658,4 +695,18 @@ func LogPolicyEvaluations(evaluations []*v12.PolicyEvaluation, logger *zerolog.L
 			}
 		}
 	}
+}
+
+func engineRawResultsToAPIRawResults(rawResults []*engine.RawData) []*v12.PolicyEvaluation_RawResult {
+	res := make([]*v12.PolicyEvaluation_RawResult, 0)
+	for _, r := range rawResults {
+		if r == nil {
+			continue
+		}
+		res = append(res, &v12.PolicyEvaluation_RawResult{
+			Input:  r.Input,
+			Output: r.Output,
+		})
+	}
+	return res
 }

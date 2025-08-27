@@ -16,7 +16,6 @@
 package policydevel
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"errors"
@@ -33,6 +32,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
 	"github.com/styrainc/regal/pkg/linter"
+	"github.com/styrainc/regal/pkg/report"
 	"github.com/styrainc/regal/pkg/rules"
 	"gopkg.in/yaml.v3"
 )
@@ -122,14 +122,13 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 	return policy, nil
 }
 
-// Loads referenced rego files from all YAML files in the policy
-// Loads referenced rego files from all YAML files in the policy
+// Loads referenced rego files from YAML files in the policy
 func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 	seen := make(map[string]struct{})
 	for _, yamlFile := range p.YAMLFiles {
 		var parsed v1.Policy
 		if err := unmarshal.FromRaw(yamlFile.Content, unmarshal.RawFormatYAML, &parsed, true); err != nil {
-			// Ignore parse errors here; they'll be caught in validation
+			p.AddError(yamlFile.Path, err.Error(), 0)
 			continue
 		}
 		for _, spec := range parsed.Spec.Policies {
@@ -183,74 +182,9 @@ func (p *PolicyToLint) processFile(filePath string) error {
 }
 
 func (p *PolicyToLint) Validate() {
-	// Validate all YAML files (including their embedded policies)
-	for _, yamlFile := range p.YAMLFiles {
-		p.validateYAMLFile(yamlFile)
-	}
-
 	// Validate standalone rego files
 	for _, regoFile := range p.RegoFiles {
 		p.validateRegoFile(regoFile)
-	}
-}
-
-func (p *PolicyToLint) validateYAMLFile(file *File) {
-	var policy v1.Policy
-	if err := unmarshal.FromRaw(file.Content, unmarshal.RawFormatYAML, &policy, true); err != nil {
-		p.AddError(file.Path, "failed to parse/validate policy", 0)
-		return
-	}
-
-	p.processEmbeddedPolicies(&policy, file)
-
-	// Update policy file with formatted content
-	if p.Format {
-		var root yaml.Node
-		if err := yaml.Unmarshal(file.Content, &root); err != nil {
-			p.AddError(file.Path, "failed to parse YAML", 0)
-			return
-		}
-
-		if err := p.updateEmbeddedRegoInYAML(file, &root); err != nil {
-			p.AddError(file.Path, fmt.Sprintf("failed to update embedded Rego: %v", err), 0)
-			return
-		}
-
-		var buf bytes.Buffer
-		enc := yaml.NewEncoder(&buf)
-		enc.SetIndent(2)
-		defer enc.Close()
-
-		if err := enc.Encode(&root); err != nil {
-			p.AddError(file.Path, err.Error(), 0)
-			return
-		}
-
-		outYAML := buf.Bytes()
-		if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
-			p.AddError(file.Path, err.Error(), 0)
-		} else {
-			if err := os.WriteFile(file.Path, outYAML, 0600); err != nil {
-				p.AddError(file.Path, fmt.Sprintf("failed to save updated file: %v", err), 0)
-			} else {
-				file.Content = outYAML
-			}
-		}
-	}
-}
-
-func (p *PolicyToLint) processEmbeddedPolicies(pa *v1.Policy, file *File) {
-	for idx, spec := range pa.Spec.Policies {
-		if regoSrc := spec.GetEmbedded(); regoSrc != "" {
-			formatted := p.validateAndFormatRego(
-				regoSrc,
-				fmt.Sprintf("%s:(embedded #%d)", file.Path, idx+1),
-			)
-
-			if p.Format && formatted != regoSrc {
-				spec.Source = &v1.PolicySpecV2_Embedded{Embedded: formatted}
-			}
-		}
 	}
 }
 
@@ -356,11 +290,37 @@ func (p *PolicyToLint) runRegalLinter(filePath, content string) {
 		return
 	}
 
-	// Add any violations to the policy errors
+	// Parse the Rego AST to map line numbers to rule names
+	regoRuleMap := p.buildRegoRuleMap(content)
+
+	// Add violations to the policy errors
 	for _, v := range report.Violations {
-		errorStr := strings.ReplaceAll(v.Description, "`opa fmt`", "`--format`")
+		errorStr := p.formatViolationError(v, regoRuleMap)
 		p.AddError(filePath, errorStr, v.Location.Row)
 	}
+}
+
+// Creates a formatted error message from a Regal violation
+// Follows format <file>:<line>: [<ruleName>] <errorMsg> - <docLinks>
+func (p *PolicyToLint) formatViolationError(v report.Violation, regoRuleMap map[int]string) string {
+	// Extract resources
+	resources := make([]string, 0, len(v.RelatedResources))
+	for _, r := range v.RelatedResources {
+		resources = append(resources, r.Reference)
+	}
+	resourceStr := strings.Join(resources, ", ")
+
+	// Try to identify which Rego rule contains this violation
+	regoRuleName, exists := regoRuleMap[v.Location.Row]
+	if !exists {
+		regoRuleName = ""
+	} else {
+		regoRuleName = fmt.Sprintf("[%s]", regoRuleName)
+	}
+
+	// Format the error message
+	lintError := fmt.Sprintf("%s: %s - %s", regoRuleName, v.Description, resourceStr)
+	return strings.ReplaceAll(lintError, "`opa fmt`", "`--format`")
 }
 
 // Attempts to load configuration in this order:
@@ -408,60 +368,38 @@ func (p *PolicyToLint) loadDefaultConfig() (*config.Config, error) {
 	return &cfg, nil
 }
 
-// Updates the embedded rego policies in a YAML file
-// Manual update required due to yaml.marshal limitations
-func (p *PolicyToLint) updateEmbeddedRegoInYAML(file *File, rootNode *yaml.Node) error {
-	if rootNode.Kind != yaml.DocumentNode || len(rootNode.Content) == 0 {
-		return fmt.Errorf("unexpected YAML root structure")
+// Creates a mapping from line numbers to Rego rule names
+func (p *PolicyToLint) buildRegoRuleMap(regoSrc string) map[int]string {
+	ruleMap := make(map[int]string)
+
+	// Parse the Rego source into AST
+	module, err := opaAst.ParseModule("", regoSrc)
+	if err != nil {
+		// Return empty map if parsing fails
+		return ruleMap
 	}
 
-	doc := rootNode.Content[0]
-	if doc.Kind != yaml.MappingNode {
-		return fmt.Errorf("expected mapping node at document root")
-	}
+	// Walk through the AST to find rule definitions
+	for _, rule := range module.Rules {
+		if rule.Location != nil {
+			ruleName := string(rule.Head.Name)
+			startLine := rule.Location.Row
+			endLine := startLine
 
-	// Locate spec policy node
-	var specNode *yaml.Node
-	for i := 0; i < len(doc.Content)-1; i += 2 {
-		if doc.Content[i].Value == "spec" && doc.Content[i+1].Kind == yaml.MappingNode {
-			specNode = doc.Content[i+1]
-			break
-		}
-	}
-	if specNode == nil {
-		return fmt.Errorf("spec node not found")
-	}
-
-	// Locate policies node within spec
-	var policiesNode *yaml.Node
-	for i := 0; i < len(specNode.Content)-1; i += 2 {
-		if specNode.Content[i].Value == "policies" && specNode.Content[i+1].Kind == yaml.SequenceNode {
-			policiesNode = specNode.Content[i+1]
-			break
-		}
-	}
-	if policiesNode == nil {
-		return fmt.Errorf("spec.policies node not found")
-	}
-
-	// Iterate over and update each rego policy
-	for _, policy := range policiesNode.Content {
-		if policy.Kind != yaml.MappingNode {
-			continue
-		}
-
-		for i := 0; i < len(policy.Content)-1; i += 2 {
-			key := policy.Content[i]
-			val := policy.Content[i+1]
-
-			if key.Value == "embedded" && val.Kind == yaml.ScalarNode {
-				formatted := p.validateAndFormatRego(val.Value, file.Path)
-				if formatted != val.Value {
-					val.Value = formatted
+			// Try to find the end line of the rule
+			if len(rule.Body) > 0 {
+				lastExpr := rule.Body[len(rule.Body)-1]
+				if lastExpr.Location != nil {
+					endLine = lastExpr.Location.Row
 				}
+			}
+
+			// Map all lines within this rule to the rule name
+			for line := startLine; line <= endLine; line++ {
+				ruleMap[line] = ruleName
 			}
 		}
 	}
 
-	return nil
+	return ruleMap
 }
