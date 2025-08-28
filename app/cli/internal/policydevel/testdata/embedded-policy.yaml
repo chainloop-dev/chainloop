@@ -1,0 +1,16 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: test-policy
+  description: Test validation policy
+spec:
+  policies:
+    - embedded: |
+        package main
+
+        result := {
+            "violations": [],
+            "skip_reason": "",
+            "skipped": false
+        }
+      kind: ATTESTATION

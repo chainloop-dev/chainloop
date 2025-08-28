@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: test-policy
+  description: Test policy with referenced rego file
+spec:
+  policies:
+    - path: valid.rego
+      kind: ATTESTATION
