@@ -87,7 +87,7 @@ func TestPolicyToLint_processFile(t *testing.T) {
 	t.Run("process yaml file", func(t *testing.T) {
 		content := "test: yaml"
 		yamlFile := filepath.Join(tempDir, "test.yaml")
-		err := os.WriteFile(yamlFile, []byte(content), 0644)
+		err := os.WriteFile(yamlFile, []byte(content), 0600)
 		require.NoError(t, err)
 
 		err = policy.processFile(yamlFile)
@@ -304,7 +304,7 @@ func TestPolicyToLint_Validate(t *testing.T) {
 		require.NoError(t, err)
 
 		regoFile := filepath.Join(tempDir, "test.rego")
-		err = os.WriteFile(regoFile, content, 0644)
+		err = os.WriteFile(regoFile, content, 0600)
 		require.NoError(t, err)
 
 		policy := &PolicyToLint{
@@ -325,7 +325,7 @@ func TestPolicyToLint_Validate(t *testing.T) {
 		require.NoError(t, err)
 
 		regoFile := filepath.Join(tempDir, "format_test.rego")
-		err = os.WriteFile(regoFile, content, 0644)
+		err = os.WriteFile(regoFile, content, 0600)
 		require.NoError(t, err)
 
 		policy := &PolicyToLint{
