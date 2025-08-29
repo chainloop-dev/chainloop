@@ -112,7 +112,7 @@ const (
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
 	expectedArgs                              = "expected_args"
-	evalResult                                = "evaluation_result"
+	violationsResult                          = "violations"
 	inputElements                             = "elements"
 	deprecatedRule                            = "violations"
 	mainRule                                  = "result"
@@ -400,8 +400,16 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 
 	// Create input with policy and expected parameters
 	inputMap := make(map[string]interface{})
-	inputMap[inputArgs] = evaluationParams
-	inputMap[expectedArgs] = expectedParams
+	if evaluationParams == nil {
+		inputMap[inputArgs] = map[string]string{}
+	} else {
+		inputMap[inputArgs] = evaluationParams
+	}
+	if expectedParams == nil {
+		inputMap[expectedArgs] = map[string]string{}
+	} else {
+		inputMap[expectedArgs] = expectedParams
+	}
 
 	// Evaluate matches_parameters rule
 	matchesParameters, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesParametersRule), parsedModule, inputMap)
@@ -414,20 +422,27 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 }
 
 // MatchesEvaluation evaluates the matches_evaluation rule in a rego policy.
-// The function creates an input object with policy parameters and evaluation result.
+// The function creates an input object with expected parameters and policy violations.
 // Returns true if the policy's matches_evaluation rule evaluates to true, false otherwise.
-// If the rule is not found or evaluation fails, it defaults to false.
-func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, ev *engine.EvaluationResult, evaluationParams map[string]string) (bool, error) {
+func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, violations []string, expectedParams map[string]string) (bool, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse rego policy: %w", err)
 	}
 
-	// Create input with the policy evaluation data
+	// Create input expected parameters and policy violations
 	inputMap := make(map[string]interface{})
-	inputMap[inputArgs] = evaluationParams
-	inputMap[evalResult] = ev
+	if expectedParams == nil {
+		inputMap[expectedArgs] = map[string]string{}
+	} else {
+		inputMap[expectedArgs] = expectedParams
+	}
+	if violations == nil {
+		inputMap[violationsResult] = []string{}
+	} else {
+		inputMap[violationsResult] = violations
+	}
 
 	// Evaluate matches_parameters rule
 	matchesEvaluation, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesEvaluationRule), parsedModule, inputMap)
