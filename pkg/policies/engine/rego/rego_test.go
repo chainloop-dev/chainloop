@@ -393,44 +393,25 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 	}
 
 	t.Run("evaluation with violations and high severity matches", func(t *testing.T) {
-		evaluation := &engine.EvaluationResult{
-			Violations: []*engine.PolicyViolation{
-				{Subject: "test", Violation: "test violation"},
-			},
-			Skipped:    false,
-			SkipReason: "",
-			Ignore:     false,
-		}
+		violations := []string{"test violation"}
 		evaluationParams := map[string]string{"severity": "high"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
 		require.NoError(t, err)
 		assert.True(t, matches)
 	})
 
 	t.Run("evaluation without violations does not match", func(t *testing.T) {
-		evaluation := &engine.EvaluationResult{
-			Violations: []*engine.PolicyViolation{},
-			Skipped:    false,
-			SkipReason: "",
-			Ignore:     false,
-		}
+		violations := []string{}
 		evaluationParams := map[string]string{"severity": "high"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
 
 	t.Run("evaluation with violations but wrong severity does not match", func(t *testing.T) {
-		evaluation := &engine.EvaluationResult{
-			Violations: []*engine.PolicyViolation{
-				{Subject: "test", Violation: "test violation"},
-			},
-			Skipped:    false,
-			SkipReason: "",
-			Ignore:     false,
-		}
+		violations := []string{"test violation"}
 		evaluationParams := map[string]string{"severity": "low"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
@@ -443,16 +424,9 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 	})
 
 	t.Run("empty evaluation params", func(t *testing.T) {
-		evaluation := &engine.EvaluationResult{
-			Violations: []*engine.PolicyViolation{
-				{Subject: "test", Violation: "test violation"},
-			},
-			Skipped:    false,
-			SkipReason: "",
-			Ignore:     false,
-		}
+		violations := []string{"test violation"}
 		evaluationParams := map[string]string{}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, evaluation, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
