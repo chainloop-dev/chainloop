@@ -15,7 +15,7 @@ policies:
 policyGroups:
   - ref: sbom-quality
     with:
-      bannedLicenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      bannedLicenses: GPL, AGPL
       bannedComponents: log4j@2.14.1
   - ref: slsa-checks
     with:
