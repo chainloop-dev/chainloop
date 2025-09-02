@@ -170,7 +170,7 @@ func main() {
 	// Start the background CAS Backend checker
 	// TODO: Make it configurable from the application config
 	if app.casBackendChecker != nil {
-		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{CheckInterval: 1 * time.Minute, OnlyDefaults: true})
+		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{CheckInterval: 30 * time.Minute, OnlyDefaults: true})
 	}
 
 	// start and wait for stop signal
