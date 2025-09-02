@@ -1376,16 +1376,16 @@ func (_c *MockCASBackendRepo_Update_Call) RunAndReturn(run func(context1 context
 }
 
 // UpdateValidationStatus provides a mock function for the type MockCASBackendRepo
-func (_mock *MockCASBackendRepo) UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error {
-	ret := _mock.Called(ctx, ID, status)
+func (_mock *MockCASBackendRepo) UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus, validationError *string) error {
+	ret := _mock.Called(ctx, ID, status, validationError)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateValidationStatus")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, CASBackendValidationStatus) error); ok {
-		r0 = returnFunc(ctx, ID, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, CASBackendValidationStatus, *string) error); ok {
+		r0 = returnFunc(ctx, ID, status, validationError)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1401,11 +1401,12 @@ type MockCASBackendRepo_UpdateValidationStatus_Call struct {
 //   - ctx context.Context
 //   - ID uuid.UUID
 //   - status CASBackendValidationStatus
-func (_e *MockCASBackendRepo_Expecter) UpdateValidationStatus(ctx interface{}, ID interface{}, status interface{}) *MockCASBackendRepo_UpdateValidationStatus_Call {
-	return &MockCASBackendRepo_UpdateValidationStatus_Call{Call: _e.mock.On("UpdateValidationStatus", ctx, ID, status)}
+//   - validationError *string
+func (_e *MockCASBackendRepo_Expecter) UpdateValidationStatus(ctx interface{}, ID interface{}, status interface{}, validationError interface{}) *MockCASBackendRepo_UpdateValidationStatus_Call {
+	return &MockCASBackendRepo_UpdateValidationStatus_Call{Call: _e.mock.On("UpdateValidationStatus", ctx, ID, status, validationError)}
 }
 
-func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) Run(run func(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus)) *MockCASBackendRepo_UpdateValidationStatus_Call {
+func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) Run(run func(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus, validationError *string)) *MockCASBackendRepo_UpdateValidationStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1419,10 +1420,15 @@ func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) Run(run func(ctx conte
 		if args[2] != nil {
 			arg2 = args[2].(CASBackendValidationStatus)
 		}
+		var arg3 *string
+		if args[3] != nil {
+			arg3 = args[3].(*string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -1433,7 +1439,7 @@ func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) Return(err error) *Moc
 	return _c
 }
 
-func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error) *MockCASBackendRepo_UpdateValidationStatus_Call {
+func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus, validationError *string) error) *MockCASBackendRepo_UpdateValidationStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }

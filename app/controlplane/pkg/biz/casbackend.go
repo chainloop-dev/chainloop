@@ -78,6 +78,8 @@ type CASBackendOpts struct {
 	Location, SecretName, Description string
 	Provider                          CASBackendProvider
 	Default                           bool
+	ValidationStatus                  CASBackendValidationStatus
+	ValidationError                   *string
 }
 
 type CASBackendCreateOpts struct {
@@ -346,6 +348,8 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
 			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
+			ValidationStatus: CASBackendValidationOK,
+			ValidationError:  ToPtr(""),
 		},
 	})
 	if err != nil {

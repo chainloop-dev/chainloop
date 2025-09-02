@@ -158,6 +158,14 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 			updateChain = updateChain.SetSecretName(opts.SecretName)
 		}
 
+		if opts.ValidationStatus != "" {
+			updateChain = updateChain.SetValidationStatus(opts.ValidationStatus)
+		}
+
+		if opts.ValidationError != nil {
+			updateChain = updateChain.SetValidationError(*opts.ValidationError)
+		}
+
 		backend, err = updateChain.Save(ctx)
 		if err != nil {
 			return err
@@ -229,13 +237,13 @@ func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUI
 	update := r.data.DB.CASBackend.UpdateOneID(id).
 		SetValidationStatus(status).
 		SetValidatedAt(time.Now())
-	
+
 	if validationError != nil {
 		update = update.SetValidationError(*validationError)
 	} else {
 		update = update.ClearValidationError()
 	}
-	
+
 	return update.Exec(ctx)
 }
 
