@@ -341,18 +341,18 @@ func TestRego_MatchesParameters(t *testing.T) {
 		Source: regoContent,
 	}
 
-	t.Run("high severity matches medium expectation", func(t *testing.T) {
+	t.Run("high expectation matches low severity", func(t *testing.T) {
 		matches, err := r.MatchesParameters(context.TODO(), policy,
-			map[string]string{"severity": "high"},
-			map[string]string{"severity": "medium"})
+			map[string]string{"severity": "low"},
+			map[string]string{"severity": "high"})
 		require.NoError(t, err)
 		assert.True(t, matches)
 	})
 
-	t.Run("low severity does not match high expectation", func(t *testing.T) {
+	t.Run("medium expectation does not match high severity", func(t *testing.T) {
 		matches, err := r.MatchesParameters(context.TODO(), policy,
-			map[string]string{"severity": "low"},
-			map[string]string{"severity": "high"})
+			map[string]string{"severity": "high"},
+			map[string]string{"severity": "medium"})
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})

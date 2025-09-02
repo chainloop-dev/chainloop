@@ -15,6 +15,6 @@ matches_parameters := result {
     eval_idx := severity_index(eval_severity)
     expected_idx := severity_index(expected_severity)
     
-    # Evaluation severity must be >= expected severity
-    result := eval_idx >= expected_idx
+    # Expected severity must be >= evaluation severity
+    result := expected_idx >= eval_idx
 }
