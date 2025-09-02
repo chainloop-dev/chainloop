@@ -45,11 +45,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	providers := loader.LoadProviders(readerWriter)
 	bootstrap_CASServer := bootstrap.CasServer
 	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
-	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	bootstrap_NatsServer := bootstrap.NatsServer
 	conn, err := newNatsConnection(bootstrap_NatsServer)
 	if err != nil {
@@ -62,6 +57,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
+	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, auditorUseCase, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)
@@ -302,7 +302,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
 	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, userAccessSyncerUseCase, bootstrap)
+	casBackendChecker := biz.NewCASBackendChecker(logger, casBackendRepo, casBackendUseCase)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, userAccessSyncerUseCase, casBackendChecker, bootstrap)
 	return mainApp, func() {
 		cleanup()
 	}, nil

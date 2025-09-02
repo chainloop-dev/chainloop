@@ -245,6 +245,36 @@ func (_m *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CAS
 	return r0, r1
 }
 
+// ListBackends provides a mock function with given fields: ctx, onlyDefaults
+func (_m *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([]*biz.CASBackend, error) {
+	ret := _m.Called(ctx, onlyDefaults)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListBackends")
+	}
+
+	var r0 []*biz.CASBackend
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, bool) ([]*biz.CASBackend, error)); ok {
+		return rf(ctx, onlyDefaults)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, bool) []*biz.CASBackend); ok {
+		r0 = rf(ctx, onlyDefaults)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*biz.CASBackend)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, bool) error); ok {
+		r1 = rf(ctx, onlyDefaults)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SoftDelete provides a mock function with given fields: ctx, ID
 func (_m *CASBackendRepo) SoftDelete(ctx context.Context, ID uuid.UUID) error {
 	ret := _m.Called(ctx, ID)

@@ -1,0 +1,19 @@
+{
+  "ActionType": "CASBackendSoftDeleted",
+  "TargetType": "CASBackend",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has deleted CAS backend test-backend",
+  "Info": {
+    "cas_backend_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "cas_backend_name": "test-backend",
+    "provider": "OCI",
+    "location": "test-location",
+    "default": true
+  },
+  "Digest": "sha256:1ea71357557c287db2f67687985c681c9cf4b383c726ea209df97a065afb81cd"
+}

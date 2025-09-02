@@ -1,0 +1,20 @@
+{
+  "ActionType": "CASBackendCreated",
+  "TargetType": "CASBackend",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "SYSTEM",
+  "ActorID": null,
+  "ActorEmail": "",
+  "ActorName": "test-token",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "test-token has created CAS backend test-backend with provider OCI (default)",
+  "Info": {
+    "cas_backend_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "cas_backend_name": "test-backend",
+    "provider": "OCI",
+    "location": "test-location",
+    "default": true,
+    "description": "test description"
+  },
+  "Digest": "sha256:aa8f32fed1393ad0dcbb06ec7a478e14c6a02fe449233a5068786b69232d571e"
+}

@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	blobM "github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -37,7 +36,7 @@ type casBackendTestSuite struct {
 	validUUID       uuid.UUID
 	invalidUUID     string
 	useCase         *biz.CASBackendUseCase
-	repo            *bizMocks.CASBackendRepo
+	repo            *biz.MockCASBackendRepo
 	credsRW         *credentialsM.ReaderWriter
 	backendProvider *blobM.Provider
 }
@@ -247,7 +246,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 			useCase, err := biz.NewCASBackendUseCase(s.repo, s.credsRW,
 				backends.Providers{
 					"OCI": s.backendProvider,
-				}, tc.config, nil)
+				}, tc.config, nil, nil)
 
 			if tc.expectError {
 				assert.Error(err)
@@ -278,14 +277,14 @@ func (s *casBackendTestSuite) resetMock() {
 func (s *casBackendTestSuite) SetupTest() {
 	s.validUUID = uuid.New()
 	s.invalidUUID = "deadbeef"
-	s.repo = bizMocks.NewCASBackendRepo(s.T())
+	s.repo = biz.NewMockCASBackendRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
 	var err error
 	s.useCase, err = biz.NewCASBackendUseCase(s.repo, s.credsRW,
 		backends.Providers{
 			"OCI": s.backendProvider,
-		}, nil, nil,
+		}, nil, nil, nil,
 	)
 	s.Require().NoError(err)
 }

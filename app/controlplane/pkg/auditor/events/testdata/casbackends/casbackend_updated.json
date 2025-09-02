@@ -1,0 +1,21 @@
+{
+  "ActionType": "CASBackendUpdated",
+  "TargetType": "CASBackend",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has updated CAS backend test-backend to default and updated credentials",
+  "Info": {
+    "cas_backend_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "cas_backend_name": "test-backend",
+    "provider": "OCI",
+    "location": "test-location",
+    "default": true,
+    "new_description": "test description",
+    "credentials_changed": true
+  },
+  "Digest": "sha256:2c738aacd42a4257f9496c270586c1edf0be13d0d10160e8c564a96fedf0a726"
+}

@@ -1,0 +1,20 @@
+{
+  "ActionType": "CASBackendCreated",
+  "TargetType": "CASBackend",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has created CAS backend test-backend with provider OCI (default)",
+  "Info": {
+    "cas_backend_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "cas_backend_name": "test-backend",
+    "provider": "OCI",
+    "location": "test-location",
+    "default": true,
+    "description": "test description"
+  },
+  "Digest": "sha256:e35e315f427c27772253c0eef3e455be4d35d4845e7925c7b4620fb6927946a7"
+}

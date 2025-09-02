@@ -7,7 +7,7 @@ services:
   dex:
     volumes:
       - ".:/wd"
-    image: docker.io/bitnami/dex:2
+    image: "ghcr.io/chainloop-dev/chainloop/dex:2.43.1"
     working_dir: /wd/dex
     command: "serve config.labs.yaml"
     ports:
