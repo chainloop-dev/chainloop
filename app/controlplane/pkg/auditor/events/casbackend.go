@@ -119,6 +119,7 @@ func (c *CASBackendUpdated) ActionInfo() (json.RawMessage, error) {
 func (c *CASBackendUpdated) Description() string {
 	var credentialsInfo string
 	if c.CredentialsChanged {
+		// nolint: gosec
 		credentialsInfo = " and updated credentials"
 	}
 
