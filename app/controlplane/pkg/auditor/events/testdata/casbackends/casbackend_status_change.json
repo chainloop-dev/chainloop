@@ -1,0 +1,21 @@
+{
+  "ActionType": "CASBackendStatusChanged",
+  "TargetType": "CASBackend",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "CAS backend test-backend status changed from OK to Invalid",
+  "Info": {
+    "cas_backend_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "cas_backend_name": "test-backend",
+    "provider": "OCI",
+    "location": "test-location",
+    "default": true,
+    "previous_status": "OK",
+    "new_status": "Invalid"
+  },
+  "Digest": "sha256:2112ea486d9e36c40a6869efcbf745836742c70dc97a17cffe30ae3651b0579c"
+}

@@ -43,11 +43,6 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	bootstrap_CASServer := NewCASBackendConfig()
 	casServerDefaultOpts := NewCASServerOptions(bootstrap_CASServer)
-	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	conn, err := newNatsConnection()
 	if err != nil {
 		cleanup()
@@ -59,6 +54,11 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		return nil, nil, err
 	}
 	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
+	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, auditorUseCase, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	integrationRepo := data.NewIntegrationRepo(dataData, logger)
 	integrationAttachmentRepo := data.NewIntegrationAttachmentRepo(dataData, logger)
 	workflowRepo := data.NewWorkflowRepo(dataData, logger)

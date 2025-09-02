@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
@@ -97,6 +98,9 @@ type CASBackendRepo interface {
 	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
 	FindByNameInOrg(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
+	// ListBackends returns CAS backends across all organizations
+	// If onlyDefaults is true, only default backends are returned
+	ListBackends(ctx context.Context, onlyDefaults bool) ([]*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
 	Update(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)
@@ -116,6 +120,7 @@ type CASBackendUseCase struct {
 	credsRW         credentials.ReaderWriter
 	providers       backend.Providers
 	MaxBytesDefault int64
+	auditorUC       *AuditorUseCase
 }
 
 // CASServerDefaultOpts holds the default options for the CAS server
@@ -123,7 +128,7 @@ type CASServerDefaultOpts struct {
 	DefaultEntryMaxSize string
 }
 
-func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, c *CASServerDefaultOpts, l log.Logger) (*CASBackendUseCase, error) {
+func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter, providers backend.Providers, c *CASServerDefaultOpts, auditorUC *AuditorUseCase, l log.Logger) (*CASBackendUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
@@ -137,7 +142,14 @@ func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter,
 		}
 	}
 
-	return &CASBackendUseCase{repo, servicelogger.ScopedHelper(l, "biz/CASBackend"), credsRW, providers, int64(maxBytesDefault)}, nil
+	return &CASBackendUseCase{
+		repo:            repo,
+		logger:          servicelogger.ScopedHelper(l, "biz/CASBackend"),
+		credsRW:         credsRW,
+		providers:       providers,
+		MaxBytesDefault: int64(maxBytesDefault),
+		auditorUC:       auditorUC,
+	}, nil
 }
 
 func (uc *CASBackendUseCase) List(ctx context.Context, orgID string) ([]*CASBackend, error) {
@@ -284,6 +296,20 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 		return nil, fmt.Errorf("failed to create CAS backend: %w", err)
 	}
 
+	// Record CAS backend creation in audit log
+	if uc.auditorUC != nil {
+		uc.auditorUC.Dispatch(ctx, &events.CASBackendCreated{
+			CASBackendBase: &events.CASBackendBase{
+				CASBackendID:   &backend.ID,
+				CASBackendName: backend.Name,
+				Provider:       string(backend.Provider),
+				Location:       backend.Location,
+				Default:        backend.Default,
+			},
+			CASBackendDescription: description,
+		}, &orgUUID)
+	}
+
 	return backend, nil
 }
 
@@ -330,6 +356,22 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 		if _, err := uc.defaultFallbackBackend(ctx, orgID); err != nil {
 			return nil, fmt.Errorf("setting the fallback backend as default: %w", err)
 		}
+	}
+
+	// Record CAS backend update in audit log
+	if uc.auditorUC != nil {
+		uc.auditorUC.Dispatch(ctx, &events.CASBackendUpdated{
+			CASBackendBase: &events.CASBackendBase{
+				CASBackendID:   &after.ID,
+				CASBackendName: after.Name,
+				Provider:       string(after.Provider),
+				Location:       after.Location,
+				Default:        after.Default,
+			},
+			NewDescription:     &description,
+			CredentialsChanged: creds != nil,
+			PreviousDefault:    before.Default,
+		}, &orgUUID)
 	}
 
 	return after, nil
@@ -414,6 +456,19 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		}
 	}
 
+	// Record CAS backend soft deletion in audit log
+	if uc.auditorUC != nil {
+		uc.auditorUC.Dispatch(ctx, &events.CASBackendDeleted{
+			CASBackendBase: &events.CASBackendBase{
+				CASBackendID:   &backend.ID,
+				CASBackendName: backend.Name,
+				Provider:       string(backend.Provider),
+				Location:       backend.Location,
+				Default:        backend.Default,
+			},
+		}, &orgUUID)
+	}
+
 	return nil
 }
 
@@ -442,8 +497,25 @@ func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
 		}
 	}
 
+	if delErr := uc.repo.Delete(ctx, backendUUID); delErr != nil {
+		return delErr
+	}
 	uc.logger.Infow("msg", "CAS Backend deleted", "ID", id)
-	return uc.repo.Delete(ctx, backendUUID)
+
+	// Record CAS backend permanent deletion in audit log
+	if uc.auditorUC != nil {
+		uc.auditorUC.Dispatch(ctx, &events.CASBackendPermanentDeleted{
+			CASBackendBase: &events.CASBackendBase{
+				CASBackendID:   &backend.ID,
+				CASBackendName: backend.Name,
+				Provider:       string(backend.Provider),
+				Location:       backend.Location,
+				Default:        backend.Default,
+			},
+		}, &backend.OrganizationID)
+	}
+
+	return nil
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
@@ -487,10 +559,39 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 			return
 		}
 
+		// Store previous status for audit logging
+		previousStatus := backend.ValidationStatus
+
 		// Update the validation status
 		uc.logger.Infow("msg", "updating validation status", "ID", id, "status", validationStatus)
 		if err := uc.repo.UpdateValidationStatus(ctx, backendUUID, validationStatus); err != nil {
 			uc.logger.Errorw("msg", "updating validation status", "ID", id, "error", err)
+			return
+		}
+
+		// Log status change as an audit event if status has changed and auditor is available
+		if uc.auditorUC != nil && previousStatus != validationStatus {
+			uc.logger.Debugw("msg", "status changed, dispatching audit event",
+				"backend", backend.ID,
+				"previousStatus", previousStatus,
+				"newStatus", validationStatus)
+
+			// Check if this is a recovery event (going from failed to OK)
+			isRecovery := previousStatus == CASBackendValidationFailed && validationStatus == CASBackendValidationOK
+
+			// Create and send event for the status change
+			uc.auditorUC.Dispatch(ctx, &events.CASBackendStatusChanged{
+				CASBackendBase: &events.CASBackendBase{
+					CASBackendID:   &backend.ID,
+					CASBackendName: backend.Name,
+					Provider:       string(backend.Provider),
+					Location:       backend.Location,
+					Default:        backend.Default,
+				},
+				PreviousStatus: string(previousStatus),
+				NewStatus:      string(validationStatus),
+				IsRecovery:     isRecovery,
+			}, &backend.OrganizationID)
 		}
 	}()
 
