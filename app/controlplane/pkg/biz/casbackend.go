@@ -499,16 +499,12 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	// 1 - Retrieve the credentials from the external secrets manager
 	var creds any
 	if err := uc.credsRW.ReadCredentials(ctx, backend.SecretName, &creds); err != nil {
-		errMsg := fmt.Sprintf("credentials not found or invalid: %v", err)
-		validationError = &errMsg
 		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id, "error", err)
 		return nil
 	}
 
 	credsJSON, err := json.Marshal(creds)
 	if err != nil {
-		errMsg := fmt.Sprintf("credentials invalid: %v", err)
-		validationError = &errMsg
 		uc.logger.Infow("msg", "credentials invalid", "ID", id, "error", err)
 		return nil
 	}

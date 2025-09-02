@@ -143,6 +143,13 @@ func toTimePtr(t time.Time) *time.Time {
 	return &t
 }
 
+func toStringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 func orgScopedQuery(client *ent.Client, orgID uuid.UUID) *ent.OrganizationQuery {
 	return client.Organization.Query().Where(organization.ID(orgID), organization.DeletedAtIsNil())
 }

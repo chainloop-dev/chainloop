@@ -257,7 +257,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		CreatedAt:        toTimePtr(backend.CreatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
-		ValidationError:  biz.ToPtr(backend.ValidationError),
+		ValidationError:  toStringPtr(backend.ValidationError),
 		Provider:         backend.Provider,
 		Default:          backend.Default,
 		Inline:           backend.Provider == biz.CASBackendInline,
