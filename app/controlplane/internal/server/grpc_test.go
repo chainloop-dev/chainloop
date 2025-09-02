@@ -41,28 +41,6 @@ func TestRequireCurrentUserMatcher(t *testing.T) {
 	}
 }
 
-func TestRequireFullyConfiguredOrgMatcher(t *testing.T) {
-	testCases := []struct {
-		operation string
-		matches   bool
-	}{
-		{"/controlplane.v1.WorkflowService/List", true},
-		{"/controlplane.v1.WorkflowRunService/List", true},
-		{"/controlplane.v1.OCIRepositoryService/Save", false},
-		{"/controlplane.v1.OrganizationService/ListMemberships", false},
-		{"/controlplane.v1.OrganizationService/SetCurrent", false},
-		{"/controlplane.v1.CASBackendService/List", false},
-		{"/controlplane.v1.CASBackendService/Add", false},
-	}
-
-	matchFunc := requireFullyConfiguredOrgMatcher()
-	for _, op := range testCases {
-		if got, want := matchFunc(context.Background(), op.operation), op.matches; got != want {
-			assert.Equal(t, matchFunc(context.Background(), op.operation), op.matches)
-		}
-	}
-}
-
 func TestRequireRobotAccountMatcher(t *testing.T) {
 	testCases := []struct {
 		operation string

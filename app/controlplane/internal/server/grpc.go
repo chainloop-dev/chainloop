@@ -206,9 +206,6 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			selector.Server(
 				usercontext.CheckUserHasAccess(opts.AuthConfig.AllowList, opts.UserUseCase),
 			).Match(allowListEnabled()).Build(),
-			selector.Server(
-				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
-			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 		).Match(requireCurrentUserMatcher()).Build(),
 	)
 
@@ -253,15 +250,6 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 func requireCurrentUserMatcher() selector.MatchFunc {
 	// Skip authentication on the status grpc service
 	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService|controlplane.v1.SigningService)"
-	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
-	}
-}
-
-func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
-	// We do not need to remove other endpoints since this matcher is called once the requireCurrentUserMatcher one has passed
-	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*"
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
