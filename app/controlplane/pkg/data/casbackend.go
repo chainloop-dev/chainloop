@@ -224,12 +224,19 @@ func (r *CASBackendRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.CASBackend.DeleteOneID(id).Exec(ctx)
 }
 
-// UpdateValidationStatus updates the validation status of an OCI repository
-func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus) error {
-	return r.data.DB.CASBackend.UpdateOneID(id).
+// UpdateValidationStatus updates the validation status of a CAS backend
+func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus, validationError *string) error {
+	update := r.data.DB.CASBackend.UpdateOneID(id).
 		SetValidationStatus(status).
-		SetValidatedAt(time.Now()).
-		Exec(ctx)
+		SetValidatedAt(time.Now())
+	
+	if validationError != nil {
+		update = update.SetValidationError(*validationError)
+	} else {
+		update = update.ClearValidationError()
+	}
+	
+	return update.Exec(ctx)
 }
 
 func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
@@ -250,6 +257,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		CreatedAt:        toTimePtr(backend.CreatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
+		ValidationError:  biz.ToPtr(backend.ValidationError),
 		Provider:         backend.Provider,
 		Default:          backend.Default,
 		Inline:           backend.Provider == biz.CASBackendInline,

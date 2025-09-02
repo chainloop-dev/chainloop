@@ -292,6 +292,8 @@ message CASBackendItem {
   // Is it an inline backend?
   // inline means that the content is stored in the attestation itself
   bool is_inline = 10;
+  // Error message if validation failed
+  optional string validation_error = 12;
 
   message Limits {
     // Max number of bytes allowed to be stored in this backend

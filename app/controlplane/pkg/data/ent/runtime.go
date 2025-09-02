@@ -64,15 +64,15 @@ func init() {
 	// casbackend.DefaultCreatedAt holds the default value on creation for the created_at field.
 	casbackend.DefaultCreatedAt = casbackendDescCreatedAt.Default.(func() time.Time)
 	// casbackendDescValidatedAt is the schema descriptor for validated_at field.
-	casbackendDescValidatedAt := casbackendFields[8].Descriptor()
+	casbackendDescValidatedAt := casbackendFields[9].Descriptor()
 	// casbackend.DefaultValidatedAt holds the default value on creation for the validated_at field.
 	casbackend.DefaultValidatedAt = casbackendDescValidatedAt.Default.(func() time.Time)
 	// casbackendDescDefault is the schema descriptor for default field.
-	casbackendDescDefault := casbackendFields[9].Descriptor()
+	casbackendDescDefault := casbackendFields[10].Descriptor()
 	// casbackend.DefaultDefault holds the default value on creation for the default field.
 	casbackend.DefaultDefault = casbackendDescDefault.Default.(bool)
 	// casbackendDescFallback is the schema descriptor for fallback field.
-	casbackendDescFallback := casbackendFields[11].Descriptor()
+	casbackendDescFallback := casbackendFields[12].Descriptor()
 	// casbackend.DefaultFallback holds the default value on creation for the fallback field.
 	casbackend.DefaultFallback = casbackendDescFallback.Default.(bool)
 	// casbackendDescID is the schema descriptor for id field.

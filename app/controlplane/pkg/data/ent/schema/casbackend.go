@@ -49,6 +49,7 @@ func (CASBackend) Fields() []ent.Field {
 		field.Enum("validation_status").
 			GoType(biz.CASBackendValidationStatus("")).
 			Default(string(biz.CASBackendValidationOK)),
+		field.String("validation_error").Optional(),
 		field.Time("validated_at").Default(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Bool("default").Default(false),

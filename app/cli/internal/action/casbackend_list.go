@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ type CASBackendItem struct {
 	Inline           bool              `json:"inline"`
 	Limits           *CASBackendLimits `json:"limits"`
 	ValidationStatus ValidationStatus  `json:"validationStatus"`
+	ValidationError  *string           `json:"validationError,omitempty"`
 
 	CreatedAt   *time.Time `json:"createdAt"`
 	ValidatedAt *time.Time `json:"validatedAt"`
@@ -100,6 +101,10 @@ func pbCASBackendItemToAction(in *pb.CASBackendItem) *CASBackendItem {
 		b.ValidationStatus = Valid
 	case pb.CASBackendItem_VALIDATION_STATUS_INVALID:
 		b.ValidationStatus = Invalid
+	}
+
+	if in.ValidationError != nil {
+		b.ValidationError = in.ValidationError
 	}
 
 	return b

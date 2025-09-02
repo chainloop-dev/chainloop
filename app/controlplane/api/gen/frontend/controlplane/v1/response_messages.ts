@@ -619,6 +619,8 @@ export interface CASBackendItem {
    * inline means that the content is stored in the attestation itself
    */
   isInline: boolean;
+  /** Error message if validation failed */
+  validationError?: string | undefined;
 }
 
 export enum CASBackendItem_ValidationStatus {
@@ -3813,6 +3815,7 @@ function createBaseCASBackendItem(): CASBackendItem {
     default: false,
     limits: undefined,
     isInline: false,
+    validationError: undefined,
   };
 }
 
@@ -3850,6 +3853,9 @@ export const CASBackendItem = {
     }
     if (message.isInline === true) {
       writer.uint32(80).bool(message.isInline);
+    }
+    if (message.validationError !== undefined) {
+      writer.uint32(98).string(message.validationError);
     }
     return writer;
   },
@@ -3938,6 +3944,13 @@ export const CASBackendItem = {
 
           message.isInline = reader.bool();
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.validationError = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3962,6 +3975,7 @@ export const CASBackendItem = {
       default: isSet(object.default) ? Boolean(object.default) : false,
       limits: isSet(object.limits) ? CASBackendItem_Limits.fromJSON(object.limits) : undefined,
       isInline: isSet(object.isInline) ? Boolean(object.isInline) : false,
+      validationError: isSet(object.validationError) ? String(object.validationError) : undefined,
     };
   },
 
@@ -3980,6 +3994,7 @@ export const CASBackendItem = {
     message.limits !== undefined &&
       (obj.limits = message.limits ? CASBackendItem_Limits.toJSON(message.limits) : undefined);
     message.isInline !== undefined && (obj.isInline = message.isInline);
+    message.validationError !== undefined && (obj.validationError = message.validationError);
     return obj;
   },
 
@@ -4002,6 +4017,7 @@ export const CASBackendItem = {
       ? CASBackendItem_Limits.fromPartial(object.limits)
       : undefined;
     message.isInline = object.isInline ?? false;
+    message.validationError = object.validationError ?? undefined;
     return message;
   },
 };

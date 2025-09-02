@@ -13,6 +13,10 @@
     "^(validatedAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
+    "^(validationError)$": {
+      "description": "Error message if validation failed",
+      "type": "string"
+    },
     "^(validationStatus)$": {
       "anyOf": [
         {
@@ -67,6 +71,10 @@
     },
     "validated_at": {
       "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "validation_error": {
+      "description": "Error message if validation failed",
+      "type": "string"
     },
     "validation_status": {
       "anyOf": [

@@ -54,6 +54,7 @@ type CASBackend struct {
 	CreatedAt, ValidatedAt            *time.Time
 	OrganizationID                    uuid.UUID
 	ValidationStatus                  CASBackendValidationStatus
+	ValidationError                   *string
 	// OCI, S3, ...
 	Provider CASBackendProvider
 	// Whether this is the default cas backend for the organization
@@ -97,7 +98,7 @@ type CASBackendRepo interface {
 	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
 	FindByNameInOrg(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
-	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error
+	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus, validationError *string) error
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
 	Update(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
@@ -458,6 +459,7 @@ func (CASBackendValidationStatus) Values() (kinds []string) {
 // Validate that the repository is valid and reachable
 func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (err error) {
 	validationStatus := CASBackendValidationFailed
+	var validationError *string
 
 	backendUUID, err := uuid.Parse(id)
 	if err != nil {
@@ -487,9 +489,9 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 			return
 		}
 
-		// Update the validation status
-		uc.logger.Infow("msg", "updating validation status", "ID", id, "status", validationStatus)
-		if err := uc.repo.UpdateValidationStatus(ctx, backendUUID, validationStatus); err != nil {
+		// Update the validation status and error
+		uc.logger.Infow("msg", "updating validation status", "ID", id, "status", validationStatus, "error", validationError)
+		if err := uc.repo.UpdateValidationStatus(ctx, backendUUID, validationStatus, validationError); err != nil {
 			uc.logger.Errorw("msg", "updating validation status", "ID", id, "error", err)
 		}
 	}()
@@ -497,25 +499,32 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	// 1 - Retrieve the credentials from the external secrets manager
 	var creds any
 	if err := uc.credsRW.ReadCredentials(ctx, backend.SecretName, &creds); err != nil {
-		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id)
+		errMsg := fmt.Sprintf("credentials not found or invalid: %v", err)
+		validationError = &errMsg
+		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id, "error", err)
 		return nil
 	}
 
 	credsJSON, err := json.Marshal(creds)
 	if err != nil {
-		uc.logger.Infow("msg", "credentials invalid", "ID", id)
+		errMsg := fmt.Sprintf("credentials invalid: %v", err)
+		validationError = &errMsg
+		uc.logger.Infow("msg", "credentials invalid", "ID", id, "error", err)
 		return nil
 	}
 
 	// 2 - run validation
 	_, err = provider.ValidateAndExtractCredentials(backend.Location, credsJSON)
 	if err != nil {
-		uc.logger.Infow("msg", "permissions validation failed", "ID", id)
+		errMsg := err.Error()
+		validationError = &errMsg
+		uc.logger.Infow("msg", "permissions validation failed", "ID", id, "error", err)
 		return nil
 	}
 
 	// If everything went well, update the validation status to OK
 	validationStatus = CASBackendValidationOK
+	validationError = nil
 	uc.logger.Infow("msg", "validation OK", "ID", id)
 
 	return nil
