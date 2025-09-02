@@ -102,7 +102,7 @@ func TestCASBackendEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			name: "CAS Backend deleted by user",
+			name: "CAS Backend soft deleted by user",
 			event: &events.CASBackendDeleted{
 				CASBackendBase: &events.CASBackendBase{
 					CASBackendID:   &backendUUID,
@@ -112,12 +112,27 @@ func TestCASBackendEvents(t *testing.T) {
 					Default:        true,
 				},
 			},
-			expected: "testdata/casbackends/casbackend_deleted.json",
+			expected: "testdata/casbackends/casbackend_soft_deleted.json",
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
 		},
 		{
-			name: "CAS Backend status changed",
+			name: "CAS Backend permanently deleted by user",
+			event: &events.CASBackendPermanentDeleted{
+				CASBackendBase: &events.CASBackendBase{
+					CASBackendID:   &backendUUID,
+					CASBackendName: backendName,
+					Provider:       backendProvider,
+					Location:       backendLocation,
+					Default:        true,
+				},
+			},
+			expected: "testdata/casbackends/casbackend_permanent_deleted.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "CAS Backend status changed with recovery",
 			event: &events.CASBackendStatusChanged{
 				CASBackendBase: &events.CASBackendBase{
 					CASBackendID:   &backendUUID,
@@ -271,7 +286,7 @@ func TestCASBackendEventsFailed(t *testing.T) {
 			expectedErr: "cas backend id and name are required",
 		},
 		{
-			name: "CAS Backend deleted with missing ID",
+			name: "CAS Backend soft deleted with missing ID",
 			event: &events.CASBackendDeleted{
 				CASBackendBase: &events.CASBackendBase{
 					CASBackendName: "test-backend",
@@ -282,8 +297,30 @@ func TestCASBackendEventsFailed(t *testing.T) {
 			expectedErr: "cas backend id and name are required",
 		},
 		{
-			name: "CAS Backend deleted with missing name",
+			name: "CAS Backend soft deleted with missing name",
 			event: &events.CASBackendDeleted{
+				CASBackendBase: &events.CASBackendBase{
+					CASBackendID: &backendUUID,
+					Provider:     "OCI",
+					Location:     "test-location",
+				},
+			},
+			expectedErr: "cas backend id and name are required",
+		},
+		{
+			name: "CAS Backend permanently deleted with missing ID",
+			event: &events.CASBackendPermanentDeleted{
+				CASBackendBase: &events.CASBackendBase{
+					CASBackendName: "test-backend",
+					Provider:       "OCI",
+					Location:       "test-location",
+				},
+			},
+			expectedErr: "cas backend id and name are required",
+		},
+		{
+			name: "CAS Backend permanently deleted with missing name",
+			event: &events.CASBackendPermanentDeleted{
 				CASBackendBase: &events.CASBackendBase{
 					CASBackendID: &backendUUID,
 					Provider:     "OCI",

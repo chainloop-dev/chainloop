@@ -15,3 +15,4 @@ packages:
   github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz:
     interfaces:
       APITokenRepo:
+      CASBackendRepo:

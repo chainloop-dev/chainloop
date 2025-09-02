@@ -28,15 +28,17 @@ var (
 	_ auditor.LogEntry = (*CASBackendCreated)(nil)
 	_ auditor.LogEntry = (*CASBackendUpdated)(nil)
 	_ auditor.LogEntry = (*CASBackendDeleted)(nil)
+	_ auditor.LogEntry = (*CASBackendPermanentDeleted)(nil)
 	_ auditor.LogEntry = (*CASBackendStatusChanged)(nil)
 )
 
 const (
-	CASBackendType                auditor.TargetType = "CASBackend"
-	CASBackendCreatedActionType   string             = "CASBackendCreated"
-	CASBackendUpdatedActionType   string             = "CASBackendUpdated"
-	CASBackendDeletedActionType   string             = "CASBackendDeleted"
-	CASBackendStatusChangedAction string             = "CASBackendStatusChanged"
+	CASBackendType                 auditor.TargetType = "CASBackend"
+	CASBackendCreatedActionType    string             = "CASBackendCreated"
+	CASBackendUpdatedActionType    string             = "CASBackendUpdated"
+	CASBackendDeletedActionType    string             = "CASBackendSoftDeleted"
+	CASBackendPermanentDeletedType string             = "CASBackendPermanentDeleted"
+	CASBackendStatusChangedAction  string             = "CASBackendStatusChanged"
 )
 
 // CASBackendBase contains the common fields for all CAS backend events
@@ -152,6 +154,27 @@ func (c *CASBackendDeleted) ActionInfo() (json.RawMessage, error) {
 
 func (c *CASBackendDeleted) Description() string {
 	return fmt.Sprintf("%s has deleted CAS backend %s", auditor.GetActorIdentifier(), c.CASBackendName)
+}
+
+// CASBackendPermanentDeleted represents the permanent deletion of a CAS backend
+type CASBackendPermanentDeleted struct {
+	*CASBackendBase
+}
+
+func (c *CASBackendPermanentDeleted) ActionType() string {
+	return CASBackendPermanentDeletedType
+}
+
+func (c *CASBackendPermanentDeleted) ActionInfo() (json.RawMessage, error) {
+	if _, err := c.CASBackendBase.ActionInfo(); err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(&c)
+}
+
+func (c *CASBackendPermanentDeleted) Description() string {
+	return fmt.Sprintf("%s has permanently deleted CAS backend %s", auditor.GetActorIdentifier(), c.CASBackendName)
 }
 
 // CASBackendStatusChanged represents a change in the validation status of a CAS backend

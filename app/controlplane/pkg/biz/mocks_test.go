@@ -199,9 +199,83 @@ func (_c *MockAPITokenRepo_FindByID_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
+// FindByIDInOrg provides a mock function for the type MockAPITokenRepo
+func (_mock *MockAPITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error) {
+	ret := _mock.Called(ctx, orgID, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByIDInOrg")
+	}
+
+	var r0 *APIToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (*APIToken, error)); ok {
+		return returnFunc(ctx, orgID, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) *APIToken); ok {
+		r0 = returnFunc(ctx, orgID, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*APIToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, orgID, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAPITokenRepo_FindByIDInOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByIDInOrg'
+type MockAPITokenRepo_FindByIDInOrg_Call struct {
+	*mock.Call
+}
+
+// FindByIDInOrg is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+//   - id uuid.UUID
+func (_e *MockAPITokenRepo_Expecter) FindByIDInOrg(ctx interface{}, orgID interface{}, id interface{}) *MockAPITokenRepo_FindByIDInOrg_Call {
+	return &MockAPITokenRepo_FindByIDInOrg_Call{Call: _e.mock.On("FindByIDInOrg", ctx, orgID, id)}
+}
+
+func (_c *MockAPITokenRepo_FindByIDInOrg_Call) Run(run func(ctx context.Context, orgID uuid.UUID, id uuid.UUID)) *MockAPITokenRepo_FindByIDInOrg_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPITokenRepo_FindByIDInOrg_Call) Return(aPIToken *APIToken, err error) *MockAPITokenRepo_FindByIDInOrg_Call {
+	_c.Call.Return(aPIToken, err)
+	return _c
+}
+
+func (_c *MockAPITokenRepo_FindByIDInOrg_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error)) *MockAPITokenRepo_FindByIDInOrg_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindByNameInOrg provides a mock function for the type MockAPITokenRepo
-func (_mock *MockAPITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error) {
-	ret := _mock.Called(ctx, orgID, name, projectID)
+func (_mock *MockAPITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error) {
+	ret := _mock.Called(ctx, orgID, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByNameInOrg")
@@ -209,18 +283,18 @@ func (_mock *MockAPITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 
 	var r0 *APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, *uuid.UUID) (*APIToken, error)); ok {
-		return returnFunc(ctx, orgID, name, projectID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*APIToken, error)); ok {
+		return returnFunc(ctx, orgID, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, *uuid.UUID) *APIToken); ok {
-		r0 = returnFunc(ctx, orgID, name, projectID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *APIToken); ok {
+		r0 = returnFunc(ctx, orgID, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, *uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, orgID, name, projectID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, orgID, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -236,12 +310,11 @@ type MockAPITokenRepo_FindByNameInOrg_Call struct {
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - name string
-//   - projectID *uuid.UUID
-func (_e *MockAPITokenRepo_Expecter) FindByNameInOrg(ctx interface{}, orgID interface{}, name interface{}, projectID interface{}) *MockAPITokenRepo_FindByNameInOrg_Call {
-	return &MockAPITokenRepo_FindByNameInOrg_Call{Call: _e.mock.On("FindByNameInOrg", ctx, orgID, name, projectID)}
+func (_e *MockAPITokenRepo_Expecter) FindByNameInOrg(ctx interface{}, orgID interface{}, name interface{}) *MockAPITokenRepo_FindByNameInOrg_Call {
+	return &MockAPITokenRepo_FindByNameInOrg_Call{Call: _e.mock.On("FindByNameInOrg", ctx, orgID, name)}
 }
 
-func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Run(run func(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID)) *MockAPITokenRepo_FindByNameInOrg_Call {
+func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Run(run func(ctx context.Context, orgID uuid.UUID, name string)) *MockAPITokenRepo_FindByNameInOrg_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -255,15 +328,10 @@ func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Run(run func(ctx context.Contex
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		var arg3 *uuid.UUID
-		if args[3] != nil {
-			arg3 = args[3].(*uuid.UUID)
-		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -274,14 +342,14 @@ func (_c *MockAPITokenRepo_FindByNameInOrg_Call) Return(aPIToken *APIToken, err 
 	return _c
 }
 
-func (_c *MockAPITokenRepo_FindByNameInOrg_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, name string, projectID *uuid.UUID) (*APIToken, error)) *MockAPITokenRepo_FindByNameInOrg_Call {
+func (_c *MockAPITokenRepo_FindByNameInOrg_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)) *MockAPITokenRepo_FindByNameInOrg_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // List provides a mock function for the type MockAPITokenRepo
-func (_mock *MockAPITokenRepo) List(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error) {
-	ret := _mock.Called(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
+func (_mock *MockAPITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error) {
+	ret := _mock.Called(ctx, orgID, filters)
 
 	if len(ret) == 0 {
 		panic("no return value specified for List")
@@ -289,18 +357,18 @@ func (_mock *MockAPITokenRepo) List(ctx context.Context, orgID *uuid.UUID, proje
 
 	var r0 []*APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *uuid.UUID, bool, bool) ([]*APIToken, error)); ok {
-		return returnFunc(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *APITokenListFilters) ([]*APIToken, error)); ok {
+		return returnFunc(ctx, orgID, filters)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *uuid.UUID, bool, bool) []*APIToken); ok {
-		r0 = returnFunc(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *APITokenListFilters) []*APIToken); ok {
+		r0 = returnFunc(ctx, orgID, filters)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *uuid.UUID, *uuid.UUID, bool, bool) error); ok {
-		r1 = returnFunc(ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *uuid.UUID, *APITokenListFilters) error); ok {
+		r1 = returnFunc(ctx, orgID, filters)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -315,14 +383,12 @@ type MockAPITokenRepo_List_Call struct {
 // List is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID *uuid.UUID
-//   - projectID *uuid.UUID
-//   - includeRevoked bool
-//   - showOnlySystemTokens bool
-func (_e *MockAPITokenRepo_Expecter) List(ctx interface{}, orgID interface{}, projectID interface{}, includeRevoked interface{}, showOnlySystemTokens interface{}) *MockAPITokenRepo_List_Call {
-	return &MockAPITokenRepo_List_Call{Call: _e.mock.On("List", ctx, orgID, projectID, includeRevoked, showOnlySystemTokens)}
+//   - filters *APITokenListFilters
+func (_e *MockAPITokenRepo_Expecter) List(ctx interface{}, orgID interface{}, filters interface{}) *MockAPITokenRepo_List_Call {
+	return &MockAPITokenRepo_List_Call{Call: _e.mock.On("List", ctx, orgID, filters)}
 }
 
-func (_c *MockAPITokenRepo_List_Call) Run(run func(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool)) *MockAPITokenRepo_List_Call {
+func (_c *MockAPITokenRepo_List_Call) Run(run func(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters)) *MockAPITokenRepo_List_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -332,24 +398,14 @@ func (_c *MockAPITokenRepo_List_Call) Run(run func(ctx context.Context, orgID *u
 		if args[1] != nil {
 			arg1 = args[1].(*uuid.UUID)
 		}
-		var arg2 *uuid.UUID
+		var arg2 *APITokenListFilters
 		if args[2] != nil {
-			arg2 = args[2].(*uuid.UUID)
-		}
-		var arg3 bool
-		if args[3] != nil {
-			arg3 = args[3].(bool)
-		}
-		var arg4 bool
-		if args[4] != nil {
-			arg4 = args[4].(bool)
+			arg2 = args[2].(*APITokenListFilters)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -360,7 +416,7 @@ func (_c *MockAPITokenRepo_List_Call) Return(aPITokens []*APIToken, err error) *
 	return _c
 }
 
-func (_c *MockAPITokenRepo_List_Call) RunAndReturn(run func(ctx context.Context, orgID *uuid.UUID, projectID *uuid.UUID, includeRevoked bool, showOnlySystemTokens bool) ([]*APIToken, error)) *MockAPITokenRepo_List_Call {
+func (_c *MockAPITokenRepo_List_Call) RunAndReturn(run func(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)) *MockAPITokenRepo_List_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -550,6 +606,834 @@ func (_c *MockAPITokenRepo_UpdateLastUsedAt_Call) Return(err error) *MockAPIToke
 }
 
 func (_c *MockAPITokenRepo_UpdateLastUsedAt_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error) *MockAPITokenRepo_UpdateLastUsedAt_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockCASBackendRepo creates a new instance of MockCASBackendRepo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockCASBackendRepo(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockCASBackendRepo {
+	mock := &MockCASBackendRepo{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockCASBackendRepo is an autogenerated mock type for the CASBackendRepo type
+type MockCASBackendRepo struct {
+	mock.Mock
+}
+
+type MockCASBackendRepo_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockCASBackendRepo) EXPECT() *MockCASBackendRepo_Expecter {
+	return &MockCASBackendRepo_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) Create(context1 context.Context, cASBackendCreateOpts *CASBackendCreateOpts) (*CASBackend, error) {
+	ret := _mock.Called(context1, cASBackendCreateOpts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *CASBackendCreateOpts) (*CASBackend, error)); ok {
+		return returnFunc(context1, cASBackendCreateOpts)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *CASBackendCreateOpts) *CASBackend); ok {
+		r0 = returnFunc(context1, cASBackendCreateOpts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *CASBackendCreateOpts) error); ok {
+		r1 = returnFunc(context1, cASBackendCreateOpts)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockCASBackendRepo_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - context1 context.Context
+//   - cASBackendCreateOpts *CASBackendCreateOpts
+func (_e *MockCASBackendRepo_Expecter) Create(context1 interface{}, cASBackendCreateOpts interface{}) *MockCASBackendRepo_Create_Call {
+	return &MockCASBackendRepo_Create_Call{Call: _e.mock.On("Create", context1, cASBackendCreateOpts)}
+}
+
+func (_c *MockCASBackendRepo_Create_Call) Run(run func(context1 context.Context, cASBackendCreateOpts *CASBackendCreateOpts)) *MockCASBackendRepo_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *CASBackendCreateOpts
+		if args[1] != nil {
+			arg1 = args[1].(*CASBackendCreateOpts)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_Create_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_Create_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_Create_Call) RunAndReturn(run func(context1 context.Context, cASBackendCreateOpts *CASBackendCreateOpts) (*CASBackend, error)) *MockCASBackendRepo_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) Delete(ctx context.Context, ID uuid.UUID) error {
+	ret := _mock.Called(ctx, ID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, ID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCASBackendRepo_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockCASBackendRepo_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) Delete(ctx interface{}, ID interface{}) *MockCASBackendRepo_Delete_Call {
+	return &MockCASBackendRepo_Delete_Call{Call: _e.mock.On("Delete", ctx, ID)}
+}
+
+func (_c *MockCASBackendRepo_Delete_Call) Run(run func(ctx context.Context, ID uuid.UUID)) *MockCASBackendRepo_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_Delete_Call) Return(err error) *MockCASBackendRepo_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_Delete_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID) error) *MockCASBackendRepo_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByID provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error) {
+	ret := _mock.Called(ctx, ID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByID")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*CASBackend, error)); ok {
+		return returnFunc(ctx, ID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *CASBackend); ok {
+		r0 = returnFunc(ctx, ID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, ID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_FindByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByID'
+type MockCASBackendRepo_FindByID_Call struct {
+	*mock.Call
+}
+
+// FindByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) FindByID(ctx interface{}, ID interface{}) *MockCASBackendRepo_FindByID_Call {
+	return &MockCASBackendRepo_FindByID_Call{Call: _e.mock.On("FindByID", ctx, ID)}
+}
+
+func (_c *MockCASBackendRepo_FindByID_Call) Run(run func(ctx context.Context, ID uuid.UUID)) *MockCASBackendRepo_FindByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindByID_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_FindByID_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindByID_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID) (*CASBackend, error)) *MockCASBackendRepo_FindByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByIDInOrg provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) FindByIDInOrg(ctx context.Context, OrgID uuid.UUID, ID uuid.UUID) (*CASBackend, error) {
+	ret := _mock.Called(ctx, OrgID, ID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByIDInOrg")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (*CASBackend, error)); ok {
+		return returnFunc(ctx, OrgID, ID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) *CASBackend); ok {
+		r0 = returnFunc(ctx, OrgID, ID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, OrgID, ID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_FindByIDInOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByIDInOrg'
+type MockCASBackendRepo_FindByIDInOrg_Call struct {
+	*mock.Call
+}
+
+// FindByIDInOrg is a helper method to define mock.On call
+//   - ctx context.Context
+//   - OrgID uuid.UUID
+//   - ID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) FindByIDInOrg(ctx interface{}, OrgID interface{}, ID interface{}) *MockCASBackendRepo_FindByIDInOrg_Call {
+	return &MockCASBackendRepo_FindByIDInOrg_Call{Call: _e.mock.On("FindByIDInOrg", ctx, OrgID, ID)}
+}
+
+func (_c *MockCASBackendRepo_FindByIDInOrg_Call) Run(run func(ctx context.Context, OrgID uuid.UUID, ID uuid.UUID)) *MockCASBackendRepo_FindByIDInOrg_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindByIDInOrg_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_FindByIDInOrg_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindByIDInOrg_Call) RunAndReturn(run func(ctx context.Context, OrgID uuid.UUID, ID uuid.UUID) (*CASBackend, error)) *MockCASBackendRepo_FindByIDInOrg_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByNameInOrg provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) FindByNameInOrg(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error) {
+	ret := _mock.Called(ctx, OrgID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByNameInOrg")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*CASBackend, error)); ok {
+		return returnFunc(ctx, OrgID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *CASBackend); ok {
+		r0 = returnFunc(ctx, OrgID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, OrgID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_FindByNameInOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByNameInOrg'
+type MockCASBackendRepo_FindByNameInOrg_Call struct {
+	*mock.Call
+}
+
+// FindByNameInOrg is a helper method to define mock.On call
+//   - ctx context.Context
+//   - OrgID uuid.UUID
+//   - name string
+func (_e *MockCASBackendRepo_Expecter) FindByNameInOrg(ctx interface{}, OrgID interface{}, name interface{}) *MockCASBackendRepo_FindByNameInOrg_Call {
+	return &MockCASBackendRepo_FindByNameInOrg_Call{Call: _e.mock.On("FindByNameInOrg", ctx, OrgID, name)}
+}
+
+func (_c *MockCASBackendRepo_FindByNameInOrg_Call) Run(run func(ctx context.Context, OrgID uuid.UUID, name string)) *MockCASBackendRepo_FindByNameInOrg_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindByNameInOrg_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_FindByNameInOrg_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindByNameInOrg_Call) RunAndReturn(run func(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error)) *MockCASBackendRepo_FindByNameInOrg_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindDefaultBackend provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error) {
+	ret := _mock.Called(ctx, orgID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindDefaultBackend")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*CASBackend, error)); ok {
+		return returnFunc(ctx, orgID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *CASBackend); ok {
+		r0 = returnFunc(ctx, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_FindDefaultBackend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindDefaultBackend'
+type MockCASBackendRepo_FindDefaultBackend_Call struct {
+	*mock.Call
+}
+
+// FindDefaultBackend is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) FindDefaultBackend(ctx interface{}, orgID interface{}) *MockCASBackendRepo_FindDefaultBackend_Call {
+	return &MockCASBackendRepo_FindDefaultBackend_Call{Call: _e.mock.On("FindDefaultBackend", ctx, orgID)}
+}
+
+func (_c *MockCASBackendRepo_FindDefaultBackend_Call) Run(run func(ctx context.Context, orgID uuid.UUID)) *MockCASBackendRepo_FindDefaultBackend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindDefaultBackend_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_FindDefaultBackend_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindDefaultBackend_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)) *MockCASBackendRepo_FindDefaultBackend_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindFallbackBackend provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error) {
+	ret := _mock.Called(ctx, orgID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindFallbackBackend")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*CASBackend, error)); ok {
+		return returnFunc(ctx, orgID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *CASBackend); ok {
+		r0 = returnFunc(ctx, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_FindFallbackBackend_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindFallbackBackend'
+type MockCASBackendRepo_FindFallbackBackend_Call struct {
+	*mock.Call
+}
+
+// FindFallbackBackend is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) FindFallbackBackend(ctx interface{}, orgID interface{}) *MockCASBackendRepo_FindFallbackBackend_Call {
+	return &MockCASBackendRepo_FindFallbackBackend_Call{Call: _e.mock.On("FindFallbackBackend", ctx, orgID)}
+}
+
+func (_c *MockCASBackendRepo_FindFallbackBackend_Call) Run(run func(ctx context.Context, orgID uuid.UUID)) *MockCASBackendRepo_FindFallbackBackend_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindFallbackBackend_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_FindFallbackBackend_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_FindFallbackBackend_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)) *MockCASBackendRepo_FindFallbackBackend_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error) {
+	ret := _mock.Called(ctx, orgID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 []*CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*CASBackend, error)); ok {
+		return returnFunc(ctx, orgID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*CASBackend); ok {
+		r0 = returnFunc(ctx, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockCASBackendRepo_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) List(ctx interface{}, orgID interface{}) *MockCASBackendRepo_List_Call {
+	return &MockCASBackendRepo_List_Call{Call: _e.mock.On("List", ctx, orgID)}
+}
+
+func (_c *MockCASBackendRepo_List_Call) Run(run func(ctx context.Context, orgID uuid.UUID)) *MockCASBackendRepo_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_List_Call) Return(cASBackends []*CASBackend, err error) *MockCASBackendRepo_List_Call {
+	_c.Call.Return(cASBackends, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_List_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)) *MockCASBackendRepo_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListBackends provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([]*CASBackend, error) {
+	ret := _mock.Called(ctx, onlyDefaults)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListBackends")
+	}
+
+	var r0 []*CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, bool) ([]*CASBackend, error)); ok {
+		return returnFunc(ctx, onlyDefaults)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, bool) []*CASBackend); ok {
+		r0 = returnFunc(ctx, onlyDefaults)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, bool) error); ok {
+		r1 = returnFunc(ctx, onlyDefaults)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_ListBackends_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListBackends'
+type MockCASBackendRepo_ListBackends_Call struct {
+	*mock.Call
+}
+
+// ListBackends is a helper method to define mock.On call
+//   - ctx context.Context
+//   - onlyDefaults bool
+func (_e *MockCASBackendRepo_Expecter) ListBackends(ctx interface{}, onlyDefaults interface{}) *MockCASBackendRepo_ListBackends_Call {
+	return &MockCASBackendRepo_ListBackends_Call{Call: _e.mock.On("ListBackends", ctx, onlyDefaults)}
+}
+
+func (_c *MockCASBackendRepo_ListBackends_Call) Run(run func(ctx context.Context, onlyDefaults bool)) *MockCASBackendRepo_ListBackends_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 bool
+		if args[1] != nil {
+			arg1 = args[1].(bool)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_ListBackends_Call) Return(cASBackends []*CASBackend, err error) *MockCASBackendRepo_ListBackends_Call {
+	_c.Call.Return(cASBackends, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_ListBackends_Call) RunAndReturn(run func(ctx context.Context, onlyDefaults bool) ([]*CASBackend, error)) *MockCASBackendRepo_ListBackends_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SoftDelete provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) SoftDelete(ctx context.Context, ID uuid.UUID) error {
+	ret := _mock.Called(ctx, ID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SoftDelete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, ID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCASBackendRepo_SoftDelete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SoftDelete'
+type MockCASBackendRepo_SoftDelete_Call struct {
+	*mock.Call
+}
+
+// SoftDelete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID uuid.UUID
+func (_e *MockCASBackendRepo_Expecter) SoftDelete(ctx interface{}, ID interface{}) *MockCASBackendRepo_SoftDelete_Call {
+	return &MockCASBackendRepo_SoftDelete_Call{Call: _e.mock.On("SoftDelete", ctx, ID)}
+}
+
+func (_c *MockCASBackendRepo_SoftDelete_Call) Run(run func(ctx context.Context, ID uuid.UUID)) *MockCASBackendRepo_SoftDelete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_SoftDelete_Call) Return(err error) *MockCASBackendRepo_SoftDelete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_SoftDelete_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID) error) *MockCASBackendRepo_SoftDelete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) Update(context1 context.Context, cASBackendUpdateOpts *CASBackendUpdateOpts) (*CASBackend, error) {
+	ret := _mock.Called(context1, cASBackendUpdateOpts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *CASBackend
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)); ok {
+		return returnFunc(context1, cASBackendUpdateOpts)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *CASBackendUpdateOpts) *CASBackend); ok {
+		r0 = returnFunc(context1, cASBackendUpdateOpts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*CASBackend)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *CASBackendUpdateOpts) error); ok {
+		r1 = returnFunc(context1, cASBackendUpdateOpts)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCASBackendRepo_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockCASBackendRepo_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - context1 context.Context
+//   - cASBackendUpdateOpts *CASBackendUpdateOpts
+func (_e *MockCASBackendRepo_Expecter) Update(context1 interface{}, cASBackendUpdateOpts interface{}) *MockCASBackendRepo_Update_Call {
+	return &MockCASBackendRepo_Update_Call{Call: _e.mock.On("Update", context1, cASBackendUpdateOpts)}
+}
+
+func (_c *MockCASBackendRepo_Update_Call) Run(run func(context1 context.Context, cASBackendUpdateOpts *CASBackendUpdateOpts)) *MockCASBackendRepo_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *CASBackendUpdateOpts
+		if args[1] != nil {
+			arg1 = args[1].(*CASBackendUpdateOpts)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_Update_Call) Return(cASBackend *CASBackend, err error) *MockCASBackendRepo_Update_Call {
+	_c.Call.Return(cASBackend, err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_Update_Call) RunAndReturn(run func(context1 context.Context, cASBackendUpdateOpts *CASBackendUpdateOpts) (*CASBackend, error)) *MockCASBackendRepo_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateValidationStatus provides a mock function for the type MockCASBackendRepo
+func (_mock *MockCASBackendRepo) UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error {
+	ret := _mock.Called(ctx, ID, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateValidationStatus")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, CASBackendValidationStatus) error); ok {
+		r0 = returnFunc(ctx, ID, status)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCASBackendRepo_UpdateValidationStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateValidationStatus'
+type MockCASBackendRepo_UpdateValidationStatus_Call struct {
+	*mock.Call
+}
+
+// UpdateValidationStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID uuid.UUID
+//   - status CASBackendValidationStatus
+func (_e *MockCASBackendRepo_Expecter) UpdateValidationStatus(ctx interface{}, ID interface{}, status interface{}) *MockCASBackendRepo_UpdateValidationStatus_Call {
+	return &MockCASBackendRepo_UpdateValidationStatus_Call{Call: _e.mock.On("UpdateValidationStatus", ctx, ID, status)}
+}
+
+func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) Run(run func(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus)) *MockCASBackendRepo_UpdateValidationStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 CASBackendValidationStatus
+		if args[2] != nil {
+			arg2 = args[2].(CASBackendValidationStatus)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) Return(err error) *MockCASBackendRepo_UpdateValidationStatus_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCASBackendRepo_UpdateValidationStatus_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus) error) *MockCASBackendRepo_UpdateValidationStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }

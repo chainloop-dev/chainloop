@@ -456,7 +456,7 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		}
 	}
 
-	// Record CAS backend deletion in audit log
+	// Record CAS backend soft deletion in audit log
 	if uc.auditorUC != nil {
 		uc.auditorUC.Dispatch(ctx, &events.CASBackendDeleted{
 			CASBackendBase: &events.CASBackendBase{
@@ -497,8 +497,25 @@ func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
 		}
 	}
 
+	if delErr := uc.repo.Delete(ctx, backendUUID); delErr != nil {
+		return delErr
+	}
 	uc.logger.Infow("msg", "CAS Backend deleted", "ID", id)
-	return uc.repo.Delete(ctx, backendUUID)
+
+	// Record CAS backend permanent deletion in audit log
+	if uc.auditorUC != nil {
+		uc.auditorUC.Dispatch(ctx, &events.CASBackendPermanentDeleted{
+			CASBackendBase: &events.CASBackendBase{
+				CASBackendID:   &backend.ID,
+				CASBackendName: backend.Name,
+				Provider:       string(backend.Provider),
+				Location:       backend.Location,
+				Default:        backend.Default,
+			},
+		}, &backend.OrganizationID)
+	}
+
+	return nil
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
