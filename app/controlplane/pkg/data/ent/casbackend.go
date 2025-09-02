@@ -34,6 +34,8 @@ type CASBackend struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// ValidationStatus holds the value of the "validation_status" field.
 	ValidationStatus biz.CASBackendValidationStatus `json:"validation_status,omitempty"`
+	// ValidationError holds the value of the "validation_error" field.
+	ValidationError string `json:"validation_error,omitempty"`
 	// ValidatedAt holds the value of the "validated_at" field.
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
 	// Default holds the value of the "default" field.
@@ -91,7 +93,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case casbackend.FieldMaxBlobSizeBytes:
 			values[i] = new(sql.NullInt64)
-		case casbackend.FieldLocation, casbackend.FieldName, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus:
+		case casbackend.FieldLocation, casbackend.FieldName, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldValidationError:
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -161,6 +163,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field validation_status", values[i])
 			} else if value.Valid {
 				cb.ValidationStatus = biz.CASBackendValidationStatus(value.String)
+			}
+		case casbackend.FieldValidationError:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field validation_error", values[i])
+			} else if value.Valid {
+				cb.ValidationError = value.String
 			}
 		case casbackend.FieldValidatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -265,6 +273,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("validation_status=")
 	builder.WriteString(fmt.Sprintf("%v", cb.ValidationStatus))
+	builder.WriteString(", ")
+	builder.WriteString("validation_error=")
+	builder.WriteString(cb.ValidationError)
 	builder.WriteString(", ")
 	builder.WriteString("validated_at=")
 	builder.WriteString(cb.ValidatedAt.Format(time.ANSIC))

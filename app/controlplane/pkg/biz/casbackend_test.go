@@ -139,7 +139,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 
 	t.Run("proper provider credentials missing, set validation status => invalid", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
-		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
+		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed, mock.Anything).Return(nil)
 
 		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(credentials.ErrNotFound)
 		err := s.useCase.PerformValidation(context.Background(), s.validUUID.String())
@@ -149,7 +149,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 
 	t.Run("invalid credentials, set validation status => invalid", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
-		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed).Return(nil)
+		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationFailed, mock.Anything).Return(nil)
 		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		s.backendProvider.On("ValidateAndExtractCredentials", validRepo.Location, mock.Anything).Return(nil, errors.New("invalid credentials"))
 
@@ -160,7 +160,7 @@ func (s *casBackendTestSuite) TestPerformValidation() {
 
 	t.Run("valid credentials, set validation status => ok", func(_ *testing.T) {
 		s.repo.On("FindByID", mock.Anything, s.validUUID).Return(validRepo, nil)
-		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationOK).Return(nil)
+		s.repo.On("UpdateValidationStatus", mock.Anything, s.validUUID, biz.CASBackendValidationOK, mock.Anything).Return(nil)
 		s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		s.backendProvider.On("ValidateAndExtractCredentials", validRepo.Location, mock.Anything).Return(nil, nil)
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
@@ -56,9 +57,9 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 	}
 
 	t := newTableWriter()
-	header := table.Row{"Name", "Location", "Provider", "Description", "Limits", "Default"}
+	header := table.Row{"Name", "Location", "Provider", "Description", "Limits", "Default", "Status"}
 	if full {
-		header = append(header, "Validation Status", "Created At", "Validated At")
+		header = append(header, "Created At", "Validated At")
 	}
 
 	t.AppendHeader(header)
@@ -68,12 +69,14 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 			limits = fmt.Sprintf("MaxSize: %s", bytefmt.ByteSize(uint64(b.Limits.MaxBytes)))
 		}
 
-		r := table.Row{b.Name, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default}
+		validationStatus := string(b.ValidationStatus)
+		if b.ValidationError != nil && *b.ValidationError != "" {
+			validationStatus = strings.Join([]string{validationStatus, wrap.String(*b.ValidationError, 50)}, "\n")
+		}
+
+		r := table.Row{b.Name, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default, validationStatus}
 		if full {
-			r = append(r, b.ValidationStatus,
-				b.CreatedAt.Format(time.RFC822),
-				b.ValidatedAt.Format(time.RFC822),
-			)
+			r = append(r, b.CreatedAt.Format(time.RFC822), b.ValidatedAt.Format(time.RFC822))
 		}
 
 		t.AppendRow(r)

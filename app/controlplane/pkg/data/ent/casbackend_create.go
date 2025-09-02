@@ -93,6 +93,20 @@ func (cbc *CASBackendCreate) SetNillableValidationStatus(bbvs *biz.CASBackendVal
 	return cbc
 }
 
+// SetValidationError sets the "validation_error" field.
+func (cbc *CASBackendCreate) SetValidationError(s string) *CASBackendCreate {
+	cbc.mutation.SetValidationError(s)
+	return cbc
+}
+
+// SetNillableValidationError sets the "validation_error" field if the given value is not nil.
+func (cbc *CASBackendCreate) SetNillableValidationError(s *string) *CASBackendCreate {
+	if s != nil {
+		cbc.SetValidationError(*s)
+	}
+	return cbc
+}
+
 // SetValidatedAt sets the "validated_at" field.
 func (cbc *CASBackendCreate) SetValidatedAt(t time.Time) *CASBackendCreate {
 	cbc.mutation.SetValidatedAt(t)
@@ -365,6 +379,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
 		_node.ValidationStatus = value
 	}
+	if value, ok := cbc.mutation.ValidationError(); ok {
+		_spec.SetField(casbackend.FieldValidationError, field.TypeString, value)
+		_node.ValidationError = value
+	}
 	if value, ok := cbc.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 		_node.ValidatedAt = value
@@ -509,6 +527,24 @@ func (u *CASBackendUpsert) SetValidationStatus(v biz.CASBackendValidationStatus)
 // UpdateValidationStatus sets the "validation_status" field to the value that was provided on create.
 func (u *CASBackendUpsert) UpdateValidationStatus() *CASBackendUpsert {
 	u.SetExcluded(casbackend.FieldValidationStatus)
+	return u
+}
+
+// SetValidationError sets the "validation_error" field.
+func (u *CASBackendUpsert) SetValidationError(v string) *CASBackendUpsert {
+	u.Set(casbackend.FieldValidationError, v)
+	return u
+}
+
+// UpdateValidationError sets the "validation_error" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateValidationError() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldValidationError)
+	return u
+}
+
+// ClearValidationError clears the value of the "validation_error" field.
+func (u *CASBackendUpsert) ClearValidationError() *CASBackendUpsert {
+	u.SetNull(casbackend.FieldValidationError)
 	return u
 }
 
@@ -681,6 +717,27 @@ func (u *CASBackendUpsertOne) SetValidationStatus(v biz.CASBackendValidationStat
 func (u *CASBackendUpsertOne) UpdateValidationStatus() *CASBackendUpsertOne {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateValidationStatus()
+	})
+}
+
+// SetValidationError sets the "validation_error" field.
+func (u *CASBackendUpsertOne) SetValidationError(v string) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetValidationError(v)
+	})
+}
+
+// UpdateValidationError sets the "validation_error" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateValidationError() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateValidationError()
+	})
+}
+
+// ClearValidationError clears the value of the "validation_error" field.
+func (u *CASBackendUpsertOne) ClearValidationError() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.ClearValidationError()
 	})
 }
 
@@ -1030,6 +1087,27 @@ func (u *CASBackendUpsertBulk) SetValidationStatus(v biz.CASBackendValidationSta
 func (u *CASBackendUpsertBulk) UpdateValidationStatus() *CASBackendUpsertBulk {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateValidationStatus()
+	})
+}
+
+// SetValidationError sets the "validation_error" field.
+func (u *CASBackendUpsertBulk) SetValidationError(v string) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetValidationError(v)
+	})
+}
+
+// UpdateValidationError sets the "validation_error" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateValidationError() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateValidationError()
+	})
+}
+
+// ClearValidationError clears the value of the "validation_error" field.
+func (u *CASBackendUpsertBulk) ClearValidationError() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.ClearValidationError()
 	})
 }
 

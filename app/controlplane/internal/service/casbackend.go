@@ -176,5 +176,9 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 		r.ValidationStatus = pb.CASBackendItem_VALIDATION_STATUS_INVALID
 	}
 
+	if in.ValidationError != nil {
+		r.ValidationError = in.ValidationError
+	}
+
 	return r
 }

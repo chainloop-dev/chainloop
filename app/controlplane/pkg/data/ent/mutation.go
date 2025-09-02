@@ -1485,6 +1485,7 @@ type CASBackendMutation struct {
 	secret_name            *string
 	created_at             *time.Time
 	validation_status      *biz.CASBackendValidationStatus
+	validation_error       *string
 	validated_at           *time.Time
 	_default               *bool
 	deleted_at             *time.Time
@@ -1871,6 +1872,55 @@ func (m *CASBackendMutation) ResetValidationStatus() {
 	m.validation_status = nil
 }
 
+// SetValidationError sets the "validation_error" field.
+func (m *CASBackendMutation) SetValidationError(s string) {
+	m.validation_error = &s
+}
+
+// ValidationError returns the value of the "validation_error" field in the mutation.
+func (m *CASBackendMutation) ValidationError() (r string, exists bool) {
+	v := m.validation_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValidationError returns the old "validation_error" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldValidationError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValidationError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValidationError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValidationError: %w", err)
+	}
+	return oldValue.ValidationError, nil
+}
+
+// ClearValidationError clears the value of the "validation_error" field.
+func (m *CASBackendMutation) ClearValidationError() {
+	m.validation_error = nil
+	m.clearedFields[casbackend.FieldValidationError] = struct{}{}
+}
+
+// ValidationErrorCleared returns if the "validation_error" field was cleared in this mutation.
+func (m *CASBackendMutation) ValidationErrorCleared() bool {
+	_, ok := m.clearedFields[casbackend.FieldValidationError]
+	return ok
+}
+
+// ResetValidationError resets all changes to the "validation_error" field.
+func (m *CASBackendMutation) ResetValidationError() {
+	m.validation_error = nil
+	delete(m.clearedFields, casbackend.FieldValidationError)
+}
+
 // SetValidatedAt sets the "validated_at" field.
 func (m *CASBackendMutation) SetValidatedAt(t time.Time) {
 	m.validated_at = &t
@@ -2211,7 +2261,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.location != nil {
 		fields = append(fields, casbackend.FieldLocation)
 	}
@@ -2232,6 +2282,9 @@ func (m *CASBackendMutation) Fields() []string {
 	}
 	if m.validation_status != nil {
 		fields = append(fields, casbackend.FieldValidationStatus)
+	}
+	if m.validation_error != nil {
+		fields = append(fields, casbackend.FieldValidationError)
 	}
 	if m.validated_at != nil {
 		fields = append(fields, casbackend.FieldValidatedAt)
@@ -2270,6 +2323,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case casbackend.FieldValidationStatus:
 		return m.ValidationStatus()
+	case casbackend.FieldValidationError:
+		return m.ValidationError()
 	case casbackend.FieldValidatedAt:
 		return m.ValidatedAt()
 	case casbackend.FieldDefault:
@@ -2303,6 +2358,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldCreatedAt(ctx)
 	case casbackend.FieldValidationStatus:
 		return m.OldValidationStatus(ctx)
+	case casbackend.FieldValidationError:
+		return m.OldValidationError(ctx)
 	case casbackend.FieldValidatedAt:
 		return m.OldValidatedAt(ctx)
 	case casbackend.FieldDefault:
@@ -2370,6 +2427,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetValidationStatus(v)
+		return nil
+	case casbackend.FieldValidationError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValidationError(v)
 		return nil
 	case casbackend.FieldValidatedAt:
 		v, ok := value.(time.Time)
@@ -2454,6 +2518,9 @@ func (m *CASBackendMutation) ClearedFields() []string {
 	if m.FieldCleared(casbackend.FieldDescription) {
 		fields = append(fields, casbackend.FieldDescription)
 	}
+	if m.FieldCleared(casbackend.FieldValidationError) {
+		fields = append(fields, casbackend.FieldValidationError)
+	}
 	if m.FieldCleared(casbackend.FieldDeletedAt) {
 		fields = append(fields, casbackend.FieldDeletedAt)
 	}
@@ -2473,6 +2540,9 @@ func (m *CASBackendMutation) ClearField(name string) error {
 	switch name {
 	case casbackend.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case casbackend.FieldValidationError:
+		m.ClearValidationError()
 		return nil
 	case casbackend.FieldDeletedAt:
 		m.ClearDeletedAt()
@@ -2505,6 +2575,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldValidationStatus:
 		m.ResetValidationStatus()
+		return nil
+	case casbackend.FieldValidationError:
+		m.ResetValidationError()
 		return nil
 	case casbackend.FieldValidatedAt:
 		m.ResetValidatedAt()

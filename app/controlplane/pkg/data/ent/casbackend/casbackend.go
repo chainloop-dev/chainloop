@@ -31,6 +31,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldValidationStatus holds the string denoting the validation_status field in the database.
 	FieldValidationStatus = "validation_status"
+	// FieldValidationError holds the string denoting the validation_error field in the database.
+	FieldValidationError = "validation_error"
 	// FieldValidatedAt holds the string denoting the validated_at field in the database.
 	FieldValidatedAt = "validated_at"
 	// FieldDefault holds the string denoting the default field in the database.
@@ -71,6 +73,7 @@ var Columns = []string{
 	FieldSecretName,
 	FieldCreatedAt,
 	FieldValidationStatus,
+	FieldValidationError,
 	FieldValidatedAt,
 	FieldDefault,
 	FieldDeletedAt,
@@ -181,6 +184,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByValidationStatus orders the results by the validation_status field.
 func ByValidationStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidationStatus, opts...).ToFunc()
+}
+
+// ByValidationError orders the results by the validation_error field.
+func ByValidationError(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValidationError, opts...).ToFunc()
 }
 
 // ByValidatedAt orders the results by the validated_at field.

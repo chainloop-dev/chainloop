@@ -183,6 +183,7 @@ type CASBackendStatusChanged struct {
 	*CASBackendBase
 	PreviousStatus string `json:"previous_status,omitempty"`
 	NewStatus      string `json:"new_status,omitempty"`
+	StatusError    string `json:"status_error,omitempty"`
 	IsRecovery     bool   `json:"is_recovery,omitempty"`
 }
 

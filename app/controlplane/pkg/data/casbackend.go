@@ -158,6 +158,14 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 			updateChain = updateChain.SetSecretName(opts.SecretName)
 		}
 
+		if opts.ValidationStatus != "" {
+			updateChain = updateChain.SetValidationStatus(opts.ValidationStatus)
+		}
+
+		if opts.ValidationError != nil {
+			updateChain = updateChain.SetValidationError(*opts.ValidationError)
+		}
+
 		backend, err = updateChain.Save(ctx)
 		if err != nil {
 			return err
@@ -224,12 +232,19 @@ func (r *CASBackendRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.CASBackend.DeleteOneID(id).Exec(ctx)
 }
 
-// UpdateValidationStatus updates the validation status of an OCI repository
-func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus) error {
-	return r.data.DB.CASBackend.UpdateOneID(id).
+// UpdateValidationStatus updates the validation status of a CAS backend
+func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus, validationError *string) error {
+	update := r.data.DB.CASBackend.UpdateOneID(id).
 		SetValidationStatus(status).
-		SetValidatedAt(time.Now()).
-		Exec(ctx)
+		SetValidatedAt(time.Now())
+
+	if validationError != nil {
+		update = update.SetValidationError(*validationError)
+	} else {
+		update = update.ClearValidationError()
+	}
+
+	return update.Exec(ctx)
 }
 
 // ListBackends returns CAS backends across all organizations. Only not inline backends are returned
@@ -279,6 +294,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		CreatedAt:        toTimePtr(backend.CreatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
+		ValidationError:  toStringPtr(backend.ValidationError),
 		Provider:         backend.Provider,
 		Default:          backend.Default,
 		Inline:           backend.Provider == biz.CASBackendInline,

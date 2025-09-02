@@ -81,6 +81,26 @@ func (cbu *CASBackendUpdate) SetNillableValidationStatus(bbvs *biz.CASBackendVal
 	return cbu
 }
 
+// SetValidationError sets the "validation_error" field.
+func (cbu *CASBackendUpdate) SetValidationError(s string) *CASBackendUpdate {
+	cbu.mutation.SetValidationError(s)
+	return cbu
+}
+
+// SetNillableValidationError sets the "validation_error" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableValidationError(s *string) *CASBackendUpdate {
+	if s != nil {
+		cbu.SetValidationError(*s)
+	}
+	return cbu
+}
+
+// ClearValidationError clears the value of the "validation_error" field.
+func (cbu *CASBackendUpdate) ClearValidationError() *CASBackendUpdate {
+	cbu.mutation.ClearValidationError()
+	return cbu
+}
+
 // SetValidatedAt sets the "validated_at" field.
 func (cbu *CASBackendUpdate) SetValidatedAt(t time.Time) *CASBackendUpdate {
 	cbu.mutation.SetValidatedAt(t)
@@ -278,6 +298,12 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cbu.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
 	}
+	if value, ok := cbu.mutation.ValidationError(); ok {
+		_spec.SetField(casbackend.FieldValidationError, field.TypeString, value)
+	}
+	if cbu.mutation.ValidationErrorCleared() {
+		_spec.ClearField(casbackend.FieldValidationError, field.TypeString)
+	}
 	if value, ok := cbu.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 	}
@@ -437,6 +463,26 @@ func (cbuo *CASBackendUpdateOne) SetNillableValidationStatus(bbvs *biz.CASBacken
 	if bbvs != nil {
 		cbuo.SetValidationStatus(*bbvs)
 	}
+	return cbuo
+}
+
+// SetValidationError sets the "validation_error" field.
+func (cbuo *CASBackendUpdateOne) SetValidationError(s string) *CASBackendUpdateOne {
+	cbuo.mutation.SetValidationError(s)
+	return cbuo
+}
+
+// SetNillableValidationError sets the "validation_error" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableValidationError(s *string) *CASBackendUpdateOne {
+	if s != nil {
+		cbuo.SetValidationError(*s)
+	}
+	return cbuo
+}
+
+// ClearValidationError clears the value of the "validation_error" field.
+func (cbuo *CASBackendUpdateOne) ClearValidationError() *CASBackendUpdateOne {
+	cbuo.mutation.ClearValidationError()
 	return cbuo
 }
 
@@ -666,6 +712,12 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 	}
 	if value, ok := cbuo.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
+	}
+	if value, ok := cbuo.mutation.ValidationError(); ok {
+		_spec.SetField(casbackend.FieldValidationError, field.TypeString, value)
+	}
+	if cbuo.mutation.ValidationErrorCleared() {
+		_spec.ClearField(casbackend.FieldValidationError, field.TypeString)
 	}
 	if value, ok := cbuo.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)

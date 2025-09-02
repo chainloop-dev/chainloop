@@ -82,6 +82,11 @@ func CreatedAt(v time.Time) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// ValidationError applies equality check predicate on the "validation_error" field. It's identical to ValidationErrorEQ.
+func ValidationError(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldValidationError, v))
+}
+
 // ValidatedAt applies equality check predicate on the "validated_at" field. It's identical to ValidatedAtEQ.
 func ValidatedAt(v time.Time) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldValidatedAt, v))
@@ -475,6 +480,81 @@ func ValidationStatusNotIn(vs ...biz.CASBackendValidationStatus) predicate.CASBa
 		v[i] = vs[i]
 	}
 	return predicate.CASBackend(sql.FieldNotIn(FieldValidationStatus, v...))
+}
+
+// ValidationErrorEQ applies the EQ predicate on the "validation_error" field.
+func ValidationErrorEQ(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldValidationError, v))
+}
+
+// ValidationErrorNEQ applies the NEQ predicate on the "validation_error" field.
+func ValidationErrorNEQ(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldValidationError, v))
+}
+
+// ValidationErrorIn applies the In predicate on the "validation_error" field.
+func ValidationErrorIn(vs ...string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIn(FieldValidationError, vs...))
+}
+
+// ValidationErrorNotIn applies the NotIn predicate on the "validation_error" field.
+func ValidationErrorNotIn(vs ...string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotIn(FieldValidationError, vs...))
+}
+
+// ValidationErrorGT applies the GT predicate on the "validation_error" field.
+func ValidationErrorGT(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGT(FieldValidationError, v))
+}
+
+// ValidationErrorGTE applies the GTE predicate on the "validation_error" field.
+func ValidationErrorGTE(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldGTE(FieldValidationError, v))
+}
+
+// ValidationErrorLT applies the LT predicate on the "validation_error" field.
+func ValidationErrorLT(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLT(FieldValidationError, v))
+}
+
+// ValidationErrorLTE applies the LTE predicate on the "validation_error" field.
+func ValidationErrorLTE(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldLTE(FieldValidationError, v))
+}
+
+// ValidationErrorContains applies the Contains predicate on the "validation_error" field.
+func ValidationErrorContains(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldContains(FieldValidationError, v))
+}
+
+// ValidationErrorHasPrefix applies the HasPrefix predicate on the "validation_error" field.
+func ValidationErrorHasPrefix(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldHasPrefix(FieldValidationError, v))
+}
+
+// ValidationErrorHasSuffix applies the HasSuffix predicate on the "validation_error" field.
+func ValidationErrorHasSuffix(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldHasSuffix(FieldValidationError, v))
+}
+
+// ValidationErrorIsNil applies the IsNil predicate on the "validation_error" field.
+func ValidationErrorIsNil() predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIsNull(FieldValidationError))
+}
+
+// ValidationErrorNotNil applies the NotNil predicate on the "validation_error" field.
+func ValidationErrorNotNil() predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotNull(FieldValidationError))
+}
+
+// ValidationErrorEqualFold applies the EqualFold predicate on the "validation_error" field.
+func ValidationErrorEqualFold(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEqualFold(FieldValidationError, v))
+}
+
+// ValidationErrorContainsFold applies the ContainsFold predicate on the "validation_error" field.
+func ValidationErrorContainsFold(v string) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldContainsFold(FieldValidationError, v))
 }
 
 // ValidatedAtEQ applies the EQ predicate on the "validated_at" field.
