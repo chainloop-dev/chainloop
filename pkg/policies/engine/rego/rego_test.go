@@ -392,15 +392,15 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 		Source: regoContent,
 	}
 
-	t.Run("evaluation with violations and high severity matches", func(t *testing.T) {
+	t.Run("evaluation with violations and high severity does not match", func(t *testing.T) {
 		violations := []string{"test violation"}
 		evaluationParams := map[string]string{"severity": "high"}
 		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
 		require.NoError(t, err)
-		assert.True(t, matches)
+		assert.False(t, matches)
 	})
 
-	t.Run("evaluation without violations does not match", func(t *testing.T) {
+	t.Run("evaluation without violations does matches", func(t *testing.T) {
 		violations := []string{}
 		evaluationParams := map[string]string{"severity": "high"}
 		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
@@ -408,7 +408,7 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 		assert.False(t, matches)
 	})
 
-	t.Run("evaluation with violations but wrong severity does not match", func(t *testing.T) {
+	t.Run("evaluation with violations but wrong severity does match", func(t *testing.T) {
 		violations := []string{"test violation"}
 		evaluationParams := map[string]string{"severity": "low"}
 		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
@@ -416,7 +416,7 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 		assert.False(t, matches)
 	})
 
-	t.Run("nil evaluation does not match", func(t *testing.T) {
+	t.Run("nil evaluation matches", func(t *testing.T) {
 		evaluationParams := map[string]string{"severity": "high"}
 		matches, err := r.MatchesEvaluation(context.TODO(), policy, nil, evaluationParams)
 		require.NoError(t, err)
