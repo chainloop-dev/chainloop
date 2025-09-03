@@ -336,14 +336,13 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 	}
 
 	var secretName string
-	credentialsUpdated := false
+	credentialsUpdated := creds != nil
 	// We want to rotate credentials
 	if creds != nil {
 		secretName, err = uc.credsRW.SaveCredentials(ctx, orgID, creds)
 		if err != nil {
 			return nil, fmt.Errorf("storing the credentials: %w", err)
 		}
-		credentialsUpdated = true
 	}
 
 	// Update the backend without modifying validation status directly
