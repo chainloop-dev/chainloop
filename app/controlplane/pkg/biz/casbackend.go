@@ -361,8 +361,8 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 
 	// If we're not updating credentials, preserve the current validation status
 	if !credentialsUpdated {
-		updateOpts.CASBackendOpts.ValidationStatus = before.ValidationStatus
-		updateOpts.CASBackendOpts.ValidationError = before.ValidationError
+		updateOpts.ValidationStatus = before.ValidationStatus
+		updateOpts.ValidationError = before.ValidationError
 	}
 
 	after, err := uc.repo.Update(ctx, updateOpts)
