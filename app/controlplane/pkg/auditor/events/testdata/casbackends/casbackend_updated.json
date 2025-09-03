@@ -15,7 +15,8 @@
     "location": "test-location",
     "default": true,
     "new_description": "test description",
-    "credentials_changed": true
+    "credentials_changed": true,
+    "previous_default": false
   },
-  "Digest": "sha256:2c738aacd42a4257f9496c270586c1edf0be13d0d10160e8c564a96fedf0a726"
+  "Digest": "sha256:5d893a99885dcb465c30558736487493c5f24a61a7f28d1738b9b237f4c8fdc5"
 }
