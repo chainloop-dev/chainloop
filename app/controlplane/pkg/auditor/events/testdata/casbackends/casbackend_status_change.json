@@ -15,7 +15,8 @@
     "location": "test-location",
     "default": true,
     "previous_status": "OK",
-    "new_status": "Invalid"
+    "new_status": "Invalid",
+    "is_recovery": false
   },
-  "Digest": "sha256:2112ea486d9e36c40a6869efcbf745836742c70dc97a17cffe30ae3651b0579c"
+  "Digest": "sha256:496bc2b996945222ab4f96cf62d3ff5c08dcc92a4647a6e4bdd3def7de7288ab"
 }

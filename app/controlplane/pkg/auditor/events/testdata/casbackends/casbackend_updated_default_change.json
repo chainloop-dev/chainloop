@@ -13,8 +13,10 @@
     "cas_backend_name": "test-backend",
     "provider": "OCI",
     "location": "test-location",
+    "default": false,
     "new_description": "test description",
+    "credentials_changed": false,
     "previous_default": true
   },
-  "Digest": "sha256:c229b657b7f984a60a2e7c5b6eab1137f026e50eecd76bc718f6548c006d625f"
+  "Digest": "sha256:8d7db84ea1e85b5c033ccb0c7b553bd57292554383498094fd1eb36d4dc3c1cd"
 }
