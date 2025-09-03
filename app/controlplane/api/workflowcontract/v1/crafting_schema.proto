@@ -247,6 +247,8 @@ message PolicySpec {
   // Describe the supported inputs
   repeated PolicyInput inputs = 5;
 
+  AutoMatch auto_match = 6;
+
   option (buf.validate.message).cel = {
     id: "policyspec"
     message: "either spec source or policies fields must be provided"
@@ -283,6 +285,19 @@ message PolicySpecV2 {
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [3]
   }];
+}
+
+// Auto-matching policy specification
+message AutoMatch {
+  oneof source {
+    // path to a policy script. It might consist of a URI reference
+    string path = 1;
+
+    // embedded source code (only Rego supported currently)
+    string embedded = 2;
+
+    option (buf.validate.oneof).required = true;
+  }
 }
 
 // Represents a group attachment in a contract
