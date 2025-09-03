@@ -123,6 +123,12 @@ func WithOnboardingConfiguration(conf []*config.OnboardingSpec) NewTestingUCOpt 
 	}
 }
 
+func WithBackendProviders(providers backends.Providers) NewTestingUCOpt {
+	return func(tu *newTestingOpts) {
+		tu.providers = providers
+	}
+}
+
 func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases {
 	// default args
 	newArgs := &newTestingOpts{credsReaderWriter: creds.NewReaderWriter(t),

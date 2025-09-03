@@ -21,6 +21,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	blobM "github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/go-cmp/cmp"
@@ -317,6 +319,8 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		ctx := context.TODO()
 		s.credsWriter.Mock = mock.Mock{}
 		s.credsWriter.On("SaveCredentials", ctx, s.orgNoBackend.ID, creds).Return("new-secret", nil)
+		s.credsWriter.On("ReadCredentials", ctx, "new-secret", mock.Anything).Return(nil)
+		s.backendProvider.On("ValidateAndExtractCredentials", location, mock.Anything).Return(nil, nil)
 		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), description, creds, true)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
@@ -439,7 +443,14 @@ func (s *CASBackendIntegrationTestSuite) SetupTest() {
 		"SaveCredentials", mock.Anything, mock.Anything, mock.Anything,
 	).Return("stored-OCI-secret", nil)
 
-	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(s.credsWriter))
+	// Create backend provider mock
+	s.backendProvider = blobM.NewProvider(s.T())
+
+	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(),
+		testhelpers.WithCredsReaderWriter(s.credsWriter),
+		testhelpers.WithBackendProviders(backends.Providers{
+			"OCI": s.backendProvider,
+		}))
 
 	s.orgOne, err = s.Organization.Create(ctx, "testing-org-1-with-one-backend")
 	assert.NoError(err)
@@ -465,6 +476,7 @@ type CASBackendIntegrationTestSuite struct {
 	orgTwo, orgOne, orgNoBackend          *biz.Organization
 	casBackend1, casBackend2, casBackend3 *biz.CASBackend
 	credsWriter                           *creds.ReaderWriter
+	backendProvider                       *blobM.Provider
 }
 
 func TestIntegrationCASBackend(t *testing.T) {
