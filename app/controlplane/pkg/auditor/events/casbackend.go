@@ -47,7 +47,7 @@ type CASBackendBase struct {
 	CASBackendName string     `json:"cas_backend_name,omitempty"`
 	Provider       string     `json:"provider,omitempty"`
 	Location       string     `json:"location,omitempty"`
-	Default        bool       `json:"default,omitempty"`
+	Default        bool       `json:"default"`
 }
 
 func (c *CASBackendBase) RequiresActor() bool {
@@ -100,8 +100,8 @@ func (c *CASBackendCreated) Description() string {
 type CASBackendUpdated struct {
 	*CASBackendBase
 	NewDescription     *string `json:"new_description,omitempty"`
-	CredentialsChanged bool    `json:"credentials_changed,omitempty"`
-	PreviousDefault    bool    `json:"previous_default,omitempty"`
+	CredentialsChanged bool    `json:"credentials_changed"`
+	PreviousDefault    bool    `json:"previous_default"`
 }
 
 func (c *CASBackendUpdated) ActionType() string {
@@ -184,7 +184,7 @@ type CASBackendStatusChanged struct {
 	PreviousStatus string `json:"previous_status,omitempty"`
 	NewStatus      string `json:"new_status,omitempty"`
 	StatusError    string `json:"status_error,omitempty"`
-	IsRecovery     bool   `json:"is_recovery,omitempty"`
+	IsRecovery     bool   `json:"is_recovery"`
 }
 
 func (c *CASBackendStatusChanged) ActionType() string {

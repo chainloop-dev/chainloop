@@ -336,24 +336,54 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 	}
 
 	var secretName string
+	credentialsUpdated := false
 	// We want to rotate credentials
 	if creds != nil {
 		secretName, err = uc.credsRW.SaveCredentials(ctx, orgID, creds)
 		if err != nil {
 			return nil, fmt.Errorf("storing the credentials: %w", err)
 		}
+		credentialsUpdated = true
 	}
 
-	after, err := uc.repo.Update(ctx, &CASBackendUpdateOpts{
+	// Update the backend without modifying validation status directly
+	// The validation status will be updated through PerformValidation if needed
+	// Don't set validation status here - let PerformValidation handle it
+	updateOpts := &CASBackendUpdateOpts{
 		ID: uuid,
 		CASBackendOpts: &CASBackendOpts{
-			SecretName: secretName, Default: defaultB, Description: description, OrgID: orgUUID,
-			ValidationStatus: CASBackendValidationOK,
-			ValidationError:  ToPtr(""),
+			SecretName:  secretName,
+			Default:     defaultB,
+			Description: description,
+			OrgID:       orgUUID,
 		},
-	})
+	}
+
+	// If we're not updating credentials, preserve the current validation status
+	if !credentialsUpdated {
+		updateOpts.CASBackendOpts.ValidationStatus = before.ValidationStatus
+		updateOpts.CASBackendOpts.ValidationError = before.ValidationError
+	}
+
+	after, err := uc.repo.Update(ctx, updateOpts)
 	if err != nil {
 		return nil, err
+	}
+
+	// If credentials were updated, perform validation to check if they work
+	// This will properly update validation status and send events
+	if credentialsUpdated {
+		if err := uc.PerformValidation(ctx, id); err != nil {
+			// Log the validation error but don't fail the update operation
+			// The validation status will be updated by PerformValidation
+			uc.logger.Warnw("msg", "validation failed after credential update", "ID", id, "error", err)
+		}
+
+		// Reload the backend to get the updated validation status
+		after, err = uc.repo.FindByIDInOrg(ctx, orgUUID, uuid)
+		if err != nil {
+			return nil, fmt.Errorf("reloading backend after validation: %w", err)
+		}
 	}
 
 	// If we just updated the backend from default=true => default=false, we need to set up the fallback as default
@@ -374,7 +404,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 				Default:        after.Default,
 			},
 			NewDescription:     &description,
-			CredentialsChanged: creds != nil,
+			CredentialsChanged: credentialsUpdated,
 			PreviousDefault:    before.Default,
 		}, &orgUUID)
 	}
