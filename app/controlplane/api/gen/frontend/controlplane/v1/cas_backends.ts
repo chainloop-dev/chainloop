@@ -84,9 +84,13 @@ export interface CASBackendServiceCreateResponse {
 export interface CASBackendServiceUpdateRequest {
   name: string;
   /** Description */
-  description: string;
+  description?:
+    | string
+    | undefined;
   /** Set as default in your organization */
-  default: boolean;
+  default?:
+    | boolean
+    | undefined;
   /** Credentials, useful for rotation */
   credentials?: { [key: string]: any };
 }
@@ -394,7 +398,7 @@ export const CASBackendServiceCreateResponse = {
 };
 
 function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
-  return { name: "", description: "", default: false, credentials: undefined };
+  return { name: "", description: undefined, default: undefined, credentials: undefined };
 }
 
 export const CASBackendServiceUpdateRequest = {
@@ -402,10 +406,10 @@ export const CASBackendServiceUpdateRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.description !== "") {
+    if (message.description !== undefined) {
       writer.uint32(18).string(message.description);
     }
-    if (message.default === true) {
+    if (message.default !== undefined) {
       writer.uint32(24).bool(message.default);
     }
     if (message.credentials !== undefined) {
@@ -461,8 +465,8 @@ export const CASBackendServiceUpdateRequest = {
   fromJSON(object: any): CASBackendServiceUpdateRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      default: isSet(object.default) ? Boolean(object.default) : false,
+      description: isSet(object.description) ? String(object.description) : undefined,
+      default: isSet(object.default) ? Boolean(object.default) : undefined,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
     };
   },
@@ -485,8 +489,8 @@ export const CASBackendServiceUpdateRequest = {
   ): CASBackendServiceUpdateRequest {
     const message = createBaseCASBackendServiceUpdateRequest();
     message.name = object.name ?? "";
-    message.description = object.description ?? "";
-    message.default = object.default ?? false;
+    message.description = object.description ?? undefined;
+    message.default = object.default ?? undefined;
     message.credentials = object.credentials ?? undefined;
     return message;
   },

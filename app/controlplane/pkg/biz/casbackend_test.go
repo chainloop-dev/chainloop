@@ -89,7 +89,7 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendAlreadyExist() {
 	s.repo.On("Update", ctx, &biz.CASBackendUpdateOpts{
 		ID: s.validUUID,
 		CASBackendOpts: &biz.CASBackendOpts{
-			Location: repoName, SecretName: "secret-key", Default: true, Provider: backendType,
+			Location: repoName, SecretName: "secret-key", Default: toPtrBool(true), Provider: backendType,
 		},
 	}).Return(r, nil)
 
@@ -111,7 +111,7 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 	s.repo.On("Create", ctx, &biz.CASBackendCreateOpts{
 		CASBackendOpts: &biz.CASBackendOpts{
 			OrgID:    s.validUUID,
-			Location: repo, SecretName: "secret-key", Default: true, Provider: backendType,
+			Location: repo, SecretName: "secret-key", Default: toPtrBool(true), Provider: backendType,
 		},
 	}).Return(newRepo, nil)
 

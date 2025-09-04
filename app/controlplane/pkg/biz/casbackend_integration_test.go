@@ -35,8 +35,9 @@ import (
 )
 
 const location = "my-location"
-const description = "my-description"
 const backendType = oci.ProviderID
+
+var description = "my-description"
 
 func (s *CASBackendIntegrationTestSuite) TestUniqueNameDuringCreate() {
 	orgID, err := uuid.Parse(s.orgOne.ID)
@@ -243,7 +244,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.False(nonDefaultB.Default)
 
 		// Update the non-default to be default
-		nonDefaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, nonDefaultB.ID.String(), "", nil, true)
+		nonDefaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, nonDefaultB.ID.String(), toPtrS(""), nil, toPtrBool(true))
 		assert.NoError(err)
 		assert.True(nonDefaultB.Default)
 
@@ -260,7 +261,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.Equal(description, defaultB.Description)
 
 		// Update the description
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), "updated desc", nil, true)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS("updated desc"), nil, toPtrBool(true))
 		assert.NoError(err)
 		assert.Equal("updated desc", defaultB.Description)
 		assert.True(defaultB.Default)
@@ -273,7 +274,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.Equal(description, defaultB.Description)
 
 		// update the status
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), description, nil, false)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), nil, toPtrBool(false))
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 		assert.False(defaultB.Default)
@@ -298,7 +299,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		assert.False(fallbackB.Default)
 
 		// update the status
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), description, nil, false)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), nil, toPtrBool(false))
 		assert.NoError(err)
 		assert.False(defaultB.Default)
 
@@ -321,7 +322,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		s.credsWriter.On("SaveCredentials", ctx, s.orgNoBackend.ID, creds).Return("new-secret", nil)
 		s.credsWriter.On("ReadCredentials", ctx, "new-secret", mock.Anything).Return(nil)
 		s.backendProvider.On("ValidateAndExtractCredentials", location, mock.Anything).Return(nil, nil)
-		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), description, creds, true)
+		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), creds, nil)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 		assert.Equal("new-secret", defaultB.SecretName)

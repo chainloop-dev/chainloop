@@ -27,34 +27,23 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 		Use:   "inline",
 		Short: "Update the Inline, fallback CAS Backend description or default status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			isDefault, err := cmd.Flags().GetBool("default")
-			cobra.CheckErr(err)
+			// capture flags only when explicitly set
+			if err := captureUpdateFlags(cmd); err != nil {
+				return err
+			}
 
-			description, err := cmd.Flags().GetString("description")
-			cobra.CheckErr(err)
-
-			// If we are overriding the default we ask for confirmation
-			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendName); err != nil {
-					return err
-				} else if !confirmed {
-					log.Info("Aborting...")
-					return nil
-				}
-			} else {
-				// If we are removing the default we ask for confirmation too
-				if confirmed, err := confirmDefaultCASBackendUnset(backendName, "You are setting the default CAS backend to false", actionOpts); err != nil {
-					return err
-				} else if !confirmed {
-					log.Info("Aborting...")
-					return nil
-				}
+			// If we are overriding/unsetting the default we ask for confirmation
+			if ok, err := handleDefaultUpdateConfirmation(actionOpts, backendName); err != nil {
+				return err
+			} else if !ok {
+				log.Info("Aborting...")
+				return nil
 			}
 
 			opts := &action.NewCASBackendUpdateOpts{
 				Name:        backendName,
-				Description: description,
-				Default:     isDefault,
+				Description: descriptionCASBackendUpdateOption,
+				Default:     isDefaultCASBackendUpdateOption,
 			}
 
 			res, err := action.NewCASBackendUpdate(actionOpts).Run(opts)

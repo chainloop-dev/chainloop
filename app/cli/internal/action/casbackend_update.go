@@ -29,8 +29,8 @@ type CASBackendUpdate struct {
 
 type NewCASBackendUpdateOpts struct {
 	Name        string
-	Description string
-	Default     bool
+	Description *string
+	Default     *bool
 	Credentials map[string]any
 }
 

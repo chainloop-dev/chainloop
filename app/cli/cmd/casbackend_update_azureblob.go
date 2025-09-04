@@ -27,41 +27,28 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 		Use:   "azure-blob",
 		Short: "Update a AzureBlob CAS Backend description, credentials or default status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If we are setting the default, we list existing CAS backends
-			// and ask the user to confirm the rewrite
-			isDefault, err := cmd.Flags().GetBool("default")
-			cobra.CheckErr(err)
+			// capture flags only when explicitly set
+			if err := captureUpdateFlags(cmd); err != nil {
+				return err
+			}
 
-			description, err := cmd.Flags().GetString("description")
-			cobra.CheckErr(err)
-
-			// If we are overriding the default we ask for confirmation
-			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, backendName); err != nil {
-					return err
-				} else if !confirmed {
-					log.Info("Aborting...")
-					return nil
-				}
-			} else {
-				// If we are removing the default we ask for confirmation too
-				if confirmed, err := confirmDefaultCASBackendUnset(backendName, "You are setting the default CAS backend to false", actionOpts); err != nil {
-					return err
-				} else if !confirmed {
-					log.Info("Aborting...")
-					return nil
-				}
+			// If we are overriding/unsetting the default we ask for confirmation
+			if ok, err := handleDefaultUpdateConfirmation(actionOpts, backendName); err != nil {
+				return err
+			} else if !ok {
+				log.Info("Aborting...")
+				return nil
 			}
 
 			opts := &action.NewCASBackendUpdateOpts{
 				Name:        backendName,
-				Description: description,
+				Description: descriptionCASBackendUpdateOption,
 				Credentials: map[string]any{
 					"tenantID":     tenantID,
 					"clientID":     clientID,
 					"clientSecret": clientSecret,
 				},
-				Default: isDefault,
+				Default: isDefaultCASBackendUpdateOption,
 			}
 
 			// this means that we are not updating credentials
