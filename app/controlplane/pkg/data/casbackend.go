@@ -90,7 +90,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 	)
 	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// 1 - unset default backend for all the other backends in the org
-		if opts.Default {
+		if opts.Default != nil && *opts.Default {
 			if err := tx.CASBackend.Update().
 				Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
 				Where(casbackend.Default(true)).
@@ -105,10 +105,10 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 			SetName(opts.Name).
 			SetOrganizationID(opts.OrgID).
 			SetLocation(opts.Location).
-			SetDescription(opts.Description).
+			SetNillableDescription(opts.Description).
 			SetFallback(opts.Fallback).
 			SetProvider(opts.Provider).
-			SetDefault(opts.Default).
+			SetNillableDefault(opts.Default).
 			SetSecretName(opts.SecretName).
 			SetMaxBlobSizeBytes(opts.MaxBytes).
 			Save(ctx)
@@ -135,7 +135,7 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 	)
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// 1 - unset default backend for all the other backends in the org
-		if opts.Default {
+		if opts.Default != nil && *opts.Default {
 			if err := tx.CASBackend.Update().
 				Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
 				Where(casbackend.Default(true)).
@@ -148,10 +148,9 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 		// 2 - Chain the list of updates
 		// TODO: allow setting values as empty, currently it's not possible.
 		// We do it in other models by providing pointers to string + setNillableX methods
-		updateChain := tx.CASBackend.UpdateOneID(opts.ID).SetDefault(opts.Default)
-		if opts.Description != "" {
-			updateChain = updateChain.SetDescription(opts.Description)
-		}
+		updateChain := tx.CASBackend.UpdateOneID(opts.ID).
+			SetNillableDefault(opts.Default).
+			SetNillableDescription(opts.Description)
 
 		// If secretName is provided we set it
 		if opts.SecretName != "" {

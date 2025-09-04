@@ -22,6 +22,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	isDefaultCASBackendUpdateOption   *bool
+	descriptionCASBackendUpdateOption *string
+)
+
 func newCASBackendCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cas-backend",
@@ -118,4 +123,42 @@ func confirmationPrompt(msg string) bool {
 	fmt.Scanln(&gotChallenge)
 
 	return gotChallenge == "y" || gotChallenge == "Y"
+}
+
+// captureUpdateFlags reads the --default and --description flags only when explicitly set and
+// stores their values in the package-level pointer options. This avoids treating their zero
+// values as an intention to update.
+func captureUpdateFlags(cmd *cobra.Command) error {
+	if f := cmd.Flags().Lookup("default"); f != nil && f.Changed {
+		v, err := cmd.Flags().GetBool("default")
+		if err != nil {
+			return err
+		}
+		isDefaultCASBackendUpdateOption = &v
+	}
+
+	if f := cmd.Flags().Lookup("description"); f != nil && f.Changed {
+		v, err := cmd.Flags().GetString("description")
+		if err != nil {
+			return err
+		}
+		descriptionCASBackendUpdateOption = &v
+	}
+
+	return nil
+}
+
+// handleDefaultUpdateConfirmation centralizes the confirmation logic when the --default flag
+// is provided. It returns (true, nil) when it's ok to proceed, (false, nil) when the user
+// declined confirmation, or (false, err) when an error happened.
+func handleDefaultUpdateConfirmation(actionOpts *action.ActionsOpts, name string) (bool, error) {
+	if isDefaultCASBackendUpdateOption == nil {
+		return true, nil
+	}
+
+	if *isDefaultCASBackendUpdateOption {
+		return confirmDefaultCASBackendOverride(actionOpts, name)
+	}
+
+	return confirmDefaultCASBackendUnset(name, "You are setting the default CAS backend to false", actionOpts)
 }

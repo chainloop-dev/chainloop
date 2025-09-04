@@ -69,9 +69,9 @@ message CASBackendServiceUpdateRequest {
     }
   }];
   // Description
-  string description = 2;
+  optional string description = 2;
   // Set as default in your organization
-  bool default = 3;
+  optional bool default = 3;
   // Credentials, useful for rotation
   google.protobuf.Struct credentials = 4;
 }

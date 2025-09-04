@@ -43,6 +43,8 @@ const (
 	CASBackendInlineDefaultMaxBytes int64              = 500 * 1024 // 500KB
 )
 
+var CASBackendInlineDescription = "Embed artifacts content in the attestation (fallback)"
+
 type CASBackendValidationStatus string
 
 var CASBackendValidationOK CASBackendValidationStatus = "OK"
@@ -74,12 +76,13 @@ type CASBackendLimits struct {
 }
 
 type CASBackendOpts struct {
-	OrgID                             uuid.UUID
-	Location, SecretName, Description string
-	Provider                          CASBackendProvider
-	Default                           bool
-	ValidationStatus                  CASBackendValidationStatus
-	ValidationError                   *string
+	OrgID                uuid.UUID
+	Location, SecretName string
+	Description          *string
+	Provider             CASBackendProvider
+	Default              *bool
+	ValidationStatus     CASBackendValidationStatus
+	ValidationError      *string
 }
 
 type CASBackendCreateOpts struct {
@@ -237,8 +240,8 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 		Fallback: true,
 		MaxBytes: CASBackendInlineDefaultMaxBytes,
 		CASBackendOpts: &CASBackendOpts{
-			Provider: CASBackendInline, Default: true,
-			Description: "Embed artifacts content in the attestation (fallback)",
+			Provider: CASBackendInline, Default: ToPtr(true),
+			Description: &CASBackendInlineDescription,
 			OrgID:       orgUUID,
 		},
 	})
@@ -259,7 +262,7 @@ func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID s
 		return nil, nil
 	}
 
-	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: true}})
+	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: ToPtr(true)}})
 }
 
 func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
@@ -286,8 +289,8 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 		MaxBytes: uc.MaxBytesDefault,
 		Name:     name,
 		CASBackendOpts: &CASBackendOpts{
-			Location: location, SecretName: secretName, Provider: provider, Default: defaultB,
-			Description: description,
+			Location: location, SecretName: secretName, Provider: provider, Default: ToPtr(defaultB),
+			Description: &description,
 			OrgID:       orgUUID,
 		},
 	})
@@ -317,7 +320,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 }
 
 // Update will update credentials, description or default status
-func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description string, creds any, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, description *string, creds any, defaultB *bool) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -402,7 +405,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id, description 
 				Location:       after.Location,
 				Default:        after.Default,
 			},
-			NewDescription:     &description,
+			NewDescription:     description,
 			CredentialsChanged: credentialsUpdated,
 			PreviousDefault:    before.Default,
 		}, &orgUUID)
@@ -439,7 +442,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	if backend != nil && backend.Provider == provider {
 		return uc.repo.Update(ctx, &CASBackendUpdateOpts{
 			CASBackendOpts: &CASBackendOpts{
-				Location: name, SecretName: secretName, Provider: provider, Default: defaultB,
+				Location: name, SecretName: secretName, Provider: provider, Default: ToPtr(defaultB),
 			},
 			ID: backend.ID,
 		})
@@ -448,7 +451,7 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		CASBackendOpts: &CASBackendOpts{
 			Location: name, SecretName: secretName, Provider: provider,
-			Default: defaultB,
+			Default: ToPtr(defaultB),
 			OrgID:   orgUUID,
 		},
 	})
