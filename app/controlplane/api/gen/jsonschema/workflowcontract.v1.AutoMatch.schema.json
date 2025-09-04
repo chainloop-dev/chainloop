@@ -1,0 +1,18 @@
+{
+  "$id": "workflowcontract.v1.AutoMatch.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Auto-matching policy specification",
+  "properties": {
+    "embedded": {
+      "description": "embedded source code (only Rego supported currently)",
+      "type": "string"
+    },
+    "path": {
+      "description": "path to a policy script. It might consist of a URI reference",
+      "type": "string"
+    }
+  },
+  "title": "Auto Match",
+  "type": "object"
+}

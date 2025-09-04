@@ -2,7 +2,15 @@
   "$id": "workflowcontract.v1.PolicySpec.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(auto_match)$": {
+      "$ref": "workflowcontract.v1.AutoMatch.jsonschema.json"
+    }
+  },
   "properties": {
+    "autoMatch": {
+      "$ref": "workflowcontract.v1.AutoMatch.jsonschema.json"
+    },
     "embedded": {
       "description": "embedded source code (only Rego supported currently)",
       "type": "string"

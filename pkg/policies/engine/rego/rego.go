@@ -112,7 +112,7 @@ const (
 	EnvironmentModePermissive EnvironmentMode = 1
 	inputArgs                                 = "args"
 	expectedArgs                              = "expected_args"
-	evalResult                                = "evaluation_result"
+	violationsResult                          = "violations"
 	inputElements                             = "elements"
 	mainRule                                  = "result"
 	matchesParametersRule                     = "matches_parameters"
@@ -344,7 +344,6 @@ func getRuleName(packagePath ast.Ref, rule string) string {
 
 // MatchesParameters evaluates the matches_parameters rule in a rego policy.
 // The function creates an input object with policy parameters and expected parameters.
-// Returns true if the policy's matches_parameters rule evaluates to true, false otherwise.
 func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, evaluationParams, expectedParams map[string]string) (bool, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
@@ -354,47 +353,67 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 
 	// Create input with policy and expected parameters
 	inputMap := make(map[string]interface{})
-	inputMap[inputArgs] = evaluationParams
-	inputMap[expectedArgs] = expectedParams
+	if evaluationParams == nil {
+		inputMap[inputArgs] = map[string]string{}
+	} else {
+		inputMap[inputArgs] = evaluationParams
+	}
+	if expectedParams == nil {
+		inputMap[expectedArgs] = map[string]string{}
+	} else {
+		inputMap[expectedArgs] = expectedParams
+	}
 
 	// Evaluate matches_parameters rule
-	matchesParameters, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesParametersRule), parsedModule, inputMap)
+	matchesParameters, found, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesParametersRule), parsedModule, inputMap)
 	if err != nil {
-		// Defaults to false
 		return false, err
+	}
+	if !found {
+		// Rule not found, defaults to false
+		return false, nil
 	}
 
 	return matchesParameters, nil
 }
 
 // MatchesEvaluation evaluates the matches_evaluation rule in a rego policy.
-// The function creates an input object with policy parameters and evaluation result.
-// Returns true if the policy's matches_evaluation rule evaluates to true, false otherwise.
-// If the rule is not found or evaluation fails, it defaults to false.
-func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, ev *engine.EvaluationResult, evaluationParams map[string]string) (bool, error) {
+// Creates an input object with expected parameters and policy violations.
+func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, violations []string, expectedParams map[string]string) (bool, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse rego policy: %w", err)
 	}
 
-	// Create input with the policy evaluation data
+	// Create input expected parameters and policy violations
 	inputMap := make(map[string]interface{})
-	inputMap[inputArgs] = evaluationParams
-	inputMap[evalResult] = ev
+	if expectedParams == nil {
+		inputMap[expectedArgs] = map[string]string{}
+	} else {
+		inputMap[expectedArgs] = expectedParams
+	}
+	if violations == nil {
+		inputMap[violationsResult] = []string{}
+	} else {
+		inputMap[violationsResult] = violations
+	}
 
-	// Evaluate matches_parameters rule
-	matchesEvaluation, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesEvaluationRule), parsedModule, inputMap)
+	// Evaluate matches_evaluation rule
+	matchesEvaluation, found, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesEvaluationRule), parsedModule, inputMap)
 	if err != nil {
-		// Defaults to false
 		return false, err
+	}
+	if !found {
+		// Rule not found, defaults to true
+		return true, nil
 	}
 
 	return matchesEvaluation, nil
 }
 
 // Evaluates a single rule and returns its boolean result
-func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, parsedModule *ast.Module, decodedInput interface{}) (bool, error) {
+func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, parsedModule *ast.Module, decodedInput interface{}) (result bool, found bool, err error) {
 	// Add input
 	regoInput := rego.Input(decodedInput)
 
@@ -408,18 +427,18 @@ func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, pars
 
 	res, err := queryRego(ctx, ruleName, options...)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 
 	// Parse the boolean result
 	for _, exp := range res {
 		for _, val := range exp.Expressions {
 			if boolResult, ok := val.Value.(bool); ok {
-				return boolResult, nil
+				return boolResult, true, nil
 			}
 		}
 	}
 
-	// No valid boolean result found
-	return false, nil
+	// Rule not found or returns non bool value
+	return false, false, nil
 }

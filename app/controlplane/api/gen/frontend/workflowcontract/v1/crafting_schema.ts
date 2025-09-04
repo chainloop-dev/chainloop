@@ -418,6 +418,7 @@ export interface PolicySpec {
   policies: PolicySpecV2[];
   /** Describe the supported inputs */
   inputs: PolicyInput[];
+  autoMatch?: AutoMatch;
 }
 
 export interface PolicyInput {
@@ -438,6 +439,16 @@ export interface PolicySpecV2 {
     | undefined;
   /** if set, it will match any material supported by Chainloop */
   kind: CraftingSchema_Material_MaterialType;
+}
+
+/** Auto-matching policy specification */
+export interface AutoMatch {
+  /** path to a policy script. It might consist of a URI reference */
+  path?:
+    | string
+    | undefined;
+  /** embedded source code (only Rego supported currently) */
+  embedded?: string | undefined;
 }
 
 /** Represents a group attachment in a contract */
@@ -1528,7 +1539,7 @@ export const Metadata_AnnotationsEntry = {
 };
 
 function createBasePolicySpec(): PolicySpec {
-  return { path: undefined, embedded: undefined, type: 0, policies: [], inputs: [] };
+  return { path: undefined, embedded: undefined, type: 0, policies: [], inputs: [], autoMatch: undefined };
 }
 
 export const PolicySpec = {
@@ -1547,6 +1558,9 @@ export const PolicySpec = {
     }
     for (const v of message.inputs) {
       PolicyInput.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.autoMatch !== undefined) {
+      AutoMatch.encode(message.autoMatch, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1593,6 +1607,13 @@ export const PolicySpec = {
 
           message.inputs.push(PolicyInput.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.autoMatch = AutoMatch.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1609,6 +1630,7 @@ export const PolicySpec = {
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
       policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicySpecV2.fromJSON(e)) : [],
       inputs: Array.isArray(object?.inputs) ? object.inputs.map((e: any) => PolicyInput.fromJSON(e)) : [],
+      autoMatch: isSet(object.autoMatch) ? AutoMatch.fromJSON(object.autoMatch) : undefined,
     };
   },
 
@@ -1627,6 +1649,8 @@ export const PolicySpec = {
     } else {
       obj.inputs = [];
     }
+    message.autoMatch !== undefined &&
+      (obj.autoMatch = message.autoMatch ? AutoMatch.toJSON(message.autoMatch) : undefined);
     return obj;
   },
 
@@ -1641,6 +1665,9 @@ export const PolicySpec = {
     message.type = object.type ?? 0;
     message.policies = object.policies?.map((e) => PolicySpecV2.fromPartial(e)) || [];
     message.inputs = object.inputs?.map((e) => PolicyInput.fromPartial(e)) || [];
+    message.autoMatch = (object.autoMatch !== undefined && object.autoMatch !== null)
+      ? AutoMatch.fromPartial(object.autoMatch)
+      : undefined;
     return message;
   },
 };
@@ -1822,6 +1849,77 @@ export const PolicySpecV2 = {
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
     message.kind = object.kind ?? 0;
+    return message;
+  },
+};
+
+function createBaseAutoMatch(): AutoMatch {
+  return { path: undefined, embedded: undefined };
+}
+
+export const AutoMatch = {
+  encode(message: AutoMatch, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.path !== undefined) {
+      writer.uint32(10).string(message.path);
+    }
+    if (message.embedded !== undefined) {
+      writer.uint32(18).string(message.embedded);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AutoMatch {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAutoMatch();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.path = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.embedded = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AutoMatch {
+    return {
+      path: isSet(object.path) ? String(object.path) : undefined,
+      embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
+    };
+  },
+
+  toJSON(message: AutoMatch): unknown {
+    const obj: any = {};
+    message.path !== undefined && (obj.path = message.path);
+    message.embedded !== undefined && (obj.embedded = message.embedded);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AutoMatch>, I>>(base?: I): AutoMatch {
+    return AutoMatch.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AutoMatch>, I>>(object: I): AutoMatch {
+    const message = createBaseAutoMatch();
+    message.path = object.path ?? undefined;
+    message.embedded = object.embedded ?? undefined;
     return message;
   },
 };
