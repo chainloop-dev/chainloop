@@ -234,6 +234,10 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.c - Set Attestation context from user token
 			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
+			// Validate the CAS Backend is fully configured and valid
+			selector.Server(
+				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
+			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 			// Store all memberships in the context
 			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
 			// 2.d - Set its robot account from federated delegation
@@ -260,11 +264,10 @@ func requireCurrentUserMatcher() selector.MatchFunc {
 }
 
 func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
-	// We do not need to remove other endpoints since this matcher is called once the requireCurrentUserMatcher one has passed
-	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*"
+	const requireMatcher = "/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
+		r := regexp.MustCompile(requireMatcher)
+		return r.MatchString(operation)
 	}
 }
 

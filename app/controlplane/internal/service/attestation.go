@@ -179,6 +179,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "default CAS backend not found")
 	}
 
+	// Check the status of the backend
+	if backend.ValidationStatus != biz.CASBackendValidationOK {
+		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+	}
+
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
 		WorkflowID:       wf.ID.String(),
@@ -438,6 +443,12 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	}
 
 	backend := wRun.CASBackends[0]
+
+	// Check the status of the backend
+	if backend.ValidationStatus != biz.CASBackendValidationOK {
+		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+	}
+
 	s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
 
 	// Return the backend information and associated credentials (if applicable)
