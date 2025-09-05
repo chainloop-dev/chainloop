@@ -446,7 +446,11 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 
 	// Check the status of the backend
 	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+		// Try to re-validate the backend; if it still fails, return an error
+		// Assume PerformValidation updated the backend status; continue if validation succeeded
+		if err = s.casUC.PerformValidation(ctx, backend.ID.String()); err != nil {
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+		}
 	}
 
 	s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
