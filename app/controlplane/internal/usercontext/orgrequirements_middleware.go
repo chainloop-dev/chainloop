@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
@@ -78,16 +77,8 @@ func validateCASBackend(ctx context.Context, uc biz.CASBackendReader, repo *biz.
 	return repo, nil
 }
 
-const validationTimeOffset = 5 * time.Minute
-
-// Since this check happens synchronously on every request it has a big performance impact
-// that's why we run it only in refresh windows
+// shouldRevalidate returns true if the repo needs to be re-validated
+// Currently, we only re-validate if the last status was "failed"
 func shouldRevalidate(repo *biz.CASBackend) bool {
-	// If the validation is currently failed we want to make sure we re-validate
-	if repo.ValidationStatus == biz.CASBackendValidationFailed {
-		return true
-	}
-
-	// if it has been more than validationTimeOffset since the last validation
-	return repo.ValidatedAt.Before(time.Now().Add(-validationTimeOffset))
+	return repo.ValidationStatus == biz.CASBackendValidationFailed
 }

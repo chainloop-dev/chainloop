@@ -46,8 +46,8 @@ func TestRequireFullyConfiguredOrgMatcher(t *testing.T) {
 		operation string
 		matches   bool
 	}{
-		{"/controlplane.v1.WorkflowService/List", true},
-		{"/controlplane.v1.WorkflowRunService/List", true},
+		{"/controlplane.v1.AttestationService.GetUploadCreds", true},
+		{"/controlplane.v1.AttestationService.Init", true},
 		{"/controlplane.v1.OCIRepositoryService/Save", false},
 		{"/controlplane.v1.OrganizationService/ListMemberships", false},
 		{"/controlplane.v1.OrganizationService/SetCurrent", false},
