@@ -289,6 +289,12 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 
 	// If we have an external CAS backend, we will push there the attestation
 	if !casBackend.Inline {
+		if casBackend.ValidationStatus != biz.CASBackendValidationOK {
+			// Try to re-validate the backend; if it still fails, return an error
+			if err = s.casUC.PerformValidation(ctx, casBackend.ID.String()); err != nil {
+				return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+			}
+		}
 		go func() {
 			b := backoff.NewExponentialBackOff()
 			b.MaxElapsedTime = 1 * time.Minute
