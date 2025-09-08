@@ -275,7 +275,7 @@ func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 
 func requireFullyConfiguredCASBackendMatcher() selector.MatchFunc {
 	const requireMatcher = "/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get"
-	return func(ctx context.Context, operation string) bool {
+	return func(_ context.Context, operation string) bool {
 		r := regexp.MustCompile(requireMatcher)
 		return r.MatchString(operation)
 	}
