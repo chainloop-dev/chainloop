@@ -179,6 +179,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "default CAS backend not found")
 	}
 
+	// Check the status of the backend
+	if backend.ValidationStatus != biz.CASBackendValidationOK {
+		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+	}
+
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
 		WorkflowID:       wf.ID.String(),
@@ -284,6 +289,12 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 
 	// If we have an external CAS backend, we will push there the attestation
 	if !casBackend.Inline {
+		if casBackend.ValidationStatus != biz.CASBackendValidationOK {
+			// Try to re-validate the backend; if it still fails, return an error
+			if err = s.casUC.PerformValidation(ctx, casBackend.ID.String()); err != nil {
+				return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+			}
+		}
 		go func() {
 			b := backoff.NewExponentialBackOff()
 			b.MaxElapsedTime = 1 * time.Minute
@@ -438,6 +449,16 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	}
 
 	backend := wRun.CASBackends[0]
+
+	// Check the status of the backend
+	if backend.ValidationStatus != biz.CASBackendValidationOK {
+		// Try to re-validate the backend; if it still fails, return an error
+		// Assume PerformValidation updated the backend status; continue if validation succeeded
+		if err = s.casUC.PerformValidation(ctx, backend.ID.String()); err != nil {
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+		}
+	}
+
 	s.log.Infow("msg", "generating upload credentials for CAS backend", "ID", wRun.CASBackends[0].ID, "name", wRun.CASBackends[0].Location, "workflowRun", req.WorkflowRunId)
 
 	// Return the backend information and associated credentials (if applicable)

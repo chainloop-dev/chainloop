@@ -207,7 +207,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				usercontext.CheckUserHasAccess(opts.AuthConfig.AllowList, opts.UserUseCase),
 			).Match(allowListEnabled()).Build(),
 			selector.Server(
-				usercontext.CheckOrgRequirements(opts.CASBackendUseCase),
+				usercontext.ValidateCASBackend(opts.CASBackendUseCase),
 			).Match(requireFullyConfiguredOrgMatcher()).Build(),
 		).Match(requireCurrentUserMatcher()).Build(),
 	)
@@ -234,6 +234,11 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.c - Set Attestation context from user token
 			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
+			// Validate the CAS Backend is fully configured and valid
+			selector.Server(
+				usercontext.ValidateCASBackend(opts.CASBackendUseCase),
+				usercontext.BlockIfCASBackendNotValid(opts.CASBackendUseCase),
+			).Match(requireFullyConfiguredCASBackendMatcher()).Build(),
 			// Store all memberships in the context
 			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
 			// 2.d - Set its robot account from federated delegation
@@ -265,6 +270,14 @@ func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
 	return func(ctx context.Context, operation string) bool {
 		r := regexp.MustCompile(skipRegexp)
 		return !r.MatchString(operation)
+	}
+}
+
+func requireFullyConfiguredCASBackendMatcher() selector.MatchFunc {
+	const requireMatcher = "/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get"
+	return func(ctx context.Context, operation string) bool {
+		r := regexp.MustCompile(requireMatcher)
+		return r.MatchString(operation)
 	}
 }
 

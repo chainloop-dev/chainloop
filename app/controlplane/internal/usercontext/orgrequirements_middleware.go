@@ -27,7 +27,12 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
+const validationTimeOffset = 5 * time.Minute
+
+// ValidateCASBackend checks that the current organization has a valid CAS Backend configured
+// If the last validation happened more than validationTimeOffset ago it will re-run the validation
+// This middleware does not block the request if the CAS Backend is not valid
+func ValidateCASBackend(uc biz.CASBackendReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			org := entities.CurrentOrg(ctx)
@@ -52,11 +57,6 @@ func CheckOrgRequirements(uc biz.CASBackendReader) middleware.Middleware {
 				}
 			}
 
-			// 2 - compare the status
-			if repo.ValidationStatus != biz.CASBackendValidationOK {
-				return nil, v1.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
-			}
-
 			return handler(ctx, req)
 		}
 	}
@@ -78,10 +78,9 @@ func validateCASBackend(ctx context.Context, uc biz.CASBackendReader, repo *biz.
 	return repo, nil
 }
 
-const validationTimeOffset = 5 * time.Minute
-
-// Since this check happens synchronously on every request it has a big performance impact
-// that's why we run it only in refresh windows
+// shouldRevalidate returns true if the repo needs to be re-validated
+// Currently, we only re-validate if the last status was "failed"
+// or if the last validation was more than validationTimeOffset ago
 func shouldRevalidate(repo *biz.CASBackend) bool {
 	// If the validation is currently failed we want to make sure we re-validate
 	if repo.ValidationStatus == biz.CASBackendValidationFailed {
@@ -90,4 +89,32 @@ func shouldRevalidate(repo *biz.CASBackend) bool {
 
 	// if it has been more than validationTimeOffset since the last validation
 	return repo.ValidatedAt.Before(time.Now().Add(-validationTimeOffset))
+}
+
+// BlockIfCASBackendNotValid checks that the current organization has a valid CAS Backend configured
+// If the CAS Backend is not valid it will block the request
+func BlockIfCASBackendNotValid(uc biz.CASBackendReader) middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			org := entities.CurrentOrg(ctx)
+			if org == nil {
+				// Make sure that this middleware is ran after WithCurrentUser
+				return nil, errors.New("organization not found")
+			}
+
+			// 1 - Figure out main repository for this organization
+			repo, err := uc.FindDefaultBackend(ctx, org.ID)
+			if err != nil && !biz.IsNotFound(err) {
+				return nil, fmt.Errorf("checking for CAS backends in the org: %w", err)
+			} else if repo == nil {
+				return nil, v1.ErrorCasBackendErrorReasonRequired("your organization does not have a CAS Backend configured yet")
+			}
+
+			// 2 - compare the status
+			if repo.ValidationStatus != biz.CASBackendValidationOK {
+				return nil, v1.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+			}
+			return handler(ctx, req)
+		}
+	}
 }

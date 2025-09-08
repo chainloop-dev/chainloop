@@ -155,3 +155,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 		})
 	}
 }
+
+func toTimePtr(t time.Time) *time.Time {
+	return &t
+}
