@@ -320,7 +320,7 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 }
 
 func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*biz.WorkflowRun, error) {
-	q := r.data.DB.WorkflowRun.Query().WithWorkflow().Where(workflowrun.CreatedAtLTE(olderThan)).Where(workflowrun.StateEQ(biz.WorkflowRunInitialized))
+	q := r.data.DB.WorkflowRun.Query().WithWorkflow().Where(workflowrun.StateEQ(biz.WorkflowRunInitialized), workflowrun.CreatedAtLTE(olderThan))
 	if limit > 0 {
 		q = q.Limit(limit)
 	}
