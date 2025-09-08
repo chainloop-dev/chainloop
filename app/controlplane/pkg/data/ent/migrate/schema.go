@@ -813,11 +813,6 @@ var (
 				Name:    "workflowrun_state_created_at",
 				Unique:  false,
 				Columns: []*schema.Column{WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					DescColumns: map[string]bool{
-						WorkflowRunsColumns[1].Name: true,
-					},
-				},
 			},
 			{
 				Name:    "workflowrun_state_finished_at",
