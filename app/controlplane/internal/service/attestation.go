@@ -289,6 +289,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, envelope []by
 
 	// If we have an external CAS backend, we will push there the attestation
 	if !casBackend.Inline {
+		// Check the validation status of the backend. The backend might be different from the one configured as default
 		if casBackend.ValidationStatus != biz.CASBackendValidationOK {
 			// Try to re-validate the backend; if it still fails, return an error
 			if err = s.casUC.PerformValidation(ctx, casBackend.ID.String()); err != nil {
@@ -450,10 +451,10 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 
 	backend := wRun.CASBackends[0]
 
-	// Check the status of the backend
+	// Check the validation status of the backend. The backend might be different from the one configured as default
 	if backend.ValidationStatus != biz.CASBackendValidationOK {
 		// Try to re-validate the backend; if it still fails, return an error
-		// Assume PerformValidation updated the backend status; continue if validation succeeded
+		// Ccontinue if validation succeeded
 		if err = s.casUC.PerformValidation(ctx, backend.ID.String()); err != nil {
 			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
 		}
