@@ -1,5 +1,5 @@
 -- atlas:txmode none
-    
+
 -- Drop index "workflowrun_state_created_at" from table: "workflow_runs"
 DROP INDEX "workflowrun_state_created_at";
 -- Create index "workflowrun_state_created_at" to table: "workflow_runs"
