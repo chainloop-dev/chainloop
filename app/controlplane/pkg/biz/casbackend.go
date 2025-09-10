@@ -41,6 +41,8 @@ const (
 	// Inline, embedded CAS backend
 	CASBackendInline                CASBackendProvider = "INLINE"
 	CASBackendInlineDefaultMaxBytes int64              = 500 * 1024 // 500KB
+	errMsgCredentialsAccess                            = "Failed to access CAS backend credentials in external Secrets Manager"
+	errMsgCredentialsFormat                            = "Invalid CAS backend credentials format from external Secrets Manager"
 )
 
 var CASBackendInlineDescription = "Embed artifacts content in the attestation (fallback)"
@@ -565,7 +567,7 @@ func (CASBackendValidationStatus) Values() (kinds []string) {
 }
 
 // Validate that the repository is valid and reachable
-func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (err error) {
+func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) error {
 	validationStatus := CASBackendValidationFailed
 	var validationError *string
 
@@ -592,11 +594,6 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	}
 
 	defer func() {
-		// If the actual validation logic failed we do not update the underlying repository
-		if err != nil {
-			return
-		}
-
 		// Update the validation status and error
 		uc.logger.Infow("msg", "updating validation status", "ID", id, "status", validationStatus, "error", validationError)
 		if err := uc.repo.UpdateValidationStatus(ctx, backendUUID, validationStatus, validationError); err != nil {
@@ -643,12 +640,14 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) (
 	var creds any
 	if err := uc.credsRW.ReadCredentials(ctx, backend.SecretName, &creds); err != nil {
 		uc.logger.Infow("msg", "credentials not found or invalid", "ID", id, "error", err)
+		validationError = ToPtr(errMsgCredentialsAccess)
 		return nil
 	}
 
 	credsJSON, err := json.Marshal(creds)
 	if err != nil {
 		uc.logger.Infow("msg", "credentials invalid", "ID", id, "error", err)
+		validationError = ToPtr(errMsgCredentialsFormat)
 		return nil
 	}
 
