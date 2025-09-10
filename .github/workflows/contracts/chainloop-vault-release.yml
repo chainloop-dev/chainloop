@@ -16,6 +16,7 @@ policyGroups:
   - ref: sbom-quality
     with:
       bannedLicenses: GPL, AGPL
+      skippedTypes: file
       bannedComponents: log4j@2.14.1
   - ref: slsa-checks
     with:
