@@ -48,6 +48,8 @@ type PluginCommandInfo struct {
 	Description string
 	Usage       string
 	Flags       []*FlagInfo
+	// Optional: if specified, this command will be added as a subcommand to the parent
+	ParentCommand string
 }
 
 // FlagInfo describes a command flag.
