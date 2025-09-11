@@ -290,7 +290,7 @@ func findCommand(rootCmd *cobra.Command, name string) *cobra.Command {
 	if rootCmd.Name() == name {
 		return rootCmd
 	}
-	
+
 	// Search through all subcommands recursively
 	for _, cmd := range rootCmd.Commands() {
 		if cmd.Name() == name {
@@ -301,7 +301,7 @@ func findCommand(rootCmd *cobra.Command, name string) *cobra.Command {
 			return found
 		}
 	}
-	
+
 	return nil
 }
 
@@ -329,7 +329,7 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 			}
 
 			pluginCmd := createPluginCommand(rootCmd, plugin, cmdInfo)
-			
+
 			// If ParentCommand is specified, try to find the parent and add as subcommand otherwise add as top-level command
 			if cmdInfo.ParentCommand != "" {
 				parentCmd := findCommand(rootCmd, cmdInfo.ParentCommand)
@@ -341,7 +341,7 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 			} else {
 				rootCmd.AddCommand(pluginCmd)
 			}
-			
+
 			registeredCommands[cmdInfo.Name] = pluginName
 		}
 	}
