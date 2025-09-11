@@ -103,6 +103,11 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 				Token:           viper.GetString(confOptions.authToken.viperKey),
 			}
 
+			// Create platform configuration from viper
+			platformConfig := plugins.PlatformConfig{
+				API: viper.GetString(confOptions.platformAPI.viperKey),
+			}
+
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginExecConfig{
 				Command:         cmdInfo.Name,
@@ -110,6 +115,7 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 				Args:            args,
 				Flags:           flags,
 				ChainloopConfig: cliConfig,
+				PlatformConfig:  platformConfig,
 			}
 
 			// execute plugin command using the action pattern

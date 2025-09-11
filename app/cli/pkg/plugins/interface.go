@@ -70,6 +70,11 @@ type PluginExecConfig struct {
 	Args            []string
 	Flags           map[string]*SimpleFlag
 	ChainloopConfig ChainloopConfig
+	PlatformConfig  PlatformConfig
+}
+
+type PlatformConfig struct {
+	API string
 }
 
 type SimpleFlag struct {
