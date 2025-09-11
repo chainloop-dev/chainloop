@@ -106,6 +106,7 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginExecConfig{
 				Command:         cmdInfo.Name,
+				ParentCommand:   cmdInfo.ParentCommand,
 				Args:            args,
 				Flags:           flags,
 				ChainloopConfig: cliConfig,
