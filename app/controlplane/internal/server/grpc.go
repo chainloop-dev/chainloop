@@ -234,17 +234,17 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.c - Set Attestation context from user token
 			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
-			// Validate the CAS Backend is fully configured and valid
+			// 2.d - Set its robot account from federated delegation
+			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
+			// Store all memberships in the context
+			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
+			// 3 - Update API Token last usage
+			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),
+			// 4 - Validate the CAS Backend is fully configured and valid
 			selector.Server(
 				usercontext.ValidateCASBackend(opts.CASBackendUseCase),
 				usercontext.BlockIfCASBackendNotValid(opts.CASBackendUseCase),
 			).Match(requireFullyConfiguredCASBackendMatcher()).Build(),
-			// Store all memberships in the context
-			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
-			// 2.d - Set its robot account from federated delegation
-			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
-			// 3 - Update API Token last usage
-			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),
 		).Match(requireRobotAccountMatcher()).Build(),
 	)
 
