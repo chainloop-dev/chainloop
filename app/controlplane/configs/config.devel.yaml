@@ -104,6 +104,6 @@ prometheus_integration:
 #     url: http://localhost:8002/v1
 
 enable_profiler: true
-federated_authentication:
-  enabled: true
-  url: http://localhost:8002/machine-identity/verify-token
+# federated_authentication:
+#   enabled: true
+#   url: http://localhost:8002/machine-identity/verify-token
