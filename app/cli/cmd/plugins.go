@@ -103,12 +103,19 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 				Token:           viper.GetString(confOptions.authToken.viperKey),
 			}
 
+			// Create platform configuration from viper
+			platformConfig := plugins.PlatformConfig{
+				API: viper.GetString(confOptions.platformAPI.viperKey),
+			}
+
 			// Create plugin configuration with command, arguments, and flags
 			config := plugins.PluginExecConfig{
 				Command:         cmdInfo.Name,
+				ParentCommand:   cmdInfo.ParentCommand,
 				Args:            args,
 				Flags:           flags,
 				ChainloopConfig: cliConfig,
+				PlatformConfig:  platformConfig,
 			}
 
 			// execute plugin command using the action pattern
@@ -277,6 +284,27 @@ func newPluginInstallCmd() *cobra.Command {
 	return cmd
 }
 
+// findCommand recursively searches for a command by name in the command tree
+func findCommand(rootCmd *cobra.Command, name string) *cobra.Command {
+	// Check if the root command itself matches
+	if rootCmd.Name() == name {
+		return rootCmd
+	}
+
+	// Search through all subcommands recursively
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Name() == name {
+			return cmd
+		}
+		// Recursively search in subcommands
+		if found := findCommand(cmd, name); found != nil {
+			return found
+		}
+	}
+
+	return nil
+}
+
 // loadAllPlugins loads all plugins and registers their commands to the root command
 func loadAllPlugins(rootCmd *cobra.Command) error {
 	ctx := rootCmd.Context()
@@ -301,7 +329,19 @@ func loadAllPlugins(rootCmd *cobra.Command) error {
 			}
 
 			pluginCmd := createPluginCommand(rootCmd, plugin, cmdInfo)
-			rootCmd.AddCommand(pluginCmd)
+
+			// If ParentCommand is specified, try to find the parent and add as subcommand otherwise add as top-level command
+			if cmdInfo.ParentCommand != "" {
+				parentCmd := findCommand(rootCmd, cmdInfo.ParentCommand)
+				if parentCmd == nil {
+					return fmt.Errorf("parent command '%s' not found for plugin command '%s' from plugin '%s'",
+						cmdInfo.ParentCommand, cmdInfo.Name, pluginName)
+				}
+				parentCmd.AddCommand(pluginCmd)
+			} else {
+				rootCmd.AddCommand(pluginCmd)
+			}
+
 			registeredCommands[cmdInfo.Name] = pluginName
 		}
 	}

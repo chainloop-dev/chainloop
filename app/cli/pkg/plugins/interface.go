@@ -48,6 +48,8 @@ type PluginCommandInfo struct {
 	Description string
 	Usage       string
 	Flags       []*FlagInfo
+	// Optional: if specified, this command will be added as a subcommand to the parent
+	ParentCommand string
 }
 
 // FlagInfo describes a command flag.
@@ -62,10 +64,17 @@ type FlagInfo struct {
 
 // PluginExecConfig is the configuration for a plugin command execution.
 type PluginExecConfig struct {
-	Command         string
+	Command string
+	// Optional: the parent command if this is a subcommand
+	ParentCommand   string
 	Args            []string
 	Flags           map[string]*SimpleFlag
 	ChainloopConfig ChainloopConfig
+	PlatformConfig  PlatformConfig
+}
+
+type PlatformConfig struct {
+	API string
 }
 
 type SimpleFlag struct {
