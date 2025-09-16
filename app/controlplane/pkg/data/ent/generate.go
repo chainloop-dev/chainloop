@@ -15,9 +15,4 @@
 
 package ent
 
-import (
-	// This dependency is used by entc.go to generate the schema.
-	_ "github.com/hedwigz/entviz"
-)
-
 //go:generate go run entc.go
