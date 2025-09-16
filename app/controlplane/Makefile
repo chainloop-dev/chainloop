@@ -88,7 +88,3 @@ all:
 	make config;
 	make generate;
 
-.PHONY: visualize-data-model
-# Visualize data model
-visualize-data-model:
-	xdg-open pkg/data/ent/schema-viz.html
