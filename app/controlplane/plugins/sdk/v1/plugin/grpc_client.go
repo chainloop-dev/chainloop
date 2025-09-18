@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/plugin/api"
 )
@@ -43,6 +44,25 @@ func (c *fanOutGRPCClient) Describe() *sdk.IntegrationInfo {
 	}
 
 	return info
+}
+
+func (c *fanOutGRPCClient) GetSubscribedMaterials() []*sdk.InputMaterial {
+	var res []*sdk.InputMaterial
+	desc, err := c.client.Describe(context.Background(), &api.DescribeRequest{})
+	if err != nil {
+		return nil
+	}
+
+	for _, m := range desc.SubscribedMaterials {
+		materialType, ok := schemaapi.CraftingSchema_Material_MaterialType_value[m]
+		if !ok {
+			return nil
+		}
+
+		res = append(res, &sdk.InputMaterial{Type: schemaapi.CraftingSchema_Material_MaterialType(materialType)})
+	}
+
+	return res
 }
 
 func (c *fanOutGRPCClient) ValidateRegistrationRequest(payload []byte) error {

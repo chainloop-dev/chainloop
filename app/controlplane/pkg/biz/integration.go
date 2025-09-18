@@ -130,7 +130,7 @@ func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, name, 
 	}
 
 	// 2 - validate JSON against the schema
-	if err := i.ValidateRegistrationRequest(pluginRequest); err != nil {
+	if err := sdk.ValidateRegistrationRequest(i, pluginRequest); err != nil {
 		return nil, NewErrValidation(err)
 	}
 
@@ -227,7 +227,7 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 	}
 
 	// 2 - validate JSON against the schema
-	if err := opts.FanOutIntegration.ValidateAttachmentRequest(pluginRequest); err != nil {
+	if err := sdk.ValidateAttachmentRequest(opts.FanOutIntegration, pluginRequest); err != nil {
 		return nil, NewErrValidation(err)
 	}
 
