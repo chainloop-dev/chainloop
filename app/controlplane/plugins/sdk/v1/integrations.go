@@ -115,6 +115,7 @@ func NewIntegrationBase(id, name, version, description, kind string, schema *Inp
 func (i *IntegrationBase) Describe() *IntegrationInfo {
 	return &IntegrationInfo{
 		ID:                     i.Id,
+		Name:                   i.Name,
 		Version:                i.Version,
 		Description:            i.Description,
 		Kind:                   i.Kind,
