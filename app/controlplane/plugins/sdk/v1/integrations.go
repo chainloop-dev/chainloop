@@ -40,6 +40,89 @@ type Integration interface {
 	Execute(ctx context.Context, req any) error
 }
 
+type InputSchema struct {
+	// Structs defining the registration and attachment schemas
+	Registration, Attachment any
+}
+
+// IntegrationBase provides a base implementation to be embedded in integrations
+type IntegrationBase struct {
+	// Identifier of the integration
+	Id string
+	// Friendly Name of the integration
+	Name string
+	// Integration version
+	Version string
+	// Optional description
+	Description string
+	// kind of integration (e.g. "notification", "task-manager", "fanout", etc.)
+	Kind string
+
+	// Rendered schema definitions
+	// Generated from the schema definitions using https://github.com/invopop/jsonschema
+
+	// Registration JSON schema in bytes
+	registrationJSONSchema []byte
+	// Attachment JSON schema in bytes
+	attachmentJSONSchema []byte
+}
+
+// NewIntegrationBase helper to create a new IntegrationBase
+func NewIntegrationBase(id, name, version, description, kind string, schema *InputSchema) (*IntegrationBase, error) {
+	var (
+		registrationJSONSchema, attachmentJSONSchema []byte
+		err                                          error
+	)
+
+	// Validate basic metadata
+	if id == "" {
+		return nil, fmt.Errorf("id is required")
+	}
+
+	if version == "" {
+		return nil, fmt.Errorf("version is required")
+	}
+
+	if kind == "" {
+		return nil, fmt.Errorf("kind is required")
+	}
+
+	if schema == nil {
+		return nil, fmt.Errorf("input schema is required")
+	}
+
+	// Generate JSON schemas
+	registrationJSONSchema, err = GenerateJSONSchema(schema.Registration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate registration JSON schema: %w", err)
+	}
+
+	attachmentJSONSchema, err = GenerateJSONSchema(schema.Attachment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate attachment JSON schema: %w", err)
+	}
+	return &IntegrationBase{
+		Id:                     id,
+		Name:                   name,
+		Version:                version,
+		Description:            description,
+		Kind:                   kind,
+		registrationJSONSchema: registrationJSONSchema,
+		attachmentJSONSchema:   attachmentJSONSchema,
+	}, nil
+}
+
+func (i *IntegrationBase) Describe() *IntegrationInfo {
+	return &IntegrationInfo{
+		ID:                     i.Id,
+		Version:                i.Version,
+		Description:            i.Description,
+		Kind:                   i.Kind,
+		RegistrationJSONSchema: i.registrationJSONSchema,
+		AttachmentJSONSchema:   i.attachmentJSONSchema,
+	}
+}
+
 type IntegrationInfo struct {
 	// Identifier of the integration
 	ID string
@@ -49,8 +132,8 @@ type IntegrationInfo struct {
 	Version string
 	// Integration description
 	Description string
-	// Type of integration (e.g. "notification", "task-manager", "fanout", etc.)
-	Type string
+	// Kind of integration (e.g. "notification", "task-manager", "fanout", etc.)
+	Kind string
 	// Schemas in JSON schema format
 	RegistrationJSONSchema, AttachmentJSONSchema []byte
 }
@@ -66,6 +149,10 @@ type RegistrationResponse struct {
 	Credentials *Credentials
 	// Configuration to be persisted in DB
 	Configuration
+}
+
+type Credentials struct {
+	URL, Username, Password string
 }
 
 type AttachmentRequest struct {

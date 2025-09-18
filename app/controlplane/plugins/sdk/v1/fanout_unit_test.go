@@ -69,7 +69,7 @@ func TestGenerateJSONSchema(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := generateJSONSchema(tc.input)
+			_, err := GenerateJSONSchema(tc.input)
 			if tc.wantErrMsg != "" {
 				assert.ErrorContains(t, err, tc.wantErrMsg)
 			} else {

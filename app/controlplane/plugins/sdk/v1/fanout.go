@@ -31,12 +31,7 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
-const IntegrationTypeFanOut = "fan-out"
-
-type InputSchema struct {
-	// Structs defining the registration and attachment schemas
-	Registration, Attachment any
-}
+const IntegrationKindFanOut = "fan-out"
 
 // FanOut a FanOut is an integration for which we expect to fan out data to other systems
 type FanOut interface {
@@ -51,20 +46,13 @@ type FanOut interface {
 
 // FanOutIntegration provides a base implementation to be embedded in FanOut plugins
 type FanOutIntegration struct {
-	// Identifier of the integration
-	id string
-	// Integration version
-	version string
-	// Optional description
-	description string
+	*IntegrationBase
+
 	// Material types an integration expect as part of the execution
 	subscribedMaterials []*InputMaterial
-	// Rendered schema definitions
-	// Generated from the schema definitions using https://github.com/invopop/jsonschema
-	registrationJSONSchema []byte
-	attachmentJSONSchema   []byte
-	log                    log.Logger
-	Logger                 *log.Helper
+
+	log    log.Logger
+	Logger *log.Helper
 }
 
 type ChainloopMetadata struct {
@@ -115,10 +103,6 @@ type ExecuteMaterial struct {
 	Content []byte
 }
 
-type Credentials struct {
-	URL, Username, Password string
-}
-
 type InputMaterial struct {
 	// Name of the material kind that the integration expects
 	Type schemaapi.CraftingSchema_Material_MaterialType
@@ -140,16 +124,19 @@ func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialTy
 }
 
 type NewParams struct {
-	ID, Version, Description string
-	Logger                   log.Logger
-	InputSchema              *InputSchema
+	ID, Name, Version, Description string
+	Logger                         log.Logger
+	InputSchema                    *InputSchema
 }
 
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
+	base, err := NewIntegrationBase(p.ID, p.Name, p.Version, p.Description, IntegrationKindFanOut, p.InputSchema)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &FanOutIntegration{
-		id:                  p.ID,
-		version:             p.Version,
-		description:         p.Description,
+		IntegrationBase:     base,
 		log:                 p.Logger,
 		subscribedMaterials: []*InputMaterial{},
 	}
@@ -168,22 +155,7 @@ func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 		return nil, err
 	}
 
-	if err := validateAndMarshalSchema(p, c); err != nil {
-		return nil, err
-	}
-
 	return c, nil
-}
-
-func (i *FanOutIntegration) Describe() *IntegrationInfo {
-	return &IntegrationInfo{
-		ID:                     i.id,
-		Version:                i.version,
-		Description:            i.description,
-		Type:                   IntegrationTypeFanOut,
-		RegistrationJSONSchema: i.registrationJSONSchema,
-		AttachmentJSONSchema:   i.attachmentJSONSchema,
-	}
 }
 
 func (i *FanOutIntegration) GetSubscribedMaterials() []*InputMaterial {
@@ -212,47 +184,10 @@ func (i *FanOutIntegration) String() string {
 		subscribedMaterials[i] = m.Type.String()
 	}
 
-	return fmt.Sprintf("id=%s, version=%s, expectedMaterials=%s", i.id, i.version, subscribedMaterials)
-}
-
-func validateAndMarshalSchema(p *NewParams, c *FanOutIntegration) error {
-	// Schema
-	if p.InputSchema == nil {
-		return fmt.Errorf("input schema is required")
-	}
-
-	// Registration schema
-	if p.InputSchema.Registration == nil {
-		return fmt.Errorf("registration schema is required")
-	}
-
-	// Attachment schema
-	if p.InputSchema.Attachment == nil {
-		return fmt.Errorf("attachment schema is required")
-	}
-
-	// Try to generate JSON schemas
-	var err error
-	if c.registrationJSONSchema, err = GenerateJSONSchema(p.InputSchema.Registration); err != nil {
-		return fmt.Errorf("failed to generate registration schema: %w", err)
-	}
-
-	if c.attachmentJSONSchema, err = GenerateJSONSchema(p.InputSchema.Attachment); err != nil {
-		return fmt.Errorf("failed to generate attachment schema: %w", err)
-	}
-
-	return nil
+	return fmt.Sprintf("id=%s, version=%s, expectedMaterials=%s", i.Id, i.Version, subscribedMaterials)
 }
 
 func validateInputs(c *FanOutIntegration) error {
-	if c.id == "" {
-		return fmt.Errorf("id is required")
-	}
-
-	if c.version == "" {
-		return fmt.Errorf("version is required")
-	}
-
 	for _, m := range c.subscribedMaterials {
 		if m.Type == schemaapi.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED {
 			return fmt.Errorf("%s is not a valid material type", m.Type)
@@ -264,15 +199,15 @@ func validateInputs(c *FanOutIntegration) error {
 
 // Methods to be implemented by the specific integration
 
-func (i *FanOutIntegration) Register(ctx context.Context, req *RegistrationRequest) (*RegistrationResponse, error) {
+func (i *FanOutIntegration) Register(_ context.Context, _ *RegistrationRequest) (*RegistrationResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (i *FanOutIntegration) Attach(ctx context.Context, req *AttachmentRequest) (*AttachmentResponse, error) {
+func (i *FanOutIntegration) Attach(_ context.Context, _ *AttachmentRequest) (*AttachmentResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (i *FanOutIntegration) Execute(ctx context.Context, req any) error {
+func (i *FanOutIntegration) Execute(_ context.Context, _ any) error {
 	return fmt.Errorf("not implemented")
 }
 
