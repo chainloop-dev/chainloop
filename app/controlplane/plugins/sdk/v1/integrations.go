@@ -128,12 +128,11 @@ func FromConfig(data Configuration, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-// generate a flat JSON schema from a struct using https://github.com/invopop/jsonschema
+// GenerateJSONSchema generates a flat JSON schema from a struct using https://github.com/invopop/jsonschema
 // We've put some limitations on the kind of input structs we support, for example:
 // - Nested schemas are not supported
 // - Array based properties are not supported
-
-func generateJSONSchema(schema any) ([]byte, error) {
+func GenerateJSONSchema(schema any) ([]byte, error) {
 	if schema == nil {
 		return nil, fmt.Errorf("schema is nil")
 	}
@@ -178,6 +177,7 @@ type SchemaProperty struct {
 	Default string
 }
 
+// CompileJSONSchema compiles a JSON schema using github.com/santhosh-tekuri/jsonschema
 func CompileJSONSchema(in []byte) (*schema_validator.Schema, error) {
 	// Parse the schemas
 	compiler := schema_validator.NewCompiler()
@@ -193,7 +193,7 @@ func CompileJSONSchema(in []byte) (*schema_validator.Schema, error) {
 	return compiler.Compile("schema.json")
 }
 
-// Denormalize the properties of a json schema
+// CalculatePropertiesMap Denormalizes the properties of a json schema
 func CalculatePropertiesMap(s *schema_validator.Schema, m *SchemaPropertiesMap) error {
 	if m == nil {
 		return nil

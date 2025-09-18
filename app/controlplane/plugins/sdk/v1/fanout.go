@@ -233,11 +233,11 @@ func validateAndMarshalSchema(p *NewParams, c *FanOutIntegration) error {
 
 	// Try to generate JSON schemas
 	var err error
-	if c.registrationJSONSchema, err = generateJSONSchema(p.InputSchema.Registration); err != nil {
+	if c.registrationJSONSchema, err = GenerateJSONSchema(p.InputSchema.Registration); err != nil {
 		return fmt.Errorf("failed to generate registration schema: %w", err)
 	}
 
-	if c.attachmentJSONSchema, err = generateJSONSchema(p.InputSchema.Attachment); err != nil {
+	if c.attachmentJSONSchema, err = GenerateJSONSchema(p.InputSchema.Attachment); err != nil {
 		return fmt.Errorf("failed to generate attachment schema: %w", err)
 	}
 
