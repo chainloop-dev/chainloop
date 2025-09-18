@@ -149,13 +149,15 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 
 // Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
-func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
+func (i *Integration) Execute(_ context.Context, req any) error {
 	i.Logger.Info("execution requested")
 
+	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+
 	// You can receive more than one material
-	for _, sbom := range req.Input.Materials {
+	for _, sbom := range fanoutReq.Input.Materials {
 		// Example of custom validation
-		if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
+		if err := validateExecuteOpts(sbom, fanoutReq.RegistrationInfo, fanoutReq.AttachmentInfo); err != nil {
 			return fmt.Errorf("running validation: %w", err)
 		}
 

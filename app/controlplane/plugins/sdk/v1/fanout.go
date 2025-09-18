@@ -87,7 +87,7 @@ type ChainloopMetadataWorkflow struct {
 }
 
 // ExecutionRequest is the request to execute the integration
-type ExecutionRequest struct {
+type FanOutExecutionRequest struct {
 	*ChainloopMetadata
 	Input            *ExecuteInput
 	RegistrationInfo *RegistrationResponse
@@ -272,7 +272,7 @@ func (i *FanOutIntegration) Attach(ctx context.Context, req *AttachmentRequest) 
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (i *FanOutIntegration) Execute(ctx context.Context, req *ExecutionRequest) error {
+func (i *FanOutIntegration) Execute(ctx context.Context, req any) error {
 	return fmt.Errorf("not implemented")
 }
 

@@ -65,7 +65,7 @@ func (_m *FanOut) Describe() *sdk.IntegrationInfo {
 }
 
 // Execute provides a mock function with given fields: ctx, req
-func (_m *FanOut) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+func (_m *FanOut) Execute(ctx context.Context, req interface{}) error {
 	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
@@ -73,7 +73,7 @@ func (_m *FanOut) Execute(ctx context.Context, req *sdk.ExecutionRequest) error 
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *sdk.ExecutionRequest) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) error); ok {
 		r0 = rf(ctx, req)
 	} else {
 		r0 = ret.Error(0)

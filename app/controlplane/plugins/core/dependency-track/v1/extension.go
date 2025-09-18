@@ -162,11 +162,13 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 }
 
 // Send the SBOMs to the configured Dependency Track instance
-func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+func (i *DependencyTrack) Execute(ctx context.Context, req any) error {
 	var errs error
+	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+
 	// Iterate over all SBOMs
-	for _, sbom := range req.Input.Materials {
-		if err := doExecute(ctx, req, sbom, i.Logger); err != nil {
+	for _, sbom := range fanoutReq.Input.Materials {
+		if err := doExecute(ctx, fanoutReq, sbom, i.Logger); err != nil {
 			errs = errors.Join(errs, err)
 			continue
 		}
@@ -179,7 +181,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 	return nil
 }
 
-func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.ExecuteMaterial, l *log.Helper) error {
+func doExecute(ctx context.Context, req *sdk.FanOutExecutionRequest, sbom *sdk.ExecuteMaterial, l *log.Helper) error {
 	l.Info("execution requested")
 
 	// Make sure it's an SBOM and all the required configuration has been received

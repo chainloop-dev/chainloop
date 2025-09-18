@@ -128,24 +128,26 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 
 // Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
-func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
+func (i *Integration) Execute(_ context.Context, req any) error {
 	i.Logger.Info("execution requested")
 
-	if err := validateExecuteRequest(req); err != nil {
+	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+
+	if err := validateExecuteRequest(fanoutReq); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
 
 	var config *registrationState
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &config); err != nil {
+	if err := sdk.FromConfig(fanoutReq.RegistrationInfo.Configuration, &config); err != nil {
 		return fmt.Errorf("invalid registration config: %w", err)
 	}
 
-	summary, err := sdk.SummaryTable(req)
+	summary, err := sdk.SummaryTable(fanoutReq)
 	if err != nil {
 		return fmt.Errorf("generating summary table: %w", err)
 	}
 
-	webhookURL := req.RegistrationInfo.Credentials.Password
+	webhookURL := fanoutReq.RegistrationInfo.Credentials.Password
 	if err := executeWebhook(webhookURL, config.Username, []byte(summary), "New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
@@ -241,7 +243,7 @@ type payloadAttachment struct {
 	Filename string `json:"filename"`
 }
 
-func validateExecuteRequest(req *sdk.ExecutionRequest) error {
+func validateExecuteRequest(req *sdk.FanOutExecutionRequest) error {
 	if req == nil || req.Input == nil {
 		return errors.New("execution input not received")
 	}

@@ -168,29 +168,30 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 }
 
 // Execute is called when an attestation or SBOM is received
-func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+func (i *Integration) Execute(ctx context.Context, req any) error {
+	fanoutReq := req.(*sdk.FanOutExecutionRequest)
 	// Extract the webhook URL from credentials
-	if req.RegistrationInfo.Credentials == nil || req.RegistrationInfo.Credentials.URL == "" {
+	if fanoutReq.RegistrationInfo.Credentials == nil || fanoutReq.RegistrationInfo.Credentials.URL == "" {
 		i.Logger.Error("missing webhook URL in credentials")
 		return errors.New("missing webhook URL in credentials")
 	}
-	webhookURL := req.RegistrationInfo.Credentials.URL
+	webhookURL := fanoutReq.RegistrationInfo.Credentials.URL
 
 	// Extract the settings from the attachment state
 	var attachState attachmentState
-	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachState); err != nil {
+	if err := sdk.FromConfig(fanoutReq.AttachmentInfo.Configuration, &attachState); err != nil {
 		i.Logger.Errorw("invalid attachment state", "error", err)
 		return fmt.Errorf("invalid attachment state: %w", err)
 	}
 
 	// Send attestation if enabled and present
-	if attachState.SendAttestation && req.Input.Attestation != nil {
-		statementJSON, err := json.Marshal(req.Input.Attestation)
+	if attachState.SendAttestation && fanoutReq.Input.Attestation != nil {
+		statementJSON, err := json.Marshal(fanoutReq.Input.Attestation)
 		if err != nil {
 			i.Logger.Errorw("failed to marshal attestation", "error", err)
 			return fmt.Errorf("marshalling attestation: %w", err)
 		}
-		if err := i.sendWebhook(ctx, webhookURL, "ATTESTATION", statementJSON, req.ChainloopMetadata); err != nil {
+		if err := i.sendWebhook(ctx, webhookURL, "ATTESTATION", statementJSON, fanoutReq.ChainloopMetadata); err != nil {
 			i.Logger.Errorw("failed to send attestation webhook", "error", err)
 			return err
 		}
@@ -198,7 +199,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 
 	// Send SBOM if enabled and present
 	if attachState.SendSBOM {
-		for _, material := range req.Input.Materials {
+		for _, material := range fanoutReq.Input.Materials {
 			// Ensure material type is either SBOM_CYCLONEDX_JSON or SBOM_SPDX_JSON
 			if material.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() && material.Type != schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON.String() {
 				i.Logger.Warnw("unsupported material type, skipping", "type", material.Type)
@@ -211,7 +212,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 			}
 
 			// Send the SBOM webhook
-			if err := i.sendWebhook(ctx, webhookURL, material.Type, material.Content, req.ChainloopMetadata); err != nil {
+			if err := i.sendWebhook(ctx, webhookURL, material.Type, material.Content, fanoutReq.ChainloopMetadata); err != nil {
 				i.Logger.Errorw("failed to send SBOM webhook", "error", err, "type", material.Type)
 				return err
 			}

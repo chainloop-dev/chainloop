@@ -125,18 +125,20 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 
 // Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
-func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+func (i *Integration) Execute(ctx context.Context, req any) error {
+	fanoutRequest := req.(*sdk.FanOutExecutionRequest)
+
 	// Extract registration and attachment configuration if needed
 	var registrationConfig *registrationState
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
+	if err := sdk.FromConfig(fanoutRequest.RegistrationInfo.Configuration, &registrationConfig); err != nil {
 		return fmt.Errorf("invalid registration configuration %w", err)
 	}
 
-	if req.RegistrationInfo.Credentials == nil || req.RegistrationInfo.Credentials.Password == "" {
+	if fanoutRequest.RegistrationInfo.Credentials == nil || fanoutRequest.RegistrationInfo.Credentials.Password == "" {
 		return errors.New("missing expected credentials")
 	}
 
-	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(req.RegistrationInfo.Credentials.Password)))
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(fanoutRequest.RegistrationInfo.Credentials.Password)))
 	if err != nil {
 		return fmt.Errorf("creating storage client: %w", err)
 	}
@@ -147,20 +149,20 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 	}
 
 	// 1 - Upload the attestation
-	envelopeJSON, err := json.Marshal(req.Input.Attestation.Envelope)
+	envelopeJSON, err := json.Marshal(fanoutRequest.Input.Attestation.Envelope)
 	if err != nil {
 		return fmt.Errorf("marshalling attestation: %w", err)
 	}
 
-	filename := uniqueFilename(pathPrefix, "attestation.json", req.Input.Attestation.Hash.Hex)
-	if err := uploadToBucket(ctx, bucket, filename, envelopeJSON, req.ChainloopMetadata, i.Logger); err != nil {
+	filename := uniqueFilename(pathPrefix, "attestation.json", fanoutRequest.Input.Attestation.Hash.Hex)
+	if err := uploadToBucket(ctx, bucket, filename, envelopeJSON, fanoutRequest.ChainloopMetadata, i.Logger); err != nil {
 		return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 	}
 
 	// 2 - Upload all the materials, in our case they are SBOMs
-	for _, sbom := range req.Input.Materials {
+	for _, sbom := range fanoutRequest.Input.Materials {
 		filename := uniqueFilename(pathPrefix, sbom.Filename, sbom.Hash.Hex)
-		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, req.ChainloopMetadata, i.Logger); err != nil {
+		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, fanoutRequest.ChainloopMetadata, i.Logger); err != nil {
 			return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 		}
 	}

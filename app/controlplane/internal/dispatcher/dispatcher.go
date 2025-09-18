@@ -132,7 +132,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 	// Dispatch the integrations
 	for _, item := range queue {
 		req := generateRequest(item, workflowMetadata)
-		go func(p sdk.FanOut, r *sdk.ExecutionRequest) {
+		go func(p sdk.FanOut, r *sdk.FanOutExecutionRequest) {
 			_ = dispatch(ctx, p, req, d.log)
 		}(item.plugin, req)
 	}
@@ -274,7 +274,7 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 	return nil
 }
 
-func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest, logger *log.Helper) error {
+func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.FanOutExecutionRequest, logger *log.Helper) error {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = 10 * time.Second
 
@@ -311,8 +311,8 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest
 	)
 }
 
-func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.ExecutionRequest {
-	return &sdk.ExecutionRequest{
+func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.FanOutExecutionRequest {
+	return &sdk.FanOutExecutionRequest{
 		ChainloopMetadata: metadata,
 		RegistrationInfo: &sdk.RegistrationResponse{
 			Credentials:   in.credentials,

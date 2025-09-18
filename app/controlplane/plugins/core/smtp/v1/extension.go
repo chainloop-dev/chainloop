@@ -140,30 +140,32 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 }
 
 // Send the SBOM to the configured Dependency Track instance
-func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
+func (i *Integration) Execute(_ context.Context, req any) error {
 	i.Logger.Info("execution requested")
 
-	if err := validateExecuteRequest(req); err != nil {
-		return fmt.Errorf("running validation for workflow id %s: %w", req.Workflow.ID, err)
+	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+
+	if err := validateExecuteRequest(fanoutReq); err != nil {
+		return fmt.Errorf("running validation for workflow id %s: %w", fanoutReq.Workflow.ID, err)
 	}
 
 	var rc *registrationState
-	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &rc); err != nil {
+	if err := sdk.FromConfig(fanoutReq.RegistrationInfo.Configuration, &rc); err != nil {
 		return errors.New("invalid registration configuration")
 	}
 
 	var ac *attachmentState
-	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &ac); err != nil {
+	if err := sdk.FromConfig(fanoutReq.AttachmentInfo.Configuration, &ac); err != nil {
 		return errors.New("invalid attachment configuration")
 	}
 
-	summary, err := sdk.SummaryTable(req)
+	summary, err := sdk.SummaryTable(fanoutReq)
 	if err != nil {
 		return fmt.Errorf("generating summary table: %w", err)
 	}
 
 	// send the email
-	to, from, user, password, host, port := rc.To, rc.From, rc.User, req.RegistrationInfo.Credentials.Password, rc.Host, rc.Port
+	to, from, user, password, host, port := rc.To, rc.From, rc.User, fanoutReq.RegistrationInfo.Credentials.Password, rc.Host, rc.Port
 	subject := "[chainloop] New workflow run finished successfully!"
 	if err := sendEmail(host, port, user, password, from, to, ac.CC, subject,
 		"<pre>"+summary+"</pre>"); err != nil {
@@ -173,7 +175,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	return nil
 }
 
-func validateExecuteRequest(req *sdk.ExecutionRequest) error {
+func validateExecuteRequest(req *sdk.FanOutExecutionRequest) error {
 	if req == nil || req.Input == nil || req.Input.Attestation == nil {
 		return errors.New("invalid input")
 	}

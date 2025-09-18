@@ -118,7 +118,7 @@ func (b *fanOutGRPCServer) Execute(ctx context.Context, req *api.ExecuteRequest)
 		return nil, fmt.Errorf("converting envelope to attestation info: %w", err)
 	}
 
-	opts := &sdk.ExecutionRequest{
+	opts := &sdk.FanOutExecutionRequest{
 		RegistrationInfo:  registrationInfo,
 		AttachmentInfo:    attachmentInfo,
 		ChainloopMetadata: api.MetadataProtoToSDK(req.Metadata),
