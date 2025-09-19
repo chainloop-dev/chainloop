@@ -410,10 +410,13 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 	}
 
 	cmdTracker := telemetry.NewCommandTracker(telemetryClient)
+	controlplaneURL, controlplaneHash := hashControlPlaneURL()
+
 	tags := telemetry.Tags{
-		"cli_version":      Version,
-		"cp_url_hash":      hashControlPlaneURL(),
-		"chainloop_source": "cli",
+		"cli_version":         Version,
+		"cp_url_hash":         controlplaneHash,
+		"cp_installation_url": controlplaneURL,
+		"chainloop_source":    "cli",
 	}
 
 	// It tries to extract the token from the context and add it to the tags. If it fails, it will ignore it.
@@ -421,6 +424,12 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 		tags["token_type"] = authInfo.TokenType.String()
 		tags["user_id"] = authInfo.ID
 		tags["org_id"] = authInfo.OrgID
+	}
+
+	// Add organization name if available
+	orgName := viper.GetString(confOptions.organization.viperKey)
+	if orgName != "" {
+		tags["organization_name"] = orgName
 	}
 
 	if err = cmdTracker.Track(executedCmd.Context(), extractCmdLineFromCommand(executedCmd), tags); err != nil {
@@ -446,10 +455,9 @@ func extractCmdLineFromCommand(cmd *cobra.Command) string {
 }
 
 // hashControlPlaneURL returns a hash of the control plane URL
-func hashControlPlaneURL() string {
-	url := viper.GetString("control-plane.API")
-
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
+func hashControlPlaneURL() (url string, hash string) {
+	url = viper.GetString(confOptions.controlplaneAPI.viperKey)
+	return url, fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
 }
 
 func apiInsecure() bool {
