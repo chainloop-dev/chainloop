@@ -73,16 +73,18 @@ func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tag
 		msg.Properties.Set(k, v)
 	}
 
-	// Assign groups for installation and organization tracking
-	groups := posthog.NewGroups()
+	// Assign the installation ID if available as a group.
+	// It creates a new group named cp_installation where the values are the cp_url_hash.
 	if tags["cp_url_hash"] != "" {
-		groups.Set("cp_installation", tags["cp_url_hash"])
+		msg.Groups = posthog.
+			NewGroups().
+			Set("cp_installation", tags["cp_url_hash"])
 	}
+	// It creates a new group named org_id where the values are the org_id.
 	if tags["org_id"] != "" {
-		groups.Set("organization", tags["org_id"])
-	}
-	if len(groups) > 0 {
-		msg.Groups = groups
+		msg.Groups = posthog.
+			NewGroups().
+			Set("organization", tags["org_id"])
 	}
 	// Assign an alias to the userID in the following cases:
 	// - The machine ID is available and different from the userID.
