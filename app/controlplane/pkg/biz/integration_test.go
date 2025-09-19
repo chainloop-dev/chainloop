@@ -39,10 +39,23 @@ func (s *testSuite) TestCreate() {
 
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewFanOut(s.T())
+	type schema struct {
+		FirstName string `json:"firstName"`
+	}
 
+	fanOutSchemas := &sdk.InputSchema{Registration: schema{}, Attachment: schema{}}
+
+	b, err := sdk.NewFanOut(
+		&sdk.NewParams{
+			ID:          kind,
+			Version:     "1.0",
+			InputSchema: fanOutSchemas,
+		},
+	)
+	assert.NoError(err)
+
+	integration.On("Describe").Return(b.Describe()).Maybe()
 	ctx := context.Background()
-	integration.On("Describe").Return(&sdk.IntegrationInfo{ID: kind}).Maybe()
-	integration.On("ValidateRegistrationRequest", mock.Anything).Maybe().Return(nil)
 	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: s.config, Credentials: &sdk.Credentials{
 			Password: "key", URL: "host"},
@@ -182,7 +195,6 @@ func (s *testSuite) TestAttachWorkflow() {
 		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
 			Configuration: s.config,
 		}, nil).Once()
-		s.fanOutIntegration.On("ValidateAttachmentRequest", mock.Anything).Return(nil)
 
 		got, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
@@ -207,7 +219,6 @@ func (s *testSuite) TestAttachWorkflow() {
 	s.Run("attachment fails", func() {
 		ctx := context.Background()
 		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
-		s.fanOutIntegration.On("ValidateAttachmentRequest", mock.Anything).Return(nil)
 
 		_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
@@ -228,7 +239,6 @@ func (s *testSuite) TestListAttachments() {
 	s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
 		Configuration: s.config,
 	}, nil).Once()
-	s.fanOutIntegration.On("ValidateAttachmentRequest", mock.Anything).Return(nil)
 
 	// Attach the integration to the workflow
 	_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
@@ -289,8 +299,22 @@ func (s *testSuite) SetupTest() {
 
 	// Mocked fanOut that will return both generic configuration and credentials
 	fanOut := integrationMocks.NewFanOut(s.T())
-	fanOut.On("Describe").Return(&sdk.IntegrationInfo{})
-	fanOut.On("ValidateRegistrationRequest", mock.Anything).Return(nil)
+	type schema struct {
+		FirstName string `json:"firstName"`
+	}
+
+	fanOutSchemas := &sdk.InputSchema{Registration: schema{}, Attachment: schema{}}
+
+	b, err := sdk.NewFanOut(
+		&sdk.NewParams{
+			ID:          "integration",
+			Version:     "1.0",
+			InputSchema: fanOutSchemas,
+		},
+	)
+	assert.NoError(err)
+
+	fanOut.On("Describe").Return(b.Describe())
 	fanOut.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
 	s.fanOutIntegration = fanOut
 
