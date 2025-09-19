@@ -131,8 +131,8 @@ func (b *fanOutGRPCServer) Execute(ctx context.Context, req *api.ExecuteRequest)
 
 	opts.Payload = &sdk.FanOutPayload{
 		ChainloopMetadata: api.MetadataProtoToSDK(req.Metadata),
-		Attestation: attestationInput,
-		Materials:   materials,
+		Attestation:       attestationInput,
+		Materials:         materials,
 	}
 
 	return &api.ExecuteResponse{}, b.impl.Execute(ctx, opts)

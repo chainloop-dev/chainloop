@@ -342,8 +342,6 @@ func (s *dispatcherTestSuite) newMock(ctx context.Context) *mockedSDK.FanOut {
 	customImplementation := mockedSDK.NewFanOut(s.T())
 	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
 	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
-	//customImplementation.On("String", mock.Anything).Return("mocked-integration")
-	//customImplementation.On("IsSubscribedTo", mock.Anything).Return(true)
 
 	return customImplementation
 }

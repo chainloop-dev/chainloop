@@ -47,7 +47,7 @@ func (c *fanOutGRPCClient) Describe() *sdk.IntegrationInfo {
 }
 
 func (c *fanOutGRPCClient) GetSubscribedMaterials() []*sdk.InputMaterial {
-	var res []*sdk.InputMaterial
+	res := make([]*sdk.InputMaterial, 0)
 	desc, err := c.client.Describe(context.Background(), &api.DescribeRequest{})
 	if err != nil {
 		return nil
