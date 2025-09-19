@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
@@ -44,7 +45,7 @@ var (
 	flagCfgFile        string
 	flagDebug          bool
 	flagOutputFormat   string
-	actionOpts         *action.ActionsOpts
+	actionOpts         *options.ActionsOpts
 	logger             zerolog.Logger
 	defaultCPAPI       = "api.cp.chainloop.dev:443"
 	defaultCASAPI      = "api.cas.chainloop.dev:443"
@@ -337,8 +338,8 @@ func initConfigFile() {
 	cobra.CheckErr(viper.ReadInConfig())
 }
 
-func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token}
+func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *options.ActionsOpts {
+	return &options.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token}
 }
 
 func cleanup(conn *grpc.ClientConn) error {

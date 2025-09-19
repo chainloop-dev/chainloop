@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
@@ -36,7 +37,7 @@ var WorkflowRunStatus = func() map[string]pb.RunStatus {
 }
 
 type WorkflowRunList struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
 type WorkflowRunItem struct {
@@ -66,7 +67,7 @@ type PaginatedWorkflowRunItem struct {
 	PaginationMeta *PaginationOpts
 }
 
-func NewWorkflowRunList(cfg *ActionsOpts) *WorkflowRunList {
+func NewWorkflowRunList(cfg *options.ActionsOpts) *WorkflowRunList {
 	return &WorkflowRunList{cfg}
 }
 

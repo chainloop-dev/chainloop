@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type DeleteAccount struct {
-	*ActionsOpts
+	*options.ActionsOpts
 }
 
-func NewDeleteAccount(cfg *ActionsOpts) *DeleteAccount {
+func NewDeleteAccount(cfg *options.ActionsOpts) *DeleteAccount {
 	return &DeleteAccount{cfg}
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,19 @@
 
 package options
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+)
 
 type Interface interface {
 	// AddFlags adds this options' flags to the cobra command.
 	AddFlags(cmd *cobra.Command)
+}
+
+type ActionsOpts struct {
+	CPConnection *grpc.ClientConn
+	Logger       zerolog.Logger
+	AuthTokenRaw string
 }

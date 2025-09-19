@@ -19,14 +19,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Attach a third party integration to a workflow
-type AttachedIntegrationAdd struct{ cfg *ActionsOpts }
+type AttachedIntegrationAdd struct{ cfg *options.ActionsOpts }
 
-func NewAttachedIntegrationAdd(cfg *ActionsOpts) *AttachedIntegrationAdd {
+func NewAttachedIntegrationAdd(cfg *options.ActionsOpts) *AttachedIntegrationAdd {
 	return &AttachedIntegrationAdd{cfg}
 }
 

@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type RegisteredIntegrationDescribe struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewRegisteredIntegrationDescribe(cfg *ActionsOpts) *RegisteredIntegrationDescribe {
+func NewRegisteredIntegrationDescribe(cfg *options.ActionsOpts) *RegisteredIntegrationDescribe {
 	return &RegisteredIntegrationDescribe{cfg}
 }
 

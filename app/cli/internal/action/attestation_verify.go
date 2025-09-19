@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/sigstore/cosign/v2/pkg/blob"
@@ -28,10 +29,10 @@ import (
 )
 
 type AttestationVerifyAction struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewAttestationVerifyAction(cfg *ActionsOpts) *AttestationVerifyAction {
+func NewAttestationVerifyAction(cfg *options.ActionsOpts) *AttestationVerifyAction {
 	return &AttestationVerifyAction{cfg}
 }
 
@@ -44,7 +45,7 @@ func (action *AttestationVerifyAction) Run(ctx context.Context, fileOrURL string
 	return verifyBundle(ctx, content, action.cfg)
 }
 
-func verifyBundle(ctx context.Context, content []byte, opts *ActionsOpts) (bool, error) {
+func verifyBundle(ctx context.Context, content []byte, opts *options.ActionsOpts) (bool, error) {
 	sc := pb.NewSigningServiceClient(opts.CPConnection)
 	trResp, err := sc.GetTrustedRoot(ctx, &pb.GetTrustedRootRequest{})
 	if err != nil {

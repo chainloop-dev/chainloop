@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
@@ -33,10 +34,10 @@ type PolicyLintResult struct {
 }
 
 type PolicyLint struct {
-	*ActionsOpts
+	*options.ActionsOpts
 }
 
-func NewPolicyLint(actionOpts *ActionsOpts) (*PolicyLint, error) {
+func NewPolicyLint(actionOpts *options.ActionsOpts) (*PolicyLint, error) {
 	return &PolicyLint{
 		ActionsOpts: actionOpts,
 	}, nil

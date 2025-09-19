@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type MembershipLeave struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewMembershipLeave(cfg *ActionsOpts) *MembershipLeave {
+func NewMembershipLeave(cfg *options.ActionsOpts) *MembershipLeave {
 	return &MembershipLeave{cfg}
 }
 

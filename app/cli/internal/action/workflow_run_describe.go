@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
@@ -38,7 +39,7 @@ import (
 )
 
 type WorkflowRunDescribe struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
 type WorkflowRunItemFull struct {
@@ -120,7 +121,7 @@ func (i *WorkflowRunAttestationItem) Statement() *intoto.Statement {
 	return i.statement
 }
 
-func NewWorkflowRunDescribe(cfg *ActionsOpts) *WorkflowRunDescribe {
+func NewWorkflowRunDescribe(cfg *options.ActionsOpts) *WorkflowRunDescribe {
 	return &WorkflowRunDescribe{cfg}
 }
 

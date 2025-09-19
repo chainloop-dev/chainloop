@@ -19,15 +19,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type RegisteredIntegrationAdd struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewRegisteredIntegrationAdd(cfg *ActionsOpts) *RegisteredIntegrationAdd {
+func NewRegisteredIntegrationAdd(cfg *options.ActionsOpts) *RegisteredIntegrationAdd {
 	return &RegisteredIntegrationAdd{cfg}
 }
 

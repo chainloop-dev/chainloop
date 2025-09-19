@@ -25,6 +25,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"google.golang.org/grpc"
@@ -33,13 +34,13 @@ import (
 )
 
 type ArtifactDownload struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	artifactsCASConn *grpc.ClientConn
 	stdout           io.Writer
 }
 
 type ArtifactDownloadOpts struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	ArtifactsCASConn *grpc.ClientConn
 	Stdout           io.Writer
 }

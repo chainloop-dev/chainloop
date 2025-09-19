@@ -19,11 +19,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type CASBackendList struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
 type CASBackendItem struct {
@@ -54,7 +55,7 @@ const (
 	Invalid ValidationStatus = "invalid"
 )
 
-func NewCASBackendList(cfg *ActionsOpts) *CASBackendList {
+func NewCASBackendList(cfg *options.ActionsOpts) *CASBackendList {
 	return &CASBackendList{cfg}
 }
 

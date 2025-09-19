@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -31,7 +32,7 @@ import (
 )
 
 type AttestationInitOpts struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	DryRun bool
 	// Force the initialization and override any existing, in-progress ones.
 	// Note that this is only useful when local-based attestation state is configured
@@ -42,7 +43,7 @@ type AttestationInitOpts struct {
 }
 
 type AttestationInit struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	dryRun, force  bool
 	c              *crafter.Crafter
 	useRemoteState bool

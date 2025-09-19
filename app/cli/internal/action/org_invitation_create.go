@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type OrgInvitationCreate struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewOrgInvitationCreate(cfg *ActionsOpts) *OrgInvitationCreate {
+func NewOrgInvitationCreate(cfg *options.ActionsOpts) *OrgInvitationCreate {
 	return &OrgInvitationCreate{cfg}
 }
 

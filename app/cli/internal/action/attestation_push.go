@@ -22,6 +22,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -35,7 +36,7 @@ import (
 )
 
 type AttestationPushOpts struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
 	LocalStatePath string
@@ -57,7 +58,7 @@ type AttestationResult struct {
 }
 
 type AttestationPush struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
 	localStatePath                             string
 	signServerOpts                             *SignServerOpts
@@ -221,7 +222,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	workflow := crafter.CraftingState.Attestation.GetWorkflow()
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.ActionsOpts.CPConnection, envelope, bundle, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.CPConnection, envelope, bundle, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}

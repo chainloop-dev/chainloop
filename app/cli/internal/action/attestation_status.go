@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -29,14 +30,14 @@ import (
 )
 
 type AttestationStatusOpts struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	UseAttestationRemoteState bool
 	isPushed                  bool
 	LocalStatePath            string
 }
 
 type AttestationStatus struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	c *crafter.Crafter
 	// Do not show information about the project version release status
 	isPushed             bool

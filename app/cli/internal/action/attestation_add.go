@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -29,7 +30,7 @@ import (
 )
 
 type AttestationAddOpts struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	ArtifactsCASConn   *grpc.ClientConn
 	CASURI             string
 	CASCAPath          string // optional CA certificate for the CAS connection
@@ -45,7 +46,7 @@ type newCrafterOpts struct {
 }
 
 type AttestationAdd struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	casURI string
 	// optional CA certificate for the CAS connection
 	casCAPath          string

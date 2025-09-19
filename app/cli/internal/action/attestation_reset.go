@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/go-kratos/kratos/v2/errors"
@@ -28,12 +29,12 @@ const AttestationResetTriggerFailed = "failure"
 const AttestationResetTriggerCancelled = "cancellation"
 
 type AttestationResetOpts struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	LocalStatePath string
 }
 
 type AttestationReset struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	*newCrafterOpts
 	localStatePath string
 }

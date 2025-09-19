@@ -19,14 +19,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type APITokenList struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewAPITokenList(cfg *ActionsOpts) *APITokenList {
+func NewAPITokenList(cfg *options.ActionsOpts) *APITokenList {
 	return &APITokenList{cfg}
 }
 

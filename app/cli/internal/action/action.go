@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/remote"
-	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
 
@@ -33,12 +32,6 @@ const (
 	PolicyViolationBlockingStrategyEnforced = "ENFORCED"
 	PolicyViolationBlockingStrategyAdvisory = "ADVISORY"
 )
-
-type ActionsOpts struct {
-	CPConnection *grpc.ClientConn
-	Logger       zerolog.Logger
-	AuthTokenRaw string
-}
 
 type OffsetPagination struct {
 	Page       int `json:"page"`

@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type WorkflowContractDelete struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewWorkflowContractDelete(cfg *ActionsOpts) *WorkflowContractDelete {
+func NewWorkflowContractDelete(cfg *options.ActionsOpts) *WorkflowContractDelete {
 	return &WorkflowContractDelete{cfg}
 }
 

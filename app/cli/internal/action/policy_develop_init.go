@@ -18,6 +18,7 @@ package action
 import (
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
@@ -30,11 +31,11 @@ type PolicyInitOpts struct {
 }
 
 type PolicyInit struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	opts *PolicyInitOpts
 }
 
-func NewPolicyInit(opts *PolicyInitOpts, actionOpts *ActionsOpts) (*PolicyInit, error) {
+func NewPolicyInit(opts *PolicyInitOpts, actionOpts *options.ActionsOpts) (*PolicyInit, error) {
 	return &PolicyInit{
 		ActionsOpts: actionOpts,
 		opts:        opts,

@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type RegisteredIntegrationDelete struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewRegisteredIntegrationDelete(cfg *ActionsOpts) *RegisteredIntegrationDelete {
+func NewRegisteredIntegrationDelete(cfg *options.ActionsOpts) *RegisteredIntegrationDelete {
 	return &RegisteredIntegrationDelete{cfg}
 }
 

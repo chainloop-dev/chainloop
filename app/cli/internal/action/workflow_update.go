@@ -18,14 +18,15 @@ package action
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type WorkflowUpdate struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
-func NewWorkflowUpdate(cfg *ActionsOpts) *WorkflowUpdate {
+func NewWorkflowUpdate(cfg *options.ActionsOpts) *WorkflowUpdate {
 	return &WorkflowUpdate{cfg}
 }
 

@@ -19,12 +19,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type CASBackendAdd struct {
-	cfg *ActionsOpts
+	cfg *options.ActionsOpts
 }
 
 type NewCASBackendAddOpts struct {
@@ -36,7 +37,7 @@ type NewCASBackendAddOpts struct {
 	Credentials map[string]any
 }
 
-func NewCASBackendAdd(cfg *ActionsOpts) *CASBackendAdd {
+func NewCASBackendAdd(cfg *options.ActionsOpts) *CASBackendAdd {
 	return &CASBackendAdd{cfg}
 }
 

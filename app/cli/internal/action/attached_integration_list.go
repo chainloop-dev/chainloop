@@ -20,12 +20,13 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type AttachedIntegrationList struct{ cfg *ActionsOpts }
+type AttachedIntegrationList struct{ cfg *options.ActionsOpts }
 
-func NewAttachedIntegrationList(cfg *ActionsOpts) *AttachedIntegrationList {
+func NewAttachedIntegrationList(cfg *options.ActionsOpts) *AttachedIntegrationList {
 	return &AttachedIntegrationList{cfg}
 }
 

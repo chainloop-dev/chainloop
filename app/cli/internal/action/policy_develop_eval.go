@@ -16,6 +16,7 @@
 package action
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
@@ -30,11 +31,11 @@ type PolicyEvalOpts struct {
 }
 
 type PolicyEval struct {
-	*ActionsOpts
+	*options.ActionsOpts
 	opts *PolicyEvalOpts
 }
 
-func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, error) {
+func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *options.ActionsOpts) (*PolicyEval, error) {
 	return &PolicyEval{
 		ActionsOpts: actionOpts,
 		opts:        opts,
