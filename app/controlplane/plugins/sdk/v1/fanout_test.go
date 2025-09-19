@@ -103,7 +103,7 @@ func TestNewBaseIntegration(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				d := got.Describe()
-				assert.Equal(t, tc.wantMaterials, d.SubscribedMaterials)
+				assert.Equal(t, tc.wantMaterials, got.GetSubscribedMaterials())
 				assert.Equal(t, tc.id, d.ID)
 			}
 		})
@@ -235,7 +235,7 @@ func TestValidateRegistrationRequest(t *testing.T) {
 			payload, err := json.Marshal(tc.input)
 			require.NoError(t, err)
 
-			err = got.ValidateRegistrationRequest(payload)
+			err = sdk.ValidateRegistrationRequest(got, payload)
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 			} else {
@@ -360,7 +360,7 @@ func TestValidateAttachmentRequest(t *testing.T) {
 			payload, err := json.Marshal(tc.input)
 			require.NoError(t, err)
 
-			err = got.ValidateAttachmentRequest(payload)
+			err = sdk.ValidateAttachmentRequest(got, payload)
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 			} else {

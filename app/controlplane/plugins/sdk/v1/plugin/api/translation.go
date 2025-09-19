@@ -17,14 +17,12 @@ package api
 
 import (
 	"errors"
-	"fmt"
 
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
-	status "google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func DescribeProtoToSDK(pd *DescribeResponse) (*sdk.IntegrationInfo, error) {
@@ -34,24 +32,14 @@ func DescribeProtoToSDK(pd *DescribeResponse) (*sdk.IntegrationInfo, error) {
 		Description:            pd.Description,
 		RegistrationJSONSchema: pd.RegistrationJsonSchema,
 		AttachmentJSONSchema:   pd.AttachmentJsonSchema,
-		SubscribedMaterials:    make([]*sdk.InputMaterial, 0),
-	}
-
-	for _, m := range pd.SubscribedMaterials {
-		materialType, ok := schemaapi.CraftingSchema_Material_MaterialType_value[m]
-		if !ok {
-			return nil, fmt.Errorf("invalid material type %s", m)
-		}
-
-		info.SubscribedMaterials = append(info.SubscribedMaterials, &sdk.InputMaterial{Type: schemaapi.CraftingSchema_Material_MaterialType(materialType)})
 	}
 
 	return info, nil
 }
 
-func DescribeSDKToProto(in *sdk.IntegrationInfo) (*DescribeResponse, error) {
-	var materials = make([]string, 0, len(in.SubscribedMaterials))
-	for _, m := range in.SubscribedMaterials {
+func DescribeSDKToProto(in *sdk.IntegrationInfo, mats []*sdk.InputMaterial) (*DescribeResponse, error) {
+	var materials = make([]string, 0, len(mats))
+	for _, m := range mats {
 		materials = append(materials, m.Type.String())
 	}
 

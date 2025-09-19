@@ -143,8 +143,10 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
+	fanoutReq := req.Payload.(*sdk.FanOutPayload)
+
 	if err := validateExecuteRequest(req); err != nil {
-		return fmt.Errorf("running validation for workflow id %s: %w", req.Workflow.ID, err)
+		return fmt.Errorf("running validation for workflow id %s: %w", fanoutReq.Workflow.ID, err)
 	}
 
 	var rc *registrationState
@@ -157,7 +159,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return errors.New("invalid attachment configuration")
 	}
 
-	summary, err := sdk.SummaryTable(req)
+	summary, err := sdk.SummaryTable(fanoutReq)
 	if err != nil {
 		return fmt.Errorf("generating summary table: %w", err)
 	}
@@ -174,8 +176,13 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 }
 
 func validateExecuteRequest(req *sdk.ExecutionRequest) error {
-	if req == nil || req.Input == nil || req.Input.Attestation == nil {
+	if req == nil || req.Payload == nil {
 		return errors.New("invalid input")
+	}
+
+	foReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok || foReq.Attestation == nil {
+		return errors.New("invalid input, expected FanOutPayload")
 	}
 
 	if req.RegistrationInfo == nil || req.RegistrationInfo.Configuration == nil {
