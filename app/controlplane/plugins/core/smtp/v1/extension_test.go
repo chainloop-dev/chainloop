@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +53,7 @@ func TestValidateRegistrationInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, err := json.Marshal(tc.input)
 			require.NoError(t, err)
-			err = integration.ValidateRegistrationRequest(payload)
+			err = sdk.ValidateRegistrationRequest(integration, payload)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -90,7 +91,7 @@ func TestValidateAttachmentInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, err := json.Marshal(tc.input)
 			require.NoError(t, err)
-			err = integration.ValidateAttachmentRequest(payload)
+			err = sdk.ValidateAttachmentRequest(integration, payload)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
