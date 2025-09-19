@@ -118,18 +118,21 @@ func (b *fanOutGRPCServer) Execute(ctx context.Context, req *api.ExecuteRequest)
 		return nil, fmt.Errorf("converting envelope to attestation info: %w", err)
 	}
 
-	opts := &sdk.FanOutExecutionRequest{
-		RegistrationInfo:  registrationInfo,
-		AttachmentInfo:    attachmentInfo,
-		ChainloopMetadata: api.MetadataProtoToSDK(req.Metadata),
-		Input: &sdk.ExecuteInput{
-			Attestation: attestationInput,
-			Materials:   make([]*sdk.ExecuteMaterial, 0),
-		},
+	opts := &sdk.ExecutionRequest{
+		RegistrationInfo: registrationInfo,
+		AttachmentInfo:   attachmentInfo,
 	}
 
+	materials := make([]*sdk.ExecuteMaterial, 0, len(req.Materials))
+
 	for _, material := range req.Materials {
-		opts.Input.Materials = append(opts.Input.Materials, api.MaterialProtoToSDK(material))
+		materials = append(materials, api.MaterialProtoToSDK(material))
+	}
+
+	opts.Payload = &sdk.FanOutPayload{
+		ChainloopMetadata: api.MetadataProtoToSDK(req.Metadata),
+		Attestation: attestationInput,
+		Materials:   materials,
 	}
 
 	return &api.ExecuteResponse{}, b.impl.Execute(ctx, opts)

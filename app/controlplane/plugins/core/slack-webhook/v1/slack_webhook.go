@@ -89,14 +89,14 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 
 // Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
-func (i *Integration) Execute(_ context.Context, req any) error {
+func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	fanoutReq := req.(*sdk.FanOutExecutionRequest)
-
-	if err := validateExecuteRequest(fanoutReq); err != nil {
+	if err := validateExecuteRequest(req); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
+
+	fanoutReq := req.Payload.(*sdk.FanOutPayload)
 
 	// 4000 is the max size of a Slack message
 	// if the message is larger than that, we will truncate it
@@ -106,7 +106,7 @@ func (i *Integration) Execute(_ context.Context, req any) error {
 	}
 
 	msg := fmt.Sprintf("\nNew attestation received!\n```\n%s\n```\n", summary)
-	webhookURL := fanoutReq.RegistrationInfo.Credentials.Password
+	webhookURL := req.RegistrationInfo.Credentials.Password
 
 	if err := executeWebhook(webhookURL, msg); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
@@ -143,12 +143,17 @@ func executeWebhook(webhookURL, msgContent string) error {
 	return nil
 }
 
-func validateExecuteRequest(req *sdk.FanOutExecutionRequest) error {
-	if req == nil || req.Input == nil {
+func validateExecuteRequest(req *sdk.ExecutionRequest) error {
+	if req == nil || req.Payload == nil {
 		return errors.New("execution input not received")
 	}
 
-	if req.Input.Attestation == nil {
+	fanOutInput, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("execution input invalid, not a FanOutPayload type")
+	}
+
+	if fanOutInput.Attestation == nil {
 		return errors.New("execution input invalid, envelope is nil")
 	}
 

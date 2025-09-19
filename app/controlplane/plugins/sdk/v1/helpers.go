@@ -218,11 +218,11 @@ func truncateText(s string, n int) string {
 	return s
 }
 
-func SummaryTable(req *FanOutExecutionRequest, opts ...RenderOpt) (string, error) {
+func SummaryTable(req *FanOutPayload, opts ...RenderOpt) (string, error) {
 	renderer, err := newRenderer(opts...)
 	if err != nil {
 		return "", err
 	}
 
-	return renderer.summaryTable(req.ChainloopMetadata, req.Input.Attestation.Predicate)
+	return renderer.summaryTable(req.ChainloopMetadata, req.Attestation.Predicate)
 }

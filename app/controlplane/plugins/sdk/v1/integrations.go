@@ -37,7 +37,7 @@ type Integration interface {
 	// Attach Validates that the attachment configuration is valid in the context of the provided registration
 	Attach(ctx context.Context, req *AttachmentRequest) (*AttachmentResponse, error)
 	// Execute runs the integration
-	Execute(ctx context.Context, req any) error
+	Execute(ctx context.Context, req *ExecutionRequest) error
 }
 
 type InputSchema struct {
@@ -150,6 +150,14 @@ type RegistrationResponse struct {
 	Credentials *Credentials
 	// Configuration to be persisted in DB
 	Configuration
+}
+
+type ExecutionRequest struct {
+	// Information about the registration and attachment, if applicable
+	RegistrationInfo *RegistrationResponse
+	AttachmentInfo   *AttachmentResponse
+	// Any other data needed by the integration to execute its task
+	Payload any
 }
 
 type Credentials struct {

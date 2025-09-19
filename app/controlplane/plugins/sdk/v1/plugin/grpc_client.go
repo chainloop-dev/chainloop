@@ -138,20 +138,24 @@ func (c *fanOutGRPCClient) Attach(ctx context.Context, req *sdk.AttachmentReques
 	return api.AttachProtoToSDK(resp)
 }
 
-func (c *fanOutGRPCClient) Execute(ctx context.Context, req any) error {
-	fanoutReq := req.(*sdk.FanOutExecutionRequest)
-	regResp, err := api.RegistrationSDKToProto(fanoutReq.RegistrationInfo)
+func (c *fanOutGRPCClient) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+	fanoutReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("invalid execution payload")
+	}
+
+	regResp, err := api.RegistrationSDKToProto(req.RegistrationInfo)
 	if err != nil {
 		return fmt.Errorf("failed to convert registration info: %w", err)
 	}
 
-	attResp, err := api.AttachSDKToProto(fanoutReq.AttachmentInfo)
+	attResp, err := api.AttachSDKToProto(req.AttachmentInfo)
 	if err != nil {
 		return fmt.Errorf("failed to convert attachment info: %w", err)
 	}
 
 	// We send the envelope json encoded
-	envelopeJSON, err := json.Marshal(fanoutReq.Input.Attestation.Envelope)
+	envelopeJSON, err := json.Marshal(fanoutReq.Attestation.Envelope)
 	if err != nil {
 		return fmt.Errorf("failed to marshal attestation envelope: %w", err)
 	}
@@ -163,7 +167,7 @@ func (c *fanOutGRPCClient) Execute(ctx context.Context, req any) error {
 		Metadata:         api.MetadataSDKToProto(fanoutReq.ChainloopMetadata),
 	}
 
-	for _, m := range fanoutReq.Input.Materials {
+	for _, m := range fanoutReq.Materials {
 		reqPayload.Materials = append(reqPayload.Materials, api.MaterialSDKToProto(m))
 	}
 

@@ -128,17 +128,20 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 
 // Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
-func (i *Integration) Execute(_ context.Context, req any) error {
+func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+	fanoutReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("invalid execution payload")
+	}
 
-	if err := validateExecuteRequest(fanoutReq); err != nil {
+	if err := validateExecuteRequest(req); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
 
 	var config *registrationState
-	if err := sdk.FromConfig(fanoutReq.RegistrationInfo.Configuration, &config); err != nil {
+	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &config); err != nil {
 		return fmt.Errorf("invalid registration config: %w", err)
 	}
 
@@ -147,7 +150,7 @@ func (i *Integration) Execute(_ context.Context, req any) error {
 		return fmt.Errorf("generating summary table: %w", err)
 	}
 
-	webhookURL := fanoutReq.RegistrationInfo.Credentials.Password
+	webhookURL := req.RegistrationInfo.Credentials.Password
 	if err := executeWebhook(webhookURL, config.Username, []byte(summary), "New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
@@ -243,12 +246,17 @@ type payloadAttachment struct {
 	Filename string `json:"filename"`
 }
 
-func validateExecuteRequest(req *sdk.FanOutExecutionRequest) error {
-	if req == nil || req.Input == nil {
+func validateExecuteRequest(req *sdk.ExecutionRequest) error {
+	if req == nil || req.Payload == nil {
 		return errors.New("execution input not received")
 	}
 
-	if req.Input.Attestation == nil {
+	fanOutInput, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("execution input invalid, not a FanOutPayload type")
+	}
+
+	if fanOutInput.Attestation == nil {
 		return errors.New("execution input invalid, envelope is nil")
 	}
 

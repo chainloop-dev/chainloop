@@ -168,25 +168,30 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 }
 
 // Execute is called when an attestation or SBOM is received
-func (i *Integration) Execute(ctx context.Context, req any) error {
-	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+	fanoutReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		i.Logger.Error("invalid payload type, expected FanOutPayload")
+		return errors.New("invalid payload type, expected FanOutPayload")
+	}
+
 	// Extract the webhook URL from credentials
-	if fanoutReq.RegistrationInfo.Credentials == nil || fanoutReq.RegistrationInfo.Credentials.URL == "" {
+	if req.RegistrationInfo.Credentials == nil || req.RegistrationInfo.Credentials.URL == "" {
 		i.Logger.Error("missing webhook URL in credentials")
 		return errors.New("missing webhook URL in credentials")
 	}
-	webhookURL := fanoutReq.RegistrationInfo.Credentials.URL
+	webhookURL := req.RegistrationInfo.Credentials.URL
 
 	// Extract the settings from the attachment state
 	var attachState attachmentState
-	if err := sdk.FromConfig(fanoutReq.AttachmentInfo.Configuration, &attachState); err != nil {
+	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &attachState); err != nil {
 		i.Logger.Errorw("invalid attachment state", "error", err)
 		return fmt.Errorf("invalid attachment state: %w", err)
 	}
 
 	// Send attestation if enabled and present
-	if attachState.SendAttestation && fanoutReq.Input.Attestation != nil {
-		statementJSON, err := json.Marshal(fanoutReq.Input.Attestation)
+	if attachState.SendAttestation && fanoutReq.Attestation != nil {
+		statementJSON, err := json.Marshal(fanoutReq.Attestation)
 		if err != nil {
 			i.Logger.Errorw("failed to marshal attestation", "error", err)
 			return fmt.Errorf("marshalling attestation: %w", err)
@@ -199,7 +204,7 @@ func (i *Integration) Execute(ctx context.Context, req any) error {
 
 	// Send SBOM if enabled and present
 	if attachState.SendSBOM {
-		for _, material := range fanoutReq.Input.Materials {
+		for _, material := range fanoutReq.Materials {
 			// Ensure material type is either SBOM_CYCLONEDX_JSON or SBOM_SPDX_JSON
 			if material.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String() && material.Type != schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON.String() {
 				i.Logger.Warnw("unsupported material type, skipping", "type", material.Type)

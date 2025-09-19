@@ -132,7 +132,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 	// Dispatch the integrations
 	for _, item := range queue {
 		req := generateRequest(item, workflowMetadata)
-		go func(p sdk.FanOut, r *sdk.FanOutExecutionRequest) {
+		go func(p sdk.FanOut, r *sdk.ExecutionRequest) {
 			_ = dispatch(ctx, p, req, d.log)
 		}(item.plugin, req)
 	}
@@ -274,17 +274,22 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 	return nil
 }
 
-func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.FanOutExecutionRequest, logger *log.Helper) error {
+func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest, logger *log.Helper) error {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = 10 * time.Second
 
+	fanoutPayload, ok := opts.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("invalid fanout payload")
+	}
+
 	var inputType string
 	switch {
-	case opts.Input.Attestation != nil:
+	case fanoutPayload.Attestation != nil:
 		inputType = "DSSEnvelope"
-	case len(opts.Input.Materials) > 0:
+	case len(fanoutPayload.Materials) > 0:
 		var materialTypes []string
-		for _, m := range opts.Input.Materials {
+		for _, m := range fanoutPayload.Materials {
 			materialTypes = append(materialTypes, m.Type)
 		}
 
@@ -311,9 +316,8 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.FanOutExecutionR
 	)
 }
 
-func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.FanOutExecutionRequest {
-	return &sdk.FanOutExecutionRequest{
-		ChainloopMetadata: metadata,
+func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.ExecutionRequest {
+	return &sdk.ExecutionRequest{
 		RegistrationInfo: &sdk.RegistrationResponse{
 			Credentials:   in.credentials,
 			Configuration: in.registrationConfig,
@@ -321,9 +325,11 @@ func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.Fan
 		AttachmentInfo: &sdk.AttachmentResponse{
 			Configuration: in.attachmentConfig,
 		},
-		Input: &sdk.ExecuteInput{
-			Materials:   in.materials,
-			Attestation: in.attestation,
+		// Custom fanout payload
+		Payload: &sdk.FanOutPayload{
+			ChainloopMetadata: metadata,
+			Materials:         in.materials,
+			Attestation:       in.attestation,
 		},
 	}
 }

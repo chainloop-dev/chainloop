@@ -74,17 +74,12 @@ type ChainloopMetadataWorkflow struct {
 	ID, Name, Team, Project string
 }
 
-// ExecutionRequest is the request to execute the integration
-type FanOutExecutionRequest struct {
+// FanOutPayload is the request to execute the FanOut integration
+type FanOutPayload struct {
 	*ChainloopMetadata
-	Input            *ExecuteInput
-	RegistrationInfo *RegistrationResponse
-	AttachmentInfo   *AttachmentResponse
-}
 
-// An execute method will receive either the envelope or a material as input
-// The material will contain its content as well as the metadata
-type ExecuteInput struct {
+	// An execute method will receive either the envelope or a material as input
+	// The material will contain its content as well as the metadata
 	Attestation *ExecuteAttestation
 	Materials   []*ExecuteMaterial
 }
@@ -207,7 +202,7 @@ func (i *FanOutIntegration) Attach(_ context.Context, _ *AttachmentRequest) (*At
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (i *FanOutIntegration) Execute(_ context.Context, _ any) error {
+func (i *FanOutIntegration) Execute(_ context.Context, _ *ExecutionRequest) error {
 	return fmt.Errorf("not implemented")
 }
 

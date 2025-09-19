@@ -140,22 +140,22 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 }
 
 // Send the SBOM to the configured Dependency Track instance
-func (i *Integration) Execute(_ context.Context, req any) error {
+func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	fanoutReq := req.(*sdk.FanOutExecutionRequest)
+	fanoutReq := req.Payload.(*sdk.FanOutPayload)
 
-	if err := validateExecuteRequest(fanoutReq); err != nil {
+	if err := validateExecuteRequest(req); err != nil {
 		return fmt.Errorf("running validation for workflow id %s: %w", fanoutReq.Workflow.ID, err)
 	}
 
 	var rc *registrationState
-	if err := sdk.FromConfig(fanoutReq.RegistrationInfo.Configuration, &rc); err != nil {
+	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &rc); err != nil {
 		return errors.New("invalid registration configuration")
 	}
 
 	var ac *attachmentState
-	if err := sdk.FromConfig(fanoutReq.AttachmentInfo.Configuration, &ac); err != nil {
+	if err := sdk.FromConfig(req.AttachmentInfo.Configuration, &ac); err != nil {
 		return errors.New("invalid attachment configuration")
 	}
 
@@ -165,7 +165,7 @@ func (i *Integration) Execute(_ context.Context, req any) error {
 	}
 
 	// send the email
-	to, from, user, password, host, port := rc.To, rc.From, rc.User, fanoutReq.RegistrationInfo.Credentials.Password, rc.Host, rc.Port
+	to, from, user, password, host, port := rc.To, rc.From, rc.User, req.RegistrationInfo.Credentials.Password, rc.Host, rc.Port
 	subject := "[chainloop] New workflow run finished successfully!"
 	if err := sendEmail(host, port, user, password, from, to, ac.CC, subject,
 		"<pre>"+summary+"</pre>"); err != nil {
@@ -175,9 +175,14 @@ func (i *Integration) Execute(_ context.Context, req any) error {
 	return nil
 }
 
-func validateExecuteRequest(req *sdk.FanOutExecutionRequest) error {
-	if req == nil || req.Input == nil || req.Input.Attestation == nil {
+func validateExecuteRequest(req *sdk.ExecutionRequest) error {
+	if req == nil || req.Payload == nil {
 		return errors.New("invalid input")
+	}
+
+	foReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok || foReq.Attestation == nil {
+		return errors.New("invalid input, expected FanOutPayload")
 	}
 
 	if req.RegistrationInfo == nil || req.RegistrationInfo.Configuration == nil {
