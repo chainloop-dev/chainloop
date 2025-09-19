@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +56,7 @@ evaluates the policy against the provided material or attestation.`,
 				Debug:            debug,
 			}
 
-			policyEval, err := action.NewPolicyEval(opts, actionOpts)
+			policyEval, err := action.NewPolicyEval(opts, ActionOpts)
 			if err != nil {
 				return err
 			}

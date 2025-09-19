@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -41,7 +41,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 				duration = &expiresIn
 			}
 
-			res, err := action.NewAPITokenCreate(actionOpts).Run(context.Background(), name, description, projectName, duration)
+			res, err := action.NewAPITokenCreate(ActionOpts).Run(context.Background(), name, description, projectName, duration)
 			if err != nil {
 				return fmt.Errorf("creating API token: %w", err)
 			}

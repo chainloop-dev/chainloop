@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ func newRegisteredIntegrationDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "De-register an integration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewRegisteredIntegrationDelete(actionOpts).Run(name); err != nil {
+			if err := action.NewRegisteredIntegrationDelete(ActionOpts).Run(name); err != nil {
 				return err
 			}
 

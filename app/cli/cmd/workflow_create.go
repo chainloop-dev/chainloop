@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -60,7 +60,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 				}
 			}
 
-			wf, err := action.NewWorkflowCreate(actionOpts).Run(opts)
+			wf, err := action.NewWorkflowCreate(ActionOpts).Run(opts)
 			if err != nil {
 				if s, ok := status.FromError(err); ok {
 					if s.Code() == codes.AlreadyExists {

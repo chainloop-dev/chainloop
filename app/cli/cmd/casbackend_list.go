@@ -22,7 +22,7 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
@@ -34,7 +34,7 @@ func newCASBackendListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List CAS Backends from your organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewCASBackendList(actionOpts).Run()
+			res, err := action.NewCASBackendList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

@@ -17,7 +17,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/stretchr/testify/assert"
 )
 

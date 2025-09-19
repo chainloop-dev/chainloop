@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("description") {
 				desc = &description
 			}
-			res, err := action.NewWorkflowContractCreate(actionOpts).Run(name, desc, contractPath, projectName)
+			res, err := action.NewWorkflowContractCreate(ActionOpts).Run(name, desc, contractPath, projectName)
 			if err != nil {
 				return err
 			}

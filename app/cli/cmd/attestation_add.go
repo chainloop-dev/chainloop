@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
 )
@@ -68,7 +68,7 @@ func newAttestationAddCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
-					ActionsOpts:        actionOpts,
+					ActionsOpts:        ActionOpts,
 					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
 					CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
 					ConnectionInsecure: apiInsecure(),

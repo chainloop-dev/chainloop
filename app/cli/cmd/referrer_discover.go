@@ -19,7 +19,7 @@ import (
 	"context"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -35,9 +35,9 @@ func newReferrerDiscoverCmd() *cobra.Command {
 			var err error
 
 			if fromPublicIndex {
-				res, err = action.NewReferrerDiscoverPublicIndex(actionOpts).Run(context.Background(), digest, kind)
+				res, err = action.NewReferrerDiscoverPublicIndex(ActionOpts).Run(context.Background(), digest, kind)
 			} else {
-				res, err = action.NewReferrerDiscoverPrivate(actionOpts).Run(context.Background(), digest, kind)
+				res, err = action.NewReferrerDiscoverPrivate(ActionOpts).Run(context.Background(), digest, kind)
 			}
 
 			if err != nil {

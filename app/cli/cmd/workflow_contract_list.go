@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +30,7 @@ func newWorkflowContractListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List contracts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowContractList(actionOpts).Run()
+			res, err := action.NewWorkflowContractList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

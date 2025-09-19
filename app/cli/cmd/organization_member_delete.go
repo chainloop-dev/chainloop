@@ -19,13 +19,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
 // Get the membership entry associated to the current user for the given organization
 func loadMembershipCurrentOrg(ctx context.Context, membershipID string) (*action.MembershipItem, error) {
-	res, err := action.NewMembershipList(actionOpts).ListMembers(ctx, 1, 1, &action.ListMembersOpts{MembershipID: &membershipID})
+	res, err := action.NewMembershipList(ActionOpts).ListMembers(ctx, 1, 1, &action.ListMembersOpts{MembershipID: &membershipID})
 	if err != nil {
 		return nil, fmt.Errorf("listing memberships: %w", err)
 	}
@@ -59,7 +59,7 @@ func newOrganizationMemberDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			if err := action.NewMembershipDelete(actionOpts).Run(ctx, membershipID); err != nil {
+			if err := action.NewMembershipDelete(ActionOpts).Run(ctx, membershipID); err != nil {
 				return err
 			}
 

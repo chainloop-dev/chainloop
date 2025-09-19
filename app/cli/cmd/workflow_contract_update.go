@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractUpdate(actionOpts).Run(name, desc, contractPath)
+			res, err := action.NewWorkflowContractUpdate(ActionOpts).Run(name, desc, contractPath)
 			if err != nil {
 				return err
 			}

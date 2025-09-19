@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +55,7 @@ func newOrganizationSet() *cobra.Command {
 			// change the state server side
 			if setDefault {
 				var err error
-				membership, err = action.NewMembershipSet(actionOpts).Run(ctx, membership.ID)
+				membership, err = action.NewMembershipSet(ActionOpts).Run(ctx, membership.ID)
 				if err != nil {
 					return err
 				}

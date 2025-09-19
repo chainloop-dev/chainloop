@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -120,7 +120,7 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 			}
 
 			// execute plugin command using the action pattern
-			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, config)
+			result, err := action.NewPluginExec(ActionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, config)
 			if err != nil {
 				return fmt.Errorf("failed to execute plugin command: %w", err)
 			}
@@ -170,7 +170,7 @@ func newPluginListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List installed plugins",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			result, err := action.NewPluginList(actionOpts, pluginManager).Run(context.Background())
+			result, err := action.NewPluginList(ActionOpts, pluginManager).Run(context.Background())
 			if err != nil {
 				return err
 			}
@@ -215,7 +215,7 @@ func newPluginDescribeCmd() *cobra.Command {
 				return fmt.Errorf("plugin name is required")
 			}
 
-			result, err := action.NewPluginDescribe(actionOpts, pluginManager).Run(context.Background(), pluginName)
+			result, err := action.NewPluginDescribe(ActionOpts, pluginManager).Run(context.Background(), pluginName)
 			if err != nil {
 				return err
 			}
@@ -268,7 +268,7 @@ func newPluginInstallCmd() *cobra.Command {
 				Location: location,
 			}
 
-			result, err := action.NewPluginInstall(actionOpts, pluginManager).Run(ctx, opts)
+			result, err := action.NewPluginInstall(ActionOpts, pluginManager).Run(ctx, opts)
 			if err != nil {
 				return fmt.Errorf("failed to install plugin: %w", err)
 			}

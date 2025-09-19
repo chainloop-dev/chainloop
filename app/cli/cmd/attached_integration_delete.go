@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ func newAttachedIntegrationDeleteCmd() *cobra.Command {
 		Aliases: []string{"detach"},
 		Short:   "Detach an integration that's attached to a workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewAttachedIntegrationDelete(actionOpts).Run(attachmentID); err != nil {
+			if err := action.NewAttachedIntegrationDelete(ActionOpts).Run(attachmentID); err != nil {
 				return err
 			}
 

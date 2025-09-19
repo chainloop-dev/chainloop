@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +39,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 - *.yaml files (schema validation)
 - *.rego (formatting, linting, structure)`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			a, err := action.NewPolicyLint(actionOpts)
+			a, err := action.NewPolicyLint(ActionOpts)
 			if err != nil {
 				return err
 			}

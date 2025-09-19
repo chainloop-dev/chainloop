@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.PoliciesAllowedHostnames = &policiesAllowedHostnames
 			}
 
-			_, err := action.NewOrgUpdate(actionOpts).Run(cmd.Context(), orgName, opts)
+			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
 			if err != nil {
 				return err
 			}

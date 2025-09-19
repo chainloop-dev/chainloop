@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -68,7 +68,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
+			res, err := action.NewWorkflowRunDescribe(ActionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
 				RunID:         runID,
 				Digest:        attestationDigest,
 				PublicKeyRef:  publicKey,

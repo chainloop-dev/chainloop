@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -36,13 +36,13 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
   chainloop integration attached add --workflow deadbeef --project my-project --integration dependency-track --opt projectName=MyProject --opt filter="environment=prod,team=security"`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			// Find the integration to extract the kind of integration we care about
-			integration, err := action.NewRegisteredIntegrationDescribe(actionOpts).Run(integrationName)
+			integration, err := action.NewRegisteredIntegrationDescribe(ActionOpts).Run(integrationName)
 			if err != nil {
 				return err
 			}
 
 			// Retrieve schema for validation and options marshaling
-			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integration.Kind)
+			item, err := action.NewAvailableIntegrationDescribe(ActionOpts).Run(integration.Kind)
 			if err != nil {
 				return err
 			}
@@ -57,7 +57,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewAttachedIntegrationAdd(actionOpts).Run(integrationName, workflowName, projectName, opts)
+			res, err := action.NewAttachedIntegrationAdd(ActionOpts).Run(integrationName, workflowName, projectName, opts)
 			if err != nil {
 				return err
 			}

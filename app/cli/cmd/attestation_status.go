@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 )
 
@@ -46,7 +46,7 @@ func newAttestationStatusCmd() *cobra.Command {
 			a, err := action.NewAttestationStatus(
 				&action.AttestationStatusOpts{
 					UseAttestationRemoteState: attestationID != "",
-					ActionsOpts:               actionOpts,
+					ActionsOpts:               ActionOpts,
 					LocalStatePath:            attestationLocalStatePath,
 				},
 			)

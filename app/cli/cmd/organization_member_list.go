@@ -21,7 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -79,7 +79,7 @@ func newOrganizationMemberList() *cobra.Command {
 				opts.Role = &role
 			}
 
-			res, err := action.NewMembershipList(actionOpts).ListMembers(cmd.Context(), paginationOpts.Page, paginationOpts.Limit, opts)
+			res, err := action.NewMembershipList(ActionOpts).ListMembers(cmd.Context(), paginationOpts.Page, paginationOpts.Limit, opts)
 			if err != nil {
 				return err
 			}

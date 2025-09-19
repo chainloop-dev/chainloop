@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func newOrganizationInvitationCreateCmd() *cobra.Command {
 				return fmt.Errorf("role %q is not available. Available roles are %s", role, action.AvailableRoles)
 			}
 
-			res, err := action.NewOrgInvitationCreate(actionOpts).Run(
+			res, err := action.NewOrgInvitationCreate(ActionOpts).Run(
 				context.Background(), receiverEmail, role)
 			if err != nil {
 				return err

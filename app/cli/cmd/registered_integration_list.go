@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +32,7 @@ func newRegisteredIntegrationListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List registered integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewRegisteredIntegrationList(actionOpts).Run()
+			res, err := action.NewRegisteredIntegrationList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

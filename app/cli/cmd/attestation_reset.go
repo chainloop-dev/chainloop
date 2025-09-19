@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +41,7 @@ func newAttestationResetCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a, err := action.NewAttestationReset(&action.AttestationResetOpts{ActionsOpts: actionOpts, LocalStatePath: attestationLocalStatePath})
+			a, err := action.NewAttestationReset(&action.AttestationResetOpts{ActionsOpts: ActionOpts, LocalStatePath: attestationLocalStatePath})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)
 			}

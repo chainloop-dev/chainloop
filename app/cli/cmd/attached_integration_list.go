@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -34,7 +34,7 @@ func newAttachedIntegrationListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List integrations attached to workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAttachedIntegrationList(actionOpts).Run(projectName, workflowName)
+			res, err := action.NewAttachedIntegrationList(ActionOpts).Run(projectName, workflowName)
 			if err != nil {
 				return err
 			}

@@ -22,7 +22,7 @@ import (
 	"sort"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -36,7 +36,7 @@ func newAvailableIntegrationDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "Describe integration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integrationName)
+			item, err := action.NewAvailableIntegrationDescribe(ActionOpts).Run(integrationName)
 			if err != nil {
 				return err
 			}
