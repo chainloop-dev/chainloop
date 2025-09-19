@@ -48,7 +48,7 @@ type InputSchema struct {
 // IntegrationBase provides a base implementation to be embedded in integrations
 type IntegrationBase struct {
 	// Identifier of the integration
-	Id string
+	ID string
 	// Friendly Name of the integration
 	Name string
 	// Integration version
@@ -102,7 +102,7 @@ func NewIntegrationBase(id, name, version, description, kind string, schema *Inp
 		return nil, fmt.Errorf("failed to generate attachment JSON schema: %w", err)
 	}
 	return &IntegrationBase{
-		Id:                     id,
+		ID:                     id,
 		Name:                   name,
 		Version:                version,
 		Description:            description,
@@ -114,7 +114,7 @@ func NewIntegrationBase(id, name, version, description, kind string, schema *Inp
 
 func (i *IntegrationBase) Describe() *IntegrationInfo {
 	return &IntegrationInfo{
-		ID:                     i.Id,
+		ID:                     i.ID,
 		Name:                   i.Name,
 		Version:                i.Version,
 		Description:            i.Description,

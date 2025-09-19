@@ -179,7 +179,7 @@ func (i *FanOutIntegration) String() string {
 		subscribedMaterials[i] = m.Type.String()
 	}
 
-	return fmt.Sprintf("id=%s, version=%s, expectedMaterials=%s", i.Id, i.Version, subscribedMaterials)
+	return fmt.Sprintf("id=%s, version=%s, expectedMaterials=%s", i.ID, i.Version, subscribedMaterials)
 }
 
 func validateInputs(c *FanOutIntegration) error {
