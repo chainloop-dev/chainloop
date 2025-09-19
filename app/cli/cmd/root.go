@@ -72,7 +72,7 @@ var telemetryWg sync.WaitGroup
 // Environment variable prefix for vipers
 const envPrefix = "CHAINLOOP"
 
-func Execute(rootCmd *cobra.Command, l zerolog.Logger) error {
+func Execute(rootCmd *cobra.Command) error {
 	if err := rootCmd.Execute(); err != nil {
 		// The local file is pointing to the wrong organization, we remove it
 		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
