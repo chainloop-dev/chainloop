@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
 	token "github.com/chainloop-dev/chainloop/app/cli/internal/token"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"

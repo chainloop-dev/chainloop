@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 

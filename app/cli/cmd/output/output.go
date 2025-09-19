@@ -22,7 +22,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"

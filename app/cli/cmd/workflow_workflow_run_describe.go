@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"

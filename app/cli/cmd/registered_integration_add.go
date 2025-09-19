@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cobra"

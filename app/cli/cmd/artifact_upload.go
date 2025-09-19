@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"

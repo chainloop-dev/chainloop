@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 )
 
 func newAttestationPushCmd() *cobra.Command {
