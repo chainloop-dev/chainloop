@@ -18,6 +18,7 @@ package cmd
 import (
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -34,7 +35,7 @@ func newWorkflowContractListCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, contractListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, contractListTableOutput)
 		},
 	}
 
@@ -46,7 +47,7 @@ func contractItemTableOutput(contract *action.WorkflowContractItem) error {
 }
 
 func contractListTableOutput(contracts []*action.WorkflowContractItem) error {
-	t := newTableWriter()
+	t := output.NewTableWriter()
 
 	t.AppendHeader(table.Row{"Name", "Latest Revision", "Created At", "Updated At", "# Workflows", "Scope"})
 	for _, p := range contracts {

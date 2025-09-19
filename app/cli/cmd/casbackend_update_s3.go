@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
@@ -63,7 +64,7 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput(res, casBackendItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, casBackendItemTableOutput)
 		},
 	}
 

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -61,7 +62,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 				return err
 			}
 
-			if err := encodeOutput(res.Result, workflowRunListTableOutput); err != nil {
+			if err := output.EncodeOutput(flagOutputFormat, res.Result, workflowRunListTableOutput); err != nil {
 				return err
 			}
 
@@ -101,7 +102,7 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 		header = append(header, "Finished At", "Failure reason")
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(header)
 
 	for _, p := range runs {

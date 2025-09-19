@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -61,7 +62,7 @@ func newOrganizationSet() *cobra.Command {
 			}
 
 			logger.Info().Msg("Organization switched!")
-			return encodeOutput([]*action.MembershipItem{membership}, orgMembershipTableOutput)
+			return output.EncodeOutput(flagOutputFormat, []*action.MembershipItem{membership}, orgMembershipTableOutput)
 		},
 	}
 

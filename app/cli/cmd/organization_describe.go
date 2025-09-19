@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ func newOrganizationDescribeCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, contextTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, contextTableOutput)
 		},
 	}
 
@@ -43,7 +44,7 @@ func newOrganizationDescribeCmd() *cobra.Command {
 }
 
 func contextTableOutput(config *action.ConfigContextItem) error {
-	gt := newTableWriter()
+	gt := output.NewTableWriter()
 	gt.SetTitle("Current Context")
 	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.PrintUserProfileWithEmail()})
 	gt.AppendSeparator()

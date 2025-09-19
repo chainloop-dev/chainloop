@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package output
 
 import (
 	"encoding/json"
@@ -28,8 +28,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const formatJSON = "json"
-const formatTable = "table"
+const FormatJSON = "json"
+const FormatTable = "table"
+
+var ErrOutputFormatNotImplemented = errors.New("format not implemented")
 
 // Supported list of tabulated data that can be rendered as a table
 type tabulatedData interface {
@@ -58,25 +60,23 @@ type tabulatedData interface {
 		*action.PolicyLintResult
 }
 
-var ErrOutputFormatNotImplemented = errors.New("format not implemented")
-
 // returns either json or table representation of the result
-func encodeOutput[messageType tabulatedData, f func(messageType) error](v messageType, tableWriter f) error {
+func EncodeOutput[messageType tabulatedData, f func(messageType) error](flagOutputFormat string, v messageType, tableWriter f) error {
 	switch flagOutputFormat {
-	case formatJSON:
-		return encodeJSON(v)
-	case formatTable:
+	case FormatJSON:
+		return EncodeJSON(v)
+	case FormatTable:
 		return tableWriter(v)
 	default:
 		return ErrOutputFormatNotImplemented
 	}
 }
 
-func encodeJSON(v interface{}) error {
-	return encodeJSONToWriter(v, os.Stdout)
+func EncodeJSON(v interface{}) error {
+	return EncodeJSONToWriter(v, os.Stdout)
 }
 
-func encodeProtoJSON(v proto.Message) error {
+func EncodeProtoJSON(v proto.Message) error {
 	options := protojson.MarshalOptions{
 		Multiline: true,
 		Indent:    "   ",
@@ -92,7 +92,7 @@ func encodeProtoJSON(v proto.Message) error {
 	return nil
 }
 
-func encodeJSONToWriter(v interface{}, w io.Writer) error {
+func EncodeJSONToWriter(v interface{}, w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "   ")
 	if err := encoder.Encode(v); err != nil {
@@ -102,11 +102,11 @@ func encodeJSONToWriter(v interface{}, w io.Writer) error {
 	return nil
 }
 
-func newTableWriter() table.Writer {
-	return newTableWriterWithWriter(os.Stdout)
+func NewTableWriter() table.Writer {
+	return NewTableWriterWithWriter(os.Stdout)
 }
 
-func newTableWriterWithWriter(w io.Writer) table.Writer {
+func NewTableWriterWithWriter(w io.Writer) table.Writer {
 	tw := table.NewWriter()
 	tw.SetStyle(table.StyleLight)
 	tw.SetOutputMirror(w)

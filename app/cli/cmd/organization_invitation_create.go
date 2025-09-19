@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -47,7 +48,7 @@ func newOrganizationInvitationCreateCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput([]*action.OrgInvitationItem{res}, orgInvitationTableOutput)
+			return output.EncodeOutput(flagOutputFormat, []*action.OrgInvitationItem{res}, orgInvitationTableOutput)
 		},
 	}
 

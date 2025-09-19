@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +53,7 @@ func newWorkflowUpdateCmd() *cobra.Command {
 			}
 
 			logger.Info().Msg("Workflow updated!")
-			return encodeOutput(&action.WorkflowListResult{Workflows: []*action.WorkflowItem{res}}, WorkflowListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, &action.WorkflowListResult{Workflows: []*action.WorkflowItem{res}}, WorkflowListTableOutput)
 		},
 	}
 

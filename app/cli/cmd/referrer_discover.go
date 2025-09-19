@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 			}
 
 			// NOTE: this is a preview/beta command, for now we only return JSON format
-			return encodeJSON(res)
+			return output.EncodeJSON(res)
 		},
 	}
 

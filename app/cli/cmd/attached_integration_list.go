@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ func newAttachedIntegrationListCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, attachedIntegrationListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, attachedIntegrationListTableOutput)
 		},
 	}
 
@@ -58,7 +59,7 @@ func attachedIntegrationListTableOutput(attachments []*action.AttachedIntegratio
 		fmt.Println("Integrations attached to workflows")
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"ID", "Kind", "Config", "Workflow", "Attached At"})
 	for _, attachment := range attachments {
 		wf := attachment.Workflow

@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -62,7 +63,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, registeredIntegrationItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, registeredIntegrationItemTableOutput)
 		},
 	}
 
