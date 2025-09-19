@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +33,7 @@ func newWorkflowDescribeCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(wf, workflowItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, wf, workflowItemTableOutput)
 		},
 	}
 

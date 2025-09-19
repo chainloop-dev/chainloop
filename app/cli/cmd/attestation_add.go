@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
@@ -118,7 +119,7 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					return encodeOutput(resp, func(s *action.AttestationStatusMaterial) error {
+					return output.EncodeOutput(flagOutputFormat, resp, func(s *action.AttestationStatusMaterial) error {
 						return displayMaterialInfo(s, policies[resp.Name])
 					})
 				},
@@ -168,7 +169,7 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 		return nil
 	}
 
-	mt := newTableWriter()
+	mt := output.NewTableWriter()
 
 	mt.AppendRow(table.Row{"Name", status.Material.Name})
 	mt.AppendRow(table.Row{"Type", status.Material.Type})

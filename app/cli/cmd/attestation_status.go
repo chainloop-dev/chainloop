@@ -28,6 +28,7 @@ import (
 	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 )
@@ -58,12 +59,12 @@ func newAttestationStatusCmd() *cobra.Command {
 				return err
 			}
 
-			output := simpleStatusTable
+			outputF := simpleStatusTable
 			if full {
-				output = fullStatusTable
+				outputF = fullStatusTable
 			}
 
-			return encodeOutput(res, output)
+			return output.EncodeOutput(flagOutputFormat, res, outputF)
 		},
 	}
 
@@ -87,7 +88,7 @@ func fullStatusTableWithWriter(status *action.AttestationStatusResult, w io.Writ
 
 func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.Writer, full bool) error {
 	// General info table
-	gt := newTableWriterWithWriter(w)
+	gt := output.NewTableWriterWithWriter(w)
 	gt.AppendRow(table.Row{"Initialized At", status.InitializedAt.Format(time.RFC822)})
 	gt.AppendSeparator()
 	meta := status.WorkflowMeta
@@ -154,7 +155,7 @@ func envVarsTable(status *action.AttestationStatusResult, w io.Writer, full bool
 
 	if len(status.EnvVars) > 0 {
 		// Env Variables table
-		evt := newTableWriterWithWriter(w)
+		evt := output.NewTableWriterWithWriter(w)
 		evt.SetTitle("Env Variables")
 		for k, v := range status.EnvVars {
 			if v == "" {
@@ -167,7 +168,7 @@ func envVarsTable(status *action.AttestationStatusResult, w io.Writer, full bool
 
 	runnerVars := status.RunnerContext.EnvVars
 	if len(runnerVars) > 0 && full {
-		evt := newTableWriterWithWriter(w)
+		evt := output.NewTableWriterWithWriter(w)
 		evt.SetTitle("Runner context")
 		for k, v := range runnerVars {
 			if v == "" {
@@ -190,7 +191,7 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		return strings.Compare(a.Name, b.Name)
 	})
 
-	mt := newTableWriterWithWriter(w)
+	mt := output.NewTableWriterWithWriter(w)
 	mt.SetTitle("Materials")
 
 	for _, m := range status.Materials {

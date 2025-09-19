@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
 )
@@ -56,8 +57,8 @@ func NewVersionCmd() *cobra.Command {
 				}
 			}
 
-			if flagOutputFormat == formatJSON {
-				return encodeJSON(version)
+			if flagOutputFormat == output.FormatJSON {
+				return output.EncodeJSON(version)
 			}
 
 			fmt.Printf("Client Version: %s\n", version.Client)

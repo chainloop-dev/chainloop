@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ func newAvailableIntegrationListCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, availableIntegrationListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, availableIntegrationListTableOutput)
 		},
 	}
 
@@ -48,7 +49,7 @@ func availableIntegrationListTableOutput(items []*action.AvailableIntegrationIte
 		return nil
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"Name", "Version", "Material Requirement", "Description"})
 	for _, i := range items {
 		t.AppendRow(table.Row{i.Name, i.Version, strings.Join(i.SubscribedInputs, ", "), i.Description})

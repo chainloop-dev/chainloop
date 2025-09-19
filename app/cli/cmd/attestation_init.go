@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -129,7 +130,7 @@ func newAttestationInitCmd() *cobra.Command {
 				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
 			}
 
-			return encodeOutput(res, fullStatusTable)
+			return output.EncodeOutput(flagOutputFormat, res, fullStatusTable)
 		}}
 
 	// This option is only useful for local-based attestation states

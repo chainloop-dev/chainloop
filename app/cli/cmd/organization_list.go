@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ func newOrganizationList() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, orgMembershipTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, orgMembershipTableOutput)
 		},
 	}
 
@@ -54,7 +55,7 @@ func orgMembershipTableOutput(items []*action.MembershipItem) error {
 	// Get the current organization from viper configuration
 	currentOrg := viper.GetString(confOptions.organization.viperKey)
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"Name", "Current", "Default", "Role", "Default Policy strategy", "Joined At"})
 
 	for _, i := range items {

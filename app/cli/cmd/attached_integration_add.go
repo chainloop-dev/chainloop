@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -61,7 +62,7 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput([]*action.AttachedIntegrationItem{res}, attachedIntegrationListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, []*action.AttachedIntegrationItem{res}, attachedIntegrationListTableOutput)
 		},
 	}
 

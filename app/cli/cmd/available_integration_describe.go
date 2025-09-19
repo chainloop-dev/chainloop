@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -44,7 +45,7 @@ func newAvailableIntegrationDescribeCmd() *cobra.Command {
 				return fmt.Errorf("integration %q not found", integrationName)
 			}
 
-			return encodeOutput([]*action.AvailableIntegrationItem{item}, availableIntegrationDescribeTableOutput)
+			return output.EncodeOutput(flagOutputFormat, []*action.AvailableIntegrationItem{item}, availableIntegrationDescribeTableOutput)
 		},
 	}
 
@@ -97,7 +98,7 @@ func renderSchemaTable(tableTitle string, properties sdk.SchemaPropertiesMap) er
 		return nil
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.SetTitle(tableTitle)
 	t.AppendHeader(table.Row{"Field", "Type", "Required", "Description"})
 
@@ -143,7 +144,7 @@ func renderSchemaRaw(tableTitle string, s string) error {
 		return err
 	}
 
-	rt := newTableWriter()
+	rt := output.NewTableWriter()
 	rt.SetTitle(tableTitle)
 	rt.AppendRow(table.Row{prettyAttachmentJSON.String()})
 	rt.Render()

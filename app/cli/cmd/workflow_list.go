@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ func newWorkflowListCmd() *cobra.Command {
 				return err
 			}
 
-			if err := encodeOutput(res, WorkflowListTableOutput); err != nil {
+			if err := output.EncodeOutput(flagOutputFormat, res, WorkflowListTableOutput); err != nil {
 				return err
 			}
 
@@ -99,7 +100,7 @@ func WorkflowListTableOutput(workflowListResult *action.WorkflowListResult) erro
 	headerRow := table.Row{"Name", "Project", "Contract", "Public", "Runner", "Last Run status", "Created At"}
 	headerRowFull := table.Row{"Name", "Description", "Project", "Team", "Contract", "Public", "Runner", "Last Run status", "Created At"}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	if full {
 		t.AppendHeader(headerRowFull)
 	} else {

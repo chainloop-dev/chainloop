@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -53,7 +54,7 @@ func newAPITokenListCmd() *cobra.Command {
 				return fmt.Errorf("listing API tokens: %w", err)
 			}
 
-			return encodeOutput(res, apiTokenListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, apiTokenListTableOutput)
 		},
 	}
 

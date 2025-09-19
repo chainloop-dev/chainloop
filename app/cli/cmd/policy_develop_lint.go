@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 				return nil
 			}
 
-			if err := encodeOutput(result, policyLintTable); err != nil {
+			if err := output.EncodeOutput(flagOutputFormat, result, policyLintTable); err != nil {
 				return fmt.Errorf("failed to encode output: %w", err)
 			}
 			return fmt.Errorf("%d issues found", len(result.Errors))

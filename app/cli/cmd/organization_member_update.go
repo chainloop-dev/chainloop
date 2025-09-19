@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +47,7 @@ func newOrganizationMemberUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(&action.ListMembershipResult{Memberships: []*action.MembershipItem{res}}, orgMembershipsTableOutput)
+			return output.EncodeOutput(flagOutputFormat, &action.ListMembershipResult{Memberships: []*action.MembershipItem{res}}, orgMembershipsTableOutput)
 		},
 	}
 

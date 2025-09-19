@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -36,7 +37,7 @@ func newOrganizationInvitationListSentCmd() *cobra.Command {
 				return err
 			}
 
-			return encodeOutput(res, orgInvitationTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, orgInvitationTableOutput)
 		},
 	}
 
@@ -49,7 +50,7 @@ func orgInvitationTableOutput(items []*action.OrgInvitationItem) error {
 		return nil
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"ID", "Receiver Email", "Role", "Status", "Created At"})
 
 	for _, i := range items {

@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -74,7 +75,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 			}
 
 			// Print the workflow table
-			if err := encodeOutput(wf, workflowItemTableOutput); err != nil {
+			if err := output.EncodeOutput(flagOutputFormat, wf, workflowItemTableOutput); err != nil {
 				return fmt.Errorf("failed to print workflow: %w", err)
 			}
 

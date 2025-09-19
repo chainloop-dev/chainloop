@@ -87,7 +87,17 @@ func Execute(rootCmd *cobra.Command) error {
 	return nil
 }
 
-func NewRootCmd(l zerolog.Logger) *cobra.Command {
+type RootCmd struct {
+	*cobra.Command
+	// ActionOpts is a pointer-to-pointer to the global actionOpts variable.
+	// This allows the RootCmd to reference the global state that gets initialized
+	// in PersistentPreRunE and used across all subcommands. The double indirection
+	// ensures that when the global actionOpts is updated (e.g., with new connection),
+	// all references automatically point to the updated value.
+	ActionOpts **action.ActionsOpts
+}
+
+func NewRootCmd(l zerolog.Logger) *RootCmd {
 	rootCmd := &cobra.Command{
 		Use:           appName,
 		Short:         "Chainloop Command Line Interface",
@@ -154,6 +164,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			actionOpts = newActionOpts(logger, conn, authToken)
 
 			if !isTelemetryDisabled() {
@@ -258,7 +269,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		}
 	}
 
-	return rootCmd
+	return &RootCmd{Command: rootCmd, ActionOpts: &actionOpts}
 }
 
 // this could have been done using automatic + prefix but we want to have control and know the values
