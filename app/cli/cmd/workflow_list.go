@@ -56,7 +56,7 @@ func newWorkflowListCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			res, err := action.NewWorkflowList(actionOpts).Run(paginationOpts.Page, paginationOpts.Limit)
+			res, err := action.NewWorkflowList(ActionOpts).Run(paginationOpts.Page, paginationOpts.Limit)
 			if err != nil {
 				return err
 			}

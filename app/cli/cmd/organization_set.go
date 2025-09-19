@@ -55,7 +55,7 @@ func newOrganizationSet() *cobra.Command {
 			// change the state server side
 			if setDefault {
 				var err error
-				membership, err = action.NewMembershipSet(actionOpts).Run(ctx, membership.ID)
+				membership, err = action.NewMembershipSet(ActionOpts).Run(ctx, membership.ID)
 				if err != nil {
 					return err
 				}

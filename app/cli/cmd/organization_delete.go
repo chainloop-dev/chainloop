@@ -39,7 +39,7 @@ func newOrganizationDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			if err := action.NewOrganizationDelete(actionOpts).Run(ctx, orgName); err != nil {
+			if err := action.NewOrganizationDelete(ActionOpts).Run(ctx, orgName); err != nil {
 				return fmt.Errorf("deleting organization: %w", err)
 			}
 

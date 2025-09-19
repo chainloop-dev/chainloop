@@ -31,7 +31,7 @@ func newAuthDeleteAccountCmd() *cobra.Command {
 		Short: "delete your account",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get user information to make sure the user knows the account she is deleting
-			contextResp, err := action.NewConfigCurrentContext(actionOpts).Run()
+			contextResp, err := action.NewConfigCurrentContext(ActionOpts).Run()
 			if err != nil {
 				return err
 			}
@@ -44,7 +44,7 @@ func newAuthDeleteAccountCmd() *cobra.Command {
 			}
 
 			// Account deletion
-			if err := action.NewDeleteAccount(actionOpts).Run(); err != nil {
+			if err := action.NewDeleteAccount(ActionOpts).Run(); err != nil {
 				return err
 			}
 

@@ -34,7 +34,7 @@ func newAttachedIntegrationListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List integrations attached to workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAttachedIntegrationList(actionOpts).Run(projectName, workflowName)
+			res, err := action.NewAttachedIntegrationList(ActionOpts).Run(projectName, workflowName)
 			if err != nil {
 				return err
 			}

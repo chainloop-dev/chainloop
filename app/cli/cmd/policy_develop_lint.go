@@ -39,7 +39,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 - *.yaml files (schema validation)
 - *.rego (formatting, linting, structure)`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			a, err := action.NewPolicyLint(actionOpts)
+			a, err := action.NewPolicyLint(ActionOpts)
 			if err != nil {
 				return err
 			}

@@ -42,7 +42,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractUpdate(actionOpts).Run(name, desc, contractPath)
+			res, err := action.NewWorkflowContractUpdate(ActionOpts).Run(name, desc, contractPath)
 			if err != nil {
 				return err
 			}

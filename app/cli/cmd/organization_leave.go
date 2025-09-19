@@ -25,7 +25,7 @@ import (
 
 // Get the membership entry associated to the current user for the given organization
 func membershipFromOrg(ctx context.Context, name string) (*action.MembershipItem, error) {
-	memberships, err := action.NewMembershipList(actionOpts).ListOrgs(ctx)
+	memberships, err := action.NewMembershipList(ActionOpts).ListOrgs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing memberships: %w", err)
 	}
@@ -62,7 +62,7 @@ func newOrganizationLeaveCmd() *cobra.Command {
 			}
 
 			// Membership deletion
-			if err := action.NewMembershipLeave(actionOpts).Run(ctx, membership.ID); err != nil {
+			if err := action.NewMembershipLeave(ActionOpts).Run(ctx, membership.ID); err != nil {
 				return fmt.Errorf("deleting membership: %w", err)
 			}
 

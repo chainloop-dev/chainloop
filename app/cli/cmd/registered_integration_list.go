@@ -32,7 +32,7 @@ func newRegisteredIntegrationListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List registered integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewRegisteredIntegrationList(actionOpts).Run()
+			res, err := action.NewRegisteredIntegrationList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

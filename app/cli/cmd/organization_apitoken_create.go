@@ -41,7 +41,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 				duration = &expiresIn
 			}
 
-			res, err := action.NewAPITokenCreate(actionOpts).Run(context.Background(), name, description, projectName, duration)
+			res, err := action.NewAPITokenCreate(ActionOpts).Run(context.Background(), name, description, projectName, duration)
 			if err != nil {
 				return fmt.Errorf("creating API token: %w", err)
 			}

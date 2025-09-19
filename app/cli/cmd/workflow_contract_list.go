@@ -30,7 +30,7 @@ func newWorkflowContractListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List contracts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowContractList(actionOpts).Run()
+			res, err := action.NewWorkflowContractList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

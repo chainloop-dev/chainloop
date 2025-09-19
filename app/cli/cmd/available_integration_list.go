@@ -31,7 +31,7 @@ func newAvailableIntegrationListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List available integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAvailableIntegrationList(actionOpts).Run()
+			res, err := action.NewAvailableIntegrationList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

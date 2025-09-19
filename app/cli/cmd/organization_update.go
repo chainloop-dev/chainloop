@@ -40,7 +40,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.PoliciesAllowedHostnames = &policiesAllowedHostnames
 			}
 
-			_, err := action.NewOrgUpdate(actionOpts).Run(cmd.Context(), orgName, opts)
+			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
 			if err != nil {
 				return err
 			}

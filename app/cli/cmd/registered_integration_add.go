@@ -39,7 +39,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Retrieve schema for validation and options marshaling
-			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(args[0])
+			item, err := action.NewAvailableIntegrationDescribe(ActionOpts).Run(args[0])
 			if err != nil {
 				return err
 			}
@@ -58,7 +58,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			res, err := action.NewRegisteredIntegrationAdd(actionOpts).Run(args[0], integrationName, integrationDescription, opts)
+			res, err := action.NewRegisteredIntegrationAdd(ActionOpts).Run(args[0], integrationName, integrationDescription, opts)
 			if err != nil {
 				return err
 			}

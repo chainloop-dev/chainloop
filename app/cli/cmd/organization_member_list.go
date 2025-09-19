@@ -79,7 +79,7 @@ func newOrganizationMemberList() *cobra.Command {
 				opts.Role = &role
 			}
 
-			res, err := action.NewMembershipList(actionOpts).ListMembers(cmd.Context(), paginationOpts.Page, paginationOpts.Limit, opts)
+			res, err := action.NewMembershipList(ActionOpts).ListMembers(cmd.Context(), paginationOpts.Page, paginationOpts.Limit, opts)
 			if err != nil {
 				return err
 			}

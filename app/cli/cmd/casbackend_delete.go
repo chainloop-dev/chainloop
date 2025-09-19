@@ -29,14 +29,14 @@ func newCASBackendDeleteCmd() *cobra.Command {
 		Aliases: []string{"rm"},
 		Short:   "Delete a CAS Backend from your organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if confirmed, err := confirmDefaultCASBackendRemoval(actionOpts, name); err != nil {
+			if confirmed, err := confirmDefaultCASBackendRemoval(ActionOpts, name); err != nil {
 				return err
 			} else if !confirmed {
 				log.Info("Aborting...")
 				return nil
 			}
 
-			if err := action.NewCASBackendDelete(actionOpts).Run(name); err != nil {
+			if err := action.NewCASBackendDelete(ActionOpts).Run(name); err != nil {
 				return err
 			}
 

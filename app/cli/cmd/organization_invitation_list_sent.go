@@ -32,7 +32,7 @@ func newOrganizationInvitationListSentCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List sent invitations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewOrgInvitationListSent(actionOpts).Run(context.Background())
+			res, err := action.NewOrgInvitationListSent(ActionOpts).Run(context.Background())
 			if err != nil {
 				return err
 			}

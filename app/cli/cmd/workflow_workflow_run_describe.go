@@ -68,7 +68,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
+			res, err := action.NewWorkflowRunDescribe(ActionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
 				RunID:         runID,
 				Digest:        attestationDigest,
 				PublicKeyRef:  publicKey,

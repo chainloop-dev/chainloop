@@ -32,7 +32,7 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("description") {
 				desc = &description
 			}
-			res, err := action.NewWorkflowContractCreate(actionOpts).Run(name, desc, contractPath, projectName)
+			res, err := action.NewWorkflowContractCreate(ActionOpts).Run(name, desc, contractPath, projectName)
 			if err != nil {
 				return err
 			}

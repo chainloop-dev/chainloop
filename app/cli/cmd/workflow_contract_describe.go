@@ -39,7 +39,7 @@ func newWorkflowContractDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "Describe the information of the contract",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowContractDescribe(actionOpts).Run(name, revision)
+			res, err := action.NewWorkflowContractDescribe(ActionOpts).Run(name, revision)
 			if err != nil {
 				return err
 			}

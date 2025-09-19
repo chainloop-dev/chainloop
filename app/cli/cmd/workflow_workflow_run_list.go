@@ -47,7 +47,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunList(actionOpts).Run(
+			res, err := action.NewWorkflowRunList(ActionOpts).Run(
 				&action.WorkflowRunListOpts{
 					WorkflowName: workflowName,
 					ProjectName:  projectName,

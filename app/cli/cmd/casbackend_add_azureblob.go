@@ -43,7 +43,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 			cobra.CheckErr(err)
 
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, ""); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(ActionOpts, ""); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -64,7 +64,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 				Default: isDefault,
 			}
 
-			res, err := action.NewCASBackendAdd(actionOpts).Run(opts)
+			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)
 			if err != nil {
 				return err
 			} else if res == nil {

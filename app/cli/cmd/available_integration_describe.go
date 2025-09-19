@@ -36,7 +36,7 @@ func newAvailableIntegrationDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "Describe integration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			item, err := action.NewAvailableIntegrationDescribe(actionOpts).Run(integrationName)
+			item, err := action.NewAvailableIntegrationDescribe(ActionOpts).Run(integrationName)
 			if err != nil {
 				return err
 			}

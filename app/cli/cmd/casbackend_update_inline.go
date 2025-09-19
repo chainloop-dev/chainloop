@@ -34,7 +34,7 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 			}
 
 			// If we are overriding/unsetting the default we ask for confirmation
-			if ok, err := handleDefaultUpdateConfirmation(actionOpts, backendName); err != nil {
+			if ok, err := handleDefaultUpdateConfirmation(ActionOpts, backendName); err != nil {
 				return err
 			} else if !ok {
 				log.Info("Aborting...")
@@ -47,7 +47,7 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 				Default:     isDefaultCASBackendUpdateOption,
 			}
 
-			res, err := action.NewCASBackendUpdate(actionOpts).Run(opts)
+			res, err := action.NewCASBackendUpdate(ActionOpts).Run(opts)
 			if err != nil {
 				return err
 			} else if res == nil {

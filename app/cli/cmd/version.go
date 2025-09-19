@@ -50,8 +50,8 @@ func NewVersionCmd() *cobra.Command {
 				Server: "unknown",
 			}
 
-			if actionOpts.CPConnection != nil {
-				res, err := pb.NewStatusServiceClient(actionOpts.CPConnection).Infoz(context.Background(), &pb.InfozRequest{})
+			if ActionOpts.CPConnection != nil {
+				res, err := pb.NewStatusServiceClient(ActionOpts.CPConnection).Infoz(context.Background(), &pb.InfozRequest{})
 				if err == nil {
 					version.Server = res.Version
 				}

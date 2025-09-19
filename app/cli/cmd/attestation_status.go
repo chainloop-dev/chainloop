@@ -46,7 +46,7 @@ func newAttestationStatusCmd() *cobra.Command {
 			a, err := action.NewAttestationStatus(
 				&action.AttestationStatusOpts{
 					UseAttestationRemoteState: attestationID != "",
-					ActionsOpts:               actionOpts,
+					ActionsOpts:               ActionOpts,
 					LocalStatePath:            attestationLocalStatePath,
 				},
 			)

@@ -56,7 +56,7 @@ evaluates the policy against the provided material or attestation.`,
 				Debug:            debug,
 			}
 
-			policyEval, err := action.NewPolicyEval(opts, actionOpts)
+			policyEval, err := action.NewPolicyEval(opts, ActionOpts)
 			if err != nil {
 				return err
 			}

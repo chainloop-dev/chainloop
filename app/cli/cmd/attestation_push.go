@@ -68,7 +68,7 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("getting executable information: %w", err)
 			}
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
-				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle,
+				ActionsOpts: ActionOpts, KeyPath: pkPath, BundlePath: bundle,
 				CLIVersion: info.Version, CLIDigest: info.Digest,
 				LocalStatePath: attestationLocalStatePath,
 				SignServerOpts: &action.SignServerOpts{

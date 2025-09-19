@@ -35,14 +35,14 @@ func newAttestationVerifyCmd() *cobra.Command {
   # verify an attestation stored in an https endpoint
   chainloop attestation verify -b https://myrepository/attestation.json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			res, err := action.NewAttestationVerifyAction(actionOpts).Run(cmd.Context(), fileOrURL)
+			res, err := action.NewAttestationVerifyAction(ActionOpts).Run(cmd.Context(), fileOrURL)
 			if err != nil {
 				return fmt.Errorf("verifying attestation: %w", err)
 			}
 			if res {
-				actionOpts.Logger.Info().Msg("attestation verified successfully")
+				ActionOpts.Logger.Info().Msg("attestation verified successfully")
 			} else {
-				actionOpts.Logger.Warn().Msg("attestation couldn't be verified")
+				ActionOpts.Logger.Warn().Msg("attestation couldn't be verified")
 			}
 
 			return nil

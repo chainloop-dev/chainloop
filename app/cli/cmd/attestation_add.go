@@ -68,7 +68,7 @@ func newAttestationAddCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
-					ActionsOpts:        actionOpts,
+					ActionsOpts:        ActionOpts,
 					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
 					CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
 					ConnectionInsecure: apiInsecure(),

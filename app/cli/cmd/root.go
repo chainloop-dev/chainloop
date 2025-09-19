@@ -44,7 +44,7 @@ var (
 	flagCfgFile        string
 	flagDebug          bool
 	flagOutputFormat   string
-	actionOpts         *action.ActionsOpts
+	ActionOpts         *action.ActionsOpts
 	logger             zerolog.Logger
 	defaultCPAPI       = "api.cp.chainloop.dev:443"
 	defaultCASAPI      = "api.cas.chainloop.dev:443"
@@ -87,17 +87,7 @@ func Execute(rootCmd *cobra.Command) error {
 	return nil
 }
 
-type RootCmd struct {
-	*cobra.Command
-	// ActionOpts is a pointer-to-pointer to the global actionOpts variable.
-	// This allows the RootCmd to reference the global state that gets initialized
-	// in PersistentPreRunE and used across all subcommands. The double indirection
-	// ensures that when the global actionOpts is updated (e.g., with new connection),
-	// all references automatically point to the updated value.
-	ActionOpts **action.ActionsOpts
-}
-
-func NewRootCmd(l zerolog.Logger) *RootCmd {
+func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           appName,
 		Short:         "Chainloop Command Line Interface",
@@ -165,7 +155,7 @@ func NewRootCmd(l zerolog.Logger) *RootCmd {
 				return err
 			}
 
-			actionOpts = newActionOpts(logger, conn, authToken)
+			ActionOpts = newActionOpts(logger, conn, authToken)
 
 			if !isTelemetryDisabled() {
 				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
@@ -208,7 +198,7 @@ func NewRootCmd(l zerolog.Logger) *RootCmd {
 			return nil
 		},
 		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
-			return cleanup(actionOpts.CPConnection)
+			return cleanup(ActionOpts.CPConnection)
 		},
 	}
 
@@ -269,7 +259,7 @@ func NewRootCmd(l zerolog.Logger) *RootCmd {
 		}
 	}
 
-	return &RootCmd{Command: rootCmd, ActionOpts: &actionOpts}
+	return rootCmd
 }
 
 // this could have been done using automatic + prefix but we want to have control and know the values
@@ -349,7 +339,7 @@ func initConfigFile() {
 }
 
 func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token}
+	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token, OutputFormat: flagOutputFormat}
 }
 
 func cleanup(conn *grpc.ClientConn) error {

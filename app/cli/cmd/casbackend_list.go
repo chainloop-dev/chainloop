@@ -34,7 +34,7 @@ func newCASBackendListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List CAS Backends from your organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewCASBackendList(actionOpts).Run()
+			res, err := action.NewCASBackendList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}

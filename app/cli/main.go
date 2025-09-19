@@ -35,7 +35,7 @@ func main() {
 	// Couldn't find an easier way to disable the timestamp
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, FormatTimestamp: func(interface{}) string { return "" }})
 	rootCmd := cmd.NewRootCmd(logger)
-	if err := cmd.Execute(rootCmd.Command); err != nil {
+	if err := cmd.Execute(rootCmd); err != nil {
 		msg, exitCode := errorInfo(err, logger)
 		logger.Error().Msg(msg)
 		os.Exit(exitCode)
