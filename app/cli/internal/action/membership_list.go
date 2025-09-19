@@ -21,12 +21,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type MembershipList struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
 type OrgItem struct {
@@ -62,7 +61,7 @@ type ListMembershipResult struct {
 	PaginationMeta *OffsetPagination
 }
 
-func NewMembershipList(cfg *options.ActionsOpts) *MembershipList {
+func NewMembershipList(cfg *ActionsOpts) *MembershipList {
 	return &MembershipList{cfg}
 }
 

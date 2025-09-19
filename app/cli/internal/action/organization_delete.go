@@ -18,15 +18,14 @@ package action
 import (
 	"context"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type OrganizationDelete struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
-func NewOrganizationDelete(cfg *options.ActionsOpts) *OrganizationDelete {
+func NewOrganizationDelete(cfg *ActionsOpts) *OrganizationDelete {
 	return &OrganizationDelete{cfg}
 }
 

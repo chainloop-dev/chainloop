@@ -18,15 +18,14 @@ package action
 import (
 	"context"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type CASBackendDelete struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
-func NewCASBackendDelete(cfg *options.ActionsOpts) *CASBackendDelete {
+func NewCASBackendDelete(cfg *ActionsOpts) *CASBackendDelete {
 	return &CASBackendDelete{cfg}
 }
 

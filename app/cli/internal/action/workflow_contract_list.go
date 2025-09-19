@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 type WorkflowContractList struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
 type WorkflowContractItem struct {
@@ -74,7 +73,7 @@ type ContractRawBody struct {
 	Format string `json:"format"`
 }
 
-func NewWorkflowContractList(cfg *options.ActionsOpts) *WorkflowContractList {
+func NewWorkflowContractList(cfg *ActionsOpts) *WorkflowContractList {
 	return &WorkflowContractList{cfg}
 }
 

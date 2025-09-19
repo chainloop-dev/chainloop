@@ -16,18 +16,10 @@
 package options
 
 import (
-	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 type Interface interface {
 	// AddFlags adds this options' flags to the cobra command.
 	AddFlags(cmd *cobra.Command)
-}
-
-type ActionsOpts struct {
-	CPConnection *grpc.ClientConn
-	Logger       zerolog.Logger
-	AuthTokenRaw string
 }

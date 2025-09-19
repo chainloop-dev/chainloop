@@ -21,25 +21,24 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 )
 
 // PluginList handles listing installed plugins
 type PluginList struct {
-	cfg     *options.ActionsOpts
+	cfg     *ActionsOpts
 	manager *plugins.Manager
 }
 
 // PluginInfo handles showing detailed information about a specific plugin
 type PluginDescribe struct {
-	cfg     *options.ActionsOpts
+	cfg     *ActionsOpts
 	manager *plugins.Manager
 }
 
 // PluginExec handles executing a command provided by a plugin
 type PluginExec struct {
-	cfg     *options.ActionsOpts
+	cfg     *ActionsOpts
 	manager *plugins.Manager
 }
 
@@ -64,7 +63,7 @@ type PluginExecResult struct {
 
 // PluginInstall handles downloading a plugin
 type PluginInstall struct {
-	cfg     *options.ActionsOpts
+	cfg     *ActionsOpts
 	manager *plugins.Manager
 }
 
@@ -81,7 +80,7 @@ type PluginInstallResult struct {
 }
 
 // NewPluginList creates a new PluginList action
-func NewPluginList(cfg *options.ActionsOpts, manager *plugins.Manager) *PluginList {
+func NewPluginList(cfg *ActionsOpts, manager *plugins.Manager) *PluginList {
 	return &PluginList{cfg: cfg, manager: manager}
 }
 
@@ -106,7 +105,7 @@ func (action *PluginList) Run(_ context.Context) (*PluginListResult, error) {
 }
 
 // NewPluginDescribe creates a new NewPluginDescribe action
-func NewPluginDescribe(cfg *options.ActionsOpts, manager *plugins.Manager) *PluginDescribe {
+func NewPluginDescribe(cfg *ActionsOpts, manager *plugins.Manager) *PluginDescribe {
 	return &PluginDescribe{cfg: cfg, manager: manager}
 }
 
@@ -125,7 +124,7 @@ func (action *PluginDescribe) Run(_ context.Context, pluginName string) (*Plugin
 }
 
 // NewPluginExec creates a new PluginExec action
-func NewPluginExec(cfg *options.ActionsOpts, manager *plugins.Manager) *PluginExec {
+func NewPluginExec(cfg *ActionsOpts, manager *plugins.Manager) *PluginExec {
 	return &PluginExec{cfg: cfg, manager: manager}
 }
 
@@ -156,7 +155,7 @@ func (action *PluginExec) Run(ctx context.Context, pluginName string, commandNam
 }
 
 // NewPluginInstall creates a new PluginInstall action
-func NewPluginInstall(cfg *options.ActionsOpts, manager *plugins.Manager) *PluginInstall {
+func NewPluginInstall(cfg *ActionsOpts, manager *plugins.Manager) *PluginInstall {
 	return &PluginInstall{cfg: cfg, manager: manager}
 }
 

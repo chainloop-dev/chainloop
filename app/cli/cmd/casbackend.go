@@ -18,7 +18,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/spf13/cobra"
 )
@@ -70,7 +69,7 @@ func newCASBackendUpdateCmd() *cobra.Command {
 
 // confirmDefaultCASBackendOverride asks the user to confirm the override of the default CAS backend
 // in the event that there is one already set and its not the same as the one we are setting
-func confirmDefaultCASBackendOverride(actionOpts *options.ActionsOpts, id string) (bool, error) {
+func confirmDefaultCASBackendOverride(actionOpts *action.ActionsOpts, id string) (bool, error) {
 	// get existing backends
 	backends, err := action.NewCASBackendList(actionOpts).Run()
 	if err != nil {
@@ -96,11 +95,11 @@ func confirmDefaultCASBackendOverride(actionOpts *options.ActionsOpts, id string
 }
 
 // If we are removing the default we confirm too
-func confirmDefaultCASBackendRemoval(actionOpts *options.ActionsOpts, name string) (bool, error) {
+func confirmDefaultCASBackendRemoval(actionOpts *action.ActionsOpts, name string) (bool, error) {
 	return confirmDefaultCASBackendUnset(name, "You are deleting the default CAS backend.", actionOpts)
 }
 
-func confirmDefaultCASBackendUnset(name, msg string, actionOpts *options.ActionsOpts) (bool, error) {
+func confirmDefaultCASBackendUnset(name, msg string, actionOpts *action.ActionsOpts) (bool, error) {
 	// get existing backends
 	backends, err := action.NewCASBackendList(actionOpts).Run()
 	if err != nil {
@@ -152,7 +151,7 @@ func captureUpdateFlags(cmd *cobra.Command) error {
 // handleDefaultUpdateConfirmation centralizes the confirmation logic when the --default flag
 // is provided. It returns (true, nil) when it's ok to proceed, (false, nil) when the user
 // declined confirmation, or (false, err) when an error happened.
-func handleDefaultUpdateConfirmation(actionOpts *options.ActionsOpts, name string) (bool, error) {
+func handleDefaultUpdateConfirmation(actionOpts *action.ActionsOpts, name string) (bool, error) {
 	if isDefaultCASBackendUpdateOption == nil {
 		return true, nil
 	}

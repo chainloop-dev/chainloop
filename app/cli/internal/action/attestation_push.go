@@ -22,7 +22,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -36,7 +35,7 @@ import (
 )
 
 type AttestationPushOpts struct {
-	*options.ActionsOpts
+	*ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
 	LocalStatePath string
@@ -58,7 +57,7 @@ type AttestationResult struct {
 }
 
 type AttestationPush struct {
-	*options.ActionsOpts
+	*ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
 	localStatePath                             string
 	signServerOpts                             *SignServerOpts

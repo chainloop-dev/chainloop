@@ -18,13 +18,12 @@ package action
 import (
 	"context"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
-type AttachedIntegrationDelete struct{ cfg *options.ActionsOpts }
+type AttachedIntegrationDelete struct{ cfg *ActionsOpts }
 
-func NewAttachedIntegrationDelete(cfg *options.ActionsOpts) *AttachedIntegrationDelete {
+func NewAttachedIntegrationDelete(cfg *ActionsOpts) *AttachedIntegrationDelete {
 	return &AttachedIntegrationDelete{cfg}
 }
 

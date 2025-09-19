@@ -18,15 +18,14 @@ package action
 import (
 	"context"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type MembershipUpdate struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
-func NewMembershipUpdate(cfg *options.ActionsOpts) *MembershipUpdate {
+func NewMembershipUpdate(cfg *ActionsOpts) *MembershipUpdate {
 	return &MembershipUpdate{cfg}
 }
 

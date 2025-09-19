@@ -18,15 +18,14 @@ package action
 import (
 	"context"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type OrgUpdate struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
-func NewOrgUpdate(cfg *options.ActionsOpts) *OrgUpdate {
+func NewOrgUpdate(cfg *ActionsOpts) *OrgUpdate {
 	return &OrgUpdate{cfg}
 }
 

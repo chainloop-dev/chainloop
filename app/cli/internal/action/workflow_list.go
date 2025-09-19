@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
 
 type WorkflowList struct {
-	cfg *options.ActionsOpts
+	cfg *ActionsOpts
 }
 
 type WorkflowItem struct {
@@ -52,7 +51,7 @@ type WorkflowListResult struct {
 }
 
 // NewWorkflowList creates a new instance of WorkflowList
-func NewWorkflowList(cfg *options.ActionsOpts) *WorkflowList {
+func NewWorkflowList(cfg *ActionsOpts) *WorkflowList {
 	return &WorkflowList{cfg}
 }
 
