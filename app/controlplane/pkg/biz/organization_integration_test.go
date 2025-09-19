@@ -258,8 +258,22 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	// Integration
 	// Mocked integration that will return both generic configuration and credentials
 	integration := integrationMocks.NewFanOut(s.T())
-	integration.On("Describe").Return(&sdk.IntegrationInfo{})
-	integration.On("ValidateRegistrationRequest", mock.Anything).Return(nil)
+	type schema struct {
+		FirstName string `json:"firstName"`
+	}
+
+	fanOutSchemas := &sdk.InputSchema{Registration: schema{}, Attachment: schema{}}
+
+	b, err := sdk.NewFanOut(
+		&sdk.NewParams{
+			ID:          "integration",
+			Version:     "1.0",
+			InputSchema: fanOutSchemas,
+		},
+	)
+	assert.NoError(err)
+
+	integration.On("Describe").Return(b.Describe())
 	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: []byte("deadbeef")}, nil)
 
