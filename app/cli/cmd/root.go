@@ -41,16 +41,15 @@ import (
 )
 
 var (
-	flagCfgFile        string
-	flagDebug          bool
-	flagOutputFormat   string
-	ActionOpts         *action.ActionsOpts
-	logger             zerolog.Logger
-	defaultCPAPI       = "api.cp.chainloop.dev:443"
-	defaultCASAPI      = "api.cas.chainloop.dev:443"
-	defaultPlatformAPI = "api.app.chainloop.dev:443"
-	apiToken           string
-	flagYes            bool
+	flagCfgFile      string
+	flagDebug        bool
+	flagOutputFormat string
+	ActionOpts       *action.ActionsOpts
+	logger           zerolog.Logger
+	defaultCPAPI     = "api.cp.chainloop.dev:443"
+	defaultCASAPI    = "api.cas.chainloop.dev:443"
+	apiToken         string
+	flagYes          bool
 )
 
 const (
@@ -106,7 +105,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
 
-			authToken, isUserToken, err := loadControlplaneAuthToken(cmd)
+			authToken, isUserToken, err := LoadAuthToken(cmd)
 			if err != nil {
 				return err
 			}
@@ -223,11 +222,6 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().String(confOptions.CASCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Artifacts CAS API (optional) ($%s)", calculateEnvVarName(confOptions.CASCA.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.CASCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASCA.flagName)))
 	cobra.CheckErr(viper.BindEnv(confOptions.CASCA.viperKey, calculateEnvVarName(confOptions.CASCA.viperKey)))
-
-	// Platform API configuration
-	rootCmd.PersistentFlags().String(confOptions.platformAPI.flagName, defaultPlatformAPI, fmt.Sprintf("URL for the Platform API ($%s)", calculateEnvVarName(confOptions.platformAPI.viperKey)))
-	cobra.CheckErr(viper.BindPFlag(confOptions.platformAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.platformAPI.flagName)))
-	cobra.CheckErr(viper.BindEnv(confOptions.platformAPI.viperKey, calculateEnvVarName(confOptions.platformAPI.viperKey)))
 
 	rootCmd.PersistentFlags().BoolP("insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", calculateEnvVarName(confOptions.insecure.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.insecure.viperKey, rootCmd.PersistentFlags().Lookup("insecure")))
@@ -359,7 +353,7 @@ func cleanup(conn *grpc.ClientConn) error {
 // 2.2 Load the token from the environment variable and from the auth login config file
 // 2.3 if they both exist, we default to the user token
 // 2.4 otherwise to the one that's set
-func loadControlplaneAuthToken(cmd *cobra.Command) (string, bool, error) {
+func LoadAuthToken(cmd *cobra.Command) (string, bool, error) {
 	// Load the APIToken from the env variable
 	apiTokenFromVar := os.Getenv(tokenEnvVarName)
 
