@@ -17,6 +17,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -108,5 +109,5 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 
 func isWrappedErr(grpcStatus *status.Status, err *errors.Error) bool {
 	target := errors.FromError(grpcStatus.Err())
-	return target.Code == err.Code && err.Message == target.Message
+	return target.Code == err.Code && strings.Contains(target.Message, err.Message)
 }
