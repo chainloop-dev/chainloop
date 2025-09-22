@@ -54,10 +54,6 @@ var confOptions = struct {
 		viperKey: "organization",
 		flagName: "org",
 	},
-	platformAPI: &confOpt{
-		viperKey: "platform.API",
-		flagName: "platform",
-	},
 }
 
 type confOpt struct {
