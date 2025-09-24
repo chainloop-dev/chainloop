@@ -131,6 +131,11 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
+	fanoutReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("invalid execution payload")
+	}
+
 	if err := validateExecuteRequest(req); err != nil {
 		return fmt.Errorf("running validation: %w", err)
 	}
@@ -140,7 +145,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("invalid registration config: %w", err)
 	}
 
-	summary, err := sdk.SummaryTable(req)
+	summary, err := sdk.SummaryTable(fanoutReq)
 	if err != nil {
 		return fmt.Errorf("generating summary table: %w", err)
 	}
@@ -242,11 +247,16 @@ type payloadAttachment struct {
 }
 
 func validateExecuteRequest(req *sdk.ExecutionRequest) error {
-	if req == nil || req.Input == nil {
+	if req == nil || req.Payload == nil {
 		return errors.New("execution input not received")
 	}
 
-	if req.Input.Attestation == nil {
+	fanOutInput, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("execution input invalid, not a FanOutPayload type")
+	}
+
+	if fanOutInput.Attestation == nil {
 		return errors.New("execution input invalid, envelope is nil")
 	}
 

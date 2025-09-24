@@ -53,7 +53,7 @@ func (s *IntegrationsService) ListAvailable(_ context.Context, _ *pb.Integration
 		d := i.Describe()
 
 		var subscribedMaterials = make([]string, 0)
-		for _, m := range d.SubscribedMaterials {
+		for _, m := range i.GetSubscribedMaterials() {
 			subscribedMaterials = append(subscribedMaterials, m.Type.String())
 		}
 

@@ -67,7 +67,7 @@ func TestValidateRegistrationInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, err := json.Marshal(tc.input)
 			require.NoError(t, err)
-			err = integration.ValidateRegistrationRequest(payload)
+			err = sdk.ValidateRegistrationRequest(integration, payload)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -211,7 +211,7 @@ func TestValidateAttachmentInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, err := json.Marshal(tc.input)
 			require.NoError(t, err)
-			err = integration.ValidateAttachmentRequest(payload)
+			err = sdk.ValidateAttachmentRequest(integration, payload)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)
 			} else {
@@ -237,28 +237,28 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "invalid - missing material",
 			opts: &sdk.ExecutionRequest{
-				Input: &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{{}}},
+				Payload: &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{{}}},
 			},
 			errMsg: "invalid input",
 		},
 		{
 			name: "invalid - invalid material",
 			opts: &sdk.ExecutionRequest{
-				Input: &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}}},
+				Payload: &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{{NormalizedMaterial: &chainloop.NormalizedMaterial{Type: "invalid"}, Content: []byte("content")}}},
 			},
 			errMsg: "invalid input type",
 		},
 		{
 			name: "invalid - missing configuration",
 			opts: &sdk.ExecutionRequest{
-				Input: &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
+				Payload: &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 			},
 			errMsg: "missing registration configuration",
 		},
 		{
 			name: "invalid - missing attachment configuration",
 			opts: &sdk.ExecutionRequest{
-				Input:            &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
+				Payload:          &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config"), Credentials: &sdk.Credentials{Password: "password"}},
 			},
 			errMsg: "missing attachment configuration",
@@ -266,7 +266,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "invalid - missing registration configuration",
 			opts: &sdk.ExecutionRequest{
-				Input:          &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
+				Payload:        &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				AttachmentInfo: &sdk.AttachmentResponse{},
 			},
 			errMsg: "missing registration configuration",
@@ -274,7 +274,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "invalid - missing credentials",
 			opts: &sdk.ExecutionRequest{
-				Input:            &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
+				Payload:          &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config")},
 				AttachmentInfo:   &sdk.AttachmentResponse{Configuration: []byte("config")},
 			},
@@ -283,7 +283,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 		{
 			name: "ok - all good",
 			opts: &sdk.ExecutionRequest{
-				Input:            &sdk.ExecuteInput{Materials: []*sdk.ExecuteMaterial{validMaterial}},
+				Payload:          &sdk.FanOutPayload{Materials: []*sdk.ExecuteMaterial{validMaterial}},
 				RegistrationInfo: &sdk.RegistrationResponse{Configuration: []byte("config"), Credentials: &sdk.Credentials{Password: "password"}},
 				AttachmentInfo:   &sdk.AttachmentResponse{Configuration: []byte("config")},
 			},
@@ -292,7 +292,7 @@ func TestValidateExecuteOpts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := tc.opts.Input.Materials[0]
+			m := tc.opts.Payload.(*sdk.FanOutPayload).Materials[0]
 			err := validateExecuteOpts(m, tc.opts.RegistrationInfo, tc.opts.AttachmentInfo)
 			if tc.errMsg != "" {
 				assert.ErrorContains(t, err, tc.errMsg)

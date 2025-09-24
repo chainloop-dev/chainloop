@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/plugin/api"
 )
@@ -43,6 +44,25 @@ func (c *fanOutGRPCClient) Describe() *sdk.IntegrationInfo {
 	}
 
 	return info
+}
+
+func (c *fanOutGRPCClient) GetSubscribedMaterials() []*sdk.InputMaterial {
+	res := make([]*sdk.InputMaterial, 0)
+	desc, err := c.client.Describe(context.Background(), &api.DescribeRequest{})
+	if err != nil {
+		return nil
+	}
+
+	for _, m := range desc.SubscribedMaterials {
+		materialType, ok := schemaapi.CraftingSchema_Material_MaterialType_value[m]
+		if !ok {
+			return nil
+		}
+
+		res = append(res, &sdk.InputMaterial{Type: schemaapi.CraftingSchema_Material_MaterialType(materialType)})
+	}
+
+	return res
 }
 
 func (c *fanOutGRPCClient) ValidateRegistrationRequest(payload []byte) error {
@@ -119,6 +139,11 @@ func (c *fanOutGRPCClient) Attach(ctx context.Context, req *sdk.AttachmentReques
 }
 
 func (c *fanOutGRPCClient) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
+	fanoutReq, ok := req.Payload.(*sdk.FanOutPayload)
+	if !ok {
+		return errors.New("invalid execution payload")
+	}
+
 	regResp, err := api.RegistrationSDKToProto(req.RegistrationInfo)
 	if err != nil {
 		return fmt.Errorf("failed to convert registration info: %w", err)
@@ -130,7 +155,7 @@ func (c *fanOutGRPCClient) Execute(ctx context.Context, req *sdk.ExecutionReques
 	}
 
 	// We send the envelope json encoded
-	envelopeJSON, err := json.Marshal(req.Input.Attestation.Envelope)
+	envelopeJSON, err := json.Marshal(fanoutReq.Attestation.Envelope)
 	if err != nil {
 		return fmt.Errorf("failed to marshal attestation envelope: %w", err)
 	}
@@ -139,10 +164,10 @@ func (c *fanOutGRPCClient) Execute(ctx context.Context, req *sdk.ExecutionReques
 		RegistrationInfo: regResp,
 		AttachmentInfo:   attResp,
 		Envelope:         envelopeJSON,
-		Metadata:         api.MetadataSDKToProto(req.ChainloopMetadata),
+		Metadata:         api.MetadataSDKToProto(fanoutReq.ChainloopMetadata),
 	}
 
-	for _, m := range req.Input.Materials {
+	for _, m := range fanoutReq.Materials {
 		reqPayload.Materials = append(reqPayload.Materials, api.MaterialSDKToProto(m))
 	}
 
