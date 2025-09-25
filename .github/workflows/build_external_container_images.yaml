@@ -61,15 +61,15 @@ jobs:
           # NGINX Ingress Controller version: 1.12.1
           - name: NGINX Ingress Controller
             image_name: chainloop-dev/chainloop/nginx-ingress-controller
-            path: bitnami/nginx-ingress-controller/1.12/debian-12
-            sparse_checkout: bitnami/nginx-ingress-controller/1.12/debian-12
-            ref: 9ad1a44da005cdf487b3e069220da598cff6776c
+            path: bitnami/nginx-ingress-controller/1/debian-12
+            sparse_checkout: bitnami/nginx-ingress-controller/1/debian-12
+            ref: 87b1dc063ce0a75de731cf6757c1cc5c67ab88e1
           # NGINX version: 1.27.4 (for default backend)
           - name: NGINX
             image_name: chainloop-dev/chainloop/nginx
             path: bitnami/nginx/1.27/debian-12
             sparse_checkout: bitnami/nginx/1.27/debian-12
-            ref: 9ad1a44da005cdf487b3e069220da598cff6776c
+            ref: 1c185405602d01ad60b5454908c95b91deb5747a
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ matrix.image.image_name }}
