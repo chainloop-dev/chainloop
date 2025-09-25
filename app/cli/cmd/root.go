@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
 	token "github.com/chainloop-dev/chainloop/app/cli/internal/token"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
@@ -41,16 +41,15 @@ import (
 )
 
 var (
-	flagCfgFile        string
-	flagDebug          bool
-	flagOutputFormat   string
-	actionOpts         *action.ActionsOpts
-	logger             zerolog.Logger
-	defaultCPAPI       = "api.cp.chainloop.dev:443"
-	defaultCASAPI      = "api.cas.chainloop.dev:443"
-	defaultPlatformAPI = "api.app.chainloop.dev:443"
-	apiToken           string
-	flagYes            bool
+	flagCfgFile      string
+	flagDebug        bool
+	flagOutputFormat string
+	ActionOpts       *action.ActionsOpts
+	logger           zerolog.Logger
+	defaultCPAPI     = "api.cp.chainloop.dev:443"
+	defaultCASAPI    = "api.cas.chainloop.dev:443"
+	apiToken         string
+	flagYes          bool
 )
 
 const (
@@ -72,8 +71,7 @@ var telemetryWg sync.WaitGroup
 // Environment variable prefix for vipers
 const envPrefix = "CHAINLOOP"
 
-func Execute(l zerolog.Logger) error {
-	rootCmd := NewRootCmd(l)
+func Execute(rootCmd *cobra.Command) error {
 	if err := rootCmd.Execute(); err != nil {
 		// The local file is pointing to the wrong organization, we remove it
 		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
@@ -107,7 +105,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
 
-			authToken, isUserToken, err := loadControlplaneAuthToken(cmd)
+			authToken, isUserToken, err := loadAuthToken(cmd)
 			if err != nil {
 				return err
 			}
@@ -155,7 +153,8 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			actionOpts = newActionOpts(logger, conn, authToken)
+
+			ActionOpts = newActionOpts(logger, conn, authToken)
 
 			if !isTelemetryDisabled() {
 				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
@@ -198,7 +197,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
-			return cleanup(actionOpts.CPConnection)
+			return cleanup(ActionOpts.CPConnection)
 		},
 	}
 
@@ -206,32 +205,27 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	rootCmd.PersistentFlags().StringVarP(&flagCfgFile, "config", "c", "", "Path to an existing config file (default is $HOME/.config/chainloop/config.toml)")
 
-	rootCmd.PersistentFlags().String(confOptions.controlplaneAPI.flagName, defaultCPAPI, fmt.Sprintf("URL for the Control Plane API ($%s)", calculateEnvVarName(confOptions.controlplaneAPI.viperKey)))
+	rootCmd.PersistentFlags().String(confOptions.controlplaneAPI.flagName, defaultCPAPI, fmt.Sprintf("URL for the Control Plane API ($%s)", CalculateEnvVarName(confOptions.controlplaneAPI.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.controlplaneAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneAPI.flagName)))
-	cobra.CheckErr(viper.BindEnv(confOptions.controlplaneAPI.viperKey, calculateEnvVarName(confOptions.controlplaneAPI.viperKey)))
+	cobra.CheckErr(viper.BindEnv(confOptions.controlplaneAPI.viperKey, CalculateEnvVarName(confOptions.controlplaneAPI.viperKey)))
 
 	// Custom CAs for the control plane
-	rootCmd.PersistentFlags().String(confOptions.controlplaneCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Control Plane API (optional) ($%s)", calculateEnvVarName(confOptions.controlplaneCA.viperKey)))
+	rootCmd.PersistentFlags().String(confOptions.controlplaneCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Control Plane API (optional) ($%s)", CalculateEnvVarName(confOptions.controlplaneCA.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.controlplaneCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.controlplaneCA.flagName)))
-	cobra.CheckErr(viper.BindEnv(confOptions.controlplaneCA.viperKey, calculateEnvVarName(confOptions.controlplaneCA.viperKey)))
+	cobra.CheckErr(viper.BindEnv(confOptions.controlplaneCA.viperKey, CalculateEnvVarName(confOptions.controlplaneCA.viperKey)))
 
-	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, defaultCASAPI, fmt.Sprintf("URL for the Artifacts Content Addressable Storage API ($%s)", calculateEnvVarName(confOptions.CASAPI.viperKey)))
+	rootCmd.PersistentFlags().String(confOptions.CASAPI.flagName, defaultCASAPI, fmt.Sprintf("URL for the Artifacts Content Addressable Storage API ($%s)", CalculateEnvVarName(confOptions.CASAPI.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.CASAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASAPI.flagName)))
-	cobra.CheckErr(viper.BindEnv(confOptions.CASAPI.viperKey, calculateEnvVarName(confOptions.CASAPI.viperKey)))
+	cobra.CheckErr(viper.BindEnv(confOptions.CASAPI.viperKey, CalculateEnvVarName(confOptions.CASAPI.viperKey)))
 
 	// Custom CAs for the CAS
-	rootCmd.PersistentFlags().String(confOptions.CASCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Artifacts CAS API (optional) ($%s)", calculateEnvVarName(confOptions.CASCA.viperKey)))
+	rootCmd.PersistentFlags().String(confOptions.CASCA.flagName, "", fmt.Sprintf("CUSTOM CA file for the Artifacts CAS API (optional) ($%s)", CalculateEnvVarName(confOptions.CASCA.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.CASCA.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.CASCA.flagName)))
-	cobra.CheckErr(viper.BindEnv(confOptions.CASCA.viperKey, calculateEnvVarName(confOptions.CASCA.viperKey)))
+	cobra.CheckErr(viper.BindEnv(confOptions.CASCA.viperKey, CalculateEnvVarName(confOptions.CASCA.viperKey)))
 
-	// Platform API configuration
-	rootCmd.PersistentFlags().String(confOptions.platformAPI.flagName, defaultPlatformAPI, fmt.Sprintf("URL for the Platform API ($%s)", calculateEnvVarName(confOptions.platformAPI.viperKey)))
-	cobra.CheckErr(viper.BindPFlag(confOptions.platformAPI.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.platformAPI.flagName)))
-	cobra.CheckErr(viper.BindEnv(confOptions.platformAPI.viperKey, calculateEnvVarName(confOptions.platformAPI.viperKey)))
-
-	rootCmd.PersistentFlags().BoolP("insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", calculateEnvVarName(confOptions.insecure.viperKey)))
+	rootCmd.PersistentFlags().BoolP("insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", CalculateEnvVarName(confOptions.insecure.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.insecure.viperKey, rootCmd.PersistentFlags().Lookup("insecure")))
-	cobra.CheckErr(viper.BindEnv(confOptions.insecure.viperKey, calculateEnvVarName(confOptions.insecure.viperKey)))
+	cobra.CheckErr(viper.BindEnv(confOptions.insecure.viperKey, CalculateEnvVarName(confOptions.insecure.viperKey)))
 
 	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "Enable debug/verbose logging mode")
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "Output format, valid options are json and table")
@@ -267,7 +261,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 //	viper.AutomaticEnv()
 //	viper.SetEnvPrefix(envPrefix)
 //	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
-func calculateEnvVarName(key string) string {
+func CalculateEnvVarName(key string) string {
 	// replace - with _ and . with _
 	s := strings.ReplaceAll(key, "-", "_")
 	s = strings.ReplaceAll(s, ".", "_")
@@ -339,7 +333,7 @@ func initConfigFile() {
 }
 
 func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token}
+	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token, OutputFormat: flagOutputFormat}
 }
 
 func cleanup(conn *grpc.ClientConn) error {
@@ -359,7 +353,7 @@ func cleanup(conn *grpc.ClientConn) error {
 // 2.2 Load the token from the environment variable and from the auth login config file
 // 2.3 if they both exist, we default to the user token
 // 2.4 otherwise to the one that's set
-func loadControlplaneAuthToken(cmd *cobra.Command) (string, bool, error) {
+func loadAuthToken(cmd *cobra.Command) (string, bool, error) {
 	// Load the APIToken from the env variable
 	apiTokenFromVar := os.Getenv(tokenEnvVarName)
 
@@ -411,10 +405,13 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 	}
 
 	cmdTracker := telemetry.NewCommandTracker(telemetryClient)
+	controlplaneURL, controlplaneHash := hashControlPlaneURL()
+
 	tags := telemetry.Tags{
-		"cli_version":      Version,
-		"cp_url_hash":      hashControlPlaneURL(),
-		"chainloop_source": "cli",
+		"cli_version":         Version,
+		"cp_url_hash":         controlplaneHash,
+		"cp_installation_url": controlplaneURL,
+		"chainloop_source":    "cli",
 	}
 
 	// It tries to extract the token from the context and add it to the tags. If it fails, it will ignore it.
@@ -422,6 +419,12 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 		tags["token_type"] = authInfo.TokenType.String()
 		tags["user_id"] = authInfo.ID
 		tags["org_id"] = authInfo.OrgID
+	}
+
+	// Add organization name if available
+	orgName := viper.GetString(confOptions.organization.viperKey)
+	if orgName != "" {
+		tags["organization_name"] = orgName
 	}
 
 	if err = cmdTracker.Track(executedCmd.Context(), extractCmdLineFromCommand(executedCmd), tags); err != nil {
@@ -447,10 +450,9 @@ func extractCmdLineFromCommand(cmd *cobra.Command) string {
 }
 
 // hashControlPlaneURL returns a hash of the control plane URL
-func hashControlPlaneURL() string {
-	url := viper.GetString("control-plane.API")
-
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
+func hashControlPlaneURL() (url string, hash string) {
+	url = viper.GetString(confOptions.controlplaneAPI.viperKey)
+	return url, fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
 }
 
 func apiInsecure() bool {

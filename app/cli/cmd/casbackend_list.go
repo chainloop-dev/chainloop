@@ -21,7 +21,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
@@ -33,12 +34,12 @@ func newCASBackendListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List CAS Backends from your organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewCASBackendList(actionOpts).Run()
+			res, err := action.NewCASBackendList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, casBackendListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, casBackendListTableOutput)
 		},
 	}
 
@@ -56,7 +57,7 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 		return nil
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	header := table.Row{"Name", "Location", "Provider", "Description", "Limits", "Default", "Status"}
 	if full {
 		header = append(header, "Created At", "Validated At")

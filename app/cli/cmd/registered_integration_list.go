@@ -20,7 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -31,12 +32,12 @@ func newRegisteredIntegrationListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List registered integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewRegisteredIntegrationList(actionOpts).Run()
+			res, err := action.NewRegisteredIntegrationList(ActionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, registeredIntegrationListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, registeredIntegrationListTableOutput)
 		},
 	}
 
@@ -56,7 +57,7 @@ func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationI
 		fmt.Println("Integrations registered and configured in your organization")
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"Name", "Description", "Kind", "Config", "Created At"})
 	for _, i := range items {
 		var options []string

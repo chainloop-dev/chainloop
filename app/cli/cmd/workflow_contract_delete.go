@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ func newWorkflowContractDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a contract",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewWorkflowContractDelete(actionOpts).Run(name); err != nil {
+			if err := action.NewWorkflowContractDelete(ActionOpts).Run(name); err != nil {
 				return err
 			}
 			logger.Info().Msg("contract deleted!")

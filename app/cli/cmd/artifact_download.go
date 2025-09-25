@@ -18,7 +18,7 @@ package cmd
 import (
 	"errors"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -39,7 +39,7 @@ func newArtifactDownloadCmd() *cobra.Command {
 			}
 
 			// Retrieve temporary credentials for uploading
-			artifactCASConn, err = wrappedArtifactConn(actionOpts.CPConnection,
+			artifactCASConn, err = wrappedArtifactConn(ActionOpts.CPConnection,
 				pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER, digest)
 			if err != nil {
 				return err
@@ -49,7 +49,7 @@ func newArtifactDownloadCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := &action.ArtifactDownloadOpts{
-				ActionsOpts:      actionOpts,
+				ActionsOpts:      ActionOpts,
 				ArtifactsCASConn: artifactCASConn,
 				Stdout:           cmd.OutOrStdout(),
 			}

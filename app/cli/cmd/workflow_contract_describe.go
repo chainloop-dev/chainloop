@@ -23,7 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +39,7 @@ func newWorkflowContractDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "Describe the information of the contract",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowContractDescribe(actionOpts).Run(name, revision)
+			res, err := action.NewWorkflowContractDescribe(ActionOpts).Run(name, revision)
 			if err != nil {
 				return err
 			}
@@ -64,8 +65,8 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 		logger.Info().Msg("To download the contract, run the command with the \"--output schema\" option")
 	}
 
-	err := encodeOutput(run, contractDescribeTableOutput)
-	if err == nil || !errors.Is(err, ErrOutputFormatNotImplemented) {
+	err := output.EncodeOutput(flagOutputFormat, run, contractDescribeTableOutput)
+	if err == nil || !errors.Is(err, output.ErrOutputFormatNotImplemented) {
 		return err
 	}
 
@@ -74,7 +75,7 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 		fmt.Fprintln(os.Stdout, run.Revision.RawBody.Body)
 		return nil
 	default:
-		return ErrOutputFormatNotImplemented
+		return output.ErrOutputFormatNotImplemented
 	}
 }
 
@@ -82,7 +83,7 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	revision := contractWithVersion.Revision
 
 	c := contractWithVersion.Contract
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.SetTitle("Contract")
 	t.AppendRow(table.Row{"Name", c.Name})
 	t.AppendSeparator()
@@ -97,7 +98,7 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	t.AppendRow(table.Row{"Revision Created At", revision.CreatedAt.Format(time.RFC822)})
 	t.Render()
 
-	vt := newTableWriter()
+	vt := output.NewTableWriter()
 	vt.AppendRow(table.Row{revision.RawBody.Body})
 	vt.Render()
 

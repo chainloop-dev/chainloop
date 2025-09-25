@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -54,7 +54,7 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
 				Directory:   directory,
 			}
 
-			policyInit, err := action.NewPolicyInit(opts, actionOpts)
+			policyInit, err := action.NewPolicyInit(opts, ActionOpts)
 			if err != nil {
 				return fmt.Errorf("failed to initialize policy: %w", err)
 			}

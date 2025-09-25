@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ func newOrganizationCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			org, err := action.NewOrgCreate(actionOpts).Run(context.Background(), name)
+			org, err := action.NewOrgCreate(ActionOpts).Run(context.Background(), name)
 			if err != nil {
 				return err
 			}

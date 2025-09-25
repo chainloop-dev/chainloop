@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +39,7 @@ func newOrganizationDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			if err := action.NewOrganizationDelete(actionOpts).Run(ctx, orgName); err != nil {
+			if err := action.NewOrganizationDelete(ActionOpts).Run(ctx, orgName); err != nil {
 				return fmt.Errorf("deleting organization: %w", err)
 			}
 

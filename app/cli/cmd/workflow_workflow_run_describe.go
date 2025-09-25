@@ -24,7 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -67,7 +68,7 @@ func newWorkflowWorkflowRunDescribeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewWorkflowRunDescribe(actionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
+			res, err := action.NewWorkflowRunDescribe(ActionOpts).Run(context.Background(), &action.WorkflowRunDescribeOpts{
 				RunID:         runID,
 				Digest:        attestationDigest,
 				PublicKeyRef:  publicKey,
@@ -107,7 +108,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	wf := run.Workflow
 	wr := run.WorkflowRun
 
-	gt := newTableWriter()
+	gt := output.NewTableWriter()
 	gt.SetTitle("Workflow")
 	gt.AppendRow(table.Row{"ID", wf.ID})
 	gt.AppendRow(table.Row{"Name", wf.Name})
@@ -181,7 +182,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 	// Materials
 	materials := att.Materials
 	if len(materials) > 0 {
-		mt := newTableWriter()
+		mt := output.NewTableWriter()
 		mt.SetTitle("Materials")
 
 		for _, m := range materials {
@@ -225,7 +226,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 
 	envVars := att.EnvVars
 	if len(envVars) > 0 {
-		mt := newTableWriter()
+		mt := output.NewTableWriter()
 		mt.SetTitle("Environment Variables")
 
 		header := table.Row{"Name", "Value"}
@@ -272,14 +273,14 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
 
 func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) error {
 	// Try to encode as a table or json
-	err := encodeOutput(run, workflowRunDescribeTableOutput)
+	err := output.EncodeOutput(flagOutputFormat, run, workflowRunDescribeTableOutput)
 	// It was correctly encoded, we are done
 	if err == nil {
 		return nil
 	}
 
 	// It could not be encoded but for a reason that's not because it was a custom format
-	if !errors.Is(err, ErrOutputFormatNotImplemented) {
+	if !errors.Is(err, output.ErrOutputFormatNotImplemented) {
 		return err
 	}
 
@@ -291,7 +292,7 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 
 	switch flagOutputFormat {
 	case formatStatement:
-		return encodeJSON(run.Attestation.Statement())
+		return output.EncodeJSON(run.Attestation.Statement())
 	case formatAttestation:
 		if run.Attestation.Bundle != nil {
 			var bundle protobundle.Bundle
@@ -299,14 +300,14 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 			if err != nil {
 				return fmt.Errorf("unmarshaling attestation: %w", err)
 			}
-			return encodeProtoJSON(&bundle)
+			return output.EncodeProtoJSON(&bundle)
 		} else {
-			return encodeJSON(run.Attestation.Envelope)
+			return output.EncodeJSON(run.Attestation.Envelope)
 		}
 	case formatPayloadPAE:
 		return encodePAE(run, writer)
 	default:
-		return ErrOutputFormatNotImplemented
+		return output.ErrOutputFormatNotImplemented
 	}
 }
 

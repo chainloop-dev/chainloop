@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +41,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 				duration = &expiresIn
 			}
 
-			res, err := action.NewAPITokenCreate(actionOpts).Run(context.Background(), name, description, projectName, duration)
+			res, err := action.NewAPITokenCreate(ActionOpts).Run(context.Background(), name, description, projectName, duration)
 			if err != nil {
 				return fmt.Errorf("creating API token: %w", err)
 			}
@@ -50,7 +51,7 @@ func newAPITokenCreateCmd() *cobra.Command {
 				return nil
 			}
 
-			return encodeOutput(res, apiTokenItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, apiTokenItemTableOutput)
 		},
 	}
 
@@ -76,7 +77,7 @@ func apiTokenListTableOutput(tokens []*action.APITokenItem) error {
 		return nil
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 
 	t.AppendHeader(table.Row{"ID", "Name", "Scope", "Description", "Created At", "Expires At", "Revoked At", "Last used at"})
 	for _, p := range tokens {

@@ -16,7 +16,7 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ func newWorkflowDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete an existing workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := action.NewWorkflowDelete(actionOpts).Run(name, projectName)
+			err := action.NewWorkflowDelete(ActionOpts).Run(name, projectName)
 			if err == nil {
 				logger.Info().Msg("Workflow deleted!")
 			}

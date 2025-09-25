@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ func newAPITokenRevokeCmd() *cobra.Command {
 		Use:   "revoke",
 		Short: "revoke API token",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewAPITokenRevoke(actionOpts).Run(context.Background(), id); err != nil {
+			if err := action.NewAPITokenRevoke(ActionOpts).Run(context.Background(), id); err != nil {
 				return fmt.Errorf("revoking API token: %w", err)
 			}
 

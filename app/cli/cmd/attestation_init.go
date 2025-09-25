@@ -19,7 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -71,7 +72,7 @@ func newAttestationInitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
-					ActionsOpts:    actionOpts,
+					ActionsOpts:    ActionOpts,
 					DryRun:         attestationDryRun,
 					Force:          force,
 					UseRemoteState: useAttestationRemoteState,
@@ -111,7 +112,7 @@ func newAttestationInitCmd() *cobra.Command {
 			logger.Info().Msg("Attestation initialized! now you can check its status or add materials to it")
 
 			// Show the status information
-			statusAction, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: actionOpts, UseAttestationRemoteState: useAttestationRemoteState, LocalStatePath: attestationLocalStatePath})
+			statusAction, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: ActionOpts, UseAttestationRemoteState: useAttestationRemoteState, LocalStatePath: attestationLocalStatePath})
 			if err != nil {
 				return newGracefulError(err)
 			}
@@ -129,7 +130,7 @@ func newAttestationInitCmd() *cobra.Command {
 				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
 			}
 
-			return encodeOutput(res, fullStatusTable)
+			return output.EncodeOutput(flagOutputFormat, res, fullStatusTable)
 		}}
 
 	// This option is only useful for local-based attestation states

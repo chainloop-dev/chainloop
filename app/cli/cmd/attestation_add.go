@@ -26,7 +26,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
 )
@@ -67,7 +68,7 @@ func newAttestationAddCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
-					ActionsOpts:        actionOpts,
+					ActionsOpts:        ActionOpts,
 					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
 					CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
 					ConnectionInsecure: apiInsecure(),
@@ -118,7 +119,7 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					return encodeOutput(resp, func(s *action.AttestationStatusMaterial) error {
+					return output.EncodeOutput(flagOutputFormat, resp, func(s *action.AttestationStatusMaterial) error {
 						return displayMaterialInfo(s, policies[resp.Name])
 					})
 				},
@@ -168,7 +169,7 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 		return nil
 	}
 
-	mt := newTableWriter()
+	mt := output.NewTableWriter()
 
 	mt.AppendRow(table.Row{"Name", status.Material.Name})
 	mt.AppendRow(table.Row{"Type", status.Material.Type})

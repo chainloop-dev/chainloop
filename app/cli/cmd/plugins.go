@@ -22,7 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -119,7 +120,7 @@ func createPluginCommand(_ *cobra.Command, plugin *plugins.LoadedPlugin, cmdInfo
 			}
 
 			// execute plugin command using the action pattern
-			result, err := action.NewPluginExec(actionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, config)
+			result, err := action.NewPluginExec(ActionOpts, pluginManager).Run(ctx, plugin.Metadata.Name, cmdInfo.Name, config)
 			if err != nil {
 				return fmt.Errorf("failed to execute plugin command: %w", err)
 			}
@@ -169,12 +170,12 @@ func newPluginListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List installed plugins",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			result, err := action.NewPluginList(actionOpts, pluginManager).Run(context.Background())
+			result, err := action.NewPluginList(ActionOpts, pluginManager).Run(context.Background())
 			if err != nil {
 				return err
 			}
 
-			if flagOutputFormat == formatJSON {
+			if flagOutputFormat == output.FormatJSON {
 				type pluginInfo struct {
 					Name        string `json:"name"`
 					Version     string `json:"version"`
@@ -192,7 +193,7 @@ func newPluginListCmd() *cobra.Command {
 					})
 				}
 
-				return encodeJSON(items)
+				return output.EncodeJSON(items)
 			}
 
 			pluginListTableOutput(result.Plugins)
@@ -214,12 +215,12 @@ func newPluginDescribeCmd() *cobra.Command {
 				return fmt.Errorf("plugin name is required")
 			}
 
-			result, err := action.NewPluginDescribe(actionOpts, pluginManager).Run(context.Background(), pluginName)
+			result, err := action.NewPluginDescribe(ActionOpts, pluginManager).Run(context.Background(), pluginName)
 			if err != nil {
 				return err
 			}
 
-			if flagOutputFormat == formatJSON {
+			if flagOutputFormat == output.FormatJSON {
 				type pluginDetail struct {
 					Name        string                       `json:"name"`
 					Version     string                       `json:"version"`
@@ -236,7 +237,7 @@ func newPluginDescribeCmd() *cobra.Command {
 					Commands:    result.Plugin.Metadata.Commands,
 				}
 
-				return encodeJSON(detail)
+				return output.EncodeJSON(detail)
 			}
 
 			pluginInfoTableOutput(result.Plugin)
@@ -267,7 +268,7 @@ func newPluginInstallCmd() *cobra.Command {
 				Location: location,
 			}
 
-			result, err := action.NewPluginInstall(actionOpts, pluginManager).Run(ctx, opts)
+			result, err := action.NewPluginInstall(ActionOpts, pluginManager).Run(ctx, opts)
 			if err != nil {
 				return fmt.Errorf("failed to install plugin: %w", err)
 			}
@@ -363,7 +364,7 @@ func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
 		return
 	}
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"Name", "Version", "Description", "Commands"})
 
 	for name, plugin := range plugins {
@@ -380,7 +381,7 @@ func pluginListTableOutput(plugins map[string]*plugins.LoadedPlugin) {
 }
 
 func pluginInfoTableOutput(plugin *plugins.LoadedPlugin) {
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.SetTitle(fmt.Sprintf("Plugin: %s", plugin.Metadata.Name))
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Version", plugin.Metadata.Version})
@@ -411,7 +412,7 @@ func pluginInfoFlagsTableOutput(plugin *plugins.LoadedPlugin) {
 	}
 
 	for _, cmd := range plugin.Metadata.Commands {
-		t := newTableWriter()
+		t := output.NewTableWriter()
 		t.SetTitle(fmt.Sprintf("Command: %s", cmd.Name))
 		t.AppendSeparator()
 

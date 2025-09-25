@@ -16,7 +16,8 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,7 @@ func newCASBackendAddOCICmd() *cobra.Command {
 			cobra.CheckErr(err)
 
 			if isDefault {
-				if confirmed, err := confirmDefaultCASBackendOverride(actionOpts, ""); err != nil {
+				if confirmed, err := confirmDefaultCASBackendOverride(ActionOpts, ""); err != nil {
 					return err
 				} else if !confirmed {
 					log.Info("Aborting...")
@@ -58,14 +59,14 @@ func newCASBackendAddOCICmd() *cobra.Command {
 				Default: isDefault,
 			}
 
-			res, err := action.NewCASBackendAdd(actionOpts).Run(opts)
+			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)
 			if err != nil {
 				return err
 			} else if res == nil {
 				return nil
 			}
 
-			return encodeOutput(res, casBackendItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, casBackendItemTableOutput)
 		},
 	}
 

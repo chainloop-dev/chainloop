@@ -18,7 +18,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -41,12 +42,12 @@ func newOrganizationMemberUpdateCmd() *cobra.Command {
 				return fmt.Errorf("role %q is not available. Available roles are %s", role, action.AvailableRoles)
 			}
 
-			res, err := action.NewMembershipUpdate(actionOpts).ChangeRole(cmd.Context(), membershipID, role)
+			res, err := action.NewMembershipUpdate(ActionOpts).ChangeRole(cmd.Context(), membershipID, role)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(&action.ListMembershipResult{Memberships: []*action.MembershipItem{res}}, orgMembershipsTableOutput)
+			return output.EncodeOutput(flagOutputFormat, &action.ListMembershipResult{Memberships: []*action.MembershipItem{res}}, orgMembershipsTableOutput)
 		},
 	}
 

@@ -20,7 +20,8 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -78,12 +79,12 @@ func newOrganizationMemberList() *cobra.Command {
 				opts.Role = &role
 			}
 
-			res, err := action.NewMembershipList(actionOpts).ListMembers(cmd.Context(), paginationOpts.Page, paginationOpts.Limit, opts)
+			res, err := action.NewMembershipList(ActionOpts).ListMembers(cmd.Context(), paginationOpts.Page, paginationOpts.Limit, opts)
 			if err != nil {
 				return err
 			}
 
-			if err := encodeOutput(res, orgMembershipsTableOutput); err != nil {
+			if err := output.EncodeOutput(flagOutputFormat, res, orgMembershipsTableOutput); err != nil {
 				return err
 			}
 
@@ -112,7 +113,7 @@ func newOrganizationMemberList() *cobra.Command {
 }
 
 func orgMembershipsTableOutput(res *action.ListMembershipResult) error {
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"ID", "Email", "Role", "Joined At"})
 
 	for _, m := range res.Memberships {

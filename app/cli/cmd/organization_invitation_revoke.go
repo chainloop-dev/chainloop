@@ -18,7 +18,7 @@ package cmd
 import (
 	"context"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ func newOrganizationInvitationRevokeCmd() *cobra.Command {
 		Use:   "revoke",
 		Short: "Revoke a pending invitation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := action.NewOrgInvitationRevoke(actionOpts).Run(context.Background(), invitationID); err != nil {
+			if err := action.NewOrgInvitationRevoke(ActionOpts).Run(context.Background(), invitationID); err != nil {
 				return err
 			}
 

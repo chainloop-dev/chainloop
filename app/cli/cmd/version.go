@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/spf13/cobra"
 )
@@ -49,15 +50,15 @@ func NewVersionCmd() *cobra.Command {
 				Server: "unknown",
 			}
 
-			if actionOpts.CPConnection != nil {
-				res, err := pb.NewStatusServiceClient(actionOpts.CPConnection).Infoz(context.Background(), &pb.InfozRequest{})
+			if ActionOpts.CPConnection != nil {
+				res, err := pb.NewStatusServiceClient(ActionOpts.CPConnection).Infoz(context.Background(), &pb.InfozRequest{})
 				if err == nil {
 					version.Server = res.Version
 				}
 			}
 
-			if flagOutputFormat == formatJSON {
-				return encodeJSON(version)
+			if flagOutputFormat == output.FormatJSON {
+				return output.EncodeJSON(version)
 			}
 
 			fmt.Printf("Client Version: %s\n", version.Client)

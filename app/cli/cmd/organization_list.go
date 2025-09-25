@@ -19,7 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -33,12 +34,12 @@ func newOrganizationList() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List the organizations this user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewMembershipList(actionOpts).ListOrgs(cmd.Context())
+			res, err := action.NewMembershipList(ActionOpts).ListOrgs(cmd.Context())
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, orgMembershipTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, orgMembershipTableOutput)
 		},
 	}
 
@@ -54,7 +55,7 @@ func orgMembershipTableOutput(items []*action.MembershipItem) error {
 	// Get the current organization from viper configuration
 	currentOrg := viper.GetString(confOptions.organization.viperKey)
 
-	t := newTableWriter()
+	t := output.NewTableWriter()
 	t.AppendHeader(table.Row{"Name", "Current", "Default", "Role", "Default Policy strategy", "Joined At"})
 
 	for _, i := range items {

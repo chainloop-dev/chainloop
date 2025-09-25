@@ -16,7 +16,8 @@
 package cmd
 
 import (
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
@@ -27,12 +28,12 @@ func newWorkflowDescribeCmd() *cobra.Command {
 		Use:   "describe",
 		Short: "Describe an existing workflow",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			wf, err := action.NewWorkflowDescribe(actionOpts).Run(cmd.Context(), workflowName, projectName)
+			wf, err := action.NewWorkflowDescribe(ActionOpts).Run(cmd.Context(), workflowName, projectName)
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(wf, workflowItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, wf, workflowItemTableOutput)
 		},
 	}
 

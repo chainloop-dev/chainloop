@@ -19,7 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
@@ -30,12 +31,12 @@ func newOrganizationDescribeCmd() *cobra.Command {
 		Aliases: []string{"current-context"},
 		Short:   "Describe the current organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewConfigCurrentContext(actionOpts).Run()
+			res, err := action.NewConfigCurrentContext(ActionOpts).Run()
 			if err != nil {
 				return err
 			}
 
-			return encodeOutput(res, contextTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, contextTableOutput)
 		},
 	}
 
@@ -43,7 +44,7 @@ func newOrganizationDescribeCmd() *cobra.Command {
 }
 
 func contextTableOutput(config *action.ConfigContextItem) error {
-	gt := newTableWriter()
+	gt := output.NewTableWriter()
 	gt.SetTitle("Current Context")
 	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.PrintUserProfileWithEmail()})
 	gt.AppendSeparator()

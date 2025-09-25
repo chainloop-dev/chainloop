@@ -24,7 +24,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/action"
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 )
 
 func newAttestationPushCmd() *cobra.Command {
@@ -67,7 +68,7 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("getting executable information: %w", err)
 			}
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
-				ActionsOpts: actionOpts, KeyPath: pkPath, BundlePath: bundle,
+				ActionsOpts: ActionOpts, KeyPath: pkPath, BundlePath: bundle,
 				CLIVersion: info.Version, CLIDigest: info.Digest,
 				LocalStatePath: attestationLocalStatePath,
 				SignServerOpts: &action.SignServerOpts{
@@ -106,7 +107,7 @@ func newAttestationPushCmd() *cobra.Command {
 			res.Status.Digest = res.Digest
 
 			// If we are returning the json format, we also want to render the attestation table as one property so it can also be consumed
-			if flagOutputFormat == formatJSON {
+			if flagOutputFormat == output.FormatJSON {
 				// Render the attestation status to a string
 				buf := &bytes.Buffer{}
 				if err := fullStatusTableWithWriter(res.Status, buf); err != nil {
@@ -117,7 +118,7 @@ func newAttestationPushCmd() *cobra.Command {
 			}
 
 			// In TABLE format, we render the attestation status
-			if err := encodeOutput(res.Status, fullStatusTable); err != nil {
+			if err := output.EncodeOutput(flagOutputFormat, res.Status, fullStatusTable); err != nil {
 				return fmt.Errorf("failed to render output: %w", err)
 			}
 
