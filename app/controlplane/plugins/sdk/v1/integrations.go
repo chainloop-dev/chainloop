@@ -67,46 +67,60 @@ type IntegrationBase struct {
 	attachmentJSONSchema []byte
 }
 
+// IntegrationBaseOptions holds the options for creating a new IntegrationBase
+type IntegrationBaseOptions struct {
+	ID          string
+	Name        string
+	Version     string
+	Description string
+	Kinds       []string
+	Schema      *InputSchema
+}
+
 // NewIntegrationBase helper to create a new IntegrationBase
-func NewIntegrationBase(id, name, version, description string, kinds []string, schema *InputSchema) (*IntegrationBase, error) {
+func NewIntegrationBase(opts *IntegrationBaseOptions) (*IntegrationBase, error) {
 	var (
 		registrationJSONSchema, attachmentJSONSchema []byte
 		err                                          error
 	)
 
+	if opts == nil {
+		return nil, fmt.Errorf("options are required")
+	}
+
 	// Validate basic metadata
-	if id == "" {
+	if opts.ID == "" {
 		return nil, fmt.Errorf("id is required")
 	}
 
-	if version == "" {
+	if opts.Version == "" {
 		return nil, fmt.Errorf("version is required")
 	}
 
-	if len(kinds) == 0 {
+	if len(opts.Kinds) == 0 {
 		return nil, fmt.Errorf("kinds is required")
 	}
 
-	if schema == nil {
+	if opts.Schema == nil {
 		return nil, fmt.Errorf("input schema is required")
 	}
 
 	// Generate JSON schemas
-	registrationJSONSchema, err = GenerateJSONSchema(schema.Registration)
+	registrationJSONSchema, err = GenerateJSONSchema(opts.Schema.Registration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate registration JSON schema: %w", err)
 	}
 
-	attachmentJSONSchema, err = GenerateJSONSchema(schema.Attachment)
+	attachmentJSONSchema, err = GenerateJSONSchema(opts.Schema.Attachment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate attachment JSON schema: %w", err)
 	}
 	return &IntegrationBase{
-		ID:                     id,
-		Name:                   name,
-		Version:                version,
-		Description:            description,
-		Kinds:                  kinds,
+		ID:                     opts.ID,
+		Name:                   opts.Name,
+		Version:                opts.Version,
+		Description:            opts.Description,
+		Kinds:                  opts.Kinds,
 		registrationJSONSchema: registrationJSONSchema,
 		attachmentJSONSchema:   attachmentJSONSchema,
 	}, nil

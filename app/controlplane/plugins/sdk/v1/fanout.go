@@ -119,13 +119,20 @@ func WithInputMaterial(materialType schemaapi.CraftingSchema_Material_MaterialTy
 }
 
 type NewParams struct {
-	ID, Name, Version, Description string
-	Logger                         log.Logger
-	InputSchema                    *InputSchema
+	ID          string
+	Name        string
+	Version     string
+	Description string
+	Logger      log.Logger
+	InputSchema *InputSchema
 }
 
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
-	base, err := NewIntegrationBase(p.ID, p.Name, p.Version, p.Description, []string{IntegrationKindFanOut}, p.InputSchema)
+	base, err := NewIntegrationBase(
+		&IntegrationBaseOptions{
+			p.ID, p.Name, p.Version, p.Description, []string{IntegrationKindFanOut}, p.InputSchema,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -195,15 +202,15 @@ func validateInputs(c *FanOutIntegration) error {
 // Methods to be implemented by the specific integration
 
 func (i *FanOutIntegration) Register(_ context.Context, _ *RegistrationRequest) (*RegistrationResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, fmt.Errorf("method Register not implemented")
 }
 
 func (i *FanOutIntegration) Attach(_ context.Context, _ *AttachmentRequest) (*AttachmentResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, fmt.Errorf("method Attach not implemented")
 }
 
 func (i *FanOutIntegration) Execute(_ context.Context, _ *ExecutionRequest) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("method Execute not implemented")
 }
 
 // List of loaded integrations
