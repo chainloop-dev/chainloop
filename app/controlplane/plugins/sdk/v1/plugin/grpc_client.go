@@ -50,13 +50,13 @@ func (c *fanOutGRPCClient) GetSubscribedMaterials() []*sdk.InputMaterial {
 	res := make([]*sdk.InputMaterial, 0)
 	desc, err := c.client.Describe(context.Background(), &api.DescribeRequest{})
 	if err != nil {
-		return nil
+		return res
 	}
 
 	for _, m := range desc.SubscribedMaterials {
 		materialType, ok := schemaapi.CraftingSchema_Material_MaterialType_value[m]
 		if !ok {
-			return nil
+			return res
 		}
 
 		res = append(res, &sdk.InputMaterial{Type: schemaapi.CraftingSchema_Material_MaterialType(materialType)})
