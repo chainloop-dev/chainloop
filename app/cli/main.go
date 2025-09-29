@@ -65,13 +65,13 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		var gs grpcstatus
 		if errors.As(err, &gs) {
 			knownCodes := []codes.Code{
-				codes.AlreadyExists, codes.InvalidArgument, codes.NotFound, codes.PermissionDenied,
+				codes.AlreadyExists, codes.InvalidArgument, codes.NotFound, codes.PermissionDenied, codes.Unauthenticated,
 			}
 
-			grpcStatus := gs.GRPCStatus()
+			st = gs.GRPCStatus()
 			for _, code := range knownCodes {
 				if st.Code() == code {
-					msg = grpcStatus.Message()
+					msg = st.Message()
 					break
 				}
 			}

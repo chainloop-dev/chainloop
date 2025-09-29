@@ -310,7 +310,7 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 							return handler(ctx, req)
 						}
 
-						return nil, fmt.Errorf("couldn't match JWT provider: %w", err)
+						return nil, err
 					}
 
 					// When reached this point, one match has happened meaning the auth context
