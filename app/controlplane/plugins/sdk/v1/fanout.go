@@ -125,7 +125,7 @@ type NewParams struct {
 }
 
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
-	base, err := NewIntegrationBase(p.ID, p.Name, p.Version, p.Description, IntegrationKindFanOut, p.InputSchema)
+	base, err := NewIntegrationBase(p.ID, p.Name, p.Version, p.Description, []string{IntegrationKindFanOut}, p.InputSchema)
 	if err != nil {
 		return nil, err
 	}

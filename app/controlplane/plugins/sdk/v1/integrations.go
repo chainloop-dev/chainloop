@@ -55,8 +55,8 @@ type IntegrationBase struct {
 	Version string
 	// Optional description
 	Description string
-	// kind of integration (e.g. "notification", "task-manager", "fanout", etc.)
-	Kind string
+	// kinds of integration (e.g. "notification", "task-manager", "fanout", etc.)
+	Kinds []string
 
 	// Rendered schema definitions
 	// Generated from the schema definitions using https://github.com/invopop/jsonschema
@@ -68,7 +68,7 @@ type IntegrationBase struct {
 }
 
 // NewIntegrationBase helper to create a new IntegrationBase
-func NewIntegrationBase(id, name, version, description, kind string, schema *InputSchema) (*IntegrationBase, error) {
+func NewIntegrationBase(id, name, version, description string, kinds []string, schema *InputSchema) (*IntegrationBase, error) {
 	var (
 		registrationJSONSchema, attachmentJSONSchema []byte
 		err                                          error
@@ -83,8 +83,8 @@ func NewIntegrationBase(id, name, version, description, kind string, schema *Inp
 		return nil, fmt.Errorf("version is required")
 	}
 
-	if kind == "" {
-		return nil, fmt.Errorf("kind is required")
+	if len(kinds) == 0 {
+		return nil, fmt.Errorf("kinds is required")
 	}
 
 	if schema == nil {
@@ -106,7 +106,7 @@ func NewIntegrationBase(id, name, version, description, kind string, schema *Inp
 		Name:                   name,
 		Version:                version,
 		Description:            description,
-		Kind:                   kind,
+		Kinds:                  kinds,
 		registrationJSONSchema: registrationJSONSchema,
 		attachmentJSONSchema:   attachmentJSONSchema,
 	}, nil
@@ -118,7 +118,7 @@ func (i *IntegrationBase) Describe() *IntegrationInfo {
 		Name:                   i.Name,
 		Version:                i.Version,
 		Description:            i.Description,
-		Kind:                   i.Kind,
+		Kinds:                  i.Kinds,
 		RegistrationJSONSchema: i.registrationJSONSchema,
 		AttachmentJSONSchema:   i.attachmentJSONSchema,
 	}
@@ -133,8 +133,8 @@ type IntegrationInfo struct {
 	Version string
 	// Integration description
 	Description string
-	// Kind of integration (e.g. "notification", "task-manager", "fanout", etc.)
-	Kind string
+	// Kinds of integration (e.g. "notification", "task-manager", "fanout", etc.)
+	Kinds []string
 	// Schemas in JSON schema format
 	RegistrationJSONSchema, AttachmentJSONSchema []byte
 }
