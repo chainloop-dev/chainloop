@@ -119,20 +119,17 @@ func (b *fanOutGRPCServer) Execute(ctx context.Context, req *api.ExecuteRequest)
 	}
 
 	opts := &sdk.ExecutionRequest{
-		RegistrationInfo: registrationInfo,
-		AttachmentInfo:   attachmentInfo,
-	}
-
-	materials := make([]*sdk.ExecuteMaterial, 0, len(req.Materials))
-
-	for _, material := range req.Materials {
-		materials = append(materials, api.MaterialProtoToSDK(material))
-	}
-
-	opts.Payload = &sdk.FanOutPayload{
+		RegistrationInfo:  registrationInfo,
+		AttachmentInfo:    attachmentInfo,
 		ChainloopMetadata: api.MetadataProtoToSDK(req.Metadata),
-		Attestation:       attestationInput,
-		Materials:         materials,
+		Input: &sdk.ExecuteInput{
+			Attestation: attestationInput,
+			Materials:   make([]*sdk.ExecuteMaterial, 0),
+		},
+	}
+	
+	for _, material := range req.Materials {
+		opts.Input.Materials = append(opts.Input.Materials, api.MaterialProtoToSDK(material))
 	}
 
 	return &api.ExecuteResponse{}, b.impl.Execute(ctx, opts)

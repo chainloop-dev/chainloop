@@ -126,8 +126,6 @@ func (i *Integration) Attach(_ context.Context, _ *sdk.AttachmentRequest) (*sdk.
 // Execute will be instantiated when either an attestation or a material has been received
 // It's up to the plugin builder to differentiate between inputs
 func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
-	fanoutRequest := req.Payload.(*sdk.FanOutPayload)
-
 	// Extract registration and attachment configuration if needed
 	var registrationConfig *registrationState
 	if err := sdk.FromConfig(req.RegistrationInfo.Configuration, &registrationConfig); err != nil {
@@ -149,20 +147,20 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 	}
 
 	// 1 - Upload the attestation
-	envelopeJSON, err := json.Marshal(fanoutRequest.Attestation.Envelope)
+	envelopeJSON, err := json.Marshal(req.Input.Attestation.Envelope)
 	if err != nil {
 		return fmt.Errorf("marshalling attestation: %w", err)
 	}
 
-	filename := uniqueFilename(pathPrefix, "attestation.json", fanoutRequest.Attestation.Hash.Hex)
-	if err := uploadToBucket(ctx, bucket, filename, envelopeJSON, fanoutRequest.ChainloopMetadata, i.Logger); err != nil {
+	filename := uniqueFilename(pathPrefix, "attestation.json", req.Input.Attestation.Hash.Hex)
+	if err := uploadToBucket(ctx, bucket, filename, envelopeJSON, req.ChainloopMetadata, i.Logger); err != nil {
 		return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 	}
 
 	// 2 - Upload all the materials, in our case they are SBOMs
-	for _, sbom := range fanoutRequest.Materials {
+	for _, sbom := range req.Input.Materials {
 		filename := uniqueFilename(pathPrefix, sbom.Filename, sbom.Hash.Hex)
-		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, fanoutRequest.ChainloopMetadata, i.Logger); err != nil {
+		if err := uploadToBucket(ctx, bucket, filename, sbom.Content, req.ChainloopMetadata, i.Logger); err != nil {
 			return fmt.Errorf("uploading the SBOM to the bucket: %w", err)
 		}
 	}

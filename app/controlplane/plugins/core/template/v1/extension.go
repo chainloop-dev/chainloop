@@ -152,10 +152,8 @@ func (i *Integration) Attach(_ context.Context, req *sdk.AttachmentRequest) (*sd
 func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) error {
 	i.Logger.Info("execution requested")
 
-	fanoutReq := req.Payload.(*sdk.FanOutPayload)
-
 	// You can receive more than one material
-	for _, sbom := range fanoutReq.Materials {
+	for _, sbom := range req.Input.Materials {
 		// Example of custom validation
 		if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
 			return fmt.Errorf("running validation: %w", err)

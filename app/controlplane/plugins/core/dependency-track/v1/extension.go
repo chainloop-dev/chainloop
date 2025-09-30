@@ -164,10 +164,9 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 // Send the SBOMs to the configured Dependency Track instance
 func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
 	var errs error
-	fanoutReq := req.Payload.(*sdk.FanOutPayload)
 
 	// Iterate over all SBOMs
-	for _, sbom := range fanoutReq.Materials {
+	for _, sbom := range req.Input.Materials {
 		if err := doExecute(ctx, req, sbom, i.Logger); err != nil {
 			errs = errors.Join(errs, err)
 			continue
@@ -183,7 +182,6 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 
 func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.ExecuteMaterial, l *log.Helper) error {
 	l.Info("execution requested")
-	fanoutReq := req.Payload.(*sdk.FanOutPayload)
 
 	// Make sure it's an SBOM and all the required configuration has been received
 	if err := validateExecuteOpts(sbom, req.RegistrationInfo, req.AttachmentInfo); err != nil {
@@ -204,7 +202,7 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 
 	// Check if upload filter is specified and if it matches annotations
 	if attachmentConfig.Filter != "" {
-		attestationAnnotations := fanoutReq.Attestation.Predicate.GetAnnotations()
+		attestationAnnotations := req.Input.Attestation.Predicate.GetAnnotations()
 		materialAnnotations := sbom.Annotations
 		if err := verifyAllFilters(attestationAnnotations, materialAnnotations, attachmentConfig.Filter); err != nil {
 			l.Infow("msg", "filter conditions not met, SKIPPING", "err", err, "materialName", sbom.Name)
@@ -214,7 +212,7 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 
 	// Calculate the project name based on the template
 
-	projectName, err := resolveProjectName(attachmentConfig.ProjectName, fanoutReq.Attestation.Predicate.GetAnnotations(), sbom.Annotations)
+	projectName, err := resolveProjectName(attachmentConfig.ProjectName, req.Input.Attestation.Predicate.GetAnnotations(), sbom.Annotations)
 	if err != nil {
 		// If we can't find the annotation for example, we skip the SBOM
 		l.Infow("msg", "failed to resolve project name, SKIPPING", "err", err, "materialName", sbom.Name)
@@ -225,7 +223,7 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 		"materialName", sbom.Name,
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.ProjectID, "projectName", projectName,
-		"workflowID", fanoutReq.Workflow.ID,
+		"workflowID", req.Workflow.ID,
 	)
 
 	// Create an SBOM client and perform validation and upload
@@ -251,7 +249,7 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 		"materialName", sbom.Name,
 		"host", registrationConfig.Domain,
 		"projectID", attachmentConfig.ProjectID, "projectName", projectName,
-		"workflowID", fanoutReq.Workflow.ID,
+		"workflowID", req.Workflow.ID,
 	)
 
 	l.Info("execution finished")

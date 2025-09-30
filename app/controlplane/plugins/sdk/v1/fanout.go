@@ -42,6 +42,24 @@ type FanOut interface {
 	GetSubscribedMaterials() []*InputMaterial
 	// IsSubscribedTo Returns if the integration is subscribed to the material type
 	IsSubscribedTo(materialType string) bool
+
+	// Execute runs the fanout integration
+	Execute(ctx context.Context, req *ExecutionRequest) error
+}
+
+// ExecutionRequest is the request to execute the integration
+type ExecutionRequest struct {
+	*ChainloopMetadata
+	Input            *ExecuteInput
+	RegistrationInfo *RegistrationResponse
+	AttachmentInfo   *AttachmentResponse
+}
+
+// An execute method will receive either the envelope or a material as input
+// The material will contain its content as well as the metadata
+type ExecuteInput struct {
+	Attestation *ExecuteAttestation
+	Materials   []*ExecuteMaterial
 }
 
 // FanOutIntegration provides a base implementation to be embedded in FanOut plugins
@@ -72,16 +90,6 @@ type ChainloopMetadataWorkflowRun struct {
 
 type ChainloopMetadataWorkflow struct {
 	ID, Name, Team, Project string
-}
-
-// FanOutPayload is the request to execute the FanOut integration
-type FanOutPayload struct {
-	*ChainloopMetadata
-
-	// An execute method will receive either the envelope or a material as input
-	// The material will contain its content as well as the metadata
-	Attestation *ExecuteAttestation
-	Materials   []*ExecuteMaterial
 }
 
 type ExecuteAttestation struct {

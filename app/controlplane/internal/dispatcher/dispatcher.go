@@ -278,18 +278,13 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = 10 * time.Second
 
-	fanoutPayload, ok := opts.Payload.(*sdk.FanOutPayload)
-	if !ok {
-		return errors.New("invalid fanout payload")
-	}
-
 	var inputType string
 	switch {
-	case fanoutPayload.Attestation != nil:
+	case opts.Input.Attestation != nil:
 		inputType = "DSSEnvelope"
-	case len(fanoutPayload.Materials) > 0:
+	case len(opts.Input.Materials) > 0:
 		var materialTypes []string
-		for _, m := range fanoutPayload.Materials {
+		for _, m := range opts.Input.Materials {
 			materialTypes = append(materialTypes, m.Type)
 		}
 
@@ -318,6 +313,7 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest
 
 func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.ExecutionRequest {
 	return &sdk.ExecutionRequest{
+		ChainloopMetadata: metadata,
 		RegistrationInfo: &sdk.RegistrationResponse{
 			Credentials:   in.credentials,
 			Configuration: in.registrationConfig,
@@ -325,11 +321,9 @@ func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.Exe
 		AttachmentInfo: &sdk.AttachmentResponse{
 			Configuration: in.attachmentConfig,
 		},
-		// Custom fanout payload
-		Payload: &sdk.FanOutPayload{
-			ChainloopMetadata: metadata,
-			Materials:         in.materials,
-			Attestation:       in.attestation,
+		Input: &sdk.ExecuteInput{
+			Materials:   in.materials,
+			Attestation: in.attestation,
 		},
 	}
 }

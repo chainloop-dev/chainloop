@@ -96,11 +96,9 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 		return fmt.Errorf("running validation: %w", err)
 	}
 
-	fanoutReq := req.Payload.(*sdk.FanOutPayload)
-
 	// 4000 is the max size of a Slack message
 	// if the message is larger than that, we will truncate it
-	summary, err := sdk.SummaryTable(fanoutReq, sdk.WithMaxSize(4000))
+	summary, err := sdk.SummaryTable(req, sdk.WithMaxSize(4000))
 	if err != nil {
 		return fmt.Errorf("error summarizing the request: %w", err)
 	}
@@ -144,16 +142,11 @@ func executeWebhook(webhookURL, msgContent string) error {
 }
 
 func validateExecuteRequest(req *sdk.ExecutionRequest) error {
-	if req == nil || req.Payload == nil {
+	if req == nil || req.Input == nil {
 		return errors.New("execution input not received")
 	}
 
-	fanOutInput, ok := req.Payload.(*sdk.FanOutPayload)
-	if !ok {
-		return errors.New("execution input invalid, not a FanOutPayload type")
-	}
-
-	if fanOutInput.Attestation == nil {
+	if req.Input.Attestation == nil {
 		return errors.New("execution input invalid, envelope is nil")
 	}
 
