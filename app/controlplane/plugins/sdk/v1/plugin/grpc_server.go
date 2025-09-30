@@ -131,7 +131,7 @@ func (b *fanOutGRPCServer) Execute(ctx context.Context, req *api.ExecuteRequest)
 	for _, material := range req.Materials {
 		opts.Input.Materials = append(opts.Input.Materials, api.MaterialProtoToSDK(material))
 	}
-	
+
 	return &api.ExecuteResponse{}, b.impl.Execute(ctx, opts)
 }
 
