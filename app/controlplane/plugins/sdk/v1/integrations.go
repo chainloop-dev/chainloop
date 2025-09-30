@@ -260,11 +260,9 @@ func GenerateJSONSchema(schema any) ([]byte, error) {
 		return nil, fmt.Errorf("nested schemas are not supported")
 	}
 
-	// Array based properties are not supported
-	for _, k := range s.Properties.Keys() {
-		p, _ := s.Properties.Get(k)
-		s := p.(*jsonschema.Schema)
-		if s.Items != nil {
+	// Iterate over the properties and check that none of them are array based
+	for pair := s.Properties.Oldest(); pair != nil; pair = pair.Next() {
+		if pair.Value.Items != nil {
 			return nil, fmt.Errorf("array based properties are not supported")
 		}
 	}
