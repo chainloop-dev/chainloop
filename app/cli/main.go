@@ -106,7 +106,14 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	return msg, exitCode
 }
 
-func isWrappedErr(grpcStatus *status.Status, err *errors.Error) bool {
-	target := errors.FromError(grpcStatus.Err())
+// target is the expected error
+// grpcStatus is the actual error that might be wrapped in both the status and the error
+func isWrappedErr(grpcStatus *status.Status, target *errors.Error) bool {
+	err := errors.FromError(grpcStatus.Err())
+	// The error might be wrapped since the CLI sometimes returns a wrapped error
+	if errors.Is(err, target) {
+		return true
+	}
+
 	return target.Code == err.Code && err.Message == target.Message
 }
