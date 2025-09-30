@@ -164,7 +164,6 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 // Send the SBOMs to the configured Dependency Track instance
 func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest) error {
 	var errs error
-
 	// Iterate over all SBOMs
 	for _, sbom := range req.Input.Materials {
 		if err := doExecute(ctx, req, sbom, i.Logger); err != nil {
