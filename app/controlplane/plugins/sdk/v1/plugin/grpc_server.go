@@ -32,12 +32,13 @@ type fanOutGRPCServer struct {
 
 func (b *fanOutGRPCServer) Describe(_ context.Context, _ *api.DescribeRequest) (*api.DescribeResponse, error) {
 	info := b.impl.Describe()
+	materials := b.impl.GetSubscribedMaterials()
 
-	return api.DescribeSDKToProto(info)
+	return api.DescribeSDKToProto(info, materials)
 }
 
 func (b *fanOutGRPCServer) ValidateRegistration(_ context.Context, req *api.ValidateRegistrationRequest) (*api.ValidateRegistrationResponse, error) {
-	err := b.impl.ValidateRegistrationRequest(req.JsonPayload)
+	err := sdk.ValidateRegistrationRequest(b.impl, req.JsonPayload)
 
 	resp := &api.ValidateRegistrationResponse{Valid: err == nil}
 
@@ -49,7 +50,7 @@ func (b *fanOutGRPCServer) ValidateRegistration(_ context.Context, req *api.Vali
 }
 
 func (b *fanOutGRPCServer) ValidateAttachment(_ context.Context, req *api.ValidateAttachmentRequest) (*api.ValidateAttachmentResponse, error) {
-	err := b.impl.ValidateAttachmentRequest(req.JsonPayload)
+	err := sdk.ValidateAttachmentRequest(b.impl, req.JsonPayload)
 
 	resp := &api.ValidateAttachmentResponse{Valid: err == nil}
 

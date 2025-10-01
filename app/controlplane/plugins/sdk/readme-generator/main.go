@@ -83,7 +83,7 @@ func updateIntegrationsIndex(plugins sdk.AvailablePlugins) error {
 		info := p.Describe()
 		// Load the materials
 		var subscribedMaterials = make([]string, 0)
-		for _, m := range info.SubscribedMaterials {
+		for _, m := range p.GetSubscribedMaterials() {
 			subscribedMaterials = append(subscribedMaterials, m.Type.String())
 		}
 

@@ -53,6 +53,10 @@ func (s *dispatcherTestSuite) TestLoadInputsEnvelope() {
 	envelope, err := testEnvelope("testdata/attestation.json")
 	require.NoError(s.T(), err)
 
+	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "CONTAINER_IMAGE").Return(true)
+	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "SBOM_CYCLONEDX_JSON").Return(false)
+	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("String").Return("mocked-integration")
+
 	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name")
 	assert.NoError(s.T(), err)
 
@@ -83,6 +87,15 @@ func (s *dispatcherTestSuite) TestLoadInputsMaterials() {
 		integrationInfoBuilder(s.containerIntegrationBackend),
 		integrationInfoBuilder(s.cdxIntegrationBackend),
 	}
+
+	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "CONTAINER_IMAGE").Return(false)
+	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "SBOM_CYCLONEDX_JSON").Return(false)
+	s.containerIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "CONTAINER_IMAGE").Return(true)
+	s.containerIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "SBOM_CYCLONEDX_JSON").Return(false)
+	s.containerIntegrationBackend.(*mockedSDK.FanOut).On("String").Return("mocked-integration")
+	s.cdxIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "CONTAINER_IMAGE").Return(false)
+	s.cdxIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "SBOM_CYCLONEDX_JSON").Return(true)
+	s.cdxIntegrationBackend.(*mockedSDK.FanOut).On("String").Return("mocked-integration")
 
 	envelope, err := testEnvelope("testdata/attestation.json")
 	require.NoError(s.T(), err)
@@ -178,11 +191,17 @@ func (s *dispatcherTestSuite) TestInitDispatchQueue() {
 			integrationInfoBuilder(s.cdxIntegrationBackend), integrationInfoBuilder(s.cdxIntegrationBackend),
 		}
 
+		s.containerIntegrationBackend.(*mockedSDK.FanOut).On("String", mock.Anything).Return("mocked-integration")
+		s.cdxIntegrationBackend.(*mockedSDK.FanOut).On("String", mock.Anything).Return("mocked-integration")
+		s.ociIntegrationBackend.(*mockedSDK.FanOut).On("String", mock.Anything).Return("mocked-integration")
 		q, err := s.dispatcher.initDispatchQueue(context.TODO(), s.org.ID, s.workflow.ID.String())
 		require.NoError(t, err)
 
 		// There are 4 integrations attached
 		require.Len(t, q, 4)
+
+		s.containerIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", mock.Anything).Return(true)
+		s.cdxIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", mock.Anything).Return(true)
 
 		for i, tc := range []struct{ id, subscribedMaterial string }{
 			{"OCI_INTEGRATION", ""},
@@ -228,9 +247,6 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.emptyWorkflow, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "empty-workflow", OrgID: s.org.ID, Project: "test-project"})
 	assert.NoError(s.T(), err)
 
-	customImplementation := mockedSDK.NewFanOutPlugin(s.T())
-	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
-	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
 	type schema struct {
 		TestProperty string
 	}
@@ -246,11 +262,13 @@ func (s *dispatcherTestSuite) SetupTest() {
 		sdk.WithInputMaterial(v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON),
 	)
 	require.NoError(s.T(), err)
+	customImplementation := s.newMock(ctx)
+	customImplementation.On("Describe").Return(b.Describe())
 
 	// Registration configuration
 	config, _ := structpb.NewStruct(map[string]interface{}{"TestProperty": "testValue"})
 
-	s.cdxIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
+	s.cdxIntegrationBackend = customImplementation
 	s.cdxIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "sbom-integration", "", s.cdxIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
@@ -263,8 +281,10 @@ func (s *dispatcherTestSuite) SetupTest() {
 		sdk.WithInputMaterial(v1.CraftingSchema_Material_CONTAINER_IMAGE),
 	)
 	require.NoError(s.T(), err)
+	customImplementation = s.newMock(ctx)
+	customImplementation.On("Describe").Return(b.Describe())
 
-	s.containerIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
+	s.containerIntegrationBackend = customImplementation
 	s.containerIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "container-integration", "", s.containerIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
@@ -277,8 +297,10 @@ func (s *dispatcherTestSuite) SetupTest() {
 		},
 	)
 	require.NoError(s.T(), err)
+	customImplementation = s.newMock(ctx)
+	customImplementation.On("Describe").Return(b.Describe())
 
-	s.ociIntegrationBackend = &mockedIntegration{FanOutPlugin: customImplementation, FanOutIntegration: b}
+	s.ociIntegrationBackend = customImplementation
 	s.ociIntegration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "oci-integration", "", s.ociIntegrationBackend, config)
 	require.NoError(s.T(), err)
 
@@ -316,9 +338,12 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.dispatcher = New(s.Integration, nil, nil, nil, s.casClient, registeredIntegrations, l)
 }
 
-type mockedIntegration struct {
-	*sdk.FanOutIntegration
-	*mockedSDK.FanOutPlugin
+func (s *dispatcherTestSuite) newMock(ctx context.Context) *mockedSDK.FanOut {
+	customImplementation := mockedSDK.NewFanOut(s.T())
+	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
+	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
+
+	return customImplementation
 }
 
 // Utility struct to hold the test suite
