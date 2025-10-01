@@ -16,6 +16,9 @@ policyGroups:
   - ref: sbom-quality
     with:
       bannedLicenses: GPL, AGPL
+      # sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2 = Apache-2.0 pkg:golang/github.com/cyberphone/json-canonicalization
+      # sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71 = MIT, BSD-3-Clause pkg:golang/github.com/theupdateframework/go-tuf
+      allowedCustomLicenses: Apache 2.0, sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2, sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71
       skippedTypes: file
       bannedComponents: log4j@2.14.1
   - ref: slsa-checks
