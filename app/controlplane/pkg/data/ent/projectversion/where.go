@@ -96,6 +96,11 @@ func ReleasedAt(v time.Time) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldReleasedAt, v))
 }
 
+// LastRunAt applies equality check predicate on the "last_run_at" field. It's identical to LastRunAtEQ.
+func LastRunAt(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldLastRunAt, v))
+}
+
 // Latest applies equality check predicate on the "latest" field. It's identical to LatestEQ.
 func Latest(v bool) predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldEQ(FieldLatest, v))
@@ -414,6 +419,56 @@ func ReleasedAtIsNil() predicate.ProjectVersion {
 // ReleasedAtNotNil applies the NotNil predicate on the "released_at" field.
 func ReleasedAtNotNil() predicate.ProjectVersion {
 	return predicate.ProjectVersion(sql.FieldNotNull(FieldReleasedAt))
+}
+
+// LastRunAtEQ applies the EQ predicate on the "last_run_at" field.
+func LastRunAtEQ(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldEQ(FieldLastRunAt, v))
+}
+
+// LastRunAtNEQ applies the NEQ predicate on the "last_run_at" field.
+func LastRunAtNEQ(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNEQ(FieldLastRunAt, v))
+}
+
+// LastRunAtIn applies the In predicate on the "last_run_at" field.
+func LastRunAtIn(vs ...time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldIn(FieldLastRunAt, vs...))
+}
+
+// LastRunAtNotIn applies the NotIn predicate on the "last_run_at" field.
+func LastRunAtNotIn(vs ...time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNotIn(FieldLastRunAt, vs...))
+}
+
+// LastRunAtGT applies the GT predicate on the "last_run_at" field.
+func LastRunAtGT(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGT(FieldLastRunAt, v))
+}
+
+// LastRunAtGTE applies the GTE predicate on the "last_run_at" field.
+func LastRunAtGTE(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldGTE(FieldLastRunAt, v))
+}
+
+// LastRunAtLT applies the LT predicate on the "last_run_at" field.
+func LastRunAtLT(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLT(FieldLastRunAt, v))
+}
+
+// LastRunAtLTE applies the LTE predicate on the "last_run_at" field.
+func LastRunAtLTE(v time.Time) predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldLTE(FieldLastRunAt, v))
+}
+
+// LastRunAtIsNil applies the IsNil predicate on the "last_run_at" field.
+func LastRunAtIsNil() predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldIsNull(FieldLastRunAt))
+}
+
+// LastRunAtNotNil applies the NotNil predicate on the "last_run_at" field.
+func LastRunAtNotNil() predicate.ProjectVersion {
+	return predicate.ProjectVersion(sql.FieldNotNull(FieldLastRunAt))
 }
 
 // LatestEQ applies the EQ predicate on the "latest" field.
