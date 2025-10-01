@@ -82,8 +82,14 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, errors.BadRequest("invalid config", err.Error())
 	}
 
+	// Extract max_bytes if provided
+	var maxBytes *int64
+	if req.MaxBytes != nil {
+		maxBytes = req.MaxBytes
+	}
+
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Create(ctx, currentOrg.ID, req.Name, req.Location, req.Description, biz.CASBackendProvider(req.Provider), creds, req.Default)
+	res, err := s.uc.Create(ctx, currentOrg.ID, req.Name, req.Location, req.Description, biz.CASBackendProvider(req.Provider), creds, req.Default, maxBytes)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -123,8 +129,14 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 		}
 	}
 
+	// Extract max_bytes if provided
+	var maxBytes *int64
+	if req.MaxBytes != nil {
+		maxBytes = req.MaxBytes
+	}
+
 	// For now we only support one backend which is set as default
-	res, err := s.uc.Update(ctx, currentOrg.ID, backend.ID.String(), req.Description, creds, req.Default)
+	res, err := s.uc.Update(ctx, currentOrg.ID, backend.ID.String(), req.Description, creds, req.Default, maxBytes)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

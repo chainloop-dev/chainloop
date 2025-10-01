@@ -25,6 +25,7 @@ import (
 var (
 	isDefaultCASBackendUpdateOption   *bool
 	descriptionCASBackendUpdateOption *string
+	maxBytesCASBackendOption          string
 )
 
 func newCASBackendCmd() *cobra.Command {
@@ -46,6 +47,7 @@ func newCASBackendAddCmd() *cobra.Command {
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 	cmd.PersistentFlags().String("name", "", "CAS backend name")
+	cmd.PersistentFlags().StringVar(&maxBytesCASBackendOption, "max-bytes", "", "Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)")
 	err := cmd.MarkPersistentFlagRequired("name")
 	cobra.CheckErr(err)
 
@@ -56,12 +58,13 @@ func newCASBackendAddCmd() *cobra.Command {
 func newCASBackendUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update a CAS backend description, credentials or default status",
+		Short: "Update a CAS backend description, credentials, default status, or max bytes",
 	}
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 	cmd.PersistentFlags().String("name", "", "CAS backend name")
+	cmd.PersistentFlags().StringVar(&maxBytesCASBackendOption, "max-bytes", "", "Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.")
 
 	cmd.AddCommand(newCASBackendUpdateOCICmd(), newCASBackendUpdateInlineCmd(), newCASBackendUpdateAzureBlobCmd(), newCASBackendUpdateAWSS3Cmd())
 	return cmd

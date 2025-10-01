@@ -16,6 +16,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/go-kratos/kratos/v2/log"
@@ -26,7 +29,7 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 	var backendName, accessKeyID, secretAccessKey, region string
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
-		Short: "Update a AWS S3 CAS Backend description, credentials or default status",
+		Short: "Update a AWS S3 CAS Backend description, credentials, default status, or max bytes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {
@@ -41,6 +44,17 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 				return nil
 			}
 
+			// Parse max-bytes if provided from parent flag
+			var maxBytes *int64
+			if maxBytesCASBackendOption != "" {
+				bytes, err := bytefmt.ToBytes(maxBytesCASBackendOption)
+				if err != nil {
+					return fmt.Errorf("invalid max-bytes format: %w", err)
+				}
+				bytesInt := int64(bytes)
+				maxBytes = &bytesInt
+			}
+
 			opts := &action.NewCASBackendUpdateOpts{
 				Name:        backendName,
 				Description: descriptionCASBackendUpdateOption,
@@ -49,7 +63,8 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 					"secretAccessKey": secretAccessKey,
 					"region":          region,
 				},
-				Default: isDefaultCASBackendUpdateOption,
+				Default:  isDefaultCASBackendUpdateOption,
+				MaxBytes: maxBytes,
 			}
 
 			// this means that we are not updating credentials

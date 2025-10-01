@@ -16,6 +16,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/go-kratos/kratos/v2/log"
@@ -26,7 +29,7 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 	var backendName, username, password string
 	cmd := &cobra.Command{
 		Use:   "oci",
-		Short: "Update a OCI CAS Backend description, credentials or default status",
+		Short: "Update a OCI CAS Backend description, credentials, default status, or max bytes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {
@@ -41,6 +44,17 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 				return nil
 			}
 
+			// Parse max-bytes if provided from parent flag
+			var maxBytes *int64
+			if maxBytesCASBackendOption != "" {
+				bytes, err := bytefmt.ToBytes(maxBytesCASBackendOption)
+				if err != nil {
+					return fmt.Errorf("invalid max-bytes format: %w", err)
+				}
+				bytesInt := int64(bytes)
+				maxBytes = &bytesInt
+			}
+
 			opts := &action.NewCASBackendUpdateOpts{
 				Name:        backendName,
 				Description: descriptionCASBackendUpdateOption,
@@ -48,7 +62,8 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 					"username": username,
 					"password": password,
 				},
-				Default: isDefaultCASBackendUpdateOption,
+				Default:  isDefaultCASBackendUpdateOption,
+				MaxBytes: maxBytes,
 			}
 
 			if username == "" && password == "" {
@@ -73,5 +88,6 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 	cmd.Flags().StringVarP(&username, "username", "u", "", "registry username")
 
 	cmd.Flags().StringVarP(&password, "password", "p", "", "registry password")
+
 	return cmd
 }

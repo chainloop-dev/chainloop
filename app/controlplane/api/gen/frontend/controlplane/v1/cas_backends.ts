@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Struct } from "../../google/protobuf/struct";
 import { CASBackendItem } from "./response_messages";
@@ -69,6 +70,12 @@ export interface CASBackendServiceCreateRequest {
   /** Arbitrary configuration for the integration */
   credentials?: { [key: string]: any };
   name: string;
+  /**
+   * Maximum size in bytes for each blob stored in this backend.
+   * If not specified, defaults to the system default (typically 100MB).
+   * Minimum allowed value is 10MB (10485760 bytes).
+   */
+  maxBytes?: number | undefined;
 }
 
 export interface CASBackendServiceCreateResponse {
@@ -80,6 +87,7 @@ export interface CASBackendServiceCreateResponse {
  * - description
  * - set is as default
  * - rotate credentials
+ * - max blob size
  */
 export interface CASBackendServiceUpdateRequest {
   name: string;
@@ -93,6 +101,11 @@ export interface CASBackendServiceUpdateRequest {
     | undefined;
   /** Credentials, useful for rotation */
   credentials?: { [key: string]: any };
+  /**
+   * Maximum size in bytes for each blob stored in this backend.
+   * Minimum allowed value is 10MB (10485760 bytes).
+   */
+  maxBytes?: number | undefined;
 }
 
 export interface CASBackendServiceUpdateResponse {
@@ -213,7 +226,15 @@ export const CASBackendServiceListResponse = {
 };
 
 function createBaseCASBackendServiceCreateRequest(): CASBackendServiceCreateRequest {
-  return { location: "", provider: "", description: "", default: false, credentials: undefined, name: "" };
+  return {
+    location: "",
+    provider: "",
+    description: "",
+    default: false,
+    credentials: undefined,
+    name: "",
+    maxBytes: undefined,
+  };
 }
 
 export const CASBackendServiceCreateRequest = {
@@ -235,6 +256,9 @@ export const CASBackendServiceCreateRequest = {
     }
     if (message.name !== "") {
       writer.uint32(50).string(message.name);
+    }
+    if (message.maxBytes !== undefined) {
+      writer.uint32(56).int64(message.maxBytes);
     }
     return writer;
   },
@@ -288,6 +312,13 @@ export const CASBackendServiceCreateRequest = {
 
           message.name = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.maxBytes = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -305,6 +336,7 @@ export const CASBackendServiceCreateRequest = {
       default: isSet(object.default) ? Boolean(object.default) : false,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
       name: isSet(object.name) ? String(object.name) : "",
+      maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : undefined,
     };
   },
 
@@ -316,6 +348,7 @@ export const CASBackendServiceCreateRequest = {
     message.default !== undefined && (obj.default = message.default);
     message.credentials !== undefined && (obj.credentials = message.credentials);
     message.name !== undefined && (obj.name = message.name);
+    message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
     return obj;
   },
 
@@ -333,6 +366,7 @@ export const CASBackendServiceCreateRequest = {
     message.default = object.default ?? false;
     message.credentials = object.credentials ?? undefined;
     message.name = object.name ?? "";
+    message.maxBytes = object.maxBytes ?? undefined;
     return message;
   },
 };
@@ -398,7 +432,7 @@ export const CASBackendServiceCreateResponse = {
 };
 
 function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
-  return { name: "", description: undefined, default: undefined, credentials: undefined };
+  return { name: "", description: undefined, default: undefined, credentials: undefined, maxBytes: undefined };
 }
 
 export const CASBackendServiceUpdateRequest = {
@@ -414,6 +448,9 @@ export const CASBackendServiceUpdateRequest = {
     }
     if (message.credentials !== undefined) {
       Struct.encode(Struct.wrap(message.credentials), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.maxBytes !== undefined) {
+      writer.uint32(40).int64(message.maxBytes);
     }
     return writer;
   },
@@ -453,6 +490,13 @@ export const CASBackendServiceUpdateRequest = {
 
           message.credentials = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maxBytes = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -468,6 +512,7 @@ export const CASBackendServiceUpdateRequest = {
       description: isSet(object.description) ? String(object.description) : undefined,
       default: isSet(object.default) ? Boolean(object.default) : undefined,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
+      maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : undefined,
     };
   },
 
@@ -477,6 +522,7 @@ export const CASBackendServiceUpdateRequest = {
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
     message.credentials !== undefined && (obj.credentials = message.credentials);
+    message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
     return obj;
   },
 
@@ -492,6 +538,7 @@ export const CASBackendServiceUpdateRequest = {
     message.description = object.description ?? undefined;
     message.default = object.default ?? undefined;
     message.credentials = object.credentials ?? undefined;
+    message.maxBytes = object.maxBytes ?? undefined;
     return message;
   },
 };
@@ -908,6 +955,18 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isObject(value: any): boolean {
   return typeof value === "object" && value !== null;

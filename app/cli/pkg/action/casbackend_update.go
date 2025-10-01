@@ -32,6 +32,7 @@ type NewCASBackendUpdateOpts struct {
 	Description *string
 	Default     *bool
 	Credentials map[string]any
+	MaxBytes    *int64
 }
 
 func NewCASBackendUpdate(cfg *ActionsOpts) *CASBackendUpdate {
@@ -55,6 +56,7 @@ func (action *CASBackendUpdate) Run(opts *NewCASBackendUpdateOpts) (*CASBackendI
 		Description: opts.Description,
 		Default:     opts.Default,
 		Credentials: credentials,
+		MaxBytes:    opts.MaxBytes,
 	})
 	if err != nil {
 		return nil, err
