@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
@@ -51,6 +52,17 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 				}
 			}
 
+			// Parse max-bytes if provided from parent flag
+			var maxBytes *int64
+			if maxBytesCASBackendOption != "" {
+				bytes, err := bytefmt.ToBytes(maxBytesCASBackendOption)
+				if err != nil {
+					return fmt.Errorf("invalid max-bytes format: %w", err)
+				}
+				bytesInt := int64(bytes)
+				maxBytes = &bytesInt
+			}
+
 			opts := &action.NewCASBackendAddOpts{
 				Name:        name,
 				Location:    fmt.Sprintf("%s/%s", storageAccountName, container),
@@ -61,7 +73,8 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 					"clientID":     clientID,
 					"clientSecret": clientSecret,
 				},
-				Default: isDefault,
+				Default:  isDefault,
+				MaxBytes: maxBytes,
 			}
 
 			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)
@@ -92,5 +105,6 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&container, "container", "chainloop", "Storage Container Name")
+
 	return cmd
 }

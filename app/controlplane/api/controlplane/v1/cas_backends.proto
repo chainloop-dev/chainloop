@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,10 @@ message CASBackendServiceCreateRequest {
   // Arbitrary configuration for the integration
   google.protobuf.Struct credentials = 5 [(buf.validate.field).required = true];
   string name = 6 [(buf.validate.field).string.min_len = 1];
+  // Maximum size in bytes for each blob stored in this backend.
+  // If not specified, defaults to the system default (typically 100MB).
+  // Minimum allowed value is 10MB (10485760 bytes).
+  optional int64 max_bytes = 7 [(buf.validate.field).int64.gte = 10485760];
 }
 
 message CASBackendServiceCreateResponse {
@@ -59,6 +63,7 @@ message CASBackendServiceCreateResponse {
 // - description
 // - set is as default
 // - rotate credentials
+// - max blob size
 message CASBackendServiceUpdateRequest {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
@@ -74,6 +79,9 @@ message CASBackendServiceUpdateRequest {
   optional bool default = 3;
   // Credentials, useful for rotation
   google.protobuf.Struct credentials = 4;
+  // Maximum size in bytes for each blob stored in this backend.
+  // Minimum allowed value is 10MB (10485760 bytes).
+  optional int64 max_bytes = 5 [(buf.validate.field).int64.gte = 10485760];
 }
 
 message CASBackendServiceUpdateResponse {

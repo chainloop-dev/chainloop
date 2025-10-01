@@ -255,3 +255,8 @@ Code reviews are required for all submissions via GitHub pull requests.
 - make sure golang code is always formatted and golang-ci-lint is run
 - I do not want you to be in the co-author signoff
 - when the schema is changed, run make generate, do not create a migration explicitly
+- If you are writing go code, adhere to best practices such as the ones in effective-go, or others. This could include, error handling patterns, interface design, package organization, concurrency patterns, etc.
+- do not change previous migrations, they are immutable
+- if you add any new dependency to a constructor, remember to run wire ./...
+
+
