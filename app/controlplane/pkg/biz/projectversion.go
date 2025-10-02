@@ -38,7 +38,9 @@ type ProjectVersion struct {
 	CreatedAt *time.Time
 	// ReleasedAt is the time when the version was released.
 	ReleasedAt *time.Time
-	ProjectID  uuid.UUID
+	// LastRunAt is the time when the last workflow run occurred for this version.
+	LastRunAt *time.Time
+	ProjectID uuid.UUID
 }
 
 type ProjectVersionRepo interface {

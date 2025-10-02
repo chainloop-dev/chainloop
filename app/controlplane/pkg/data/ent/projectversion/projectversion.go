@@ -31,6 +31,8 @@ const (
 	FieldWorkflowRunCount = "workflow_run_count"
 	// FieldReleasedAt holds the string denoting the released_at field in the database.
 	FieldReleasedAt = "released_at"
+	// FieldLastRunAt holds the string denoting the last_run_at field in the database.
+	FieldLastRunAt = "last_run_at"
 	// FieldLatest holds the string denoting the latest field in the database.
 	FieldLatest = "latest"
 	// EdgeProject holds the string denoting the project edge name in mutations.
@@ -66,6 +68,7 @@ var Columns = []string{
 	FieldPrerelease,
 	FieldWorkflowRunCount,
 	FieldReleasedAt,
+	FieldLastRunAt,
 	FieldLatest,
 }
 
@@ -144,6 +147,11 @@ func ByWorkflowRunCount(opts ...sql.OrderTermOption) OrderOption {
 // ByReleasedAt orders the results by the released_at field.
 func ByReleasedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReleasedAt, opts...).ToFunc()
+}
+
+// ByLastRunAt orders the results by the last_run_at field.
+func ByLastRunAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastRunAt, opts...).ToFunc()
 }
 
 // ByLatest orders the results by the latest field.

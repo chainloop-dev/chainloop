@@ -130,6 +130,20 @@ func (pvc *ProjectVersionCreate) SetNillableReleasedAt(t *time.Time) *ProjectVer
 	return pvc
 }
 
+// SetLastRunAt sets the "last_run_at" field.
+func (pvc *ProjectVersionCreate) SetLastRunAt(t time.Time) *ProjectVersionCreate {
+	pvc.mutation.SetLastRunAt(t)
+	return pvc
+}
+
+// SetNillableLastRunAt sets the "last_run_at" field if the given value is not nil.
+func (pvc *ProjectVersionCreate) SetNillableLastRunAt(t *time.Time) *ProjectVersionCreate {
+	if t != nil {
+		pvc.SetLastRunAt(*t)
+	}
+	return pvc
+}
+
 // SetLatest sets the "latest" field.
 func (pvc *ProjectVersionCreate) SetLatest(b bool) *ProjectVersionCreate {
 	pvc.mutation.SetLatest(b)
@@ -338,6 +352,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
 		_node.ReleasedAt = value
 	}
+	if value, ok := pvc.mutation.LastRunAt(); ok {
+		_spec.SetField(projectversion.FieldLastRunAt, field.TypeTime, value)
+		_node.LastRunAt = value
+	}
 	if value, ok := pvc.mutation.Latest(); ok {
 		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
 		_node.Latest = value
@@ -529,6 +547,24 @@ func (u *ProjectVersionUpsert) ClearReleasedAt() *ProjectVersionUpsert {
 	return u
 }
 
+// SetLastRunAt sets the "last_run_at" field.
+func (u *ProjectVersionUpsert) SetLastRunAt(v time.Time) *ProjectVersionUpsert {
+	u.Set(projectversion.FieldLastRunAt, v)
+	return u
+}
+
+// UpdateLastRunAt sets the "last_run_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsert) UpdateLastRunAt() *ProjectVersionUpsert {
+	u.SetExcluded(projectversion.FieldLastRunAt)
+	return u
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (u *ProjectVersionUpsert) ClearLastRunAt() *ProjectVersionUpsert {
+	u.SetNull(projectversion.FieldLastRunAt)
+	return u
+}
+
 // SetLatest sets the "latest" field.
 func (u *ProjectVersionUpsert) SetLatest(v bool) *ProjectVersionUpsert {
 	u.Set(projectversion.FieldLatest, v)
@@ -708,6 +744,27 @@ func (u *ProjectVersionUpsertOne) UpdateReleasedAt() *ProjectVersionUpsertOne {
 func (u *ProjectVersionUpsertOne) ClearReleasedAt() *ProjectVersionUpsertOne {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.ClearReleasedAt()
+	})
+}
+
+// SetLastRunAt sets the "last_run_at" field.
+func (u *ProjectVersionUpsertOne) SetLastRunAt(v time.Time) *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetLastRunAt(v)
+	})
+}
+
+// UpdateLastRunAt sets the "last_run_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsertOne) UpdateLastRunAt() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateLastRunAt()
+	})
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (u *ProjectVersionUpsertOne) ClearLastRunAt() *ProjectVersionUpsertOne {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.ClearLastRunAt()
 	})
 }
 
@@ -1059,6 +1116,27 @@ func (u *ProjectVersionUpsertBulk) UpdateReleasedAt() *ProjectVersionUpsertBulk 
 func (u *ProjectVersionUpsertBulk) ClearReleasedAt() *ProjectVersionUpsertBulk {
 	return u.Update(func(s *ProjectVersionUpsert) {
 		s.ClearReleasedAt()
+	})
+}
+
+// SetLastRunAt sets the "last_run_at" field.
+func (u *ProjectVersionUpsertBulk) SetLastRunAt(v time.Time) *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.SetLastRunAt(v)
+	})
+}
+
+// UpdateLastRunAt sets the "last_run_at" field to the value that was provided on create.
+func (u *ProjectVersionUpsertBulk) UpdateLastRunAt() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.UpdateLastRunAt()
+	})
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (u *ProjectVersionUpsertBulk) ClearLastRunAt() *ProjectVersionUpsertBulk {
+	return u.Update(func(s *ProjectVersionUpsert) {
+		s.ClearLastRunAt()
 	})
 }
 
