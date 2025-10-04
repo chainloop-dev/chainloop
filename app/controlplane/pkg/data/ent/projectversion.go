@@ -35,6 +35,8 @@ type ProjectVersion struct {
 	WorkflowRunCount int `json:"workflow_run_count,omitempty"`
 	// ReleasedAt holds the value of the "released_at" field.
 	ReleasedAt time.Time `json:"released_at,omitempty"`
+	// LastRunAt holds the value of the "last_run_at" field.
+	LastRunAt time.Time `json:"last_run_at,omitempty"`
 	// Whether this is the latest version of the project
 	Latest bool `json:"latest,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -85,7 +87,7 @@ func (*ProjectVersion) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case projectversion.FieldVersion:
 			values[i] = new(sql.NullString)
-		case projectversion.FieldCreatedAt, projectversion.FieldUpdatedAt, projectversion.FieldDeletedAt, projectversion.FieldReleasedAt:
+		case projectversion.FieldCreatedAt, projectversion.FieldUpdatedAt, projectversion.FieldDeletedAt, projectversion.FieldReleasedAt, projectversion.FieldLastRunAt:
 			values[i] = new(sql.NullTime)
 		case projectversion.FieldID, projectversion.FieldProjectID:
 			values[i] = new(uuid.UUID)
@@ -157,6 +159,12 @@ func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field released_at", values[i])
 			} else if value.Valid {
 				pv.ReleasedAt = value.Time
+			}
+		case projectversion.FieldLastRunAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_run_at", values[i])
+			} else if value.Valid {
+				pv.LastRunAt = value.Time
 			}
 		case projectversion.FieldLatest:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -233,6 +241,9 @@ func (pv *ProjectVersion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("released_at=")
 	builder.WriteString(pv.ReleasedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("last_run_at=")
+	builder.WriteString(pv.LastRunAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("latest=")
 	builder.WriteString(fmt.Sprintf("%v", pv.Latest))

@@ -149,6 +149,26 @@ func (pvu *ProjectVersionUpdate) ClearReleasedAt() *ProjectVersionUpdate {
 	return pvu
 }
 
+// SetLastRunAt sets the "last_run_at" field.
+func (pvu *ProjectVersionUpdate) SetLastRunAt(t time.Time) *ProjectVersionUpdate {
+	pvu.mutation.SetLastRunAt(t)
+	return pvu
+}
+
+// SetNillableLastRunAt sets the "last_run_at" field if the given value is not nil.
+func (pvu *ProjectVersionUpdate) SetNillableLastRunAt(t *time.Time) *ProjectVersionUpdate {
+	if t != nil {
+		pvu.SetLastRunAt(*t)
+	}
+	return pvu
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (pvu *ProjectVersionUpdate) ClearLastRunAt() *ProjectVersionUpdate {
+	pvu.mutation.ClearLastRunAt()
+	return pvu
+}
+
 // SetLatest sets the "latest" field.
 func (pvu *ProjectVersionUpdate) SetLatest(b bool) *ProjectVersionUpdate {
 	pvu.mutation.SetLatest(b)
@@ -299,6 +319,12 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if pvu.mutation.ReleasedAtCleared() {
 		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
+	}
+	if value, ok := pvu.mutation.LastRunAt(); ok {
+		_spec.SetField(projectversion.FieldLastRunAt, field.TypeTime, value)
+	}
+	if pvu.mutation.LastRunAtCleared() {
+		_spec.ClearField(projectversion.FieldLastRunAt, field.TypeTime)
 	}
 	if value, ok := pvu.mutation.Latest(); ok {
 		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
@@ -516,6 +542,26 @@ func (pvuo *ProjectVersionUpdateOne) ClearReleasedAt() *ProjectVersionUpdateOne 
 	return pvuo
 }
 
+// SetLastRunAt sets the "last_run_at" field.
+func (pvuo *ProjectVersionUpdateOne) SetLastRunAt(t time.Time) *ProjectVersionUpdateOne {
+	pvuo.mutation.SetLastRunAt(t)
+	return pvuo
+}
+
+// SetNillableLastRunAt sets the "last_run_at" field if the given value is not nil.
+func (pvuo *ProjectVersionUpdateOne) SetNillableLastRunAt(t *time.Time) *ProjectVersionUpdateOne {
+	if t != nil {
+		pvuo.SetLastRunAt(*t)
+	}
+	return pvuo
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (pvuo *ProjectVersionUpdateOne) ClearLastRunAt() *ProjectVersionUpdateOne {
+	pvuo.mutation.ClearLastRunAt()
+	return pvuo
+}
+
 // SetLatest sets the "latest" field.
 func (pvuo *ProjectVersionUpdateOne) SetLatest(b bool) *ProjectVersionUpdateOne {
 	pvuo.mutation.SetLatest(b)
@@ -696,6 +742,12 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 	}
 	if pvuo.mutation.ReleasedAtCleared() {
 		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
+	}
+	if value, ok := pvuo.mutation.LastRunAt(); ok {
+		_spec.SetField(projectversion.FieldLastRunAt, field.TypeTime, value)
+	}
+	if pvuo.mutation.LastRunAtCleared() {
+		_spec.ClearField(projectversion.FieldLastRunAt, field.TypeTime)
 	}
 	if value, ok := pvuo.mutation.Latest(); ok {
 		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
