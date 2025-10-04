@@ -27,6 +27,9 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
 		Short: "Update a AWS S3 CAS Backend description, credentials, default status, or max bytes",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {

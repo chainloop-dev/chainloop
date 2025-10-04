@@ -27,6 +27,9 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
 		Short: "Update a AzureBlob CAS Backend description, credentials, default status, or max bytes",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {

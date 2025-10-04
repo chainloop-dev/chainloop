@@ -288,7 +288,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 	finalMaxBytes := uc.MaxBytesDefault
 	if maxBytes != nil {
 		if *maxBytes < MinCASBackendMaxBytes {
-			return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least 10MB (%d bytes)", MinCASBackendMaxBytes))
+			return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least %s", bytefmt.ByteSize(uint64(MinCASBackendMaxBytes))))
 		}
 		finalMaxBytes = *maxBytes
 	}
@@ -358,7 +358,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 
 	// Validate max_bytes if provided
 	if maxBytes != nil && *maxBytes < MinCASBackendMaxBytes {
-		return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least 10MB (%d bytes)", MinCASBackendMaxBytes))
+		return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least %s", bytefmt.ByteSize(uint64(MinCASBackendMaxBytes))))
 	}
 
 	var secretName string

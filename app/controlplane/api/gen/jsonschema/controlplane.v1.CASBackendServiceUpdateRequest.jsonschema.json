@@ -7,8 +7,8 @@
     "^(max_bytes)$": {
       "anyOf": [
         {
-          "exclusiveMaximum": 9223372036854775808,
-          "minimum": 10485760,
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
           "type": "integer"
         },
         {
@@ -16,7 +16,7 @@
           "type": "string"
         }
       ],
-      "description": "Maximum size in bytes for each blob stored in this backend.\n Minimum allowed value is 10MB (10485760 bytes)."
+      "description": "Maximum size in bytes for each blob stored in this backend."
     }
   },
   "properties": {
@@ -35,8 +35,8 @@
     "maxBytes": {
       "anyOf": [
         {
-          "exclusiveMaximum": 9223372036854775808,
-          "minimum": 10485760,
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
           "type": "integer"
         },
         {
@@ -44,7 +44,7 @@
           "type": "string"
         }
       ],
-      "description": "Maximum size in bytes for each blob stored in this backend.\n Minimum allowed value is 10MB (10485760 bytes)."
+      "description": "Maximum size in bytes for each blob stored in this backend."
     },
     "name": {
       "type": "string"

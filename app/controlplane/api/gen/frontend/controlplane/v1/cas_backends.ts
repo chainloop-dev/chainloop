@@ -73,7 +73,6 @@ export interface CASBackendServiceCreateRequest {
   /**
    * Maximum size in bytes for each blob stored in this backend.
    * If not specified, defaults to the system default (typically 100MB).
-   * Minimum allowed value is 10MB (10485760 bytes).
    */
   maxBytes?: number | undefined;
 }
@@ -101,10 +100,7 @@ export interface CASBackendServiceUpdateRequest {
     | undefined;
   /** Credentials, useful for rotation */
   credentials?: { [key: string]: any };
-  /**
-   * Maximum size in bytes for each blob stored in this backend.
-   * Minimum allowed value is 10MB (10485760 bytes).
-   */
+  /** Maximum size in bytes for each blob stored in this backend. */
   maxBytes?: number | undefined;
 }
 

@@ -44,9 +44,6 @@ func newCASBackendAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add a new Artifact CAS backend",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return parseMaxBytesOption()
-		},
 	}
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
@@ -64,9 +61,6 @@ func newCASBackendUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a CAS backend description, credentials, default status, or max bytes",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return parseMaxBytesOption()
-		},
 	}
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")

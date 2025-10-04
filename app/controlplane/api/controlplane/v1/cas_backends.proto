@@ -51,8 +51,7 @@ message CASBackendServiceCreateRequest {
   string name = 6 [(buf.validate.field).string.min_len = 1];
   // Maximum size in bytes for each blob stored in this backend.
   // If not specified, defaults to the system default (typically 100MB).
-  // Minimum allowed value is 10MB (10485760 bytes).
-  optional int64 max_bytes = 7 [(buf.validate.field).int64.gte = 10485760];
+  optional int64 max_bytes = 7;
 }
 
 message CASBackendServiceCreateResponse {
@@ -80,8 +79,7 @@ message CASBackendServiceUpdateRequest {
   // Credentials, useful for rotation
   google.protobuf.Struct credentials = 4;
   // Maximum size in bytes for each blob stored in this backend.
-  // Minimum allowed value is 10MB (10485760 bytes).
-  optional int64 max_bytes = 5 [(buf.validate.field).int64.gte = 10485760];
+  optional int64 max_bytes = 5;
 }
 
 message CASBackendServiceUpdateResponse {
