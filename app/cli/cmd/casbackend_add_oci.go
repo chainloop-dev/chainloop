@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/go-kratos/kratos/v2/log"
@@ -51,17 +48,6 @@ func newCASBackendAddOCICmd() *cobra.Command {
 				}
 			}
 
-			// Parse max-bytes if provided from parent flag
-			var maxBytes *int64
-			if maxBytesCASBackendOption != "" {
-				bytes, err := bytefmt.ToBytes(maxBytesCASBackendOption)
-				if err != nil {
-					return fmt.Errorf("invalid max-bytes format: %w", err)
-				}
-				bytesInt := int64(bytes)
-				maxBytes = &bytesInt
-			}
-
 			opts := &action.NewCASBackendAddOpts{
 				Name:     name,
 				Location: repo, Description: description,
@@ -71,7 +57,7 @@ func newCASBackendAddOCICmd() *cobra.Command {
 					"password": password,
 				},
 				Default:  isDefault,
-				MaxBytes: maxBytes,
+				MaxBytes: parsedMaxBytes,
 			}
 
 			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)
