@@ -30,7 +30,7 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
 		Short: "Register a AWS S3 storage bucket",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			return parseMaxBytesOption()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

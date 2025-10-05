@@ -27,7 +27,7 @@ func newCASBackendAddOCICmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "oci",
 		Short: "Register a OCI CAS Backend",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			return parseMaxBytesOption()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

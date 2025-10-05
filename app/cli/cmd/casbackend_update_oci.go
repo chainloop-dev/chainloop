@@ -27,7 +27,7 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "oci",
 		Short: "Update a OCI CAS Backend description, credentials, default status, or max bytes",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			return parseMaxBytesOption()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

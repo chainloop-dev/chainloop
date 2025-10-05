@@ -30,7 +30,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
 		Short: "Register a Azure Blob Storage CAS Backend",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			return parseMaxBytesOption()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
