@@ -636,6 +636,7 @@ Options
 --default              set the backend as default in your organization
 --description string   descriptive information for this registration
 -h, --help                 help for add
+--max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string          CAS backend name
 ```
 
@@ -686,6 +687,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -724,6 +726,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -762,6 +765,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -798,6 +802,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -904,7 +909,7 @@ Options inherited from parent commands
 
 ### chainloop cas-backend update
 
-Update a CAS backend description, credentials or default status
+Update a CAS backend description, credentials, default status, or max bytes
 
 Options
 
@@ -912,6 +917,7 @@ Options
 --default              set the backend as default in your organization
 --description string   descriptive information for this registration
 -h, --help                 help for update
+--max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --name string          CAS backend name
 ```
 
@@ -933,7 +939,7 @@ Options inherited from parent commands
 
 #### chainloop cas-backend update aws-s3
 
-Update a AWS S3 CAS Backend description, credentials or default status
+Update a AWS S3 CAS Backend description, credentials, default status, or max bytes
 
 ```
 chainloop cas-backend update aws-s3 [flags]
@@ -961,6 +967,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -969,7 +976,7 @@ Options inherited from parent commands
 
 #### chainloop cas-backend update azure-blob
 
-Update a AzureBlob CAS Backend description, credentials or default status
+Update a AzureBlob CAS Backend description, credentials, default status, or max bytes
 
 ```
 chainloop cas-backend update azure-blob [flags]
@@ -997,6 +1004,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1034,6 +1042,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -1068,6 +1077,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1076,7 +1086,7 @@ Options inherited from parent commands
 
 #### chainloop cas-backend update oci
 
-Update a OCI CAS Backend description, credentials or default status
+Update a OCI CAS Backend description, credentials, default status, or max bytes
 
 ```
 chainloop cas-backend update oci [flags]
@@ -1103,6 +1113,7 @@ Options inherited from parent commands
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
