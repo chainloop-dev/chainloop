@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
 		Short: "Register a Azure Blob Storage CAS Backend",
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If we are setting the default, we list existing CAS backends
 			// and ask the user to confirm the rewrite
@@ -61,7 +64,8 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 					"clientID":     clientID,
 					"clientSecret": clientSecret,
 				},
-				Default: isDefault,
+				Default:  isDefault,
+				MaxBytes: parsedMaxBytes,
 			}
 
 			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)
@@ -92,5 +96,6 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&container, "container", "chainloop", "Storage Container Name")
+
 	return cmd
 }

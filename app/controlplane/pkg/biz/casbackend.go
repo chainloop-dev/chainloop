@@ -40,7 +40,8 @@ type CASBackendProvider string
 const (
 	// Inline, embedded CAS backend
 	CASBackendInline                CASBackendProvider = "INLINE"
-	CASBackendInlineDefaultMaxBytes int64              = 500 * 1024 // 500KB
+	CASBackendInlineDefaultMaxBytes int64              = 500 * 1024       // 500KB
+	MinCASBackendMaxBytes           int64              = 10 * 1024 * 1024 // 10MB minimum
 	errMsgCredentialsAccess                            = "Failed to access CAS backend credentials in external Secrets Manager"
 	errMsgCredentialsFormat                            = "Invalid CAS backend credentials format from external Secrets Manager"
 )
@@ -96,7 +97,8 @@ type CASBackendCreateOpts struct {
 
 type CASBackendUpdateOpts struct {
 	*CASBackendOpts
-	ID uuid.UUID
+	ID       uuid.UUID
+	MaxBytes *int64
 }
 
 type CASBackendRepo interface {
@@ -267,7 +269,7 @@ func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID s
 	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: ToPtr(true)}})
 }
 
-func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool, maxBytes *int64) (*CASBackend, error) {
 	if orgID == "" || name == "" {
 		return nil, NewErrValidationStr("organization and name are required")
 	}
@@ -282,13 +284,22 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 		return nil, NewErrValidation(err)
 	}
 
+	// Determine max bytes: use provided value or default
+	finalMaxBytes := uc.MaxBytesDefault
+	if maxBytes != nil {
+		if *maxBytes < MinCASBackendMaxBytes {
+			return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least %s", bytefmt.ByteSize(uint64(MinCASBackendMaxBytes))))
+		}
+		finalMaxBytes = *maxBytes
+	}
+
 	secretName, err := uc.credsRW.SaveCredentials(ctx, orgID, creds)
 	if err != nil {
 		return nil, fmt.Errorf("storing the credentials: %w", err)
 	}
 
 	backend, err := uc.repo.Create(ctx, &CASBackendCreateOpts{
-		MaxBytes: uc.MaxBytesDefault,
+		MaxBytes: finalMaxBytes,
 		Name:     name,
 		CASBackendOpts: &CASBackendOpts{
 			Location: location, SecretName: secretName, Provider: provider, Default: ToPtr(defaultB),
@@ -321,8 +332,8 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 	return backend, nil
 }
 
-// Update will update credentials, description or default status
-func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, description *string, creds any, defaultB *bool) (*CASBackend, error) {
+// Update will update credentials, description, default status, or max bytes
+func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, description *string, creds any, defaultB *bool, maxBytes *int64) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -340,6 +351,16 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 		return nil, NewErrNotFound("CAS Backend")
 	}
 
+	// Inline backends cannot have their max_bytes updated
+	if maxBytes != nil && before.Inline {
+		return nil, NewErrValidationStr("inline backends cannot have their max_bytes updated")
+	}
+
+	// Validate max_bytes if provided
+	if maxBytes != nil && *maxBytes < MinCASBackendMaxBytes {
+		return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least %s", bytefmt.ByteSize(uint64(MinCASBackendMaxBytes))))
+	}
+
 	var secretName string
 	credentialsUpdated := creds != nil
 	// We want to rotate credentials
@@ -354,7 +375,8 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 	// The validation status will be updated through PerformValidation if needed
 	// Don't set validation status here - let PerformValidation handle it
 	updateOpts := &CASBackendUpdateOpts{
-		ID: uuid,
+		ID:       uuid,
+		MaxBytes: maxBytes,
 		CASBackendOpts: &CASBackendOpts{
 			SecretName:  secretName,
 			Default:     defaultB,

@@ -2,6 +2,22 @@
   "$id": "controlplane.v1.CASBackendServiceCreateRequest.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(maxBytes)$": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Maximum size in bytes for each blob stored in this backend.\n If not specified, defaults to the system default (typically 100MB)."
+    }
+  },
   "properties": {
     "credentials": {
       "$ref": "google.protobuf.Struct.schema.json",
@@ -19,6 +35,20 @@
       "description": "Location, e.g. bucket name, OCI bucket name, ...",
       "minLength": 1,
       "type": "string"
+    },
+    "max_bytes": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Maximum size in bytes for each blob stored in this backend.\n If not specified, defaults to the system default (typically 100MB)."
     },
     "name": {
       "minLength": 1,

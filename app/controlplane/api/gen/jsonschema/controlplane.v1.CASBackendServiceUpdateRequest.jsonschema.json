@@ -2,7 +2,23 @@
   "$id": "controlplane.v1.CASBackendServiceUpdateRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Update a CAS backend is limited to\n - description\n - set is as default\n - rotate credentials",
+  "description": "Update a CAS backend is limited to\n - description\n - set is as default\n - rotate credentials\n - max blob size",
+  "patternProperties": {
+    "^(max_bytes)$": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Maximum size in bytes for each blob stored in this backend."
+    }
+  },
   "properties": {
     "credentials": {
       "$ref": "google.protobuf.Struct.jsonschema.json",
@@ -15,6 +31,20 @@
     "description": {
       "description": "Description",
       "type": "string"
+    },
+    "maxBytes": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Maximum size in bytes for each blob stored in this backend."
     },
     "name": {
       "type": "string"

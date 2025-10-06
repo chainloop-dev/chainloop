@@ -165,6 +165,11 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 			updateChain = updateChain.SetValidationError(*opts.ValidationError)
 		}
 
+		// If MaxBytes is provided, update it
+		if opts.MaxBytes != nil {
+			updateChain = updateChain.SetMaxBlobSizeBytes(*opts.MaxBytes)
+		}
+
 		backend, err = updateChain.Save(ctx)
 		if err != nil {
 			return err
