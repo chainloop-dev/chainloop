@@ -383,6 +383,8 @@ export interface Metadata {
   name: string;
   description: string;
   annotations: { [key: string]: string };
+  /** optional organization name to specify the owning organization */
+  organization?: string | undefined;
 }
 
 export interface Metadata_AnnotationsEntry {
@@ -1366,7 +1368,7 @@ export const Policy = {
 };
 
 function createBaseMetadata(): Metadata {
-  return { name: "", description: "", annotations: {} };
+  return { name: "", description: "", annotations: {}, organization: undefined };
 }
 
 export const Metadata = {
@@ -1380,6 +1382,9 @@ export const Metadata = {
     Object.entries(message.annotations).forEach(([key, value]) => {
       Metadata_AnnotationsEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
     });
+    if (message.organization !== undefined) {
+      writer.uint32(50).string(message.organization);
+    }
     return writer;
   },
 
@@ -1414,6 +1419,13 @@ export const Metadata = {
             message.annotations[entry5.key] = entry5.value;
           }
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.organization = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1433,6 +1445,7 @@ export const Metadata = {
           return acc;
         }, {})
         : {},
+      organization: isSet(object.organization) ? String(object.organization) : undefined,
     };
   },
 
@@ -1446,6 +1459,7 @@ export const Metadata = {
         obj.annotations[k] = v;
       });
     }
+    message.organization !== undefined && (obj.organization = message.organization);
     return obj;
   },
 
@@ -1466,6 +1480,7 @@ export const Metadata = {
       },
       {},
     );
+    message.organization = object.organization ?? undefined;
     return message;
   },
 };

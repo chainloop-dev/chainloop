@@ -217,6 +217,8 @@ message Metadata {
 
   string description = 4;
   map<string, string> annotations = 5;
+  // optional organization name to specify the owning organization
+  optional string organization = 6;
 }
 
 message PolicySpec {
