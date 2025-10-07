@@ -57,10 +57,6 @@ jobs:
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Initialize Attestation
-        run: |
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --debug
-
       - name: Package Chart
         run: helm package deployment/chainloop/
 
@@ -69,6 +65,10 @@ jobs:
           export CONTAINER_CP=$(cat deployment/chainloop/Chart.yaml | yq -r .annotations.images | yq -r '.[] | select(.name == "control-plane") | .image')
           export CONTAINER_CAS=$(cat deployment/chainloop/Chart.yaml | yq -r .annotations.images | yq -r '.[] | select(.name == "artifact-cas") | .image')
           chart_version=$(cat deployment/chainloop/Chart.yaml | yq .version)
+          app_version=$(cat deployment/chainloop/Chart.yaml | yq .appVersion)
+
+          # Force the version that's inside the Chart.yaml file
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version ${app_version}
 
           # Attest Control plane image
           chainloop attestation add --name control-plane-image --value "${CONTAINER_CP}"
