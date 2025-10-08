@@ -20,10 +20,10 @@ BEGIN
     -- Loop until no more rows remain
     WHILE total_remaining > 0 LOOP
         -- Update a batch of project versions
-        -- Set released_at to updated_at as a reasonable default
+        -- Set released_at to created_at as a reasonable default
             WITH updated AS (
                 UPDATE project_versions
-                    SET released_at = updated_at
+                    SET released_at = created_at
                     WHERE id IN (
                         SELECT id
                         FROM project_versions
