@@ -659,11 +659,10 @@ type Metadata struct {
 	unknownFields protoimpl.UnknownFields
 
 	// the name of the policy
-	Name        string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description string            `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Annotations map[string]string `protobuf:"bytes,5,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// optional organization name to specify the owning organization
-	Organization *string `protobuf:"bytes,6,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
+	Name         string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description  string            `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Annotations  map[string]string `protobuf:"bytes,5,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Organization *string           `protobuf:"bytes,6,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
 }
 
 func (x *Metadata) Reset() {

@@ -383,7 +383,6 @@ export interface Metadata {
   name: string;
   description: string;
   annotations: { [key: string]: string };
-  /** optional organization name to specify the owning organization */
   organization?: string | undefined;
 }
 

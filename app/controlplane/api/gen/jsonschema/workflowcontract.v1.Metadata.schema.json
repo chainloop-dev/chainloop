@@ -20,7 +20,6 @@
       "type": "string"
     },
     "organization": {
-      "description": "optional organization name to specify the owning organization",
       "type": "string"
     }
   },
