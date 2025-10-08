@@ -18,6 +18,9 @@
     "name": {
       "description": "the name of the policy",
       "type": "string"
+    },
+    "organization": {
+      "type": "string"
     }
   },
   "title": "Metadata",
