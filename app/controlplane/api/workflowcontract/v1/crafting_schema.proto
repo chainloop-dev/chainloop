@@ -143,7 +143,6 @@ message CraftingSchemaV2 {
   CraftingSchemaV2Spec spec = 4 [(buf.validate.field).required = true];
 }
 
-
 message CraftingSchemaV2Spec {
   // Materials that are expected to be present in the attestation
   repeated CraftingSchema.Material materials = 1;
