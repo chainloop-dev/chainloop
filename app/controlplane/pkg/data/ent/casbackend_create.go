@@ -79,6 +79,20 @@ func (cbc *CASBackendCreate) SetNillableCreatedAt(t *time.Time) *CASBackendCreat
 	return cbc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (cbc *CASBackendCreate) SetUpdatedAt(t time.Time) *CASBackendCreate {
+	cbc.mutation.SetUpdatedAt(t)
+	return cbc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (cbc *CASBackendCreate) SetNillableUpdatedAt(t *time.Time) *CASBackendCreate {
+	if t != nil {
+		cbc.SetUpdatedAt(*t)
+	}
+	return cbc
+}
+
 // SetValidationStatus sets the "validation_status" field.
 func (cbc *CASBackendCreate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendCreate {
 	cbc.mutation.SetValidationStatus(bbvs)
@@ -248,6 +262,10 @@ func (cbc *CASBackendCreate) defaults() {
 		v := casbackend.DefaultCreatedAt()
 		cbc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := cbc.mutation.UpdatedAt(); !ok {
+		v := casbackend.DefaultUpdatedAt()
+		cbc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := cbc.mutation.ValidationStatus(); !ok {
 		v := casbackend.DefaultValidationStatus
 		cbc.mutation.SetValidationStatus(v)
@@ -291,6 +309,9 @@ func (cbc *CASBackendCreate) check() error {
 	}
 	if _, ok := cbc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CASBackend.created_at"`)}
+	}
+	if _, ok := cbc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "CASBackend.updated_at"`)}
 	}
 	if _, ok := cbc.mutation.ValidationStatus(); !ok {
 		return &ValidationError{Name: "validation_status", err: errors.New(`ent: missing required field "CASBackend.validation_status"`)}
@@ -374,6 +395,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := cbc.mutation.CreatedAt(); ok {
 		_spec.SetField(casbackend.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := cbc.mutation.UpdatedAt(); ok {
+		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := cbc.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
@@ -515,6 +540,18 @@ func (u *CASBackendUpsert) SetSecretName(v string) *CASBackendUpsert {
 // UpdateSecretName sets the "secret_name" field to the value that was provided on create.
 func (u *CASBackendUpsert) UpdateSecretName() *CASBackendUpsert {
 	u.SetExcluded(casbackend.FieldSecretName)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *CASBackendUpsert) SetUpdatedAt(v time.Time) *CASBackendUpsert {
+	u.Set(casbackend.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateUpdatedAt() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldUpdatedAt)
 	return u
 }
 
@@ -703,6 +740,20 @@ func (u *CASBackendUpsertOne) SetSecretName(v string) *CASBackendUpsertOne {
 func (u *CASBackendUpsertOne) UpdateSecretName() *CASBackendUpsertOne {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateSecretName()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *CASBackendUpsertOne) SetUpdatedAt(v time.Time) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateUpdatedAt() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 
@@ -1073,6 +1124,20 @@ func (u *CASBackendUpsertBulk) SetSecretName(v string) *CASBackendUpsertBulk {
 func (u *CASBackendUpsertBulk) UpdateSecretName() *CASBackendUpsertBulk {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateSecretName()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *CASBackendUpsertBulk) SetUpdatedAt(v time.Time) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateUpdatedAt() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 

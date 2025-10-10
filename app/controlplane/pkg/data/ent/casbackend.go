@@ -32,6 +32,8 @@ type CASBackend struct {
 	SecretName string `json:"secret_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// ValidationStatus holds the value of the "validation_status" field.
 	ValidationStatus biz.CASBackendValidationStatus `json:"validation_status,omitempty"`
 	// ValidationError holds the value of the "validation_error" field.
@@ -95,7 +97,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case casbackend.FieldLocation, casbackend.FieldName, casbackend.FieldProvider, casbackend.FieldDescription, casbackend.FieldSecretName, casbackend.FieldValidationStatus, casbackend.FieldValidationError:
 			values[i] = new(sql.NullString)
-		case casbackend.FieldCreatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
+		case casbackend.FieldCreatedAt, casbackend.FieldUpdatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case casbackend.FieldID:
 			values[i] = new(uuid.UUID)
@@ -157,6 +159,12 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				cb.CreatedAt = value.Time
+			}
+		case casbackend.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				cb.UpdatedAt = value.Time
 			}
 		case casbackend.FieldValidationStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -270,6 +278,9 @@ func (cb *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(cb.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(cb.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("validation_status=")
 	builder.WriteString(fmt.Sprintf("%v", cb.ValidationStatus))

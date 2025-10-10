@@ -115,6 +115,13 @@ export interface CASBackendServiceDeleteRequest {
 export interface CASBackendServiceDeleteResponse {
 }
 
+export interface CASBackendServiceRevalidateRequest {
+  name: string;
+}
+
+export interface CASBackendServiceRevalidateResponse {
+}
+
 function createBaseCASBackendServiceListRequest(): CASBackendServiceListRequest {
   return {};
 }
@@ -701,6 +708,114 @@ export const CASBackendServiceDeleteResponse = {
   },
 };
 
+function createBaseCASBackendServiceRevalidateRequest(): CASBackendServiceRevalidateRequest {
+  return { name: "" };
+}
+
+export const CASBackendServiceRevalidateRequest = {
+  encode(message: CASBackendServiceRevalidateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceRevalidateRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceRevalidateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceRevalidateRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: CASBackendServiceRevalidateRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceRevalidateRequest>, I>>(
+    base?: I,
+  ): CASBackendServiceRevalidateRequest {
+    return CASBackendServiceRevalidateRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceRevalidateRequest>, I>>(
+    object: I,
+  ): CASBackendServiceRevalidateRequest {
+    const message = createBaseCASBackendServiceRevalidateRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseCASBackendServiceRevalidateResponse(): CASBackendServiceRevalidateResponse {
+  return {};
+}
+
+export const CASBackendServiceRevalidateResponse = {
+  encode(_: CASBackendServiceRevalidateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceRevalidateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceRevalidateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): CASBackendServiceRevalidateResponse {
+    return {};
+  },
+
+  toJSON(_: CASBackendServiceRevalidateResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceRevalidateResponse>, I>>(
+    base?: I,
+  ): CASBackendServiceRevalidateResponse {
+    return CASBackendServiceRevalidateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceRevalidateResponse>, I>>(
+    _: I,
+  ): CASBackendServiceRevalidateResponse {
+    const message = createBaseCASBackendServiceRevalidateResponse();
+    return message;
+  },
+};
+
 export interface CASBackendService {
   List(
     request: DeepPartial<CASBackendServiceListRequest>,
@@ -718,6 +833,10 @@ export interface CASBackendService {
     request: DeepPartial<CASBackendServiceDeleteRequest>,
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceDeleteResponse>;
+  Revalidate(
+    request: DeepPartial<CASBackendServiceRevalidateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceRevalidateResponse>;
 }
 
 export class CASBackendServiceClientImpl implements CASBackendService {
@@ -729,6 +848,7 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
     this.Delete = this.Delete.bind(this);
+    this.Revalidate = this.Revalidate.bind(this);
   }
 
   List(
@@ -757,6 +877,17 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceDeleteResponse> {
     return this.rpc.unary(CASBackendServiceDeleteDesc, CASBackendServiceDeleteRequest.fromPartial(request), metadata);
+  }
+
+  Revalidate(
+    request: DeepPartial<CASBackendServiceRevalidateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceRevalidateResponse> {
+    return this.rpc.unary(
+      CASBackendServiceRevalidateDesc,
+      CASBackendServiceRevalidateRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
@@ -844,6 +975,29 @@ export const CASBackendServiceDeleteDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = CASBackendServiceDeleteResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const CASBackendServiceRevalidateDesc: UnaryMethodDefinitionish = {
+  methodName: "Revalidate",
+  service: CASBackendServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return CASBackendServiceRevalidateRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = CASBackendServiceRevalidateResponse.decode(data);
       return {
         ...value,
         toObject() {

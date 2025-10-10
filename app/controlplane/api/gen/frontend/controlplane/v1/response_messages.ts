@@ -621,6 +621,7 @@ export interface CASBackendItem {
   isInline: boolean;
   /** Error message if validation failed */
   validationError?: string | undefined;
+  updatedAt?: Date;
 }
 
 export enum CASBackendItem_ValidationStatus {
@@ -3816,6 +3817,7 @@ function createBaseCASBackendItem(): CASBackendItem {
     limits: undefined,
     isInline: false,
     validationError: undefined,
+    updatedAt: undefined,
   };
 }
 
@@ -3856,6 +3858,9 @@ export const CASBackendItem = {
     }
     if (message.validationError !== undefined) {
       writer.uint32(98).string(message.validationError);
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -3951,6 +3956,13 @@ export const CASBackendItem = {
 
           message.validationError = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3976,6 +3988,7 @@ export const CASBackendItem = {
       limits: isSet(object.limits) ? CASBackendItem_Limits.fromJSON(object.limits) : undefined,
       isInline: isSet(object.isInline) ? Boolean(object.isInline) : false,
       validationError: isSet(object.validationError) ? String(object.validationError) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
     };
   },
 
@@ -3995,6 +4008,7 @@ export const CASBackendItem = {
       (obj.limits = message.limits ? CASBackendItem_Limits.toJSON(message.limits) : undefined);
     message.isInline !== undefined && (obj.isInline = message.isInline);
     message.validationError !== undefined && (obj.validationError = message.validationError);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     return obj;
   },
 
@@ -4018,6 +4032,7 @@ export const CASBackendItem = {
       : undefined;
     message.isInline = object.isInline ?? false;
     message.validationError = object.validationError ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     return message;
   },
 };

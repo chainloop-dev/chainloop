@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,7 +150,8 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 		// We do it in other models by providing pointers to string + setNillableX methods
 		updateChain := tx.CASBackend.UpdateOneID(opts.ID).
 			SetNillableDefault(opts.Default).
-			SetNillableDescription(opts.Description)
+			SetNillableDescription(opts.Description).
+			SetUpdatedAt(time.Now())
 
 		// If secretName is provided we set it
 		if opts.SecretName != "" {
@@ -296,6 +297,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		Description:      backend.Description,
 		SecretName:       backend.SecretName,
 		CreatedAt:        toTimePtr(backend.CreatedAt),
+		UpdatedAt:        toTimePtr(backend.UpdatedAt),
 		ValidatedAt:      toTimePtr(backend.ValidatedAt),
 		ValidationStatus: backend.ValidationStatus,
 		ValidationError:  toStringPtr(backend.ValidationError),

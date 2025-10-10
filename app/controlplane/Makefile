@@ -37,6 +37,12 @@ migration_apply: check-atlas-tool migration_hash
 	atlas migrate status --dir ${local_migrations_dir} --url ${local_db}
 	atlas migrate apply --dir ${local_migrations_dir} --url ${local_db}
 
+.PHONY: migration_apply_non_linear
+# see https://atlasgo.io/versioned/apply#non-linear-error
+migration_apply_non_linear: check-atlas-tool migration_hash
+	atlas migrate status --dir ${local_migrations_dir} --url ${local_db}
+	atlas migrate apply --dir ${local_migrations_dir} --url ${local_db} --exec-order non-linear
+
 .PHONY: migration_sync
 # sync migration files with the current ent schema
 migration_sync: check-atlas-tool migration_hash

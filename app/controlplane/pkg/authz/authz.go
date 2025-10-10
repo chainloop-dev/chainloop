@@ -130,7 +130,8 @@ var (
 	PolicyArtifactDownload = &Policy{ResourceCASArtifact, ActionRead}
 	PolicyArtifactUpload   = &Policy{ResourceCASArtifact, ActionCreate}
 	// CAS backend
-	PolicyCASBackendList = &Policy{ResourceCASBackend, ActionList}
+	PolicyCASBackendList   = &Policy{ResourceCASBackend, ActionList}
+	PolicyCASBackendUpdate = &Policy{ResourceCASBackend, ActionUpdate}
 	// Available integrations
 	PolicyAvailableIntegrationList = &Policy{ResourceAvailableIntegration, ActionList}
 	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
@@ -370,7 +371,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	// Or to retrieve a download url
 	"/controlplane.v1.CASRedirectService/GetDownloadURL": {PolicyArtifactDownload},
 	// CAS Backend listing
-	"/controlplane.v1.CASBackendService/List": {PolicyCASBackendList},
+	"/controlplane.v1.CASBackendService/List":       {PolicyCASBackendList},
+	"/controlplane.v1.CASBackendService/Revalidate": {PolicyCASBackendUpdate},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
 	// Registered integrations
