@@ -116,6 +116,8 @@ var (
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultValidatedAt holds the default value on creation for the "validated_at" field.
 	DefaultValidatedAt func() time.Time
 	// DefaultDefault holds the default value on creation for the "default" field.

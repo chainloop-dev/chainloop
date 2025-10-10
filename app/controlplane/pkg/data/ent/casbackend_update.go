@@ -73,14 +73,6 @@ func (cbu *CASBackendUpdate) SetUpdatedAt(t time.Time) *CASBackendUpdate {
 	return cbu
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableUpdatedAt(t *time.Time) *CASBackendUpdate {
-	if t != nil {
-		cbu.SetUpdatedAt(*t)
-	}
-	return cbu
-}
-
 // SetValidationStatus sets the "validation_status" field.
 func (cbu *CASBackendUpdate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdate {
 	cbu.mutation.SetValidationStatus(bbvs)
@@ -244,6 +236,7 @@ func (cbu *CASBackendUpdate) RemoveWorkflowRun(w ...*WorkflowRun) *CASBackendUpd
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cbu *CASBackendUpdate) Save(ctx context.Context) (int, error) {
+	cbu.defaults()
 	return withHooks(ctx, cbu.sqlSave, cbu.mutation, cbu.hooks)
 }
 
@@ -266,6 +259,14 @@ func (cbu *CASBackendUpdate) Exec(ctx context.Context) error {
 func (cbu *CASBackendUpdate) ExecX(ctx context.Context) {
 	if err := cbu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (cbu *CASBackendUpdate) defaults() {
+	if _, ok := cbu.mutation.UpdatedAt(); !ok {
+		v := casbackend.UpdateDefaultUpdatedAt()
+		cbu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -475,14 +476,6 @@ func (cbuo *CASBackendUpdateOne) SetUpdatedAt(t time.Time) *CASBackendUpdateOne 
 	return cbuo
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableUpdatedAt(t *time.Time) *CASBackendUpdateOne {
-	if t != nil {
-		cbuo.SetUpdatedAt(*t)
-	}
-	return cbuo
-}
-
 // SetValidationStatus sets the "validation_status" field.
 func (cbuo *CASBackendUpdateOne) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdateOne {
 	cbuo.mutation.SetValidationStatus(bbvs)
@@ -659,6 +652,7 @@ func (cbuo *CASBackendUpdateOne) Select(field string, fields ...string) *CASBack
 
 // Save executes the query and returns the updated CASBackend entity.
 func (cbuo *CASBackendUpdateOne) Save(ctx context.Context) (*CASBackend, error) {
+	cbuo.defaults()
 	return withHooks(ctx, cbuo.sqlSave, cbuo.mutation, cbuo.hooks)
 }
 
@@ -681,6 +675,14 @@ func (cbuo *CASBackendUpdateOne) Exec(ctx context.Context) error {
 func (cbuo *CASBackendUpdateOne) ExecX(ctx context.Context) {
 	if err := cbuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (cbuo *CASBackendUpdateOne) defaults() {
+	if _, ok := cbuo.mutation.UpdatedAt(); !ok {
+		v := casbackend.UpdateDefaultUpdatedAt()
+		cbuo.mutation.SetUpdatedAt(v)
 	}
 }
 
