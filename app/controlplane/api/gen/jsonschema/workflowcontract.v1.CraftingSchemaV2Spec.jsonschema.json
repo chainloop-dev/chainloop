@@ -19,13 +19,6 @@
     }
   },
   "properties": {
-    "annotations": {
-      "description": "List of annotations that can be used to add metadata to the attestation\n this metadata can be used later on by the integrations engine to filter and interpolate data\n It works in addition to the annotations defined in the materials and the runner",
-      "items": {
-        "$ref": "workflowcontract.v1.Annotation.jsonschema.json"
-      },
-      "type": "array"
-    },
     "envAllowList": {
       "description": "List of environment variables that are allowed to be present in the attestation",
       "items": {

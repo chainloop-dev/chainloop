@@ -333,12 +333,6 @@ export interface CraftingSchemaV2Spec {
   policies?: Policies;
   /** Policy groups to apply to this contract */
   policyGroups: PolicyGroupAttachment[];
-  /**
-   * List of annotations that can be used to add metadata to the attestation
-   * this metadata can be used later on by the integrations engine to filter and interpolate data
-   * It works in addition to the annotations defined in the materials and the runner
-   */
-  annotations: Annotation[];
 }
 
 export interface Annotation {
@@ -964,7 +958,7 @@ export const CraftingSchemaV2 = {
 };
 
 function createBaseCraftingSchemaV2Spec(): CraftingSchemaV2Spec {
-  return { materials: [], envAllowList: [], runner: undefined, policies: undefined, policyGroups: [], annotations: [] };
+  return { materials: [], envAllowList: [], runner: undefined, policies: undefined, policyGroups: [] };
 }
 
 export const CraftingSchemaV2Spec = {
@@ -983,9 +977,6 @@ export const CraftingSchemaV2Spec = {
     }
     for (const v of message.policyGroups) {
       PolicyGroupAttachment.encode(v!, writer.uint32(42).fork()).ldelim();
-    }
-    for (const v of message.annotations) {
-      Annotation.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1032,13 +1023,6 @@ export const CraftingSchemaV2Spec = {
 
           message.policyGroups.push(PolicyGroupAttachment.decode(reader, reader.uint32()));
           continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.annotations.push(Annotation.decode(reader, reader.uint32()));
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1059,7 +1043,6 @@ export const CraftingSchemaV2Spec = {
       policyGroups: Array.isArray(object?.policyGroups)
         ? object.policyGroups.map((e: any) => PolicyGroupAttachment.fromJSON(e))
         : [],
-      annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
     };
   },
 
@@ -1083,11 +1066,6 @@ export const CraftingSchemaV2Spec = {
     } else {
       obj.policyGroups = [];
     }
-    if (message.annotations) {
-      obj.annotations = message.annotations.map((e) => e ? Annotation.toJSON(e) : undefined);
-    } else {
-      obj.annotations = [];
-    }
     return obj;
   },
 
@@ -1106,7 +1084,6 @@ export const CraftingSchemaV2Spec = {
       ? Policies.fromPartial(object.policies)
       : undefined;
     message.policyGroups = object.policyGroups?.map((e) => PolicyGroupAttachment.fromPartial(e)) || [];
-    message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
     return message;
   },
 };
