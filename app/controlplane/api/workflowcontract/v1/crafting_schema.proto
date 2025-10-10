@@ -134,6 +134,29 @@ message CraftingSchema {
   }
 }
 
+// Schema definition provided by the user to the tool
+// that defines the schema of the workflowRun
+message CraftingSchemaV2 {
+  string api_version = 1 [(buf.validate.field).string.const = "chainloop.dev/v1"];
+  string kind = 2 [(buf.validate.field).string.const = "Contract"];
+
+  Metadata metadata = 3 [(buf.validate.field).required = true];
+  CraftingSchemaV2Spec spec = 4 [(buf.validate.field).required = true];
+}
+
+message CraftingSchemaV2Spec {
+  // Materials that are expected to be present in the attestation
+  repeated CraftingSchema.Material materials = 1;
+  // List of environment variables that are allowed to be present in the attestation
+  repeated string env_allow_list = 2;
+  // Runner configuration for the contract
+  CraftingSchema.Runner runner = 3;
+  // Policies to apply to this contract
+  Policies policies = 4;
+  // Policy groups to apply to this contract
+  repeated PolicyGroupAttachment policy_groups = 5;
+}
+
 message Annotation {
   string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
   // This value can be set in the contract or provided during the attestation
