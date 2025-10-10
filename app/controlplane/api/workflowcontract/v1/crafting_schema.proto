@@ -134,7 +134,8 @@ message CraftingSchema {
   }
 }
 
-// Represents a workflow contract that defines schema and requirements
+// Schema definition provided by the user to the tool
+// that defines the schema of the workflowRun
 message CraftingSchemaV2 {
   string api_version = 1 [(buf.validate.field).string.const = "chainloop.dev/v1"];
   string kind = 2 [(buf.validate.field).string.const = "Contract"];

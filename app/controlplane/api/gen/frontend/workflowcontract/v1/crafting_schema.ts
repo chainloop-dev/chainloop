@@ -314,7 +314,10 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
   }
 }
 
-/** Represents a workflow contract that defines schema and requirements */
+/**
+ * Schema definition provided by the user to the tool
+ * that defines the schema of the workflowRun
+ */
 export interface CraftingSchemaV2 {
   apiVersion: string;
   kind: string;

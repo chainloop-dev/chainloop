@@ -339,7 +339,8 @@ func (x *CraftingSchema) GetPolicyGroups() []*PolicyGroupAttachment {
 	return nil
 }
 
-// Represents a workflow contract that defines schema and requirements
+// Schema definition provided by the user to the tool
+// that defines the schema of the workflowRun
 type CraftingSchemaV2 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
