@@ -314,6 +314,33 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
   }
 }
 
+/** Represents a workflow contract that defines schema and requirements */
+export interface CraftingSchemaV2 {
+  apiVersion: string;
+  kind: string;
+  metadata?: Metadata;
+  spec?: CraftingSchemaV2Spec;
+}
+
+export interface CraftingSchemaV2Spec {
+  /** Materials that are expected to be present in the attestation */
+  materials: CraftingSchema_Material[];
+  /** List of environment variables that are allowed to be present in the attestation */
+  envAllowList: string[];
+  /** Runner configuration for the contract */
+  runner?: CraftingSchema_Runner;
+  /** Policies to apply to this contract */
+  policies?: Policies;
+  /** Policy groups to apply to this contract */
+  policyGroups: PolicyGroupAttachment[];
+  /**
+   * List of annotations that can be used to add metadata to the attestation
+   * this metadata can be used later on by the integrations engine to filter and interpolate data
+   * It works in addition to the annotations defined in the materials and the runner
+   */
+  annotations: Annotation[];
+}
+
 export interface Annotation {
   /** Single word optionally separated with _ */
   name: string;
@@ -830,6 +857,255 @@ export const CraftingSchema_Material = {
     message.name = object.name ?? "";
     message.optional = object.optional ?? false;
     message.output = object.output ?? false;
+    message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCraftingSchemaV2(): CraftingSchemaV2 {
+  return { apiVersion: "", kind: "", metadata: undefined, spec: undefined };
+}
+
+export const CraftingSchemaV2 = {
+  encode(message: CraftingSchemaV2, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.apiVersion !== "") {
+      writer.uint32(10).string(message.apiVersion);
+    }
+    if (message.kind !== "") {
+      writer.uint32(18).string(message.kind);
+    }
+    if (message.metadata !== undefined) {
+      Metadata.encode(message.metadata, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.spec !== undefined) {
+      CraftingSchemaV2Spec.encode(message.spec, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CraftingSchemaV2 {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCraftingSchemaV2();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.apiVersion = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.metadata = Metadata.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.spec = CraftingSchemaV2Spec.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CraftingSchemaV2 {
+    return {
+      apiVersion: isSet(object.apiVersion) ? String(object.apiVersion) : "",
+      kind: isSet(object.kind) ? String(object.kind) : "",
+      metadata: isSet(object.metadata) ? Metadata.fromJSON(object.metadata) : undefined,
+      spec: isSet(object.spec) ? CraftingSchemaV2Spec.fromJSON(object.spec) : undefined,
+    };
+  },
+
+  toJSON(message: CraftingSchemaV2): unknown {
+    const obj: any = {};
+    message.apiVersion !== undefined && (obj.apiVersion = message.apiVersion);
+    message.kind !== undefined && (obj.kind = message.kind);
+    message.metadata !== undefined && (obj.metadata = message.metadata ? Metadata.toJSON(message.metadata) : undefined);
+    message.spec !== undefined && (obj.spec = message.spec ? CraftingSchemaV2Spec.toJSON(message.spec) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CraftingSchemaV2>, I>>(base?: I): CraftingSchemaV2 {
+    return CraftingSchemaV2.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CraftingSchemaV2>, I>>(object: I): CraftingSchemaV2 {
+    const message = createBaseCraftingSchemaV2();
+    message.apiVersion = object.apiVersion ?? "";
+    message.kind = object.kind ?? "";
+    message.metadata = (object.metadata !== undefined && object.metadata !== null)
+      ? Metadata.fromPartial(object.metadata)
+      : undefined;
+    message.spec = (object.spec !== undefined && object.spec !== null)
+      ? CraftingSchemaV2Spec.fromPartial(object.spec)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCraftingSchemaV2Spec(): CraftingSchemaV2Spec {
+  return { materials: [], envAllowList: [], runner: undefined, policies: undefined, policyGroups: [], annotations: [] };
+}
+
+export const CraftingSchemaV2Spec = {
+  encode(message: CraftingSchemaV2Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.materials) {
+      CraftingSchema_Material.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.envAllowList) {
+      writer.uint32(18).string(v!);
+    }
+    if (message.runner !== undefined) {
+      CraftingSchema_Runner.encode(message.runner, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.policies !== undefined) {
+      Policies.encode(message.policies, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.policyGroups) {
+      PolicyGroupAttachment.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.annotations) {
+      Annotation.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CraftingSchemaV2Spec {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCraftingSchemaV2Spec();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.materials.push(CraftingSchema_Material.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.envAllowList.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.runner = CraftingSchema_Runner.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.policies = Policies.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.policyGroups.push(PolicyGroupAttachment.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.annotations.push(Annotation.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CraftingSchemaV2Spec {
+    return {
+      materials: Array.isArray(object?.materials)
+        ? object.materials.map((e: any) => CraftingSchema_Material.fromJSON(e))
+        : [],
+      envAllowList: Array.isArray(object?.envAllowList) ? object.envAllowList.map((e: any) => String(e)) : [],
+      runner: isSet(object.runner) ? CraftingSchema_Runner.fromJSON(object.runner) : undefined,
+      policies: isSet(object.policies) ? Policies.fromJSON(object.policies) : undefined,
+      policyGroups: Array.isArray(object?.policyGroups)
+        ? object.policyGroups.map((e: any) => PolicyGroupAttachment.fromJSON(e))
+        : [],
+      annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: CraftingSchemaV2Spec): unknown {
+    const obj: any = {};
+    if (message.materials) {
+      obj.materials = message.materials.map((e) => e ? CraftingSchema_Material.toJSON(e) : undefined);
+    } else {
+      obj.materials = [];
+    }
+    if (message.envAllowList) {
+      obj.envAllowList = message.envAllowList.map((e) => e);
+    } else {
+      obj.envAllowList = [];
+    }
+    message.runner !== undefined &&
+      (obj.runner = message.runner ? CraftingSchema_Runner.toJSON(message.runner) : undefined);
+    message.policies !== undefined && (obj.policies = message.policies ? Policies.toJSON(message.policies) : undefined);
+    if (message.policyGroups) {
+      obj.policyGroups = message.policyGroups.map((e) => e ? PolicyGroupAttachment.toJSON(e) : undefined);
+    } else {
+      obj.policyGroups = [];
+    }
+    if (message.annotations) {
+      obj.annotations = message.annotations.map((e) => e ? Annotation.toJSON(e) : undefined);
+    } else {
+      obj.annotations = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CraftingSchemaV2Spec>, I>>(base?: I): CraftingSchemaV2Spec {
+    return CraftingSchemaV2Spec.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CraftingSchemaV2Spec>, I>>(object: I): CraftingSchemaV2Spec {
+    const message = createBaseCraftingSchemaV2Spec();
+    message.materials = object.materials?.map((e) => CraftingSchema_Material.fromPartial(e)) || [];
+    message.envAllowList = object.envAllowList?.map((e) => e) || [];
+    message.runner = (object.runner !== undefined && object.runner !== null)
+      ? CraftingSchema_Runner.fromPartial(object.runner)
+      : undefined;
+    message.policies = (object.policies !== undefined && object.policies !== null)
+      ? Policies.fromPartial(object.policies)
+      : undefined;
+    message.policyGroups = object.policyGroups?.map((e) => PolicyGroupAttachment.fromPartial(e)) || [];
     message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
     return message;
   },
