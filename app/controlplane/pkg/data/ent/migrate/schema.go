@@ -89,6 +89,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "secret_name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "validation_status", Type: field.TypeEnum, Enums: []string{"OK", "Invalid"}, Default: "OK"},
 		{Name: "validation_error", Type: field.TypeString, Nullable: true},
 		{Name: "validated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
@@ -106,7 +107,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_backends_organizations_cas_backends",
-				Columns:    []*schema.Column{CasBackendsColumns[14]},
+				Columns:    []*schema.Column{CasBackendsColumns[15]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -115,7 +116,7 @@ var (
 			{
 				Name:    "casbackend_name_organization_cas_backends",
 				Unique:  true,
-				Columns: []*schema.Column{CasBackendsColumns[2], CasBackendsColumns[14]},
+				Columns: []*schema.Column{CasBackendsColumns[2], CasBackendsColumns[15]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

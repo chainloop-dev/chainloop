@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -169,6 +169,7 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 		Id: in.ID.String(), Location: in.Location, Description: in.Description,
 		Name:        in.Name,
 		CreatedAt:   timestamppb.New(*in.CreatedAt),
+		UpdatedAt:   timestamppb.New(*in.UpdatedAt),
 		ValidatedAt: timestamppb.New(*in.ValidatedAt),
 		Provider:    string(in.Provider),
 		Default:     in.Default,

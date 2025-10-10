@@ -29,6 +29,8 @@ const (
 	FieldSecretName = "secret_name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldValidationStatus holds the string denoting the validation_status field in the database.
 	FieldValidationStatus = "validation_status"
 	// FieldValidationError holds the string denoting the validation_error field in the database.
@@ -72,6 +74,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldSecretName,
 	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldValidationStatus,
 	FieldValidationError,
 	FieldValidatedAt,
@@ -111,6 +114,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
 	// DefaultValidatedAt holds the default value on creation for the "validated_at" field.
 	DefaultValidatedAt func() time.Time
 	// DefaultDefault holds the default value on creation for the "default" field.
@@ -179,6 +184,11 @@ func BySecretName(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByValidationStatus orders the results by the validation_status field.

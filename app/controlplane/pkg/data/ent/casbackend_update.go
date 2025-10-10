@@ -67,6 +67,20 @@ func (cbu *CASBackendUpdate) SetNillableSecretName(s *string) *CASBackendUpdate 
 	return cbu
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (cbu *CASBackendUpdate) SetUpdatedAt(t time.Time) *CASBackendUpdate {
+	cbu.mutation.SetUpdatedAt(t)
+	return cbu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (cbu *CASBackendUpdate) SetNillableUpdatedAt(t *time.Time) *CASBackendUpdate {
+	if t != nil {
+		cbu.SetUpdatedAt(*t)
+	}
+	return cbu
+}
+
 // SetValidationStatus sets the "validation_status" field.
 func (cbu *CASBackendUpdate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdate {
 	cbu.mutation.SetValidationStatus(bbvs)
@@ -295,6 +309,9 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cbu.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
 	}
+	if value, ok := cbu.mutation.UpdatedAt(); ok {
+		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := cbu.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
 	}
@@ -448,6 +465,20 @@ func (cbuo *CASBackendUpdateOne) SetSecretName(s string) *CASBackendUpdateOne {
 func (cbuo *CASBackendUpdateOne) SetNillableSecretName(s *string) *CASBackendUpdateOne {
 	if s != nil {
 		cbuo.SetSecretName(*s)
+	}
+	return cbuo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (cbuo *CASBackendUpdateOne) SetUpdatedAt(t time.Time) *CASBackendUpdateOne {
+	cbuo.mutation.SetUpdatedAt(t)
+	return cbuo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (cbuo *CASBackendUpdateOne) SetNillableUpdatedAt(t *time.Time) *CASBackendUpdateOne {
+	if t != nil {
+		cbuo.SetUpdatedAt(*t)
 	}
 	return cbuo
 }
@@ -709,6 +740,9 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 	}
 	if value, ok := cbuo.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
+	}
+	if value, ok := cbuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := cbuo.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)

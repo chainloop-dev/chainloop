@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -294,6 +294,7 @@ message CASBackendItem {
   bool is_inline = 10;
   // Error message if validation failed
   optional string validation_error = 12;
+  google.protobuf.Timestamp updated_at = 13;
 
   message Limits {
     // Max number of bytes allowed to be stored in this backend

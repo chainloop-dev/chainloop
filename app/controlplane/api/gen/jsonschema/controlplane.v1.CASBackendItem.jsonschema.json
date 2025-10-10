@@ -10,6 +10,9 @@
       "description": "Is it an inline backend?\n inline means that the content is stored in the attestation itself",
       "type": "boolean"
     },
+    "^(updated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
     "^(validated_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
@@ -68,6 +71,9 @@
     "provider": {
       "description": "OCI, S3, ...",
       "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
     "validatedAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
