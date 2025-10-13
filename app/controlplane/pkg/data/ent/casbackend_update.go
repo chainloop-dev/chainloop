@@ -67,6 +67,12 @@ func (cbu *CASBackendUpdate) SetNillableSecretName(s *string) *CASBackendUpdate 
 	return cbu
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (cbu *CASBackendUpdate) SetUpdatedAt(t time.Time) *CASBackendUpdate {
+	cbu.mutation.SetUpdatedAt(t)
+	return cbu
+}
+
 // SetValidationStatus sets the "validation_status" field.
 func (cbu *CASBackendUpdate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdate {
 	cbu.mutation.SetValidationStatus(bbvs)
@@ -230,6 +236,7 @@ func (cbu *CASBackendUpdate) RemoveWorkflowRun(w ...*WorkflowRun) *CASBackendUpd
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cbu *CASBackendUpdate) Save(ctx context.Context) (int, error) {
+	cbu.defaults()
 	return withHooks(ctx, cbu.sqlSave, cbu.mutation, cbu.hooks)
 }
 
@@ -252,6 +259,14 @@ func (cbu *CASBackendUpdate) Exec(ctx context.Context) error {
 func (cbu *CASBackendUpdate) ExecX(ctx context.Context) {
 	if err := cbu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (cbu *CASBackendUpdate) defaults() {
+	if _, ok := cbu.mutation.UpdatedAt(); !ok {
+		v := casbackend.UpdateDefaultUpdatedAt()
+		cbu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -294,6 +309,9 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cbu.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
+	}
+	if value, ok := cbu.mutation.UpdatedAt(); ok {
+		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := cbu.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
@@ -449,6 +467,12 @@ func (cbuo *CASBackendUpdateOne) SetNillableSecretName(s *string) *CASBackendUpd
 	if s != nil {
 		cbuo.SetSecretName(*s)
 	}
+	return cbuo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (cbuo *CASBackendUpdateOne) SetUpdatedAt(t time.Time) *CASBackendUpdateOne {
+	cbuo.mutation.SetUpdatedAt(t)
 	return cbuo
 }
 
@@ -628,6 +652,7 @@ func (cbuo *CASBackendUpdateOne) Select(field string, fields ...string) *CASBack
 
 // Save executes the query and returns the updated CASBackend entity.
 func (cbuo *CASBackendUpdateOne) Save(ctx context.Context) (*CASBackend, error) {
+	cbuo.defaults()
 	return withHooks(ctx, cbuo.sqlSave, cbuo.mutation, cbuo.hooks)
 }
 
@@ -650,6 +675,14 @@ func (cbuo *CASBackendUpdateOne) Exec(ctx context.Context) error {
 func (cbuo *CASBackendUpdateOne) ExecX(ctx context.Context) {
 	if err := cbuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (cbuo *CASBackendUpdateOne) defaults() {
+	if _, ok := cbuo.mutation.UpdatedAt(); !ok {
+		v := casbackend.UpdateDefaultUpdatedAt()
+		cbuo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -709,6 +742,9 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 	}
 	if value, ok := cbuo.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
+	}
+	if value, ok := cbuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := cbuo.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -164,11 +164,40 @@ func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServic
 	return &pb.CASBackendServiceDeleteResponse{}, nil
 }
 
+// Revalidate triggers a manual validation for a non-inline CAS backend
+func (s *CASBackendService) Revalidate(ctx context.Context, req *pb.CASBackendServiceRevalidateRequest) (*pb.CASBackendServiceRevalidateResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	backend, err := s.uc.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Only allow revalidation for non-inline backends
+	if backend.Inline {
+		return nil, errors.BadRequest("invalid request", "inline CAS backends do not require validation")
+	}
+
+	// Launch validation in a goroutine and return immediately
+	go func() {
+		// Use background context to avoid cancellation when request context is cancelled
+		if err := s.uc.PerformValidation(context.Background(), backend.ID.String()); err != nil {
+			s.log.Errorw("msg", "background validation failed", "backend", backend.ID, "error", err)
+		}
+	}()
+
+	return &pb.CASBackendServiceRevalidateResponse{}, nil
+}
+
 func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	r := &pb.CASBackendItem{
 		Id: in.ID.String(), Location: in.Location, Description: in.Description,
 		Name:        in.Name,
 		CreatedAt:   timestamppb.New(*in.CreatedAt),
+		UpdatedAt:   timestamppb.New(*in.UpdatedAt),
 		ValidatedAt: timestamppb.New(*in.ValidatedAt),
 		Provider:    string(in.Provider),
 		Default:     in.Default,

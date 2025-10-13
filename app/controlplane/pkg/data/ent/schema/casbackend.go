@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,10 @@ func (CASBackend) Fields() []ent.Field {
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().
+			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now).
 			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Enum("validation_status").
 			GoType(biz.CASBackendValidationStatus("")).
