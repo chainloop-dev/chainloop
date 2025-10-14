@@ -24,9 +24,12 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/wor
 // Schema definition provided by the user to the tool
 // that defines the schema of the workflowRun
 message CraftingSchema {
-   option deprecated = true;
+  option deprecated = true;
   // Version of the schema, do not confuse with the revision of the content
-  string schema_version = 1 [(buf.validate.field).string.const = "v1", deprecated = true];
+  string schema_version = 1 [
+    (buf.validate.field).string.const = "v1",
+    deprecated = true
+  ];
   repeated Material materials = 2 [deprecated = true];
   repeated string env_allow_list = 3 [deprecated = true];
   Runner runner = 4 [deprecated = true];
@@ -42,7 +45,7 @@ message CraftingSchema {
   repeated PolicyGroupAttachment policy_groups = 7 [deprecated = true];
 
   message Runner {
-   option deprecated = true;
+    option deprecated = true;
     RunnerType type = 1 [
       (buf.validate.field).enum = {
         not_in: [0]
@@ -64,7 +67,7 @@ message CraftingSchema {
   }
 
   message Material {
-   option deprecated = true;
+    option deprecated = true;
     MaterialType type = 1 [
       (buf.validate.field).enum = {
         not_in: [0]
@@ -72,14 +75,17 @@ message CraftingSchema {
       (buf.validate.field).enum.defined_only = true,
       deprecated = true
     ];
-    string name = 2 [(buf.validate.field) = {
-      // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
-      cel: {
-        message: "must contain only lowercase letters, numbers, and hyphens."
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
-        id: "name.dns-1123"
-      }
-    }, deprecated = true];
+    string name = 2 [
+      (buf.validate.field) = {
+        // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+        cel: {
+          message: "must contain only lowercase letters, numbers, and hyphens."
+          expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+          id: "name.dns-1123"
+        }
+      },
+      deprecated = true
+    ];
     bool optional = 3 [deprecated = true];
     // If a material is set as output it will get added to the subject in the statement
     bool output = 4 [deprecated = true];
