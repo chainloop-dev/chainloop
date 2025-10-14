@@ -6,26 +6,47 @@ export const protobufPackage = "workflowcontract.v1";
 /**
  * Schema definition provided by the user to the tool
  * that defines the schema of the workflowRun
+ *
+ * @deprecated
  */
 export interface CraftingSchema {
-  /** Version of the schema, do not confuse with the revision of the content */
+  /**
+   * Version of the schema, do not confuse with the revision of the content
+   *
+   * @deprecated
+   */
   schemaVersion: string;
+  /** @deprecated */
   materials: CraftingSchema_Material[];
+  /** @deprecated */
   envAllowList: string[];
+  /** @deprecated */
   runner?: CraftingSchema_Runner;
   /**
    * List of annotations that can be used to add metadata to the attestation
    * this metadata can be used later on by the integrations engine to filter and interpolate data
    * It works in addition to the annotations defined in the materials and the runner
+   *
+   * @deprecated
    */
   annotations: Annotation[];
-  /** Policies to apply to this schema */
+  /**
+   * Policies to apply to this schema
+   *
+   * @deprecated
+   */
   policies?: Policies;
-  /** Policy groups to apply to this schema */
+  /**
+   * Policy groups to apply to this schema
+   *
+   * @deprecated
+   */
   policyGroups: PolicyGroupAttachment[];
 }
 
+/** @deprecated */
 export interface CraftingSchema_Runner {
+  /** @deprecated */
   type: CraftingSchema_Runner_RunnerType;
 }
 
@@ -98,15 +119,25 @@ export function craftingSchema_Runner_RunnerTypeToJSON(object: CraftingSchema_Ru
   }
 }
 
+/** @deprecated */
 export interface CraftingSchema_Material {
+  /** @deprecated */
   type: CraftingSchema_Material_MaterialType;
+  /** @deprecated */
   name: string;
+  /** @deprecated */
   optional: boolean;
-  /** If a material is set as output it will get added to the subject in the statement */
+  /**
+   * If a material is set as output it will get added to the subject in the statement
+   *
+   * @deprecated
+   */
   output: boolean;
   /**
    * List of annotations that can be used to add metadata to the material
    * this metadata can be used later on by the integrations engine to filter and interpolate data
+   *
+   * @deprecated
    */
   annotations: Annotation[];
 }
