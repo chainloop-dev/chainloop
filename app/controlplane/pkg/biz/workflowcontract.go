@@ -68,8 +68,20 @@ type Contract struct {
 	Raw []byte
 	// Detected format as provided by the user
 	Format unmarshal.RawFormat
-	// marhalled proto contract
+	// marshalled proto v1 contract
 	Schema *schemav1.CraftingSchema
+	// marshalled proto v2 contract
+	Schemav2 *schemav1.CraftingSchemaV2
+}
+
+// isV2Schema returns true if the contract uses the v2 CraftingSchema format
+func (c *Contract) isV2Schema() bool {
+	return c.Schemav2 != nil
+}
+
+// isV1Schema returns true if the contract uses the v1 CraftingSchema format
+func (c *Contract) isV1Schema() bool {
+	return c.Schema != nil
 }
 
 type WorkflowContractWithVersion struct {
@@ -202,7 +214,6 @@ var EmptyDefaultContract = &Contract{
 	Raw: []byte("schemaVersion: v1"), Format: unmarshal.RawFormatYAML,
 }
 
-// we currently only support schema v1
 func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowContractCreateOpts) (*WorkflowContract, error) {
 	if opts.OrgID == "" || opts.Name == "" {
 		return nil, NewErrValidationStr("organization and name are required")
@@ -388,20 +399,46 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 		return NewErrValidation(err)
 	}
 
-	for _, att := range c.Schema.GetPolicies().GetAttestation() {
-		if _, err := uc.findAndValidatePolicy(att, token); err != nil {
-			return NewErrValidation(err)
+	if c.isV1Schema() {
+		// Handle v1 schema
+		schema := c.Schema
+		for _, att := range schema.GetPolicies().GetAttestation() {
+			if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+				return NewErrValidation(err)
+			}
 		}
-	}
-	for _, att := range c.Schema.GetPolicies().GetMaterials() {
-		if _, err := uc.findAndValidatePolicy(att, token); err != nil {
-			return NewErrValidation(err)
+		for _, att := range schema.GetPolicies().GetMaterials() {
+			if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+				return NewErrValidation(err)
+			}
 		}
-	}
-	for _, gatt := range c.Schema.GetPolicyGroups() {
-		if _, err := uc.findPolicyGroup(gatt, token); err != nil {
-			return NewErrValidation(err)
+		for _, gatt := range schema.GetPolicyGroups() {
+			if _, err := uc.findPolicyGroup(gatt, token); err != nil {
+				return NewErrValidation(err)
+			}
 		}
+	} else if c.isV2Schema() {
+		// Handle v2 schema
+		spec := c.Schemav2.GetSpec()
+		if spec.GetPolicies() != nil {
+			for _, att := range spec.GetPolicies().GetAttestation() {
+				if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+					return NewErrValidation(err)
+				}
+			}
+			for _, att := range spec.GetPolicies().GetMaterials() {
+				if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+					return NewErrValidation(err)
+				}
+			}
+		}
+		for _, gatt := range spec.GetPolicyGroups() {
+			if _, err := uc.findPolicyGroup(gatt, token); err != nil {
+				return NewErrValidation(err)
+			}
+		}
+	} else {
+		return NewErrValidation(fmt.Errorf("invalid schema format"))
 	}
 
 	return nil
@@ -601,22 +638,37 @@ func (uc *WorkflowContractUseCase) findProvider(providerName string) (*policies.
 
 // UnmarshalAndValidateRawContract Takes the raw contract + format and will unmarshal the contract and validate it
 func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*Contract, error) {
-	contract := &schemav1.CraftingSchema{}
-	err := unmarshal.FromRaw(raw, format, contract, true)
-	if err != nil {
-		return nil, NewErrValidation(err)
+	// Try parsing as v2 Contract format first
+	v2Contract := &schemav1.CraftingSchemaV2{}
+	v2Err := unmarshal.FromRaw(raw, format, v2Contract, true)
+	if v2Err == nil {
+		// Custom Validations
+		if err := v2Contract.ValidateUniqueMaterialName(); err != nil {
+			return nil, NewErrValidation(fmt.Errorf("unique material name validation failed: %w", err))
+		}
+		if err := v2Contract.ValidatePolicyAttachments(); err != nil {
+			return nil, NewErrValidation(fmt.Errorf("policy attachment validation failed: %w", err))
+		}
+		return &Contract{Raw: raw, Format: format, Schemav2: v2Contract}, nil
 	}
 
-	// Custom Validations
-	if err := contract.ValidateUniqueMaterialName(); err != nil {
-		return nil, NewErrValidation(err)
+	// Fallback to v1 CraftingSchema format
+	v1Contract := &schemav1.CraftingSchema{}
+	v1Err := unmarshal.FromRaw(raw, format, v1Contract, true)
+	if v1Err == nil {
+		// Custom Validations
+		if err := v1Contract.ValidateUniqueMaterialName(); err != nil {
+			return nil, NewErrValidation(fmt.Errorf("unique material name validation failed: %w", err))
+		}
+		if err := v1Contract.ValidatePolicyAttachments(); err != nil {
+			return nil, NewErrValidation(fmt.Errorf("policy attachment validation failed: %w", err))
+		}
+		return &Contract{Raw: raw, Format: format, Schema: v1Contract}, nil
 	}
 
-	if err := contract.ValidatePolicyAttachments(); err != nil {
-		return nil, NewErrValidation(err)
-	}
-
-	return &Contract{Raw: raw, Format: format, Schema: contract}, nil
+	// Both parsing attempts failed
+	// Best effort: provide errors for both schemas
+	return nil, NewErrValidation(fmt.Errorf("contract validation failed:\n  v2 Contract format error: %v\n  v1 CraftingSchema format error: %v", v2Err, v1Err))
 }
 
 // Will try to figure out the format of the raw contract and validate it
