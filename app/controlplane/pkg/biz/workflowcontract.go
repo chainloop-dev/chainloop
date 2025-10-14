@@ -673,7 +673,7 @@ func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*C
 
 	// Both parsing attempts failed
 	// Best effort: provide errors for both schemas
-	return nil, NewErrValidation(fmt.Errorf("contract validation failed:\n  v2 Contract format error: %v\n  v1 CraftingSchema format error: %v", v2Err, v1Err))
+	return nil, NewErrValidation(fmt.Errorf("contract validation failed:\n  v2 Contract format error: %w\n  v1 CraftingSchema format error: %w", v2Err, v1Err))
 }
 
 // Will try to figure out the format of the raw contract and validate it
