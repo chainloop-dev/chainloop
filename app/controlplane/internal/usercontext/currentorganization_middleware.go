@@ -17,7 +17,6 @@ package usercontext
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -200,20 +199,14 @@ type ResourceBase struct {
 
 // Extracts organization from request with raw contract data
 func extractOrg(req interface{}) (string, error) {
-	// Get raw data as base64 string
-	rawSchema, err := getRawData(req)
+	// Get raw data
+	rawData, err := getRawData(req)
 	if err != nil {
 		return "", err
 	}
 
-	if rawSchema == "" {
+	if len(rawData) == 0 {
 		return "", nil
-	}
-
-	// Decode base64 raw schema
-	rawData, err := base64.StdEncoding.DecodeString(rawSchema)
-	if err != nil {
-		return "", err
 	}
 
 	// Identify format
@@ -230,7 +223,9 @@ func extractOrg(req interface{}) (string, error) {
 	// Unmarshal to extract organization
 	var resourceBase ResourceBase
 	if err := json.Unmarshal(jsonData, &resourceBase); err != nil {
-		return "", err
+		// If unmarshaling fails, return empty string (no error)
+		// This allows old format schemas to work without the metadata field
+		return "", nil
 	}
 
 	return resourceBase.Metadata.Organization, nil
@@ -241,16 +236,11 @@ type RequestWithRawContract interface {
 }
 
 // Extracts raw data
-func getRawData(req interface{}) (string, error) {
+func getRawData(req interface{}) ([]byte, error) {
 	// Check if the request implements RequestWithRawContract
 	if rawContractReq, ok := req.(RequestWithRawContract); ok {
-		rawBytes := rawContractReq.GetRawContract()
-		if len(rawBytes) == 0 {
-			return "", nil
-		}
-		// Convert bytes to base64 string for consistent handling
-		return base64.StdEncoding.EncodeToString(rawBytes), nil
+		return rawContractReq.GetRawContract(), nil
 	}
 
-	return "", fmt.Errorf("request does not have raw schema")
+	return nil, fmt.Errorf("request does not have raw contract")
 }

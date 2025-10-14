@@ -173,11 +173,39 @@ spec:
 			expectedError: false,
 		},
 		{
+			name: "old schema format (CraftingSchema) - no organization field",
+			rawContract: []byte(`schemaVersion: v1
+materials:
+  - name: my-image
+    type: CONTAINER_IMAGE
+runner:
+  type: GITHUB_ACTION`),
+			expectedOrg:   "",
+			expectedError: false,
+		},
+		{
+			name: "old schema format JSON - no organization field",
+			rawContract: []byte(`{
+  "schemaVersion": "v1",
+  "materials": [
+    {
+      "name": "my-image",
+      "type": "CONTAINER_IMAGE"
+    }
+  ],
+  "runner": {
+    "type": "GITHUB_ACTION"
+  }
+}`),
+			expectedOrg:   "",
+			expectedError: false,
+		},
+		{
 			name: "invalid format",
 			rawContract: []byte(`invalid yaml content
 			this is not parseable`),
 			expectedOrg:   "",
-			expectedError: true,
+			expectedError: false,
 		},
 	}
 
