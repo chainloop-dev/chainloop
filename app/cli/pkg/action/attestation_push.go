@@ -113,7 +113,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Annotations
 	craftedAnnotations := make(map[string]string, 0)
 	// 1 - Set annotations that come from the contract
-	for _, v := range crafter.CraftingState.InputSchema.GetAnnotations() {
+	for _, v := range crafter.CraftingState.GetAnnotations() {
 		craftedAnnotations[v.Name] = v.Value
 	}
 
