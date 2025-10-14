@@ -1,5 +1,5 @@
 {
-  "apiVersion": "workflowcontract.chainloop.dev/v1",
+  "apiVersion": "chainloop.dev/v1",
   "kind": "Contract",
   "metadata": {
     "name": "my-contract",
