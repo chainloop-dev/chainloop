@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protovalidate-go"
+	workflowcontract "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 // Custom validations
@@ -43,7 +44,7 @@ func (state *CraftingState) ValidateComplete(dryRun bool) error {
 	// Semantic errors
 	// It has values for all the defined, non optional materials
 	var missing []string
-	expectedMaterials := state.GetInputSchema().GetMaterials()
+	expectedMaterials := state.GetMaterials()
 	craftedMaterials := state.GetAttestation().GetMaterials()
 	// Iterate on the expected materials
 	for _, m := range expectedMaterials {
@@ -57,4 +58,82 @@ func (state *CraftingState) ValidateComplete(dryRun bool) error {
 	}
 
 	return nil
+}
+
+// Helper methods to abstract oneof schema access
+
+// GetEnvAllowList returns the environment allow list from either v1 or v2 schema
+func (state *CraftingState) GetEnvAllowList() []string {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetEnvAllowList()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetEnvAllowList()
+	default:
+		return nil
+	}
+}
+
+// GetMaterials returns the materials from either v1 or v2 schema
+func (state *CraftingState) GetMaterials() []*workflowcontract.CraftingSchema_Material {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetMaterials()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetMaterials()
+	default:
+		return nil
+	}
+}
+
+// GetV1Schema returns the v1 schema if available, nil otherwise
+func (state *CraftingState) GetV1Schema() *workflowcontract.CraftingSchema {
+	if schema, ok := state.GetSchema().(*CraftingState_InputSchema); ok {
+		return schema.InputSchema
+	}
+	return nil
+}
+
+// GetAnnotations returns the annotations from either v1 or v2 schema
+func (state *CraftingState) GetAnnotations() []*workflowcontract.Annotation {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetAnnotations()
+	case *CraftingState_SchemaV2:
+		annotations := schema.SchemaV2.GetMetadata().GetAnnotations()
+		result := make([]*workflowcontract.Annotation, 0, len(annotations))
+		for name, value := range annotations {
+			result = append(result, &workflowcontract.Annotation{
+				Name:  name,
+				Value: value,
+			})
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+// GetPolicyGroups returns the policy groups from either v1 or v2 schema
+func (state *CraftingState) GetPolicyGroups() []*workflowcontract.PolicyGroupAttachment {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetPolicyGroups()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetPolicyGroups()
+	default:
+		return nil
+	}
+}
+
+// GetPolicies returns the policies from either v1 or v2 schema
+func (state *CraftingState) GetPolicies() *workflowcontract.Policies {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetPolicies()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetPolicies()
+	default:
+		return nil
+	}
 }

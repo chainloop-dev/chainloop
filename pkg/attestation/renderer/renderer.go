@@ -25,7 +25,6 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -45,7 +44,6 @@ import (
 type AttestationRenderer struct {
 	logger     zerolog.Logger
 	att        *v1.Attestation
-	schema     *schemaapi.CraftingSchema
 	renderer   r
 	signer     sigstoresigner.Signer
 	dsseSigner sigstoresigner.Signer
@@ -79,7 +77,6 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.
 	r := &AttestationRenderer{
 		logger:     zerolog.Nop(),
 		att:        state.GetAttestation(),
-		schema:     state.GetInputSchema(),
 		dsseSigner: sigdsee.WrapSigner(signer, "application/vnd.in-toto+json"),
 		signer:     signer,
 		attClient:  attClient,
@@ -89,7 +86,7 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.
 		opt(r)
 	}
 
-	r.renderer = chainloop.NewChainloopRendererV02(state.GetAttestation(), state.GetInputSchema(), builderVersion, builderDigest, attClient, &r.logger)
+	r.renderer = chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest, attClient, &r.logger)
 
 	return r, nil
 }
