@@ -212,3 +212,44 @@ func validateIsDNS1123(name string) error {
 
 	return nil
 }
+
+// ValidateUniqueMaterialName validates that only one material definition
+// with the same ID is present in the schema
+func (contract *CraftingSchemaV2) ValidateUniqueMaterialName() error {
+	spec := contract.GetSpec()
+	if spec == nil {
+		return nil
+	}
+
+	materialNames := make(map[string]bool)
+	for _, m := range spec.GetMaterials() {
+		if _, found := materialNames[m.Name]; found {
+			return fmt.Errorf("material with name=%s is duplicated", m.Name)
+		}
+		materialNames[m.Name] = true
+	}
+
+	return nil
+}
+
+// ValidatePolicyAttachments validates policy references in the schema
+func (contract *CraftingSchemaV2) ValidatePolicyAttachments() error {
+	spec := contract.GetSpec()
+	if spec == nil || spec.GetPolicies() == nil {
+		return nil
+	}
+
+	policies := spec.GetPolicies()
+	attachments := append(policies.GetAttestation(), policies.GetMaterials()...)
+
+	for _, att := range attachments {
+		// Validate refs.
+		if att.GetRef() != "" {
+			if err := ValidatePolicyAttachmentRef(att.GetRef()); err != nil {
+				return fmt.Errorf("invalid reference %q: %w", att.GetRef(), err)
+			}
+		}
+	}
+
+	return nil
+}
