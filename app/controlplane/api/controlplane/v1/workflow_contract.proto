@@ -47,7 +47,7 @@ message WorkflowContractServiceCreateRequest {
 
   // You might need to specify a project reference if you want/need to create a contract scoped to a project
   IdentityReference project_reference = 5;
-  
+
   option (buf.validate.message).cel = {
     id: "name.dns-1122"
     message: "must contain only lowercase letters, numbers, and hyphens."
@@ -71,7 +71,7 @@ message WorkflowContractServiceUpdateRequest {
   bytes raw_contract = 5;
 
   optional string description = 4;
-  
+
   option (buf.validate.message).cel = {
     id: "name.dns-1122"
     message: "must contain only lowercase letters, numbers, and hyphens."
