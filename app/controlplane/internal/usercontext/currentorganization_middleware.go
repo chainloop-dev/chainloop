@@ -17,6 +17,8 @@ package usercontext
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -24,6 +26,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/google/uuid"
@@ -68,8 +71,15 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 				return nil, fmt.Errorf("error getting organization name: %w", err)
 			}
 
+			// Extract organization from resource metadata, takes precedence over header
+			if orgFromResource, err := getFromResource(req); err != nil {
+				return nil, fmt.Errorf("organization from resource: %w", err)
+			} else if orgFromResource != "" {
+				orgName = orgFromResource
+			}
+
 			if orgName != "" {
-				ctx, err = setCurrentOrganizationFromHeader(ctx, u, orgName, userUseCase)
+				ctx, err = setCurrentMembershipFromOrgName(ctx, u, orgName, userUseCase)
 				if err != nil {
 					return nil, v1.ErrorUserNotMemberOfOrgErrorNotInOrg("user is not a member of organization %s", orgName)
 				}
@@ -131,7 +141,7 @@ func ResetMembershipsCache() {
 	membershipsCache.Purge()
 }
 
-func setCurrentOrganizationFromHeader(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder) (context.Context, error) {
+func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder) (context.Context, error) {
 	membership, err := userUC.MembershipInOrg(ctx, user.ID, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find membership: %w", err)
@@ -165,4 +175,82 @@ func setCurrentOrganizationFromDB(ctx context.Context, user *entities.User, user
 	ctx = WithAuthzSubject(ctx, string(membership.Role))
 
 	return ctx, nil
+}
+
+// Gets organization from resource metadata
+// The metadata organization field acts as a namespace for organization resources
+func getFromResource(req interface{}) (string, error) {
+	if req == nil {
+		return "", nil
+	}
+
+	switch v := req.(type) {
+	case *v1.WorkflowContractServiceCreateRequest, *v1.WorkflowContractServiceUpdateRequest:
+		return extractOrg(v)
+	}
+
+	return "", nil
+}
+
+type ResourceBase struct {
+	Metadata struct {
+		Organization string `json:"organization"`
+	} `json:"metadata"`
+}
+
+// Extracts organization from request with raw contract data
+func extractOrg(req interface{}) (string, error) {
+	// Get raw data as base64 string
+	rawSchema, err := getRawData(req)
+	if err != nil {
+		return "", err
+	}
+
+	if rawSchema == "" {
+		return "", nil
+	}
+
+	// Decode base64 raw schema
+	rawData, err := base64.StdEncoding.DecodeString(rawSchema)
+	if err != nil {
+		return "", err
+	}
+
+	// Identify format
+	format, err := unmarshal.IdentifyFormat(rawData)
+	if err != nil {
+		return "", err
+	}
+
+	jsonData, err := unmarshal.LoadJSONBytes(rawData, "."+string(format))
+	if err != nil {
+		return "", err
+	}
+
+	// Unmarshal to extract organization
+	var resourceBase ResourceBase
+	if err := json.Unmarshal(jsonData, &resourceBase); err != nil {
+		return "", err
+	}
+
+	return resourceBase.Metadata.Organization, nil
+}
+
+type RequestWithRawContract interface {
+	GetRawContract() []byte
+}
+
+// Extracts raw data
+func getRawData(req interface{}) (string, error) {
+	// Check if the request implements RequestWithRawContract
+	if rawContractReq, ok := req.(RequestWithRawContract); ok {
+		rawBytes := rawContractReq.GetRawContract()
+		if len(rawBytes) == 0 {
+			return "", nil
+		}
+		// Convert bytes to base64 string for consistent handling
+		return base64.StdEncoding.EncodeToString(rawBytes), nil
+	}
+
+	return "", fmt.Errorf("request does not have raw schema")
 }

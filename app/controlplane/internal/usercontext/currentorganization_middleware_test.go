@@ -20,6 +20,7 @@ import (
 	"io"
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -29,6 +30,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWithCurrentOrganizationMiddleware(t *testing.T) {
@@ -98,6 +100,113 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGetFromResourceWorkflowContract(t *testing.T) {
+	tests := []struct {
+		name          string
+		rawContract   []byte
+		expectedOrg   string
+		expectedError bool
+	}{
+		{
+			name: "valid contract with organization in metadata",
+			rawContract: []byte(`apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: test-contract
+  organization: test-org
+spec:
+  materials:
+    - name: my-image
+      type: CONTAINER_IMAGE`),
+			expectedOrg:   "test-org",
+			expectedError: false,
+		},
+		{
+			name: "valid contract without organization",
+			rawContract: []byte(`apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: test-contract
+spec:
+  materials:
+    - name: my-image
+      type: CONTAINER_IMAGE`),
+			expectedOrg:   "",
+			expectedError: false,
+		},
+		{
+			name: "JSON format contract with organization",
+			rawContract: []byte(`{
+  "apiVersion": "chainloop.dev/v1",
+  "kind": "Contract",
+  "metadata": {
+    "name": "test-contract",
+    "organization": "json-org"
+  },
+  "spec": {
+    "materials": [
+      {
+        "name": "my-image",
+        "type": "CONTAINER_IMAGE"
+      }
+    ]
+  }
+}`),
+			expectedOrg:   "json-org",
+			expectedError: false,
+		},
+		{
+			name:          "empty raw contract",
+			rawContract:   []byte{},
+			expectedOrg:   "",
+			expectedError: false,
+		},
+		{
+			name:          "nil raw contract",
+			rawContract:   nil,
+			expectedOrg:   "",
+			expectedError: false,
+		},
+		{
+			name: "invalid format",
+			rawContract: []byte(`invalid yaml content
+			this is not parseable`),
+			expectedOrg:   "",
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test with CreateRequest
+			createReq := &v1.WorkflowContractServiceCreateRequest{
+				RawContract: tt.rawContract,
+			}
+
+			org, err := getFromResource(createReq)
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedOrg, org)
+			}
+
+			// Test with UpdateRequest
+			updateReq := &v1.WorkflowContractServiceUpdateRequest{
+				RawContract: tt.rawContract,
+			}
+
+			org, err = getFromResource(updateReq)
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedOrg, org)
 			}
 		})
 	}
