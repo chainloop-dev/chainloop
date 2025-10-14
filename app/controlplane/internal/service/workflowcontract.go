@@ -320,7 +320,7 @@ func extractContractName(rawContract []byte, name string) (string, error) {
 		return name, err
 	}
 
-	// Try parsing as v2 Contract 
+	// Try parsing as v2 Contract
 	v2Contract := &schemav1.CraftingSchemaV2{}
 	if err := unmarshal.FromRaw(rawContract, format, v2Contract, true); err == nil {
 		if v2Contract.GetMetadata() != nil {

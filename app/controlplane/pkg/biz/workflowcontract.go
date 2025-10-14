@@ -215,13 +215,17 @@ var EmptyDefaultContract = &Contract{
 }
 
 func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowContractCreateOpts) (*WorkflowContract, error) {
-	if opts.OrgID == "" || opts.Name == "" {
-		return nil, NewErrValidationStr("organization and name are required")
+	if opts.OrgID == "" {
+		return nil, NewErrValidationStr("organization is required")
 	}
 
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.Name == "" {
+		return nil, NewErrValidationStr("name is required")
 	}
 
 	if err := ValidateIsDNS1123(opts.Name); err != nil {
@@ -399,7 +403,8 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 		return NewErrValidation(err)
 	}
 
-	if c.isV1Schema() {
+	switch {
+	case c.isV1Schema():
 		// Handle v1 schema
 		schema := c.Schema
 		for _, att := range schema.GetPolicies().GetAttestation() {
@@ -417,7 +422,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 				return NewErrValidation(err)
 			}
 		}
-	} else if c.isV2Schema() {
+	case c.isV2Schema():
 		// Handle v2 schema
 		spec := c.Schemav2.GetSpec()
 		if spec.GetPolicies() != nil {
@@ -437,7 +442,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 				return NewErrValidation(err)
 			}
 		}
-	} else {
+	default:
 		return NewErrValidation(fmt.Errorf("invalid schema format"))
 	}
 

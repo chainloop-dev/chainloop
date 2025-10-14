@@ -53,12 +53,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "contract name")
-	err := cmd.MarkFlagRequired("name")
-	cobra.CheckErr(err)
-
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
-
-	cobra.CheckErr(err)
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
 
 	return cmd
