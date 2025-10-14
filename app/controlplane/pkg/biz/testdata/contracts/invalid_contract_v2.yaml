@@ -1,0 +1,10 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Contract
+metadata:
+  name: INVALID_NAME
+spec:
+  materials:
+    - name: duplicate
+      type: CONTAINER_IMAGE
+    - name: duplicate
+      type: ARTIFACT

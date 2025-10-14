@@ -55,6 +55,18 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 			filename:      "invalid_format.json",
 			wantFormatErr: true,
 		},
+		{
+			filename:   "contract_v2.yaml",
+			wantFormat: unmarshal.RawFormatYAML,
+		},
+		{
+			filename:   "contract_v2.json",
+			wantFormat: unmarshal.RawFormatJSON,
+		},
+		{
+			filename:          "invalid_contract_v2.yaml",
+			wantValidationErr: true,
+		},
 	}
 
 	for _, tc := range testData {
