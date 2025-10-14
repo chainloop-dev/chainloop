@@ -61,7 +61,7 @@ type Verifier interface {
 }
 
 type PolicyVerifier struct {
-	schema           *v1.CraftingSchema
+	policies         *v1.Policies
 	logger           *zerolog.Logger
 	client           v13.AttestationServiceClient
 	allowedHostnames []string
@@ -97,14 +97,14 @@ func WithEnablePrint(enable bool) PolicyVerifierOption {
 	}
 }
 
-func NewPolicyVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
+func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
 
 	return &PolicyVerifier{
-		schema:           schema,
+		policies:         policies,
 		client:           client,
 		logger:           logger,
 		allowedHostnames: options.AllowedHostnames,
@@ -326,7 +326,7 @@ func ComputeArguments(name string, inputs []*v1.PolicyInput, args map[string]str
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
 func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
-	policies := pv.schema.GetPolicies().GetAttestation()
+	policies := pv.policies.GetAttestation()
 	for _, policyAtt := range policies {
 		material, err := protojson.Marshal(statement)
 		if err != nil {
@@ -543,7 +543,7 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult) []*v12
 // 3. if policy spec doesn't have a type, a name filter is mandatory (otherwise there is no way to know if material has to be applied)
 func (pv *PolicyVerifier) requiredPoliciesForMaterial(ctx context.Context, material *v12.Attestation_Material) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
-	policies := pv.schema.GetPolicies().GetMaterials()
+	policies := pv.policies.GetMaterials()
 
 	for _, policyAtt := range policies {
 		apply, err := pv.shouldApplyPolicy(ctx, policyAtt, material)

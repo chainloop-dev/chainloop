@@ -133,7 +133,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		},
 		InitializedAt:               toTimePtr(att.InitializedAt.AsTime()),
 		DryRun:                      c.CraftingState.DryRun,
-		Annotations:                 pbAnnotationsToAction(c.CraftingState.InputSchema.GetAnnotations()),
+		Annotations:                 pbAnnotationsToAction(c.CraftingState.GetAnnotations()),
 		IsPushed:                    action.isPushed,
 		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
 		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
@@ -182,7 +182,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 
 	// User defined env variables
 	envVars := make(map[string]string)
-	for _, e := range c.CraftingState.InputSchema.EnvAllowList {
+	for _, e := range c.CraftingState.GetEnvAllowList() {
 		envVars[e] = ""
 		if val, found := c.CraftingState.Attestation.EnvVars[e]; found {
 			envVars[e] = val
@@ -242,7 +242,7 @@ func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, b
 func populateMaterials(craftingState *v1.CraftingState, res *AttestationStatusResult) error {
 	visitedMaterials := make(map[string]struct{})
 	attsMaterials := craftingState.GetAttestation().GetMaterials()
-	inputSchemaMaterials := craftingState.GetInputSchema().GetMaterials()
+	inputSchemaMaterials := craftingState.GetMaterials()
 
 	if err := populateContractMaterials(inputSchemaMaterials, attsMaterials, res, visitedMaterials); err != nil {
 		return fmt.Errorf("adding materials from the contract: %w", err)
