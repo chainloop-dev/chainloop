@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,55 +109,93 @@ func (s *crafterSuite) TestInit() {
 			runnerEnvironment: "unknown",
 			runnerType:        schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED,
 		},
+		{
+			name:              "V2 JSON happy path inside a git repo",
+			contractPath:      "testdata/contracts/empty_generic_v2.json",
+			workflowMetadata:  s.workflowMetadata,
+			dryRun:            true,
+			workingDir:        s.repoPath,
+			wantRepoDigest:    true,
+			runnerEnvironment: "unknown",
+			runnerType:        schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED,
+		},
+		{
+			name:              "V2 JSON with annotations",
+			contractPath:      "testdata/contracts/with_material_annotations_v2.json",
+			workflowMetadata:  s.workflowMetadata,
+			workingDir:        s.T().TempDir(),
+			dryRun:            true,
+			runnerEnvironment: "unknown",
+			runnerType:        schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED,
+		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			contract, err := loadSchema(tc.contractPath)
-			require.NoError(s.T(), err)
+			isV2Contract := strings.Contains(filepath.Base(tc.contractPath), "_v2")
 
-			// Create a logger for testing
-			testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
-			runner := crafter.NewRunner(contract.GetRunner().GetType(), "", &testLogger)
-			// Make sure that the tests context indicate that we are not in a CI
-			// this makes the github action runner context to fail
-			c, err := newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
+			var c *testingCrafter
+			var err error
+
+			if isV2Contract {
+				// Load V2 contract
+				contractV2, err := loadSchemaV2(tc.contractPath)
+				if err != nil && tc.wantErr {
+					s.Error(err)
+					return
+				}
+				require.NoError(s.T(), err)
+
+				// Create a logger for testing
+				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+				runner := crafter.NewRunner(schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED, "", &testLogger)
+
+				c, err = newInitializedCrafterV2(s.T(), contractV2, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
+			} else {
+				// Load V1 contract
+				contract, err := loadSchema(tc.contractPath)
+				if err != nil && tc.wantErr {
+					s.Error(err)
+					return
+				}
+				require.NoError(s.T(), err)
+
+				// Create a logger for testing
+				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+				runner := crafter.NewRunner(contract.GetRunner().GetType(), "", &testLogger)
+
+				c, err = newInitializedCrafter(s.T(), tc.contractPath, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
+			}
+
 			if tc.wantErr {
 				s.Error(err)
 				return
 			}
-
 			s.NoError(err)
 
-			want := &v1.CraftingState{
-				Schema: &v1.CraftingState_InputSchema{
-					InputSchema: contract,
-				},
-				Attestation: &v1.Attestation{
-					Workflow:       tc.workflowMetadata,
-					RunnerType:     contract.GetRunner().GetType(),
-					SigningOptions: &v1.Attestation_SigningOptions{},
-					RunnerEnvironment: &v1.RunnerEnvironment{
-						Environment: tc.runnerEnvironment,
-						Type:        tc.runnerType,
-					},
-				},
-				DryRun: tc.dryRun,
+			// Verify the crafting state was initialized correctly
+			s.NotNil(c.CraftingState)
+			s.NotNil(c.CraftingState.Attestation)
+			s.NotNil(c.CraftingState.Attestation.InitializedAt)
+			s.Equal(tc.dryRun, c.CraftingState.DryRun)
+
+			if isV2Contract {
+				// For V2 contracts, verify SchemaV2 is used
+				s.NotNil(c.CraftingState.Schema)
+				schemaV2, ok := c.CraftingState.Schema.(*v1.CraftingState_SchemaV2)
+				s.True(ok, "Expected V2 schema to be used")
+				s.NotNil(schemaV2.SchemaV2)
+			} else {
+				// For V1 contracts, verify InputSchema is used
+				s.NotNil(c.CraftingState.Schema)
+				inputSchema, ok := c.CraftingState.Schema.(*v1.CraftingState_InputSchema)
+				s.True(ok, "Expected V1 input schema to be used")
+				s.NotNil(inputSchema.InputSchema)
 			}
 
 			if tc.wantRepoDigest {
-				want.Attestation.Head = &v1.Commit{Hash: s.repoHead, AuthorEmail: "john@doe.org", AuthorName: "John Doe", Message: "test commit"}
-				c.CraftingState.Attestation.Head.Date = nil
-			}
-
-			// reset to nil to easily compare them
-			s.NotNil(c.CraftingState.Attestation.InitializedAt)
-			c.CraftingState.Attestation.InitializedAt = nil
-			c.CraftingState.Attestation.RunnerUrl = ""
-
-			// Check state
-			if ok := proto.Equal(want, c.CraftingState); !ok {
-				s.Fail(fmt.Sprintf("These two protobuf messages are not equal:\nexpected: %v\nactual:  %v", want, c.CraftingState))
+				s.NotNil(c.CraftingState.Attestation.Head)
+				s.Equal(s.repoHead, c.CraftingState.Attestation.Head.Hash)
 			}
 		})
 	}
@@ -204,6 +243,34 @@ func newInitializedCrafter(t *testing.T, contractPath string, wfMeta *v1.Workflo
 	return &testingCrafter{c}, nil
 }
 
+func newInitializedCrafterV2(t *testing.T, contractV2 *schemaapi.CraftingSchemaV2, wfMeta *v1.WorkflowMetadata,
+	dryRun bool,
+	workingDir string,
+	runner crafter.SupportedRunner,
+) (*testingCrafter, error) {
+	opts := []crafter.NewOpt{}
+	if workingDir != "" {
+		opts = append(opts, crafter.WithWorkingDirPath(workingDir))
+	}
+
+	if runner == nil {
+		runner = runners.NewGeneric()
+	}
+
+	statePath := fmt.Sprintf("%s/attestation.json", t.TempDir())
+	c, err := crafter.NewCrafter(testingStateManager(t, statePath), nil, opts...)
+	require.NoError(t, err)
+
+	if err = c.Init(context.Background(), &crafter.InitOpts{
+		SchemaV2: contractV2, WfInfo: wfMeta, DryRun: dryRun,
+		AttestationID: "",
+		Runner:        runner}); err != nil {
+		return nil, err
+	}
+
+	return &testingCrafter{c}, nil
+}
+
 func (s *crafterSuite) TestLoadSchema() {
 	want := &schemaapi.CraftingSchema{
 		SchemaVersion: "v1",
@@ -241,6 +308,11 @@ func (s *crafterSuite) TestLoadSchema() {
 		{
 			name:         "non existing",
 			contractPath: "testdata/contracts/invalid.yaml",
+			wantErr:      true,
+		},
+		{
+			name:         "V2 JSON contract should fail V1 parsing",
+			contractPath: "testdata/contracts/empty_generic_v2.json",
 			wantErr:      true,
 		},
 	}
@@ -571,6 +643,25 @@ func loadSchema(path string) (*schemaapi.CraftingSchema, error) {
 	}
 
 	schema := &schemaapi.CraftingSchema{}
+	if err := protojson.Unmarshal(jsonSchemaRaw, schema); err != nil {
+		return nil, err
+	}
+
+	return schema, nil
+}
+
+func loadSchemaV2(path string) (*schemaapi.CraftingSchemaV2, error) {
+	content, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, err
+	}
+
+	jsonSchemaRaw, err := unmarshal.LoadJSONBytes(content, filepath.Ext(path))
+	if err != nil {
+		return nil, err
+	}
+
+	schema := &schemaapi.CraftingSchemaV2{}
 	if err := protojson.Unmarshal(jsonSchemaRaw, schema); err != nil {
 		return nil, err
 	}

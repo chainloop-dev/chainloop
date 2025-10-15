@@ -58,6 +58,16 @@ func TestRenderV02(t *testing.T) {
 			sourcePath: "testdata/attestation.source-2.json",
 			outputPath: "testdata/attestation.output-2.v0.2.json",
 		},
+		{
+			name:       "V2 schema with policy violations",
+			sourcePath: "testdata/attestation.source.v2.json",
+			outputPath: "testdata/attestation.output.v2.json",
+		},
+		{
+			name:       "V2 schema with multiple types of materials",
+			sourcePath: "testdata/attestation.source-2.v2.json",
+			outputPath: "testdata/attestation.output-2.v2.json",
+		},
 	}
 
 	for _, tc := range testCases {

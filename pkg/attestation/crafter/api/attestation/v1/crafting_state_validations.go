@@ -86,14 +86,6 @@ func (state *CraftingState) GetMaterials() []*workflowcontract.CraftingSchema_Ma
 	}
 }
 
-// GetV1Schema returns the v1 schema if available, nil otherwise
-func (state *CraftingState) GetV1Schema() *workflowcontract.CraftingSchema {
-	if schema, ok := state.GetSchema().(*CraftingState_InputSchema); ok {
-		return schema.InputSchema
-	}
-	return nil
-}
-
 // GetAnnotations returns the annotations from either v1 or v2 schema
 func (state *CraftingState) GetAnnotations() []*workflowcontract.Annotation {
 	switch schema := state.GetSchema().(type) {
