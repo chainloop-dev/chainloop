@@ -17,9 +17,11 @@ package action
 
 import (
 	"context"
+	"os"
 	"slices"
 	"testing"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -171,6 +173,90 @@ func TestTemplatedGroups(t *testing.T) {
 			if tc.nMaterials > 0 {
 				assert.Equal(t, tc.materialName, schema.Materials[0].Name)
 				assert.Equal(t, tc.materialOptional, schema.Materials[0].Optional)
+			}
+		})
+	}
+}
+
+func TestParseContractV2(t *testing.T) {
+	testCases := []struct {
+		name           string
+		contractFile   string
+		format         pb.WorkflowContractVersionItem_RawBody_Format
+		expectV2Schema bool
+		expectName     string
+		expectError    bool
+	}{
+		{
+			name:           "valid V2 YAML contract",
+			contractFile:   "testdata/contract_v2.yaml",
+			format:         pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML,
+			expectV2Schema: true,
+			expectName:     "test-contract-v2",
+		},
+		{
+			name:           "V1 contract should fail V2 parsing",
+			contractFile:   "testdata/contract_v1.yaml",
+			format:         pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML,
+			expectV2Schema: false,
+		},
+		{
+			name:           "invalid contract data",
+			contractFile:   "testdata/invalid_contract.yaml",
+			format:         pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML,
+			expectV2Schema: false,
+		},
+		{
+			name:           "nil raw contract",
+			contractFile:   "",
+			format:         pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML,
+			expectV2Schema: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var rawContract *pb.WorkflowContractVersionItem_RawBody
+
+			if tc.contractFile != "" {
+				// Load contract file
+				data, err := os.ReadFile(tc.contractFile)
+				if err != nil {
+					if tc.expectV2Schema {
+						require.NoError(t, err, "Failed to load contract file")
+					}
+					// For non-existent files, test with nil
+					rawContract = nil
+				} else {
+					rawContract = &pb.WorkflowContractVersionItem_RawBody{
+						Body:   data,
+						Format: tc.format,
+					}
+				}
+			}
+
+			result := parseContractV2(rawContract)
+
+			if tc.expectV2Schema {
+				require.NotNil(t, result, "Expected V2 schema to be parsed successfully")
+				assert.Equal(t, "chainloop.dev/v1", result.GetApiVersion())
+				assert.Equal(t, "Contract", result.GetKind())
+				if tc.expectName != "" {
+					assert.Equal(t, tc.expectName, result.GetMetadata().GetName())
+				}
+
+				// Verify spec fields exist
+				spec := result.GetSpec()
+				require.NotNil(t, spec, "Spec should not be nil")
+				assert.Greater(t, len(spec.GetMaterials()), 0, "Should have materials")
+				assert.Greater(t, len(spec.GetEnvAllowList()), 0, "Should have env allow list")
+				assert.NotNil(t, spec.GetRunner(), "Should have runner config")
+
+				// Verify annotations in metadata
+				annotations := result.GetMetadata().GetAnnotations()
+				assert.NotEmpty(t, annotations, "Should have metadata annotations")
+			} else {
+				assert.Nil(t, result, "Expected V2 schema parsing to fail")
 			}
 		})
 	}

@@ -1,0 +1,18 @@
+{
+  "apiVersion": "chainloop.dev/v1",
+  "kind": "Contract",
+  "metadata": {
+    "name": "with-material-annotations-v2",
+    "annotations": {
+      "withDefaultVal": "val1"
+    }
+  },
+  "spec": {
+    "materials": [
+      {
+        "name": "string",
+        "type": "STRING"
+      }
+    ]
+  }
+}

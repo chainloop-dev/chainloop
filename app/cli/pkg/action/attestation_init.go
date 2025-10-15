@@ -238,8 +238,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	initOpts := &crafter.InitOpts{
 		WfInfo: workflowMeta,
 		//nolint:staticcheck // TODO: Migrate to new contract version API
-		SchemaV1: contractVersion.GetV1(),
-		SchemaV2: schemaV2,
+		SchemaV1:                 contractVersion.GetV1(),
+		SchemaV2:                 schemaV2,
 		DryRun:                   action.dryRun,
 		AttestationID:            attestationID,
 		Runner:                   discoveredRunner,
@@ -374,7 +374,7 @@ func parseContractV2(rawContract *pb.WorkflowContractVersionItem_RawBody) *v1.Cr
 	if rawContract == nil {
 		return nil
 	}
-	
+
 	rawFormat := func() unmarshal.RawFormat {
 		switch rawContract.GetFormat() {
 		case pb.WorkflowContractVersionItem_RawBody_FORMAT_JSON:
@@ -387,12 +387,12 @@ func parseContractV2(rawContract *pb.WorkflowContractVersionItem_RawBody) *v1.Cr
 			return unmarshal.RawFormatYAML
 		}
 	}()
-	
+
 	schemaV2 := &v1.CraftingSchemaV2{}
 	if err := unmarshal.FromRaw(rawContract.GetBody(), rawFormat, schemaV2, true); err != nil {
 		// If V2 parsing fails, return nil
 		return nil
 	}
-	
+
 	return schemaV2
 }
