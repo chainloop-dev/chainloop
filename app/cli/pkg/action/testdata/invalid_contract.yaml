@@ -1,0 +1,5 @@
+this: is not
+a: valid
+contract: at all
+missing_required_fields: true
+invalid_structure: [1, 2, 3]
