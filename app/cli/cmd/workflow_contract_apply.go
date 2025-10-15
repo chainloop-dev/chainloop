@@ -1,0 +1,67 @@
+//
+// Copyright 2024-2025 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	"github.com/spf13/cobra"
+)
+
+func newWorkflowContractApplyCmd() *cobra.Command {
+	var filePath, name, description, projectName string
+
+	cmd := &cobra.Command{
+		Use:   "apply",
+		Short: "Apply a contract (create or update)",
+		Long: `Apply a contract from a file. This command will create the contract if it doesn't exist,
+or update it if it already exists.`,
+		Example: `  # Apply a contract from file
+  chainloop workflow contract apply --contract my-contract.yaml
+
+  # Apply to a specific project
+  chainloop workflow contract apply --contract my-contract.yaml --project my-project`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if filePath == "" && name == "" {
+				return fmt.Errorf("either --contract file or --name must be provided")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var desc *string
+			if cmd.Flags().Changed("description") {
+				desc = &description
+			}
+
+			res, err := action.NewWorkflowContractApply(ActionOpts).Run(filePath, name, desc, projectName)
+			if err != nil {
+				return err
+			}
+
+			logger.Info().Msg("Contract applied!")
+			return output.EncodeOutput(flagOutputFormat, res, contractItemTableOutput)
+		},
+	}
+
+	cmd.Flags().StringVarP(&filePath, "contract", "f", "", "workflow contract file path (optional)")
+	cmd.Flags().StringVar(&name, "name", "", "contract name (required if no contract file provided)")
+	cmd.Flags().StringVar(&description, "description", "", "contract description")
+	cmd.Flags().StringVar(&projectName, "project", "", "project name to scope the contract")
+
+	return cmd
+}
