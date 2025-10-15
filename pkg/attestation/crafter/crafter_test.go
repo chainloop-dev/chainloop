@@ -137,14 +137,19 @@ func (s *crafterSuite) TestInit() {
 			var c *testingCrafter
 			var err error
 
+			var contractV2 *schemaapi.CraftingSchemaV2
+			var contract *schemaapi.CraftingSchema
+
 			if isV2Contract {
 				// Load V2 contract
-				contractV2, err := loadSchemaV2(tc.contractPath)
-				if err != nil && tc.wantErr {
-					s.Error(err)
-					return
+				contractV2, err = loadSchemaV2(tc.contractPath)
+				if err != nil {
+					if tc.wantErr {
+						s.Error(err)
+						return
+					}
+					require.NoError(s.T(), err)
 				}
-				require.NoError(s.T(), err)
 
 				// Create a logger for testing
 				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
@@ -153,12 +158,14 @@ func (s *crafterSuite) TestInit() {
 				c, err = newInitializedCrafterV2(s.T(), contractV2, tc.workflowMetadata, tc.dryRun, tc.workingDir, runner)
 			} else {
 				// Load V1 contract
-				contract, err := loadSchema(tc.contractPath)
-				if err != nil && tc.wantErr {
-					s.Error(err)
-					return
+				contract, err = loadSchema(tc.contractPath)
+				if err != nil {
+					if tc.wantErr {
+						s.Error(err)
+						return
+					}
+					require.NoError(s.T(), err)
 				}
-				require.NoError(s.T(), err)
 
 				// Create a logger for testing
 				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
