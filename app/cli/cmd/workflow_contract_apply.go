@@ -36,13 +36,13 @@ or update it if it already exists.`,
 
   # Apply to a specific project
   chainloop workflow contract apply --contract my-contract.yaml --project my-project`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if filePath == "" && name == "" {
 				return fmt.Errorf("either --contract file or --name must be provided")
 			}
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var desc *string
 			if cmd.Flags().Changed("description") {
 				desc = &description
