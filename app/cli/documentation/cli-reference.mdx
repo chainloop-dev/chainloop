@@ -3291,6 +3291,55 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
+#### chainloop workflow contract apply
+
+Apply a contract (create or update)
+
+Synopsis
+
+Apply a contract from a file. This command will create the contract if it doesn't exist,
+or update it if it already exists.
+
+```
+chainloop workflow contract apply [flags]
+```
+
+Examples
+
+```
+Apply a contract from file
+chainloop workflow contract apply --contract my-contract.yaml
+
+Apply to a specific project
+chainloop workflow contract apply --contract my-contract.yaml --project my-project
+```
+
+Options
+
+```
+-f, --contract string      workflow contract file path (optional)
+--description string   contract description
+-h, --help                 help for apply
+--name string          contract name (required if no contract file provided)
+--project string       project name to scope the contract
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
 #### chainloop workflow contract create
 
 Create a new contract
