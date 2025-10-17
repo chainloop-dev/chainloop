@@ -60,7 +60,7 @@ type SchemaBase struct {
 }
 
 // ExtractNameFromRawSchema tries to extract the name from any schema with metadata
-func ExtractNameFromRawSchema(content []byte) (string, error) {
+func extractNameFromRawSchema(content []byte) (string, error) {
 	// Identify format
 	format, err := unmarshal.IdentifyFormat(content)
 	if err != nil {
@@ -81,4 +81,33 @@ func ExtractNameFromRawSchema(content []byte) (string, error) {
 	}
 
 	return schemaBase.Metadata.Name, nil
+}
+
+// LoadSchemaAndExtractName loads a schema from file path and extracts name from metadata if available
+func LoadSchemaAndExtractName(filePath, explicitName string) ([]byte, string, error) {
+	finalName := explicitName
+
+	if filePath != "" {
+		rawSchema, err := LoadFileOrURL(filePath)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to load schema file: %w", err)
+		}
+
+		// Extract name from the schema file content
+		extractedName, err := extractNameFromRawSchema(rawSchema)
+		if err != nil {
+			return nil, "", err
+		}
+
+		// Name is required
+		if extractedName == "" && explicitName == "" {
+			return nil, "", fmt.Errorf("name in schema not found, --name flag is required")
+		} else if extractedName != "" {
+			finalName = extractedName
+		}
+
+		return rawSchema, finalName, nil
+	}
+
+	return nil, finalName, nil
 }
