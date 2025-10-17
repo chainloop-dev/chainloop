@@ -95,17 +95,15 @@ type PolicyViolation struct {
 
 type RendererV02 struct {
 	*RendererCommon
-	schema    *schemaapi.CraftingSchema
 	attClient pb.AttestationServiceClient
 	logger    *zerolog.Logger
 }
 
-func NewChainloopRendererV02(att *v1.Attestation, schema *schemaapi.CraftingSchema, builderVersion, builderDigest string, attClient pb.AttestationServiceClient, logger *zerolog.Logger) *RendererV02 {
+func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest string, attClient pb.AttestationServiceClient, logger *zerolog.Logger) *RendererV02 {
 	return &RendererV02{
 		&RendererCommon{
 			PredicateTypeV02, att, &builderInfo{builderVersion, builderDigest},
 		},
-		schema,
 		attClient,
 		logger,
 	}

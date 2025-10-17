@@ -61,7 +61,7 @@ type EvalSummaryDebugInfo struct {
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	// 1. Create crafting schema
-	schema, err := createCraftingSchema(opts.PolicyPath, opts.Inputs)
+	policies, err := createPolicies(opts.PolicyPath, opts.Inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	material.Annotations = opts.Annotations
 
 	// 3. Verify material against policy
-	summary, err := verifyMaterial(schema, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, &logger)
+	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -82,22 +82,19 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	return summary, nil
 }
 
-func createCraftingSchema(policyPath string, inputs map[string]string) (*v1.CraftingSchema, error) {
-	return &v1.CraftingSchema{
-		Policies: &v1.Policies{
-			Materials: []*v1.PolicyAttachment{
-				{
-					Policy: &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("file://%s", policyPath)},
-					With:   inputs,
-				},
+func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
+	return &v1.Policies{
+		Materials: []*v1.PolicyAttachment{
+			{
+				Policy: &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("file://%s", policyPath)},
+				With:   inputs,
 			},
-			Attestation: nil,
 		},
-		PolicyGroups: nil,
+		Attestation: nil,
 	}, nil
 }
 
-func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, logger *zerolog.Logger) (*EvalSummary, error) {
+func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
@@ -106,7 +103,7 @@ func verifyMaterial(schema *v1.CraftingSchema, material *v12.Attestation_Materia
 	opts = append(opts, policies.WithIncludeRawData(debug))
 	opts = append(opts, policies.WithEnablePrint(enablePrint))
 
-	v := policies.NewPolicyVerifier(schema, nil, logger, opts...)
+	v := policies.NewPolicyVerifier(pol, nil, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
 	if err != nil {
 		return nil, err
