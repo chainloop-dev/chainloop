@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import (
 
 func newWorkflowContractApplyCmd() *cobra.Command {
 	var filePath, name, description, projectName string
+	var contractName string
+	var rawContract []byte
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -37,8 +39,27 @@ or update it if it already exists.`,
   # Apply to a specific project
   chainloop workflow contract apply --contract my-contract.yaml --project my-project`,
 		PreRunE: func(_ *cobra.Command, _ []string) error {
-			if filePath == "" && name == "" {
-				return fmt.Errorf("either --contract file or --name must be provided")
+			contractName = name
+
+			if filePath != "" {
+				var err error
+				rawContract, err = action.LoadFileOrURL(filePath)
+				if err != nil {
+					return fmt.Errorf("failed to read contract file: %w", err)
+				}
+
+				// Extract name from the contract file content
+				extractedName, err := action.ExtractNameFromRawSchema(rawContract)
+				if err != nil {
+					return err
+				}
+
+				// For v2 schemas, use the extracted name. For v1 schemas, extractedName will be empty
+				if extractedName == "" && name == "" {
+					return fmt.Errorf("contracts require --name flag to specify the contract name")
+				} else if extractedName != "" {
+					contractName = extractedName
+				}
 			}
 			return nil
 		},
@@ -48,7 +69,7 @@ or update it if it already exists.`,
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractApply(ActionOpts).Run(filePath, name, desc, projectName)
+			res, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), rawContract, contractName, desc, projectName)
 			if err != nil {
 				return err
 			}

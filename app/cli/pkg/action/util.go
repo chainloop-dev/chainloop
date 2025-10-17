@@ -16,12 +16,16 @@
 package action
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 )
 
 // LoadFileOrURL loads a file from a local path or a URL
@@ -46,4 +50,35 @@ func LoadFileOrURL(fileRef string) ([]byte, error) {
 	}
 
 	return os.ReadFile(filepath.Clean(fileRef))
+}
+
+// SchemaBase represents the minimal structure of a schema with metadata containing a name
+type SchemaBase struct {
+	Metadata struct {
+		Name string `json:"name"`
+	} `json:"metadata"`
+}
+
+// ExtractNameFromRawSchema tries to extract the name from any schema with metadata
+func ExtractNameFromRawSchema(content []byte) (string, error) {
+	// Identify format
+	format, err := unmarshal.IdentifyFormat(content)
+	if err != nil {
+		return "", fmt.Errorf("failed to identify schema format: %w", err)
+	}
+
+	// Convert to JSON for consistent parsing
+	jsonData, err := unmarshal.LoadJSONBytes(content, "."+string(format))
+	if err != nil {
+		return "", fmt.Errorf("failed to convert to JSON: %w", err)
+	}
+
+	// Unmarshal to extract name
+	var schemaBase SchemaBase
+	if err := json.Unmarshal(jsonData, &schemaBase); err != nil {
+		// Unmarshalling error, don't fail, return empty name,
+		return "", nil
+	}
+
+	return schemaBase.Metadata.Name, nil
 }

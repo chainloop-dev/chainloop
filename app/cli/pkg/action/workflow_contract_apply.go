@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import (
 	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 )
 
 type WorkflowContractApply struct {
@@ -32,32 +30,7 @@ func NewWorkflowContractApply(cfg *ActionsOpts) *WorkflowContractApply {
 	return &WorkflowContractApply{cfg}
 }
 
-func (action *WorkflowContractApply) Run(filePath, name string, description *string, projectName string) (*WorkflowContractItem, error) {
-	var rawContract []byte
-	var err error
-	contractName := name
-
-	// Load contract from file if provided
-	if filePath != "" {
-		rawContract, err = LoadFileOrURL(filePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read contract file: %w", err)
-		}
-
-		// Extract name from the contract file content
-		extractedName, err := extractContractNameFromRawSchema(rawContract)
-		if err != nil {
-			return nil, err
-		}
-
-		// For v2 schemas, use the extracted name. For v1 schemas, extractedName will be empty
-		if extractedName == "" && name == "" {
-			return nil, fmt.Errorf("contracts require --name flag to specify the contract name")
-		} else if extractedName != "" {
-			contractName = extractedName
-		}
-	}
-
+func (action *WorkflowContractApply) Run(ctx context.Context, rawContract []byte, contractName string, description *string, projectName string) (*WorkflowContractItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	// Try to describe the specific contract first to determine if we should create or update
@@ -65,7 +38,7 @@ func (action *WorkflowContractApply) Run(filePath, name string, description *str
 		Name: contractName,
 	}
 
-	_, err = client.Describe(context.Background(), describeReq)
+	_, err := client.Describe(ctx, describeReq)
 	if err == nil {
 		// Contract exists, perform update
 		updateReq := &pb.WorkflowContractServiceUpdateRequest{
@@ -77,7 +50,7 @@ func (action *WorkflowContractApply) Run(filePath, name string, description *str
 			updateReq.Description = description
 		}
 
-		res, err := client.Update(context.Background(), updateReq)
+		res, err := client.Update(ctx, updateReq)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update existing contract '%s': %w", contractName, err)
 		}
@@ -101,31 +74,10 @@ func (action *WorkflowContractApply) Run(filePath, name string, description *str
 		}
 	}
 
-	res, err := client.Create(context.Background(), createReq)
+	res, err := client.Create(ctx, createReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new contract '%s': %w", contractName, err)
 	}
 
 	return pbWorkflowContractItemToAction(res.Result), nil
-}
-
-// extractContractNameFromContent tries to extract the contract name from the contract file content
-func extractContractNameFromRawSchema(content []byte) (string, error) {
-	// Identify format first
-	format, err := unmarshal.IdentifyFormat(content)
-	if err != nil {
-		return "", fmt.Errorf("failed to identify contract format: %w", err)
-	}
-
-	// Unmarshal as v2 contract
-	// If it fails, we assume it's a v1 contract which doesn't have a name in the content
-	v2Contract := &schemaapi.CraftingSchemaV2{}
-	if err := unmarshal.FromRaw(content, format, v2Contract, false); err == nil {
-		// Successfully parsed as v2, extract name from metadata
-		if v2Contract.Metadata != nil && v2Contract.Metadata.Name != "" {
-			return v2Contract.Metadata.Name, nil
-		}
-		return "", fmt.Errorf("missing name in metadata section of the contract")
-	}
-	return "", nil
 }
