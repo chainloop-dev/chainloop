@@ -22,7 +22,7 @@ import (
 )
 
 func newWorkflowContractApplyCmd() *cobra.Command {
-	var filePath, name, description, projectName string
+	var contractPath, name, description, projectName string
 	var contractName string
 	var rawContract []byte
 
@@ -32,18 +32,7 @@ func newWorkflowContractApplyCmd() *cobra.Command {
 		Long: `Apply a contract from a file. This command will create the contract if it doesn't exist,
 or update it if it already exists.`,
 		Example: `  # Apply a contract from file
-  chainloop workflow contract apply --contract my-contract.yaml
-
-  # Apply to a specific project
-  chainloop workflow contract apply --contract my-contract.yaml --project my-project`,
-		PreRunE: func(_ *cobra.Command, _ []string) error {
-			var err error
-			rawContract, contractName, err = action.LoadSchemaAndExtractName(filePath, name)
-			if err != nil {
-				return err
-			}
-			return nil
-		},
+  chainloop workflow contract apply --contract my-contract.yaml --name my-contract --project my-project`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			var desc *string
 			if cmd.Flags().Changed("description") {
@@ -60,12 +49,13 @@ or update it if it already exists.`,
 		},
 	}
 
-	cmd.Flags().StringVarP(&filePath, "contract", "f", "", "workflow contract file path (optional)")
-	cmd.Flags().StringVar(&name, "name", "", "contract name (required if no contract file provided)")
-	cmd.Flags().StringVar(&description, "description", "", "contract description")
-	cmd.Flags().StringVar(&projectName, "project", "", "project name to scope the contract")
+	cmd.Flags().StringVar(&name, "name", "", "contract name")
+	err := cmd.MarkFlagRequired("name")
+	cobra.CheckErr(err)
 
-	cmd.MarkFlagsOneRequired("contract", "name")
+	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
+	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
+	cmd.Flags().StringVar(&projectName, "project", "", "project name used to scope the contract, if not set the contract will be created in the organization")
 
 	return cmd
 }

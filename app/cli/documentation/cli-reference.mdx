@@ -3308,20 +3308,17 @@ Examples
 
 ```
 Apply a contract from file
-chainloop workflow contract apply --contract my-contract.yaml
-
-Apply to a specific project
-chainloop workflow contract apply --contract my-contract.yaml --project my-project
+chainloop workflow contract apply --contract my-contract.yaml --name my-contract --project my-project
 ```
 
 Options
 
 ```
--f, --contract string      workflow contract file path (optional)
---description string   contract description
+-f, --contract string      path or URL to the contract schema
+--description string   description of the contract
 -h, --help                 help for apply
---name string          contract name (required if no contract file provided)
---project string       project name to scope the contract
+--name string          contract name
+--project string       project name used to scope the contract, if not set the contract will be created in the organization
 ```
 
 Options inherited from parent commands
