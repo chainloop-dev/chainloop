@@ -31,7 +31,7 @@ import (
 )
 
 const fileHeader = `---
-title: CLI OSS Command Reference
+title: Command Line Reference (OSS)
 ---
 
 <Note>
