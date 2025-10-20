@@ -23,8 +23,6 @@ import (
 
 func newWorkflowContractApplyCmd() *cobra.Command {
 	var contractPath, name, description, projectName string
-	var contractName string
-	var rawContract []byte
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -39,7 +37,7 @@ or update it if it already exists.`,
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), rawContract, contractName, desc, projectName)
+			res, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), name, contractPath, desc, projectName)
 			if err != nil {
 				return err
 			}

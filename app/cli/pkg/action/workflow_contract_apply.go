@@ -30,7 +30,7 @@ func NewWorkflowContractApply(cfg *ActionsOpts) *WorkflowContractApply {
 	return &WorkflowContractApply{cfg}
 }
 
-func (action *WorkflowContractApply) Run(ctx context.Context, rawContract []byte, contractName string, description *string, projectName string) (*WorkflowContractItem, error) {
+func (action *WorkflowContractApply) Run(ctx context.Context, contractName string, contractPath string, description *string, projectName string) (*WorkflowContractItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	// Try to describe the specific contract first to determine if we should create or update
@@ -38,16 +38,23 @@ func (action *WorkflowContractApply) Run(ctx context.Context, rawContract []byte
 		Name: contractName,
 	}
 
+	var rawContract []byte
+	if contractPath != "" {
+		raw, err := LoadFileOrURL(contractPath)
+		if err != nil {
+			action.cfg.Logger.Debug().Err(err).Msg("loading the contract")
+			return nil, err
+		}
+		rawContract = raw
+	}
+
 	_, err := client.Describe(ctx, describeReq)
 	if err == nil {
 		// Contract exists, perform update
 		updateReq := &pb.WorkflowContractServiceUpdateRequest{
 			Name:        contractName,
+			Description: description,
 			RawContract: rawContract,
-		}
-
-		if description != nil {
-			updateReq.Description = description
 		}
 
 		res, err := client.Update(ctx, updateReq)
@@ -61,11 +68,8 @@ func (action *WorkflowContractApply) Run(ctx context.Context, rawContract []byte
 	// Contract doesn't exist, perform create
 	createReq := &pb.WorkflowContractServiceCreateRequest{
 		Name:        contractName,
+		Description: description,
 		RawContract: rawContract,
-	}
-
-	if description != nil {
-		createReq.Description = description
 	}
 
 	if projectName != "" {
