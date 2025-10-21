@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
@@ -30,11 +28,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an existing contract",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if contractPath == "" && name == "" && description == "" {
-				return errors.New("no updates provided")
-			}
-
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate and extract the contract name
 			var err error
 			contractName, err = action.ValidateAndExtractName(name, contractPath)

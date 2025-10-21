@@ -32,7 +32,7 @@ func newWorkflowContractApplyCmd() *cobra.Command {
 or update it if it already exists.`,
 		Example: `  # Apply a contract from file
   chainloop workflow contract apply --contract my-contract.yaml --name my-contract --project my-project`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate and extract the contract name
 			var err error
 			contractName, err = action.ValidateAndExtractName(name, contractPath)

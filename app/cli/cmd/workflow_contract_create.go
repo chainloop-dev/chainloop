@@ -28,7 +28,7 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new contract",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate and extract the contract name
 			var err error
 			contractName, err = action.ValidateAndExtractName(name, contractPath)
