@@ -39,26 +39,26 @@ type ReferrerUseCase struct {
 	membershipUseCase *MembershipUseCase
 	workflowRepo      WorkflowRepo
 	logger            *log.Helper
-	indexConfig       *IndexConfig
+	indexConfig       *ReferrerSharedIndexConfig
 }
 
-type IndexConfig struct {
+type ReferrerSharedIndexConfig struct {
 	Enabled     bool
 	AllowedOrgs []string
 }
 
-func NewIndexConfig(cfg *conf.ReferrerSharedIndex) (*IndexConfig, error) {
+func NewIndexConfig(cfg *conf.ReferrerSharedIndex) (*ReferrerSharedIndexConfig, error) {
 	if err := cfg.ValidateOrgs(); err != nil {
 		return nil, fmt.Errorf("invalid shared index config: %w", err)
 	}
 
-	return &IndexConfig{
+	return &ReferrerSharedIndexConfig{
 		Enabled:     cfg.Enabled,
 		AllowedOrgs: cfg.AllowedOrgs,
 	}, nil
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, indexCfg *IndexConfig, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, indexCfg *ReferrerSharedIndexConfig, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}

@@ -31,7 +31,7 @@ import (
 func (s *referrerTestSuite) TestInitialization() {
 	testCases := []struct {
 		name       string
-		conf       *IndexConfig
+		conf       *ReferrerSharedIndexConfig
 		wantErrMsg string
 	}{
 		{
@@ -39,20 +39,20 @@ func (s *referrerTestSuite) TestInitialization() {
 		},
 		{
 			name: "disabled",
-			conf: &IndexConfig{
+			conf: &ReferrerSharedIndexConfig{
 				Enabled: false,
 			},
 		},
 		{
 			name: "enabled but without orgs",
-			conf: &IndexConfig{
+			conf: &ReferrerSharedIndexConfig{
 				Enabled: true,
 			},
 			wantErrMsg: "invalid shared index config: index is enabled, but no orgs are allowed",
 		},
 		{
 			name: "enabled with invalid orgs",
-			conf: &IndexConfig{
+			conf: &ReferrerSharedIndexConfig{
 				Enabled:     true,
 				AllowedOrgs: []string{"invalid"},
 			},
@@ -60,7 +60,7 @@ func (s *referrerTestSuite) TestInitialization() {
 		},
 		{
 			name: "enabled with valid orgs",
-			conf: &IndexConfig{
+			conf: &ReferrerSharedIndexConfig{
 				Enabled:     true,
 				AllowedOrgs: []string{"00000000-0000-0000-0000-000000000000"},
 			},
