@@ -62,6 +62,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			newAuthAllowList,
 			newJWTConfig,
 			authzConfig,
+			biz.NewIndexConfig,
 		),
 	)
 }

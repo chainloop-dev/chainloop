@@ -65,6 +65,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newAuthAllowList,
 			newJWTConfig,
 			authzConfig,
+			biz.NewIndexConfig,
 		),
 	)
 }
