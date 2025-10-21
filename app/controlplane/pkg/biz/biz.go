@@ -58,6 +58,7 @@ var ProviderSet = wire.NewSet(
 	NewUserAccessSyncerUseCase,
 	NewGroupUseCase,
 	NewCASBackendChecker,
+	NewIndexConfig,
 	wire.Bind(new(PromObservable), new(*PrometheusUseCase)),
 	wire.Struct(new(NewIntegrationUseCaseOpts), "*"),
 	wire.Struct(new(NewUserUseCaseParams), "*"),
