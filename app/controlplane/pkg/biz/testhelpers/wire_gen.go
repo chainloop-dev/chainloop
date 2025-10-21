@@ -126,7 +126,12 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
 	referrerSharedIndex := _wireReferrerSharedIndexValue
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipUseCase, referrerSharedIndex, logger)
+	referrerSharedIndexConfig, err := biz.NewIndexConfig(referrerSharedIndex)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipUseCase, referrerSharedIndexConfig, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

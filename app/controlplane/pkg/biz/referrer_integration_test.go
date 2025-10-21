@@ -23,7 +23,6 @@ import (
 	"sync"
 	"testing"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -88,7 +87,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 
 	s.T().Run("it should appear if we whitelist org2", func(t *testing.T) {
 		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Membership,
-			&conf.ReferrerSharedIndex{
+			&biz.ReferrerSharedIndexConfig{
 				Enabled:     true,
 				AllowedOrgs: []string{s.org2.ID},
 			}, nil)
@@ -464,7 +463,7 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Membership,
-		&conf.ReferrerSharedIndex{
+		&biz.ReferrerSharedIndexConfig{
 			Enabled:     true,
 			AllowedOrgs: []string{s.org1.ID},
 		}, nil)
