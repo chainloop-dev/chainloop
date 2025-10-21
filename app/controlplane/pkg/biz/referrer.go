@@ -48,6 +48,11 @@ type ReferrerSharedIndexConfig struct {
 }
 
 func NewIndexConfig(cfg *conf.ReferrerSharedIndex) (*ReferrerSharedIndexConfig, error) {
+	// referrer shared index is optional, if not configured, it's disabled
+	if cfg == nil {
+		return nil, nil
+	}
+
 	if err := cfg.ValidateOrgs(); err != nil {
 		return nil, fmt.Errorf("invalid shared index config: %w", err)
 	}
