@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 func newWorkflowContractUpdateCmd() *cobra.Command {
 	var name, description, contractPath string
+	var contractName string
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -32,6 +33,13 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if contractPath == "" && name == "" && description == "" {
 				return errors.New("no updates provided")
+			}
+
+			// Validate and extract the contract name
+			var err error
+			contractName, err = action.ValidateAndExtractName(name, contractPath)
+			if err != nil {
+				return err
 			}
 
 			return nil
@@ -42,7 +50,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractUpdate(ActionOpts).Run(name, desc, contractPath)
+			res, err := action.NewWorkflowContractUpdate(ActionOpts).Run(contractName, desc, contractPath)
 			if err != nil {
 				return err
 			}

@@ -23,6 +23,7 @@ import (
 
 func newWorkflowContractApplyCmd() *cobra.Command {
 	var contractPath, name, description, projectName string
+	var contractName string
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -31,13 +32,23 @@ func newWorkflowContractApplyCmd() *cobra.Command {
 or update it if it already exists.`,
 		Example: `  # Apply a contract from file
   chainloop workflow contract apply --contract my-contract.yaml --name my-contract --project my-project`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Validate and extract the contract name
+			var err error
+			contractName, err = action.ValidateAndExtractName(name, contractPath)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			var desc *string
 			if cmd.Flags().Changed("description") {
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), name, contractPath, desc, projectName)
+			res, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), contractName, contractPath, desc, projectName)
 			if err != nil {
 				return err
 			}
@@ -48,8 +59,6 @@ or update it if it already exists.`,
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "contract name")
-	err := cmd.MarkFlagRequired("name")
-	cobra.CheckErr(err)
 
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")

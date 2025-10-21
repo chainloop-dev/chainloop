@@ -19,7 +19,6 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -133,15 +132,9 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		}
 	}
 
-	// Extract contract name from v2 metadata if available, otherwise use request name
-	contractName, err := extractContractName(req.RawContract, req.Name)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID:       currentOrg.ID,
-		Name:        contractName,
+		Name:        req.Name,
 		Description: req.Description,
 		RawSchema:   req.RawContract,
 		ProjectID:   projectID,
@@ -159,13 +152,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
-	// Extract contract name from v2 metadata if available, otherwise use request name
-	contractName, err := extractContractName(req.RawContract, req.GetName())
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName)
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if contract == nil {
@@ -188,7 +175,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		}
 	}
 
-	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, contractName,
+	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.GetName(),
 		&biz.WorkflowContractUpdateOpts{
 			Description: req.Description,
 			RawSchema:   req.RawContract,
@@ -306,29 +293,4 @@ func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contr
 	}
 
 	return nil
-}
-
-// extractContractName extracts the contract name from v2 metadata or returns the fallback name
-func extractContractName(rawContract []byte, name string) (string, error) {
-	if len(rawContract) == 0 {
-		return name, nil
-	}
-
-	// Try to identify and parse the format
-	format, err := unmarshal.IdentifyFormat(rawContract)
-	if err != nil {
-		return name, err
-	}
-
-	// Try parsing as v2 Contract
-	v2Contract := &schemav1.CraftingSchemaV2{}
-	if err := unmarshal.FromRaw(rawContract, format, v2Contract, true); err == nil {
-		if v2Contract.GetMetadata() != nil {
-			if metadataName := v2Contract.GetMetadata().GetName(); metadataName != "" {
-				return metadataName, nil
-			}
-		}
-	}
-
-	return name, err
 }

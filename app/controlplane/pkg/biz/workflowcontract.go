@@ -406,6 +406,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	switch {
 	case c.isV1Schema():
 		// Handle v1 schema
+		// DEPRECATED: v1 schema is deprecated, use v2 Contract format instead
 		schema := c.Schema
 		for _, att := range schema.GetPolicies().GetAttestation() {
 			if _, err := uc.findAndValidatePolicy(att, token); err != nil {
@@ -654,10 +655,13 @@ func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*C
 		if err := v2Contract.ValidatePolicyAttachments(); err != nil {
 			return nil, NewErrValidation(fmt.Errorf("policy attachment validation failed: %w", err))
 		}
-		return &Contract{Raw: raw, Format: format, Schemav2: v2Contract}, nil
+		// Convert to v1 for backward compatibility with old CLIs
+		v1Schema := v2Contract.ToV1()
+		return &Contract{Raw: raw, Format: format, Schema: v1Schema, Schemav2: v2Contract}, nil
 	}
 
 	// Fallback to v1 CraftingSchema format
+	// DEPRECATED: v1 schema is deprecated, use v2 Contract format instead
 	v1Contract := &schemav1.CraftingSchema{}
 	v1Err := unmarshal.FromRaw(raw, format, v1Contract, true)
 	if v1Err == nil {

@@ -23,16 +23,27 @@ import (
 
 func newWorkflowContractCreateCmd() *cobra.Command {
 	var name, description, contractPath, projectName string
+	var contractName string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new contract",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Validate and extract the contract name
+			var err error
+			contractName, err = action.ValidateAndExtractName(name, contractPath)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var desc *string
 			if cmd.Flags().Changed("description") {
 				desc = &description
 			}
-			res, err := action.NewWorkflowContractCreate(ActionOpts).Run(name, desc, contractPath, projectName)
+			res, err := action.NewWorkflowContractCreate(ActionOpts).Run(contractName, desc, contractPath, projectName)
 			if err != nil {
 				return err
 			}

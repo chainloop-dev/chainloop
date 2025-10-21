@@ -38,7 +38,14 @@ message WorkflowContractServiceListResponse {
 }
 
 message WorkflowContractServiceCreateRequest {
-  string name = 1;
+  string name = 1 [(buf.validate.field) = {
+    ignore_empty: true
+    cel: {
+      id: "name.dns-1123"
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+    }
+  }];
 
   // Raw representation of the contract in json, yaml or cue
   bytes raw_contract = 4;
@@ -47,17 +54,6 @@ message WorkflowContractServiceCreateRequest {
 
   // You might need to specify a project reference if you want/need to create a contract scoped to a project
   IdentityReference project_reference = 5;
-
-  option (buf.validate.message).cel = {
-    id: "name.dns-1122"
-    message: "must contain only lowercase letters, numbers, and hyphens."
-    expression: "this.name == '' || this.name.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
-  };
-  option (buf.validate.message).cel = {
-    id: "name_required_without_contract"
-    message: "name is required when raw_contract is not provided"
-    expression: "this.name != '' || size(this.raw_contract) > 0"
-  };
 }
 
 message WorkflowContractServiceCreateResponse {
@@ -65,23 +61,19 @@ message WorkflowContractServiceCreateResponse {
 }
 
 message WorkflowContractServiceUpdateRequest {
-  string name = 1;
+  string name = 1 [(buf.validate.field) = {
+    ignore_empty: true
+    cel: {
+      id: "name.dns-1123"
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+    }
+  }];
 
   // Raw representation of the contract in json, yaml or cue
   bytes raw_contract = 5;
 
   optional string description = 4;
-
-  option (buf.validate.message).cel = {
-    id: "name.dns-1122"
-    message: "must contain only lowercase letters, numbers, and hyphens."
-    expression: "this.name == '' || this.name.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
-  };
-  option (buf.validate.message).cel = {
-    id: "name_required_without_contract"
-    message: "name is required when raw_contract is not provided"
-    expression: "this.name != '' || size(this.raw_contract) > 0"
-  };
 }
 
 message WorkflowContractServiceUpdateResponse {
