@@ -324,7 +324,7 @@ func validateAndExtractName(rawContract []byte, explicitName string) (string, er
 	if explicitName != "" && metadataName != "" {
 		// If both are provided but different, that's a conflict
 		if explicitName != metadataName {
-			return "", errors.BadRequest("invalid", "conflicting names: explicit name and metadata.name are different. Please provide only one.")
+			return "", errors.BadRequest("invalid", "conflicting names: explicit name and metadata.name are different")
 		}
 		// Names match, return it
 		return explicitName, nil
