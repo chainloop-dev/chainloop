@@ -273,3 +273,71 @@ func (m *Attestation_Material) CraftingStateToIntotoDescriptor(name string) (*in
 func CreateAnnotation(name string) string {
 	return fmt.Sprintf("%s%s", AnnotationPrefix, name)
 }
+
+// GetEnvAllowList returns the environment allow list from either v1 or v2 schema
+func (state *CraftingState) GetEnvAllowList() []string {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetEnvAllowList()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetEnvAllowList()
+	default:
+		return nil
+	}
+}
+
+// GetMaterials returns the materials from either v1 or v2 schema
+func (state *CraftingState) GetMaterials() []*v1.CraftingSchema_Material {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetMaterials()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetMaterials()
+	default:
+		return nil
+	}
+}
+
+// GetAnnotations returns the annotations from either v1 or v2 schema
+func (state *CraftingState) GetAnnotations() []*v1.Annotation {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetAnnotations()
+	case *CraftingState_SchemaV2:
+		annotations := schema.SchemaV2.GetMetadata().GetAnnotations()
+		result := make([]*v1.Annotation, 0, len(annotations))
+		for name, value := range annotations {
+			result = append(result, &v1.Annotation{
+				Name:  name,
+				Value: value,
+			})
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+// GetPolicyGroups returns the policy groups from either v1 or v2 schema
+func (state *CraftingState) GetPolicyGroups() []*v1.PolicyGroupAttachment {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetPolicyGroups()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetPolicyGroups()
+	default:
+		return nil
+	}
+}
+
+// GetPolicies returns the policies from either v1 or v2 schema
+func (state *CraftingState) GetPolicies() *v1.Policies {
+	switch schema := state.GetSchema().(type) {
+	case *CraftingState_InputSchema:
+		return schema.InputSchema.GetPolicies()
+	case *CraftingState_SchemaV2:
+		return schema.SchemaV2.GetSpec().GetPolicies()
+	default:
+		return nil
+	}
+}
