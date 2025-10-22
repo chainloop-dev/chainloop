@@ -74,16 +74,13 @@ func ValidateAndExtractName(explicitName, filePath string) (string, error) {
 		return "", fmt.Errorf("failed to parse content: %w", err)
 	}
 
-	hasExplicitName := explicitName != ""
-	hasMetadataName := metadataName != ""
-
 	// Both provided - ambiguous
-	if hasExplicitName && hasMetadataName {
+	if explicitName != "" && metadataName != "" {
 		return "", fmt.Errorf("conflicting names: explicit name (%q) and metadata.name (%q) both provided. Please provide only one", explicitName, metadataName)
 	}
 
 	// Neither provided - missing required name
-	if !hasExplicitName && !hasMetadataName {
+	if explicitName == "" && metadataName == "" {
 		if len(content) == 0 {
 			return "", errors.New("name is required when no file is provided")
 		}
@@ -91,7 +88,7 @@ func ValidateAndExtractName(explicitName, filePath string) (string, error) {
 	}
 
 	// Return whichever name was provided
-	if hasExplicitName {
+	if explicitName != "" {
 		return explicitName, nil
 	}
 	return metadataName, nil
