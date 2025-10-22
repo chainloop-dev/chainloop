@@ -19,6 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -132,9 +133,15 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		}
 	}
 
+	// Validate and extract contract name
+	contractName, err := validateAndExtractName(req.RawContract, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID:       currentOrg.ID,
-		Name:        req.Name,
+		Name:        contractName,
 		Description: req.Description,
 		RawSchema:   req.RawContract,
 		ProjectID:   projectID,
@@ -152,7 +159,13 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, err
 	}
 
-	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
+	// Validate and extract contract name
+	contractName, err := validateAndExtractName(req.RawContract, req.GetName())
+	if err != nil {
+		return nil, err
+	}
+
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if contract == nil {
@@ -175,7 +188,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		}
 	}
 
-	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, req.GetName(),
+	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, contractName,
 		&biz.WorkflowContractUpdateOpts{
 			Description: req.Description,
 			RawSchema:   req.RawContract,
@@ -293,4 +306,67 @@ func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contr
 	}
 
 	return nil
+}
+
+// validateAndExtractName validates and extracts a name from either
+// an explicit name parameter OR from metadata.name in the v2 contract.
+// Returns error when:
+// - Neither explicit name nor metadata.name is provided
+// - Both are provided but have different values
+func validateAndExtractName(rawContract []byte, explicitName string) (string, error) {
+	// Extract name from v2 metadata if present
+	metadataName, err := extractNameFromMetadata(rawContract)
+	if err != nil {
+		return "", err
+	}
+
+	// Both provided
+	if explicitName != "" && metadataName != "" {
+		// If both are provided but different, that's a conflict
+		if explicitName != metadataName {
+			return "", errors.BadRequest("invalid", "conflicting names: explicit name and metadata.name are different. Please provide only one.")
+		}
+		// Names match, return it
+		return explicitName, nil
+	}
+
+	// Neither provided
+	if explicitName == "" && metadataName == "" {
+		if len(rawContract) == 0 {
+			return "", errors.BadRequest("invalid", "name is required when no contract is provided")
+		}
+		return "", errors.BadRequest("invalid", "name is required: either provide explicit name or include metadata.name in the schema")
+	}
+
+	// Return whichever name was provided
+	if explicitName != "" {
+		return explicitName, nil
+	}
+	return metadataName, nil
+}
+
+// extractNameFromMetadata attempts to extract the name from metadata.name in v2 contracts
+func extractNameFromMetadata(rawContract []byte) (string, error) {
+	if len(rawContract) == 0 {
+		return "", nil
+	}
+
+	// Identify the format
+	format, err := unmarshal.IdentifyFormat(rawContract)
+	if err != nil {
+		return "", errors.BadRequest("invalid", "failed to identify contract format")
+	}
+
+	// Try parsing as v2 Contract
+	v2Contract := &schemav1.CraftingSchemaV2{}
+	if err := unmarshal.FromRaw(rawContract, format, v2Contract, true); err == nil {
+		if v2Contract.GetMetadata() != nil {
+			if metadataName := v2Contract.GetMetadata().GetName(); metadataName != "" {
+				return metadataName, nil
+			}
+		}
+	}
+
+	// If v2 parsing failed or no metadata name, return empty string
+	return "", nil
 }
