@@ -64,19 +64,19 @@ func ValidateAndExtractName(explicitName, filePath string) (string, error) {
 	if filePath != "" {
 		content, err = LoadFileOrURL(filePath)
 		if err != nil {
-			return "", fmt.Errorf("failed to load file: %w", err)
+			return "", fmt.Errorf("load file: %w", err)
 		}
 	}
 
 	// Extract name from v2 metadata (if present)
 	metadataName, err := extractNameFromMetadata(content)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse content: %w", err)
+		return "", fmt.Errorf("parse content: %w", err)
 	}
 
 	// Both provided - ambiguous
 	if explicitName != "" && metadataName != "" {
-		return "", fmt.Errorf("conflicting names: explicit name (%q) and metadata.name (%q) both provided. Please provide only one", explicitName, metadataName)
+		return "", fmt.Errorf("conflicting names: explicit name (%q) and metadata.name (%q) both provided", explicitName, metadataName)
 	}
 
 	// Neither provided - missing required name
