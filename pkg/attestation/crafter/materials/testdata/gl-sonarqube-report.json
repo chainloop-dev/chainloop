@@ -1,0 +1,27 @@
+{
+  "version": "15.0.0",
+  "scan": {
+    "analyzer": {
+      "id": "SONARQUBE 2025.1.1.104738",
+      "name": "SONARQUBE - Enterprise",
+      "vendor": {
+        "name": "Sonar"
+      },
+      "version": "2025.1.1.104738"
+    },
+    "scanner": {
+      "id": "sonar_scan",
+      "name": "Sonar",
+      "vendor": {
+        "name": "Sonar"
+      },
+      "version": "11.2.0.2797"
+    },
+    "start_time": "2025-10-20T20:18:45",
+    "end_time": "2025-10-20T20:18:45",
+    "status": "success",
+    "messages": [],
+    "type": "sast"
+  },
+  "vulnerabilities": []
+}
