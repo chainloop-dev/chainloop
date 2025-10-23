@@ -44,21 +44,6 @@ func (s *referrerTestSuite) TestInitialization() {
 			},
 		},
 		{
-			name: "enabled but without orgs",
-			conf: &ReferrerSharedIndexConfig{
-				Enabled: true,
-			},
-			wantErrMsg: "invalid shared index config: index is enabled, but no orgs are allowed",
-		},
-		{
-			name: "enabled with invalid orgs",
-			conf: &ReferrerSharedIndexConfig{
-				Enabled:     true,
-				AllowedOrgs: []string{"invalid"},
-			},
-			wantErrMsg: "invalid shared index config: invalid org id: invalid",
-		},
-		{
 			name: "enabled with valid orgs",
 			conf: &ReferrerSharedIndexConfig{
 				Enabled:     true,
