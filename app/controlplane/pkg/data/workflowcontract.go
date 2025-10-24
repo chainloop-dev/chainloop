@@ -29,7 +29,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -357,13 +356,13 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 		}
 		// Scenario 2: contracts that have been updated after the introduction of the raw_body field will have the raw_body field populated
 		// but we also want to keep the Body field populated for backward compatibility
+		// Note: UnmarshalAndValidateRawContract ensures both Schema (v1) and Schemav2 (v2) are populated for v2 contracts
 	} else if len(w.Body) == 0 {
-		schema := &schemav1.CraftingSchema{}
-		err := unmarshal.FromRaw(w.RawBody, w.RawBodyFormat, schema, false)
+		parsedContract, err := biz.UnmarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal raw body: %w", err)
 		}
-		contract.Schema = schema
+		contract.Schema = parsedContract.Schema
 	}
 
 	return &biz.WorkflowContractVersion{
