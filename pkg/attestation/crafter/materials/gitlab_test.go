@@ -64,9 +64,10 @@ func TestNewGitlabCrafter(t *testing.T) {
 
 func TestGitlabCrafter_Craft(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name        string
+		filePath    string
+		wantErr     string
+		annotations map[string]string
 	}{
 		{
 			name:     "invalid path",
@@ -86,14 +87,34 @@ func TestGitlabCrafter_Craft(t *testing.T) {
 		{
 			name:     "sast report",
 			filePath: "./testdata/gl-sast-report.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "Semgrep",
+				"chainloop.material.tool.version": ":SKIP:",
+			},
 		},
 		{
 			name:     "container scanning report",
 			filePath: "./testdata/gl-container-scanning-report.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "Trivy",
+				"chainloop.material.tool.version": "0.19.2",
+			},
 		},
 		{
 			name:     "secret detection report",
 			filePath: "./testdata/gl-secret-detection-report.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "Gitleaks",
+				"chainloop.material.tool.version": ":SKIP:",
+			},
+		},
+		{
+			name:     "sonarqube report",
+			filePath: "./testdata/gl-sonarqube-report.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "Sonar",
+				"chainloop.material.tool.version": "11.2.0.2797",
+			},
 		},
 	}
 
@@ -125,6 +146,12 @@ func TestGitlabCrafter_Craft(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, contractAPI.CraftingSchema_Material_GITLAB_SECURITY_REPORT.String(), got.MaterialType.String())
 			assert.True(t, got.UploadedToCas)
+
+			if tc.annotations != nil {
+				for k, v := range tc.annotations {
+					assert.Equal(t, v, got.Annotations[k])
+				}
+			}
 		})
 	}
 }
