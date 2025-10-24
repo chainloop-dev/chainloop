@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,10 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 	var backendName, tenantID, clientID, clientSecret string
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
-		Short: "Update a AzureBlob CAS Backend description, credentials or default status",
+		Short: "Update a AzureBlob CAS Backend description, credentials, default status, or max bytes",
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {
@@ -49,7 +52,8 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 					"clientID":     clientID,
 					"clientSecret": clientSecret,
 				},
-				Default: isDefaultCASBackendUpdateOption,
+				Default:  isDefaultCASBackendUpdateOption,
+				MaxBytes: parsedMaxBytes,
 			}
 
 			// this means that we are not updating credentials

@@ -100,9 +100,10 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 			return fmt.Errorf("updating workflow: %w", err)
 		}
 
-		// Update the project version if any incrementing the runs count
+		// Update the project version if any incrementing the runs count and setting last run timestamp
 		_, err = tx.ProjectVersion.UpdateOneID(version.ID).
 			AddWorkflowRunCount(1).
+			SetLastRunAt(time.Now()).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("updating project version: %w", err)

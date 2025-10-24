@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,10 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 	var backendName, accessKeyID, secretAccessKey, region string
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
-		Short: "Update a AWS S3 CAS Backend description, credentials or default status",
+		Short: "Update a AWS S3 CAS Backend description, credentials, default status, or max bytes",
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {
@@ -49,7 +52,8 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 					"secretAccessKey": secretAccessKey,
 					"region":          region,
 				},
-				Default: isDefaultCASBackendUpdateOption,
+				Default:  isDefaultCASBackendUpdateOption,
+				MaxBytes: parsedMaxBytes,
 			}
 
 			// this means that we are not updating credentials

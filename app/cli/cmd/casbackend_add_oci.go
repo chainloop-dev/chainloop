@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ func newCASBackendAddOCICmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "oci",
 		Short: "Register a OCI CAS Backend",
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If we are setting the default, we list existing CAS backends
 			// and ask the user to confirm the rewrite
@@ -56,7 +59,8 @@ func newCASBackendAddOCICmd() *cobra.Command {
 					"username": username,
 					"password": password,
 				},
-				Default: isDefault,
+				Default:  isDefault,
+				MaxBytes: parsedMaxBytes,
 			}
 
 			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)
@@ -81,5 +85,6 @@ func newCASBackendAddOCICmd() *cobra.Command {
 	cmd.Flags().StringVarP(&password, "password", "p", "", "registry password")
 	err = cmd.MarkFlagRequired("password")
 	cobra.CheckErr(err)
+
 	return cmd
 }

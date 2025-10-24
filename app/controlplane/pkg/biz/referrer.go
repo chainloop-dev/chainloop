@@ -39,23 +39,38 @@ type ReferrerUseCase struct {
 	membershipUseCase *MembershipUseCase
 	workflowRepo      WorkflowRepo
 	logger            *log.Helper
-	indexConfig       *conf.ReferrerSharedIndex
+	indexConfig       *ReferrerSharedIndexConfig
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, indexCfg *conf.ReferrerSharedIndex, l log.Logger) (*ReferrerUseCase, error) {
+type ReferrerSharedIndexConfig struct {
+	Enabled     bool
+	AllowedOrgs []string
+}
+
+func NewIndexConfig(cfg *conf.ReferrerSharedIndex) (*ReferrerSharedIndexConfig, error) {
+	// referrer shared index is optional, if not configured, it's disabled
+	if cfg == nil {
+		return nil, nil
+	}
+
+	if err := cfg.ValidateOrgs(); err != nil {
+		return nil, fmt.Errorf("invalid shared index config: %w", err)
+	}
+
+	return &ReferrerSharedIndexConfig{
+		Enabled:     cfg.Enabled,
+		AllowedOrgs: cfg.AllowedOrgs,
+	}, nil
+}
+
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, indexCfg *ReferrerSharedIndexConfig, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 	logger := servicelogger.ScopedHelper(l, "biz/referrer")
 
-	if indexCfg != nil {
-		if err := indexCfg.ValidateOrgs(); err != nil {
-			return nil, fmt.Errorf("invalid shared index config: %w", err)
-		}
-
-		if indexCfg.Enabled {
-			logger.Infow("msg", "shared index enabled", "allowedOrgs", indexCfg.AllowedOrgs)
-		}
+	if indexCfg != nil && indexCfg.Enabled {
+		logger.Infow("msg", "shared index enabled", "allowedOrgs", indexCfg.AllowedOrgs)
 	}
 
 	return &ReferrerUseCase{

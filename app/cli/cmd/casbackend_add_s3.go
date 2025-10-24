@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws-s3",
 		Short: "Register a AWS S3 storage bucket",
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return parseMaxBytesOption()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
@@ -65,7 +68,8 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 					"secretAccessKey": secretAccessKey,
 					"region":          region,
 				},
-				Default: isDefault,
+				Default:  isDefault,
+				MaxBytes: parsedMaxBytes,
 			}
 
 			res, err := action.NewCASBackendAdd(ActionOpts).Run(opts)

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,10 +34,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	CASBackendService_List_FullMethodName   = "/controlplane.v1.CASBackendService/List"
-	CASBackendService_Create_FullMethodName = "/controlplane.v1.CASBackendService/Create"
-	CASBackendService_Update_FullMethodName = "/controlplane.v1.CASBackendService/Update"
-	CASBackendService_Delete_FullMethodName = "/controlplane.v1.CASBackendService/Delete"
+	CASBackendService_List_FullMethodName       = "/controlplane.v1.CASBackendService/List"
+	CASBackendService_Create_FullMethodName     = "/controlplane.v1.CASBackendService/Create"
+	CASBackendService_Update_FullMethodName     = "/controlplane.v1.CASBackendService/Update"
+	CASBackendService_Delete_FullMethodName     = "/controlplane.v1.CASBackendService/Delete"
+	CASBackendService_Revalidate_FullMethodName = "/controlplane.v1.CASBackendService/Revalidate"
 )
 
 // CASBackendServiceClient is the client API for CASBackendService service.
@@ -48,6 +49,7 @@ type CASBackendServiceClient interface {
 	Create(ctx context.Context, in *CASBackendServiceCreateRequest, opts ...grpc.CallOption) (*CASBackendServiceCreateResponse, error)
 	Update(ctx context.Context, in *CASBackendServiceUpdateRequest, opts ...grpc.CallOption) (*CASBackendServiceUpdateResponse, error)
 	Delete(ctx context.Context, in *CASBackendServiceDeleteRequest, opts ...grpc.CallOption) (*CASBackendServiceDeleteResponse, error)
+	Revalidate(ctx context.Context, in *CASBackendServiceRevalidateRequest, opts ...grpc.CallOption) (*CASBackendServiceRevalidateResponse, error)
 }
 
 type cASBackendServiceClient struct {
@@ -94,6 +96,15 @@ func (c *cASBackendServiceClient) Delete(ctx context.Context, in *CASBackendServ
 	return out, nil
 }
 
+func (c *cASBackendServiceClient) Revalidate(ctx context.Context, in *CASBackendServiceRevalidateRequest, opts ...grpc.CallOption) (*CASBackendServiceRevalidateResponse, error) {
+	out := new(CASBackendServiceRevalidateResponse)
+	err := c.cc.Invoke(ctx, CASBackendService_Revalidate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CASBackendServiceServer is the server API for CASBackendService service.
 // All implementations must embed UnimplementedCASBackendServiceServer
 // for forward compatibility
@@ -102,6 +113,7 @@ type CASBackendServiceServer interface {
 	Create(context.Context, *CASBackendServiceCreateRequest) (*CASBackendServiceCreateResponse, error)
 	Update(context.Context, *CASBackendServiceUpdateRequest) (*CASBackendServiceUpdateResponse, error)
 	Delete(context.Context, *CASBackendServiceDeleteRequest) (*CASBackendServiceDeleteResponse, error)
+	Revalidate(context.Context, *CASBackendServiceRevalidateRequest) (*CASBackendServiceRevalidateResponse, error)
 	mustEmbedUnimplementedCASBackendServiceServer()
 }
 
@@ -120,6 +132,9 @@ func (UnimplementedCASBackendServiceServer) Update(context.Context, *CASBackendS
 }
 func (UnimplementedCASBackendServiceServer) Delete(context.Context, *CASBackendServiceDeleteRequest) (*CASBackendServiceDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedCASBackendServiceServer) Revalidate(context.Context, *CASBackendServiceRevalidateRequest) (*CASBackendServiceRevalidateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Revalidate not implemented")
 }
 func (UnimplementedCASBackendServiceServer) mustEmbedUnimplementedCASBackendServiceServer() {}
 
@@ -206,6 +221,24 @@ func _CASBackendService_Delete_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CASBackendService_Revalidate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CASBackendServiceRevalidateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CASBackendServiceServer).Revalidate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CASBackendService_Revalidate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CASBackendServiceServer).Revalidate(ctx, req.(*CASBackendServiceRevalidateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CASBackendService_ServiceDesc is the grpc.ServiceDesc for CASBackendService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +261,10 @@ var CASBackendService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _CASBackendService_Delete_Handler,
+		},
+		{
+			MethodName: "Revalidate",
+			Handler:    _CASBackendService_Revalidate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

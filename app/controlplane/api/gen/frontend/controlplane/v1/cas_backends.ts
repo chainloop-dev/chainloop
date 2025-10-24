@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Struct } from "../../google/protobuf/struct";
 import { CASBackendItem } from "./response_messages";
@@ -69,6 +70,11 @@ export interface CASBackendServiceCreateRequest {
   /** Arbitrary configuration for the integration */
   credentials?: { [key: string]: any };
   name: string;
+  /**
+   * Maximum size in bytes for each blob stored in this backend.
+   * If not specified, defaults to the system default (typically 100MB).
+   */
+  maxBytes?: number | undefined;
 }
 
 export interface CASBackendServiceCreateResponse {
@@ -80,6 +86,7 @@ export interface CASBackendServiceCreateResponse {
  * - description
  * - set is as default
  * - rotate credentials
+ * - max blob size
  */
 export interface CASBackendServiceUpdateRequest {
   name: string;
@@ -93,6 +100,8 @@ export interface CASBackendServiceUpdateRequest {
     | undefined;
   /** Credentials, useful for rotation */
   credentials?: { [key: string]: any };
+  /** Maximum size in bytes for each blob stored in this backend. */
+  maxBytes?: number | undefined;
 }
 
 export interface CASBackendServiceUpdateResponse {
@@ -104,6 +113,13 @@ export interface CASBackendServiceDeleteRequest {
 }
 
 export interface CASBackendServiceDeleteResponse {
+}
+
+export interface CASBackendServiceRevalidateRequest {
+  name: string;
+}
+
+export interface CASBackendServiceRevalidateResponse {
 }
 
 function createBaseCASBackendServiceListRequest(): CASBackendServiceListRequest {
@@ -213,7 +229,15 @@ export const CASBackendServiceListResponse = {
 };
 
 function createBaseCASBackendServiceCreateRequest(): CASBackendServiceCreateRequest {
-  return { location: "", provider: "", description: "", default: false, credentials: undefined, name: "" };
+  return {
+    location: "",
+    provider: "",
+    description: "",
+    default: false,
+    credentials: undefined,
+    name: "",
+    maxBytes: undefined,
+  };
 }
 
 export const CASBackendServiceCreateRequest = {
@@ -235,6 +259,9 @@ export const CASBackendServiceCreateRequest = {
     }
     if (message.name !== "") {
       writer.uint32(50).string(message.name);
+    }
+    if (message.maxBytes !== undefined) {
+      writer.uint32(56).int64(message.maxBytes);
     }
     return writer;
   },
@@ -288,6 +315,13 @@ export const CASBackendServiceCreateRequest = {
 
           message.name = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.maxBytes = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -305,6 +339,7 @@ export const CASBackendServiceCreateRequest = {
       default: isSet(object.default) ? Boolean(object.default) : false,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
       name: isSet(object.name) ? String(object.name) : "",
+      maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : undefined,
     };
   },
 
@@ -316,6 +351,7 @@ export const CASBackendServiceCreateRequest = {
     message.default !== undefined && (obj.default = message.default);
     message.credentials !== undefined && (obj.credentials = message.credentials);
     message.name !== undefined && (obj.name = message.name);
+    message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
     return obj;
   },
 
@@ -333,6 +369,7 @@ export const CASBackendServiceCreateRequest = {
     message.default = object.default ?? false;
     message.credentials = object.credentials ?? undefined;
     message.name = object.name ?? "";
+    message.maxBytes = object.maxBytes ?? undefined;
     return message;
   },
 };
@@ -398,7 +435,7 @@ export const CASBackendServiceCreateResponse = {
 };
 
 function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
-  return { name: "", description: undefined, default: undefined, credentials: undefined };
+  return { name: "", description: undefined, default: undefined, credentials: undefined, maxBytes: undefined };
 }
 
 export const CASBackendServiceUpdateRequest = {
@@ -414,6 +451,9 @@ export const CASBackendServiceUpdateRequest = {
     }
     if (message.credentials !== undefined) {
       Struct.encode(Struct.wrap(message.credentials), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.maxBytes !== undefined) {
+      writer.uint32(40).int64(message.maxBytes);
     }
     return writer;
   },
@@ -453,6 +493,13 @@ export const CASBackendServiceUpdateRequest = {
 
           message.credentials = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maxBytes = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -468,6 +515,7 @@ export const CASBackendServiceUpdateRequest = {
       description: isSet(object.description) ? String(object.description) : undefined,
       default: isSet(object.default) ? Boolean(object.default) : undefined,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
+      maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : undefined,
     };
   },
 
@@ -477,6 +525,7 @@ export const CASBackendServiceUpdateRequest = {
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
     message.credentials !== undefined && (obj.credentials = message.credentials);
+    message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
     return obj;
   },
 
@@ -492,6 +541,7 @@ export const CASBackendServiceUpdateRequest = {
     message.description = object.description ?? undefined;
     message.default = object.default ?? undefined;
     message.credentials = object.credentials ?? undefined;
+    message.maxBytes = object.maxBytes ?? undefined;
     return message;
   },
 };
@@ -658,6 +708,114 @@ export const CASBackendServiceDeleteResponse = {
   },
 };
 
+function createBaseCASBackendServiceRevalidateRequest(): CASBackendServiceRevalidateRequest {
+  return { name: "" };
+}
+
+export const CASBackendServiceRevalidateRequest = {
+  encode(message: CASBackendServiceRevalidateRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceRevalidateRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceRevalidateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CASBackendServiceRevalidateRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: CASBackendServiceRevalidateRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceRevalidateRequest>, I>>(
+    base?: I,
+  ): CASBackendServiceRevalidateRequest {
+    return CASBackendServiceRevalidateRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceRevalidateRequest>, I>>(
+    object: I,
+  ): CASBackendServiceRevalidateRequest {
+    const message = createBaseCASBackendServiceRevalidateRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseCASBackendServiceRevalidateResponse(): CASBackendServiceRevalidateResponse {
+  return {};
+}
+
+export const CASBackendServiceRevalidateResponse = {
+  encode(_: CASBackendServiceRevalidateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CASBackendServiceRevalidateResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCASBackendServiceRevalidateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): CASBackendServiceRevalidateResponse {
+    return {};
+  },
+
+  toJSON(_: CASBackendServiceRevalidateResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CASBackendServiceRevalidateResponse>, I>>(
+    base?: I,
+  ): CASBackendServiceRevalidateResponse {
+    return CASBackendServiceRevalidateResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CASBackendServiceRevalidateResponse>, I>>(
+    _: I,
+  ): CASBackendServiceRevalidateResponse {
+    const message = createBaseCASBackendServiceRevalidateResponse();
+    return message;
+  },
+};
+
 export interface CASBackendService {
   List(
     request: DeepPartial<CASBackendServiceListRequest>,
@@ -675,6 +833,10 @@ export interface CASBackendService {
     request: DeepPartial<CASBackendServiceDeleteRequest>,
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceDeleteResponse>;
+  Revalidate(
+    request: DeepPartial<CASBackendServiceRevalidateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceRevalidateResponse>;
 }
 
 export class CASBackendServiceClientImpl implements CASBackendService {
@@ -686,6 +848,7 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     this.Create = this.Create.bind(this);
     this.Update = this.Update.bind(this);
     this.Delete = this.Delete.bind(this);
+    this.Revalidate = this.Revalidate.bind(this);
   }
 
   List(
@@ -714,6 +877,17 @@ export class CASBackendServiceClientImpl implements CASBackendService {
     metadata?: grpc.Metadata,
   ): Promise<CASBackendServiceDeleteResponse> {
     return this.rpc.unary(CASBackendServiceDeleteDesc, CASBackendServiceDeleteRequest.fromPartial(request), metadata);
+  }
+
+  Revalidate(
+    request: DeepPartial<CASBackendServiceRevalidateRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<CASBackendServiceRevalidateResponse> {
+    return this.rpc.unary(
+      CASBackendServiceRevalidateDesc,
+      CASBackendServiceRevalidateRequest.fromPartial(request),
+      metadata,
+    );
   }
 }
 
@@ -801,6 +975,29 @@ export const CASBackendServiceDeleteDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = CASBackendServiceDeleteResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const CASBackendServiceRevalidateDesc: UnaryMethodDefinitionish = {
+  methodName: "Revalidate",
+  service: CASBackendServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return CASBackendServiceRevalidateRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = CASBackendServiceRevalidateResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -908,6 +1105,18 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isObject(value: any): boolean {
   return typeof value === "object" && value !== null;

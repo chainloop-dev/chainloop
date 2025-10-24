@@ -28,6 +28,7 @@ func newWorkflowContractCmd() *cobra.Command {
 	cmd.AddCommand(
 		newWorkflowContractListCmd(),
 		newWorkflowContractCreateCmd(),
+		newWorkflowContractApplyCmd(),
 		newWorkflowContractDescribeCmd(),
 		newWorkflowContractUpdateCmd(),
 		newWorkflowContractDeleteCmd(),

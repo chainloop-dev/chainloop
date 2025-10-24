@@ -21,7 +21,6 @@ import (
 	"os"
 	"testing"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +31,7 @@ import (
 func (s *referrerTestSuite) TestInitialization() {
 	testCases := []struct {
 		name       string
-		conf       *conf.ReferrerSharedIndex
+		conf       *ReferrerSharedIndexConfig
 		wantErrMsg string
 	}{
 		{
@@ -40,28 +39,13 @@ func (s *referrerTestSuite) TestInitialization() {
 		},
 		{
 			name: "disabled",
-			conf: &conf.ReferrerSharedIndex{
+			conf: &ReferrerSharedIndexConfig{
 				Enabled: false,
 			},
 		},
 		{
-			name: "enabled but without orgs",
-			conf: &conf.ReferrerSharedIndex{
-				Enabled: true,
-			},
-			wantErrMsg: "invalid shared index config: index is enabled, but no orgs are allowed",
-		},
-		{
-			name: "enabled with invalid orgs",
-			conf: &conf.ReferrerSharedIndex{
-				Enabled:     true,
-				AllowedOrgs: []string{"invalid"},
-			},
-			wantErrMsg: "invalid shared index config: invalid org id: invalid",
-		},
-		{
 			name: "enabled with valid orgs",
-			conf: &conf.ReferrerSharedIndex{
+			conf: &ReferrerSharedIndexConfig{
 				Enabled:     true,
 				AllowedOrgs: []string{"00000000-0000-0000-0000-000000000000"},
 			},

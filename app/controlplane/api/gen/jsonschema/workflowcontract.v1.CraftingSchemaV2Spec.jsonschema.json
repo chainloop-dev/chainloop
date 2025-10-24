@@ -1,0 +1,54 @@
+{
+  "$id": "workflowcontract.v1.CraftingSchemaV2Spec.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(env_allow_list)$": {
+      "description": "List of environment variables that are allowed to be present in the attestation",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(policy_groups)$": {
+      "description": "Policy groups to apply to this contract",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyGroupAttachment.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "envAllowList": {
+      "description": "List of environment variables that are allowed to be present in the attestation",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "materials": {
+      "description": "Materials that are expected to be present in the attestation",
+      "items": {
+        "$ref": "workflowcontract.v1.CraftingSchema.Material.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "policies": {
+      "$ref": "workflowcontract.v1.Policies.jsonschema.json",
+      "description": "Policies to apply to this contract"
+    },
+    "policyGroups": {
+      "description": "Policy groups to apply to this contract",
+      "items": {
+        "$ref": "workflowcontract.v1.PolicyGroupAttachment.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "runner": {
+      "$ref": "workflowcontract.v1.CraftingSchema.Runner.jsonschema.json",
+      "description": "Runner configuration for the contract"
+    }
+  },
+  "title": "Crafting Schema V2 Spec",
+  "type": "object"
+}

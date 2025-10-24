@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,8 @@ import (
 var (
 	isDefaultCASBackendUpdateOption   *bool
 	descriptionCASBackendUpdateOption *string
+	maxBytesCASBackendOption          string
+	parsedMaxBytes                    *int64
 )
 
 func newCASBackendCmd() *cobra.Command {
@@ -46,6 +49,7 @@ func newCASBackendAddCmd() *cobra.Command {
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 	cmd.PersistentFlags().String("name", "", "CAS backend name")
+	cmd.PersistentFlags().StringVar(&maxBytesCASBackendOption, "max-bytes", "", "Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)")
 	err := cmd.MarkPersistentFlagRequired("name")
 	cobra.CheckErr(err)
 
@@ -56,12 +60,13 @@ func newCASBackendAddCmd() *cobra.Command {
 func newCASBackendUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update a CAS backend description, credentials or default status",
+		Short: "Update a CAS backend description, credentials, default status, or max bytes",
 	}
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 	cmd.PersistentFlags().String("name", "", "CAS backend name")
+	cmd.PersistentFlags().StringVar(&maxBytesCASBackendOption, "max-bytes", "", "Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.")
 
 	cmd.AddCommand(newCASBackendUpdateOCICmd(), newCASBackendUpdateInlineCmd(), newCASBackendUpdateAzureBlobCmd(), newCASBackendUpdateAWSS3Cmd())
 	return cmd
@@ -123,6 +128,24 @@ func confirmationPrompt(msg string) bool {
 	fmt.Scanln(&gotChallenge)
 
 	return gotChallenge == "y" || gotChallenge == "Y"
+}
+
+// parseMaxBytesOption validates and parses the --max-bytes flag value.
+// It stores the parsed result in parsedMaxBytes for child commands to use.
+func parseMaxBytesOption() error {
+	parsedMaxBytes = nil
+	if maxBytesCASBackendOption == "" {
+		return nil
+	}
+
+	bytes, err := bytefmt.ToBytes(maxBytesCASBackendOption)
+	if err != nil {
+		return fmt.Errorf("invalid max-bytes format: %w", err)
+	}
+
+	bytesInt := int64(bytes)
+	parsedMaxBytes = &bytesInt
+	return nil
 }
 
 // captureUpdateFlags reads the --default and --description flags only when explicitly set and

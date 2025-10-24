@@ -45,27 +45,48 @@ func NewGitlabCrafter(schema *schemaapi.CraftingSchema_Material, backend *cascli
 }
 
 func (i *GitlabCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
-	if err := i.validate(filePath); err != nil {
-		return nil, err
-	}
-
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
-}
-
-func (i *GitlabCrafter) validate(filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("can't open the file: %w", err)
+		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
 	var glReport report.Report
 	if err = json.Unmarshal(data, &glReport); err != nil {
-		return fmt.Errorf("error unmarshalling report file: %w", err)
+		return nil, fmt.Errorf("error unmarshalling report file: %w", err)
 	}
 
 	if !slices.Contains(supportedTypes, string(glReport.Scan.Type)) {
-		return fmt.Errorf("error loading Gitlab report. Missing scan type")
+		return nil, fmt.Errorf("error loading Gitlab report. Missing scan type")
 	}
 
-	return nil
+	m, err := uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	if err != nil {
+		return nil, err
+	}
+
+	i.injectAnnotations(m, &glReport)
+
+	return m, nil
+}
+
+func (i *GitlabCrafter) injectAnnotations(m *api.Attestation_Material, glReport *report.Report) {
+	// Prefer scanner (the actual security tool) over analyzer (the wrapper/integration layer)
+	toolName := glReport.Scan.Scanner.Name
+	toolVersion := glReport.Scan.Scanner.Version
+
+	// Fallback to analyzer if scanner information is not available
+	if toolName == "" {
+		toolName = glReport.Scan.Analyzer.Name
+		toolVersion = glReport.Scan.Analyzer.Version
+	}
+
+	if toolName != "" {
+		if m.Annotations == nil {
+			m.Annotations = make(map[string]string)
+		}
+		m.Annotations[AnnotationToolNameKey] = toolName
+		if toolVersion != "" {
+			m.Annotations[AnnotationToolVersionKey] = toolVersion
+		}
+	}
 }
