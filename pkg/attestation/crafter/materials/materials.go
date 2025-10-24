@@ -37,6 +37,16 @@ import (
 const AnnotationToolNameKey = "chainloop.material.tool.name"
 const AnnotationToolVersionKey = "chainloop.material.tool.version"
 
+// AnnotationToolIndexedName returns the annotation key for an indexed tool name
+func AnnotationToolIndexedName(idx int) string {
+	return fmt.Sprintf("chainloop.material.tool.%d.name", idx)
+}
+
+// AnnotationToolIndexedVersion returns the annotation key for an indexed tool version
+func AnnotationToolIndexedVersion(idx int) string {
+	return fmt.Sprintf("chainloop.material.tool.%d.version", idx)
+}
+
 var (
 	// ErrInvalidMaterialType is returned when the provided material type
 	// is not from the kind we are expecting

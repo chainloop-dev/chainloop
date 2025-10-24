@@ -168,8 +168,8 @@ func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, meta
 
 		// Extract all tools from the array
 		for idx, tool := range meta.Tools {
-			m.Annotations[fmt.Sprintf("chainloop.material.tool.%d.name", idx)] = tool.Name
-			m.Annotations[fmt.Sprintf("chainloop.material.tool.%d.version", idx)] = tool.Version
+			m.Annotations[AnnotationToolIndexedName(idx)] = tool.Name
+			m.Annotations[AnnotationToolIndexedVersion(idx)] = tool.Version
 		}
 
 		// Maintain backward compatibility - keep legacy non-indexed keys for the first tool
@@ -184,8 +184,8 @@ func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, meta
 
 		// Extract all tools from the array
 		for idx, tool := range meta.Tools.Components {
-			m.Annotations[fmt.Sprintf("chainloop.material.tool.%d.name", idx)] = tool.Name
-			m.Annotations[fmt.Sprintf("chainloop.material.tool.%d.version", idx)] = tool.Version
+			m.Annotations[AnnotationToolIndexedName(idx)] = tool.Name
+			m.Annotations[AnnotationToolIndexedVersion(idx)] = tool.Version
 		}
 
 		// Maintain backward compatibility - keep legacy non-indexed keys for the first tool
