@@ -1,0 +1,41 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2025-09-28T07:00:46Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "Black Duck",
+          "name": "Hub",
+          "version": "2025.4.2"
+        },
+        {
+          "type": "library",
+          "author": "CycloneDX",
+          "name": "cyclonedx-core-java",
+          "version": "5.0.5"
+        }
+      ]
+    },
+    "component": {
+      "bom-ref": "test-component",
+      "type": "application",
+      "name": "test-app",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:golang/example.com/test@v1.0.0",
+      "type": "library",
+      "name": "example.com/test",
+      "version": "v1.0.0",
+      "purl": "pkg:golang/example.com/test@v1.0.0"
+    }
+  ]
+}
