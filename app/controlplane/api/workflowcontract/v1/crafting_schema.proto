@@ -24,28 +24,34 @@ option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/wor
 // Schema definition provided by the user to the tool
 // that defines the schema of the workflowRun
 message CraftingSchema {
+  option deprecated = true;
   // Version of the schema, do not confuse with the revision of the content
-  string schema_version = 1 [(buf.validate.field).string.const = "v1"];
-  repeated Material materials = 2;
-  repeated string env_allow_list = 3;
-  Runner runner = 4;
+  string schema_version = 1 [
+    (buf.validate.field).string.const = "v1",
+    deprecated = true
+  ];
+  repeated Material materials = 2 [deprecated = true];
+  repeated string env_allow_list = 3 [deprecated = true];
+  Runner runner = 4 [deprecated = true];
   // List of annotations that can be used to add metadata to the attestation
   // this metadata can be used later on by the integrations engine to filter and interpolate data
   // It works in addition to the annotations defined in the materials and the runner
-  repeated Annotation annotations = 5;
+  repeated Annotation annotations = 5 [deprecated = true];
 
   // Policies to apply to this schema
-  Policies policies = 6;
+  Policies policies = 6 [deprecated = true];
 
   // Policy groups to apply to this schema
-  repeated PolicyGroupAttachment policy_groups = 7;
+  repeated PolicyGroupAttachment policy_groups = 7 [deprecated = true];
 
   message Runner {
+    option deprecated = true;
     RunnerType type = 1 [
       (buf.validate.field).enum = {
         not_in: [0]
       },
-      (buf.validate.field).enum.defined_only = true
+      (buf.validate.field).enum.defined_only = true,
+      deprecated = true
     ];
 
     enum RunnerType {
@@ -61,26 +67,31 @@ message CraftingSchema {
   }
 
   message Material {
+    option deprecated = true;
     MaterialType type = 1 [
       (buf.validate.field).enum = {
         not_in: [0]
       },
-      (buf.validate.field).enum.defined_only = true
+      (buf.validate.field).enum.defined_only = true,
+      deprecated = true
     ];
-    string name = 2 [(buf.validate.field) = {
-      // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
-      cel: {
-        message: "must contain only lowercase letters, numbers, and hyphens."
-        expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
-        id: "name.dns-1123"
-      }
-    }];
-    bool optional = 3;
+    string name = 2 [
+      (buf.validate.field) = {
+        // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
+        cel: {
+          message: "must contain only lowercase letters, numbers, and hyphens."
+          expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+          id: "name.dns-1123"
+        }
+      },
+      deprecated = true
+    ];
+    bool optional = 3 [deprecated = true];
     // If a material is set as output it will get added to the subject in the statement
-    bool output = 4;
+    bool output = 4 [deprecated = true];
     // List of annotations that can be used to add metadata to the material
     // this metadata can be used later on by the integrations engine to filter and interpolate data
-    repeated Annotation annotations = 5;
+    repeated Annotation annotations = 5 [deprecated = true];
 
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;
