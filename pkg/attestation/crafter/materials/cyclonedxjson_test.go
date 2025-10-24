@@ -156,6 +156,23 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 				"chainloop.material.sbom.vulnerabilities_report": "true",
 			},
 		},
+		{
+			name:                     "1.5 version with multiple tools",
+			filePath:                 "./testdata/sbom.cyclonedx-1.5-multiple-tools.json",
+			wantDigest:               "sha256:56f82c99fb4740f952296705ceb2ee0c5c3c6a3309b35373d542d58878d65cd3",
+			wantFilename:             "sbom.cyclonedx-1.5-multiple-tools.json",
+			wantMainComponent:        "test-app",
+			wantMainComponentKind:    "application",
+			wantMainComponentVersion: "1.0.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":      "Hub",
+				"chainloop.material.tool.version":   "2025.4.2",
+				"chainloop.material.tool.0.name":    "Hub",
+				"chainloop.material.tool.0.version": "2025.4.2",
+				"chainloop.material.tool.1.name":    "cyclonedx-core-java",
+				"chainloop.material.tool.1.version": "5.0.5",
+			},
+		},
 	}
 
 	schema := &contractAPI.CraftingSchema_Material{

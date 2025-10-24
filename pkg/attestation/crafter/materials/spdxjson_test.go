@@ -66,9 +66,12 @@ func TestNewSPDXJSONCrafter(t *testing.T) {
 
 func TestSPDXJSONCraft(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name         string
+		filePath     string
+		wantErr      string
+		wantDigest   string
+		wantFilename string
+		annotations  map[string]string
 	}{
 		{
 			name:     "invalid sbom format",
@@ -86,8 +89,30 @@ func TestSPDXJSONCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
-			name:     "valid artifact type",
-			filePath: "./testdata/sbom-spdx.json",
+			name:         "valid artifact type",
+			filePath:     "./testdata/sbom-spdx.json",
+			wantDigest:   "sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33",
+			wantFilename: "sbom-spdx.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":      "syft",
+				"chainloop.material.tool.version":   "0.73.0",
+				"chainloop.material.tool.0.name":    "syft",
+				"chainloop.material.tool.0.version": "0.73.0",
+			},
+		},
+		{
+			name:         "multiple tools",
+			filePath:     "./testdata/sbom-spdx-multiple-tools.json",
+			wantDigest:   "sha256:c1a61566c7c0224ac02ad9cd21d90234e5a71de26971e33df2205c1a2eb319fc",
+			wantFilename: "sbom-spdx-multiple-tools.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":      "spdxgen",
+				"chainloop.material.tool.version":   "1.0.0",
+				"chainloop.material.tool.0.name":    "spdxgen",
+				"chainloop.material.tool.0.version": "1.0.0",
+				"chainloop.material.tool.1.name":    "scanner",
+				"chainloop.material.tool.1.version": "2.1.5",
+			},
 		},
 	}
 
@@ -123,10 +148,17 @@ func TestSPDXJSONCraft(t *testing.T) {
 			assert.Equal(contractAPI.CraftingSchema_Material_SBOM_SPDX_JSON.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
-			// // The result includes the digest reference
+			// The result includes the digest reference
 			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33", Name: "sbom-spdx.json",
+				Id: "test", Digest: tc.wantDigest, Name: tc.wantFilename,
 			})
+
+			// Validate annotations if specified
+			if tc.annotations != nil {
+				for k, v := range tc.annotations {
+					assert.Equal(v, got.Annotations[k])
+				}
+			}
 		})
 	}
 }
