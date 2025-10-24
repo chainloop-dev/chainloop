@@ -1,0 +1,27 @@
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "name": "test-multiple-tools",
+ "documentNamespace": "https://example.com/test/multiple-tools",
+ "creationInfo": {
+  "licenseListVersion": "3.20",
+  "creators": [
+   "Organization: Example Corp",
+   "Tool: spdxgen-1.0.0",
+   "Tool: scanner-2.1.5"
+  ],
+  "created": "2024-01-01T10:00:00Z"
+ },
+ "packages": [
+  {
+   "name": "example-package",
+   "SPDXID": "SPDXRef-Package-example",
+   "versionInfo": "1.0.0",
+   "downloadLocation": "NOASSERTION",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION"
+  }
+ ]
+}
