@@ -9,6 +9,9 @@
     },
     "^(inputSchema)$": {
       "$ref": "workflowcontract.v1.CraftingSchema.schema.json"
+    },
+    "^(schemaV2)$": {
+      "$ref": "workflowcontract.v1.CraftingSchemaV2.schema.json"
     }
   },
   "properties": {
@@ -20,6 +23,9 @@
     },
     "input_schema": {
       "$ref": "workflowcontract.v1.CraftingSchema.schema.json"
+    },
+    "schema_v2": {
+      "$ref": "workflowcontract.v1.CraftingSchemaV2.schema.json"
     }
   },
   "title": "Crafting State",

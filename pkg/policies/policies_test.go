@@ -225,7 +225,7 @@ func (s *testSuite) TestVerifyAttestations() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			verifier := NewPolicyVerifier(tc.schema, nil, &s.logger)
+			verifier := NewPolicyVerifier(tc.schema.Policies, nil, &s.logger)
 			statement := loadStatement(tc.statement, &s.Suite)
 
 			res, err := verifier.VerifyStatement(context.TODO(), statement)
@@ -389,7 +389,7 @@ func (s *testSuite) TestArgumentsInViolations() {
 	}
 
 	s.Run("arguments in violations", func() {
-		verifier := NewPolicyVerifier(schema, nil, &s.logger)
+		verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 		statement := loadStatement("testdata/statement.json", &s.Suite)
 
 		res, err := verifier.VerifyStatement(context.TODO(), statement)
@@ -509,7 +509,7 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 					Materials: tc.policies,
 				},
 			}
-			pv := NewPolicyVerifier(schema, nil, &s.logger)
+			pv := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 			atts, err := pv.requiredPoliciesForMaterial(context.TODO(), tc.material)
 			s.Require().NoError(err)
 			s.Require().Len(atts, tc.result)
@@ -545,7 +545,7 @@ func (s *testSuite) TestValidInlineMaterial() {
 		InlineCas:    true,
 	}
 
-	verifier := NewPolicyVerifier(schema, nil, &s.logger)
+	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
 	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 	s.Require().NoError(err)
@@ -580,7 +580,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 		InlineCas:    true,
 	}
 
-	verifier := NewPolicyVerifier(schema, nil, &s.logger)
+	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
 	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 	s.Require().NoError(err)
@@ -1043,7 +1043,7 @@ func (s *testSuite) TestNewResultFormat() {
 				InlineCas:    true,
 			}
 
-			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 
 			if tc.expectErr {
@@ -1114,7 +1114,7 @@ func (s *testSuite) TestContainerMaterial() {
 				MaterialType: v12.CraftingSchema_Material_CONTAINER_IMAGE,
 			}
 
-			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 
 			if tc.expectErr {
@@ -1201,7 +1201,7 @@ func (s *testSuite) TestMultiKindAWithIgnore() {
 				material.MaterialType = v12.CraftingSchema_Material_OPENVEX
 			}
 
-			verifier := NewPolicyVerifier(schema, nil, &s.logger)
+			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 
 			if tc.expectErr {

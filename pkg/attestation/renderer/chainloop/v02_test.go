@@ -58,6 +58,16 @@ func TestRenderV02(t *testing.T) {
 			sourcePath: "testdata/attestation.source-2.json",
 			outputPath: "testdata/attestation.output-2.v0.2.json",
 		},
+		{
+			name:       "V2 schema with policy violations",
+			sourcePath: "testdata/attestation.source.v2.json",
+			outputPath: "testdata/attestation.output.v2.json",
+		},
+		{
+			name:       "V2 schema with multiple types of materials",
+			sourcePath: "testdata/attestation.source-2.v2.json",
+			outputPath: "testdata/attestation.output-2.v2.json",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -68,7 +78,7 @@ func TestRenderV02(t *testing.T) {
 			require.NoError(t, err)
 			err = protojson.Unmarshal(stateRaw, state)
 			require.NoError(t, err)
-			renderer := NewChainloopRendererV02(state.Attestation, state.InputSchema, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
+			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
 
 			// Compare result
 			statement, err := renderer.Statement(context.TODO())

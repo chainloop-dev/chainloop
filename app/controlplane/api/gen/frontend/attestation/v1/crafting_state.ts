@@ -11,6 +11,7 @@ import {
   CraftingSchema_Runner_RunnerType,
   craftingSchema_Runner_RunnerTypeFromJSON,
   craftingSchema_Runner_RunnerTypeToJSON,
+  CraftingSchemaV2,
 } from "../../workflowcontract/v1/crafting_schema";
 
 export const protobufPackage = "attestation.v1";
@@ -331,7 +332,8 @@ export interface Commit_Remote {
 
 /** Intermediate information that will get stored in the system while the run is being executed */
 export interface CraftingState {
-  inputSchema?: CraftingSchema;
+  inputSchema?: CraftingSchema | undefined;
+  schemaV2?: CraftingSchemaV2 | undefined;
   attestation?: Attestation;
   dryRun: boolean;
 }
@@ -3038,13 +3040,16 @@ export const Commit_Remote = {
 };
 
 function createBaseCraftingState(): CraftingState {
-  return { inputSchema: undefined, attestation: undefined, dryRun: false };
+  return { inputSchema: undefined, schemaV2: undefined, attestation: undefined, dryRun: false };
 }
 
 export const CraftingState = {
   encode(message: CraftingState, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.inputSchema !== undefined) {
       CraftingSchema.encode(message.inputSchema, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.schemaV2 !== undefined) {
+      CraftingSchemaV2.encode(message.schemaV2, writer.uint32(34).fork()).ldelim();
     }
     if (message.attestation !== undefined) {
       Attestation.encode(message.attestation, writer.uint32(18).fork()).ldelim();
@@ -3068,6 +3073,13 @@ export const CraftingState = {
           }
 
           message.inputSchema = CraftingSchema.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.schemaV2 = CraftingSchemaV2.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -3095,6 +3107,7 @@ export const CraftingState = {
   fromJSON(object: any): CraftingState {
     return {
       inputSchema: isSet(object.inputSchema) ? CraftingSchema.fromJSON(object.inputSchema) : undefined,
+      schemaV2: isSet(object.schemaV2) ? CraftingSchemaV2.fromJSON(object.schemaV2) : undefined,
       attestation: isSet(object.attestation) ? Attestation.fromJSON(object.attestation) : undefined,
       dryRun: isSet(object.dryRun) ? Boolean(object.dryRun) : false,
     };
@@ -3104,6 +3117,8 @@ export const CraftingState = {
     const obj: any = {};
     message.inputSchema !== undefined &&
       (obj.inputSchema = message.inputSchema ? CraftingSchema.toJSON(message.inputSchema) : undefined);
+    message.schemaV2 !== undefined &&
+      (obj.schemaV2 = message.schemaV2 ? CraftingSchemaV2.toJSON(message.schemaV2) : undefined);
     message.attestation !== undefined &&
       (obj.attestation = message.attestation ? Attestation.toJSON(message.attestation) : undefined);
     message.dryRun !== undefined && (obj.dryRun = message.dryRun);
@@ -3118,6 +3133,9 @@ export const CraftingState = {
     const message = createBaseCraftingState();
     message.inputSchema = (object.inputSchema !== undefined && object.inputSchema !== null)
       ? CraftingSchema.fromPartial(object.inputSchema)
+      : undefined;
+    message.schemaV2 = (object.schemaV2 !== undefined && object.schemaV2 !== null)
+      ? CraftingSchemaV2.fromPartial(object.schemaV2)
       : undefined;
     message.attestation = (object.attestation !== undefined && object.attestation !== null)
       ? Attestation.fromPartial(object.attestation)

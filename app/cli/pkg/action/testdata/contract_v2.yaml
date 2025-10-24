@@ -1,0 +1,36 @@
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: test-contract-v2
+  description: Test contract in V2 format
+  annotations:
+    version: "1.0.0"
+    team: test-team
+spec:
+  materials:
+    - type: CONTAINER_IMAGE
+      name: skynet-control-plane
+      output: true
+      annotations:
+        - name: component
+          value: control-plane
+    - type: ARTIFACT
+      name: rootfs
+    - type: SBOM_CYCLONEDX_JSON
+      name: skynet-sbom
+    - type: STRING
+      name: build-ref
+      optional: true
+  envAllowList:
+    - CUSTOM_VAR
+    - BUILD_NUMBER
+  runner:
+    type: GITHUB_ACTION
+  policies:
+    materials:
+      - ref: file://policy1.yaml
+      - ref: file://policy2.yaml
+    attestation:
+      - ref: file://attestation-policy.yaml
+  policyGroups:
+    - ref: file://testdata/policy_group.yaml
