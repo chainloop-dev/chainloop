@@ -17,6 +17,7 @@ package materials
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -36,6 +37,40 @@ import (
 
 const AnnotationToolNameKey = "chainloop.material.tool.name"
 const AnnotationToolVersionKey = "chainloop.material.tool.version"
+const AnnotationToolsKey = "chainloop.material.tools"
+
+// IsLegacyAnnotation returns true if the annotation key is a legacy annotation
+func IsLegacyAnnotation(key string) bool {
+	return key == AnnotationToolNameKey || key == AnnotationToolVersionKey
+}
+
+// Tool represents a tool with name and version
+type Tool struct {
+	Name    string
+	Version string
+}
+
+// SetToolsAnnotations sets the tools annotation as a JSON array in "name@version" format
+func SetToolsAnnotation(m *api.Attestation_Material, tools []Tool) {
+	if len(tools) == 0 {
+		return
+	}
+
+	// Build array of "name@version" strings
+	toolStrings := make([]string, 0, len(tools))
+	for _, tool := range tools {
+		toolStr := tool.Name
+		if tool.Version != "" {
+			toolStr = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
+		}
+		toolStrings = append(toolStrings, toolStr)
+	}
+
+	// Marshal to JSON array
+	if toolsJSON, err := json.Marshal(toolStrings); err == nil {
+		m.Annotations[AnnotationToolsKey] = string(toolsJSON)
+	}
+}
 
 var (
 	// ErrInvalidMaterialType is returned when the provided material type

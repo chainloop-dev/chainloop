@@ -166,19 +166,37 @@ func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, meta
 			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
 		}
 
-		if len(meta.Tools) > 0 {
-			m.Annotations[AnnotationToolNameKey] = meta.Tools[0].Name
-			m.Annotations[AnnotationToolVersionKey] = meta.Tools[0].Version
+		// Extract all tools and set annotations
+		var tools []Tool
+		for _, tool := range meta.Tools {
+			tools = append(tools, Tool{Name: tool.Name, Version: tool.Version})
 		}
+		SetToolsAnnotation(m, tools)
+
+		// Maintain backward compatibility - keep legacy keys for the first tool
+		if len(tools) > 0 {
+			m.Annotations[AnnotationToolNameKey] = tools[0].Name
+			m.Annotations[AnnotationToolVersionKey] = tools[0].Version
+		}
+
 	case *cyclonedxMetadataV15:
 		if err := i.extractMainComponent(m, &meta.Component); err != nil {
 			i.logger.Debug().Err(err).Msg("error extracting main component from sbom, skipping...")
 		}
 
-		if len(meta.Tools.Components) > 0 {
-			m.Annotations[AnnotationToolNameKey] = meta.Tools.Components[0].Name
-			m.Annotations[AnnotationToolVersionKey] = meta.Tools.Components[0].Version
+		// Extract all tools and set annotations
+		var tools []Tool
+		for _, tool := range meta.Tools.Components {
+			tools = append(tools, Tool{Name: tool.Name, Version: tool.Version})
 		}
+		SetToolsAnnotation(m, tools)
+
+		// Maintain backward compatibility - keep legacy keys for the first tool
+		if len(tools) > 0 {
+			m.Annotations[AnnotationToolNameKey] = tools[0].Name
+			m.Annotations[AnnotationToolVersionKey] = tools[0].Version
+		}
+
 	default:
 		i.logger.Debug().Msg("unknown metadata version")
 	}

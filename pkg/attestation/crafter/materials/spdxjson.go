@@ -71,19 +71,27 @@ func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 }
 
 func (i *SPDXJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *spdx.Document) {
+	m.Annotations = make(map[string]string)
+
+	// Extract all tools from the creators array
+	var tools []Tool
 	for _, c := range doc.CreationInfo.Creators {
 		if c.CreatorType == "Tool" {
-			m.Annotations = make(map[string]string)
-			m.Annotations[AnnotationToolNameKey] = c.Creator
-
 			// try to extract the tool name and version
 			// e.g. "myTool-1.0.0"
-			parts := strings.SplitN(c.Creator, "-", 2)
-			if len(parts) == 2 {
-				m.Annotations[AnnotationToolNameKey] = parts[0]
-				m.Annotations[AnnotationToolVersionKey] = parts[1]
+			name, version := c.Creator, ""
+			if parts := strings.SplitN(c.Creator, "-", 2); len(parts) == 2 {
+				name, version = parts[0], parts[1]
 			}
-			break
+			tools = append(tools, Tool{Name: name, Version: version})
 		}
+	}
+
+	SetToolsAnnotation(m, tools)
+
+	// Maintain backward compatibility - keep legacy keys for the first tool
+	if len(tools) > 0 {
+		m.Annotations[AnnotationToolNameKey] = tools[0].Name
+		m.Annotations[AnnotationToolVersionKey] = tools[0].Version
 	}
 }
