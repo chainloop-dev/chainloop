@@ -94,10 +94,9 @@ func TestSPDXJSONCraft(t *testing.T) {
 			wantDigest:   "sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33",
 			wantFilename: "sbom-spdx.json",
 			annotations: map[string]string{
-				"chainloop.material.tool.name":      "syft",
-				"chainloop.material.tool.version":   "0.73.0",
-				"chainloop.material.tool.0.name":    "syft",
-				"chainloop.material.tool.0.version": "0.73.0",
+				"chainloop.material.tool.name":    "syft",
+				"chainloop.material.tool.version": "0.73.0",
+				"chainloop.material.tools":        `["syft@0.73.0"]`,
 			},
 		},
 		{
@@ -106,12 +105,9 @@ func TestSPDXJSONCraft(t *testing.T) {
 			wantDigest:   "sha256:c1a61566c7c0224ac02ad9cd21d90234e5a71de26971e33df2205c1a2eb319fc",
 			wantFilename: "sbom-spdx-multiple-tools.json",
 			annotations: map[string]string{
-				"chainloop.material.tool.name":      "spdxgen",
-				"chainloop.material.tool.version":   "1.0.0",
-				"chainloop.material.tool.0.name":    "spdxgen",
-				"chainloop.material.tool.0.version": "1.0.0",
-				"chainloop.material.tool.1.name":    "scanner",
-				"chainloop.material.tool.1.version": "2.1.5",
+				"chainloop.material.tool.name":    "spdxgen",
+				"chainloop.material.tool.version": "1.0.0",
+				"chainloop.material.tools":        `["spdxgen@1.0.0","scanner@2.1.5"]`,
 			},
 		},
 	}

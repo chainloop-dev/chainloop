@@ -165,12 +165,9 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			wantMainComponentKind:    "application",
 			wantMainComponentVersion: "1.0.0",
 			annotations: map[string]string{
-				"chainloop.material.tool.name":      "Hub",
-				"chainloop.material.tool.version":   "2025.4.2",
-				"chainloop.material.tool.0.name":    "Hub",
-				"chainloop.material.tool.0.version": "2025.4.2",
-				"chainloop.material.tool.1.name":    "cyclonedx-core-java",
-				"chainloop.material.tool.1.version": "5.0.5",
+				"chainloop.material.tool.name":    "Hub",
+				"chainloop.material.tool.version": "2025.4.2",
+				"chainloop.material.tools":        `["Hub@2025.4.2","cyclonedx-core-java@5.0.5"]`,
 			},
 		},
 	}
