@@ -409,6 +409,7 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 
 	tags := telemetry.Tags{
 		"cli_version":         Version,
+		"edition":             Edition,
 		"cp_url_hash":         controlplaneHash,
 		"cp_installation_url": controlplaneURL,
 		"chainloop_source":    "cli",
