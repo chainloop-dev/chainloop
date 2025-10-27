@@ -39,6 +39,11 @@ const AnnotationToolNameKey = "chainloop.material.tool.name"
 const AnnotationToolVersionKey = "chainloop.material.tool.version"
 const AnnotationToolsKey = "chainloop.material.tools"
 
+// IsLegacyAnnotation returns true if the annotation key is a legacy annotation
+func IsLegacyAnnotation(key string) bool {
+	return key == AnnotationToolNameKey || key == AnnotationToolVersionKey
+}
+
 // Tool represents a tool with name and version
 type Tool struct {
 	Name    string

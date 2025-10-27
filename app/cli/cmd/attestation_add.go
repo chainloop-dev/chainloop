@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
 )
 
@@ -194,6 +195,9 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 	if len(status.Material.Annotations) > 0 {
 		mt.AppendRow(table.Row{"Annotations", "------"})
 		for _, a := range status.Material.Annotations {
+			if materials.IsLegacyAnnotation(a.Name) {
+				continue
+			}
 			value := a.Value
 			if value == "" {
 				value = NotSet
