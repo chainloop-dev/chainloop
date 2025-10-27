@@ -394,8 +394,15 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 		}
 	}
 	for _, att := range c.Schema.GetPolicies().GetMaterials() {
-		if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+		policy, err := uc.findAndValidatePolicy(att, token)
+		if err != nil {
 			return NewErrValidation(err)
+		}
+		// Validate that policies attached to materials do not have kind ATTESTATION
+		if policy != nil {
+			if err := validatePolicyIsNotAttestationKind(policy); err != nil {
+				return NewErrValidation(err)
+			}
 		}
 	}
 	for _, gatt := range c.Schema.GetPolicyGroups() {
@@ -638,6 +645,25 @@ func SchemaToRawContract(contract *schemav1.CraftingSchema) (*Contract, error) {
 	}
 
 	return &Contract{Raw: r, Format: unmarshal.RawFormatJSON, Schema: contract}, nil
+}
+
+// validatePolicyIsNotAttestationKind validates that a policy does not have kind ATTESTATION.
+// Policies with kind ATTESTATION should only be attached at the attestation level, not to individual materials.
+func validatePolicyIsNotAttestationKind(policy *schemav1.Policy) error {
+	policies := policy.GetSpec().GetPolicies()
+	if len(policies) == 0 {
+		// Legacy format or no policies defined
+		return nil
+	}
+
+	// Check if any policy has kind ATTESTATION - this is not allowed for material-level policies
+	for _, policySpec := range policies {
+		if policySpec.GetKind() == schemav1.CraftingSchema_Material_ATTESTATION {
+			return fmt.Errorf("attestation policy %q cannot be attached to materials", policy.GetMetadata().GetName())
+		}
+	}
+
+	return nil
 }
 
 // ContractScope represents a polymorphic relationship between a contract and a project or organization
