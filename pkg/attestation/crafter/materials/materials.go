@@ -52,7 +52,7 @@ func SetToolsAnnotation(m *api.Attestation_Material, tools []Tool) {
 	}
 
 	// Build array of "name@version" strings
-	var toolStrings []string
+	toolStrings := make([]string, 0, len(tools))
 	for _, tool := range tools {
 		toolStr := tool.Name
 		if tool.Version != "" {
