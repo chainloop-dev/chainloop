@@ -29,8 +29,12 @@ import (
 )
 
 const devVersion = "dev"
+const ossEdition = "oss"
 
-var Version = devVersion
+var (
+	Version = devVersion
+	Edition = ossEdition
+)
 
 type info struct {
 	Version string
