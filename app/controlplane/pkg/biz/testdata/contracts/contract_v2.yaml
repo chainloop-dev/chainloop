@@ -1,0 +1,18 @@
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: my-contract
+  description: Test contract in new format
+spec:
+  materials:
+    - name: my-image
+      type: CONTAINER_IMAGE
+      optional: false
+    - name: source-code
+      type: ARTIFACT
+      optional: true
+  runner:
+    type: GITHUB_ACTION
+  envAllowList:
+    - NODE_ENV
+    - BUILD_VERSION

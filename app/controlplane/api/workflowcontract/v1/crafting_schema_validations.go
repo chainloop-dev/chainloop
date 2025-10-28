@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -211,4 +211,80 @@ func validateIsDNS1123(name string) error {
 	}
 
 	return nil
+}
+
+// ValidateUniqueMaterialName validates that only one material definition
+// with the same ID is present in the schema
+func (contract *CraftingSchemaV2) ValidateUniqueMaterialName() error {
+	spec := contract.GetSpec()
+	if spec == nil {
+		return nil
+	}
+
+	materialNames := make(map[string]bool)
+	for _, m := range spec.GetMaterials() {
+		if _, found := materialNames[m.Name]; found {
+			return fmt.Errorf("material with name=%s is duplicated", m.Name)
+		}
+		materialNames[m.Name] = true
+	}
+
+	return nil
+}
+
+// ValidatePolicyAttachments validates policy references in the schema
+func (contract *CraftingSchemaV2) ValidatePolicyAttachments() error {
+	spec := contract.GetSpec()
+	if spec == nil || spec.GetPolicies() == nil {
+		return nil
+	}
+
+	policies := spec.GetPolicies()
+	attachments := append(policies.GetAttestation(), policies.GetMaterials()...)
+
+	for _, att := range attachments {
+		// Validate refs.
+		if att.GetRef() != "" {
+			if err := ValidatePolicyAttachmentRef(att.GetRef()); err != nil {
+				return fmt.Errorf("invalid reference %q: %w", att.GetRef(), err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ToV1 converts a v2 contract to v1 format for backward compatibility
+// This allows old CLIs to work with v2 contracts stored on the server
+func (contract *CraftingSchemaV2) ToV1() *CraftingSchema {
+	if contract == nil {
+		return nil
+	}
+
+	spec := contract.GetSpec()
+	if spec == nil {
+		return nil
+	}
+
+	v1 := &CraftingSchema{
+		SchemaVersion: "v1",
+		Materials:     spec.GetMaterials(),
+		EnvAllowList:  spec.GetEnvAllowList(),
+		Runner:        spec.GetRunner(),
+		Policies:      spec.GetPolicies(),
+		PolicyGroups:  spec.GetPolicyGroups(),
+	}
+
+	// Extract annotations from metadata if present
+	// Convert map[string]string to []*Annotation
+	if metadata := contract.GetMetadata(); metadata != nil {
+		for name, value := range metadata.GetAnnotations() {
+			v1.Annotations = append(v1.Annotations, &Annotation{
+				Name:  name,
+				Value: value,
+			})
+		}
+	}
+
+	return v1
 }

@@ -23,16 +23,27 @@ import (
 
 func newWorkflowContractCreateCmd() *cobra.Command {
 	var name, description, contractPath, projectName string
+	var contractName string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new contract",
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			// Validate and extract the contract name
+			var err error
+			contractName, err = action.ValidateAndExtractName(name, contractPath)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var desc *string
 			if cmd.Flags().Changed("description") {
 				desc = &description
 			}
-			res, err := action.NewWorkflowContractCreate(ActionOpts).Run(name, desc, contractPath, projectName)
+			res, err := action.NewWorkflowContractCreate(ActionOpts).Run(contractName, desc, contractPath, projectName)
 			if err != nil {
 				return err
 			}
@@ -43,9 +54,6 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "contract name")
-	err := cmd.MarkFlagRequired("name")
-	cobra.CheckErr(err)
-
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
 	cmd.Flags().StringVar(&projectName, "project", "", "project name used to scope the contract, if not set the contract will be created in the organization")
