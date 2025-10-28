@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"os"
 	"testing"
 
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,6 +79,107 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 
 			assert.Equal(t, tc.wantFormat, contract.Format)
 			assert.Equal(t, data, contract.Raw)
+		})
+	}
+}
+
+func TestValidatePolicyIsNotAttestationKind(t *testing.T) {
+	testCases := []struct {
+		name      string
+		policy    *schemav1.Policy
+		wantError bool
+		errMsg    string
+	}{
+		{
+			name: "valid material-level policy with kind SBOM_SPDX_JSON",
+			policy: &schemav1.Policy{
+				Metadata: &schemav1.Metadata{
+					Name: "sbom-validation",
+				},
+				Spec: &schemav1.PolicySpec{
+					Policies: []*schemav1.PolicySpecV2{
+						{
+							Kind: schemav1.CraftingSchema_Material_SBOM_SPDX_JSON,
+							Source: &schemav1.PolicySpecV2_Embedded{
+								Embedded: "package main\nresult := true",
+							},
+						},
+					},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "invalid policy with kind ATTESTATION in materials section",
+			policy: &schemav1.Policy{
+				Metadata: &schemav1.Metadata{
+					Name: "attestation-policy",
+				},
+				Spec: &schemav1.PolicySpec{
+					Policies: []*schemav1.PolicySpecV2{
+						{
+							Kind: schemav1.CraftingSchema_Material_ATTESTATION,
+							Source: &schemav1.PolicySpecV2_Embedded{
+								Embedded: "package main\nresult := true",
+							},
+						},
+					},
+				},
+			},
+			wantError: true,
+			errMsg:    "cannot be attached to materials",
+		},
+		{
+			name: "invalid policy with multiple kinds including ATTESTATION",
+			policy: &schemav1.Policy{
+				Metadata: &schemav1.Metadata{
+					Name: "multi-kind-policy",
+				},
+				Spec: &schemav1.PolicySpec{
+					Policies: []*schemav1.PolicySpecV2{
+						{
+							Kind: schemav1.CraftingSchema_Material_SBOM_SPDX_JSON,
+							Source: &schemav1.PolicySpecV2_Embedded{
+								Embedded: "package main\nresult := true",
+							},
+						},
+						{
+							Kind: schemav1.CraftingSchema_Material_ATTESTATION,
+							Source: &schemav1.PolicySpecV2_Embedded{
+								Embedded: "package main\nresult := true",
+							},
+						},
+					},
+				},
+			},
+			wantError: true,
+			errMsg:    "cannot be attached to materials",
+		},
+		{
+			name: "legacy policy with deprecated path field - should pass",
+			policy: &schemav1.Policy{
+				Metadata: &schemav1.Metadata{
+					Name: "legacy-path-policy",
+				},
+				Spec: &schemav1.PolicySpec{
+					Source: &schemav1.PolicySpec_Path{
+						Path: "file://policy.rego",
+					},
+				},
+			},
+			wantError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validatePolicyIsNotAttestationKind(tc.policy)
+			if tc.wantError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
