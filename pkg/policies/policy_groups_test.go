@@ -163,7 +163,7 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 				},
 			}
 
-			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
+			v := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
 			group, _, err := new(FileGroupLoader).Load(context.TODO(), &v1.PolicyGroupAttachment{
 				Ref: tc.schemaRef,
 			})
@@ -248,7 +248,7 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 	}
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			v := NewPolicyGroupVerifier(tc.schema, nil, &s.logger)
+			v := NewPolicyGroupVerifier(tc.schema.PolicyGroups, nil, nil, &s.logger)
 			statement := loadStatement(tc.statement, &s.Suite)
 			res, err := v.VerifyStatement(context.TODO(), statement)
 			if tc.wantErr != nil {
@@ -325,7 +325,7 @@ func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 				material.MaterialType = v1.CraftingSchema_Material_OPENVEX
 			}
 
-			verifier := NewPolicyGroupVerifier(schema, nil, &s.logger)
+			verifier := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
 			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
 
 			if tc.expectErr {
@@ -412,7 +412,7 @@ func (s *groupsTestSuite) TestGroupInputs() {
 			InlineCas:    true,
 		}
 		s.Run(tc.name, func() {
-			v := NewPolicyGroupVerifier(schema, nil, &s.logger)
+			v := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
 			evs, err := v.VerifyMaterial(context.TODO(), material, "")
 			if tc.wantErr {
 				s.Error(err)

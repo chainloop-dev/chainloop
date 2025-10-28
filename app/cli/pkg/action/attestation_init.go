@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
@@ -225,6 +226,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		}
 	}
 
+	// Parse the raw contract to get V2 schema if available
+	var schemaV2 *v1.CraftingSchemaV2
+	if contractVersion.GetRawContract() != nil {
+		schemaV2 = parseContractV2(contractVersion.GetRawContract())
+	}
+
 	// Initialize the local attestation crafter
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
@@ -232,6 +239,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		WfInfo: workflowMeta,
 		//nolint:staticcheck // TODO: Migrate to new contract version API
 		SchemaV1:                 contractVersion.GetV1(),
+		SchemaV2:                 schemaV2,
 		DryRun:                   action.dryRun,
 		AttestationID:            attestationID,
 		Runner:                   discoveredRunner,
@@ -359,4 +367,32 @@ func extractAuthInfo(authToken string) (*clientAPI.Attestation_Auth, error) {
 		Type: parsed.TokenType,
 		Id:   parsed.ID,
 	}, nil
+}
+
+// parseContractV2 attempts to parse a raw contract as V2 schema
+func parseContractV2(rawContract *pb.WorkflowContractVersionItem_RawBody) *v1.CraftingSchemaV2 {
+	if rawContract == nil {
+		return nil
+	}
+
+	rawFormat := func() unmarshal.RawFormat {
+		switch rawContract.GetFormat() {
+		case pb.WorkflowContractVersionItem_RawBody_FORMAT_JSON:
+			return unmarshal.RawFormatJSON
+		case pb.WorkflowContractVersionItem_RawBody_FORMAT_YAML:
+			return unmarshal.RawFormatYAML
+		case pb.WorkflowContractVersionItem_RawBody_FORMAT_CUE:
+			return unmarshal.RawFormatCUE
+		default:
+			return unmarshal.RawFormatYAML
+		}
+	}()
+
+	schemaV2 := &v1.CraftingSchemaV2{}
+	if err := unmarshal.FromRaw(rawContract.GetBody(), rawFormat, schemaV2, true); err != nil {
+		// If V2 parsing fails, return nil
+		return nil
+	}
+
+	return schemaV2
 }

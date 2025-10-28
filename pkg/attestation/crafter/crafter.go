@@ -149,6 +149,8 @@ type InitOpts struct {
 	WfInfo *api.WorkflowMetadata
 	// already marshaled schema
 	SchemaV1 *schemaapi.CraftingSchema
+	// already marshaled schema
+	SchemaV2 *schemaapi.CraftingSchemaV2
 	// do not record, upload or push attestation
 	DryRun bool
 	// Identifier of the attestation state
@@ -173,7 +175,7 @@ type SigningOpts struct {
 
 // Init initializes the crafter with a remote or local schema
 func (c *Crafter) Init(ctx context.Context, opts *InitOpts) error {
-	if opts.SchemaV1 == nil {
+	if opts.SchemaV1 == nil && opts.SchemaV2 == nil {
 		return errors.New("schema is nil")
 	} else if opts.WfInfo == nil {
 		return errors.New("workflow metadata is nil")
@@ -340,7 +342,7 @@ func sanitizeRemoteURL(remoteURL string) (string, error) {
 }
 
 func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error) {
-	if opts.WfInfo == nil || opts.Runner == nil || opts.SchemaV1 == nil {
+	if opts.WfInfo == nil || opts.Runner == nil || (opts.SchemaV1 == nil && opts.SchemaV2 == nil) {
 		return nil, errors.New("required init options not provided")
 	}
 	// Get git commit hash
@@ -375,8 +377,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 	}
 
 	// Generate Crafting state
-	return &api.CraftingState{
-		InputSchema: opts.SchemaV1,
+	craftingState := &api.CraftingState{
 		Attestation: &api.Attestation{
 			InitializedAt:          timestamppb.New(time.Now()),
 			Workflow:               opts.WfInfo,
@@ -399,7 +400,20 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
 		},
 		DryRun: opts.DryRun,
-	}, nil
+	}
+
+	// Set the appropriate schema
+	if opts.SchemaV2 != nil {
+		craftingState.Schema = &api.CraftingState_SchemaV2{
+			SchemaV2: opts.SchemaV2,
+		}
+	} else {
+		craftingState.Schema = &api.CraftingState_InputSchema{
+			InputSchema: opts.SchemaV1,
+		}
+	}
+
+	return craftingState, nil
 }
 
 // ResolveEnvVars will iterate on the env vars in the allow list and resolve them from the system context
@@ -433,10 +447,11 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 	}
 
 	// User-defined environment vars
-	if len(c.CraftingState.InputSchema.EnvAllowList) > 0 {
-		c.Logger.Debug().Strs("allowList", c.CraftingState.InputSchema.EnvAllowList).Msg("loading env variables")
+	envAllowList := c.CraftingState.GetEnvAllowList()
+	if len(envAllowList) > 0 {
+		c.Logger.Debug().Strs("allowList", envAllowList).Msg("loading env variables")
 	}
-	for _, want := range c.CraftingState.InputSchema.EnvAllowList {
+	for _, want := range envAllowList {
 		val := os.Getenv(want)
 		if val != "" {
 			outputEnvVars[want] = val
@@ -503,7 +518,7 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 
 	// 1 - Check if the material to be added is in the schema
 	var m *schemaapi.CraftingSchema_Material
-	for _, d := range c.CraftingState.InputSchema.Materials {
+	for _, d := range c.CraftingState.GetMaterials() {
 		if d.Name == key {
 			m = d
 		}
@@ -528,7 +543,7 @@ func (c *Crafter) IsMaterialInContract(key string) bool {
 		return false
 	}
 
-	for _, d := range c.CraftingState.InputSchema.Materials {
+	for _, d := range c.CraftingState.GetMaterials() {
 		if d.Name == key {
 			return true
 		}
@@ -615,8 +630,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return i.MaterialName == m.Name
 	})
 
-	// Validate policy groups
-	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policy groups to material: %w", err)
@@ -627,7 +641,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	policies.LogPolicyEvaluations(policyGroupResults, c.Logger)
 
 	// Validate policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policies to material: %w", err)
@@ -657,13 +671,13 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 // EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state
 func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement) error {
 	// evaluate attestation-level policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return fmt.Errorf("evaluating policies in statement: %w", err)
 	}
 
-	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.InputSchema, c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return fmt.Errorf("evaluating policy groups in statement: %w", err)

@@ -301,7 +301,10 @@ message Commit {
 
 // Intermediate information that will get stored in the system while the run is being executed
 message CraftingState {
-  workflowcontract.v1.CraftingSchema input_schema = 1;
+  oneof schema {
+    workflowcontract.v1.CraftingSchema input_schema = 1;
+    workflowcontract.v1.CraftingSchemaV2 schema_v2 = 4;
+  }
   Attestation attestation = 2;
   bool dry_run = 3;
 }

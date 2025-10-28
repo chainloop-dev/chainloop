@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	workflowcontract "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer/chainloop"
@@ -52,7 +53,12 @@ func (s *rendererSuite) SetupTest() {
 	var err error
 	s.cs = &crafter.VersionedCraftingState{
 		CraftingState: &v1.CraftingState{
-			InputSchema: nil,
+			Schema: &v1.CraftingState_InputSchema{
+				InputSchema: &workflowcontract.CraftingSchema{
+					SchemaVersion: "v1",
+					Materials:     []*workflowcontract.CraftingSchema_Material{},
+				},
+			},
 			Attestation: &v1.Attestation{
 				Workflow: &v1.WorkflowMetadata{
 					Name: "my-wf",

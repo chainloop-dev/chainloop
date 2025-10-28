@@ -31,25 +31,25 @@ import (
 )
 
 type PolicyGroupVerifier struct {
-	schema *v1.CraftingSchema
-	logger *zerolog.Logger
-	client v13.AttestationServiceClient
+	policyGroups []*v1.PolicyGroupAttachment
+	logger       *zerolog.Logger
+	client       v13.AttestationServiceClient
 
 	*PolicyVerifier
 }
 
 var _ Verifier = (*PolicyGroupVerifier)(nil)
 
-func NewPolicyGroupVerifier(schema *v1.CraftingSchema, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyGroupVerifier {
-	return &PolicyGroupVerifier{schema: schema, client: client, logger: logger,
-		PolicyVerifier: NewPolicyVerifier(schema, client, logger, opts...)}
+func NewPolicyGroupVerifier(policyGroups []*v1.PolicyGroupAttachment, policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyGroupVerifier {
+	return &PolicyGroupVerifier{policyGroups: policyGroups, client: client, logger: logger,
+		PolicyVerifier: NewPolicyVerifier(policies, client, logger, opts...)}
 }
 
 // VerifyMaterial evaluates a material against groups of policies defined in the schema
 func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *api.Attestation_Material, path string) ([]*api.PolicyEvaluation, error) {
 	result := make([]*api.PolicyEvaluation, 0)
 
-	groupAtts := pgv.schema.GetPolicyGroups()
+	groupAtts := pgv.policyGroups
 
 	for _, groupAtt := range groupAtts {
 		// 1. load the policy group
@@ -108,7 +108,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 
 func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*api.PolicyEvaluation, error) {
 	result := make([]*api.PolicyEvaluation, 0)
-	attachments := pgv.schema.GetPolicyGroups()
+	attachments := pgv.policyGroups
 	for _, groupAtt := range attachments {
 		group, desc, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
 			Client: pgv.client,
