@@ -68,7 +68,7 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_JOB_URL", false},
 		{"CI_PIPELINE_URL", false},
 		{"CI_RUNNER_VERSION", false},
-		{"CI_RUNNER_DESCRIPTION", false},
+		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
 	}
 }
