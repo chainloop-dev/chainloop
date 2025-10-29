@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,23 +25,24 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 )
 
 const (
-	annotationNameAuthor   = "Author"
-	annotationNameFilename = "Filename"
+	annotationNameAuthor   = "author"
+	annotationNameFilename = "filename"
 )
 
 type Backend struct {
-	client         *s3.S3
+	client         *s3.Client
 	bucket         string
 	customEndpoint string
 }
@@ -65,30 +66,40 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 		region = creds.Region
 	}
 
-	c := credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, "")
-	// Configure AWS session
-	cfg := &aws.Config{Credentials: c, Region: aws.String(region)}
-
 	// Bucket might contain the not only the bucket name but also the endpoint
 	endpoint, bucket, err := extractLocationAndBucket(creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse bucket name: %w", err)
 	}
 
+	// Configure AWS config with v2 SDK
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithRegion(region),
+		config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, ""),
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	// Create S3 client with custom options if needed
+	var s3Opts []func(*s3.Options)
+
 	// we have a custom endpoint
 	// in some cases the server-side checksum verification is not supported like in the case of cloudflare r2
 	if endpoint != "" {
-		cfg.Endpoint = aws.String(endpoint)
-		cfg.S3ForcePathStyle = aws.Bool(true)
+		s3Opts = append(s3Opts, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true
+		})
 	}
 
-	session, err := session.NewSession(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
-	}
+	client := s3.NewFromConfig(cfg, s3Opts...)
 
 	return &Backend{
-		client:         s3.New(session),
+		client:         client,
 		bucket:         bucket,
 		customEndpoint: endpoint,
 	}, nil
@@ -148,14 +159,14 @@ func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 }
 
 func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
-	uploader := s3manager.NewUploaderWithClient(b.client)
-	input := &s3manager.UploadInput{
+	uploader := manager.NewUploader(b.client)
+	input := &s3.PutObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(resourceName(resource.Digest)),
 		Body:   r,
-		Metadata: map[string]*string{
-			annotationNameAuthor:   aws.String(backend.AuthorAnnotation),
-			annotationNameFilename: aws.String(resource.FileName),
+		Metadata: map[string]string{
+			annotationNameAuthor:   backend.AuthorAnnotation,
+			annotationNameFilename: resource.FileName,
 		},
 	}
 
@@ -164,7 +175,7 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 		input.ChecksumSHA256 = aws.String(hexSha256ToBinaryB64(resource.Digest))
 	}
 
-	if _, err := uploader.UploadWithContext(ctx, input); err != nil {
+	if _, err := uploader.Upload(ctx, input); err != nil {
 		return fmt.Errorf("failed to upload to bucket: %w", err)
 	}
 
@@ -179,16 +190,16 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 
 	if b.checksumVerificationEnabled() {
 		// Enable checksum verification
-		input.ChecksumMode = aws.String("ENABLED")
+		input.ChecksumMode = types.ChecksumModeEnabled
 	}
 
 	// and read the object back
-	resp, err := b.client.HeadObjectWithContext(ctx, input)
+	resp, err := b.client.HeadObject(ctx, input)
 
 	// check error is aws error
-	var awsErr awserr.Error
 	if err != nil {
-		if errors.As(err, &awsErr) && awsErr.Code() == "NotFound" {
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "NotFound" {
 			return nil, backend.NewErrNotFound("artifact")
 		}
 
@@ -203,7 +214,7 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 	// Check asset author is Chainloop that way we can ignore files uploaded by other tools
 	// note: this is not a security mechanism, an additional check will be put in place for tamper check
 	author, ok := resp.Metadata[annotationNameAuthor]
-	if !ok || *author != backend.AuthorAnnotation {
+	if !ok || author != backend.AuthorAnnotation {
 		return nil, errors.New("asset not uploaded by Chainloop")
 	}
 
@@ -213,7 +224,7 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 	}
 
 	return &pb.CASResource{
-		FileName: *fileName,
+		FileName: fileName,
 		Size:     *resp.ContentLength,
 		Digest:   digest,
 	}, nil
@@ -227,13 +238,14 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 		return backend.NewErrNotFound("artifact")
 	}
 
-	downloader := s3manager.NewDownloaderWithClient(b.client)
-	// force sequential downloads so we can wrap the writer and ignore the offset
-	// Important! Do not change this value, otherwise the fakeWriterAt will not work
-	downloader.Concurrency = 1
+	downloader := manager.NewDownloader(b.client, func(d *manager.Downloader) {
+		// force sequential downloads so we can wrap the writer and ignore the offset
+		// Important! Do not change this value, otherwise the fakeWriterAt will not work
+		d.Concurrency = 1
+	})
 	output := fakeWriterAt{w}
 
-	_, err = downloader.DownloadWithContext(ctx, output, &s3.GetObjectInput{
+	_, err = downloader.Download(ctx, output, &s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(resourceName(digest)),
 	})
@@ -246,18 +258,18 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 	testObject := "healthcheck"
 
 	input := &s3.PutObjectInput{
-		Body:   aws.ReadSeekCloser(strings.NewReader("healthcheckdata")),
+		Body:   strings.NewReader("healthcheckdata"),
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(testObject),
 	}
 
 	// Write to the bucket
-	if _, err := b.client.PutObjectWithContext(ctx, input); err != nil {
+	if _, err := b.client.PutObject(ctx, input); err != nil {
 		return fmt.Errorf("failed to write to bucket: %w", err)
 	}
 
 	// and read the object back
-	_, err := b.client.GetObjectWithContext(ctx, &s3.GetObjectInput{
+	_, err := b.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(testObject),
 	})
