@@ -19,6 +19,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -153,7 +154,7 @@ func (c *HelmChartCrafter) validateYamlFile(r io.Reader, allowEmpty bool) error 
 	if err := yaml.NewDecoder(r).Decode(v); err != nil {
 		// io.EOF means the file is empty or contains only comments
 		// This is valid for values.yaml
-		if err == io.EOF && allowEmpty {
+		if errors.Is(err, io.EOF) && allowEmpty {
 			return nil
 		}
 		return fmt.Errorf("failed to unmarshal YAML file: %w", err)
