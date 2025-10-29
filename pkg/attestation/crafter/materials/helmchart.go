@@ -121,12 +121,12 @@ func (c *HelmChartCrafter) craftLocalHelmChart(ctx context.Context, filepath str
 		// it was compressed from. So, we can check if the file name contains the required file names
 		// Ex: helm-chart/Chart.yaml, helm-chart/values.yaml
 		if strings.Contains(header.Name, chartFileName) {
-			if err := c.validateYamlFile(tarReader); err != nil {
+			if err := c.validateYamlFile(tarReader, false); err != nil {
 				return nil, fmt.Errorf("invalid Chart.yaml file: %w", err)
 			}
 			chartFileValid = true
 		} else if strings.Contains(header.Name, chartValuesYamlFileName) {
-			if err := c.validateYamlFile(tarReader); err != nil {
+			if err := c.validateYamlFile(tarReader, true); err != nil {
 				return nil, fmt.Errorf("invalid values.yaml file: %w", err)
 			}
 			chartValuesValid = true
@@ -148,9 +148,14 @@ func (c *HelmChartCrafter) craftLocalHelmChart(ctx context.Context, filepath str
 }
 
 // validateYamlFile validates the YAML file just by trying to unmarshal it
-func (c *HelmChartCrafter) validateYamlFile(r io.Reader) error {
+func (c *HelmChartCrafter) validateYamlFile(r io.Reader, allowEmpty bool) error {
 	v := make(map[string]interface{})
 	if err := yaml.NewDecoder(r).Decode(v); err != nil {
+		// io.EOF means the file is empty or contains only comments
+		// This is valid for values.yaml
+		if err == io.EOF && allowEmpty {
+			return nil
+		}
 		return fmt.Errorf("failed to unmarshal YAML file: %w", err)
 	}
 
