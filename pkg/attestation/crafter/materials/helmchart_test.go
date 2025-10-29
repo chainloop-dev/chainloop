@@ -102,6 +102,12 @@ func TestHelmChartCraft(t *testing.T) {
 			wantDigest:   "sha256:08a46a850789938ede61d6a53552f48cb8ba74c4e17dcf30c9c50e5783ca6a13",
 			wantFilename: "valid-chart.tgz",
 		},
+		{
+			name:         "chart with empty values.yaml",
+			filePath:     "./testdata/empty-values.tgz",
+			wantDigest:   "sha256:6c5bc910da7ecb00aa1c7be70e51db237d129e3f41ff6ada1d11ea402ff7082e",
+			wantFilename: "empty-values.tgz",
+		},
 	}
 
 	assert := assert.New(t)
