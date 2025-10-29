@@ -89,7 +89,7 @@ func (s *gitlabPipelineSuite) TestListEnvVars() {
 		{"CI_JOB_URL", false},
 		{"CI_PIPELINE_URL", false},
 		{"CI_RUNNER_VERSION", false},
-		{"CI_RUNNER_DESCRIPTION", false},
+		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
 	}, s.runner.ListEnvVars())
 }
@@ -109,6 +109,26 @@ func (s *gitlabPipelineSuite) TestResolveEnvVars() {
 		"CI_COMMIT_REF_NAME":    "main",
 		"CI_SERVER_URL":         "https://gitlab.com",
 	}, resolvedEnvVars)
+}
+
+func (s *gitlabPipelineSuite) TestResolveEnvVarsWithoutRunnerDescription() {
+	s.T().Setenv("CI_RUNNER_DESCRIPTION", "")
+
+	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
+	s.Empty(errors, "Should not error when CI_RUNNER_DESCRIPTION is missing")
+
+	expected := map[string]string{
+		"GITLAB_USER_EMAIL":  "foo@foo.com",
+		"GITLAB_USER_LOGIN":  "foo",
+		"CI_PROJECT_URL":     "https://gitlab.com/chainloop/chainloop",
+		"CI_COMMIT_SHA":      "1234567890",
+		"CI_JOB_URL":         "https://gitlab.com/chainloop/chainloop/-/jobs/123",
+		"CI_PIPELINE_URL":    "https://gitlab.com/chainloop/chainloop/-/pipelines/123",
+		"CI_RUNNER_VERSION":  "13.10.0",
+		"CI_COMMIT_REF_NAME": "main",
+		"CI_SERVER_URL":      "https://gitlab.com",
+	}
+	s.Equal(expected, resolvedEnvVars)
 }
 
 func (s *gitlabPipelineSuite) TestRunURI() {
