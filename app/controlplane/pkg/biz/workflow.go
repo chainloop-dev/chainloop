@@ -133,11 +133,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, errors.New("organization ID is required")
 	}
 
-	// Set the default contract with <project>-<workflow> name
-	contractName := opts.ContractName
-	if contractName == "" {
-		contractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
-	}
+	contractName := fmt.Sprintf("%s-%s", opts.Project, opts.Name)
 
 	defaultContract, err := CreateDefaultContract(contractName)
 	if err != nil {
