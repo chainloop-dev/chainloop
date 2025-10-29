@@ -139,7 +139,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		contractName = fmt.Sprintf("%s-%s", opts.Project, opts.Name)
 	}
 
-	defaultContract, err := createDefaultContract(contractName)
+	defaultContract, err := CreateDefaultContract(contractName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create default contract: %w", err)
 	}
