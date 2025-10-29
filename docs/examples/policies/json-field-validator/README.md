@@ -26,43 +26,46 @@ This policy allows you to validate individual fields in JSON evidence files. It 
 Add this policy to your workflow contract:
 
 ```yaml
-apiVersion: workflowcontract.chainloop.dev/v1
-kind: WorkflowContract
+apiVersion: chainloop.dev/v1
+kind: Contract
 metadata:
   name: my-workflow
+  description: Workflow contract for application config validation
 spec:
   materials:
     - type: EVIDENCE
       name: app-config
-      
+
   policies:
-    - ref: ./json-field-validator/policy.yaml
-      with:
-        required_field: application.environment
-        expected_value: production
+    materials:
+      - ref: ./json-field-validator/policy.yaml
+        with:
+          required_field: application.environment
+          expected_value: production
 ```
 
 ### Multiple Field Validations
 
 ```yaml
 policies:
-  # Validate environment
-  - ref: ./json-field-validator/policy.yaml  
-    with:
-      required_field: application.environment
-      expected_value: production
-      
-  # Validate version format
-  - ref: ./json-field-validator/policy.yaml
-    with:
-      required_field: application.version  
-      field_pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
-      
-  # Validate security is enabled
-  - ref: ./json-field-validator/policy.yaml
-    with:
-      required_field: security.enabled
-      expected_value: "true"
+  materials:
+    # Validate environment
+    - ref: ./json-field-validator/policy.yaml
+      with:
+        required_field: application.environment
+        expected_value: production
+
+    # Validate version format
+    - ref: ./json-field-validator/policy.yaml
+      with:
+        required_field: application.version
+        field_pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+
+    # Validate security is enabled
+    - ref: ./json-field-validator/policy.yaml
+      with:
+        required_field: security.enabled
+        expected_value: "true"
 ```
 
 ## Development & Testing

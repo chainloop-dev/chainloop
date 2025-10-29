@@ -1,4 +1,9 @@
-schemaVersion: v1
-materials:
-  - type: CSAF_VEX
-    name: disclosure
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: csaf-vex
+  description: Contract for CSAF VEX vulnerability disclosure
+spec:
+  materials:
+    - type: CSAF_VEX
+      name: disclosure

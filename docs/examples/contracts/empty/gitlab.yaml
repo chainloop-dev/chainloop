@@ -1,5 +1,10 @@
 # Empty Chainloop contract valid for a workflow run in a Gitlab pipeline
-schemaVersion: "v1"
 # See https://docs.chainloop.dev/reference/operator/contract#runner-context
-runner:
-  type: "GITLAB_PIPELINE"
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: gitlab
+  description: Empty Chainloop contract valid for a workflow run in a Gitlab pipeline
+spec:
+  runner:
+    type: "GITLAB_PIPELINE"

@@ -1,19 +1,24 @@
 # This is an example contract that expects a container, an SBOM, and a vulnerabilities report.
-schemaVersion: v1
-materials:
-  - name: container
-    type: CONTAINER_IMAGE
-  - name: sbom
-    type: SBOM_CYCLONEDX_JSON
-    optional: true
-  - name: vulnerabilities-report
-    type: SARIF
-    optional: true
-
-policies:
-  attestation:
-    - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/chainloop-commit.yaml
-    - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/sbom/sbom-present.yaml
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: quickstart-contract-oss
+  description: Example contract with container, SBOM, and vulnerabilities report for OSS
+spec:
   materials:
-    - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/sbom/cyclonedx-licenses.yaml
+    - name: container
+      type: CONTAINER_IMAGE
+    - name: sbom
+      type: SBOM_CYCLONEDX_JSON
+      optional: true
+    - name: vulnerabilities-report
+      type: SARIF
+      optional: true
+
+  policies:
+    attestation:
+      - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/chainloop-commit.yaml
+      - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/sbom/sbom-present.yaml
+    materials:
+      - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/sbom/cyclonedx-licenses.yaml
 

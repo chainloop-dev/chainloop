@@ -1,5 +1,10 @@
 # Empty Chainloop contract valid for a workflow run in a Github Action
-schemaVersion: "v1"
 # See https://docs.chainloop.dev/reference/operator/contract#runner-context
-runner:
-  type: "GITHUB_ACTION"
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: github
+  description: Empty Chainloop contract valid for a workflow run in a Github Action
+spec:
+  runner:
+    type: "GITHUB_ACTION"

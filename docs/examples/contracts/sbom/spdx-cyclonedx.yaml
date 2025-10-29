@@ -1,10 +1,15 @@
-schemaVersion: v1
-materials:
-  # Software Bill Of Materials (SBOMs) will be uploaded 
-  # to your artifact registry and referenced by digest in the attestation
-  # Both SPDX
-  - type: SBOM_SPDX_JSON
-    name: skynet-sbom
-  # and CYCLONEDX SBOMs are supported
-  - type: SBOM_CYCLONEDX_JSON
-    name: skynet-sbom-cyclonedx
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: spdx-cyclonedx
+  description: Contract for both SPDX and CycloneDX SBOM attestation
+spec:
+  materials:
+    # Software Bill Of Materials (SBOMs) will be uploaded
+    # to your artifact registry and referenced by digest in the attestation
+    # Both SPDX
+    - type: SBOM_SPDX_JSON
+      name: skynet-sbom
+    # and CYCLONEDX SBOMs are supported
+    - type: SBOM_CYCLONEDX_JSON
+      name: skynet-sbom-cyclonedx

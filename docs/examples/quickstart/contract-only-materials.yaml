@@ -1,8 +1,13 @@
-schemaVersion: v1
-materials:
-  - name: container
-    type: CONTAINER_IMAGE
-  - name: sbom
-    type: SBOM_CYCLONEDX_JSON
-  - name: vulnerabilities-report
-    type: SARIF
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: contract-only-materials
+  description: Basic contract with materials only
+spec:
+  materials:
+    - name: container
+      type: CONTAINER_IMAGE
+    - name: sbom
+      type: SBOM_CYCLONEDX_JSON
+    - name: vulnerabilities-report
+      type: SARIF

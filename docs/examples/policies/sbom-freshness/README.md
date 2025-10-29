@@ -22,34 +22,37 @@ This policy validates the freshness of SBOM (Software Bill of Materials) files b
 Add this policy to your workflow contract:
 
 ```yaml
-apiVersion: workflowcontract.chainloop.dev/v1
-kind: WorkflowContract
+apiVersion: chainloop.dev/v1
+kind: Contract
 metadata:
   name: my-workflow
+  description: Workflow contract for SBOM freshness validation
 spec:
   materials:
     - type: SBOM_CYCLONEDX_JSON
       name: app-sbom
-      
+
   policies:
-    - ref: ./sbom-freshness/policy.yaml
-      with:
-        freshness_days: 30
+    materials:
+      - ref: ./sbom-freshness/policy.yaml
+        with:
+          freshness_days: 30
 ```
 
 ### Multiple Freshness Requirements
 
 ```yaml
 policies:
-  # Strict freshness for production
-  - ref: ./sbom-freshness/policy.yaml  
-    with:
-      freshness_days: 7
-      
-  # Moderate freshness for development
-  - ref: ./sbom-freshness/policy.yaml
-    with:
-      freshness_days: 30
+  materials:
+    # Strict freshness for production
+    - ref: ./sbom-freshness/policy.yaml
+      with:
+        freshness_days: 7
+
+    # Moderate freshness for development
+    - ref: ./sbom-freshness/policy.yaml
+      with:
+        freshness_days: 30
 ```
 
 ## Development & Testing
@@ -117,27 +120,30 @@ The policy calculates freshness using:
 ```yaml
 # Require fresh SBOMs for security scanning
 policies:
-  - ref: ./sbom-freshness/policy.yaml
-    with:
-      freshness_days: 7  # Weekly refresh requirement
+  materials:
+    - ref: ./sbom-freshness/policy.yaml
+      with:
+        freshness_days: 7  # Weekly refresh requirement
 ```
 
 ### Development Workflows
 ```yaml
 # Allow older SBOMs for development environments
 policies:
-  - ref: ./sbom-freshness/policy.yaml
-    with:
-      freshness_days: 90  # Quarterly refresh acceptable
+  materials:
+    - ref: ./sbom-freshness/policy.yaml
+      with:
+        freshness_days: 90  # Quarterly refresh acceptable
 ```
 
 ### Release Gates
 ```yaml
 # Strict freshness for production releases
 policies:
-  - ref: ./sbom-freshness/policy.yaml
-    with:
-      freshness_days: 1  # Daily refresh for releases
+  materials:
+    - ref: ./sbom-freshness/policy.yaml
+      with:
+        freshness_days: 1  # Daily refresh for releases
 ```
 
 ## Test Framework
