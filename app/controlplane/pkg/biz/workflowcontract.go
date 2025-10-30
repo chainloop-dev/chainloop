@@ -210,8 +210,8 @@ type WorkflowContractCreateOpts struct {
 	AddUniquePrefix bool
 }
 
-// CreateDefaultContract creates a new default contract with the specified name
-func CreateDefaultContract(name string) (*Contract, error) {
+// createDefaultContract creates a new default contract with the specified name
+func createDefaultContract(name string) (*Contract, error) {
 	defaultSchema := &schemav1.CraftingSchemaV2{
 		ApiVersion: "chainloop.dev/v1",
 		Kind:       "Contract",
@@ -263,7 +263,7 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		contract = c
 	} else {
 		// Use default contract with the user-provided name
-		c, err := CreateDefaultContract(opts.Name)
+		c, err := createDefaultContract(opts.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create default contract: %w", err)
 		}
