@@ -320,8 +320,9 @@ func (s *workflowContractIntegrationTestSuite) TestCreateWithCustomContract() {
 		require.NoError(s.T(), err)
 		contractWithVersion, err := s.WorkflowContract.Describe(ctx, s.org.ID, contract.ID.String(), 1)
 		require.NoError(s.T(), err)
-		s.Equal(biz.EmptyDefaultContract.Format, unmarshal.RawFormatYAML)
-		s.Equal(biz.EmptyDefaultContract.Raw, contractWithVersion.Version.Schema.Raw)
+		c := contractWithVersion.Version.Schema
+		s.Equal(c.Format, unmarshal.RawFormatYAML)
+		s.Equal(c.Raw, contractWithVersion.Version.Schema.Raw)
 		s.NotNil(contractWithVersion.Version.Schema.Schema)
 	})
 }

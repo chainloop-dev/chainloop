@@ -133,8 +133,13 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		return nil, errors.New("organization ID is required")
 	}
 
-	// Set the empty contract by default
-	opts.DetectedContract = EmptyDefaultContract
+	contractName := fmt.Sprintf("%s-%s", opts.Project, opts.Name)
+
+	defaultContract, err := createDefaultContract(contractName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create default contract: %w", err)
+	}
+	opts.DetectedContract = defaultContract
 
 	// Take the raw contract bytes and identify the format and validate it
 	if opts.ContractBytes != nil {

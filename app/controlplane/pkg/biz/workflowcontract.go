@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bufbuild/protoyaml-go"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -209,9 +210,29 @@ type WorkflowContractCreateOpts struct {
 	AddUniquePrefix bool
 }
 
-// EmptyDefaultContract is the default contract that will be created if no contract is provided
-var EmptyDefaultContract = &Contract{
-	Raw: []byte("schemaVersion: v1"), Format: unmarshal.RawFormatYAML,
+// createDefaultContract creates a new default contract with the specified name
+func createDefaultContract(name string) (*Contract, error) {
+	defaultSchema := &schemav1.CraftingSchemaV2{
+		ApiVersion: "chainloop.dev/v1",
+		Kind:       "Contract",
+		Metadata:   &schemav1.Metadata{Name: name},
+		Spec:       &schemav1.CraftingSchemaV2Spec{},
+	}
+
+	// Marshal to YAML using protoyaml
+	rawYAML, err := protoyaml.Marshal(defaultSchema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal default contract to YAML: %w", err)
+	}
+
+	// Convert to v1 for backward compatibility with old CLIs
+	v1Schema := defaultSchema.ToV1()
+	return &Contract{
+		Raw:      rawYAML,
+		Format:   unmarshal.RawFormatYAML,
+		Schema:   v1Schema,
+		Schemav2: defaultSchema,
+	}, nil
 }
 
 func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowContractCreateOpts) (*WorkflowContract, error) {
@@ -232,16 +253,20 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 		return nil, NewErrValidation(err)
 	}
 
-	// Create an empty contract by default
-	contract := EmptyDefaultContract
-
-	// or load it if provided
+	var contract *Contract
 	if len(opts.RawSchema) > 0 {
+		// Load the provided contract
 		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
-
+		contract = c
+	} else {
+		// Use default contract with the user-provided name
+		c, err := createDefaultContract(opts.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create default contract: %w", err)
+		}
 		contract = c
 	}
 
