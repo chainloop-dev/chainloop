@@ -156,63 +156,73 @@ func assertEvidenceMaterial(t *testing.T, got *attestationApi.Attestation_Materi
 }
 
 func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
-	assert := assert.New(t)
-	schema := &contractAPI.CraftingSchema_Material{
-		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_EVIDENCE,
-	}
+	schema := &contractAPI.CraftingSchema_Material{Name: "test", Type: contractAPI.CraftingSchema_Material_EVIDENCE}
+
 	l := zerolog.Nop()
-	backend := &casclient.CASBackend{}
 
-	t.Run("JSON with id, data and schema fields extracts annotations", func(t *testing.T) {
-		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
-		require.NoError(t, err)
+	testCases := []struct {
+		name                string
+		filePath            string
+		expectedAnnotations map[string]string
+	}{
+		{
+			name:     "JSON with id, data and schema fields extracts annotations",
+			filePath: "./testdata/evidence-with-id-data-schema.json",
+			expectedAnnotations: map[string]string{
+				"chainloop.material.evidence.id":     "custom-evidence-123",
+				"chainloop.material.evidence.schema": "https://example.com/schema/v1",
+			},
+		},
+		{
+			name:     "JSON with id and data but no schema field extracts only id",
+			filePath: "./testdata/evidence-with-id-data-no-schema.json",
+			expectedAnnotations: map[string]string{
+				"chainloop.material.evidence.id": "custom-evidence-456",
+			},
+		},
+		{
+			name:                "JSON without required structure does not extract annotations",
+			filePath:            "./testdata/evidence-invalid-structure.json",
+			expectedAnnotations: nil,
+		},
+		{
+			name:                "Non-JSON file does not extract annotations",
+			filePath:            "./testdata/simple.txt",
+			expectedAnnotations: nil,
+		},
+	}
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/evidence-with-id-data-schema.json")
-		assert.NoError(err)
-		assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := assert.New(t)
 
-		// Check annotations were extracted
-		assert.NotNil(got.Annotations)
-		assert.Equal("custom-evidence-123", got.Annotations["chainloop.evidence.id"])
-		assert.Equal("https://example.com/schema/v1", got.Annotations["chainloop.evidence.schema"])
-	})
+			// Create a new mock uploader for each test case
+			uploader := mUploader.NewUploader(t)
+			uploader.On("UploadFile", context.TODO(), tc.filePath).
+				Return(&casclient.UpDownStatus{
+					Digest:   "deadbeef",
+					Filename: tc.filePath,
+				}, nil)
 
-	t.Run("JSON with id and data but no schema field extracts only id", func(t *testing.T) {
-		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
-		require.NoError(t, err)
+			backend := &casclient.CASBackend{Uploader: uploader}
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/evidence-with-id-data-no-schema.json")
-		assert.NoError(err)
-		assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
+			crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
+			require.NoError(t, err)
 
-		// Check annotations were extracted
-		assert.NotNil(got.Annotations)
-		assert.Equal("custom-evidence-456", got.Annotations["chainloop.evidence.id"])
-		assert.NotContains(got.Annotations, "chainloop.evidence.schema")
-	})
+			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			assert.NoError(err)
+			assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
 
-	t.Run("JSON without required structure does not extract annotations", func(t *testing.T) {
-		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
-		require.NoError(t, err)
-
-		got, err := crafter.Craft(context.TODO(), "./testdata/evidence-invalid-structure.json")
-		assert.NoError(err)
-		assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
-
-		// Check no annotations were extracted
-		assert.Empty(got.Annotations)
-	})
-
-	t.Run("Non-JSON file does not extract annotations", func(t *testing.T) {
-		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
-		require.NoError(t, err)
-
-		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
-		assert.NoError(err)
-		assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
-
-		// Check no annotations were extracted (non-JSON)
-		assert.Empty(got.Annotations)
-	})
+			if tc.expectedAnnotations == nil {
+				assert.Empty(got.Annotations)
+			} else {
+				assert.NotNil(got.Annotations)
+				for key, value := range tc.expectedAnnotations {
+					assert.Equal(value, got.Annotations[key])
+				}
+				// Ensure no extra keys are present beyond expected
+				assert.Len(got.Annotations, len(tc.expectedAnnotations))
+			}
+		})
+	}
 }
