@@ -6,9 +6,6 @@
 [![Chat on Slack](https://img.shields.io/badge/slack-chainloop-blue?logo=slack)](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/chainloop-dev/chainloop/blob/main/LICENSE.md)
 
-> Chainloop is under active development and you should expect breaking changes before the first stable release.
-> If you are interested in contributing, please take a look at our [contributor guide](./CONTRIBUTING.md).
-
 ## What is it?
 
 [Chainloop](https://github.com/chainloop-dev/chainloop) is an open-source evidence store for your Software Supply Chain attestations, Software Bill of Materials (SBOMs), VEX, SARIF, QA reports, and more. With Chainloop, Security, Compliance, and Risk management teams can define security and compliance policies, what evidence and artifacts they want to receive, and where to store them. On the other hand, developers are shielded from all this complexity by being given simple instructions on what to provide when instrumenting their CI/CD pipelines.
