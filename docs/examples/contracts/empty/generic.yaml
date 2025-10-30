@@ -4,4 +4,4 @@ kind: Contract
 metadata:
   name: generic
   description: Empty Chainloop contract valid for any runner type
-spec: {}
+spec:
