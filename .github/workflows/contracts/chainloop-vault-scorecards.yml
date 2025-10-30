@@ -1,15 +1,20 @@
 # Contract for scorecards workflow
-schemaVersion: v1
-runner:
-  type: GITHUB_ACTION
-materials:
-  - type: SARIF
-    name: sarif-results
-    output: true
-policies:
-  attestation:
-    - ref: source-commit
-      with:
-        check_signature: yes
-      requirements:
-        - chainloop-best-practices/commit-signed
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-vault-scorecards
+  description: Contract for Vault Scorecards workflow
+spec:
+  runner:
+    type: GITHUB_ACTION
+  materials:
+    - type: SARIF
+      name: sarif-results
+      output: true
+  policies:
+    attestation:
+      - ref: source-commit
+        with:
+          check_signature: yes
+        requirements:
+          - chainloop-best-practices/commit-signed

@@ -1,11 +1,16 @@
 # contract used in release workflow
-schemaVersion: v1
-policies:
-  attestation:
-    - ref: source-commit
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-chainloop-github-release
+  description: Contract for Chainloop GitHub release workflow
+spec:
+  policies:
+    attestation:
+      - ref: source-commit
+        with:
+          check_signature: yes
+  policyGroups:
+    - ref: slsa-checks
       with:
-        check_signature: yes
-policyGroups:
-  - ref: slsa-checks
-    with:
-      runner: GITHUB_ACTION
+        runner: GITHUB_ACTION
