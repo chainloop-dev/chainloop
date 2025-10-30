@@ -1,28 +1,33 @@
 # Contract for the release workflow
-schemaVersion: v1
-policies:
-  attestation:
-    - ref: source-commit
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-vault-release
+  description: Contract for Vault release workflow
+spec:
+  policies:
+    attestation:
+      - ref: source-commit
+        with:
+          check_signature: yes
+        requirements:
+          - chainloop-best-practices/commit-signed
+      - ref: containers-with-sbom
+    materials:
+      - ref: artifact-signed
+        requirements:
+          - chainloop-best-practices/container-signed
+  policyGroups:
+    - ref: sbom-quality
       with:
-        check_signature: yes
-      requirements:
-        - chainloop-best-practices/commit-signed
-    - ref: containers-with-sbom
-  materials:
-    - ref: artifact-signed
-      requirements:
-        - chainloop-best-practices/container-signed
-policyGroups:
-  - ref: sbom-quality
-    with:
-      bannedLicenses: GPL, AGPL
-      # sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2 = Apache-2.0 pkg:golang/github.com/cyberphone/json-canonicalization
-      # sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71 = MIT, BSD-3-Clause pkg:golang/github.com/theupdateframework/go-tuf
-      allowedCustomLicenses: Apache 2.0, sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2, sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71
-      skippedTypes: file, container
-      bannedComponents: log4j@2.14.1
-  - ref: slsa-checks
-    with:
-      runner: GITHUB_ACTION
-runner:
-  type: GITHUB_ACTION
+        bannedLicenses: GPL, AGPL
+        # sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2 = Apache-2.0 pkg:golang/github.com/cyberphone/json-canonicalization
+        # sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71 = MIT, BSD-3-Clause pkg:golang/github.com/theupdateframework/go-tuf
+        allowedCustomLicenses: Apache 2.0, sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2, sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71
+        skippedTypes: file, container
+        bannedComponents: log4j@2.14.1
+    - ref: slsa-checks
+      with:
+        runner: GITHUB_ACTION
+  runner:
+    type: GITHUB_ACTION

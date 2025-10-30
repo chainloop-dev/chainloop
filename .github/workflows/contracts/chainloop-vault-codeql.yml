@@ -1,19 +1,24 @@
 # Contract for codeql workflow
-schemaVersion: v1
-runner:
-  type: GITHUB_ACTION
-materials:
-  - type: SARIF
-    name: sarif-results
-    output: true
-policies:
-  attestation:
-    - ref: source-commit
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-vault-codeql
+  description: Contract for Vault CodeQL workflow
+spec:
+  runner:
+    type: GITHUB_ACTION
+  materials:
+    - type: SARIF
+      name: sarif-results
+      output: true
+  policies:
+    attestation:
+      - ref: source-commit
+        with:
+          check_signature: yes
+        requirements:
+          - chainloop-best-practices/commit-signed
+  policyGroups:
+    - ref: slsa-checks
       with:
-        check_signature: yes
-      requirements:
-        - chainloop-best-practices/commit-signed
-policyGroups:
-  - ref: slsa-checks
-    with:
-      runner: GITHUB_ACTION
+        runner: GITHUB_ACTION
