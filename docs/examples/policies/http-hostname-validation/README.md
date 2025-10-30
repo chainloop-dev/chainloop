@@ -44,19 +44,21 @@ chainloop policy develop eval \
 Add this policy to your workflow contract:
 
 ```yaml
-apiVersion: workflowcontract.chainloop.dev/v1
-kind: WorkflowContract
+apiVersion: chainloop.dev/v1
+kind: Contract
 metadata:
   name: platform-validation-workflow
+  description: Workflow contract for platform validation
 spec:
   materials:
     - type: EVIDENCE
       name: platform-check
-      
+
   policies:
-    - ref: ./http-hostname-validation/policy.yaml
-      with:
-        expected_version: "2.0.0"  # Optional, defaults to "1.2.3"
+    materials:
+      - ref: ./http-hostname-validation/policy.yaml
+        with:
+          expected_version: "2.0.0"  # Optional, defaults to "1.2.3"
 ```
 
 **Note**: When running in production, the Control Plane manages hostname allowlisting through organization settings. The `--allowed-hostnames` flag is only for local development and testing.

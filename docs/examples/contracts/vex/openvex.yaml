@@ -1,4 +1,9 @@
-schemaVersion: v1
-materials:
-  - type: OPENVEX
-    name: disclosure
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: openvex
+  description: Contract for OpenVEX vulnerability disclosure
+spec:
+  materials:
+    - type: OPENVEX
+      name: disclosure

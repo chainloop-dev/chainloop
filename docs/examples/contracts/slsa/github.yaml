@@ -1,11 +1,15 @@
 # Require a container image reference and include SLSA complicance verification
-schemaVersion: v1
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: github
+  description: Require a container image reference and include SLSA compliance verification
+spec:
+  materials:
+    - type: CONTAINER_IMAGE
+      name: container
 
-materials:
-  - type: CONTAINER_IMAGE
-    name: container
-
-policyGroups:
-  - ref: slsa-checks
-    with:
-      runner: GITHUB_ACTION # or GITLAB_PIPELINE
+  policyGroups:
+    - ref: slsa-checks
+      with:
+        runner: GITHUB_ACTION # or GITLAB_PIPELINE

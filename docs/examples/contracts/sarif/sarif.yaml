@@ -1,4 +1,9 @@
-schemaVersion: v1
-materials:
-  - type: SARIF
-    name: static-output
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: sarif
+  description: Contract for SARIF static analysis output
+spec:
+  materials:
+    - type: SARIF
+      name: static-output

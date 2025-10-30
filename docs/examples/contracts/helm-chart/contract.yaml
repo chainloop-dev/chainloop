@@ -1,4 +1,9 @@
-schemaVersion: v1
-materials:
-  - type: HELM_CHART
-    name: helm-chart
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: contract
+  description: Contract for Helm chart attestation
+spec:
+  materials:
+    - type: HELM_CHART
+      name: helm-chart
