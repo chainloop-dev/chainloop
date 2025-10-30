@@ -35,9 +35,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const AnnotationToolNameKey = "chainloop.material.tool.name"
-const AnnotationToolVersionKey = "chainloop.material.tool.version"
-const AnnotationToolsKey = "chainloop.material.tools"
+const (
+	AnnotationToolNameKey    = "chainloop.material.tool.name"
+	AnnotationToolVersionKey = "chainloop.material.tool.version"
+	AnnotationToolsKey       = "chainloop.material.tools"
+)
 
 // IsLegacyAnnotation returns true if the annotation key is a legacy annotation
 func IsLegacyAnnotation(key string) bool {
@@ -50,7 +52,7 @@ type Tool struct {
 	Version string
 }
 
-// SetToolsAnnotations sets the tools annotation as a JSON array in "name@version" format
+// SetToolsAnnotation sets the tools annotation as a JSON array in "name@version" format
 func SetToolsAnnotation(m *api.Attestation_Material, tools []Tool) {
 	if len(tools) == 0 {
 		return
