@@ -1,0 +1,53 @@
+name: Daily SCM Configuration Check
+
+on:
+  schedule:
+    # Run daily at 9:00 AM UTC
+    - cron: "0 9 * * *"
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  scm-configuration-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+      CHAINLOOP_WORKFLOW_NAME: scm-configuration-check
+      CHAINLOOP_PROJECT_NAME: chainloop
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+
+      - name: Initialize Attestation
+        run: |
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME}
+
+      - name: Gather runner context data
+        run: |
+          chainloop gather-runner-context --runner-token ${{ secrets.PAT_ADMIN }}
+
+      - name: Add runner context material to attestation
+        run: |
+          chainloop attestation add --name runner-context --value ./runner-context.json --kind CHAINLOOP_RUNNER_CONTEXT
+
+      - name: Finish and Record Attestation
+        if: ${{ success() }}
+        run: |
+          chainloop attestation push --exception-bypass-policy-check
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation
