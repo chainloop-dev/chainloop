@@ -130,14 +130,15 @@ func TestFromCredentials(t *testing.T) {
 }
 
 func TestExtractCreds(t *testing.T) {
-	tetCases := []struct {
+	testCases := []struct {
 		name      string
 		location  string
 		credsJSON []byte
+		wantCreds *Credentials
 		wantErr   bool
 	}{
 		{
-			name:     "valid credentials",
+			name:     "valid credentials without endpoint",
 			location: "account/container",
 			credsJSON: []byte(`{
 				"storageAccountName": "test",
@@ -146,6 +147,33 @@ func TestExtractCreds(t *testing.T) {
 				"clientID": "test",
 				"clientSecret": "test"
 			}`),
+			wantCreds: &Credentials{
+				StorageAccountName: "account",
+				Container:          "container",
+				TenantID:           "test",
+				ClientID:           "test",
+				ClientSecret:       "test",
+				Endpoint:           "",
+			},
+		},
+		{
+			name:     "valid credentials with custom endpoint",
+			location: "blob.core.usgovcloudapi.net/account/container",
+			credsJSON: []byte(`{
+				"storageAccountName": "test",
+				"container": "test",
+				"tenantID": "test",
+				"clientID": "test",
+				"clientSecret": "test"
+			}`),
+			wantCreds: &Credentials{
+				StorageAccountName: "account",
+				Container:          "container",
+				TenantID:           "test",
+				ClientID:           "test",
+				ClientSecret:       "test",
+				Endpoint:           "blob.core.usgovcloudapi.net",
+			},
 		},
 		{
 			name:     "invalid location, missing container",
@@ -173,20 +201,78 @@ func TestExtractCreds(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tetCases {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			creds, err := extractCreds(tc.location, tc.credsJSON)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, &Credentials{
-					StorageAccountName: "account",
-					Container:          "container",
-					TenantID:           "test",
-					ClientID:           "test",
-					ClientSecret:       "test",
-				}, creds)
+				assert.Equal(t, tc.wantCreds, creds)
+			}
+		})
+	}
+}
+
+func TestExtractLocationAndContainer(t *testing.T) {
+	testCases := []struct {
+		name          string
+		location      string
+		wantEndpoint  string
+		wantAccount   string
+		wantContainer string
+		wantErr       bool
+	}{
+		{
+			name:          "simple location without endpoint",
+			location:      "myaccount/mycontainer",
+			wantEndpoint:  "",
+			wantAccount:   "myaccount",
+			wantContainer: "mycontainer",
+		},
+		{
+			name:          "Azure Government Cloud endpoint",
+			location:      "blob.core.usgovcloudapi.net/myaccount/mycontainer",
+			wantEndpoint:  "blob.core.usgovcloudapi.net",
+			wantAccount:   "myaccount",
+			wantContainer: "mycontainer",
+		},
+		{
+			name:          "Azure Stack Hub endpoint",
+			location:      "blob.local.azurestack.external/myaccount/mycontainer",
+			wantEndpoint:  "blob.local.azurestack.external",
+			wantAccount:   "myaccount",
+			wantContainer: "mycontainer",
+		},
+		{
+			name:          "custom endpoint with path segments",
+			location:      "custom.endpoint.com/account/container",
+			wantEndpoint:  "custom.endpoint.com",
+			wantAccount:   "account",
+			wantContainer: "container",
+		},
+		{
+			name:     "invalid simple location - missing container",
+			location: "myaccount",
+			wantErr:  true,
+		},
+		{
+			name:     "invalid location - too many segments",
+			location: "endpoint/account/container/extra",
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint, account, container, err := extractLocationAndContainer(tc.location)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.wantEndpoint, endpoint)
+				assert.Equal(t, tc.wantAccount, account)
+				assert.Equal(t, tc.wantContainer, container)
 			}
 		})
 	}
