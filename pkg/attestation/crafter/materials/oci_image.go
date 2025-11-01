@@ -18,7 +18,10 @@ package materials
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -29,6 +32,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/rs/zerolog"
 	cosigntypes "github.com/sigstore/cosign/v2/pkg/types"
@@ -83,7 +87,15 @@ func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, ociAuth authn
 	return c, nil
 }
 
-func (i *OCIImageCrafter) Craft(_ context.Context, imageRef string) (*api.Attestation_Material, error) {
+func (i *OCIImageCrafter) Craft(ctx context.Context, imageRef string) (*api.Attestation_Material, error) {
+	// Check if imageRef is a path to an OCI layout directory
+	layoutPath, digestSelector := parseLayoutReference(imageRef)
+	if i.isOCILayoutPath(layoutPath) {
+		i.logger.Debug().Str("path", layoutPath).Str("digest", digestSelector).Msg("detected OCI layout directory")
+		return i.craftFromLayout(ctx, layoutPath, digestSelector)
+	}
+
+	// Otherwise, treat as remote registry reference
 	i.logger.Debug().Str("name", imageRef).Msg("retrieving container image digest from remote")
 
 	ref, err := name.ParseReference(imageRef)
@@ -280,4 +292,189 @@ func (i *OCIImageCrafter) isLatestTag(ref name.Reference, currentDigest string) 
 
 	i.logger.Debug().Str("name", latestRef.String()).Msg("image does not have a 'latest' tag")
 	return false
+}
+
+// parseLayoutReference parses a layout reference that may include a digest selector.
+func parseLayoutReference(ref string) (string, string) {
+	// Check for @digest suffix
+	if idx := strings.LastIndex(ref, "@"); idx != -1 {
+		return ref[:idx], ref[idx+1:]
+	}
+	return ref, ""
+}
+
+// isOCILayoutPath checks if the given path is a valid OCI layout directory.
+func (i *OCIImageCrafter) isOCILayoutPath(path string) bool {
+	// Check if path exists and is a directory
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+
+	// Check for oci-layout file
+	layoutFile := filepath.Join(path, "oci-layout")
+	if _, err := os.Stat(layoutFile); err != nil {
+		return false
+	}
+
+	return true
+}
+
+// craftFromLayout creates a material from an OCI layout directory.
+// If digestSelector is provided, it will look for that specific digest in the layout.
+// Otherwise, it uses the first manifest in the index.
+func (i *OCIImageCrafter) craftFromLayout(_ context.Context, layoutPath, digestSelector string) (*api.Attestation_Material, error) {
+	// Read the OCI layout
+	layoutPath, err := filepath.Abs(layoutPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	path, err := layout.FromPath(layoutPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read OCI layout: %w", err)
+	}
+
+	// Get the image index
+	index, err := path.ImageIndex()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image index: %w", err)
+	}
+
+	indexManifest, err := index.IndexManifest()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read index manifest: %w", err)
+	}
+
+	if len(indexManifest.Manifests) == 0 {
+		return nil, fmt.Errorf("no manifests found in OCI layout")
+	}
+
+	// Select the manifest based on digest selector
+	var manifest v1.Descriptor
+	if digestSelector != "" {
+		// Find manifest with matching digest
+		found := false
+		for _, m := range indexManifest.Manifests {
+			if m.Digest.String() == digestSelector {
+				manifest = m
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("digest %s not found in OCI layout", digestSelector)
+		}
+		i.logger.Debug().Str("digest", digestSelector).Msg("selected image by digest")
+	} else {
+		// If multiple images exist, require explicit selection to avoid mistakes
+		if len(indexManifest.Manifests) > 1 {
+			var digests []string
+			for _, m := range indexManifest.Manifests {
+				digests = append(digests, m.Digest.String())
+			}
+			return nil, fmt.Errorf("OCI layout contains %d images, please specify which one to use with @digest. Available digests: %s",
+				len(indexManifest.Manifests), strings.Join(digests, ", "))
+		}
+		// Only one image, safe to use it
+		manifest = indexManifest.Manifests[0]
+		i.logger.Debug().Msg("using only image in layout")
+	}
+
+	digest := manifest.Digest.String()
+
+	// Extract repository name from annotations if available
+	repoName := "oci-layout"
+	if manifest.Annotations != nil {
+		if name, ok := manifest.Annotations["org.opencontainers.image.ref.name"]; ok {
+			repoName = name
+		}
+	}
+
+	// Extract tag from annotations
+	tag := ""
+	if manifest.Annotations != nil {
+		if t, ok := manifest.Annotations["io.containerd.image.name"]; ok {
+			// Extract tag from full reference (e.g., "registry/repo:tag" -> "tag")
+			parts := strings.Split(t, ":")
+			if len(parts) > 1 {
+				tag = parts[len(parts)-1]
+			}
+		}
+	}
+
+	// Validate artifact type if specified
+	if i.artifactTypeValidation != "" {
+		i.logger.Debug().Str("path", layoutPath).Str("want", i.artifactTypeValidation).Msg("validating artifact type")
+		if manifest.ArtifactType != i.artifactTypeValidation {
+			return nil, fmt.Errorf("artifact type %s does not match expected type %s", manifest.ArtifactType, i.artifactTypeValidation)
+		}
+	}
+
+	i.logger.Debug().Str("path", layoutPath).Str("digest", digest).Msg("OCI layout image resolved")
+
+	// Check for signatures in the layout
+	signatureInfo := i.checkForSignatureInLayout(indexManifest.Manifests, digest)
+
+	containerImage := &api.Attestation_Material_ContainerImage{
+		Id:        i.input.Name,
+		Name:      repoName,
+		Digest:    digest,
+		IsSubject: i.input.Output,
+		Tag:       tag,
+	}
+
+	// Add signature information if found
+	if signatureInfo != nil {
+		containerImage.SignatureDigest = signatureInfo.digest
+		containerImage.Signature = signatureInfo.payload
+		containerImage.SignatureProvider = string(signatureInfo.provider)
+	}
+
+	return &api.Attestation_Material{
+		MaterialType: i.input.Type,
+		M: &api.Attestation_Material_ContainerImage_{
+			ContainerImage: containerImage},
+	}, nil
+}
+
+// checkForSignatureInLayout checks for signatures in the OCI layout manifests.
+func (i *OCIImageCrafter) checkForSignatureInLayout(manifests []v1.Descriptor, imageDigest string) *containerSignatureInfo {
+	// Look for signature artifacts that reference the image digest
+	for _, m := range manifests {
+		// Check if this manifest references our image
+		if m.Annotations != nil {
+			if subject, ok := m.Annotations["org.opencontainers.image.base.digest"]; ok && subject == imageDigest {
+				// Check for Cosign signature
+				if m.ArtifactType == cosigntypes.SimpleSigningMediaType {
+					i.logger.Debug().Str("digest", m.Digest.String()).Msg("found Cosign signature artifact in OCI layout")
+					return i.encodeLayoutSignature(m, cosignSignatureProvider)
+				}
+				// Check for Notary signature
+				if m.ArtifactType == notarySignatureMimeType {
+					i.logger.Debug().Str("digest", m.Digest.String()).Msg("found Notary signature artifact in OCI layout")
+					return i.encodeLayoutSignature(m, notarySignatureProvider)
+				}
+			}
+		}
+	}
+
+	i.logger.Debug().Str("digest", imageDigest).Msg("no signature found in OCI layout")
+	return nil
+}
+
+// encodeLayoutSignature encodes a signature descriptor as base64.
+func (i *OCIImageCrafter) encodeLayoutSignature(desc v1.Descriptor, provider signatureProvider) *containerSignatureInfo {
+	// Marshal the descriptor to JSON for the payload
+	manifestBytes, err := json.Marshal(desc)
+	if err != nil {
+		i.logger.Debug().Err(err).Msg("failed to marshal signature descriptor")
+		return nil
+	}
+
+	return &containerSignatureInfo{
+		digest:   desc.Digest.String(),
+		provider: provider,
+		payload:  base64.StdEncoding.EncodeToString(manifestBytes),
+	}
 }
