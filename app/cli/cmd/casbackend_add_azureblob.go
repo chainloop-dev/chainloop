@@ -102,7 +102,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&container, "container", "chainloop", "Storage Container Name")
 
-	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Azure Blob endpoint suffix (e.g., blob.core.windows.net, blob.core.usgovcloudapi.net)")
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Custom Azure Blob endpoint suffix (e.g., blob.core.usgovcloudapi.net), if not provided, the public Azure cloud endpoint will be used.")
 
 	return cmd
 }
