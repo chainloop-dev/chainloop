@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,20 +62,39 @@ func extractCreds(location string, credsJSON []byte) (*Credentials, error) {
 		return nil, fmt.Errorf("unmarshaling credentials: %w", err)
 	}
 
-	parts := strings.Split(location, "/")
-	if len(parts) != 2 {
-		return nil, errors.New("invalid location: must be in the format <account>/<container>")
+	endpoint, storageAccount, container, err := extractLocationAndContainer(location)
+	if err != nil {
+		return nil, err
 	}
 
 	// Override the location in the credentials since that's something we don't allow updating
-	creds.StorageAccountName = parts[0]
-	creds.Container = parts[1]
+	creds.Endpoint = endpoint
+	creds.StorageAccountName = storageAccount
+	creds.Container = container
 
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
 	return creds, nil
+}
+
+// Extract the custom endpoint, storage account name, and container name from the location string
+// The location string can be either:
+// - <account>/<container> (uses default Azure blob endpoint)
+// - <endpoint>/<account>/<container> (uses custom endpoint for Azure Government, etc.)
+func extractLocationAndContainer(location string) (string, string, string, error) {
+	parts := strings.Split(location, "/")
+
+	if len(parts) == 2 {
+		return "", parts[0], parts[1], nil
+	}
+
+	if len(parts) == 3 {
+		return parts[0], parts[1], parts[2], nil
+	}
+
+	return "", "", "", errors.New("invalid location: must be in the format <account>/<container> or <endpoint>/<account>/<container>")
 }
 
 func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJSON []byte) (any, error) {
@@ -108,6 +127,9 @@ type Credentials struct {
 	ClientID string
 	// Registered application / service principal client secret
 	ClientSecret string
+	// Optional custom endpoint URL
+	// If empty, defaults to blob.core.windows.net
+	Endpoint string
 }
 
 // Validate that the APICreds has all its properties set

@@ -26,7 +26,7 @@ import (
 )
 
 func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
-	var storageAccountName, tenantID, clientID, clientSecret, container string
+	var storageAccountName, tenantID, clientID, clientSecret, container, endpoint string
 	cmd := &cobra.Command{
 		Use:   "azure-blob",
 		Short: "Register a Azure Blob Storage CAS Backend",
@@ -54,9 +54,14 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 				}
 			}
 
+			location := fmt.Sprintf("%s/%s", storageAccountName, container)
+			if endpoint != "" {
+				location = fmt.Sprintf("%s/%s/%s", endpoint, storageAccountName, container)
+			}
+
 			opts := &action.NewCASBackendAddOpts{
 				Name:        name,
-				Location:    fmt.Sprintf("%s/%s", storageAccountName, container),
+				Location:    location,
 				Provider:    azureblob.ProviderID,
 				Description: description,
 				Credentials: map[string]any{
@@ -96,6 +101,8 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 	cobra.CheckErr(err)
 
 	cmd.Flags().StringVar(&container, "container", "chainloop", "Storage Container Name")
+
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Custom Azure Blob endpoint suffix (e.g., blob.core.usgovcloudapi.net), if not provided, the public Azure cloud endpoint will be used.")
 
 	return cmd
 }
