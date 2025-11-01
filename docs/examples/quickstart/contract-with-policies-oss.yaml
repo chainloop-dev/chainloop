@@ -1,7 +1,9 @@
 apiVersion: chainloop.dev/v1
 kind: Contract
 metadata:
-  name: contract-with-policies-oss
+  # DO NOT CHANGE, it's used in the getting started guide
+  # https://docs.chainloop.dev/get-started
+  name: myproject-build-container-image
   description: Contract with policies for OSS projects
 spec:
   materials:
@@ -20,4 +22,3 @@ spec:
       - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/sbom/sbom-present.yaml
     materials:
       - ref: https://raw.githubusercontent.com/chainloop-dev/chainloop/refs/heads/main/docs/examples/policies/sbom/cyclonedx-licenses.yaml
-
