@@ -30,7 +30,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 )
 
@@ -115,9 +114,6 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 	if len(status.Annotations) > 0 {
 		gt.AppendRow(table.Row{"Annotations", "------"})
 		for _, a := range status.Annotations {
-			if materials.IsLegacyAnnotation(a.Name) {
-				continue
-			}
 			value := a.Value
 			if value == "" {
 				value = NotSet
@@ -224,9 +220,6 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		if len(m.Annotations) > 0 {
 			mt.AppendRow(table.Row{"Annotations", "------"})
 			for _, a := range m.Annotations {
-				if materials.IsLegacyAnnotation(a.Name) {
-					continue
-				}
 				value := a.Value
 				if value == "" {
 					value = NotSet

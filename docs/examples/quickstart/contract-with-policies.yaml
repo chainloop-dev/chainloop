@@ -1,7 +1,9 @@
 apiVersion: chainloop.dev/v1
 kind: Contract
 metadata:
-  name: contract-with-policies
+  # DO NOT CHANGE, it's used in the getting started guide
+  # https://docs.chainloop.dev/get-started
+  name: myproject-build-container-image
   description: Contract with policies and policy groups for comprehensive checks
 spec:
   materials:

@@ -1,0 +1,13 @@
+{
+  "id": "custom-evidence-123",
+  "schema": "https://example.com/schema/v1",
+  "data": {
+    "status": "approved",
+    "approver": "john.doe@example.com",
+    "timestamp": "2025-10-30T10:00:00Z",
+    "details": {
+      "review_type": "security",
+      "findings": ["no issues found"]
+    }
+  }
+}

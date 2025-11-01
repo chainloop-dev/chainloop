@@ -1,7 +1,9 @@
 apiVersion: chainloop.dev/v1
 kind: Contract
 metadata:
-  name: contract-only-materials
+  # DO NOT CHANGE, it's used in the getting started guide
+  # https://docs.chainloop.dev/get-started
+  name: myproject-build-container-image
   description: Basic contract with materials only
 spec:
   materials:
