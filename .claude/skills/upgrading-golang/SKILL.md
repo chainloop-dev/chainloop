@@ -9,9 +9,11 @@ This skill automates the comprehensive Go version upgrade process across all com
 
 ## Process
 
-### 1. Confirm Target Version
+### 1. Confirm Target Versions
 
-Ask the user for the target Go version (e.g., "1.25.0").
+Ask the user:
+1. What Go version they want to upgrade to (e.g., "1.25.3")
+2. Whether they also want to upgrade Atlas migrations Docker image (if yes, ask for target Atlas version, e.g., "0.38.0")
 
 ### 2. Get Docker Image Digest
 
@@ -65,7 +67,51 @@ Update the version reference in `./CLAUDE.md` under "Key Technologies":
 - **Language**: Go X.XX.X. To know how to upgrade go version, see docs/runbooks
 ```
 
-### 7. Verify Changes
+### 7. Update Atlas Docker Image and CLI (Optional)
+
+If the user requested an Atlas upgrade:
+
+**7a. Pull the Atlas Docker image and extract its SHA256 digest:**
+
+```bash
+docker pull arigaio/atlas:X.XX.X
+```
+
+Extract the SHA256 digest from the output (format: `sha256:abc123...`).
+
+**7b. Update `./app/controlplane/Dockerfile.migrations`:**
+
+Pattern to replace:
+```dockerfile
+# from: arigaio/atlas:X.XX.X
+# docker run arigaio/atlas@sha256:OLD_DIGEST version
+# atlas version vX.XX.X
+FROM arigaio/atlas@sha256:OLD_DIGEST as base
+```
+
+With:
+```dockerfile
+# from: arigaio/atlas:X.XX.X
+# docker run arigaio/atlas@sha256:NEW_DIGEST version
+# atlas version vX.XX.X
+FROM arigaio/atlas@sha256:NEW_DIGEST as base
+```
+
+**7c. Update `./common.mk` for `make init`:**
+
+Update the Atlas CLI installation version in the `init` target:
+
+Pattern to replace:
+```makefile
+curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- -y
+```
+
+With the new version (note: use `v` prefix for the version):
+```makefile
+curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- -y
+```
+
+### 8. Verify Changes
 
 Run verification commands:
 ```bash
@@ -75,7 +121,7 @@ make lint
 
 If errors occur, address them before completing the upgrade.
 
-### 8. Final Checks
+### 9. Final Checks
 
 - Ensure all license headers are updated (2024 → 2024-2025 or add current year)
 - Run `buf format -w` if any proto files were affected

@@ -12,7 +12,7 @@ This reference lists all files that must be updated when upgrading Go versions.
 
 ## Docker Images
 
-### Dockerfiles
+### Dockerfiles (Golang)
 - `./app/artifact-cas/Dockerfile`
 - `./app/artifact-cas/Dockerfile.goreleaser`
 - `./app/controlplane/Dockerfile`
@@ -22,6 +22,25 @@ This reference lists all files that must be updated when upgrading Go versions.
 Update pattern in all:
 ```dockerfile
 FROM golang:X.XX.X@sha256:DIGEST AS builder
+```
+
+### Atlas Files (Optional)
+- `./app/controlplane/Dockerfile.migrations` - Docker image for migrations
+- `./common.mk` - CLI tool installation in `make init`
+
+Update patterns:
+
+**Dockerfile.migrations:**
+```dockerfile
+# from: arigaio/atlas:X.XX.X
+# docker run arigaio/atlas@sha256:DIGEST version
+# atlas version vX.XX.X
+FROM arigaio/atlas@sha256:DIGEST as base
+```
+
+**common.mk:**
+```makefile
+curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- -y
 ```
 
 ## CI/CD Workflows
@@ -48,9 +67,13 @@ go-version: "X.XX.X"
 
 ## Summary
 
-**Total files to update**: 13 files
+**Total files to update for Go**: 13 files
 - 1 go.mod file
-- 5 Dockerfiles
+- 5 Dockerfiles (Golang)
 - 5 GitHub Actions workflows
 - 1 example workflow
 - 1 documentation file
+
+**Optional Atlas upgrade**: 2 files
+- 1 Dockerfile (Atlas migrations)
+- 1 Makefile (Atlas CLI in make init)
