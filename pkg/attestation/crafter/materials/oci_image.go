@@ -314,7 +314,7 @@ func (i *OCIImageCrafter) isOCILayoutPath(path string) bool {
 	}
 
 	// Check for oci-layout file
-	layoutFile := filepath.Join(path, "oci-layout")
+	layoutFile := filepath.Join(path, ociLayoutRepoName)
 	if _, err := os.Stat(layoutFile); err != nil {
 		return false
 	}
@@ -395,10 +395,17 @@ func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest 
 	digest := manifest.Digest.String()
 
 	// Extract repository name from annotations if available
-	repoName := ociLayoutRepoName
+	repoName := ociLayoutRepoName + ":"
 	if manifest.Annotations != nil {
-		if name, ok := manifest.Annotations["org.opencontainers.image.ref.name"]; ok {
-			repoName = name
+		// Try annotation keys in preference order
+		for _, key := range []string{
+			"org.opencontainers.image.ref.name",
+			"org.opencontainers.image.base.name",
+		} {
+			if name, ok := manifest.Annotations[key]; ok {
+				repoName = repoName + name
+				break
+			}
 		}
 	}
 
