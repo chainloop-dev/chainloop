@@ -135,7 +135,7 @@ make migration_lint         # Lint migration files
 
 ## Key Technologies
 
-- **Language**: Go 1.25.0. To know how to upgrade go version, see docs/runbooks
+- **Language**: Go 1.25.0
 - **API**: gRPC with HTTP/JSON gateway, Protocol Buffers with buf
 - **Database**: PostgreSQL with Ent ORM, Atlas for migrations
 - **Authentication**: OIDC, JWT tokens
