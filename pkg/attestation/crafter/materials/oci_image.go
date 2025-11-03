@@ -391,7 +391,6 @@ func (i *OCIImageCrafter) craftFromLayout(_ context.Context, layoutPath, digestS
 
 // buildMaterialFromManifest constructs the attestation material from a manifest descriptor.
 func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest v1.Descriptor, allManifests []v1.Descriptor) (*api.Attestation_Material, error) {
-
 	digest := manifest.Digest.String()
 
 	// Extract repository name from annotations if available
@@ -403,7 +402,7 @@ func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest 
 			"org.opencontainers.image.base.name",
 		} {
 			if name, ok := manifest.Annotations[key]; ok {
-				repoName = repoName + name
+				repoName += name
 				break
 			}
 		}
