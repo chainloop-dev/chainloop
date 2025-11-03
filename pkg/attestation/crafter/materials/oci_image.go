@@ -395,6 +395,7 @@ func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest 
 
 	// Extract repository name from annotations if available
 	repoName := ociLayoutRepoName + ":"
+	imageName := "unknown"
 	if manifest.Annotations != nil {
 		// Try annotation keys in preference order
 		for _, key := range []string{
@@ -402,11 +403,12 @@ func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest 
 			"org.opencontainers.image.base.name",
 		} {
 			if name, ok := manifest.Annotations[key]; ok {
-				repoName += name
+				imageName = name
 				break
 			}
 		}
 	}
+	repoName += imageName
 
 	// Extract tag from annotations
 	tag := ""
