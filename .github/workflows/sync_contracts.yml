@@ -17,6 +17,6 @@ permissions: read-all
 jobs:
   chainloop_contract_sync:
     name: Chainloop Contract Sync
-    uses: chainloop-dev/labs/.github/workflows/chainloop_contract_sync.yml@6bbd1c2b3022e48ae60afa0c2b90f3b6d31bcf11
+    uses: chainloop-dev/labs/.github/workflows/chainloop_contract_sync.yml@5344787a72876bd22e199b94c09a86532521b4b3
     secrets:
       api_token: ${{ secrets.CHAINLOOP_TOKEN }}
