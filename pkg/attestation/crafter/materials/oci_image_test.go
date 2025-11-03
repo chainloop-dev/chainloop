@@ -72,19 +72,19 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 		{
 			name:       "crane - single image with annotations",
 			layoutPath: "testdata/oci-layouts/crane",
-			wantName:   "oci-layout",
+			wantName:   "oci-layout:unknown",
 			wantDigest: "sha256:fa6d9058c3d65a33ff565c0e35172f2d99e76fbf8358d91ffaa2208eff2be400",
 		},
 		{
 			name:       "skopeo - single image with tag annotation",
 			layoutPath: "testdata/oci-layouts/skopeo",
-			wantName:   "v1.51.0",
+			wantName:   "oci-layout:v1.51.0",
 			wantDigest: "sha256:fa6d9058c3d65a33ff565c0e35172f2d99e76fbf8358d91ffaa2208eff2be400",
 		},
 		{
 			name:       "skopeo-alt - alternative format",
 			layoutPath: "testdata/oci-layouts/skopeo-alt",
-			wantName:   "v1.51.0",
+			wantName:   "oci-layout:v1.51.0",
 			wantDigest: "sha256:a5303ef28a4bd9b6e06aa92c07831dd151ac64172695971226bdba4a11fc1b88",
 		},
 		{
@@ -142,21 +142,21 @@ func TestOCIImageCraft_LayoutWithDigestSelector(t *testing.T) {
 			name:           "oras - select first image by digest",
 			layoutPath:     "testdata/oci-layouts/oras",
 			digestSelector: "sha256:b1747c197a0ab3cb89e109f60a3c5d4ede6946e447fd468fa82d85fa94c6c6e5",
-			wantName:       "oci-layout",
+			wantName:       "oci-layout:unknown",
 			wantDigest:     "sha256:b1747c197a0ab3cb89e109f60a3c5d4ede6946e447fd468fa82d85fa94c6c6e5",
 		},
 		{
 			name:           "oras - select second image by digest",
 			layoutPath:     "testdata/oci-layouts/oras",
 			digestSelector: "sha256:f333056ac987169b2a121c16d06112d88ec3d7cb50b098bb17b0f14b0c52f6f3",
-			wantName:       "oci-layout",
+			wantName:       "oci-layout:unknown",
 			wantDigest:     "sha256:f333056ac987169b2a121c16d06112d88ec3d7cb50b098bb17b0f14b0c52f6f3",
 		},
 		{
 			name:           "zarf - select specific image from bundle",
 			layoutPath:     "testdata/oci-layouts/zarf",
 			digestSelector: "sha256:e8ac056f7b9b44b07935fe23b8383e5e550d479dc5c6261941e76449a8f7e926",
-			wantName:       "ghcr.io/chainloop-dev/chainloop/artifact-cas:v1.51.0",
+			wantName:       "oci-layout:ghcr.io/chainloop-dev/chainloop/artifact-cas:v1.51.0",
 			wantDigest:     "sha256:e8ac056f7b9b44b07935fe23b8383e5e550d479dc5c6261941e76449a8f7e926",
 		},
 		{
