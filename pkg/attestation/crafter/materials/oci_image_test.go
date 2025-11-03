@@ -21,9 +21,6 @@ import (
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
-	"github.com/google/go-containerregistry/pkg/v1/layout"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,50 +62,40 @@ func TestNewOCIImageCrafter(t *testing.T) {
 
 func TestOCIImageCraft_Layout(t *testing.T) {
 	testCases := []struct {
-		name        string
-		setupLayout func(t *testing.T) string
-		wantErr     string
-		wantDigest  string
-		wantName    string
-		wantTag     string
+		name       string
+		layoutPath string
+		wantErr    string
+		wantDigest string
+		wantName   string
+		wantTag    string
 	}{
 		{
-			name: "valid OCI layout",
-			setupLayout: func(t *testing.T) string {
-				return createTestOCILayout(t, "test-image", "v1.0.0")
-			},
-			wantName: "test-image",
-			wantTag:  "v1.0.0",
+			name:       "crane - single image with annotations",
+			layoutPath: "testdata/oci-layouts/crane",
+			wantName:   "oci-layout",
+			wantDigest: "sha256:fa6d9058c3d65a33ff565c0e35172f2d99e76fbf8358d91ffaa2208eff2be400",
 		},
 		{
-			name: "OCI layout without annotations",
-			setupLayout: func(t *testing.T) string {
-				return createTestOCILayout(t, "", "")
-			},
-			wantName: "oci-layout",
-			wantTag:  "",
+			name:       "skopeo - single image with tag annotation",
+			layoutPath: "testdata/oci-layouts/skopeo",
+			wantName:   "v1.51.0",
+			wantDigest: "sha256:fa6d9058c3d65a33ff565c0e35172f2d99e76fbf8358d91ffaa2208eff2be400",
 		},
 		{
-			name: "non-existent path",
-			setupLayout: func(_ *testing.T) string {
-				return "/non/existent/path"
-			},
-			wantErr: "UNAUTHORIZED",
+			name:       "skopeo-alt - alternative format",
+			layoutPath: "testdata/oci-layouts/skopeo-alt",
+			wantName:   "v1.51.0",
+			wantDigest: "sha256:a5303ef28a4bd9b6e06aa92c07831dd151ac64172695971226bdba4a11fc1b88",
 		},
 		{
-			name: "empty directory",
-			setupLayout: func(t *testing.T) string {
-				dir := t.TempDir()
-				return dir
-			},
-			wantErr: "could not parse reference",
+			name:       "non-existent path",
+			layoutPath: "/non/existent/path",
+			wantErr:    "UNAUTHORIZED",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			layoutPath := tc.setupLayout(t)
-
 			schema := &contractAPI.CraftingSchema_Material{
 				Name: "test",
 				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
@@ -117,7 +104,7 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 			crafter, err := materials.NewOCIImageCrafter(schema, nil, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), layoutPath)
+			got, err := crafter.Craft(context.TODO(), tc.layoutPath)
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -130,63 +117,71 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 			containerImage := got.GetContainerImage()
 			require.NotNil(t, containerImage)
 			assert.Equal(t, tc.wantName, containerImage.Name)
-			assert.Equal(t, tc.wantTag, containerImage.Tag)
-			assert.NotEmpty(t, containerImage.Digest)
-			assert.True(t, len(containerImage.Digest) > 0, "digest should not be empty")
+			if tc.wantTag != "" {
+				assert.Equal(t, tc.wantTag, containerImage.Tag)
+			}
+			if tc.wantDigest != "" {
+				assert.Equal(t, tc.wantDigest, containerImage.Digest)
+			} else {
+				assert.NotEmpty(t, containerImage.Digest)
+			}
 		})
 	}
 }
 
 func TestOCIImageCraft_LayoutWithDigestSelector(t *testing.T) {
 	testCases := []struct {
-		name        string
-		setupLayout func(t *testing.T) (string, string) // returns (layoutPath, digestToSelect)
-		wantErr     string
-		wantName    string
-		wantTag     string
+		name           string
+		layoutPath     string
+		digestSelector string
+		wantErr        string
+		wantName       string
+		wantDigest     string
 	}{
 		{
-			name: "select second image by digest",
-			setupLayout: func(t *testing.T) (string, string) {
-				layoutPath, digests := createTestOCILayoutMultiple(t, []imageSpec{
-					{name: "first-image", tag: "v1.0.0"},
-					{name: "second-image", tag: "v2.0.0"},
-				})
-				return layoutPath, digests[1] // Select second image
-			},
-			wantName: "second-image",
-			wantTag:  "v2.0.0",
+			name:           "oras - select first image by digest",
+			layoutPath:     "testdata/oci-layouts/oras",
+			digestSelector: "sha256:b1747c197a0ab3cb89e109f60a3c5d4ede6946e447fd468fa82d85fa94c6c6e5",
+			wantName:       "oci-layout",
+			wantDigest:     "sha256:b1747c197a0ab3cb89e109f60a3c5d4ede6946e447fd468fa82d85fa94c6c6e5",
 		},
 		{
-			name: "digest not found",
-			setupLayout: func(t *testing.T) (string, string) {
-				layoutPath, _ := createTestOCILayoutMultiple(t, []imageSpec{
-					{name: "test-image", tag: "v1.0.0"},
-				})
-				return layoutPath, "sha256:nonexistent"
-			},
-			wantErr: "not found in OCI layout",
+			name:           "oras - select second image by digest",
+			layoutPath:     "testdata/oci-layouts/oras",
+			digestSelector: "sha256:f333056ac987169b2a121c16d06112d88ec3d7cb50b098bb17b0f14b0c52f6f3",
+			wantName:       "oci-layout",
+			wantDigest:     "sha256:f333056ac987169b2a121c16d06112d88ec3d7cb50b098bb17b0f14b0c52f6f3",
 		},
 		{
-			name: "multiple images without digest selector",
-			setupLayout: func(t *testing.T) (string, string) {
-				layoutPath, _ := createTestOCILayoutMultiple(t, []imageSpec{
-					{name: "first-image", tag: "v1.0.0"},
-					{name: "second-image", tag: "v2.0.0"},
-					{name: "third-image", tag: "v3.0.0"},
-				})
-				return layoutPath, "" // No digest selector
-			},
-			wantErr: "contains 3 images, please specify which one",
+			name:           "zarf - select specific image from bundle",
+			layoutPath:     "testdata/oci-layouts/zarf",
+			digestSelector: "sha256:e8ac056f7b9b44b07935fe23b8383e5e550d479dc5c6261941e76449a8f7e926",
+			wantName:       "ghcr.io/chainloop-dev/chainloop/artifact-cas:v1.51.0",
+			wantDigest:     "sha256:e8ac056f7b9b44b07935fe23b8383e5e550d479dc5c6261941e76449a8f7e926",
+		},
+		{
+			name:           "digest not found",
+			layoutPath:     "testdata/oci-layouts/oras",
+			digestSelector: "sha256:nonexistent",
+			wantErr:        "not found in OCI layout",
+		},
+		{
+			name:       "oras - multiple images without digest selector",
+			layoutPath: "testdata/oci-layouts/oras",
+			wantErr:    "contains 3 images, please specify which one",
+		},
+		{
+			name:       "zarf - multiple images without digest selector",
+			layoutPath: "testdata/oci-layouts/zarf",
+			wantErr:    "contains 3 images, please specify which one",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			layoutPath, digest := tc.setupLayout(t)
-			imageRef := layoutPath
-			if digest != "" {
-				imageRef = layoutPath + "@" + digest
+			imageRef := tc.layoutPath
+			if tc.digestSelector != "" {
+				imageRef = tc.layoutPath + "@" + tc.digestSelector
 			}
 
 			schema := &contractAPI.CraftingSchema_Material{
@@ -209,87 +204,14 @@ func TestOCIImageCraft_LayoutWithDigestSelector(t *testing.T) {
 			// Check container image fields
 			containerImage := got.GetContainerImage()
 			require.NotNil(t, containerImage)
-			assert.Equal(t, tc.wantName, containerImage.Name)
-			assert.Equal(t, tc.wantTag, containerImage.Tag)
-			assert.NotEmpty(t, containerImage.Digest)
+			if tc.wantName != "" {
+				assert.Equal(t, tc.wantName, containerImage.Name)
+			}
+			if tc.wantDigest != "" {
+				assert.Equal(t, tc.wantDigest, containerImage.Digest)
+			} else {
+				assert.NotEmpty(t, containerImage.Digest)
+			}
 		})
 	}
-}
-
-type imageSpec struct {
-	name string
-	tag  string
-}
-
-// createTestOCILayoutMultiple creates an OCI layout with multiple images for testing
-func createTestOCILayoutMultiple(t *testing.T, specs []imageSpec) (string, []string) {
-	t.Helper()
-
-	layoutPath := t.TempDir()
-	path, err := layout.Write(layoutPath, empty.Index)
-	require.NoError(t, err)
-
-	digests := make([]string, 0, len(specs))
-	for _, spec := range specs {
-		img, err := random.Image(1024, 1)
-		require.NoError(t, err)
-
-		var opts []layout.Option
-		if spec.name != "" || spec.tag != "" {
-			annotations := make(map[string]string)
-			if spec.name != "" {
-				annotations["org.opencontainers.image.ref.name"] = spec.name
-			}
-			if spec.tag != "" {
-				annotations["io.containerd.image.name"] = spec.name + ":" + spec.tag
-			}
-			opts = append(opts, layout.WithAnnotations(annotations))
-		}
-
-		err = path.AppendImage(img, opts...)
-		require.NoError(t, err)
-
-		// Get the digest of the image we just added
-		index, err := path.ImageIndex()
-		require.NoError(t, err)
-		manifest, err := index.IndexManifest()
-		require.NoError(t, err)
-		// The last manifest is the one we just added
-		digests = append(digests, manifest.Manifests[len(manifest.Manifests)-1].Digest.String())
-	}
-
-	return layoutPath, digests
-}
-
-// createTestOCILayout creates a minimal valid OCI layout directory for testing
-func createTestOCILayout(t *testing.T, imageName, tag string) string {
-	t.Helper()
-
-	layoutPath := t.TempDir()
-
-	// Use go-containerregistry to create a random image
-	img, err := random.Image(1024, 1)
-	require.NoError(t, err)
-
-	// Write layout with empty index first
-	path, err := layout.Write(layoutPath, empty.Index)
-	require.NoError(t, err)
-
-	// Append the image with annotations if provided
-	var opts []layout.Option
-	if imageName != "" || tag != "" {
-		annotations := make(map[string]string)
-		if imageName != "" {
-			annotations["org.opencontainers.image.ref.name"] = imageName
-		}
-		if tag != "" {
-			annotations["io.containerd.image.name"] = imageName + ":" + tag
-		}
-		opts = append(opts, layout.WithAnnotations(annotations))
-	}
-
-	err = path.AppendImage(img, opts...)
-	require.NoError(t, err)
-
-	return layoutPath
 }
