@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -72,16 +71,11 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 		return nil, fmt.Errorf("failed to parse bucket name: %w", err)
 	}
 
-	// Configure AWS config with v2 SDK
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithRegion(region),
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, ""),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	// Using AWS config directly instead of using config.LoadDefaultConfig
+	// to avoid the default credential chain and use only the static credentials
+	cfg := aws.Config{
+		Region:      region,
+		Credentials: credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, ""),
 	}
 
 	// Create S3 client with custom options if needed

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
@@ -67,15 +66,11 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	logger := servicelogger.ScopedHelper(l, "credentials/aws-secrets-manager")
 	logger.Infow("msg", "configuring secrets-manager", "region", opts.Region, "role", opts.Role, "prefix", opts.SecretPrefix)
 
-	config, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithRegion(opts.Region),
-		config.WithCredentialsProvider(
-			awscreds.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("loading AWS config: %w", err)
+	// Using AWS config directly instead of using config.LoadDefaultConfig
+	// to avoid the default credential chain and use only the static credentials
+	config := aws.Config{
+		Region:      opts.Region,
+		Credentials: awscreds.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""),
 	}
 
 	return &Manager{
