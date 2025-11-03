@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ type Backend struct {
 	storageAccountName string
 	container          string
 	credentials        *azidentity.ClientSecretCredential
+	endpoint           string
 }
 
 var _ backend.UploaderDownloader = (*Backend)(nil)
@@ -48,12 +49,13 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 		storageAccountName: creds.StorageAccountName,
 		credentials:        credential,
 		container:          creds.Container,
+		endpoint:           creds.Endpoint,
 	}, nil
 }
 
 // top level client used for creation/upload/download/listing operations
 func (b *Backend) client() (*azblob.Client, error) {
-	url := fmt.Sprintf("https://%s.blob.core.windows.net/", b.storageAccountName)
+	url := b.getServiceURL()
 	// Top level client
 	client, err := azblob.NewClient(url, b.credentials, nil)
 	if err != nil {
@@ -61,6 +63,14 @@ func (b *Backend) client() (*azblob.Client, error) {
 	}
 
 	return client, nil
+}
+
+// getServiceURL returns the Azure Blob Storage service URL. Uses custom endpoint if provided, otherwise defaults to public Azure cloud
+func (b *Backend) getServiceURL() string {
+	if b.endpoint != "" {
+		return fmt.Sprintf("https://%s.%s/", b.storageAccountName, b.endpoint)
+	}
+	return fmt.Sprintf("https://%s.blob.core.windows.net/", b.storageAccountName)
 }
 
 // blob client used for operating with a single blob
@@ -74,6 +84,9 @@ func (b *Backend) blobClient(digest string) (*blob.Client, error) {
 }
 
 func (b *Backend) resourcePath(digest string) string {
+	if b.endpoint != "" {
+		return fmt.Sprintf("https://%s.%s/%s/%s", b.storageAccountName, b.endpoint, b.container, resourceName(digest))
+	}
 	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", b.storageAccountName, b.container, resourceName(digest))
 }
 
