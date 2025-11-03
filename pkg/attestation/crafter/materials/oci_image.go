@@ -353,10 +353,10 @@ func (i *OCIImageCrafter) craftFromLayout(_ context.Context, layoutPath, digestS
 	}
 
 	// Select the manifest based on digest selector
-	var manifest v1.Descriptor
+	// If a specific digest is requested, find it
 	if digestSelector != "" {
-		// Find manifest with matching digest
 		found := false
+		var manifest v1.Descriptor
 		for _, m := range indexManifest.Manifests {
 			if m.Digest.String() == digestSelector {
 				manifest = m
@@ -368,20 +368,29 @@ func (i *OCIImageCrafter) craftFromLayout(_ context.Context, layoutPath, digestS
 			return nil, fmt.Errorf("digest %s not found in OCI layout", digestSelector)
 		}
 		i.logger.Debug().Str("digest", digestSelector).Msg("selected image by digest")
-	} else {
-		// If multiple images exist, require explicit selection to avoid mistakes
-		if len(indexManifest.Manifests) > 1 {
-			var digests []string
-			for _, m := range indexManifest.Manifests {
-				digests = append(digests, m.Digest.String())
-			}
-			return nil, fmt.Errorf("OCI layout contains %d images, please specify which one to use with @digest. Available digests: %s",
-				len(indexManifest.Manifests), strings.Join(digests, ", "))
-		}
-		// Only one image, safe to use it
-		manifest = indexManifest.Manifests[0]
-		i.logger.Debug().Msg("using only image in layout")
+
+		return i.buildMaterialFromManifest(layoutPath, manifest, indexManifest.Manifests)
 	}
+
+	// No digest specified - if multiple images exist, require explicit selection
+	if len(indexManifest.Manifests) > 1 {
+		var digests []string
+		for _, m := range indexManifest.Manifests {
+			digests = append(digests, m.Digest.String())
+		}
+		return nil, fmt.Errorf("OCI layout contains %d images, please specify which one to use with @digest. Available digests: %s",
+			len(indexManifest.Manifests), strings.Join(digests, ", "))
+	}
+
+	// Only one image, safe to use it
+	manifest := indexManifest.Manifests[0]
+	i.logger.Debug().Msg("using only image in layout")
+
+	return i.buildMaterialFromManifest(layoutPath, manifest, indexManifest.Manifests)
+}
+
+// buildMaterialFromManifest constructs the attestation material from a manifest descriptor.
+func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest v1.Descriptor, allManifests []v1.Descriptor) (*api.Attestation_Material, error) {
 
 	digest := manifest.Digest.String()
 
@@ -416,7 +425,7 @@ func (i *OCIImageCrafter) craftFromLayout(_ context.Context, layoutPath, digestS
 	i.logger.Debug().Str("path", layoutPath).Str("digest", digest).Msg("OCI layout image resolved")
 
 	// Check for signatures in the layout
-	signatureInfo := i.checkForSignatureInLayout(indexManifest.Manifests, digest)
+	signatureInfo := i.checkForSignatureInLayout(allManifests, digest)
 
 	containerImage := &api.Attestation_Material_ContainerImage{
 		Id:        i.input.Name,
