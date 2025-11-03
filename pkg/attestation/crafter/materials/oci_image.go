@@ -47,6 +47,8 @@ const (
 	notarySignatureMimeType = "application/vnd.cncf.notary.signature"
 	// latestTag is the tag name for the latest image.
 	latestTag = "latest"
+	// ociLayoutRepoName is the default repository name for OCI layout images.
+	ociLayoutRepoName = "oci-layout"
 )
 
 // signatureProvider is the type for the signature provider of a container image.
@@ -384,7 +386,7 @@ func (i *OCIImageCrafter) craftFromLayout(_ context.Context, layoutPath, digestS
 	digest := manifest.Digest.String()
 
 	// Extract repository name from annotations if available
-	repoName := "oci-layout"
+	repoName := ociLayoutRepoName
 	if manifest.Annotations != nil {
 		if name, ok := manifest.Annotations["org.opencontainers.image.ref.name"]; ok {
 			repoName = name
