@@ -1,0 +1,17 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-min-components
+  description: Policy that checks SBOM has minimum number of components
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+
+        import rego.v1
+
+        violations contains msg if {
+            count(input.components) < 2
+            msg := "SBOM must have at least 2 components"
+        }

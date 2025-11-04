@@ -1,0 +1,17 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-metadata-component
+  description: Policy that checks SBOM has metadata.component
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+
+        import rego.v1
+
+        violations contains msg if {
+            not input.metadata.component
+            msg := "SBOM must have metadata.component"
+        }
