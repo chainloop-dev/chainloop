@@ -608,11 +608,6 @@ func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
 	return policyTypes
 }
 
-// injectBoilerplateIfNeeded automatically injects common policy boilerplate
-func injectBoilerplateIfNeeded(policySource []byte, policyName string) ([]byte, error) {
-	return rego.InjectBoilerplate(policySource, policyName)
-}
-
 // LoadPolicyScriptsFromSpec loads all policy script that matches a given material type. It matches if:
 // * the policy kind is unspecified, meaning that it was forced by name selector
 // * the policy kind is specified, and it's equal to the material type
@@ -626,7 +621,7 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 		}
 
 		// Inject boilerplate if needed
-		script, err = injectBoilerplateIfNeeded(script, policy.GetMetadata().GetName())
+		script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
 		if err != nil {
 			return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
 		}
@@ -643,7 +638,7 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 				}
 
 				// Inject boilerplate if needed
-				script, err = injectBoilerplateIfNeeded(script, policy.GetMetadata().GetName())
+				script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
 				if err != nil {
 					return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
 				}
