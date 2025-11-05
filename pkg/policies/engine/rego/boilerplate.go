@@ -43,6 +43,7 @@ type boilerplateData struct {
 	NeedsSkipped    bool
 	NeedsValidInput bool
 	NeedsViolations bool
+	NeedsIgnore     bool
 }
 
 // InjectBoilerplate automatically injects common policy boilerplate if it doesn't exist.
@@ -71,7 +72,7 @@ func InjectBoilerplate(policySource []byte, policyName string) ([]byte, error) {
 	// If all required boilerplate rules exist, no injection needed
 	if existingRules[ruleResult] && existingRules[ruleSkipReason] &&
 		existingRules[ruleSkipped] && existingRules[ruleValidInput] &&
-		existingRules[ruleViolations] {
+		existingRules[ruleViolations] && existingRules[ruleIgnore] {
 		return policySource, nil
 	}
 
@@ -115,6 +116,7 @@ func buildBoilerplate(existingRules map[string]bool) (string, error) {
 		NeedsSkipped:    !existingRules[ruleSkipped],
 		NeedsValidInput: !existingRules[ruleValidInput],
 		NeedsViolations: !existingRules[ruleViolations],
+		NeedsIgnore:     !existingRules[ruleIgnore],
 	}
 
 	tmpl, err := template.New("boilerplate").Parse(boilerplateTemplate)

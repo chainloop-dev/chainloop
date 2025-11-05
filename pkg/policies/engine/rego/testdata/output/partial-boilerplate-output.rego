@@ -6,6 +6,7 @@ result := {
     "skipped": skipped,
     "violations": violations,
     "skip_reason": skip_reason,
+    "ignore": ignore,
 }
 
 default skip_reason := ""
@@ -16,6 +17,8 @@ skip_reason := m if {
 }
 
 default valid_input := true
+
+default ignore := false
 
 default skipped := true
 
