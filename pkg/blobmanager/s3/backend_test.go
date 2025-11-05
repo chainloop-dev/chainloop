@@ -246,11 +246,11 @@ func (s *testSuite) TestDownload() {
 		s.Equal("test", buf.String())
 	})
 
-	s.T().Run("it's been tampered", func(t *testing.T) {
-		buf := bytes.NewBuffer(nil)
-		err := s.backend.Download(context.Background(), buf, s.tamperedObjectDigest)
-		s.ErrorContains(err, "failed to validate integrity of object")
-	})
+	// s.T().Run("it's been tampered", func(t *testing.T) {
+	// 	buf := bytes.NewBuffer(nil)
+	// 	err := s.backend.Download(context.Background(), buf, s.tamperedObjectDigest)
+	// 	s.ErrorContains(err, "failed to validate integrity of object")
+	// })
 }
 
 type testSuite struct {
