@@ -10,10 +10,25 @@
                 },
                 "errors": {
                     "items": {
-                        "type": "string"
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "description": "Error code for identification (e.g: PERMISSION_RULESETS PERMISSION_BRANCHES)"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "Human-readable error message"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "code",
+                            "message"
+                        ]
                     },
                     "type": "array",
-                    "description": "Array of error messages"
+                    "description": "Array of error details with codes"
                 }
             },
             "additionalProperties": false,
@@ -331,11 +346,6 @@
                     },
                     "type": "array",
                     "description": "Array of repository configurations"
-                },
-                "org": {
-                    "items": true,
-                    "type": "array",
-                    "description": "Organization-level configuration"
                 }
             },
             "additionalProperties": false,
