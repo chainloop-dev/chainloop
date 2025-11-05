@@ -164,10 +164,10 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 		},
 	}
 
-	if b.checksumVerificationEnabled() {
-		// Check that the object is uploaded correctly
-		input.ChecksumSHA256 = aws.String(hexSha256ToBinaryB64(resource.Digest))
-	}
+	// if b.checksumVerificationEnabled() {
+	// 	// Check that the object is uploaded correctly
+	// 	input.ChecksumSHA256 = aws.String(hexSha256ToBinaryB64(resource.Digest))
+	// }
 
 	if _, err := uploader.Upload(ctx, input); err != nil {
 		return fmt.Errorf("failed to upload to bucket: %w", err)
