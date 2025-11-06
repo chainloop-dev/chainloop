@@ -42,7 +42,9 @@ type EvidenceCrafter struct {
 // customEvidence represents the expected structure of a custom Evidence JSON file
 type customEvidence struct {
 	// ID is a unique identifier for the evidence
-	ID string `json:"id"`
+	// Deprecated: in favor of ChainloopID
+	ID          string `json:"id"`
+	ChainloopID string `json:"chainloop.material.evidence.id"`
 	// Schema is an optional schema reference for the evidence validation
 	Schema string `json:"schema"`
 	// Data contains the actual evidence content
@@ -93,8 +95,14 @@ func (i *EvidenceCrafter) tryExtractAnnotations(m *api.Attestation_Material, art
 		return
 	}
 
+	chainloopID := evidence.ChainloopID
+	// fallback to deprecated id field
+	if chainloopID == "" {
+		chainloopID = evidence.ID
+	}
+
 	// Check if it has the required structure (id and data fields)
-	if evidence.ID == "" || len(evidence.Data) == 0 {
+	if chainloopID == "" || len(evidence.Data) == 0 {
 		i.logger.Debug().Msg("evidence JSON does not have required id and data fields, skipping annotation extraction")
 		return
 	}
@@ -105,7 +113,7 @@ func (i *EvidenceCrafter) tryExtractAnnotations(m *api.Attestation_Material, art
 	}
 
 	// Extract id and schema as annotations
-	m.Annotations[annotationEvidenceID] = evidence.ID
+	m.Annotations[annotationEvidenceID] = chainloopID
 	if evidence.Schema != "" {
 		m.Annotations[annotationEvidenceSchema] = evidence.Schema
 	}
