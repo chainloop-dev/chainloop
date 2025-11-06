@@ -166,7 +166,7 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 		expectedAnnotations map[string]string
 	}{
 		{
-			name:     "JSON with id, data and schema fields extracts annotations",
+			name:     "JSON with deprecated id, data and schema fields extracts annotations",
 			filePath: "./testdata/evidence-with-id-data-schema.json",
 			expectedAnnotations: map[string]string{
 				"chainloop.material.evidence.id":     "custom-evidence-123",
@@ -178,6 +178,14 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 			filePath: "./testdata/evidence-with-id-data-no-schema.json",
 			expectedAnnotations: map[string]string{
 				"chainloop.material.evidence.id": "custom-evidence-456",
+			},
+		},
+		{
+			name:     "JSON with new chainloop.material.evidence.id, data and schema fields extracts annotations",
+			filePath: "./testdata/evidence-with-new-id-data-schema.json",
+			expectedAnnotations: map[string]string{
+				"chainloop.material.evidence.id":     "custom-evidence-123",
+				"chainloop.material.evidence.schema": "https://example.com/schema/v1",
 			},
 		},
 		{
