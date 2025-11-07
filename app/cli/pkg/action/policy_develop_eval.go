@@ -16,6 +16,8 @@
 package action
 
 import (
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+
 	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 )
 
@@ -42,14 +44,20 @@ func NewPolicyEval(opts *PolicyEvalOpts, actionOpts *ActionsOpts) (*PolicyEval, 
 }
 
 func (action *PolicyEval) Run() (*policydevel.EvalSummary, error) {
+	var attClient pb.AttestationServiceClient
+	if action.CPConnection != nil {
+		attClient = pb.NewAttestationServiceClient(action.CPConnection)
+	}
+
 	evalOpts := &policydevel.EvalOptions{
-		PolicyPath:       action.opts.PolicyPath,
-		MaterialKind:     action.opts.Kind,
-		Annotations:      action.opts.Annotations,
-		MaterialPath:     action.opts.MaterialPath,
-		Inputs:           action.opts.Inputs,
-		AllowedHostnames: action.opts.AllowedHostnames,
-		Debug:            action.opts.Debug,
+		PolicyPath:        action.opts.PolicyPath,
+		MaterialKind:      action.opts.Kind,
+		Annotations:       action.opts.Annotations,
+		MaterialPath:      action.opts.MaterialPath,
+		Inputs:            action.opts.Inputs,
+		AllowedHostnames:  action.opts.AllowedHostnames,
+		Debug:             action.opts.Debug,
+		AttestationClient: attClient,
 	}
 
 	// Evaluate policy
