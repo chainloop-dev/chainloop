@@ -123,6 +123,8 @@ type WorkflowUseCase struct {
 	logger       *log.Helper
 }
 
+var ErrImplicitWorkflowCreationDisabled = errors.New("implicit workflow and project creation is disabled for this organization")
+
 func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, membershipUC *MembershipUseCase, orgRepo OrganizationRepo, logger log.Logger) *WorkflowUseCase {
 	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, membershipUC: membershipUC, orgRepo: orgRepo, logger: log.NewHelper(logger)}
 }
@@ -130,9 +132,11 @@ func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *W
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
 	if opts.Name == "" {
 		return nil, errors.New("workflow name is required")
-	} else if opts.Project == "" {
+	}
+	if opts.Project == "" {
 		return nil, errors.New("project name is required")
-	} else if opts.OrgID == "" {
+	}
+	if opts.OrgID == "" {
 		return nil, errors.New("organization ID is required")
 	}
 
@@ -180,7 +184,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		}
 
 		if org.PreventImplicitWorkflowCreation {
-			return nil, NewErrValidation(errors.New("implicit workflow and project creation is disabled for this organization. Please create the workflow explicitly using 'chainloop workflow create'"))
+			return nil, ErrImplicitWorkflowCreationDisabled
 		}
 	}
 

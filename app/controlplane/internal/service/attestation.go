@@ -769,6 +769,10 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 
 	wf, err := s.workflowUseCase.Create(ctx, createOpts)
 	if err != nil {
+		if errors.Is(err, biz.ErrImplicitWorkflowCreationDisabled) {
+			return nil, errors.Forbidden("forbidden", "creating workflows during the attestation process is disabled for this organization. Please create them in advance or contact your administrator")
+		}
+
 		return nil, handleUseCaseErr(fmt.Errorf("failed to initialize the attestation: %w", err), s.log)
 	}
 

@@ -29,10 +29,12 @@ type MembershipList struct {
 }
 
 type OrgItem struct {
-	ID, Name                        string
-	CreatedAt                       *time.Time
-	PolicyViolationBlockingStrategy string
-	PolicyAllowedHostnames          []string `json:"policyAllowedHostnames,omitempty"`
+	ID                              string     `json:"id"`
+	Name                            string     `json:"name"`
+	CreatedAt                       *time.Time `json:"createdAt"`
+	PolicyViolationBlockingStrategy string     `json:"policyViolationBlockingStrategy"`
+	PolicyAllowedHostnames          []string   `json:"policyAllowedHostnames,omitempty"`
+	PreventImplicitWorkflowCreation bool       `json:"preventImplicitWorkflowCreation"`
 }
 
 type MembershipItem struct {
@@ -40,9 +42,9 @@ type MembershipItem struct {
 	Default   bool       `json:"current"`
 	CreatedAt *time.Time `json:"joinedAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`
-	Org       *OrgItem
-	User      *UserItem
-	Role      Role `json:"role"`
+	Org       *OrgItem   `json:"org"`
+	User      *UserItem  `json:"user"`
+	Role      Role       `json:"role"`
 }
 
 type ListMembersOpts struct {
@@ -130,10 +132,11 @@ func (action *MembershipList) ListMembers(ctx context.Context, page int, pageSiz
 
 func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 	i := &OrgItem{
-		ID:                     in.Id,
-		Name:                   in.Name,
-		CreatedAt:              toTimePtr(in.CreatedAt.AsTime()),
-		PolicyAllowedHostnames: in.PolicyAllowedHostnames,
+		ID:                              in.Id,
+		Name:                            in.Name,
+		CreatedAt:                       toTimePtr(in.CreatedAt.AsTime()),
+		PolicyAllowedHostnames:          in.PolicyAllowedHostnames,
+		PreventImplicitWorkflowCreation: in.PreventImplicitWorkflowCreation,
 	}
 
 	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {
