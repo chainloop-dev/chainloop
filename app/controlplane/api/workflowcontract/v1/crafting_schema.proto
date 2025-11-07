@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -141,6 +141,8 @@ message CraftingSchema {
       SLSA_PROVENANCE = 24;
       // The Chainloop CLI plugin for runner context
       CHAINLOOP_RUNNER_CONTEXT = 25;
+      // ARTIFACT_REF is like ARTIFACT but only stores metadata without uploading to CAS
+      ARTIFACT_REF = 26;
     }
   }
 }
@@ -264,14 +266,15 @@ message PolicySpec {
   }
 
   // if set, it will match any material supported by Chainloop
-  // except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
+  // except those not having a direct schema (STRING, ARTIFACT, ARTIFACT_REF, EVIDENCE), since their format cannot be guessed by the crafter.
   // CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
   CraftingSchema.Material.MaterialType type = 3 [
     (buf.validate.field).enum = {
       not_in: [
         1,
         3,
-        11
+        11,
+        26
       ]
     },
     deprecated = true
@@ -318,7 +321,7 @@ message PolicySpecV2 {
 
   // if set, it will match any material supported by Chainloop
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
-    not_in: [3]
+    not_in: [3, 26]
   }];
 }
 

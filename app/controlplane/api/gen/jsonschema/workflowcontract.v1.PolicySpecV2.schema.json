@@ -36,7 +36,8 @@
             "GHAS_DEPENDENCY_SCAN",
             "JACOCO_XML",
             "SLSA_PROVENANCE",
-            "CHAINLOOP_RUNNER_CONTEXT"
+            "CHAINLOOP_RUNNER_CONTEXT",
+            "ARTIFACT_REF"
           ],
           "title": "Material Type",
           "type": "string"

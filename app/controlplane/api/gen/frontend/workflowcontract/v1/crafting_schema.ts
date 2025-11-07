@@ -195,6 +195,8 @@ export enum CraftingSchema_Material_MaterialType {
   SLSA_PROVENANCE = 24,
   /** CHAINLOOP_RUNNER_CONTEXT - The Chainloop CLI plugin for runner context */
   CHAINLOOP_RUNNER_CONTEXT = 25,
+  /** ARTIFACT_REF - ARTIFACT_REF is like ARTIFACT but only stores metadata without uploading to CAS */
+  ARTIFACT_REF = 26,
   UNRECOGNIZED = -1,
 }
 
@@ -278,6 +280,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 25:
     case "CHAINLOOP_RUNNER_CONTEXT":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT;
+    case 26:
+    case "ARTIFACT_REF":
+      return CraftingSchema_Material_MaterialType.ARTIFACT_REF;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -339,6 +344,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SLSA_PROVENANCE";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT:
       return "CHAINLOOP_RUNNER_CONTEXT";
+    case CraftingSchema_Material_MaterialType.ARTIFACT_REF:
+      return "ARTIFACT_REF";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -465,7 +472,7 @@ export interface PolicySpec {
     | undefined;
   /**
    * if set, it will match any material supported by Chainloop
-   * except those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.
+   * except those not having a direct schema (STRING, ARTIFACT, ARTIFACT_REF, EVIDENCE), since their format cannot be guessed by the crafter.
    * CONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future.
    *
    * @deprecated
