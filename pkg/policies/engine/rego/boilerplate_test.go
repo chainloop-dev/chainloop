@@ -111,9 +111,19 @@ func TestDetectExistingRules(t *testing.T) {
 
 	existing := detectExistingRules(module)
 
-	assert.True(t, existing["result"])
-	assert.True(t, existing["skipped"])
-	assert.True(t, existing["valid_input"])
-	assert.True(t, existing["violations"])
-	assert.False(t, existing["skip_reason"])
+	// Check rules exist
+	assert.True(t, existing.hasRule["result"])
+	assert.True(t, existing.hasRule["skipped"])
+	assert.True(t, existing.hasRule["valid_input"])
+	assert.True(t, existing.hasRule["violations"])
+	assert.False(t, existing.hasRule["skip_reason"])
+	assert.False(t, existing.hasRule["ignore"])
+
+	// Check defaults for rules
+	assert.False(t, existing.hasDefault["result"])
+	assert.True(t, existing.hasDefault["skipped"])
+	assert.True(t, existing.hasDefault["valid_input"])
+	assert.False(t, existing.hasDefault["violations"])
+	assert.False(t, existing.hasDefault["skip_reason"])
+	assert.False(t, existing.hasDefault["ignore"])
 }

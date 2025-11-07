@@ -38,12 +38,14 @@ const (
 var boilerplateTemplate string
 
 type boilerplateData struct {
-	NeedsResult     bool
-	NeedsSkipReason bool
-	NeedsSkipped    bool
-	NeedsValidInput bool
-	NeedsViolations bool
-	NeedsIgnore     bool
+	NeedsResult            bool
+	NeedsDefaultSkipReason bool
+	NeedsSkipReasonRule    bool
+	NeedsDefaultSkipped    bool
+	NeedsSkippedRule       bool
+	NeedsDefaultIgnore     bool
+	NeedsDefaultValidInput bool
+	NeedsDefaultViolations bool
 }
 
 // InjectBoilerplate automatically injects common policy boilerplate if it doesn't exist.
@@ -67,17 +69,20 @@ func InjectBoilerplate(policySource []byte, policyName string) ([]byte, error) {
 	}
 
 	// Detect which rules already exist using AST
-	existingRules := detectExistingRules(module)
+	existing := detectExistingRules(module)
 
-	// If all required boilerplate rules exist, no injection needed
-	if existingRules[ruleResult] && existingRules[ruleSkipReason] &&
-		existingRules[ruleSkipped] && existingRules[ruleValidInput] &&
-		existingRules[ruleViolations] && existingRules[ruleIgnore] {
+	// If all required boilerplate rules and defaults exist, no injection needed
+	if existing.hasRule[ruleResult] &&
+		existing.hasDefault[ruleSkipReason] && existing.hasRule[ruleSkipReason] &&
+		existing.hasDefault[ruleSkipped] && existing.hasRule[ruleSkipped] &&
+		existing.hasDefault[ruleIgnore] &&
+		existing.hasDefault[ruleValidInput] &&
+		existing.hasDefault[ruleViolations] {
 		return policySource, nil
 	}
 
 	// Build the boilerplate injection (rules only, no package/import)
-	injection, err := buildBoilerplate(existingRules)
+	injection, err := buildBoilerplate(existing)
 	if err != nil {
 		return nil, err
 	}
@@ -96,27 +101,42 @@ func InjectBoilerplate(policySource []byte, policyName string) ([]byte, error) {
 	return []byte(injected), nil
 }
 
+type existingRules struct {
+	hasRule    map[string]bool
+	hasDefault map[string]bool
+}
+
 // detectExistingRules scans the AST to find which rules are already defined
-func detectExistingRules(module *ast.Module) map[string]bool {
-	existing := make(map[string]bool)
+func detectExistingRules(module *ast.Module) *existingRules {
+	rules := &existingRules{
+		hasRule:    make(map[string]bool),
+		hasDefault: make(map[string]bool),
+	}
 
 	for _, rule := range module.Rules {
 		ruleName := string(rule.Head.Name)
-		existing[ruleName] = true
+		rules.hasRule[ruleName] = true
+
+		// Track if this is a default rule
+		if rule.Default {
+			rules.hasDefault[ruleName] = true
+		}
 	}
 
-	return existing
+	return rules
 }
 
 // buildBoilerplate constructs the boilerplate template based on what's missing
-func buildBoilerplate(existingRules map[string]bool) (string, error) {
+func buildBoilerplate(rules *existingRules) (string, error) {
 	data := boilerplateData{
-		NeedsResult:     !existingRules[ruleResult],
-		NeedsSkipReason: !existingRules[ruleSkipReason],
-		NeedsSkipped:    !existingRules[ruleSkipped],
-		NeedsValidInput: !existingRules[ruleValidInput],
-		NeedsViolations: !existingRules[ruleViolations],
-		NeedsIgnore:     !existingRules[ruleIgnore],
+		NeedsResult:            !rules.hasRule[ruleResult],
+		NeedsDefaultSkipReason: !rules.hasDefault[ruleSkipReason] && !rules.hasRule[ruleSkipReason],
+		NeedsSkipReasonRule:    !rules.hasRule[ruleSkipReason],
+		NeedsDefaultSkipped:    !rules.hasDefault[ruleSkipped] && !rules.hasRule[ruleSkipped],
+		NeedsSkippedRule:       !rules.hasRule[ruleSkipped],
+		NeedsDefaultIgnore:     !rules.hasDefault[ruleIgnore] && !rules.hasRule[ruleIgnore],
+		NeedsDefaultValidInput: !rules.hasDefault[ruleValidInput] && !rules.hasRule[ruleValidInput],
+		NeedsDefaultViolations: !rules.hasDefault[ruleViolations] && !rules.hasRule[ruleViolations],
 	}
 
 	tmpl, err := template.New("boilerplate").Parse(boilerplateTemplate)

@@ -16,13 +16,15 @@ skip_reason := m if {
 	m := "the file content is not recognized"
 }
 
+default valid_input := true
+
 default skipped := true
 
 skipped := false if valid_input
 
 default ignore := false
 
-valid_input := true
+default violations := []
 
 violations contains msg if {
 	msg := "test violation"
