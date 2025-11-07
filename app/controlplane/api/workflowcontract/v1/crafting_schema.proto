@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,6 +92,9 @@ message CraftingSchema {
     // List of annotations that can be used to add metadata to the material
     // this metadata can be used later on by the integrations engine to filter and interpolate data
     repeated Annotation annotations = 5 [deprecated = true];
+    // If true, skip uploading the material to CAS (only record metadata)
+    // Defaults to false (material will be uploaded)
+    bool skip_upload = 6 [deprecated = true];
 
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;

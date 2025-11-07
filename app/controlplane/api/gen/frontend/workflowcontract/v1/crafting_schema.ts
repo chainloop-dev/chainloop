@@ -140,6 +140,13 @@ export interface CraftingSchema_Material {
    * @deprecated
    */
   annotations: Annotation[];
+  /**
+   * If true, skip uploading the material to CAS (only record metadata)
+   * Defaults to false (material will be uploaded)
+   *
+   * @deprecated
+   */
+  skipUpload: boolean;
 }
 
 export enum CraftingSchema_Material_MaterialType {
@@ -777,7 +784,7 @@ export const CraftingSchema_Runner = {
 };
 
 function createBaseCraftingSchema_Material(): CraftingSchema_Material {
-  return { type: 0, name: "", optional: false, output: false, annotations: [] };
+  return { type: 0, name: "", optional: false, output: false, annotations: [], skipUpload: false };
 }
 
 export const CraftingSchema_Material = {
@@ -796,6 +803,9 @@ export const CraftingSchema_Material = {
     }
     for (const v of message.annotations) {
       Annotation.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.skipUpload === true) {
+      writer.uint32(48).bool(message.skipUpload);
     }
     return writer;
   },
@@ -842,6 +852,13 @@ export const CraftingSchema_Material = {
 
           message.annotations.push(Annotation.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.skipUpload = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -858,6 +875,7 @@ export const CraftingSchema_Material = {
       optional: isSet(object.optional) ? Boolean(object.optional) : false,
       output: isSet(object.output) ? Boolean(object.output) : false,
       annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
+      skipUpload: isSet(object.skipUpload) ? Boolean(object.skipUpload) : false,
     };
   },
 
@@ -872,6 +890,7 @@ export const CraftingSchema_Material = {
     } else {
       obj.annotations = [];
     }
+    message.skipUpload !== undefined && (obj.skipUpload = message.skipUpload);
     return obj;
   },
 
@@ -886,6 +905,7 @@ export const CraftingSchema_Material = {
     message.optional = object.optional ?? false;
     message.output = object.output ?? false;
     message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
+    message.skipUpload = object.skipUpload ?? false;
     return message;
   },
 };
