@@ -54,16 +54,30 @@ func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *
 	if updates == nil {
 		updates = &biz.ProjectVersionUpdateOpts{}
 	}
+	// Only set released_at if it's not already set
+	existing, err := r.data.DB.ProjectVersion.Query().Where(projectversion.IDEQ(id), projectversion.DeletedAtIsNil()).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("Version")
+		}
 
-	q := r.data.DB.ProjectVersion.UpdateOneID(id).SetNillablePrerelease(updates.Prerelease).SetUpdatedAt(time.Now())
+		return nil, err
+	}
+
+	now := time.Now()
+	q := existing.Update().SetNillablePrerelease(updates.Prerelease).SetUpdatedAt(now)
 	// we are setting the value either false or true
 	if updates.Prerelease != nil {
 		// We are marking it as a release
 		if !*updates.Prerelease {
-			q = q.SetReleasedAt(time.Now())
+			// if not set
+			if existing.ReleasedAt.IsZero() {
+				// Only set released_at if it's not already set
+				q.SetReleasedAt(now)
+			}
 		} else {
 			// We are resetting it to pre-release
-			q = q.ClearReleasedAt()
+			q.ClearReleasedAt()
 		}
 	}
 
