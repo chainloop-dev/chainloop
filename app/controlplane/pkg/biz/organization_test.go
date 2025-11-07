@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	repoM "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -33,7 +32,7 @@ type organizationTestSuite struct {
 }
 
 func (s *organizationTestSuite) TestCreateWithRandomName() {
-	repo := repoM.NewOrganizationRepo(s.T())
+	repo := biz.NewMockOrganizationRepo(s.T())
 	l := log.NewStdLogger(io.Discard)
 	uc := biz.NewOrganizationUseCase(repo, nil, biz.NewAuditorUseCase(nil, l), nil, nil, nil, l)
 

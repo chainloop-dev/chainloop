@@ -30,6 +30,10 @@
       },
       "type": "array"
     },
+    "^(prevent_implicit_workflow_creation)$": {
+      "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
+    },
     "^(updated_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
@@ -67,6 +71,10 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "preventImplicitWorkflowCreation": {
+      "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
     },
     "updatedAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"

@@ -81,6 +81,11 @@ func BlockOnPolicyViolation(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldBlockOnPolicyViolation, v))
 }
 
+// PreventImplicitWorkflowCreation applies equality check predicate on the "prevent_implicit_workflow_creation" field. It's identical to PreventImplicitWorkflowCreationEQ.
+func PreventImplicitWorkflowCreation(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldPreventImplicitWorkflowCreation, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldName, v))
@@ -294,6 +299,16 @@ func PoliciesAllowedHostnamesIsNil() predicate.Organization {
 // PoliciesAllowedHostnamesNotNil applies the NotNil predicate on the "policies_allowed_hostnames" field.
 func PoliciesAllowedHostnamesNotNil() predicate.Organization {
 	return predicate.Organization(sql.FieldNotNull(FieldPoliciesAllowedHostnames))
+}
+
+// PreventImplicitWorkflowCreationEQ applies the EQ predicate on the "prevent_implicit_workflow_creation" field.
+func PreventImplicitWorkflowCreationEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldPreventImplicitWorkflowCreation, v))
+}
+
+// PreventImplicitWorkflowCreationNEQ applies the NEQ predicate on the "prevent_implicit_workflow_creation" field.
+func PreventImplicitWorkflowCreationNEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldPreventImplicitWorkflowCreation, v))
 }
 
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.

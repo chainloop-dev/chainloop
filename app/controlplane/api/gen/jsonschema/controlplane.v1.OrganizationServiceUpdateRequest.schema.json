@@ -14,6 +14,10 @@
       },
       "type": "array"
     },
+    "^(preventImplicitWorkflowCreation)$": {
+      "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
+    },
     "^(updatePoliciesAllowedHostnames)$": {
       "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",
       "type": "boolean"
@@ -34,6 +38,10 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "prevent_implicit_workflow_creation": {
+      "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
     },
     "update_policies_allowed_hostnames": {
       "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",

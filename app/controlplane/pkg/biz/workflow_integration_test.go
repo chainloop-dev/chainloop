@@ -170,10 +170,24 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			name: "with all items",
 			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "another-name", Project: "project", Team: "team", Description: "description"},
 		},
+		{
+			name:       "implicit creation blocked when organization prevents it",
+			opts:       &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "blocked-workflow", Project: "blocked-project", ImplicitCreation: true},
+			wantErrMsg: "implicit workflow and project creation is disabled",
+		},
+		{
+			name: "explicit creation allowed even when organization prevents implicit creation",
+			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "allowed-workflow", Project: "allowed-project", ImplicitCreation: false},
+		},
 	}
 
 	// Create one contract for testing
 	_, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{Name: "contract-1", OrgID: s.org.ID})
+	s.Require().NoError(err)
+
+	// Enable implicit workflow creation prevention for testing
+	orgID, _ := uuid.Parse(s.org.ID)
+	_, err = s.Repos.OrganizationRepo.Update(ctx, orgID, nil, nil, toPtrBool(true))
 	s.Require().NoError(err)
 
 	for _, tc := range testCases {

@@ -79,6 +79,8 @@ type WorkflowCreateOpts struct {
 
 	// Owner identifies the user to be marked as owner of the project
 	Owner *uuid.UUID
+	// ImplicitCreation indicates whether this workflow is being created implicitly via attestation init
+	ImplicitCreation bool
 }
 
 type WorkflowUpdateOpts struct {
@@ -117,11 +119,12 @@ type WorkflowUseCase struct {
 	contractUC   *WorkflowContractUseCase
 	auditorUC    *AuditorUseCase
 	membershipUC *MembershipUseCase
+	orgRepo      OrganizationRepo
 	logger       *log.Helper
 }
 
-func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, membershipUC *MembershipUseCase, logger log.Logger) *WorkflowUseCase {
-	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, membershipUC: membershipUC, logger: log.NewHelper(logger)}
+func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, membershipUC *MembershipUseCase, orgRepo OrganizationRepo, logger log.Logger) *WorkflowUseCase {
+	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, membershipUC: membershipUC, orgRepo: orgRepo, logger: log.NewHelper(logger)}
 }
 
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
@@ -164,6 +167,21 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse org ID %q: %w", opts.OrgID, err)
+	}
+
+	// Check if implicit creation is prevented by organization settings
+	if opts.ImplicitCreation {
+		org, err := uc.orgRepo.FindByID(ctx, orgUUID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find organization: %w", err)
+		}
+		if org == nil {
+			return nil, NewErrNotFound("organization")
+		}
+
+		if org.PreventImplicitWorkflowCreation {
+			return nil, NewErrValidation(errors.New("implicit workflow and project creation is disabled for this organization. Please create the workflow explicitly using 'chainloop workflow create'"))
+		}
 	}
 
 	existingProject, _ := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, opts.Project)

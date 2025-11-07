@@ -93,6 +93,9 @@ message OrganizationServiceUpdateRequest {
   // flag that allows us to detect if the value is explicitly set
   // since repeated fields can not be optional
   bool update_policies_allowed_hostnames = 4;
+
+  // prevent workflows and projects from being created implicitly during attestation init
+  optional bool prevent_implicit_workflow_creation = 5;
 }
 
 message OrganizationServiceUpdateResponse {

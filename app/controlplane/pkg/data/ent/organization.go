@@ -31,6 +31,8 @@ type Organization struct {
 	BlockOnPolicyViolation bool `json:"block_on_policy_violation,omitempty"`
 	// PoliciesAllowedHostnames holds the value of the "policies_allowed_hostnames" field.
 	PoliciesAllowedHostnames []string `json:"policies_allowed_hostnames,omitempty"`
+	// PreventImplicitWorkflowCreation holds the value of the "prevent_implicit_workflow_creation" field.
+	PreventImplicitWorkflowCreation bool `json:"prevent_implicit_workflow_creation,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -139,7 +141,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case organization.FieldPoliciesAllowedHostnames:
 			values[i] = new([]byte)
-		case organization.FieldBlockOnPolicyViolation:
+		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation:
 			values[i] = new(sql.NullBool)
 		case organization.FieldName:
 			values[i] = new(sql.NullString)
@@ -205,6 +207,12 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &o.PoliciesAllowedHostnames); err != nil {
 					return fmt.Errorf("unmarshal field policies_allowed_hostnames: %w", err)
 				}
+			}
+		case organization.FieldPreventImplicitWorkflowCreation:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field prevent_implicit_workflow_creation", values[i])
+			} else if value.Valid {
+				o.PreventImplicitWorkflowCreation = value.Bool
 			}
 		default:
 			o.selectValues.Set(columns[i], values[i])
@@ -299,6 +307,9 @@ func (o *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("policies_allowed_hostnames=")
 	builder.WriteString(fmt.Sprintf("%v", o.PoliciesAllowedHostnames))
+	builder.WriteString(", ")
+	builder.WriteString("prevent_implicit_workflow_creation=")
+	builder.WriteString(fmt.Sprintf("%v", o.PreventImplicitWorkflowCreation))
 	builder.WriteByte(')')
 	return builder.String()
 }

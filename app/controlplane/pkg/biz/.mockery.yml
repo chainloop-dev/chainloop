@@ -1,18 +1,19 @@
 all: false
-dir: '{{.InterfaceDir}}'
+dir: "{{.InterfaceDir}}"
 filename: mocks_test.go
 force-file-write: true
 formatter: goimports
 include-auto-generated: false
 log-level: info
-structname: '{{.Mock}}{{.InterfaceName}}'
-pkgname: '{{.SrcPackageName}}'
+structname: "{{.Mock}}{{.InterfaceName}}"
+pkgname: "{{.SrcPackageName}}"
 recursive: false
 require-template-schema-exists: true
 template: testify
-template-schema: '{{.Template}}.schema.json'
+template-schema: "{{.Template}}.schema.json"
 packages:
   github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz:
     interfaces:
       APITokenRepo:
       CASBackendRepo:
+      OrganizationRepo:

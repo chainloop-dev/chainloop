@@ -39,13 +39,15 @@ type Organization struct {
 	BlockOnPolicyViolation bool
 	// PoliciesAllowedHostnames is an array of hostnames that are allowed to be used in the policies
 	PoliciesAllowedHostnames []string
+	// PreventImplicitWorkflowCreation prevents workflows and projects from being created implicitly during attestation init
+	PreventImplicitWorkflowCreation bool
 }
 
 type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
-	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -185,7 +187,7 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*Organization, error) {
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -196,7 +198,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to find memberships: %w", err)
 	} else if membership == nil {
-		return nil, NewErrNotFound("organization")
+		return nil, NewErrNotFound("membership")
 	}
 
 	orgUUID, err := uuid.Parse(membership.Org.ID)
@@ -205,7 +207,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 	}
 
 	// Perform the update
-	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames)
+	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	} else if org == nil {
