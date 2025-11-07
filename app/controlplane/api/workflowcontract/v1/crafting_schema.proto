@@ -321,7 +321,10 @@ message PolicySpecV2 {
 
   // if set, it will match any material supported by Chainloop
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
-    not_in: [3, 26]
+    not_in: [
+      3,
+      26
+    ]
   }];
 }
 
