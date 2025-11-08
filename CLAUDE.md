@@ -217,8 +217,11 @@ The project heavily uses code generation:
 - **Wire**: Dependency injection
 - **Ent**: ORM models and queries
 - **Buf**: Protobuf tooling and validation
+- **Mockery v3**: Test mocks - add interface to `.mockery.yml`, run `mockery` from that directory
 
 Always run `make generate` after modifying .proto files or Ent schemas.
+
+**API Token Policies**: If modifying `DefaultAuthzPolicies` in `pkg/biz/apitoken.go`, create a migration to update existing tokens' `policies` field - they're stored in DB, not loaded dynamically.
 
 ## Contract-Based Development
 
