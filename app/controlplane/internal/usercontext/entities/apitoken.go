@@ -19,6 +19,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/google/uuid"
 )
 
@@ -30,6 +31,8 @@ type APIToken struct {
 	Token       string
 	ProjectID   *uuid.UUID
 	ProjectName *string
+	// ACL policies for this token. Used for authorization checks.
+	Policies []*authz.Policy
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {

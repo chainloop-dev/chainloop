@@ -54,7 +54,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewPromSpec,
 			NewPolicyProviderConfig,
 			policies.NewRegistry,
-			authz.NewDatabaseEnforcer,
+			authz.NewInMemoryEnforcer,
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,

@@ -139,7 +139,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
 	config := authzConfig()
-	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, config)
+	enforcer, err := authz.NewInMemoryEnforcer(config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

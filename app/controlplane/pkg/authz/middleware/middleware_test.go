@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz/middleware/mocks"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
@@ -142,13 +142,24 @@ func TestWithAuthMiddleware(t *testing.T) {
 				s := authz.SubjectAPIToken{ID: "deadbeef"}
 				subject = s.String()
 				ctx = usercontext.WithAuthzSubject(ctx, subject)
+
+				// Add API token to context with policies
+				var policies []*authz.Policy
+				if tc.hasPermissions {
+					policies = []*authz.Policy{authz.PolicyWorkflowContractList}
+				}
+				ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
+					ID:       "deadbeef",
+					Policies: policies,
+				})
 			}
 
 			// Request information
 			ctx = transport.NewServerContext(ctx, &mockTransport{operation: tc.operationName})
 
-			e := mocks.NewEnforcer(t)
+			e := NewMockEnforcer(t)
 			e.On("Enforce", subject, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
+			e.On("EnforceWithPolicies", subject, mock.Anything, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
 
 			m := WithAuthzMiddleware(e, logger)
 			_, err := m(emptyHandler)(ctx, nil)

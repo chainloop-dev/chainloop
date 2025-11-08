@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/google/uuid"
 )
 
@@ -47,6 +48,9 @@ func (APIToken) Fields() []ent.Field {
 		// Tokens can be associated with a project
 		// if this value is not set, the token is an organization level token
 		field.UUID("project_id", uuid.UUID{}).Optional(),
+		// ACL policies for this token. NULL means role-based token (future), non-NULL means ACL mode.
+		// When set, contains the list of policies this token is allowed to perform.
+		field.JSON("policies", []*authz.Policy{}).Optional(),
 	}
 }
 

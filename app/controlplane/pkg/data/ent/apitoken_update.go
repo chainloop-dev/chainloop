@@ -10,7 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
@@ -146,6 +148,24 @@ func (atu *APITokenUpdate) ClearProjectID() *APITokenUpdate {
 	return atu
 }
 
+// SetPolicies sets the "policies" field.
+func (atu *APITokenUpdate) SetPolicies(a []*authz.Policy) *APITokenUpdate {
+	atu.mutation.SetPolicies(a)
+	return atu
+}
+
+// AppendPolicies appends a to the "policies" field.
+func (atu *APITokenUpdate) AppendPolicies(a []*authz.Policy) *APITokenUpdate {
+	atu.mutation.AppendPolicies(a)
+	return atu
+}
+
+// ClearPolicies clears the value of the "policies" field.
+func (atu *APITokenUpdate) ClearPolicies() *APITokenUpdate {
+	atu.mutation.ClearPolicies()
+	return atu
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (atu *APITokenUpdate) SetOrganization(o *Organization) *APITokenUpdate {
 	return atu.SetOrganizationID(o.ID)
@@ -249,6 +269,17 @@ func (atu *APITokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if atu.mutation.LastUsedAtCleared() {
 		_spec.ClearField(apitoken.FieldLastUsedAt, field.TypeTime)
+	}
+	if value, ok := atu.mutation.Policies(); ok {
+		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
+	}
+	if value, ok := atu.mutation.AppendedPolicies(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apitoken.FieldPolicies, value)
+		})
+	}
+	if atu.mutation.PoliciesCleared() {
+		_spec.ClearField(apitoken.FieldPolicies, field.TypeJSON)
 	}
 	if atu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -444,6 +475,24 @@ func (atuo *APITokenUpdateOne) ClearProjectID() *APITokenUpdateOne {
 	return atuo
 }
 
+// SetPolicies sets the "policies" field.
+func (atuo *APITokenUpdateOne) SetPolicies(a []*authz.Policy) *APITokenUpdateOne {
+	atuo.mutation.SetPolicies(a)
+	return atuo
+}
+
+// AppendPolicies appends a to the "policies" field.
+func (atuo *APITokenUpdateOne) AppendPolicies(a []*authz.Policy) *APITokenUpdateOne {
+	atuo.mutation.AppendPolicies(a)
+	return atuo
+}
+
+// ClearPolicies clears the value of the "policies" field.
+func (atuo *APITokenUpdateOne) ClearPolicies() *APITokenUpdateOne {
+	atuo.mutation.ClearPolicies()
+	return atuo
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (atuo *APITokenUpdateOne) SetOrganization(o *Organization) *APITokenUpdateOne {
 	return atuo.SetOrganizationID(o.ID)
@@ -577,6 +626,17 @@ func (atuo *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, er
 	}
 	if atuo.mutation.LastUsedAtCleared() {
 		_spec.ClearField(apitoken.FieldLastUsedAt, field.TypeTime)
+	}
+	if value, ok := atuo.mutation.Policies(); ok {
+		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
+	}
+	if value, ok := atuo.mutation.AppendedPolicies(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apitoken.FieldPolicies, value)
+		})
+	}
+	if atuo.mutation.PoliciesCleared() {
+		_spec.ClearField(apitoken.FieldPolicies, field.TypeJSON)
 	}
 	if atuo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

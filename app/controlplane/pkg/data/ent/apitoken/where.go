@@ -476,6 +476,16 @@ func ProjectIDNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldProjectID))
 }
 
+// PoliciesIsNil applies the IsNil predicate on the "policies" field.
+func PoliciesIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldPolicies))
+}
+
+// PoliciesNotNil applies the NotNil predicate on the "policies" field.
+func PoliciesNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldPolicies))
+}
+
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
 func HasOrganization() predicate.APIToken {
 	return predicate.APIToken(func(s *sql.Selector) {

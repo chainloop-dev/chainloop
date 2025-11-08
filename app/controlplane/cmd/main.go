@@ -153,14 +153,6 @@ func main() {
 	app.runsExpirer.Run(ctx, &biz.WorkflowRunExpirerOpts{CheckInterval: 1 * time.Minute, ExpirationWindow: 1 * time.Hour})
 
 	// Since policies management is not enabled yet but instead is based on a hardcoded list of permissions
-	// We'll perform a reconciliation of the policies with the tokens stored in the database on startup
-	// This will allow us to add more policies in the future and keep backwards compatibility with existing tokens
-	go func() {
-		if err := app.tokenAuthSyncer.SyncPolicies(); err != nil {
-			_ = logger.Log(log.LevelError, "msg", "syncing policies", "error", err)
-		}
-	}()
-
 	// Sync user access
 	go func() {
 		if err := app.userAccessSyncer.SyncUserAccess(ctx); err != nil {

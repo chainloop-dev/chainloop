@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
@@ -97,8 +97,8 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 		wantToken := &biz.APIToken{ID: uuid.New(), OrganizationID: wantOrgID}
 
 		t.Run(tc.name, func(t *testing.T) {
-			apiTokenRepo := bizMocks.NewAPITokenRepo(t)
-			orgRepo := bizMocks.NewOrganizationRepo(t)
+			apiTokenRepo := mocks.NewAPITokenRepo(t)
+			orgRepo := mocks.NewOrganizationRepo(t)
 			apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, nil, nil, nil, nil)
 			require.NoError(t, err)
 			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)

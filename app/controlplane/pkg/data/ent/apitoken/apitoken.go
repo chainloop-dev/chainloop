@@ -31,6 +31,8 @@ const (
 	FieldOrganizationID = "organization_id"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
+	// FieldPolicies holds the string denoting the policies field in the database.
+	FieldPolicies = "policies"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeProject holds the string denoting the project edge name in mutations.
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldLastUsedAt,
 	FieldOrganizationID,
 	FieldProjectID,
+	FieldPolicies,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

@@ -113,7 +113,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
 	config := authzConfig(bootstrap)
-	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, config)
+	enforcer, err := authz.NewInMemoryEnforcer(config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

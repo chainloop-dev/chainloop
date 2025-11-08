@@ -18,6 +18,7 @@ var (
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "policies", Type: field.TypeJSON, Nullable: true},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
 	}
@@ -29,13 +30,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_tokens_projects_project",
-				Columns:    []*schema.Column{APITokensColumns[7]},
+				Columns:    []*schema.Column{APITokensColumns[8]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_organizations_api_tokens",
-				Columns:    []*schema.Column{APITokensColumns[8]},
+				Columns:    []*schema.Column{APITokensColumns[9]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -44,7 +45,7 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[8]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NULL",
 				},
@@ -52,7 +53,7 @@ var (
 			{
 				Name:    "apitoken_name_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[7]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},
