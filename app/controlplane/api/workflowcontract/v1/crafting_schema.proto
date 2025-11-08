@@ -94,7 +94,7 @@ message CraftingSchema {
     repeated Annotation annotations = 5 [deprecated = true];
     // If true, skip uploading the material to CAS (only record metadata)
     // Defaults to false (material will be uploaded)
-    bool skip_upload = 6 [deprecated = true];
+    bool skip_upload = 6;
 
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;
