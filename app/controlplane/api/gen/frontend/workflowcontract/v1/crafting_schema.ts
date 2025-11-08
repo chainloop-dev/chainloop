@@ -143,8 +143,6 @@ export interface CraftingSchema_Material {
   /**
    * If true, skip uploading the material to CAS (only record metadata)
    * Defaults to false (material will be uploaded)
-   *
-   * @deprecated
    */
   skipUpload: boolean;
 }
