@@ -111,8 +111,7 @@ func TestDoSync(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, got, 1)
 
-	// add additional policy, only deletes policies for "known" resources
-	// or deleting a whole section
+	// replace policy for a role - old policies are removed and new ones added
 	policiesM = map[Role][]*Policy{
 		"bar": {
 			PolicyAttachedIntegrationDetach,
@@ -122,7 +121,12 @@ func TestDoSync(t *testing.T) {
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
-	assert.Len(t, got, 2)
+	assert.Len(t, got, 1)
+
+	// verify the new policy is present
+	assert.Equal(t, "bar", got[0][0])
+	assert.Equal(t, "integration_attached", got[0][1])
+	assert.Equal(t, "delete", got[0][2])
 }
 
 func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
