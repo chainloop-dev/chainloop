@@ -95,7 +95,6 @@ const (
 	RoleGroupMaintainer Role = "role:group:maintainer"
 
 	// Product roles
-
 	RoleProductViewer Role = "role:product:viewer"
 	RoleProductAdmin  Role = "role:product:admin"
 )
