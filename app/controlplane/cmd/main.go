@@ -152,7 +152,6 @@ func main() {
 	// TODO: Make it configurable from the application config
 	app.runsExpirer.Run(ctx, &biz.WorkflowRunExpirerOpts{CheckInterval: 1 * time.Minute, ExpirationWindow: 1 * time.Hour})
 
-	// Since policies management is not enabled yet but instead is based on a hardcoded list of permissions
 	// Sync user access
 	go func() {
 		if err := app.userAccessSyncer.SyncUserAccess(ctx); err != nil {
