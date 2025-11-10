@@ -92,7 +92,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, &Config{RolesMap: policiesM, ManagedResources: []string{ResourceWorkflowContract, ResourceCASArtifact}})
+	err = doSync(e, &Config{RolesMap: policiesM})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ func TestDoSync(t *testing.T) {
 		},
 	}
 
-	err = doSync(e, &Config{RolesMap: policiesM, ManagedResources: []string{ResourceWorkflowContract, ResourceCASArtifact}})
+	err = doSync(e, &Config{RolesMap: policiesM})
 	assert.NoError(t, err)
 	got, err = e.GetPolicy()
 	assert.NoError(t, err)
@@ -124,7 +124,6 @@ func TestDoSync(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, got, 2)
 }
-
 
 func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
 	f, err := os.CreateTemp(t.TempDir(), "policy*.csv")

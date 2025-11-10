@@ -38,7 +38,6 @@ func (t *SubjectAPIToken) String() string {
 var modelFile []byte
 
 type Config struct {
-	ManagedResources    []string
 	RolesMap            map[Role][]*Policy
 	RestrictOrgCreation bool
 }
@@ -57,7 +56,8 @@ func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
 // EnforceWithPolicies checks if the required policy exists in the provided list of allowed policies.
 // This is used for ACL-based authorization (e.g., API tokens) where policies are stored in the database
 // rather than in Casbin. Returns true if the required policy is found in the allowed list.
-func (e *Enforcer) EnforceWithPolicies(sub string, p *Policy, allowedPolicies []*Policy) (bool, error) {
+// in the future we will use this function to check if the policy is allowed for the subject by running the enforcer with the subject
+func (e *Enforcer) EnforceWithPolicies(_ string, p *Policy, allowedPolicies []*Policy) (bool, error) {
 	for _, allowed := range allowedPolicies {
 		if allowed.Resource == p.Resource && allowed.Action == p.Action {
 			return true, nil
@@ -170,11 +170,6 @@ func doSync(e *Enforcer, c *Config) error {
 		role := p[0]
 		resource := p[1]
 		action := p[2]
-
-		// if it's not a managed resource, skip deletion
-		if !slices.Contains(conf.ManagedResources, resource) {
-			continue
-		}
 
 		wantPolicies, ok := conf.RolesMap[Role(role)]
 		// if the role does not exist in the map, we can delete the policy

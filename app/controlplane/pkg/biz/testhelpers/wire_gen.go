@@ -208,7 +208,7 @@ var (
 // wire.go:
 
 func authzConfig() *authz.Config {
-	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+	return &authz.Config{RolesMap: authz.RolesMap}
 }
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
