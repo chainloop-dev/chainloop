@@ -23,7 +23,7 @@ jobs:
 
       - name: Install Chainloop
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- -ee
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
 
       - name: Initialize Attestation
         run: |
