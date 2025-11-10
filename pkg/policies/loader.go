@@ -244,7 +244,7 @@ func unmarshallResource(raw []byte, ref string, digest string, dest proto.Messag
 
 // IsProviderScheme takes a policy reference and returns whether it's referencing to an external provider or not
 func IsProviderScheme(ref string) bool {
-	scheme, _ := refParts(ref)
+	scheme, _ := RefParts(ref)
 	return scheme == chainloopScheme || scheme == ""
 }
 
@@ -306,7 +306,7 @@ func ProviderParts(reference string) *ProviderRef {
 }
 
 func ensureScheme(ref string, expected ...string) (string, error) {
-	scheme, id := refParts(ref)
+	scheme, id := RefParts(ref)
 	for _, ex := range expected {
 		if scheme == ex {
 			return id, nil
@@ -316,7 +316,7 @@ func ensureScheme(ref string, expected ...string) (string, error) {
 	return "", fmt.Errorf("unexpected policy reference scheme: %q", scheme)
 }
 
-func refParts(ref string) (string, string) {
+func RefParts(ref string) (string, string) {
 	parts := strings.SplitN(ref, "://", 2)
 	if len(parts) == 2 {
 		return parts[0], parts[1]

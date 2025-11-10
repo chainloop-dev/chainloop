@@ -406,7 +406,7 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	}
 
 	var loader Loader
-	scheme, _ := refParts(ref)
+	scheme, _ := RefParts(ref)
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":

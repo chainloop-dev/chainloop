@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	controlplanev1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
@@ -34,13 +35,14 @@ const (
 )
 
 type EvalOptions struct {
-	PolicyPath       string
-	MaterialKind     string
-	Annotations      map[string]string
-	MaterialPath     string
-	Inputs           map[string]string
-	AllowedHostnames []string
-	Debug            bool
+	PolicyPath        string
+	MaterialKind      string
+	Annotations       map[string]string
+	MaterialPath      string
+	Inputs            map[string]string
+	AllowedHostnames  []string
+	Debug             bool
+	AttestationClient controlplanev1.AttestationServiceClient
 }
 
 type EvalResult struct {
@@ -74,7 +76,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	material.Annotations = opts.Annotations
 
 	// 3. Verify material against policy
-	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, &logger)
+	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +85,18 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 }
 
 func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
+	// Check if the policy path already has a scheme (chainloop://, http://, https://, file://)
+	ref := policyPath
+	scheme, _ := policies.RefParts(policyPath)
+	if scheme == "" {
+		// Default to file://
+		ref = fmt.Sprintf("file://%s", policyPath)
+	}
+
 	return &v1.Policies{
 		Materials: []*v1.PolicyAttachment{
 			{
-				Policy: &v1.PolicyAttachment_Ref{Ref: fmt.Sprintf("file://%s", policyPath)},
+				Policy: &v1.PolicyAttachment_Ref{Ref: ref},
 				With:   inputs,
 			},
 		},
@@ -94,7 +104,7 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 	}, nil
 }
 
-func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, logger *zerolog.Logger) (*EvalSummary, error) {
+func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
@@ -103,7 +113,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	opts = append(opts, policies.WithIncludeRawData(debug))
 	opts = append(opts, policies.WithEnablePrint(enablePrint))
 
-	v := policies.NewPolicyVerifier(pol, nil, logger, opts...)
+	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
 	if err != nil {
 		return nil, err

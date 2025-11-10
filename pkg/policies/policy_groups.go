@@ -192,7 +192,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	}
 
 	var loader GroupLoader
-	scheme, _ := refParts(ref)
+	scheme, _ := RefParts(ref)
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":
