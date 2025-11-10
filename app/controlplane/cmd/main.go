@@ -64,7 +64,7 @@ func init() {
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
-	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase,
+	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins,
 	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker, cfg *conf.Bootstrap) *app {
 	servers := []transport.Server{gs, hs, ms}
 	if cfg.EnableProfiler {
@@ -79,7 +79,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(servers...),
-		), expirer, plugins, tokenSync, userAccessSyncer, casBackendChecker}
+		), expirer, plugins, userAccessSyncer, casBackendChecker}
 }
 
 func main() {
@@ -198,7 +198,6 @@ type app struct {
 	// Periodic job that expires unfinished attestation processes older than a given threshold
 	runsExpirer      *biz.WorkflowRunExpirerUseCase
 	availablePlugins sdk.AvailablePlugins
-	tokenAuthSyncer  *biz.APITokenSyncerUseCase
 	userAccessSyncer *biz.UserAccessSyncerUseCase
 	// Background checker for CAS backends
 	casBackendChecker *biz.CASBackendChecker

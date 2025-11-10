@@ -80,10 +80,6 @@ type APITokenUseCase struct {
 	auditorUC  *AuditorUseCase
 }
 
-type APITokenSyncerUseCase struct {
-	base *APITokenUseCase
-}
-
 func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
@@ -403,12 +399,6 @@ func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name stri
 	}
 
 	return uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name)
-}
-
-func NewAPITokenSyncerUseCase(tokenUC *APITokenUseCase) *APITokenSyncerUseCase {
-	return &APITokenSyncerUseCase{
-		base: tokenUC,
-	}
 }
 
 func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string) error {
