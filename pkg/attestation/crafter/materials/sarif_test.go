@@ -130,3 +130,66 @@ func TestSARIFCraft(t *testing.T) {
 		})
 	}
 }
+
+func TestSARIFCraft_SkipUpload(t *testing.T) {
+	testCases := []struct {
+		name       string
+		skipUpload bool
+		wantUpload bool
+	}{
+		{
+			name:       "upload enabled (default)",
+			skipUpload: false,
+			wantUpload: true,
+		},
+		{
+			name:       "upload skipped via contract",
+			skipUpload: true,
+			wantUpload: false,
+		},
+	}
+
+	assert := assert.New(t)
+	l := zerolog.Nop()
+	filePath := "./testdata/report.sarif"
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := &contractAPI.CraftingSchema_Material{
+				Name:       "test",
+				Type:       contractAPI.CraftingSchema_Material_SARIF,
+				SkipUpload: tc.skipUpload,
+			}
+
+			// Mock uploader - only expect upload call if not skipped
+			uploader := mUploader.NewUploader(t)
+			if tc.wantUpload {
+				uploader.On("UploadFile", context.TODO(), filePath).
+					Return(&casclient.UpDownStatus{
+						Digest:   "deadbeef",
+						Filename: "report.sarif",
+					}, nil)
+			}
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewSARIFCrafter(schema, backend, &l)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), filePath)
+			require.NoError(t, err)
+
+			assert.Equal(contractAPI.CraftingSchema_Material_SARIF.String(), got.MaterialType.String())
+
+			// Verify upload behavior matches expectation
+			if tc.wantUpload {
+				assert.True(got.UploadedToCas, "material should be uploaded when skip_upload is false")
+			} else {
+				assert.False(got.UploadedToCas, "material should not be uploaded when skip_upload is true")
+			}
+
+			// Verify digest is always computed regardless of upload
+			assert.Equal("sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95", got.GetArtifact().Digest)
+			assert.Equal("report.sarif", got.GetArtifact().Name)
+		})
+	}
+}
