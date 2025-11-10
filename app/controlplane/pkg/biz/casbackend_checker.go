@@ -45,8 +45,7 @@ type CASBackendCheckerOpts struct {
 	// Timeout for each individual backend validation, defaults to 10 seconds
 	ValidationTimeout time.Duration
 	// Initial delay before first validation (includes jitter). If not set, runs immediately.
-	InitialDelay   time.Duration
-	SkipFirstCheck bool
+	InitialDelay time.Duration
 }
 
 // NewCASBackendChecker creates a new CAS backend checker that will periodically validate
@@ -79,11 +78,11 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 
 	// Apply initial delay from options if provided
 	var initialDelay = 0 * time.Second
-	if opts != nil && !opts.SkipFirstCheck && opts.InitialDelay > 0 {
+	if opts != nil && opts.InitialDelay > 0 {
 		initialDelay = opts.InitialDelay
 	}
 
-	c.logger.Infow("msg", "CAS backend checker configured", "skipFirstCheck", opts.SkipFirstCheck, "initialDelay", initialDelay, "interval", interval, "allBackends", !onlyDefaults, "timeout", c.validationTimeout)
+	c.logger.Infow("msg", "CAS backend checker configured", "initialDelay", initialDelay, "interval", interval, "allBackends", !onlyDefaults, "timeout", c.validationTimeout)
 
 	select {
 	case <-ctx.Done():
@@ -93,11 +92,9 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 		// Continue to first check
 	}
 
-	if opts != nil && !opts.SkipFirstCheck {
-		// Run first check
-		if err := c.checkBackends(ctx, onlyDefaults); err != nil {
-			c.logger.Errorf("initial CAS backend check failed: %v", err)
-		}
+	// Run first check
+	if err := c.checkBackends(ctx, onlyDefaults); err != nil {
+		c.logger.Errorf("initial CAS backend check failed: %v", err)
 	}
 
 	// Start periodic checks

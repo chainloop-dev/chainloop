@@ -186,9 +186,9 @@ func main() {
 		// Start the background CAS Backend checker for ALL backends (every 24 hours)
 		// Start around 24h mark to avoid overlap with default checker
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
-			CheckInterval:  24 * time.Hour,
-			SkipFirstCheck: true,
-			OnlyDefaults:   toPtr(false),
+			CheckInterval: 24 * time.Hour,
+			InitialDelay:  24 * time.Hour,
+			OnlyDefaults:  toPtr(false),
 		})
 	}
 
