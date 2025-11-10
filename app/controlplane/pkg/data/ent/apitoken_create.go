@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
@@ -119,6 +120,12 @@ func (atc *APITokenCreate) SetNillableProjectID(u *uuid.UUID) *APITokenCreate {
 	if u != nil {
 		atc.SetProjectID(*u)
 	}
+	return atc
+}
+
+// SetPolicies sets the "policies" field.
+func (atc *APITokenCreate) SetPolicies(a []*authz.Policy) *APITokenCreate {
+	atc.mutation.SetPolicies(a)
 	return atc
 }
 
@@ -264,6 +271,10 @@ func (atc *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if value, ok := atc.mutation.LastUsedAt(); ok {
 		_spec.SetField(apitoken.FieldLastUsedAt, field.TypeTime, value)
 		_node.LastUsedAt = value
+	}
+	if value, ok := atc.mutation.Policies(); ok {
+		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
+		_node.Policies = value
 	}
 	if nodes := atc.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -453,6 +464,24 @@ func (u *APITokenUpsert) ClearProjectID() *APITokenUpsert {
 	return u
 }
 
+// SetPolicies sets the "policies" field.
+func (u *APITokenUpsert) SetPolicies(v []*authz.Policy) *APITokenUpsert {
+	u.Set(apitoken.FieldPolicies, v)
+	return u
+}
+
+// UpdatePolicies sets the "policies" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdatePolicies() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldPolicies)
+	return u
+}
+
+// ClearPolicies clears the value of the "policies" field.
+func (u *APITokenUpsert) ClearPolicies() *APITokenUpsert {
+	u.SetNull(apitoken.FieldPolicies)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -623,6 +652,27 @@ func (u *APITokenUpsertOne) UpdateProjectID() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearProjectID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearProjectID()
+	})
+}
+
+// SetPolicies sets the "policies" field.
+func (u *APITokenUpsertOne) SetPolicies(v []*authz.Policy) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetPolicies(v)
+	})
+}
+
+// UpdatePolicies sets the "policies" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdatePolicies() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdatePolicies()
+	})
+}
+
+// ClearPolicies clears the value of the "policies" field.
+func (u *APITokenUpsertOne) ClearPolicies() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearPolicies()
 	})
 }
 
@@ -963,6 +1013,27 @@ func (u *APITokenUpsertBulk) UpdateProjectID() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearProjectID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearProjectID()
+	})
+}
+
+// SetPolicies sets the "policies" field.
+func (u *APITokenUpsertBulk) SetPolicies(v []*authz.Policy) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetPolicies(v)
+	})
+}
+
+// UpdatePolicies sets the "policies" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdatePolicies() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdatePolicies()
+	})
+}
+
+// ClearPolicies clears the value of the "policies" field.
+func (u *APITokenUpsertBulk) ClearPolicies() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearPolicies()
 	})
 }
 

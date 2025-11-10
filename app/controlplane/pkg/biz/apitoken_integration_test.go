@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/golang-jwt/jwt/v4"
@@ -149,17 +148,21 @@ func (s *apiTokenTestSuite) TestAuthzPolicies() {
 	token, err := s.APIToken.Create(context.Background(), randomName(), nil, nil, s.org.ID)
 	require.NoError(s.T(), err)
 
-	subject := (&authz.SubjectAPIToken{ID: token.ID.String()}).String()
-	// load the policies associated with the token from the global enforcer
-	policies, err := s.Enforcer.GetFilteredPolicy(0, subject)
-	s.Require().NoError(err)
+	// With the new architecture, API token policies are stored in the database, not in Casbin
+	// Verify that the token has the default policies stored
+	s.Require().NotNil(token.Policies)
+	s.Len(token.Policies, len(s.APIToken.DefaultAuthzPolicies))
 
-	// Check that only default policies are loaded
-	s.Len(policies, len(s.APIToken.DefaultAuthzPolicies))
-	for _, p := range s.APIToken.DefaultAuthzPolicies {
-		ok, err := s.Enforcer.HasPolicy(subject, p.Resource, p.Action)
-		s.NoError(err)
-		s.True(ok, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
+	// Check that all default policies are present
+	for _, expectedPolicy := range s.APIToken.DefaultAuthzPolicies {
+		found := false
+		for _, actualPolicy := range token.Policies {
+			if actualPolicy.Resource == expectedPolicy.Resource && actualPolicy.Action == expectedPolicy.Action {
+				found = true
+				break
+			}
+		}
+		s.True(found, fmt.Sprintf("policy %s:%s not found", expectedPolicy.Resource, expectedPolicy.Action))
 	}
 }
 
@@ -182,20 +185,6 @@ func (s *apiTokenTestSuite) TestRevoke() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t3.ID.String())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
-	})
-
-	s.Run("the revoked token also get its policies cleared", func() {
-		sub := (&authz.SubjectAPIToken{ID: s.t2.ID.String()}).String()
-		// It has the default policies
-		gotPolicies, err := s.Enforcer.GetFilteredPolicy(0, sub)
-		s.NoError(err)
-		s.Len(gotPolicies, len(s.APIToken.DefaultAuthzPolicies))
-		err = s.APIToken.Revoke(ctx, s.org.ID, s.t2.ID.String())
-		s.NoError(err)
-		// once revoked, the policies are cleared
-		gotPolicies, err = s.Enforcer.GetFilteredPolicy(0, sub)
-		s.NoError(err)
-		s.Len(gotPolicies, 0)
 	})
 
 	s.Run("token can be revoked once", func() {

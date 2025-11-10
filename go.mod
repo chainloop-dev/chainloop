@@ -71,7 +71,6 @@ require (
 	github.com/bufbuild/protovalidate-go v0.6.1
 	github.com/bufbuild/protoyaml-go v0.1.11
 	github.com/casbin/casbin/v2 v2.103.0
-	github.com/casbin/ent-adapter v0.5.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
@@ -243,7 +242,6 @@ require (
 	cloud.google.com/go/iam v1.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.12.0
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
-	github.com/IguteChung/casbin-psql-watcher v1.0.0
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/ThalesIgnite/crypto11 v1.2.5 // indirect

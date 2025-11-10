@@ -9,7 +9,7 @@ deps:
   - buf.build/grpc-ecosystem/grpc-gateway:v2.26.3
 lint:
   use:
-    - DEFAULT
+    - STANDARD
   ignore_only:
     ENUM_ZERO_VALUE_SUFFIX:
       - controlplane/v1/pagination.proto

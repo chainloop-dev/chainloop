@@ -113,7 +113,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
 	config := authzConfig(bootstrap)
-	enforcer, err := authz.NewDatabaseEnforcer(databaseConfig, config)
+	enforcer, err := authz.NewInMemoryEnforcer(config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -306,9 +306,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
-	apiTokenSyncerUseCase := biz.NewAPITokenSyncerUseCase(apiTokenUseCase)
 	casBackendChecker := biz.NewCASBackendChecker(logger, casBackendRepo, casBackendUseCase)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, apiTokenSyncerUseCase, userAccessSyncerUseCase, casBackendChecker, bootstrap)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, bootstrap)
 	return mainApp, func() {
 		cleanup()
 	}, nil
@@ -321,7 +320,7 @@ var (
 // wire.go:
 
 func authzConfig(conf2 *conf.Bootstrap) *authz.Config {
-	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap, RestrictOrgCreation: conf2.RestrictOrgCreation}
+	return &authz.Config{RolesMap: authz.RolesMap, RestrictOrgCreation: conf2.RestrictOrgCreation}
 }
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {

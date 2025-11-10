@@ -202,6 +202,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		Token:       token.JWT,
 		ProjectID:   token.ProjectID,
 		ProjectName: token.ProjectName,
+		Policies:    token.Policies,
 	})
 
 	// Set the authorization subject that will be used to check the policies

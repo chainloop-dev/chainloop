@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
@@ -41,13 +42,14 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error) {
 	token, err := r.data.DB.APIToken.Create().
 		SetName(name).
 		SetNillableDescription(description).
 		SetNillableExpiresAt(expiresAt).
 		SetOrganizationID(organizationID).
 		SetNillableProjectID(projectID).
+		SetPolicies(policies).
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -182,6 +184,7 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		RevokedAt:      toTimePtr(t.RevokedAt),
 		LastUsedAt:     toTimePtr(t.LastUsedAt),
 		OrganizationID: t.OrganizationID,
+		Policies:       t.Policies,
 	}
 
 	// Add organization name if present

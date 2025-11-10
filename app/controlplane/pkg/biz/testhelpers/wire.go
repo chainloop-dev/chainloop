@@ -54,7 +54,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewPromSpec,
 			NewPolicyProviderConfig,
 			policies.NewRegistry,
-			authz.NewDatabaseEnforcer,
+			authz.NewInMemoryEnforcer,
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
@@ -68,7 +68,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 }
 
 func authzConfig() *authz.Config {
-	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap}
+	return &authz.Config{RolesMap: authz.RolesMap}
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {

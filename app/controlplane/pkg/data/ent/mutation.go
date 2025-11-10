@@ -82,6 +82,8 @@ type APITokenMutation struct {
 	expires_at          *time.Time
 	revoked_at          *time.Time
 	last_used_at        *time.Time
+	policies            *[]*authz.Policy
+	appendpolicies      []*authz.Policy
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
@@ -549,6 +551,71 @@ func (m *APITokenMutation) ResetProjectID() {
 	delete(m.clearedFields, apitoken.FieldProjectID)
 }
 
+// SetPolicies sets the "policies" field.
+func (m *APITokenMutation) SetPolicies(a []*authz.Policy) {
+	m.policies = &a
+	m.appendpolicies = nil
+}
+
+// Policies returns the value of the "policies" field in the mutation.
+func (m *APITokenMutation) Policies() (r []*authz.Policy, exists bool) {
+	v := m.policies
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicies returns the old "policies" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldPolicies(ctx context.Context) (v []*authz.Policy, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicies is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicies requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicies: %w", err)
+	}
+	return oldValue.Policies, nil
+}
+
+// AppendPolicies adds a to the "policies" field.
+func (m *APITokenMutation) AppendPolicies(a []*authz.Policy) {
+	m.appendpolicies = append(m.appendpolicies, a...)
+}
+
+// AppendedPolicies returns the list of values that were appended to the "policies" field in this mutation.
+func (m *APITokenMutation) AppendedPolicies() ([]*authz.Policy, bool) {
+	if len(m.appendpolicies) == 0 {
+		return nil, false
+	}
+	return m.appendpolicies, true
+}
+
+// ClearPolicies clears the value of the "policies" field.
+func (m *APITokenMutation) ClearPolicies() {
+	m.policies = nil
+	m.appendpolicies = nil
+	m.clearedFields[apitoken.FieldPolicies] = struct{}{}
+}
+
+// PoliciesCleared returns if the "policies" field was cleared in this mutation.
+func (m *APITokenMutation) PoliciesCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldPolicies]
+	return ok
+}
+
+// ResetPolicies resets all changes to the "policies" field.
+func (m *APITokenMutation) ResetPolicies() {
+	m.policies = nil
+	m.appendpolicies = nil
+	delete(m.clearedFields, apitoken.FieldPolicies)
+}
+
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *APITokenMutation) ClearOrganization() {
 	m.clearedorganization = true
@@ -637,7 +704,7 @@ func (m *APITokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APITokenMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, apitoken.FieldName)
 	}
@@ -661,6 +728,9 @@ func (m *APITokenMutation) Fields() []string {
 	}
 	if m.project != nil {
 		fields = append(fields, apitoken.FieldProjectID)
+	}
+	if m.policies != nil {
+		fields = append(fields, apitoken.FieldPolicies)
 	}
 	return fields
 }
@@ -686,6 +756,8 @@ func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 		return m.OrganizationID()
 	case apitoken.FieldProjectID:
 		return m.ProjectID()
+	case apitoken.FieldPolicies:
+		return m.Policies()
 	}
 	return nil, false
 }
@@ -711,6 +783,8 @@ func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldOrganizationID(ctx)
 	case apitoken.FieldProjectID:
 		return m.OldProjectID(ctx)
+	case apitoken.FieldPolicies:
+		return m.OldPolicies(ctx)
 	}
 	return nil, fmt.Errorf("unknown APIToken field %s", name)
 }
@@ -776,6 +850,13 @@ func (m *APITokenMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetProjectID(v)
 		return nil
+	case apitoken.FieldPolicies:
+		v, ok := value.([]*authz.Policy)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicies(v)
+		return nil
 	}
 	return fmt.Errorf("unknown APIToken field %s", name)
 }
@@ -821,6 +902,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldProjectID) {
 		fields = append(fields, apitoken.FieldProjectID)
 	}
+	if m.FieldCleared(apitoken.FieldPolicies) {
+		fields = append(fields, apitoken.FieldPolicies)
+	}
 	return fields
 }
 
@@ -849,6 +933,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 		return nil
 	case apitoken.FieldProjectID:
 		m.ClearProjectID()
+		return nil
+	case apitoken.FieldPolicies:
+		m.ClearPolicies()
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken nullable field %s", name)
@@ -881,6 +968,9 @@ func (m *APITokenMutation) ResetField(name string) error {
 		return nil
 	case apitoken.FieldProjectID:
 		m.ResetProjectID()
+		return nil
+	case apitoken.FieldPolicies:
+		m.ResetPolicies()
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken field %s", name)

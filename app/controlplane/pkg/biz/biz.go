@@ -48,7 +48,6 @@ var ProviderSet = wire.NewSet(
 	NewCASMappingUseCase,
 	NewReferrerUseCase,
 	NewAPITokenUseCase,
-	NewAPITokenSyncerUseCase,
 	NewAttestationStateUseCase,
 	NewChainloopSigningUseCase,
 	NewPrometheusUseCase,
