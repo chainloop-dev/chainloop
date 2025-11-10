@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	_ "net/http/pprof"
 	"os"
 	"time"
@@ -167,15 +168,38 @@ func main() {
 		}
 	}()
 
-	// Start the background CAS Backend checker
+	// Start the background CAS Backend checker for DEFAULT backends (every 30 minutes)
 	if app.casBackendChecker != nil {
-		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{CheckInterval: 30 * time.Minute})
+		// Calculate initial delay: 1 minute base + 0-5 minutes jitter
+		// This protects boot phase and spreads validation across pods
+		baseDelay := 1 * time.Minute
+		// #nosec G404 - using math/rand for jitter is acceptable, cryptographic randomness not required
+		jitter := time.Duration(rand.Intn(5*60)) * time.Second
+		initialDelay := baseDelay + jitter
+
+		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
+			CheckInterval: 30 * time.Minute,
+			InitialDelay:  initialDelay,
+			OnlyDefaults:  toPtr(true),
+		})
+
+		// Start the background CAS Backend checker for ALL backends (every 24 hours)
+		// Start around 24h mark to avoid overlap with default checker
+		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
+			CheckInterval: 24 * time.Hour,
+			InitialDelay:  24 * time.Hour,
+			OnlyDefaults:  toPtr(false),
+		})
 	}
 
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
 
 type app struct {
