@@ -171,8 +171,8 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 
 	mt := output.NewTableWriter()
 
-	mt.AppendRow(table.Row{"Name", status.Material.Name})
-	mt.AppendRow(table.Row{"Type", status.Material.Type})
+	mt.AppendRow(table.Row{"Name", status.Name})
+	mt.AppendRow(table.Row{"Type", status.Type})
 	mt.AppendRow(table.Row{"Required", hBool(status.Required)})
 
 	if status.IsOutput {
@@ -191,9 +191,9 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 		mt.AppendRow(table.Row{"Digest", status.Hash})
 	}
 
-	if len(status.Material.Annotations) > 0 {
+	if len(status.Annotations) > 0 {
 		mt.AppendRow(table.Row{"Annotations", "------"})
-		for _, a := range status.Material.Annotations {
+		for _, a := range status.Annotations {
 			value := a.Value
 			if value == "" {
 				value = NotSet

@@ -46,7 +46,7 @@ func NewAttestationReset(cfg *AttestationResetOpts) (*AttestationReset, error) {
 
 func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger, reason string) error {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: attestationID != "", localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: attestationID != "", localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
 		return fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -81,9 +81,10 @@ func (action *AttestationReset) Run(ctx context.Context, attestationID, trigger,
 }
 
 func parseTrigger(in string) pb.AttestationServiceCancelRequest_TriggerType {
-	if in == AttestationResetTriggerFailed {
+	switch in {
+	case AttestationResetTriggerFailed:
 		return pb.AttestationServiceCancelRequest_TRIGGER_TYPE_FAILURE
-	} else if in == AttestationResetTriggerCancelled {
+	case AttestationResetTriggerCancelled:
 		return pb.AttestationServiceCancelRequest_TRIGGER_TYPE_CANCELLATION
 	}
 

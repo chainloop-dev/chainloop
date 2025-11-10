@@ -75,7 +75,7 @@ type AttestationStatusWorkflowMeta struct {
 
 type AttestationStatusMaterial struct {
 	*Material
-	Set, IsOutput, Required bool
+	Set, IsOutput, Required, SkipUpload bool
 }
 
 func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
@@ -264,7 +264,7 @@ func populateContractMaterials(inputSchemaMaterials []*pbc.CraftingSchema_Materi
 				Name: m.Name, Type: m.Type.String(),
 				Annotations: pbAnnotationsToAction(m.Annotations),
 			},
-			IsOutput: m.Output, Required: !m.Optional,
+			IsOutput: m.Output, Required: !m.Optional, SkipUpload: m.SkipUpload,
 		}
 
 		if cm, found := attsMaterial[m.Name]; found {

@@ -202,6 +202,9 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		if m.IsOutput {
 			mt.AppendRow(table.Row{"Is output", "Yes"})
 		}
+		if m.SkipUpload {
+			mt.AppendRow(table.Row{"Skip upload", "Yes"})
+		}
 
 		if full {
 			if m.Value != "" {

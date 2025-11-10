@@ -99,7 +99,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	action.Logger.Debug().Msg("Retrieving attestation definition")
-	client := pb.NewAttestationServiceClient(action.ActionsOpts.CPConnection)
+	client := pb.NewAttestationServiceClient(action.CPConnection)
 
 	req := &pb.FindOrCreateWorkflowRequest{
 		ProjectName:  opts.ProjectName,

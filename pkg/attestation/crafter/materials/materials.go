@@ -111,13 +111,17 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, errors.New("file is empty"))
 	}
 
+	// Determine if we should skip the upload based on contract setting
+	shouldSkipUpload := input.SkipUpload
+
 	l.Debug().Str("filename", result.filename).Str("digest", result.digest).Str("path", artifactPath).
 		Str("size", bytefmt.ByteSize(uint64(result.size))).
 		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).
-		Str("backend", backend.Name).Msg("crafting file")
+		Str("backend", backend.Name).Bool("skip_upload", shouldSkipUpload).Msg("crafting file")
 
 	// If there is a max size set and the file is bigger than that, return an error
-	if backend.MaxSize > 0 && result.size > backend.MaxSize {
+	// Only check size if we're actually going to upload (not skipped)
+	if !shouldSkipUpload && backend.MaxSize > 0 && result.size > backend.MaxSize {
 		return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, fmt.Errorf("this file is too big for the %s CAS backend, please contact your administrator: fileSize=%s, maxSize=%s", backend.Name, bytefmt.ByteSize(uint64(result.size)), bytefmt.ByteSize(uint64(backend.MaxSize))))
 	}
 
@@ -134,8 +138,13 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		},
 	}
 
-	// 2 - Upload the file to CAS
-	if backend.Uploader != nil {
+	// 2 - Upload the file to CAS (unless skipped or inline backend)
+	switch {
+	case shouldSkipUpload:
+		l.Debug().Str("backend", backend.Name).Msg("skipping upload per contract configuration")
+		// Material is not uploaded, only metadata (digest, filename) is recorded
+		material.UploadedToCas = false
+	case backend.Uploader != nil:
 		l.Debug().Str("backend", backend.Name).Msg("uploading")
 
 		_, err = backend.Uploader.UploadFile(ctx, artifactPath)
@@ -144,7 +153,7 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		}
 
 		material.UploadedToCas = true
-	} else {
+	default:
 		l.Debug().Str("backend", backend.Name).Msg("storing inline")
 		// or store it inline if no uploader is provided
 		content, err := io.ReadAll(result.r)

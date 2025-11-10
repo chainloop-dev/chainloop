@@ -2,6 +2,12 @@
   "$id": "workflowcontract.v1.CraftingSchema.Material.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(skipUpload)$": {
+      "description": "If true, skip uploading the material to CAS (only record metadata)\n Defaults to false (material will be uploaded)",
+      "type": "boolean"
+    }
+  },
   "properties": {
     "annotations": {
       "description": "List of annotations that can be used to add metadata to the material\n this metadata can be used later on by the integrations engine to filter and interpolate data",
@@ -18,6 +24,10 @@
     },
     "output": {
       "description": "If a material is set as output it will get added to the subject in the statement",
+      "type": "boolean"
+    },
+    "skip_upload": {
+      "description": "If true, skip uploading the material to CAS (only record metadata)\n Defaults to false (material will be uploaded)",
       "type": "boolean"
     },
     "type": {
