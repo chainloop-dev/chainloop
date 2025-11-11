@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -32,7 +33,7 @@ type organizationTestSuite struct {
 }
 
 func (s *organizationTestSuite) TestCreateWithRandomName() {
-	repo := biz.NewMockOrganizationRepo(s.T())
+	repo := mocks.NewOrganizationRepo(s.T())
 	l := log.NewStdLogger(io.Discard)
 	uc := biz.NewOrganizationUseCase(repo, nil, biz.NewAuditorUseCase(nil, l), nil, nil, nil, l)
 
