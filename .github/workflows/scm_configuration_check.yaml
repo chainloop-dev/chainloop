@@ -29,9 +29,16 @@ jobs:
         run: |
           chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME}
 
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.CHAINLOOP_GATHERER_APP_ID }}
+          private-key: ${{ secrets.GATHERER_APP_PRIVATE_KEY }}
+
       - name: Gather runner context data
         run: |
-          chainloop gather-runner-context --runner-token ${{ secrets.PAT_ADMIN }}
+          chainloop gather-runner-context --runner-token ${{ steps.generate-token.outputs.token }}
 
       - name: Add runner context material to attestation
         run: |
