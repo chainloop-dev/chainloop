@@ -39,11 +39,13 @@ type CASBackendChecker struct {
 
 type CASBackendCheckerOpts struct {
 	// Whether to check only default backends or all backends
-	OnlyDefaults bool
+	OnlyDefaults *bool
 	// Interval between checks, defaults to 30 minutes
 	CheckInterval time.Duration
 	// Timeout for each individual backend validation, defaults to 10 seconds
 	ValidationTimeout time.Duration
+	// Initial delay before first validation (includes jitter). If not set, runs immediately.
+	InitialDelay time.Duration
 }
 
 // NewCASBackendChecker creates a new CAS backend checker that will periodically validate
@@ -65,8 +67,8 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 	}
 
 	onlyDefaults := true
-	if opts != nil {
-		onlyDefaults = opts.OnlyDefaults
+	if opts != nil && opts.OnlyDefaults != nil {
+		onlyDefaults = *opts.OnlyDefaults
 	}
 
 	// Apply validation timeout from options if provided
@@ -74,18 +76,30 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 		c.validationTimeout = opts.ValidationTimeout
 	}
 
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	// Apply initial delay from options if provided
+	var initialDelay = 0 * time.Second
+	if opts != nil && opts.InitialDelay > 0 {
+		initialDelay = opts.InitialDelay
+	}
 
-	// Run one check immediately
-	if err := c.CheckAllBackends(ctx, onlyDefaults); err != nil {
+	c.logger.Infow("msg", "CAS backend checker configured", "initialDelay", initialDelay, "interval", interval, "allBackends", !onlyDefaults, "timeout", c.validationTimeout)
+
+	select {
+	case <-ctx.Done():
+		c.logger.Info("CAS backend checker stopping due to context cancellation before initial check")
+		return
+	case <-time.After(initialDelay):
+		// Continue to first check
+	}
+
+	// Run first check
+	if err := c.checkBackends(ctx, onlyDefaults); err != nil {
 		c.logger.Errorf("initial CAS backend check failed: %v", err)
 	}
 
-	c.logger.Infof("CAS backend checker started with interval %s, checking %s, timeout %s",
-		interval,
-		conditionalString(onlyDefaults, "only default backends", "all backends"),
-		c.validationTimeout)
+	// Start periodic checks
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -93,16 +107,16 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 			c.logger.Info("CAS backend checker stopping due to context cancellation")
 			return
 		case <-ticker.C:
-			if err := c.CheckAllBackends(ctx, onlyDefaults); err != nil {
+			if err := c.checkBackends(ctx, onlyDefaults); err != nil {
 				c.logger.Errorf("periodic CAS backend check failed: %v", err)
 			}
 		}
 	}
 }
 
-// CheckAllBackends validates all CAS backends (or just default ones based on configuration)
+// checkBackends validates all CAS backends (or just default ones based on configuration)
 // using a worker pool for parallel processing with timeouts
-func (c *CASBackendChecker) CheckAllBackends(ctx context.Context, onlyDefaults bool) error {
+func (c *CASBackendChecker) checkBackends(ctx context.Context, onlyDefaults bool) error {
 	c.logger.Debug("starting CAS backend validation check")
 
 	backends, err := c.casBackendRepo.ListBackends(ctx, onlyDefaults)
@@ -137,12 +151,4 @@ func (c *CASBackendChecker) CheckAllBackends(ctx context.Context, onlyDefaults b
 
 	c.logger.Debug("all CAS backend validations completed")
 	return nil
-}
-
-// Helper function to return different strings based on a condition
-func conditionalString(condition bool, trueStr, falseStr string) string {
-	if condition {
-		return trueStr
-	}
-	return falseStr
 }

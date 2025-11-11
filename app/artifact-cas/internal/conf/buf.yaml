@@ -7,7 +7,7 @@ deps:
   - buf.build/bufbuild/protovalidate:b983156c5e994cc9892e0ce3e64e17e0
 lint:
   use:
-    - DEFAULT
+    - STANDARD
   ignore_only:
     PACKAGE_DEFINED:
       - ./conf.proto

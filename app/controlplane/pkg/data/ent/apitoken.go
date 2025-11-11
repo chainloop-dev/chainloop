@@ -3,12 +3,14 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
@@ -36,6 +38,8 @@ type APIToken struct {
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	// Policies holds the value of the "policies" field.
+	Policies []*authz.Policy `json:"policies,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the APITokenQuery when eager-loading is set.
 	Edges        APITokenEdges `json:"edges"`
@@ -80,6 +84,8 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case apitoken.FieldPolicies:
+			values[i] = new([]byte)
 		case apitoken.FieldName, apitoken.FieldDescription:
 			values[i] = new(sql.NullString)
 		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt, apitoken.FieldLastUsedAt:
@@ -155,6 +161,14 @@ func (at *APIToken) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				at.ProjectID = *value
 			}
+		case apitoken.FieldPolicies:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field policies", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &at.Policies); err != nil {
+					return fmt.Errorf("unmarshal field policies: %w", err)
+				}
+			}
 		default:
 			at.selectValues.Set(columns[i], values[i])
 		}
@@ -224,6 +238,9 @@ func (at *APIToken) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", at.ProjectID))
+	builder.WriteString(", ")
+	builder.WriteString("policies=")
+	builder.WriteString(fmt.Sprintf("%v", at.Policies))
 	builder.WriteByte(')')
 	return builder.String()
 }

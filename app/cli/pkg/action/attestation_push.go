@@ -81,7 +81,7 @@ func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 func (action *AttestationPush) Run(ctx context.Context, attestationID string, runtimeAnnotations map[string]string, bypassPolicyCheck bool) (*AttestationResult, error) {
 	useRemoteState := attestationID != ""
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: useRemoteState, localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: useRemoteState, localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

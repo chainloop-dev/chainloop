@@ -224,3 +224,70 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 		})
 	}
 }
+
+func TestCycloneDXJSONCraft_SkipUpload(t *testing.T) {
+	testCases := []struct {
+		name       string
+		skipUpload bool
+		wantUpload bool
+	}{
+		{
+			name:       "upload enabled (default)",
+			skipUpload: false,
+			wantUpload: true,
+		},
+		{
+			name:       "upload skipped via contract",
+			skipUpload: true,
+			wantUpload: false,
+		},
+	}
+
+	ast := assert.New(t)
+	l := zerolog.Nop()
+	filePath := "./testdata/sbom.cyclonedx.json"
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := &contractAPI.CraftingSchema_Material{
+				Name:       "test",
+				Type:       contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				SkipUpload: tc.skipUpload,
+			}
+
+			// Mock uploader - only expect upload call if not skipped
+			uploader := mUploader.NewUploader(t)
+			if tc.wantUpload {
+				uploader.On("UploadFile", context.TODO(), filePath).
+					Return(&casclient.UpDownStatus{
+						Digest:   "deadbeef",
+						Filename: "sbom.cyclonedx.json",
+					}, nil)
+			}
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewCyclonedxJSONCrafter(schema, backend, &l)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), filePath)
+			require.NoError(t, err)
+
+			ast.Equal(contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String(), got.MaterialType.String())
+
+			// Verify upload behavior matches expectation
+			if tc.wantUpload {
+				ast.True(got.UploadedToCas, "material should be uploaded when skip_upload is false")
+			} else {
+				ast.False(got.UploadedToCas, "material should not be uploaded when skip_upload is true")
+			}
+
+			// Verify digest is always computed regardless of upload
+			ast.Equal("sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c", got.GetSbomArtifact().Artifact.Digest)
+			ast.Equal("sbom.cyclonedx.json", got.GetSbomArtifact().Artifact.Name)
+
+			// Verify main component extraction still works
+			ast.Equal(".", got.GetSbomArtifact().MainComponent.Name)
+			ast.Equal("file", got.GetSbomArtifact().MainComponent.Kind)
+		})
+	}
+}

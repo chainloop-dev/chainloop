@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	blobM "github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -36,7 +37,7 @@ type casBackendTestSuite struct {
 	validUUID       uuid.UUID
 	invalidUUID     string
 	useCase         *biz.CASBackendUseCase
-	repo            *biz.MockCASBackendRepo
+	repo            *bizMocks.CASBackendRepo
 	credsRW         *credentialsM.ReaderWriter
 	backendProvider *blobM.Provider
 }
@@ -277,7 +278,7 @@ func (s *casBackendTestSuite) resetMock() {
 func (s *casBackendTestSuite) SetupTest() {
 	s.validUUID = uuid.New()
 	s.invalidUUID = "deadbeef"
-	s.repo = biz.NewMockCASBackendRepo(s.T())
+	s.repo = bizMocks.NewCASBackendRepo(s.T())
 	s.credsRW = credentialsM.NewReaderWriter(s.T())
 	s.backendProvider = blobM.NewProvider(s.T())
 	var err error

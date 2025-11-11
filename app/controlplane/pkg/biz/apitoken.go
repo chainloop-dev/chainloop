@@ -54,10 +54,12 @@ type APIToken struct {
 	// If the token is scoped to a project
 	ProjectID   *uuid.UUID
 	ProjectName *string
+	// ACL policies for this token
+	Policies []*authz.Policy
 }
 
 type APITokenRepo interface {
-	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID) (*APIToken, error)
+	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*APIToken, error)
 	List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
@@ -76,10 +78,6 @@ type APITokenUseCase struct {
 	// Use Cases
 	orgUseCase *OrganizationUseCase
 	auditorUC  *AuditorUseCase
-}
-
-type APITokenSyncerUseCase struct {
-	base *APITokenUseCase
 }
 
 func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
@@ -186,7 +184,8 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID)
+	// Pass default policies to be stored with the token
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID, uc.DefaultAuthzPolicies)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -212,11 +211,6 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
-	}
-
-	// Add default policies to the enforcer
-	if err := uc.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: token.ID.String()}, uc.DefaultAuthzPolicies...); err != nil {
-		return nil, fmt.Errorf("adding default policies: %w", err)
 	}
 
 	// Dispatch the event to the auditor to notify the creation of the token
@@ -343,11 +337,6 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 		return NewErrInvalidUUID(err)
 	}
 
-	// clean policies
-	if err := uc.enforcer.ClearPolicies(&authz.SubjectAPIToken{ID: id}); err != nil {
-		return fmt.Errorf("removing policies: %w", err)
-	}
-
 	token, err := uc.apiTokenRepo.FindByID(ctx, tokenUUID)
 	if err != nil {
 		return fmt.Errorf("finding token: %w", err)
@@ -410,35 +399,6 @@ func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name stri
 	}
 
 	return uc.apiTokenRepo.FindByNameInOrg(ctx, orgUUID, name)
-}
-
-func NewAPITokenSyncerUseCase(tokenUC *APITokenUseCase) *APITokenSyncerUseCase {
-	return &APITokenSyncerUseCase{
-		base: tokenUC,
-	}
-}
-
-// Make sure all the API tokens contain the default policies
-// NOTE: We'll remove this method once we have a proper policies management system where the user can add/remove policies
-func (suc *APITokenSyncerUseCase) SyncPolicies() error {
-	suc.base.logger.Info("syncing policies for all the API tokens")
-
-	// List all the non-revoked tokens from all the orgs
-	tokens, err := suc.base.apiTokenRepo.List(context.Background(), nil, nil)
-	if err != nil {
-		return fmt.Errorf("listing tokens: %w", err)
-	}
-
-	for _, t := range tokens {
-		// Add default policies to the enforcer
-		if err := suc.base.enforcer.AddPolicies(&authz.SubjectAPIToken{ID: t.ID.String()}, suc.base.DefaultAuthzPolicies...); err != nil {
-			return fmt.Errorf("adding default policies: %w", err)
-		}
-	}
-
-	suc.base.logger.Info("policies synced")
-
-	return nil
 }
 
 func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string) error {

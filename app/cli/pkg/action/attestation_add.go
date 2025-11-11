@@ -75,7 +75,7 @@ var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
 func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) (*AttestationStatusMaterial, error) {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
-	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
@@ -183,7 +183,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 // GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations
 func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestationID string) (map[string][]*PolicyEvaluation, error) {
-	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.newCrafterOpts.opts...)
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}

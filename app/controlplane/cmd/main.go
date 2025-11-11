@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	_ "net/http/pprof"
 	"os"
 	"time"
@@ -63,7 +64,7 @@ func init() {
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
-	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins, tokenSync *biz.APITokenSyncerUseCase,
+	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins,
 	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker, cfg *conf.Bootstrap) *app {
 	servers := []transport.Server{gs, hs, ms}
 	if cfg.EnableProfiler {
@@ -78,7 +79,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(servers...),
-		), expirer, plugins, tokenSync, userAccessSyncer, casBackendChecker}
+		), expirer, plugins, userAccessSyncer, casBackendChecker}
 }
 
 func main() {
@@ -151,15 +152,6 @@ func main() {
 	// TODO: Make it configurable from the application config
 	app.runsExpirer.Run(ctx, &biz.WorkflowRunExpirerOpts{CheckInterval: 1 * time.Minute, ExpirationWindow: 1 * time.Hour})
 
-	// Since policies management is not enabled yet but instead is based on a hardcoded list of permissions
-	// We'll perform a reconciliation of the policies with the tokens stored in the database on startup
-	// This will allow us to add more policies in the future and keep backwards compatibility with existing tokens
-	go func() {
-		if err := app.tokenAuthSyncer.SyncPolicies(); err != nil {
-			_ = logger.Log(log.LevelError, "msg", "syncing policies", "error", err)
-		}
-	}()
-
 	// Sync user access
 	go func() {
 		if err := app.userAccessSyncer.SyncUserAccess(ctx); err != nil {
@@ -167,9 +159,28 @@ func main() {
 		}
 	}()
 
-	// Start the background CAS Backend checker
+	// Start the background CAS Backend checker for DEFAULT backends (every 30 minutes)
 	if app.casBackendChecker != nil {
-		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{CheckInterval: 30 * time.Minute})
+		// Calculate initial delay: 1 minute base + 0-5 minutes jitter
+		// This protects boot phase and spreads validation across pods
+		baseDelay := 1 * time.Minute
+		// #nosec G404 - using math/rand for jitter is acceptable, cryptographic randomness not required
+		jitter := time.Duration(rand.Intn(5*60)) * time.Second
+		initialDelay := baseDelay + jitter
+
+		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
+			CheckInterval: 30 * time.Minute,
+			InitialDelay:  initialDelay,
+			OnlyDefaults:  toPtr(true),
+		})
+
+		// Start the background CAS Backend checker for ALL backends (every 24 hours)
+		// Start around 24h mark to avoid overlap with default checker
+		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
+			CheckInterval: 24 * time.Hour,
+			InitialDelay:  24 * time.Hour,
+			OnlyDefaults:  toPtr(false),
+		})
 	}
 
 	// start and wait for stop signal
@@ -178,12 +189,15 @@ func main() {
 	}
 }
 
+func toPtr[T any](v T) *T {
+	return &v
+}
+
 type app struct {
 	*kratos.App
 	// Periodic job that expires unfinished attestation processes older than a given threshold
 	runsExpirer      *biz.WorkflowRunExpirerUseCase
 	availablePlugins sdk.AvailablePlugins
-	tokenAuthSyncer  *biz.APITokenSyncerUseCase
 	userAccessSyncer *biz.UserAccessSyncerUseCase
 	// Background checker for CAS backends
 	casBackendChecker *biz.CASBackendChecker

@@ -16,19 +16,14 @@
 package authz
 
 import (
-	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"slices"
 
-	psqlwatcher "github.com/IguteChung/casbin-psql-watcher"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
 	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
-	entadapter "github.com/casbin/ent-adapter"
-	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 )
 
 type SubjectAPIToken struct {
@@ -43,7 +38,6 @@ func (t *SubjectAPIToken) String() string {
 var modelFile []byte
 
 type Config struct {
-	ManagedResources    []string
 	RolesMap            map[Role][]*Policy
 	RestrictOrgCreation bool
 }
@@ -55,81 +49,44 @@ type Enforcer struct {
 	RestrictOrgCreation bool
 }
 
-func (e *Enforcer) AddPolicies(sub *SubjectAPIToken, policies ...*Policy) error {
-	if len(policies) == 0 {
-		return errors.New("no policies to add")
-	}
-
-	if sub == nil {
-		return errors.New("no subject provided")
-	}
-
-	for _, p := range policies {
-		casbinPolicy := []string{sub.String(), p.Resource, p.Action}
-		// Add policies one by one to skip existing ones.
-		// This is because the bulk method AddPoliciesEx does not work well with the ent adapter
-		if _, err := e.AddPolicy(casbinPolicy); err != nil {
-			return fmt.Errorf("failed to add policy: %w", err)
-		}
-	}
-
-	return nil
-}
-
 func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
 	return e.Enforcer.Enforce(sub, p.Resource, p.Action)
 }
 
-// Remove all the policies for the given subject
-func (e *Enforcer) ClearPolicies(sub *SubjectAPIToken) error {
-	if sub == nil {
-		return errors.New("no subject provided")
+// EnforceWithPolicies checks if the required policy exists in the provided list of allowed policies.
+// This is used for ACL-based authorization (e.g., API tokens) where policies are stored in the database
+// rather than in Casbin. Returns true if the required policy is found in the allowed list.
+// in the future we will use this function to check if the policy is allowed for the subject by running the enforcer with the subject
+func (e *Enforcer) EnforceWithPolicies(_ string, p *Policy, allowedPolicies []*Policy) (bool, error) {
+	for _, allowed := range allowedPolicies {
+		if allowed.Resource == p.Resource && allowed.Action == p.Action {
+			return true, nil
+		}
 	}
-
-	// Get all the policies for the subject
-	policies, err := e.GetFilteredPolicy(0, sub.String())
-	if err != nil {
-		return fmt.Errorf("failed to get policies: %w", err)
-	}
-
-	if _, err := e.RemovePolicies(policies); err != nil {
-		return fmt.Errorf("failed to remove policies: %w", err)
-	}
-
-	return nil
+	return false, nil
 }
 
-// NewDatabaseEnforcer creates a new casbin authorization enforcer
-// based on a database backend as policies storage backend
-func NewDatabaseEnforcer(c *config.DatabaseConfig, config *Config) (*Enforcer, error) {
-	// policy storage in database
-	a, err := entadapter.NewAdapter(c.Driver, c.Source)
+// NewInMemoryEnforcer creates a new casbin authorization enforcer with in-memory storage.
+// Only static role policies from RolesMap are loaded. API token policies are checked separately
+// using EnforceWithPolicies and are not stored in Casbin.
+func NewInMemoryEnforcer(config *Config) (*Enforcer, error) {
+	// load model defined in model.conf
+	m, err := model.NewModelFromString(string(modelFile))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create adapter: %w", err)
+		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 
-	e, err := newEnforcer(a, config)
+	// Create enforcer without a persistent adapter - policies will be stored in memory only
+	enforcer, err := casbin.NewEnforcer(m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
 
-	// watch for policy changes in database and update enforcer
-	w, err := psqlwatcher.NewWatcherWithConnString(context.Background(), c.Source, psqlwatcher.Option{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create watcher: %w", err)
-	}
+	e := &Enforcer{enforcer, config, config.RestrictOrgCreation}
 
-	if err = e.SetWatcher(w); err != nil {
-		return nil, fmt.Errorf("failed to set watcher: %w", err)
-	}
-
-	if err = w.SetUpdateCallback(func(string) {
-		// When there is a change in the policy, we load the in-memory policy for the current enforcer
-		if err := e.LoadPolicy(); err != nil {
-			fmt.Printf("failed to load policy: %v", err)
-		}
-	}); err != nil {
-		return nil, fmt.Errorf("failed to set update callback: %w", err)
+	// Initialize the enforcer with the roles map
+	if err := syncRBACRoles(e, config); err != nil {
+		return nil, fmt.Errorf("failed to sync roles: %w", err)
 	}
 
 	return e, nil
@@ -190,8 +147,7 @@ func doSync(e *Enforcer, c *Config) error {
 	// Add all the defined policies if they don't exist
 	for role, policies := range conf.RolesMap {
 		for _, p := range policies {
-			// Add policies one by one to skip existing ones.
-			// This is because the bulk method AddPoliciesEx does not work well with the ent adapter
+			// Add policies one by one to skip existing ones
 			casbinPolicy := []string{string(role), p.Resource, p.Action}
 			_, err := e.AddPolicy(casbinPolicy)
 			if err != nil {
@@ -201,7 +157,7 @@ func doSync(e *Enforcer, c *Config) error {
 	}
 
 	// Delete all the policies that are not in the roles map
-	// 1 - load the policies from the enforcer DB
+	// 1 - load the policies from the enforcer
 	policies, err := e.GetPolicy()
 	if err != nil {
 		return fmt.Errorf("failed to get policies: %w", err)
@@ -214,11 +170,6 @@ func doSync(e *Enforcer, c *Config) error {
 		role := p[0]
 		resource := p[1]
 		action := p[2]
-
-		// if it's not a managed resource, skip deletion
-		if !slices.Contains(conf.ManagedResources, resource) {
-			continue
-		}
 
 		wantPolicies, ok := conf.RolesMap[Role(role)]
 		// if the role does not exist in the map, we can delete the policy

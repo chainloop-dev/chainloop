@@ -164,7 +164,6 @@ func TestAttestationCraft(t *testing.T) {
 			uploader.AssertExpectations(t)
 		})
 	}
-
 }
 
 func TestAttestationCraftInline(t *testing.T) {

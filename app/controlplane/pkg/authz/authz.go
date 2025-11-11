@@ -95,33 +95,9 @@ const (
 	RoleGroupMaintainer Role = "role:group:maintainer"
 
 	// Product roles
-
 	RoleProductViewer Role = "role:product:viewer"
 	RoleProductAdmin  Role = "role:product:admin"
 )
-
-// ManagedResources are the resources that are managed by Chainloop, considered during permissions sync
-var ManagedResources = []string{
-	ResourceWorkflowContract,
-	ResourceCASArtifact,
-	ResourceCASBackend,
-	ResourceReferrer,
-	ResourceAvailableIntegration,
-	ResourceRegisteredIntegration,
-	ResourceAttachedIntegration,
-	ResourceOrgMetric,
-	ResourceRobotAccount,
-	ResourceWorkflowRun,
-	ResourceWorkflow,
-	ResourceProject,
-	Organization,
-	OrganizationMemberships,
-	ResourceGroup,
-	ResourceGroupMembership,
-	ResourceAPIToken,
-	ResourceProjectMembership,
-	ResourceOrganizationInvitations,
-}
 
 var (
 	// Referrer

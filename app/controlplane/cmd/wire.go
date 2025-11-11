@@ -53,7 +53,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "FederatedAuthentication"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
-			authz.NewDatabaseEnforcer,
+			authz.NewInMemoryEnforcer,
 			policies.NewRegistry,
 			newApp,
 			newProtoValidator,
@@ -71,7 +71,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 }
 
 func authzConfig(conf *conf.Bootstrap) *authz.Config {
-	return &authz.Config{ManagedResources: authz.ManagedResources, RolesMap: authz.RolesMap, RestrictOrgCreation: conf.RestrictOrgCreation}
+	return &authz.Config{RolesMap: authz.RolesMap, RestrictOrgCreation: conf.RestrictOrgCreation}
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
