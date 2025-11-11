@@ -8696,44 +8696,45 @@ func (m *OrgInvitationMutation) ResetEdge(name string) error {
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
-	op                               Op
-	typ                              string
-	id                               *uuid.UUID
-	name                             *string
-	created_at                       *time.Time
-	updated_at                       *time.Time
-	deleted_at                       *time.Time
-	block_on_policy_violation        *bool
-	policies_allowed_hostnames       *[]string
-	appendpolicies_allowed_hostnames []string
-	clearedFields                    map[string]struct{}
-	memberships                      map[uuid.UUID]struct{}
-	removedmemberships               map[uuid.UUID]struct{}
-	clearedmemberships               bool
-	workflow_contracts               map[uuid.UUID]struct{}
-	removedworkflow_contracts        map[uuid.UUID]struct{}
-	clearedworkflow_contracts        bool
-	workflows                        map[uuid.UUID]struct{}
-	removedworkflows                 map[uuid.UUID]struct{}
-	clearedworkflows                 bool
-	cas_backends                     map[uuid.UUID]struct{}
-	removedcas_backends              map[uuid.UUID]struct{}
-	clearedcas_backends              bool
-	integrations                     map[uuid.UUID]struct{}
-	removedintegrations              map[uuid.UUID]struct{}
-	clearedintegrations              bool
-	api_tokens                       map[uuid.UUID]struct{}
-	removedapi_tokens                map[uuid.UUID]struct{}
-	clearedapi_tokens                bool
-	projects                         map[uuid.UUID]struct{}
-	removedprojects                  map[uuid.UUID]struct{}
-	clearedprojects                  bool
-	groups                           map[uuid.UUID]struct{}
-	removedgroups                    map[uuid.UUID]struct{}
-	clearedgroups                    bool
-	done                             bool
-	oldValue                         func(context.Context) (*Organization, error)
-	predicates                       []predicate.Organization
+	op                                 Op
+	typ                                string
+	id                                 *uuid.UUID
+	name                               *string
+	created_at                         *time.Time
+	updated_at                         *time.Time
+	deleted_at                         *time.Time
+	block_on_policy_violation          *bool
+	policies_allowed_hostnames         *[]string
+	appendpolicies_allowed_hostnames   []string
+	prevent_implicit_workflow_creation *bool
+	clearedFields                      map[string]struct{}
+	memberships                        map[uuid.UUID]struct{}
+	removedmemberships                 map[uuid.UUID]struct{}
+	clearedmemberships                 bool
+	workflow_contracts                 map[uuid.UUID]struct{}
+	removedworkflow_contracts          map[uuid.UUID]struct{}
+	clearedworkflow_contracts          bool
+	workflows                          map[uuid.UUID]struct{}
+	removedworkflows                   map[uuid.UUID]struct{}
+	clearedworkflows                   bool
+	cas_backends                       map[uuid.UUID]struct{}
+	removedcas_backends                map[uuid.UUID]struct{}
+	clearedcas_backends                bool
+	integrations                       map[uuid.UUID]struct{}
+	removedintegrations                map[uuid.UUID]struct{}
+	clearedintegrations                bool
+	api_tokens                         map[uuid.UUID]struct{}
+	removedapi_tokens                  map[uuid.UUID]struct{}
+	clearedapi_tokens                  bool
+	projects                           map[uuid.UUID]struct{}
+	removedprojects                    map[uuid.UUID]struct{}
+	clearedprojects                    bool
+	groups                             map[uuid.UUID]struct{}
+	removedgroups                      map[uuid.UUID]struct{}
+	clearedgroups                      bool
+	done                               bool
+	oldValue                           func(context.Context) (*Organization, error)
+	predicates                         []predicate.Organization
 }
 
 var _ ent.Mutation = (*OrganizationMutation)(nil)
@@ -9096,6 +9097,42 @@ func (m *OrganizationMutation) ResetPoliciesAllowedHostnames() {
 	m.policies_allowed_hostnames = nil
 	m.appendpolicies_allowed_hostnames = nil
 	delete(m.clearedFields, organization.FieldPoliciesAllowedHostnames)
+}
+
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (m *OrganizationMutation) SetPreventImplicitWorkflowCreation(b bool) {
+	m.prevent_implicit_workflow_creation = &b
+}
+
+// PreventImplicitWorkflowCreation returns the value of the "prevent_implicit_workflow_creation" field in the mutation.
+func (m *OrganizationMutation) PreventImplicitWorkflowCreation() (r bool, exists bool) {
+	v := m.prevent_implicit_workflow_creation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPreventImplicitWorkflowCreation returns the old "prevent_implicit_workflow_creation" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldPreventImplicitWorkflowCreation(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPreventImplicitWorkflowCreation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPreventImplicitWorkflowCreation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreventImplicitWorkflowCreation: %w", err)
+	}
+	return oldValue.PreventImplicitWorkflowCreation, nil
+}
+
+// ResetPreventImplicitWorkflowCreation resets all changes to the "prevent_implicit_workflow_creation" field.
+func (m *OrganizationMutation) ResetPreventImplicitWorkflowCreation() {
+	m.prevent_implicit_workflow_creation = nil
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9564,7 +9601,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9582,6 +9619,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.policies_allowed_hostnames != nil {
 		fields = append(fields, organization.FieldPoliciesAllowedHostnames)
+	}
+	if m.prevent_implicit_workflow_creation != nil {
+		fields = append(fields, organization.FieldPreventImplicitWorkflowCreation)
 	}
 	return fields
 }
@@ -9603,6 +9643,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.BlockOnPolicyViolation()
 	case organization.FieldPoliciesAllowedHostnames:
 		return m.PoliciesAllowedHostnames()
+	case organization.FieldPreventImplicitWorkflowCreation:
+		return m.PreventImplicitWorkflowCreation()
 	}
 	return nil, false
 }
@@ -9624,6 +9666,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldBlockOnPolicyViolation(ctx)
 	case organization.FieldPoliciesAllowedHostnames:
 		return m.OldPoliciesAllowedHostnames(ctx)
+	case organization.FieldPreventImplicitWorkflowCreation:
+		return m.OldPreventImplicitWorkflowCreation(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9674,6 +9718,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPoliciesAllowedHostnames(v)
+		return nil
+	case organization.FieldPreventImplicitWorkflowCreation:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreventImplicitWorkflowCreation(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -9756,6 +9807,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldPoliciesAllowedHostnames:
 		m.ResetPoliciesAllowedHostnames()
+		return nil
+	case organization.FieldPreventImplicitWorkflowCreation:
+		m.ResetPreventImplicitWorkflowCreation()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

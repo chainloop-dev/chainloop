@@ -301,8 +301,8 @@ func (_c *OrganizationRepo_FindByName_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // Update provides a mock function for the type OrganizationRepo
-func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error) {
-	ret := _mock.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
+func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool) (*biz.Organization, error) {
+	ret := _mock.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -310,18 +310,18 @@ func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOn
 
 	var r0 *biz.Organization
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string) (*biz.Organization, error)); ok {
-		return returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool) (*biz.Organization, error)); ok {
+		return returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string) *biz.Organization); ok {
-		r0 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool) *biz.Organization); ok {
+		r0 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.Organization)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, []string) error); ok {
-		r1 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, []string, *bool) error); ok {
+		r1 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -338,11 +338,12 @@ type OrganizationRepo_Update_Call struct {
 //   - id uuid.UUID
 //   - blockOnPolicyViolation *bool
 //   - policiesAllowedHostnames []string
-func (_e *OrganizationRepo_Expecter) Update(ctx interface{}, id interface{}, blockOnPolicyViolation interface{}, policiesAllowedHostnames interface{}) *OrganizationRepo_Update_Call {
-	return &OrganizationRepo_Update_Call{Call: _e.mock.On("Update", ctx, id, blockOnPolicyViolation, policiesAllowedHostnames)}
+//   - preventImplicitWorkflowCreation *bool
+func (_e *OrganizationRepo_Expecter) Update(ctx interface{}, id interface{}, blockOnPolicyViolation interface{}, policiesAllowedHostnames interface{}, preventImplicitWorkflowCreation interface{}) *OrganizationRepo_Update_Call {
+	return &OrganizationRepo_Update_Call{Call: _e.mock.On("Update", ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)}
 }
 
-func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string)) *OrganizationRepo_Update_Call {
+func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool)) *OrganizationRepo_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -360,11 +361,16 @@ func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uui
 		if args[3] != nil {
 			arg3 = args[3].([]string)
 		}
+		var arg4 *bool
+		if args[4] != nil {
+			arg4 = args[4].(*bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -375,7 +381,7 @@ func (_c *OrganizationRepo_Update_Call) Return(organization *biz.Organization, e
 	return _c
 }
 
-func (_c *OrganizationRepo_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string) (*biz.Organization, error)) *OrganizationRepo_Update_Call {
+func (_c *OrganizationRepo_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool) (*biz.Organization, error)) *OrganizationRepo_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

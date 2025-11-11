@@ -5,14 +5,14 @@ log-level: info
 recursive: false
 require-template-schema-exists: true
 template: testify
-template-schema: '{{.Template}}.schema.json'
+template-schema: "{{.Template}}.schema.json"
 packages:
   github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz:
     config:
-      dir: '{{.InterfaceDir}}/mocks'
-      filename: '{{.InterfaceName}}.go'
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName}}.go"
       pkgname: mocks
-      structname: '{{.InterfaceName}}'
+      structname: "{{.InterfaceName}}"
     interfaces:
       APITokenRepo:
       CASBackendRepo:

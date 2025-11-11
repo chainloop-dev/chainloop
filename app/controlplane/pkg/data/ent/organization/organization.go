@@ -27,6 +27,8 @@ const (
 	FieldBlockOnPolicyViolation = "block_on_policy_violation"
 	// FieldPoliciesAllowedHostnames holds the string denoting the policies_allowed_hostnames field in the database.
 	FieldPoliciesAllowedHostnames = "policies_allowed_hostnames"
+	// FieldPreventImplicitWorkflowCreation holds the string denoting the prevent_implicit_workflow_creation field in the database.
+	FieldPreventImplicitWorkflowCreation = "prevent_implicit_workflow_creation"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -112,6 +114,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldBlockOnPolicyViolation,
 	FieldPoliciesAllowedHostnames,
+	FieldPreventImplicitWorkflowCreation,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -131,6 +134,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// DefaultBlockOnPolicyViolation holds the default value on creation for the "block_on_policy_violation" field.
 	DefaultBlockOnPolicyViolation bool
+	// DefaultPreventImplicitWorkflowCreation holds the default value on creation for the "prevent_implicit_workflow_creation" field.
+	DefaultPreventImplicitWorkflowCreation bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -166,6 +171,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByBlockOnPolicyViolation orders the results by the block_on_policy_violation field.
 func ByBlockOnPolicyViolation(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBlockOnPolicyViolation, opts...).ToFunc()
+}
+
+// ByPreventImplicitWorkflowCreation orders the results by the prevent_implicit_workflow_creation field.
+func ByPreventImplicitWorkflowCreation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPreventImplicitWorkflowCreation, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

@@ -100,6 +100,20 @@ func (oc *OrganizationCreate) SetPoliciesAllowedHostnames(s []string) *Organizat
 	return oc
 }
 
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (oc *OrganizationCreate) SetPreventImplicitWorkflowCreation(b bool) *OrganizationCreate {
+	oc.mutation.SetPreventImplicitWorkflowCreation(b)
+	return oc
+}
+
+// SetNillablePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillablePreventImplicitWorkflowCreation(b *bool) *OrganizationCreate {
+	if b != nil {
+		oc.SetPreventImplicitWorkflowCreation(*b)
+	}
+	return oc
+}
+
 // SetID sets the "id" field.
 func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
 	oc.mutation.SetID(u)
@@ -281,6 +295,10 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultBlockOnPolicyViolation
 		oc.mutation.SetBlockOnPolicyViolation(v)
 	}
+	if _, ok := oc.mutation.PreventImplicitWorkflowCreation(); !ok {
+		v := organization.DefaultPreventImplicitWorkflowCreation
+		oc.mutation.SetPreventImplicitWorkflowCreation(v)
+	}
 	if _, ok := oc.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		oc.mutation.SetID(v)
@@ -300,6 +318,9 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
 		return &ValidationError{Name: "block_on_policy_violation", err: errors.New(`ent: missing required field "Organization.block_on_policy_violation"`)}
+	}
+	if _, ok := oc.mutation.PreventImplicitWorkflowCreation(); !ok {
+		return &ValidationError{Name: "prevent_implicit_workflow_creation", err: errors.New(`ent: missing required field "Organization.prevent_implicit_workflow_creation"`)}
 	}
 	return nil
 }
@@ -360,6 +381,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := oc.mutation.PoliciesAllowedHostnames(); ok {
 		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
 		_node.PoliciesAllowedHostnames = value
+	}
+	if value, ok := oc.mutation.PreventImplicitWorkflowCreation(); ok {
+		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
+		_node.PreventImplicitWorkflowCreation = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -613,6 +638,18 @@ func (u *OrganizationUpsert) ClearPoliciesAllowedHostnames() *OrganizationUpsert
 	return u
 }
 
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (u *OrganizationUpsert) SetPreventImplicitWorkflowCreation(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldPreventImplicitWorkflowCreation, v)
+	return u
+}
+
+// UpdatePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdatePreventImplicitWorkflowCreation() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldPreventImplicitWorkflowCreation)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -745,6 +782,20 @@ func (u *OrganizationUpsertOne) UpdatePoliciesAllowedHostnames() *OrganizationUp
 func (u *OrganizationUpsertOne) ClearPoliciesAllowedHostnames() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.ClearPoliciesAllowedHostnames()
+	})
+}
+
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (u *OrganizationUpsertOne) SetPreventImplicitWorkflowCreation(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPreventImplicitWorkflowCreation(v)
+	})
+}
+
+// UpdatePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdatePreventImplicitWorkflowCreation() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePreventImplicitWorkflowCreation()
 	})
 }
 
@@ -1047,6 +1098,20 @@ func (u *OrganizationUpsertBulk) UpdatePoliciesAllowedHostnames() *OrganizationU
 func (u *OrganizationUpsertBulk) ClearPoliciesAllowedHostnames() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.ClearPoliciesAllowedHostnames()
+	})
+}
+
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (u *OrganizationUpsertBulk) SetPreventImplicitWorkflowCreation(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetPreventImplicitWorkflowCreation(v)
+	})
+}
+
+// UpdatePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdatePreventImplicitWorkflowCreation() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdatePreventImplicitWorkflowCreation()
 	})
 }
 

@@ -51,6 +51,8 @@ func (Organization) Fields() []ent.Field {
 		field.Bool("block_on_policy_violation").Default(false),
 		// array of hostnames that are allowed to be used in the policies
 		field.Strings("policies_allowed_hostnames").Optional(),
+		// prevent workflows and projects from being created implicitly during attestation init
+		field.Bool("prevent_implicit_workflow_creation").Default(false),
 	}
 }
 

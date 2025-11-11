@@ -205,6 +205,10 @@ func init() {
 	organizationDescBlockOnPolicyViolation := organizationFields[5].Descriptor()
 	// organization.DefaultBlockOnPolicyViolation holds the default value on creation for the block_on_policy_violation field.
 	organization.DefaultBlockOnPolicyViolation = organizationDescBlockOnPolicyViolation.Default.(bool)
+	// organizationDescPreventImplicitWorkflowCreation is the schema descriptor for prevent_implicit_workflow_creation field.
+	organizationDescPreventImplicitWorkflowCreation := organizationFields[7].Descriptor()
+	// organization.DefaultPreventImplicitWorkflowCreation holds the default value on creation for the prevent_implicit_workflow_creation field.
+	organization.DefaultPreventImplicitWorkflowCreation = organizationDescPreventImplicitWorkflowCreation.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
 	organizationDescID := organizationFields[0].Descriptor()
 	// organization.DefaultID holds the default value on creation for the id field.

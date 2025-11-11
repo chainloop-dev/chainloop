@@ -22,9 +22,10 @@ import (
 
 func newOrganizationUpdateCmd() *cobra.Command {
 	var (
-		orgName                  string
-		blockOnPolicyViolation   bool
-		policiesAllowedHostnames []string
+		orgName                         string
+		blockOnPolicyViolation          bool
+		policiesAllowedHostnames        []string
+		preventImplicitWorkflowCreation bool
 	)
 
 	cmd := &cobra.Command{
@@ -38,6 +39,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 
 			if cmd.Flags().Changed("policies-allowed-hostnames") {
 				opts.PoliciesAllowedHostnames = &policiesAllowedHostnames
+			}
+
+			if cmd.Flags().Changed("prevent-implicit-workflow-creation") {
+				opts.PreventImplicitWorkflowCreation = &preventImplicitWorkflowCreation
 			}
 
 			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
@@ -56,5 +61,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&blockOnPolicyViolation, "block", false, "set the default policy violation blocking strategy")
 	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
+	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
 	return cmd
 }

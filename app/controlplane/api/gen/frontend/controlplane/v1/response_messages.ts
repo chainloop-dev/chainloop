@@ -558,6 +558,8 @@ export interface OrgItem {
   updatedAt?: Date;
   defaultPolicyViolationStrategy: OrgItem_PolicyViolationBlockingStrategy;
   policyAllowedHostnames: string[];
+  /** prevent workflows and projects from being created implicitly during attestation init */
+  preventImplicitWorkflowCreation: boolean;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3670,6 +3672,7 @@ function createBaseOrgItem(): OrgItem {
     updatedAt: undefined,
     defaultPolicyViolationStrategy: 0,
     policyAllowedHostnames: [],
+    preventImplicitWorkflowCreation: false,
   };
 }
 
@@ -3692,6 +3695,9 @@ export const OrgItem = {
     }
     for (const v of message.policyAllowedHostnames) {
       writer.uint32(42).string(v!);
+    }
+    if (message.preventImplicitWorkflowCreation === true) {
+      writer.uint32(56).bool(message.preventImplicitWorkflowCreation);
     }
     return writer;
   },
@@ -3745,6 +3751,13 @@ export const OrgItem = {
 
           message.policyAllowedHostnames.push(reader.string());
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.preventImplicitWorkflowCreation = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3766,6 +3779,9 @@ export const OrgItem = {
       policyAllowedHostnames: Array.isArray(object?.policyAllowedHostnames)
         ? object.policyAllowedHostnames.map((e: any) => String(e))
         : [],
+      preventImplicitWorkflowCreation: isSet(object.preventImplicitWorkflowCreation)
+        ? Boolean(object.preventImplicitWorkflowCreation)
+        : false,
     };
   },
 
@@ -3784,6 +3800,8 @@ export const OrgItem = {
     } else {
       obj.policyAllowedHostnames = [];
     }
+    message.preventImplicitWorkflowCreation !== undefined &&
+      (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     return obj;
   },
 
@@ -3799,6 +3817,7 @@ export const OrgItem = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.defaultPolicyViolationStrategy = object.defaultPolicyViolationStrategy ?? 0;
     message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
+    message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? false;
     return message;
   },
 };

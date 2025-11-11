@@ -266,6 +266,8 @@ message OrgItem {
   google.protobuf.Timestamp updated_at = 6;
   PolicyViolationBlockingStrategy default_policy_violation_strategy = 4;
   repeated string policy_allowed_hostnames = 5;
+  // prevent workflows and projects from being created implicitly during attestation init
+  bool prevent_implicit_workflow_creation = 7;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

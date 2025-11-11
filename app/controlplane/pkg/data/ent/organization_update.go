@@ -119,6 +119,20 @@ func (ou *OrganizationUpdate) ClearPoliciesAllowedHostnames() *OrganizationUpdat
 	return ou
 }
 
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (ou *OrganizationUpdate) SetPreventImplicitWorkflowCreation(b bool) *OrganizationUpdate {
+	ou.mutation.SetPreventImplicitWorkflowCreation(b)
+	return ou
+}
+
+// SetNillablePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillablePreventImplicitWorkflowCreation(b *bool) *OrganizationUpdate {
+	if b != nil {
+		ou.SetPreventImplicitWorkflowCreation(*b)
+	}
+	return ou
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ou *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	ou.mutation.AddMembershipIDs(ids...)
@@ -479,6 +493,9 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ou.mutation.PoliciesAllowedHostnamesCleared() {
 		_spec.ClearField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON)
+	}
+	if value, ok := ou.mutation.PreventImplicitWorkflowCreation(); ok {
+		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -942,6 +959,20 @@ func (ouo *OrganizationUpdateOne) ClearPoliciesAllowedHostnames() *OrganizationU
 	return ouo
 }
 
+// SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
+func (ouo *OrganizationUpdateOne) SetPreventImplicitWorkflowCreation(b bool) *OrganizationUpdateOne {
+	ouo.mutation.SetPreventImplicitWorkflowCreation(b)
+	return ouo
+}
+
+// SetNillablePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillablePreventImplicitWorkflowCreation(b *bool) *OrganizationUpdateOne {
+	if b != nil {
+		ouo.SetPreventImplicitWorkflowCreation(*b)
+	}
+	return ouo
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ouo *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	ouo.mutation.AddMembershipIDs(ids...)
@@ -1332,6 +1363,9 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	}
 	if ouo.mutation.PoliciesAllowedHostnamesCleared() {
 		_spec.ClearField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON)
+	}
+	if value, ok := ouo.mutation.PreventImplicitWorkflowCreation(); ok {
+		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

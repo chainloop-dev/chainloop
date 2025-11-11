@@ -31,14 +31,17 @@ func NewConfigCurrentContext(cfg *ActionsOpts) *ConfigCurrentContext {
 }
 
 type ConfigContextItem struct {
-	CurrentUser       *UserItem
-	CurrentMembership *MembershipItem
-	CurrentCASBackend *CASBackendItem
+	CurrentUser       *UserItem       `json:"currentUser"`
+	CurrentMembership *MembershipItem `json:"currentMembership"`
+	CurrentCASBackend *CASBackendItem `json:"currentCASBackend"`
 }
 
 type UserItem struct {
-	ID, Email, FirstName, LastName string
-	CreatedAt                      *time.Time
+	ID        string     `json:"id"`
+	Email     string     `json:"email"`
+	FirstName string     `json:"firstName"`
+	LastName  string     `json:"lastName"`
+	CreatedAt *time.Time `json:"createdAt"`
 }
 
 // PrintUserProfileWithEmail formats the user's profile with their email.

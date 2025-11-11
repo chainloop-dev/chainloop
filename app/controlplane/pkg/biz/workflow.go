@@ -79,6 +79,8 @@ type WorkflowCreateOpts struct {
 
 	// Owner identifies the user to be marked as owner of the project
 	Owner *uuid.UUID
+	// ImplicitCreation indicates whether this workflow is being created implicitly via attestation init
+	ImplicitCreation bool
 }
 
 type WorkflowUpdateOpts struct {
@@ -117,19 +119,24 @@ type WorkflowUseCase struct {
 	contractUC   *WorkflowContractUseCase
 	auditorUC    *AuditorUseCase
 	membershipUC *MembershipUseCase
+	orgRepo      OrganizationRepo
 	logger       *log.Helper
 }
 
-func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, membershipUC *MembershipUseCase, logger log.Logger) *WorkflowUseCase {
-	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, membershipUC: membershipUC, logger: log.NewHelper(logger)}
+var ErrImplicitWorkflowCreationDisabled = errors.New("implicit workflow and project creation is disabled for this organization")
+
+func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *WorkflowContractUseCase, auditorUC *AuditorUseCase, membershipUC *MembershipUseCase, orgRepo OrganizationRepo, logger log.Logger) *WorkflowUseCase {
+	return &WorkflowUseCase{wfRepo: wfr, contractUC: schemaUC, projectRepo: projectsRepo, auditorUC: auditorUC, membershipUC: membershipUC, orgRepo: orgRepo, logger: log.NewHelper(logger)}
 }
 
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
 	if opts.Name == "" {
 		return nil, errors.New("workflow name is required")
-	} else if opts.Project == "" {
+	}
+	if opts.Project == "" {
 		return nil, errors.New("project name is required")
-	} else if opts.OrgID == "" {
+	}
+	if opts.OrgID == "" {
 		return nil, errors.New("organization ID is required")
 	}
 
@@ -164,6 +171,21 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse org ID %q: %w", opts.OrgID, err)
+	}
+
+	// Check if implicit creation is prevented by organization settings
+	if opts.ImplicitCreation {
+		org, err := uc.orgRepo.FindByID(ctx, orgUUID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find organization: %w", err)
+		}
+		if org == nil {
+			return nil, NewErrNotFound("organization")
+		}
+
+		if org.PreventImplicitWorkflowCreation {
+			return nil, ErrImplicitWorkflowCreationDisabled
+		}
 	}
 
 	existingProject, _ := uc.projectRepo.FindProjectByOrgIDAndName(ctx, orgUUID, opts.Project)

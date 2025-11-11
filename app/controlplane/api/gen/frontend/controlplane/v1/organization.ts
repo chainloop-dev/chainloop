@@ -76,6 +76,8 @@ export interface OrganizationServiceUpdateRequest {
    * since repeated fields can not be optional
    */
   updatePoliciesAllowedHostnames: boolean;
+  /** prevent workflows and projects from being created implicitly during attestation init */
+  preventImplicitWorkflowCreation?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -663,6 +665,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     blockOnPolicyViolation: undefined,
     policiesAllowedHostnames: [],
     updatePoliciesAllowedHostnames: false,
+    preventImplicitWorkflowCreation: undefined,
   };
 }
 
@@ -679,6 +682,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.updatePoliciesAllowedHostnames === true) {
       writer.uint32(32).bool(message.updatePoliciesAllowedHostnames);
+    }
+    if (message.preventImplicitWorkflowCreation !== undefined) {
+      writer.uint32(40).bool(message.preventImplicitWorkflowCreation);
     }
     return writer;
   },
@@ -718,6 +724,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.updatePoliciesAllowedHostnames = reader.bool();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.preventImplicitWorkflowCreation = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -737,6 +750,9 @@ export const OrganizationServiceUpdateRequest = {
       updatePoliciesAllowedHostnames: isSet(object.updatePoliciesAllowedHostnames)
         ? Boolean(object.updatePoliciesAllowedHostnames)
         : false,
+      preventImplicitWorkflowCreation: isSet(object.preventImplicitWorkflowCreation)
+        ? Boolean(object.preventImplicitWorkflowCreation)
+        : undefined,
     };
   },
 
@@ -751,6 +767,8 @@ export const OrganizationServiceUpdateRequest = {
     }
     message.updatePoliciesAllowedHostnames !== undefined &&
       (obj.updatePoliciesAllowedHostnames = message.updatePoliciesAllowedHostnames);
+    message.preventImplicitWorkflowCreation !== undefined &&
+      (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     return obj;
   },
 
@@ -768,6 +786,7 @@ export const OrganizationServiceUpdateRequest = {
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? undefined;
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
     message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
+    message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
     return message;
   },
 };
