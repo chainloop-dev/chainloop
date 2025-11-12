@@ -81,7 +81,7 @@ func interactiveAuth(forceHeadless bool) error {
 
 	err = openbrowser(serverLoginURL.String())
 	if err != nil {
-		logger.Debug().Err(err).Msg("falling back to manual login")
+		Logger.Debug().Err(err).Msg("falling back to manual login")
 		return headlessAuth(serverLoginURL)
 	}
 
@@ -90,7 +90,7 @@ func interactiveAuth(forceHeadless bool) error {
 	// Run server in background
 	http.HandleFunc(callbackURL.Path, a.handleCallback)
 	go func() {
-		logger.Info().Msg("waiting for the authentication to be completed, please check your browser")
+		Logger.Info().Msg("waiting for the authentication to be completed, please check your browser")
 
 		server := &http.Server{ReadHeaderTimeout: time.Second}
 
@@ -132,7 +132,7 @@ func headlessAuth(loginURL *url.URL) error {
 	}
 
 	fmt.Println("")
-	logger.Info().Msg("login successful!")
+	Logger.Info().Msg("login successful!")
 
 	return nil
 }
@@ -160,7 +160,7 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info().Msg("login successful!")
+	Logger.Info().Msg("login successful!")
 	fmt.Fprintln(w, "login successful, you can now close this window and go back to the terminal")
 }
 

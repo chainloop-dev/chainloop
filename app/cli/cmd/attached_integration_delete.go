@@ -32,7 +32,7 @@ func newAttachedIntegrationDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("integration detached!")
+			Logger.Info().Msg("integration detached!")
 			return nil
 		},
 	}

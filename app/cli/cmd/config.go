@@ -87,7 +87,7 @@ var (
 // It supports both .yaml and .yml extensions
 func loadDotChainloopConfigWithParentTraversal() (*DotChainloopConfig, string, error) {
 	searchPaths := getConfigSearchPaths()
-	logger.Debug().Msgf("searching %s.[yaml|yml] file in %q", dotChainloopConfigFilename, searchPaths)
+	Logger.Debug().Msgf("searching %s.[yaml|yml] file in %q", dotChainloopConfigFilename, searchPaths)
 
 	for _, currentDir := range searchPaths {
 		for _, ext := range []string{".yaml", ".yml"} {

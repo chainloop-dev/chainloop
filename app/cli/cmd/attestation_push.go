@@ -126,7 +126,7 @@ func newAttestationPushCmd() *cobra.Command {
 			// and fail the command if needed
 			if res.Status.MustBlockOnPolicyViolations {
 				if bypassPolicyCheck {
-					logger.Warn().Msg(exceptionBypassPolicyCheck)
+					Logger.Warn().Msg(exceptionBypassPolicyCheck)
 					return nil
 				}
 

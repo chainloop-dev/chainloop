@@ -29,7 +29,7 @@ func newWorkflowDeleteCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := action.NewWorkflowDelete(ActionOpts).Run(name, projectName)
 			if err == nil {
-				logger.Info().Msg("Workflow deleted!")
+				Logger.Info().Msg("Workflow deleted!")
 			}
 			return err
 		},

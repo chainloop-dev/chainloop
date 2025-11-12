@@ -30,7 +30,7 @@ func newWorkflowContractDeleteCmd() *cobra.Command {
 			if err := action.NewWorkflowContractDelete(ActionOpts).Run(name); err != nil {
 				return err
 			}
-			logger.Info().Msg("contract deleted!")
+			Logger.Info().Msg("contract deleted!")
 			return nil
 		},
 	}

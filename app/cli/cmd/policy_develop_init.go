@@ -63,7 +63,7 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
 				return newGracefulError(err)
 			}
 
-			logger.Info().Msg("Initialized policy files")
+			Logger.Info().Msg("Initialized policy files")
 
 			return nil
 		},

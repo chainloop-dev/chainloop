@@ -34,7 +34,7 @@ func newAPITokenRevokeCmd() *cobra.Command {
 				return fmt.Errorf("revoking API token: %w", err)
 			}
 
-			logger.Info().Msg("API token revoked!")
+			Logger.Info().Msg("API token revoked!")
 			return nil
 		},
 	}

@@ -54,11 +54,11 @@ func newAttestationInitCmd() *cobra.Command {
 				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
 				// we do gracefully load, if not found, or any other error we continue
 				if err != nil {
-					logger.Debug().Msgf("failed to load chainloop config: %s", err)
+					Logger.Debug().Msgf("failed to load chainloop config: %s", err)
 					return nil
 				}
 
-				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
+				Logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
 
 				projectVersion = cfg.ProjectVersion
 			}
@@ -109,7 +109,7 @@ func newAttestationInitCmd() *cobra.Command {
 				return newGracefulError(err)
 			}
 
-			logger.Info().Msg("Attestation initialized! now you can check its status or add materials to it")
+			Logger.Info().Msg("Attestation initialized! now you can check its status or add materials to it")
 
 			// Show the status information
 			statusAction, err := action.NewAttestationStatus(&action.AttestationStatusOpts{ActionsOpts: ActionOpts, UseAttestationRemoteState: useAttestationRemoteState, LocalStatePath: attestationLocalStatePath})
@@ -123,11 +123,11 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			if res.DryRun {
-				logger.Info().Msg("The attestation is being crafted in dry-run mode. It will not get stored once rendered")
+				Logger.Info().Msg("The attestation is being crafted in dry-run mode. It will not get stored once rendered")
 			}
 
 			if projectName == "" {
-				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
+				Logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
 			}
 
 			return output.EncodeOutput(flagOutputFormat, res, fullStatusTable)

@@ -65,7 +65,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 				if s, ok := status.FromError(err); ok {
 					if s.Code() == codes.AlreadyExists {
 						if skipIfExists {
-							logger.Info().Msg("Workflow already exists")
+							Logger.Info().Msg("Workflow already exists")
 							return nil
 						}
 					}
@@ -79,7 +79,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 				return fmt.Errorf("failed to print workflow: %w", err)
 			}
 
-			logger.Info().Msg("To Attest this workflow you'll need to provide an API token. See \"chainloop organization api-token\" command for more information.\n")
+			Logger.Info().Msg("To Attest this workflow you'll need to provide an API token. See \"chainloop organization api-token\" command for more information.\n")
 
 			return nil
 		},

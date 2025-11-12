@@ -30,7 +30,7 @@ func newRegisteredIntegrationDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Integration deregistered!")
+			Logger.Info().Msg("Integration deregistered!")
 			return nil
 		},
 	}

@@ -49,7 +49,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Contract updated!")
+			Logger.Info().Msg("Contract updated!")
 			return output.EncodeOutput(flagOutputFormat, res, contractDescribeTableOutput)
 		},
 	}

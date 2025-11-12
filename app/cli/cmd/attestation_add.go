@@ -112,7 +112,7 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					logger.Info().Msg("material added to attestation")
+					Logger.Info().Msg("material added to attestation")
 
 					policies, err := a.GetPolicyEvaluations(cmd.Context(), attestationID)
 					if err != nil {

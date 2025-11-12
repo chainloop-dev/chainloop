@@ -93,11 +93,11 @@ func newOrganizationMemberList() *cobra.Command {
 			if pgResponse.TotalPages >= paginationOpts.Page {
 				inPage := min(paginationOpts.Limit, len(res.Memberships))
 				lowerBound := (paginationOpts.Page - 1) * paginationOpts.Limit
-				logger.Info().Msg(fmt.Sprintf("Showing [%d-%d] out of %d", lowerBound+1, lowerBound+inPage, pgResponse.TotalCount))
+				Logger.Info().Msg(fmt.Sprintf("Showing [%d-%d] out of %d", lowerBound+1, lowerBound+inPage, pgResponse.TotalCount))
 			}
 
 			if pgResponse.TotalCount > pgResponse.Page*pgResponse.PageSize {
-				logger.Info().Msg(fmt.Sprintf("Next page available: %d", pgResponse.Page+1))
+				Logger.Info().Msg(fmt.Sprintf("Next page available: %d", pgResponse.Page+1))
 			}
 
 			return nil

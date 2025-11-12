@@ -54,7 +54,7 @@ func newAuthDeleteAccountCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Account deleted :(")
+			Logger.Info().Msg("Account deleted :(")
 			return nil
 		},
 	}

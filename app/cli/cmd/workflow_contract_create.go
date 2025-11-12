@@ -48,7 +48,7 @@ func newWorkflowContractCreateCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Contract created!")
+			Logger.Info().Msg("Contract created!")
 			return output.EncodeOutput(flagOutputFormat, res, contractItemTableOutput)
 		},
 	}

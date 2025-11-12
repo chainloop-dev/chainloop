@@ -62,7 +62,7 @@ func newWorkflowContractDescribeCmd() *cobra.Command {
 
 func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 	if flagOutputFormat != formatContract {
-		logger.Info().Msg("To download the contract, run the command with the \"--output schema\" option")
+		Logger.Info().Msg("To download the contract, run the command with the \"--output schema\" option")
 	}
 
 	err := output.EncodeOutput(flagOutputFormat, run, contractDescribeTableOutput)

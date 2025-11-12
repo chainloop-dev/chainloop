@@ -87,6 +87,6 @@ func runWithBackoffRetry(fn func() error) error {
 		},
 		backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(3*time.Minute)),
 		func(err error, delay time.Duration) {
-			logger.Err(err).Msgf("retrying in %s", delay)
+			Logger.Err(err).Msgf("retrying in %s", delay)
 		})
 }

@@ -132,14 +132,14 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 
 	if run.WorkflowRun.FinishedAt == nil {
 		gt.Render()
-		logger.Info().Msg("the attestation crafting process is in progress, it has not been received yet")
+		Logger.Info().Msg("the attestation crafting process is in progress, it has not been received yet")
 		return nil
 	}
 
 	att := run.Attestation
 	if att == nil {
 		gt.Render()
-		logger.Warn().Msg("there was an issue retrieving the attestation")
+		Logger.Warn().Msg("there was an issue retrieving the attestation")
 		return nil
 	}
 
@@ -174,7 +174,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	gt.Render()
 
 	predicateV1Table(att)
-	logger.Info().Msg("you can use the flag \"--output statement\" to see the full in-toto statement")
+	Logger.Info().Msg("you can use the flag \"--output statement\" to see the full in-toto statement")
 	return nil
 }
 
@@ -286,7 +286,7 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 
 	// Try to encode the output using some additional custom formats
 	if run.Attestation == nil {
-		logger.Info().Msg("This run doesn't have an attestation, noop")
+		Logger.Info().Msg("This run doesn't have an attestation, noop")
 		return nil
 	}
 

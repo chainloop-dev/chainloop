@@ -63,7 +63,7 @@ func newOrganizationMemberDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Member deleted")
+			Logger.Info().Msg("Member deleted")
 			return nil
 		},
 	}

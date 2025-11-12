@@ -30,7 +30,7 @@ func newConfigResetCmd() *cobra.Command {
 			configFile := viper.ConfigFileUsed()
 			err := os.Remove(configFile)
 			cobra.CheckErr(err)
-			logger.Info().Str("file", configFile).Msg("Config file removed")
+			Logger.Info().Str("file", configFile).Msg("Config file removed")
 		},
 	}
 

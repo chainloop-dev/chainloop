@@ -40,7 +40,7 @@ func newCASBackendDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Backend deleted")
+			Logger.Info().Msg("Backend deleted")
 
 			return nil
 		},

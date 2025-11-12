@@ -48,7 +48,7 @@ func newOrganizationDeleteCmd() *cobra.Command {
 				return fmt.Errorf("writing config file: %w", err)
 			}
 
-			logger.Info().Str("organization", orgName).Msg("Organization deleted")
+			Logger.Info().Str("organization", orgName).Msg("Organization deleted")
 			return nil
 		},
 	}

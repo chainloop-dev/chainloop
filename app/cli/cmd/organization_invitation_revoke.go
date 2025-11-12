@@ -32,7 +32,7 @@ func newOrganizationInvitationRevokeCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Invitation Revoked!")
+			Logger.Info().Msg("Invitation Revoked!")
 			return nil
 		},
 	}

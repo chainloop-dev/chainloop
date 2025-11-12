@@ -71,7 +71,7 @@ func newOrganizationLeaveCmd() *cobra.Command {
 				return fmt.Errorf("writing config file: %w", err)
 			}
 
-			logger.Info().Msg("Membership deleted")
+			Logger.Info().Msg("Membership deleted")
 			return nil
 		},
 	}

@@ -54,7 +54,7 @@ func newPolicyDevelopLintCmd() *cobra.Command {
 			}
 
 			if result.Valid {
-				logger.Info().Msg("policy is valid!")
+				Logger.Info().Msg("policy is valid!")
 				return nil
 			}
 

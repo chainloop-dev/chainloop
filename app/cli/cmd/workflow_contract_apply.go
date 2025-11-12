@@ -53,7 +53,7 @@ or update it if it already exists.`,
 				return err
 			}
 
-			logger.Info().Msg("Contract applied!")
+			Logger.Info().Msg("Contract applied!")
 			return output.EncodeOutput(flagOutputFormat, res, contractItemTableOutput)
 		},
 	}

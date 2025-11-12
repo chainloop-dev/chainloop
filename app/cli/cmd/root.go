@@ -41,11 +41,11 @@ import (
 )
 
 var (
+	Logger           zerolog.Logger
 	flagCfgFile      string
 	flagDebug        bool
 	flagOutputFormat string
 	ActionOpts       *action.ActionsOpts
-	logger           zerolog.Logger
 	defaultCPAPI     = "api.cp.chainloop.dev:443"
 	defaultCASAPI    = "api.cas.chainloop.dev:443"
 	apiToken         string
@@ -76,7 +76,7 @@ func Execute(rootCmd *cobra.Command) error {
 		// The local file is pointing to the wrong organization, we remove it
 		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
 			if err := setLocalOrganization(""); err != nil {
-				logger.Debug().Err(err).Msg("failed to remove organization from config")
+				Logger.Debug().Err(err).Msg("failed to remove organization from config")
 			}
 		}
 
@@ -94,15 +94,15 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var err error
-			logger, err = initLogger(l)
+			Logger, err = initLogger(l)
 			if err != nil {
 				return err
 			}
 
-			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
+			Logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
 
 			if apiInsecure() {
-				logger.Warn().Msg("API contacted in insecure mode")
+				Logger.Warn().Msg("API contacted in insecure mode")
 			}
 
 			authToken, isUserToken, err := loadAuthToken(cmd)
@@ -128,7 +128,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 					return err
 				}
 
-				currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run()
+				currentContext, err := action.NewConfigCurrentContext(newActionOpts(Logger, conn, authToken)).Run()
 				if err == nil && currentContext.CurrentMembership != nil {
 					if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
 						return fmt.Errorf("writing config file: %w", err)
@@ -154,10 +154,10 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				return err
 			}
 
-			ActionOpts = newActionOpts(logger, conn, authToken)
+			ActionOpts = newActionOpts(Logger, conn, authToken)
 
 			if !isTelemetryDisabled() {
-				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
+				Logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
 
 				telemetryWg.Add(1)
 				go func() {
@@ -174,13 +174,13 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 						// Once we have the token type we can send it to the telemetry service by injecting it on the context
 						authToken, err := token.Parse(authToken)
 						if err != nil {
-							logger.Debug().Err(err).Msg("parsing token for telemetry")
+							Logger.Debug().Err(err).Msg("parsing token for telemetry")
 							return
 						}
 
 						err = recordCommand(cmd, authToken)
 						if err != nil {
-							logger.Debug().Err(err).Msg("sending command to telemetry")
+							Logger.Debug().Err(err).Msg("sending command to telemetry")
 						}
 						close(done)
 					}()
@@ -247,9 +247,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 	// Load plugins for root command and subcommands (except completion and help)
 	if len(os.Args) == 1 || (len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help") {
-		pluginManager = plugins.NewManager(&logger)
+		pluginManager = plugins.NewManager(&Logger)
 		if err := loadAllPlugins(rootCmd); err != nil {
-			logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
+			Logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
 		}
 	}
 
@@ -372,13 +372,13 @@ func loadAuthToken(cmd *cobra.Command) (string, bool, error) {
 
 	// Now we check explicitly provided API token via the flag
 	if apiToken != "" {
-		logger.Info().Msg("API token provided to the command line")
+		Logger.Info().Msg("API token provided to the command line")
 		return apiToken, false, nil
 	}
 
 	// If both the user authentication and the API token en var are set, we default to user authentication
 	if userToken != "" && apiTokenFromVar != "" {
-		logger.Warn().Msgf("Both user credentials and $%s set. Ignoring $%s.", tokenEnvVarName, tokenEnvVarName)
+		Logger.Warn().Msgf("Both user credentials and $%s set. Ignoring $%s.", tokenEnvVarName, tokenEnvVarName)
 		return userToken, true, nil
 	} else if apiTokenFromVar != "" {
 		return apiTokenFromVar, false, nil
@@ -400,7 +400,7 @@ var (
 func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) error {
 	telemetryClient, err := posthog.NewClient(posthogAPIKey, posthogEndpoint)
 	if err != nil {
-		logger.Debug().Err(err).Msgf("creating telemetry client: %v", err)
+		Logger.Debug().Err(err).Msgf("creating telemetry client: %v", err)
 		return nil
 	}
 

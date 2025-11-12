@@ -55,7 +55,7 @@ func newAttestationResetCmd() *cobra.Command {
 				msg = "Attestation marked as failed"
 			}
 
-			logger.Info().Msg(msg)
+			Logger.Info().Msg(msg)
 
 			return nil
 		},

@@ -45,7 +45,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Info().Msg("Organization updated!")
+			Logger.Info().Msg("Organization updated!")
 			return nil
 		},
 	}

@@ -40,7 +40,7 @@ func newOrganizationCreateCmd() *cobra.Command {
 				return fmt.Errorf("writing config file: %w", err)
 			}
 
-			logger.Info().Msgf("Organization %q created!", org.Name)
+			Logger.Info().Msgf("Organization %q created!", org.Name)
 			return nil
 		},
 	}

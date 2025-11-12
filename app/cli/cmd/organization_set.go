@@ -61,7 +61,7 @@ func newOrganizationSet() *cobra.Command {
 				}
 			}
 
-			logger.Info().Msg("Organization switched!")
+			Logger.Info().Msg("Organization switched!")
 			return output.EncodeOutput(flagOutputFormat, []*action.MembershipItem{membership}, orgMembershipTableOutput)
 		},
 	}
