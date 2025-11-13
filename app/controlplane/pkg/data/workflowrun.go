@@ -64,7 +64,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 
 	// If RequireExistingVersion is set, fail if the version doesn't exist
 	if opts.RequireExistingVersion && version == nil {
-		return nil, biz.NewErrNotFound("project version")
+		return nil, biz.NewErrValidationStr(fmt.Errorf("project version %q not found", opts.ProjectVersion).Error())
 	}
 
 	var p *ent.WorkflowRun
