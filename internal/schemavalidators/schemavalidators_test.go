@@ -102,6 +102,10 @@ func TestValidateCycloneDX1_6(t *testing.T) {
 			name:     "1.6 version",
 			filePath: "./testdata/sbom.cyclonedx-1.6.json",
 		},
+		{
+			name:     "1.6 version with duplicated element",
+			filePath: "./testdata/sbom.cyclonedx-duplicated.json",
+		},
 	}
 
 	for _, tc := range testCases {
