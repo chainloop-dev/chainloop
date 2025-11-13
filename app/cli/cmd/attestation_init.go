@@ -158,7 +158,7 @@ func newAttestationInitCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
-	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "fail if the version doesn't exist in the system")
+	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
 
 	return cmd
 }
