@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ func newAttestationInitCmd() *cobra.Command {
 		projectName           string
 		projectVersion        string
 		projectVersionRelease bool
+		existingVersion       bool
 		newWorkflowcontract   string
 	)
 
@@ -67,6 +68,10 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("project version is required when using --release")
 			}
 
+			if existingVersion && projectVersion == "" {
+				return errors.New("project version is required when using --existing-version")
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -94,6 +99,7 @@ func newAttestationInitCmd() *cobra.Command {
 						WorkflowName:                 workflowName,
 						NewWorkflowContractRef:       newWorkflowcontract,
 						ProjectVersionMarkAsReleased: projectVersionRelease,
+						RequireExistingVersion:       existingVersion,
 					})
 
 					return err
@@ -152,6 +158,7 @@ func newAttestationInitCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
+	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
 
 	return cmd
 }

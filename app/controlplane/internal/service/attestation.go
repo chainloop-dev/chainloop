@@ -186,12 +186,13 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
-		WorkflowID:       wf.ID.String(),
-		ContractRevision: contractVersion,
-		RunnerRunURL:     req.GetJobUrl(),
-		RunnerType:       req.GetRunner().String(),
-		CASBackendID:     backend.ID,
-		ProjectVersion:   req.GetProjectVersion(),
+		WorkflowID:             wf.ID.String(),
+		ContractRevision:       contractVersion,
+		RunnerRunURL:           req.GetJobUrl(),
+		RunnerType:             req.GetRunner().String(),
+		CASBackendID:           backend.ID,
+		ProjectVersion:         req.GetProjectVersion(),
+		RequireExistingVersion: req.GetRequireExistingVersion(),
 	}
 
 	run, err := s.wrUseCase.Create(ctx, opts)

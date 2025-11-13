@@ -122,6 +122,8 @@ message AttestationServiceInitRequest {
 
   // Optional project version
   string project_version = 6;
+  // Optional flag to require that the project version already exists
+  bool require_existing_version = 7;
 }
 
 message AttestationServiceInitResponse {

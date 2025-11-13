@@ -94,6 +94,8 @@ export interface AttestationServiceInitRequest {
   projectName: string;
   /** Optional project version */
   projectVersion: string;
+  /** Optional flag to require that the project version already exists */
+  requireExistingVersion: boolean;
 }
 
 export interface AttestationServiceInitResponse {
@@ -1061,7 +1063,15 @@ export const AttestationServiceGetContractResponse_Result = {
 };
 
 function createBaseAttestationServiceInitRequest(): AttestationServiceInitRequest {
-  return { contractRevision: 0, jobUrl: "", runner: 0, workflowName: "", projectName: "", projectVersion: "" };
+  return {
+    contractRevision: 0,
+    jobUrl: "",
+    runner: 0,
+    workflowName: "",
+    projectName: "",
+    projectVersion: "",
+    requireExistingVersion: false,
+  };
 }
 
 export const AttestationServiceInitRequest = {
@@ -1083,6 +1093,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.projectVersion !== "") {
       writer.uint32(50).string(message.projectVersion);
+    }
+    if (message.requireExistingVersion === true) {
+      writer.uint32(56).bool(message.requireExistingVersion);
     }
     return writer;
   },
@@ -1136,6 +1149,13 @@ export const AttestationServiceInitRequest = {
 
           message.projectVersion = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.requireExistingVersion = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1153,6 +1173,7 @@ export const AttestationServiceInitRequest = {
       workflowName: isSet(object.workflowName) ? String(object.workflowName) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      requireExistingVersion: isSet(object.requireExistingVersion) ? Boolean(object.requireExistingVersion) : false,
     };
   },
 
@@ -1164,6 +1185,7 @@ export const AttestationServiceInitRequest = {
     message.workflowName !== undefined && (obj.workflowName = message.workflowName);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.requireExistingVersion !== undefined && (obj.requireExistingVersion = message.requireExistingVersion);
     return obj;
   },
 
@@ -1181,6 +1203,7 @@ export const AttestationServiceInitRequest = {
     message.workflowName = object.workflowName ?? "";
     message.projectName = object.projectName ?? "";
     message.projectVersion = object.projectVersion ?? "";
+    message.requireExistingVersion = object.requireExistingVersion ?? false;
     return message;
   },
 };
