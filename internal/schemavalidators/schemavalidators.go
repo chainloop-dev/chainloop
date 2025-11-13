@@ -138,11 +138,16 @@ func ValidateCycloneDX(data interface{}, version CycloneDXVersion) error {
 		}
 		var validationError *jsonschema.ValidationError
 		if errors.As(err, &validationError) {
-			if slices.ContainsFunc(validationError.Causes, func(v0 *jsonschema.ValidationError) bool {
-				return slices.ContainsFunc(v0.Causes, func(v1 *jsonschema.ValidationError) bool {
-					// workaround: Some scanners like Jfrog Xray might report null `cwes` element ("cwes": null)
+			if slices.ContainsFunc(validationError.Causes, func(cause *jsonschema.ValidationError) bool {
+				// Jfrog Xray: Do not fail in case of duplicated components. Policies will take care of validation and deduplication
+				if cause.KeywordLocation == "/properties/components/uniqueItems" {
+					return true
+				}
+				// Some validation errors are found deeper in the tree
+				return slices.ContainsFunc(cause.Causes, func(c1 *jsonschema.ValidationError) bool {
+					// Some scanners like Jfrog Xray might report null `cwes` element ("cwes": null)
 					// the validator would fail with "expected array, but got null"
-					return v1.KeywordLocation == "/properties/vulnerabilities/items/$ref/properties/cwes/type"
+					return c1.KeywordLocation == "/properties/vulnerabilities/items/$ref/properties/cwes/type"
 				})
 			}) {
 				return nil
