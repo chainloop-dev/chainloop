@@ -1,5 +1,6 @@
-# This can indicate the next version and by default it will be marked as pre-release
-projectVersion: v1.56.0
+# This indicates the [current version]+next
+# to indicate that we are building a new version of the project
+projectVersion: v1.55.0+next
 
 # Experimental feature used by Chainloop labs shared workflow https://github.com/chainloop-dev/labs
 # It maps the material names with location in disk so they get automatically attested
