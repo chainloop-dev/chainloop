@@ -81,6 +81,7 @@ type AttestationInitRunOpts struct {
 	ProjectName                  string
 	ProjectVersion               string
 	ProjectVersionMarkAsReleased bool
+	RequireExistingVersion       bool
 	WorkflowName                 string
 	NewWorkflowContractRef       string
 }
@@ -190,9 +191,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 				JobUrl:           discoveredRunner.RunURI(),
 				ContractRevision: int32(opts.ContractRevision),
 				// send the workflow name explicitly provided by the user to detect that functional case
-				WorkflowName:   opts.WorkflowName,
-				ProjectName:    opts.ProjectName,
-				ProjectVersion: opts.ProjectVersion,
+				WorkflowName:           opts.WorkflowName,
+				ProjectName:            opts.ProjectName,
+				ProjectVersion:         opts.ProjectVersion,
+				RequireExistingVersion: opts.RequireExistingVersion,
 			},
 		)
 		if err != nil {

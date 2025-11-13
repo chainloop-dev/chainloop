@@ -190,12 +190,13 @@ func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderT
 }
 
 type WorkflowRunCreateOpts struct {
-	WorkflowID       string
-	ContractRevision *WorkflowContractWithVersion
-	RunnerRunURL     string
-	RunnerType       string
-	CASBackendID     uuid.UUID
-	ProjectVersion   string
+	WorkflowID             string
+	ContractRevision       *WorkflowContractWithVersion
+	RunnerRunURL           string
+	RunnerType             string
+	CASBackendID           uuid.UUID
+	ProjectVersion         string
+	RequireExistingVersion bool
 }
 
 type WorkflowRunRepoCreateOpts struct {
@@ -204,6 +205,7 @@ type WorkflowRunRepoCreateOpts struct {
 	Backends                     []uuid.UUID
 	LatestRevision, UsedRevision int
 	ProjectVersion               string
+	RequireExistingVersion       bool
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -234,14 +236,15 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 	backends := []uuid.UUID{opts.CASBackendID}
 	result, err := uc.wfRunRepo.Create(ctx,
 		&WorkflowRunRepoCreateOpts{
-			WorkflowID:      workflowUUID,
-			SchemaVersionID: contractRevision.Version.ID,
-			RunURL:          opts.RunnerRunURL,
-			RunnerType:      opts.RunnerType,
-			Backends:        backends,
-			LatestRevision:  contractRevision.Contract.LatestRevision,
-			UsedRevision:    contractRevision.Version.Revision,
-			ProjectVersion:  opts.ProjectVersion,
+			WorkflowID:             workflowUUID,
+			SchemaVersionID:        contractRevision.Version.ID,
+			RunURL:                 opts.RunnerRunURL,
+			RunnerType:             opts.RunnerType,
+			Backends:               backends,
+			LatestRevision:         contractRevision.Contract.LatestRevision,
+			UsedRevision:           contractRevision.Version.Revision,
+			ProjectVersion:         opts.ProjectVersion,
+			RequireExistingVersion: opts.RequireExistingVersion,
 		})
 	if err != nil {
 		return nil, err
