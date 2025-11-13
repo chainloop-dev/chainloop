@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Install Chainloop
         run: |
-          curl -sfL https://raw.githubusercontent.com/chainloop-dev/chainloop/8a12fce328929abf012c96a07bddfeaf94c74ed4/docs/static/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
@@ -68,7 +68,9 @@ jobs:
           app_version=$(cat deployment/chainloop/Chart.yaml | yq .appVersion)
 
           # Force the version that's inside the Chart.yaml file
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version ${app_version}
+          # and make sure it exists in the project by passing the --existing-version flag
+          # if it doesn't exist, the attestation will fail, and first we need to create/update/rename the version in the project and re-run the job
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version ${app_version} --existing-version
 
           # Attest Control plane image
           chainloop attestation add --name control-plane-image --value "${CONTAINER_CP}"
