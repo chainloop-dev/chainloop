@@ -162,16 +162,16 @@ jobs:
           gh release download ${{ github.ref_name }} -A tar.gz -O /tmp/source-code.tar.gz
           chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
-      - name: Bump Chart and Dagger Version
-        run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
-      - name: Bump Project Version
-        run: .github/workflows/utils/bump-project-version.sh ${{ github.ref_name }}
-
       - name: Promote Chainloop Project Version
         run: |
           current_version="$(cat .chainloop.yml | awk '/^projectVersion:/ {print $2}')"
           # Rename the existing pre-release into the actual release name
           chainloop project version update --project ${CHAINLOOP_PROJECT_NAME} --name $current_version --new-name ${{ github.ref_name }} || true
+
+      - name: Bump Chart and Dagger Version
+        run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
+      - name: Bump Project Version
+        run: .github/workflows/utils/bump-project-version.sh ${{ github.ref_name }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
