@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,6 +59,8 @@ func (WorkflowRun) Fields() []ent.Field {
 		// We have runs without data
 		field.UUID("version_id", uuid.UUID{}),
 		field.UUID("workflow_id", uuid.UUID{}).Immutable(),
+		// Whether the run has policy violations (nullable for backward compatibility)
+		field.Bool("has_policy_violations").Optional().Nillable(),
 	}
 }
 

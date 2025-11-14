@@ -17615,6 +17615,7 @@ type WorkflowRunMutation struct {
 	addcontract_revision_used   *int
 	contract_revision_latest    *int
 	addcontract_revision_latest *int
+	has_policy_violations       *bool
 	clearedFields               map[string]struct{}
 	workflow                    *uuid.UUID
 	clearedworkflow             bool
@@ -18335,6 +18336,55 @@ func (m *WorkflowRunMutation) ResetWorkflowID() {
 	m.workflow = nil
 }
 
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (m *WorkflowRunMutation) SetHasPolicyViolations(b bool) {
+	m.has_policy_violations = &b
+}
+
+// HasPolicyViolations returns the value of the "has_policy_violations" field in the mutation.
+func (m *WorkflowRunMutation) HasPolicyViolations() (r bool, exists bool) {
+	v := m.has_policy_violations
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHasPolicyViolations returns the old "has_policy_violations" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldHasPolicyViolations(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHasPolicyViolations is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHasPolicyViolations requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHasPolicyViolations: %w", err)
+	}
+	return oldValue.HasPolicyViolations, nil
+}
+
+// ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
+func (m *WorkflowRunMutation) ClearHasPolicyViolations() {
+	m.has_policy_violations = nil
+	m.clearedFields[workflowrun.FieldHasPolicyViolations] = struct{}{}
+}
+
+// HasPolicyViolationsCleared returns if the "has_policy_violations" field was cleared in this mutation.
+func (m *WorkflowRunMutation) HasPolicyViolationsCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldHasPolicyViolations]
+	return ok
+}
+
+// ResetHasPolicyViolations resets all changes to the "has_policy_violations" field.
+func (m *WorkflowRunMutation) ResetHasPolicyViolations() {
+	m.has_policy_violations = nil
+	delete(m.clearedFields, workflowrun.FieldHasPolicyViolations)
+}
+
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *WorkflowRunMutation) ClearWorkflow() {
 	m.clearedworkflow = true
@@ -18555,7 +18605,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -18595,6 +18645,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.workflow != nil {
 		fields = append(fields, workflowrun.FieldWorkflowID)
 	}
+	if m.has_policy_violations != nil {
+		fields = append(fields, workflowrun.FieldHasPolicyViolations)
+	}
 	return fields
 }
 
@@ -18629,6 +18682,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.VersionID()
 	case workflowrun.FieldWorkflowID:
 		return m.WorkflowID()
+	case workflowrun.FieldHasPolicyViolations:
+		return m.HasPolicyViolations()
 	}
 	return nil, false
 }
@@ -18664,6 +18719,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldVersionID(ctx)
 	case workflowrun.FieldWorkflowID:
 		return m.OldWorkflowID(ctx)
+	case workflowrun.FieldHasPolicyViolations:
+		return m.OldHasPolicyViolations(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -18764,6 +18821,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetWorkflowID(v)
 		return nil
+	case workflowrun.FieldHasPolicyViolations:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHasPolicyViolations(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -18842,6 +18906,9 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldAttestationState) {
 		fields = append(fields, workflowrun.FieldAttestationState)
 	}
+	if m.FieldCleared(workflowrun.FieldHasPolicyViolations) {
+		fields = append(fields, workflowrun.FieldHasPolicyViolations)
+	}
 	return fields
 }
 
@@ -18876,6 +18943,9 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldAttestationState:
 		m.ClearAttestationState()
+		return nil
+	case workflowrun.FieldHasPolicyViolations:
+		m.ClearHasPolicyViolations()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
@@ -18923,6 +18993,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldWorkflowID:
 		m.ResetWorkflowID()
+		return nil
+	case workflowrun.FieldHasPolicyViolations:
+		m.ResetHasPolicyViolations()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

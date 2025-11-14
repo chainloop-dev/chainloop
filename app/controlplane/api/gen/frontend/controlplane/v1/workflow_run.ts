@@ -13,6 +13,9 @@ import { CursorPaginationRequest, CursorPaginationResponse } from "./pagination"
 import {
   AttestationItem,
   CASBackendItem,
+  PolicyViolationsFilter,
+  policyViolationsFilterFromJSON,
+  policyViolationsFilterToJSON,
   RunStatus,
   runStatusFromJSON,
   runStatusToJSON,
@@ -214,6 +217,8 @@ export interface WorkflowRunServiceListRequest {
   status: RunStatus;
   /** by project version */
   projectVersion: string;
+  /** by policy violations status */
+  policyViolations: PolicyViolationsFilter;
   /** pagination options */
   pagination?: CursorPaginationRequest;
 }
@@ -1862,7 +1867,14 @@ export const AttestationServiceCancelResponse = {
 };
 
 function createBaseWorkflowRunServiceListRequest(): WorkflowRunServiceListRequest {
-  return { workflowName: "", projectName: "", status: 0, projectVersion: "", pagination: undefined };
+  return {
+    workflowName: "",
+    projectName: "",
+    status: 0,
+    projectVersion: "",
+    policyViolations: 0,
+    pagination: undefined,
+  };
 }
 
 export const WorkflowRunServiceListRequest = {
@@ -1878,6 +1890,9 @@ export const WorkflowRunServiceListRequest = {
     }
     if (message.projectVersion !== "") {
       writer.uint32(42).string(message.projectVersion);
+    }
+    if (message.policyViolations !== 0) {
+      writer.uint32(48).int32(message.policyViolations);
     }
     if (message.pagination !== undefined) {
       CursorPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
@@ -1920,6 +1935,13 @@ export const WorkflowRunServiceListRequest = {
 
           message.projectVersion = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.policyViolations = reader.int32() as any;
+          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1942,6 +1964,7 @@ export const WorkflowRunServiceListRequest = {
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
       projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      policyViolations: isSet(object.policyViolations) ? policyViolationsFilterFromJSON(object.policyViolations) : 0,
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
@@ -1952,6 +1975,8 @@ export const WorkflowRunServiceListRequest = {
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
     message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.policyViolations !== undefined &&
+      (obj.policyViolations = policyViolationsFilterToJSON(message.policyViolations));
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
@@ -1969,6 +1994,7 @@ export const WorkflowRunServiceListRequest = {
     message.projectName = object.projectName ?? "";
     message.status = object.status ?? 0;
     message.projectVersion = object.projectVersion ?? "";
+    message.policyViolations = object.policyViolations ?? 0;
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationRequest.fromPartial(object.pagination)
       : undefined;
