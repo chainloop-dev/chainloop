@@ -133,7 +133,7 @@ func newService(opts ...NewOpt) *service {
 
 type service struct {
 	log            *log.Helper
-	enforcer       *authz.Enforcer
+	authz          *biz.AuthzUseCase
 	projectUseCase *biz.ProjectUseCase
 	groupUseCase   *biz.GroupUseCase
 }
@@ -146,9 +146,9 @@ func WithLogger(logger log.Logger) NewOpt {
 	}
 }
 
-func WithEnforcer(enforcer *authz.Enforcer) NewOpt {
+func WithEnforcer(authzUC *biz.AuthzUseCase) NewOpt {
 	return func(s *service) {
-		s.enforcer = enforcer
+		s.authz = authzUC
 	}
 }
 
@@ -231,7 +231,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	// Try to enforce the policy with each matching role
 	// If any role passes, authorize the request
 	for _, rm := range matchingResources {
-		pass, err := s.enforcer.Enforce(string(rm.Role), op)
+		pass, err := s.authz.Enforce(ctx, string(rm.Role), op)
 		if err != nil {
 			return handleUseCaseErr(err, s.log)
 		}
@@ -289,7 +289,7 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 	}
 
 	orgRole := usercontext.CurrentAuthzSubject(ctx)
-	pass, err := s.enforcer.Enforce(orgRole, authz.PolicyProjectCreate)
+	pass, err := s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
 	if err != nil {
 		return handleUseCaseErr(err, s.log)
 	}

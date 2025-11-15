@@ -30,8 +30,8 @@ import (
 // Injectors from wire.go:
 
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
-	config := authzConfig(bootstrap)
-	enforcer, err := authz.NewInMemoryEnforcer(config)
+	config := authzConfig()
+	enforcer, err := authz.NewEnforcer(config)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -43,7 +43,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	authzUseCase := biz.NewAuthzUseCase(enforcer, apiTokenRepo, logger)
+	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, enforcer, apiTokenRepo, logger)
+	authzUseCase := biz.NewAuthzUseCase(bizAuthzUseCaseConfig)
 	userRepo := data.NewUserRepo(dataData, logger)
 	groupRepo := data.NewGroupRepo(dataData, logger)
 	membershipRepo := data.NewMembershipRepo(dataData, groupRepo, logger)
@@ -118,7 +119,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenJWTConfig := newJWTConfig(auth)
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, authzUseCase, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -140,9 +141,9 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, enforcer, membershipUseCase)
-	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, enforcer)
-	v5 := serviceOpts(logger, enforcer, projectUseCase, groupUseCase)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, authzUseCase, membershipUseCase)
+	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
+	v5 := serviceOpts(logger, authzUseCase, projectUseCase, groupUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
 	confServer := bootstrap.Server
 	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
@@ -206,7 +207,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
 	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v5...)
 	contextService := service.NewContextService(casBackendUseCase, userUseCase, v5...)
-	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, enforcer, v5...)
+	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, authzUseCase, v5...)
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v5...)
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v5...)
 	organizationService := service.NewOrganizationService(membershipUseCase, organizationUseCase, v5...)
@@ -319,8 +320,17 @@ var (
 
 // wire.go:
 
-func authzConfig(conf2 *conf.Bootstrap) *authz.Config {
-	return &authz.Config{RolesMap: authz.RolesMap, RestrictOrgCreation: conf2.RestrictOrgCreation}
+func authzConfig() *authz.Config {
+	return &authz.Config{RolesMap: authz.RolesMap}
+}
+
+func authzUseCaseConfig(conf2 *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+	return &biz.AuthzUseCaseConfig{
+		Enforcer:            enforcer,
+		APITokenRepo:        apiTokenRepo,
+		RestrictOrgCreation: conf2.RestrictOrgCreation,
+		Logger:              logger,
+	}
 }
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
@@ -345,8 +355,8 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(enforcer), service.WithProjectUseCase(pUC), service.WithGroupUseCase(gUC)}
+func serviceOpts(l log.Logger, authzUC *biz.AuthzUseCase, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(authzUC), service.WithProjectUseCase(pUC), service.WithGroupUseCase(gUC)}
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {

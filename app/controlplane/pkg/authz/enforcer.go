@@ -17,13 +17,13 @@ package authz
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
-	"github.com/casbin/casbin/v2/persist"
-	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
 )
 
 type SubjectAPIToken struct {
@@ -38,38 +38,29 @@ func (t *SubjectAPIToken) String() string {
 var modelFile []byte
 
 type Config struct {
-	RolesMap            map[Role][]*Policy
-	RestrictOrgCreation bool
+	RolesMap map[Role][]*Policy
 }
 
 type Enforcer struct {
 	*casbin.Enforcer
 
-	config              *Config
-	RestrictOrgCreation bool
+	config *Config
 }
 
 func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
+	// This enforcer does not support API token subjects
+	// this is due to the fact that API tokens are not stored in casbin yet
+	// To use them, make sure you use the AuthzUseCase.Enforce method instead
+	if strings.HasPrefix(sub, "api-token:") {
+		return false, errors.New("API token subjects not supported")
+	}
+
 	return e.Enforcer.Enforce(sub, p.Resource, p.Action)
 }
 
-// EnforceWithPolicies checks if the required policy exists in the provided list of allowed policies.
-// This is used for ACL-based authorization (e.g., API tokens) where policies are stored in the database
-// rather than in Casbin. Returns true if the required policy is found in the allowed list.
-// in the future we will use this function to check if the policy is allowed for the subject by running the enforcer with the subject
-func (e *Enforcer) EnforceWithPolicies(p *Policy, allowedPolicies []*Policy) (bool, error) {
-	for _, allowed := range allowedPolicies {
-		if allowed.Resource == p.Resource && allowed.Action == p.Action {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// NewInMemoryEnforcer creates a new casbin authorization enforcer with in-memory storage.
-// Only static role policies from RolesMap are loaded. API token policies are checked separately
-// using EnforceWithPolicies and are not stored in Casbin.
-func NewInMemoryEnforcer(config *Config) (*Enforcer, error) {
+// NewEnforcer creates a new casbin authorization enforcer with in-memory storage.
+// Only static role policies from RolesMap are loaded
+func NewEnforcer(config *Config) (*Enforcer, error) {
 	// load model defined in model.conf
 	m, err := model.NewModelFromString(string(modelFile))
 	if err != nil {
@@ -82,7 +73,7 @@ func NewInMemoryEnforcer(config *Config) (*Enforcer, error) {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
 
-	e := &Enforcer{enforcer, config, config.RestrictOrgCreation}
+	e := &Enforcer{enforcer, config}
 
 	// Initialize the enforcer with the roles map
 	if err := syncRBACRoles(e, config); err != nil {
@@ -92,52 +83,7 @@ func NewInMemoryEnforcer(config *Config) (*Enforcer, error) {
 	return e, nil
 }
 
-// NewFileAdapter creates a new casbin authorization enforcer
-// based on a CSV file as policies storage backend
-func NewFiletypeEnforcer(path string, config *Config) (*Enforcer, error) {
-	// policy storage in filesystem
-	a := fileadapter.NewAdapter(path)
-	e, err := newEnforcer(a, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create enforcer: %w", err)
-	}
-
-	return e, nil
-}
-
-// NewEnforcer creates a new casbin authorization enforcer for the policies stored
-// in the database and the model defined in model.conf
-func newEnforcer(a persist.Adapter, config *Config) (*Enforcer, error) {
-	// load model defined in model.conf
-	m, err := model.NewModelFromString(string(modelFile))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create model: %w", err)
-	}
-
-	// create enforcer for authorization
-	enforcer, err := casbin.NewEnforcer(m, a)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create enforcer: %w", err)
-	}
-
-	e := &Enforcer{enforcer, config, config.RestrictOrgCreation}
-
-	// Initialize the enforcer with the roles map
-	if err := syncRBACRoles(e, config); err != nil {
-		return nil, fmt.Errorf("failed to sync roles: %w", err)
-	}
-
-	return e, nil
-}
-
-// Load the roles map into the enforcer
-// This is done by adding all the policies defined in the roles map
-// and removing all the policies that are not
-func syncRBACRoles(e *Enforcer, config *Config) error {
-	return doSync(e, config)
-}
-
-func doSync(e *Enforcer, c *Config) error {
+func syncRBACRoles(e *Enforcer, c *Config) error {
 	// allow to override config during sync
 	conf := c
 	if conf == nil {

@@ -139,12 +139,14 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
 	config := authzConfig()
-	enforcer, err := authz.NewInMemoryEnforcer(config)
+	enforcer, err := authz.NewEnforcer(config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
+	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, enforcer, apiTokenRepo, logger)
+	authzUseCase := biz.NewAuthzUseCase(bizAuthzUseCaseConfig)
+	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, authzUseCase, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -157,8 +159,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	}
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
-	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, enforcer, membershipUseCase)
-	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, enforcer)
+	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, authzUseCase, membershipUseCase)
+	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
 	testingRepos := &TestingRepos{
 		Membership:        membershipRepo,
 		Referrer:          referrerRepo,
@@ -209,6 +211,15 @@ var (
 
 func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
+}
+
+func authzUseCaseConfig(conf2 *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+	return &biz.AuthzUseCaseConfig{
+		Enforcer:            enforcer,
+		APITokenRepo:        apiTokenRepo,
+		RestrictOrgCreation: conf2.RestrictOrgCreation,
+		Logger:              logger,
+	}
 }
 
 func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {

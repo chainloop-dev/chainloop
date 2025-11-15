@@ -58,7 +58,7 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 			// so for now we skip the authorization check for admin users since they are allowed to do anything
 			// TODO: fill out the rest of the policies in authz.ServerOperationsMap and remove this check
 			if authz.Role(subject).IsAdmin() {
-				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation)
+				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation, "component", "authz/middleware")
 				return handler(ctx, req)
 			}
 
@@ -73,7 +73,7 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 }
 
 func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer Enforcer, logger *log.Helper) error {
-	logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation)
+	logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation, "component", "authz/middleware")
 	// If there is no entry in the map for this API operation, we deny access
 	policies, err := policiesLookup(apiOperation)
 	if err != nil {
@@ -88,7 +88,7 @@ func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer E
 		}
 
 		if !ok {
-			logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
+			logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action, "component", "authz/middleware")
 			return errorsAPI.Forbidden("forbidden", "operation not allowed")
 		}
 	}

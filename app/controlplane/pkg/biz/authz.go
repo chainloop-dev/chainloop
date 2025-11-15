@@ -26,21 +26,33 @@ import (
 
 type AuthzUseCase struct {
 	log *log.Helper
-	*authz.Enforcer
-	apiTokenRepo APITokenRepo
+	// actual CASBIN enforcer
+	enforcer            *authz.Enforcer
+	apiTokenRepo        APITokenRepo
+	RestrictOrgCreation bool
 }
 
-func NewAuthzUseCase(enforcer *authz.Enforcer, apiTokenRepo APITokenRepo, logger log.Logger) *AuthzUseCase {
+type AuthzUseCaseConfig struct {
+	Enforcer            *authz.Enforcer
+	APITokenRepo        APITokenRepo
+	RestrictOrgCreation bool
+	Logger              log.Logger
+}
+
+func NewAuthzUseCase(config *AuthzUseCaseConfig) *AuthzUseCase {
 	return &AuthzUseCase{
-		log:          log.NewHelper(log.With(logger, "component", "biz/authz")),
-		apiTokenRepo: apiTokenRepo,
-		Enforcer:     enforcer,
+		log:                 log.NewHelper(log.With(config.Logger, "component", "biz/authz")),
+		apiTokenRepo:        config.APITokenRepo,
+		enforcer:            config.Enforcer,
+		RestrictOrgCreation: config.RestrictOrgCreation,
 	}
 }
 
 // Wrapper around the Enforcer.Enforce method that takes into account some of our nuances
 // with regards to policies retrieval and handling for API tokens.
-func (e *AuthzUseCase) Enforce(ctx context.Context, sub string, p *authz.Policy) (bool, error) {
+func (e *AuthzUseCase) Enforce(ctx context.Context, sub string, p *authz.Policy) (ok bool, err error) {
+	defer e.log.Infow("msg", "policy enforcement result", "sub", sub, "policy", p, "result", ok)
+
 	// Check if this is an API token (subject starts with "api-token:")
 	if strings.HasPrefix(sub, "api-token:") {
 		// load the token using the ID that's the second part of the subject
@@ -59,13 +71,16 @@ func (e *AuthzUseCase) Enforce(ctx context.Context, sub string, p *authz.Policy)
 			return false, NewErrNotFound("API token")
 		}
 
-		// For API tokens, use ACL-based enforcement with token's policies
-		ok, err := e.Enforcer.EnforceWithPolicies(p, token.Policies)
-		if err != nil {
-			return false, err
+		for _, allowed := range token.Policies {
+			if allowed.Resource == p.Resource && allowed.Action == p.Action {
+				return true, nil
+			}
 		}
 
-		return ok, nil
+		// Tokens for now only support ACL-based authorization
+		// in the future we'll continue to use the enforcer to check if the policy is allowed for the subject
+		return false, nil
 	}
-	return e.Enforcer.Enforce(sub, p)
+
+	return e.enforcer.Enforce(sub, p)
 }

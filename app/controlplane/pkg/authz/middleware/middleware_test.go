@@ -158,8 +158,7 @@ func TestWithAuthMiddleware(t *testing.T) {
 			ctx = transport.NewServerContext(ctx, &mockTransport{operation: tc.operationName})
 
 			e := NewMockEnforcer(t)
-			e.On("Enforce", subject, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
-			e.On("EnforceWithPolicies", mock.Anything, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
+			e.On("Enforce", mock.Anything, subject, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
 
 			m := WithAuthzMiddleware(e, logger)
 			_, err := m(emptyHandler)(ctx, nil)
