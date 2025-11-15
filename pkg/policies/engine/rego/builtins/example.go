@@ -19,9 +19,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/open-policy-agent/opa/v1/ast"
-	"github.com/open-policy-agent/opa/v1/topdown"
-	"github.com/open-policy-agent/opa/v1/types"
+	"github.com/open-policy-agent/opa/ast"
+	"github.com/open-policy-agent/opa/topdown"
+	"github.com/open-policy-agent/opa/types"
 )
 
 const helloBuiltinName = "chainloop.hello"
@@ -39,8 +39,8 @@ func RegisterHelloBuiltin() error {
 			),
 		},
 		Impl:          getHelloImpl,
-		SecurityLevel: SecurityLevelRestrictive, // Always available
-		Description:   "Discovers artifact graph data by calling the Referrer chainloop service",
+		SecurityLevel: SecurityLevelPermissive, // Only available in permissive mode
+		Description:   "Example builtin",
 	})
 }
 

@@ -23,9 +23,9 @@ import (
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
-	"github.com/open-policy-agent/opa/v1/ast"
-	"github.com/open-policy-agent/opa/v1/rego"
-	"github.com/open-policy-agent/opa/v1/topdown/print"
+	"github.com/open-policy-agent/opa/ast"
+	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/topdown/print"
 	"golang.org/x/exp/maps"
 )
 

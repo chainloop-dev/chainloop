@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-policy-agent/opa/v1/rego"
+	"github.com/open-policy-agent/opa/rego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -16,10 +16,7 @@
 package rego
 
 import (
-	"bytes"
 	"context"
-	"io"
-	"net/http"
 	"os"
 	"testing"
 
@@ -440,19 +437,6 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 }
 
 func TestRego_CustomBuiltinsPermissiveMode(t *testing.T) {
-	// Set up mock HTTP client
-	defer builtins.ResetHTTPClient()
-	builtins.SetHTTPClient(func() builtins.HTTPClient {
-		return &mockHTTPClient{
-			response: &http.Response{
-				StatusCode: 200,
-				Status:     "200 OK",
-				Body:       io.NopCloser(bytes.NewBufferString(`{"allowed": true}`)),
-				Header:     http.Header{},
-			},
-		}
-	})
-
 	regoContent, err := os.ReadFile("testfiles/custom_builtin_permissive.rego")
 	require.NoError(t, err)
 
@@ -482,8 +466,7 @@ result := {
 
 violations contains msg if {
 	# Try to use a permissive-only built-in
-	response := chainloop.http_with_auth("https://example.com", {"Authorization": "Bearer token"})
-	response.status != 200
+	response := chainloop.hello("world")
 	msg := "Request failed"
 }`)
 
@@ -547,17 +530,4 @@ violations contains msg if {
 		assert.False(t, result.Skipped)
 		assert.Len(t, result.Violations, 0)
 	})
-}
-
-// mockHTTPClient is a mock HTTP client for testing
-type mockHTTPClient struct {
-	response *http.Response
-	err      error
-}
-
-func (m *mockHTTPClient) Do(_ *http.Request) (*http.Response, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.response, nil
 }
