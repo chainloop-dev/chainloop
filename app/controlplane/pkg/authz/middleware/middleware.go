@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,10 @@ import (
 	"context"
 	"errors"
 	"regexp"
-	"strings"
 
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -32,8 +30,7 @@ import (
 )
 
 type Enforcer interface {
-	Enforce(sub string, p *authz.Policy) (bool, error)
-	EnforceWithPolicies(p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)
+	Enforce(ctx context.Context, sub string, p *authz.Policy) (bool, error)
 }
 
 // Check Authorization for the current API operation against the current user/token
@@ -83,37 +80,16 @@ func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer E
 		return errorsAPI.Forbidden("forbidden", err.Error())
 	}
 
-	// Check if this is an API token (subject starts with "api-token:")
-	if strings.HasPrefix(subject, "api-token:") {
-		// For API tokens, use ACL-based enforcement with token's policies
-		token := entities.CurrentAPIToken(ctx)
-		if token == nil {
-			return errorsAPI.InternalServer("internal error", "API token not found in context")
+	// For users, use role-based enforcement via Casbin
+	for _, p := range policies {
+		ok, err := enforcer.Enforce(ctx, subject, p)
+		if err != nil {
+			return errorsAPI.InternalServer("internal error", err.Error())
 		}
 
-		for _, p := range policies {
-			ok, err := enforcer.EnforceWithPolicies(p, token.Policies)
-			if err != nil {
-				return errorsAPI.InternalServer("internal error", err.Error())
-			}
-
-			if !ok {
-				logger.Infow("msg", "[authZ] policy not found in token policies", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
-				return errorsAPI.Forbidden("forbidden", "operation not allowed")
-			}
-		}
-	} else {
-		// For users, use role-based enforcement via Casbin
-		for _, p := range policies {
-			ok, err := enforcer.Enforce(subject, p)
-			if err != nil {
-				return errorsAPI.InternalServer("internal error", err.Error())
-			}
-
-			if !ok {
-				logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
-				return errorsAPI.Forbidden("forbidden", "operation not allowed")
-			}
+		if !ok {
+			logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
+			return errorsAPI.Forbidden("forbidden", "operation not allowed")
 		}
 	}
 

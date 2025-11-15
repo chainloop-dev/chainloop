@@ -5,6 +5,8 @@
 package middleware
 
 import (
+	"context"
+
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *MockEnforcer) EXPECT() *MockEnforcer_Expecter {
 }
 
 // Enforce provides a mock function for the type MockEnforcer
-func (_mock *MockEnforcer) Enforce(sub string, p *authz.Policy) (bool, error) {
-	ret := _mock.Called(sub, p)
+func (_mock *MockEnforcer) Enforce(ctx context.Context, sub string, p *authz.Policy) (bool, error) {
+	ret := _mock.Called(ctx, sub, p)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Enforce")
@@ -46,16 +48,16 @@ func (_mock *MockEnforcer) Enforce(sub string, p *authz.Policy) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, *authz.Policy) (bool, error)); ok {
-		return returnFunc(sub, p)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *authz.Policy) (bool, error)); ok {
+		return returnFunc(ctx, sub, p)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *authz.Policy) bool); ok {
-		r0 = returnFunc(sub, p)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *authz.Policy) bool); ok {
+		r0 = returnFunc(ctx, sub, p)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *authz.Policy) error); ok {
-		r1 = returnFunc(sub, p)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *authz.Policy) error); ok {
+		r1 = returnFunc(ctx, sub, p)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -68,25 +70,31 @@ type MockEnforcer_Enforce_Call struct {
 }
 
 // Enforce is a helper method to define mock.On call
+//   - ctx context.Context
 //   - sub string
 //   - p *authz.Policy
-func (_e *MockEnforcer_Expecter) Enforce(sub interface{}, p interface{}) *MockEnforcer_Enforce_Call {
-	return &MockEnforcer_Enforce_Call{Call: _e.mock.On("Enforce", sub, p)}
+func (_e *MockEnforcer_Expecter) Enforce(ctx interface{}, sub interface{}, p interface{}) *MockEnforcer_Enforce_Call {
+	return &MockEnforcer_Enforce_Call{Call: _e.mock.On("Enforce", ctx, sub, p)}
 }
 
-func (_c *MockEnforcer_Enforce_Call) Run(run func(sub string, p *authz.Policy)) *MockEnforcer_Enforce_Call {
+func (_c *MockEnforcer_Enforce_Call) Run(run func(ctx context.Context, sub string, p *authz.Policy)) *MockEnforcer_Enforce_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 *authz.Policy
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*authz.Policy)
+			arg1 = args[1].(string)
+		}
+		var arg2 *authz.Policy
+		if args[2] != nil {
+			arg2 = args[2].(*authz.Policy)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -97,73 +105,7 @@ func (_c *MockEnforcer_Enforce_Call) Return(b bool, err error) *MockEnforcer_Enf
 	return _c
 }
 
-func (_c *MockEnforcer_Enforce_Call) RunAndReturn(run func(sub string, p *authz.Policy) (bool, error)) *MockEnforcer_Enforce_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// EnforceWithPolicies provides a mock function for the type MockEnforcer
-func (_mock *MockEnforcer) EnforceWithPolicies(p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error) {
-	ret := _mock.Called(p, allowedPolicies)
-
-	if len(ret) == 0 {
-		panic("no return value specified for EnforceWithPolicies")
-	}
-
-	var r0 bool
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*authz.Policy, []*authz.Policy) (bool, error)); ok {
-		return returnFunc(p, allowedPolicies)
-	}
-	if returnFunc, ok := ret.Get(0).(func(*authz.Policy, []*authz.Policy) bool); ok {
-		r0 = returnFunc(p, allowedPolicies)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	if returnFunc, ok := ret.Get(1).(func(*authz.Policy, []*authz.Policy) error); ok {
-		r1 = returnFunc(p, allowedPolicies)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockEnforcer_EnforceWithPolicies_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnforceWithPolicies'
-type MockEnforcer_EnforceWithPolicies_Call struct {
-	*mock.Call
-}
-
-// EnforceWithPolicies is a helper method to define mock.On call
-//   - p *authz.Policy
-//   - allowedPolicies []*authz.Policy
-func (_e *MockEnforcer_Expecter) EnforceWithPolicies(p interface{}, allowedPolicies interface{}) *MockEnforcer_EnforceWithPolicies_Call {
-	return &MockEnforcer_EnforceWithPolicies_Call{Call: _e.mock.On("EnforceWithPolicies", p, allowedPolicies)}
-}
-
-func (_c *MockEnforcer_EnforceWithPolicies_Call) Run(run func(p *authz.Policy, allowedPolicies []*authz.Policy)) *MockEnforcer_EnforceWithPolicies_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *authz.Policy
-		if args[0] != nil {
-			arg0 = args[0].(*authz.Policy)
-		}
-		var arg1 []*authz.Policy
-		if args[1] != nil {
-			arg1 = args[1].([]*authz.Policy)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockEnforcer_EnforceWithPolicies_Call) Return(b bool, err error) *MockEnforcer_EnforceWithPolicies_Call {
-	_c.Call.Return(b, err)
-	return _c
-}
-
-func (_c *MockEnforcer_EnforceWithPolicies_Call) RunAndReturn(run func(p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)) *MockEnforcer_EnforceWithPolicies_Call {
+func (_c *MockEnforcer_Enforce_Call) RunAndReturn(run func(ctx context.Context, sub string, p *authz.Policy) (bool, error)) *MockEnforcer_Enforce_Call {
 	_c.Call.Return(run)
 	return _c
 }

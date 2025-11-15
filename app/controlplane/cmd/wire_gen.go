@@ -30,6 +30,11 @@ import (
 // Injectors from wire.go:
 
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
+	config := authzConfig(bootstrap)
+	enforcer, err := authz.NewInMemoryEnforcer(config)
+	if err != nil {
+		return nil, nil, err
+	}
 	confData := bootstrap.Data
 	data_Database := confData.Database
 	databaseConfig := newDataConf(data_Database)
@@ -37,6 +42,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	if err != nil {
 		return nil, nil, err
 	}
+	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
+	authzUseCase := biz.NewAuthzUseCase(enforcer, apiTokenRepo, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
 	groupRepo := data.NewGroupRepo(dataData, logger)
 	membershipRepo := data.NewMembershipRepo(dataData, groupRepo, logger)
@@ -110,14 +117,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
-	config := authzConfig(bootstrap)
-	enforcer, err := authz.NewInMemoryEnforcer(config)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, enforcer, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()
@@ -244,6 +244,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	opts := &server.Opts{
+		AuthzUseCase:        authzUseCase,
 		UserUseCase:         userUseCase,
 		RobotAccountUseCase: robotAccountUseCase,
 		CASBackendUseCase:   casBackendUseCase,
@@ -282,7 +283,6 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		FederatedConfig:     federatedAuthentication,
 		BootstrapConfig:     bootstrap,
 		Credentials:         readerWriter,
-		Enforcer:            enforcer,
 		Validator:           validator,
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
