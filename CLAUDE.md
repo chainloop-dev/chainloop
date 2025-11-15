@@ -323,23 +323,13 @@ violations contains msg if {
 }
 ```
 
-3. **Testing**:
-- Add unit tests in `pkg/policies/engine/rego/builtins/*_test.go`
-- Add integration tests in `pkg/policies/engine/rego/rego_test.go`
-- Test both restrictive and permissive modes
-- Mock external dependencies (HTTP clients, databases, etc.)
-
 **Guidelines**:
 - Use `chainloop.*` namespace for all custom built-ins
 - Restrictive functions must be read-only, deterministic, and not make external calls
-- Permissive functions can call external services but should use dependency injection
+- Permissive functions can call external services
 - Always implement proper error handling and return meaningful error messages
 - Use context from `BuiltinContext` for timeout/cancellation support
 - Document function signatures and behavior in the `Description` field
-
-**Example Use Cases**:
-- **Restrictive**: Data transformations, format parsing, cryptographic verification with embedded keys
-- **Permissive**: External API calls, database queries, dynamic credential fetching
 
 ## Commit Guidelines
 
