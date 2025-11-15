@@ -103,8 +103,8 @@ func (_c *MockEnforcer_Enforce_Call) RunAndReturn(run func(sub string, p *authz.
 }
 
 // EnforceWithPolicies provides a mock function for the type MockEnforcer
-func (_mock *MockEnforcer) EnforceWithPolicies(sub string, p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error) {
-	ret := _mock.Called(sub, p, allowedPolicies)
+func (_mock *MockEnforcer) EnforceWithPolicies(p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error) {
+	ret := _mock.Called(p, allowedPolicies)
 
 	if len(ret) == 0 {
 		panic("no return value specified for EnforceWithPolicies")
@@ -112,16 +112,16 @@ func (_mock *MockEnforcer) EnforceWithPolicies(sub string, p *authz.Policy, allo
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, *authz.Policy, []*authz.Policy) (bool, error)); ok {
-		return returnFunc(sub, p, allowedPolicies)
+	if returnFunc, ok := ret.Get(0).(func(*authz.Policy, []*authz.Policy) (bool, error)); ok {
+		return returnFunc(p, allowedPolicies)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *authz.Policy, []*authz.Policy) bool); ok {
-		r0 = returnFunc(sub, p, allowedPolicies)
+	if returnFunc, ok := ret.Get(0).(func(*authz.Policy, []*authz.Policy) bool); ok {
+		r0 = returnFunc(p, allowedPolicies)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *authz.Policy, []*authz.Policy) error); ok {
-		r1 = returnFunc(sub, p, allowedPolicies)
+	if returnFunc, ok := ret.Get(1).(func(*authz.Policy, []*authz.Policy) error); ok {
+		r1 = returnFunc(p, allowedPolicies)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -134,31 +134,25 @@ type MockEnforcer_EnforceWithPolicies_Call struct {
 }
 
 // EnforceWithPolicies is a helper method to define mock.On call
-//   - sub string
 //   - p *authz.Policy
 //   - allowedPolicies []*authz.Policy
-func (_e *MockEnforcer_Expecter) EnforceWithPolicies(sub interface{}, p interface{}, allowedPolicies interface{}) *MockEnforcer_EnforceWithPolicies_Call {
-	return &MockEnforcer_EnforceWithPolicies_Call{Call: _e.mock.On("EnforceWithPolicies", sub, p, allowedPolicies)}
+func (_e *MockEnforcer_Expecter) EnforceWithPolicies(p interface{}, allowedPolicies interface{}) *MockEnforcer_EnforceWithPolicies_Call {
+	return &MockEnforcer_EnforceWithPolicies_Call{Call: _e.mock.On("EnforceWithPolicies", p, allowedPolicies)}
 }
 
-func (_c *MockEnforcer_EnforceWithPolicies_Call) Run(run func(sub string, p *authz.Policy, allowedPolicies []*authz.Policy)) *MockEnforcer_EnforceWithPolicies_Call {
+func (_c *MockEnforcer_EnforceWithPolicies_Call) Run(run func(p *authz.Policy, allowedPolicies []*authz.Policy)) *MockEnforcer_EnforceWithPolicies_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 *authz.Policy
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(*authz.Policy)
 		}
-		var arg1 *authz.Policy
+		var arg1 []*authz.Policy
 		if args[1] != nil {
-			arg1 = args[1].(*authz.Policy)
-		}
-		var arg2 []*authz.Policy
-		if args[2] != nil {
-			arg2 = args[2].([]*authz.Policy)
+			arg1 = args[1].([]*authz.Policy)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -169,7 +163,7 @@ func (_c *MockEnforcer_EnforceWithPolicies_Call) Return(b bool, err error) *Mock
 	return _c
 }
 
-func (_c *MockEnforcer_EnforceWithPolicies_Call) RunAndReturn(run func(sub string, p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)) *MockEnforcer_EnforceWithPolicies_Call {
+func (_c *MockEnforcer_EnforceWithPolicies_Call) RunAndReturn(run func(p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)) *MockEnforcer_EnforceWithPolicies_Call {
 	_c.Call.Return(run)
 	return _c
 }

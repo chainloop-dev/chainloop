@@ -57,7 +57,7 @@ func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
 // This is used for ACL-based authorization (e.g., API tokens) where policies are stored in the database
 // rather than in Casbin. Returns true if the required policy is found in the allowed list.
 // in the future we will use this function to check if the policy is allowed for the subject by running the enforcer with the subject
-func (e *Enforcer) EnforceWithPolicies(_ string, p *Policy, allowedPolicies []*Policy) (bool, error) {
+func (e *Enforcer) EnforceWithPolicies(p *Policy, allowedPolicies []*Policy) (bool, error) {
 	for _, allowed := range allowedPolicies {
 		if allowed.Resource == p.Resource && allowed.Action == p.Action {
 			return true, nil

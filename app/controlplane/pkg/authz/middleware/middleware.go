@@ -33,7 +33,7 @@ import (
 
 type Enforcer interface {
 	Enforce(sub string, p *authz.Policy) (bool, error)
-	EnforceWithPolicies(sub string, p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)
+	EnforceWithPolicies(p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)
 }
 
 // Check Authorization for the current API operation against the current user/token
@@ -92,7 +92,7 @@ func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer E
 		}
 
 		for _, p := range policies {
-			ok, err := enforcer.EnforceWithPolicies(subject, p, token.Policies)
+			ok, err := enforcer.EnforceWithPolicies(p, token.Policies)
 			if err != nil {
 				return errorsAPI.InternalServer("internal error", err.Error())
 			}

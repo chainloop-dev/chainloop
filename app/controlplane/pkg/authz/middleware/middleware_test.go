@@ -159,7 +159,7 @@ func TestWithAuthMiddleware(t *testing.T) {
 
 			e := NewMockEnforcer(t)
 			e.On("Enforce", subject, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
-			e.On("EnforceWithPolicies", subject, mock.Anything, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
+			e.On("EnforceWithPolicies", mock.Anything, mock.Anything).Maybe().Return(tc.hasPermissions, nil)
 
 			m := WithAuthzMiddleware(e, logger)
 			_, err := m(emptyHandler)(ctx, nil)
