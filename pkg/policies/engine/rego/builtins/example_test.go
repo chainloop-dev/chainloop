@@ -45,7 +45,6 @@ result := chainloop.hello("world")`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Create registry with HTTP built-ins
 			registry := NewRegistry()
 			require.NoError(t, RegisterHelloBuiltin())
