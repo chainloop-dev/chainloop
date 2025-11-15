@@ -21,6 +21,10 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
+	"github.com/open-policy-agent/opa/v1/ast"
+	"github.com/open-policy-agent/opa/v1/topdown"
+	"github.com/open-policy-agent/opa/v1/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -429,5 +433,101 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
+	})
+}
+
+func TestRego_CustomBuiltinsPermissiveMode(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/custom_builtin_permissive.rego")
+	require.NoError(t, err)
+
+	// Create engine in permissive mode
+	r := NewEngine(WithOperatingMode(EnvironmentModePermissive))
+	policy := &engine.Policy{
+		Name:   "custom builtin test",
+		Source: regoContent,
+	}
+
+	t.Run("custom builtin works in permissive mode", func(t *testing.T) {
+		result, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Skipped)
+		assert.Len(t, result.Violations, 0)
+	})
+}
+
+func TestRego_CustomBuiltinsRestrictiveMode(t *testing.T) {
+	regoContent := []byte(`package test
+import rego.v1
+
+result := {
+	"violations": violations,
+	"skipped": false
+}
+
+violations contains msg if {
+	# Try to use a permissive-only built-in
+	response := chainloop.hello("world")
+	msg := "Request failed"
+}`)
+
+	// Create engine in restrictive mode (default)
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "custom builtin test",
+		Source: regoContent,
+	}
+
+	t.Run("permissive builtin fails in restrictive mode", func(t *testing.T) {
+		_, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
+		// Should fail because chainloop.http_with_auth is not available in restrictive mode
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "undefined function")
+	})
+}
+
+func TestRego_CustomBuiltinRegistry(t *testing.T) {
+	// Create a custom restrictive built-in for testing
+	testBuiltin := &builtins.BuiltinDef{
+		Name: "test.restrictive_func",
+		Decl: &ast.Builtin{
+			Name: "test.restrictive_func",
+			Decl: types.NewFunction(types.Args(types.S), types.S),
+		},
+		Impl: func(_ topdown.BuiltinContext, _ []*ast.Term, iter func(*ast.Term) error) error {
+			return iter(ast.StringTerm("test_value"))
+		},
+		SecurityLevel: builtins.SecurityLevelRestrictive,
+		Description:   "Test restrictive function",
+	}
+
+	registry := builtins.NewRegistry()
+	require.NoError(t, registry.Register(testBuiltin))
+
+	regoContent := []byte(`package test
+import rego.v1
+
+result := {
+	"violations": violations,
+	"skipped": false
+}
+
+violations contains msg if {
+	val := test.restrictive_func("input")
+	val != "test_value"
+	msg := "Value mismatch"
+}`)
+
+	t.Run("custom restrictive builtin works in restrictive mode", func(t *testing.T) {
+		// Create engine with custom registry
+		r := NewEngine(WithBuiltinRegistry(registry))
+		policy := &engine.Policy{
+			Name:   "test",
+			Source: regoContent,
+		}
+
+		result, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
+		require.NoError(t, err)
+		assert.False(t, result.Skipped)
+		assert.Len(t, result.Violations, 0)
 	})
 }

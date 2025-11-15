@@ -165,9 +165,6 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 }
 
 func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
-	if fileNotExists(materialPath) {
-		return nil, fmt.Errorf("%s: does not exists", materialPath)
-	}
 	backend := &casclient.CASBackend{
 		Name:     "backend",
 		MaxSize:  0,
