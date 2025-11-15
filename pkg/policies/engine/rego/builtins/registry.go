@@ -17,8 +17,8 @@ package builtins
 import (
 	"sync"
 
-	"github.com/open-policy-agent/opa/ast"
-	"github.com/open-policy-agent/opa/topdown"
+	"github.com/open-policy-agent/opa/v1/ast"
+	"github.com/open-policy-agent/opa/v1/topdown"
 )
 
 // SecurityLevel defines when a built-in function is allowed to execute
