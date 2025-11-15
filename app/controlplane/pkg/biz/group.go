@@ -188,8 +188,8 @@ type ListProjectsByGroupOpts struct {
 
 type GroupUseCase struct {
 	// logger is used to log messages.
-	logger   *log.Helper
-	enforcer *authz.Enforcer
+	logger *log.Helper
+	authz  *AuthzUseCase
 	// Repositories
 	groupRepo         GroupRepo
 	membershipRepo    MembershipRepo
@@ -201,7 +201,7 @@ type GroupUseCase struct {
 	membershipUC    *MembershipUseCase
 }
 
-func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo, enforcer *authz.Enforcer, membershipUseCase *MembershipUseCase) *GroupUseCase {
+func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo MembershipRepo, userRepo UserRepo, orgInvitationUC *OrgInvitationUseCase, auditorUC *AuditorUseCase, invitationRepo OrgInvitationRepo, authzUC *AuthzUseCase, membershipUseCase *MembershipUseCase) *GroupUseCase {
 	return &GroupUseCase{
 		logger:            log.NewHelper(log.With(logger, "component", "biz/group")),
 		groupRepo:         groupRepo,
@@ -210,7 +210,7 @@ func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo Memb
 		orgInvitationUC:   orgInvitationUC,
 		auditorUC:         auditorUC,
 		orgInvitationRepo: invitationRepo,
-		enforcer:          enforcer,
+		authz:             authzUC,
 		membershipUC:      membershipUseCase,
 	}
 }
@@ -548,7 +548,7 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 		return nil, fmt.Errorf("failed to check requester's role: %w", err)
 	}
 
-	pass, err := uc.enforcer.Enforce(string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)
+	pass, err := uc.authz.Enforce(ctx, string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check requester's role: %w", err)
 	}

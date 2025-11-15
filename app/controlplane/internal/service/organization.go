@@ -212,7 +212,7 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 
 func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, error) {
 	// Restricted org creation is disabled, allow creation
-	if !s.enforcer.RestrictOrgCreation {
+	if !s.authz.RestrictOrgCreation {
 		return true, nil
 	}
 
@@ -222,7 +222,7 @@ func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, 
 			continue
 		}
 
-		pass, err := s.enforcer.Enforce(string(rm.Role), authz.PolicyOrganizationCreate)
+		pass, err := s.authz.Enforce(ctx, string(rm.Role), authz.PolicyOrganizationCreate)
 		if err != nil {
 			return false, handleUseCaseErr(err, s.log)
 		}

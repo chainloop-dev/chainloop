@@ -25,7 +25,6 @@ import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/sentrycontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz/middleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
@@ -51,6 +50,7 @@ import (
 
 type Opts struct {
 	// UseCases
+	AuthzUseCase        *biz.AuthzUseCase
 	UserUseCase         *biz.UserUseCase
 	RobotAccountUseCase *biz.RobotAccountUseCase
 	CASBackendUseCase   *biz.CASBackendUseCase
@@ -91,7 +91,6 @@ type Opts struct {
 	FederatedConfig *conf.FederatedAuthentication
 	BootstrapConfig *conf.Bootstrap
 	Credentials     credentials.ReaderWriter
-	Enforcer        *authz.Enforcer
 	Validator       *protovalidate.Validator
 }
 
@@ -198,7 +197,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				// 2.d- Set its organization
 				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, logHelper),
 				// 3 - Check user/token authorization
-				authzMiddleware.WithAuthzMiddleware(opts.Enforcer, logHelper),
+				authzMiddleware.WithAuthzMiddleware(opts.AuthzUseCase, logHelper),
 			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
 			// Store all memberships in the context
 			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),

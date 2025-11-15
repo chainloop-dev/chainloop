@@ -53,7 +53,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "FederatedAuthentication"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
-			authz.NewInMemoryEnforcer,
+			authz.NewEnforcer,
 			policies.NewRegistry,
 			newApp,
 			newProtoValidator,
@@ -65,13 +65,23 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newAuthAllowList,
 			newJWTConfig,
 			authzConfig,
+			authzUseCaseConfig,
 			biz.NewIndexConfig,
 		),
 	)
 }
 
-func authzConfig(conf *conf.Bootstrap) *authz.Config {
-	return &authz.Config{RolesMap: authz.RolesMap, RestrictOrgCreation: conf.RestrictOrgCreation}
+func authzConfig() *authz.Config {
+	return &authz.Config{RolesMap: authz.RolesMap}
+}
+
+func authzUseCaseConfig(conf *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+	return &biz.AuthzUseCaseConfig{
+		Enforcer:            enforcer,
+		APITokenRepo:        apiTokenRepo,
+		RestrictOrgCreation: conf.RestrictOrgCreation,
+		Logger:              logger,
+	}
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
@@ -96,10 +106,10 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 	return out
 }
 
-func serviceOpts(l log.Logger, enforcer *authz.Enforcer, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
+func serviceOpts(l log.Logger, authzUC *biz.AuthzUseCase, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
 	return []service.NewOpt{
 		service.WithLogger(l),
-		service.WithEnforcer(enforcer),
+		service.WithEnforcer(authzUC),
 		service.WithProjectUseCase(pUC),
 		service.WithGroupUseCase(gUC),
 	}

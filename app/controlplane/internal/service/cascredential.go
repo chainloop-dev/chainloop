@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@ type CASCredentialsService struct {
 	casUC        *biz.CASCredentialsUseCase
 	casBackendUC *biz.CASBackendUseCase
 	casMappingUC *biz.CASMappingUseCase
-	authz        *authz.Enforcer
+	authzUC      *biz.AuthzUseCase
 }
 
-func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASMappingUseCase, casBUC *biz.CASBackendUseCase, authz *authz.Enforcer, opts ...NewOpt) *CASCredentialsService {
+func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASMappingUseCase, casBUC *biz.CASBackendUseCase, authzUC *biz.AuthzUseCase, opts ...NewOpt) *CASCredentialsService {
 	return &CASCredentialsService{
 		service: newService(opts...),
 		casUC:   casUC,
@@ -45,7 +45,7 @@ func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASM
 		casMappingUC: casmUC,
 		// we use the casBackendUC to find the default upload backend
 		casBackendUC: casBUC,
-		authz:        authz,
+		authzUC:      authzUC,
 	}
 }
 
@@ -79,7 +79,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	// Enforce required role
-	if ok, err := s.authz.Enforce(currentAuthzSubject, policyToCheck); err != nil {
+	if ok, err := s.authzUC.Enforce(ctx, currentAuthzSubject, policyToCheck); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if !ok {
 		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")

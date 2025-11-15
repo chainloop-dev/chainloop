@@ -620,7 +620,7 @@ func (g *GroupService) userHasPermissionOnGroupMembershipsWithPolicy(ctx context
 	m := entities.CurrentMembership(ctx)
 	for _, rm := range m.Resources {
 		if rm.ResourceType == authz.ResourceTypeGroup && rm.ResourceID == resolvedGroupID {
-			pass, err := g.enforcer.Enforce(string(rm.Role), policy)
+			pass, err := g.authz.Enforce(ctx, string(rm.Role), policy)
 			if err != nil {
 				return handleUseCaseErr(err, g.log)
 			}
