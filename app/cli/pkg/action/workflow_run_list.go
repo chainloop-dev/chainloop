@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ type WorkflowRunItem struct {
 	ContractRevisionUsed   int                          `json:"contractRevisionUsed"`
 	ContractRevisionLatest int                          `json:"contractRevisionLatest"`
 	ProjectVersion         *ProjectVersion              `json:"projectVersion,omitempty"`
+	PolicyStatus           string                       `json:"policyStatus,omitempty"`
 }
 
 type ProjectVersion struct {
@@ -74,6 +75,7 @@ type WorkflowRunListOpts struct {
 	WorkflowName, ProjectName string
 	Pagination                *PaginationOpts
 	Status                    string
+	PolicyStatus              string
 }
 type PaginationOpts struct {
 	Limit      int
@@ -93,6 +95,18 @@ func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflo
 
 	if v, ok := WorkflowRunStatus()[opts.Status]; ok {
 		req.Status = v
+	}
+
+	// Map policy status string to proto enum
+	if opts.PolicyStatus != "" {
+		switch opts.PolicyStatus {
+		case "failed":
+			req.PolicyViolations = pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS
+		case "passed":
+			req.PolicyViolations = pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS
+		case "all":
+			req.PolicyViolations = pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_UNSPECIFIED
+		}
 	}
 
 	resp, err := client.List(context.Background(), req)
@@ -145,6 +159,7 @@ func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
 			Version:    in.GetVersion().GetVersion(),
 			Prerelease: in.GetVersion().GetPrerelease(),
 		},
+		PolicyStatus: humanizedPolicyStatus(in.HasPolicyViolations),
 	}
 
 	if in.GetContractVersion() != nil {
@@ -156,6 +171,16 @@ func pbWorkflowRunItemToAction(in *pb.WorkflowRunItem) *WorkflowRunItem {
 	}
 
 	return item
+}
+
+func humanizedPolicyStatus(hasPolicyViolations *bool) string {
+	if hasPolicyViolations == nil {
+		return "N/A"
+	}
+	if *hasPolicyViolations {
+		return "failed"
+	}
+	return "passed"
 }
 
 func humanizedRunnerType(in v1.CraftingSchema_Runner_RunnerType) string {

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 		DefaultLimit: 50,
 	}
 
-	var workflowName, projectName, status string
+	var workflowName, projectName, status, policyStatus string
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -42,6 +42,10 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if status != "" && !slices.Contains(listAvailableWorkflowStatusFlag(), status) {
 				return fmt.Errorf("invalid status %q, please chose one of: %v", status, listAvailableWorkflowStatusFlag())
+			}
+
+			if policyStatus != "" && !slices.Contains([]string{"all", "failed", "passed"}, policyStatus) {
+				return fmt.Errorf("invalid policy-status %q, please chose one of: all, failed, passed", policyStatus)
 			}
 
 			return nil
@@ -55,7 +59,8 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 						Limit:      paginationOpts.Limit,
 						NextCursor: paginationOpts.NextCursor,
 					},
-					Status: status,
+					Status:       status,
+					PolicyStatus: policyStatus,
 				},
 			)
 			if err != nil {
@@ -85,6 +90,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectName, "project", "", "project name")
 	cmd.Flags().BoolVar(&full, "full", false, "full report")
 	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", listAvailableWorkflowStatusFlag()))
+	cmd.Flags().StringVar(&policyStatus, "policy-status", "", "filter by policy violations status: all, failed, passed")
 	// Add pagination flags
 	paginationOpts.AddFlags(cmd)
 
@@ -97,7 +103,7 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 		return nil
 	}
 
-	header := table.Row{"ID", "Workflow", "Version", "State", "Created At", "Runner"}
+	header := table.Row{"ID", "Workflow", "Version", "State", "Policy Status", "Created At", "Runner"}
 	if full {
 		header = append(header, "Finished At", "Failure reason")
 	}
@@ -107,7 +113,7 @@ func workflowRunListTableOutput(runs []*action.WorkflowRunItem) error {
 
 	for _, p := range runs {
 		wf := p.Workflow
-		r := table.Row{p.ID, wf.NamespacedName(), versionString(p.ProjectVersion), p.State, p.CreatedAt.Format(time.RFC822), p.RunnerType}
+		r := table.Row{p.ID, wf.NamespacedName(), versionString(p.ProjectVersion), p.State, p.PolicyStatus, p.CreatedAt.Format(time.RFC822), p.RunnerType}
 
 		if full {
 			var finishedAt string

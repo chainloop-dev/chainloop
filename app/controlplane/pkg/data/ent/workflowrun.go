@@ -51,6 +51,8 @@ type WorkflowRun struct {
 	VersionID uuid.UUID `json:"version_id,omitempty"`
 	// WorkflowID holds the value of the "workflow_id" field.
 	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
+	// HasPolicyViolations holds the value of the "has_policy_violations" field.
+	HasPolicyViolations *bool `json:"has_policy_violations,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -135,6 +137,8 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
 			values[i] = new([]byte)
+		case workflowrun.FieldHasPolicyViolations:
+			values[i] = new(sql.NullBool)
 		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest:
 			values[i] = new(sql.NullInt64)
 		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest:
@@ -246,6 +250,13 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				wr.WorkflowID = *value
 			}
+		case workflowrun.FieldHasPolicyViolations:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field has_policy_violations", values[i])
+			} else if value.Valid {
+				wr.HasPolicyViolations = new(bool)
+				*wr.HasPolicyViolations = value.Bool
+			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
@@ -352,6 +363,11 @@ func (wr *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("workflow_id=")
 	builder.WriteString(fmt.Sprintf("%v", wr.WorkflowID))
+	builder.WriteString(", ")
+	if v := wr.HasPolicyViolations; v != nil {
+		builder.WriteString("has_policy_violations=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

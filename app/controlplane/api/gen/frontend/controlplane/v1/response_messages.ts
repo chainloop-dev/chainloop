@@ -68,6 +68,45 @@ export function runStatusToJSON(object: RunStatus): string {
   }
 }
 
+export enum PolicyViolationsFilter {
+  POLICY_VIOLATIONS_FILTER_UNSPECIFIED = 0,
+  POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS = 1,
+  POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function policyViolationsFilterFromJSON(object: any): PolicyViolationsFilter {
+  switch (object) {
+    case 0:
+    case "POLICY_VIOLATIONS_FILTER_UNSPECIFIED":
+      return PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_UNSPECIFIED;
+    case 1:
+    case "POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS":
+      return PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS;
+    case 2:
+    case "POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS":
+      return PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyViolationsFilter.UNRECOGNIZED;
+  }
+}
+
+export function policyViolationsFilterToJSON(object: PolicyViolationsFilter): string {
+  switch (object) {
+    case PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_UNSPECIFIED:
+      return "POLICY_VIOLATIONS_FILTER_UNSPECIFIED";
+    case PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS:
+      return "POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS";
+    case PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS:
+      return "POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS";
+    case PolicyViolationsFilter.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum MembershipRole {
   MEMBERSHIP_ROLE_UNSPECIFIED = 0,
   MEMBERSHIP_ROLE_ORG_VIEWER = 1,
@@ -302,6 +341,8 @@ export interface WorkflowRunItem {
   contractRevisionLatest: number;
   /** The version of the project the attestation was initiated with */
   version?: ProjectVersion;
+  /** Whether the run has policy violations (null if no policies were evaluated) */
+  hasPolicyViolations?: boolean | undefined;
 }
 
 export interface ProjectVersion {
@@ -917,6 +958,7 @@ function createBaseWorkflowRunItem(): WorkflowRunItem {
     contractRevisionUsed: 0,
     contractRevisionLatest: 0,
     version: undefined,
+    hasPolicyViolations: undefined,
   };
 }
 
@@ -960,6 +1002,9 @@ export const WorkflowRunItem = {
     }
     if (message.version !== undefined) {
       ProjectVersion.encode(message.version, writer.uint32(106).fork()).ldelim();
+    }
+    if (message.hasPolicyViolations !== undefined) {
+      writer.uint32(112).bool(message.hasPolicyViolations);
     }
     return writer;
   },
@@ -1062,6 +1107,13 @@ export const WorkflowRunItem = {
 
           message.version = ProjectVersion.decode(reader, reader.uint32());
           continue;
+        case 14:
+          if (tag !== 112) {
+            break;
+          }
+
+          message.hasPolicyViolations = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1088,6 +1140,7 @@ export const WorkflowRunItem = {
       contractRevisionUsed: isSet(object.contractRevisionUsed) ? Number(object.contractRevisionUsed) : 0,
       contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
       version: isSet(object.version) ? ProjectVersion.fromJSON(object.version) : undefined,
+      hasPolicyViolations: isSet(object.hasPolicyViolations) ? Boolean(object.hasPolicyViolations) : undefined,
     };
   },
 
@@ -1111,6 +1164,7 @@ export const WorkflowRunItem = {
       (obj.contractRevisionLatest = Math.round(message.contractRevisionLatest));
     message.version !== undefined &&
       (obj.version = message.version ? ProjectVersion.toJSON(message.version) : undefined);
+    message.hasPolicyViolations !== undefined && (obj.hasPolicyViolations = message.hasPolicyViolations);
     return obj;
   },
 
@@ -1139,6 +1193,7 @@ export const WorkflowRunItem = {
     message.version = (object.version !== undefined && object.version !== null)
       ? ProjectVersion.fromPartial(object.version)
       : undefined;
+    message.hasPolicyViolations = object.hasPolicyViolations ?? undefined;
     return message;
   },
 };

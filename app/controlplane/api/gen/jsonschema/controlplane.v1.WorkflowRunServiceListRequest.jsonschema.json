@@ -3,6 +3,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(policy_violations)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_VIOLATIONS_FILTER_UNSPECIFIED",
+            "POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS",
+            "POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS"
+          ],
+          "title": "Policy Violations Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by policy violations status"
+    },
     "^(project_name)$": {
       "description": "Not required since filtering by workflow and project is optional",
       "type": "string"
@@ -21,6 +40,25 @@
     "pagination": {
       "$ref": "controlplane.v1.CursorPaginationRequest.jsonschema.json",
       "description": "pagination options"
+    },
+    "policyViolations": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_VIOLATIONS_FILTER_UNSPECIFIED",
+            "POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS",
+            "POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS"
+          ],
+          "title": "Policy Violations Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by policy violations status"
     },
     "projectName": {
       "description": "Not required since filtering by workflow and project is optional",

@@ -100,6 +100,12 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		filters.Status = st
 	}
 
+	// by policy violations status
+	if req.GetPolicyViolations() != pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_UNSPECIFIED {
+		hasViolations := req.GetPolicyViolations() == pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS
+		filters.PolicyViolationsFilter = &hasViolations
+	}
+
 	p := req.GetPagination()
 	paginationOpts, err := pagination.NewCursor(p.GetCursor(), int(p.GetLimit()))
 	if err != nil {
@@ -216,6 +222,7 @@ func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 		ContractRevisionUsed:   int32(wfr.ContractRevisionUsed),
 		ContractRevisionLatest: int32(wfr.ContractRevisionLatest),
 		Version:                bizProjectVersionToPb(wfr.ProjectVersion),
+		HasPolicyViolations:    wfr.HasPolicyViolations,
 	}
 
 	if wfr.FinishedAt != nil {

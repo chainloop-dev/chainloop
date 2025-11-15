@@ -3890,13 +3890,14 @@ chainloop workflow workflow-run list [flags]
 Options
 
 ```
---full              full report
--h, --help              help for list
---limit int         number of items to show (default 50)
---next string       cursor to load the next page
---project string    project name
---status string     filter by workflow run status: [CANCELLED EXPIRED FAILED INITIALIZED SUCCEEDED]
---workflow string   workflow name
+--full                   full report
+-h, --help                   help for list
+--limit int              number of items to show (default 50)
+--next string            cursor to load the next page
+--policy-status string   filter by policy violations status: all, failed, passed
+--project string         project name
+--status string          filter by workflow run status: [CANCELLED EXPIRED FAILED INITIALIZED SUCCEEDED]
+--workflow string        workflow name
 ```
 
 Options inherited from parent commands

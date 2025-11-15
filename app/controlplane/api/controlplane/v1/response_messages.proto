@@ -66,6 +66,9 @@ message WorkflowRunItem {
 
   // The version of the project the attestation was initiated with
   ProjectVersion version = 13;
+
+  // Whether the run has policy violations (null if no policies were evaluated)
+  optional bool has_policy_violations = 14;
 }
 
 message ProjectVersion {
@@ -84,6 +87,12 @@ enum RunStatus {
   RUN_STATUS_FAILED = 3;
   RUN_STATUS_EXPIRED = 4;
   RUN_STATUS_CANCELLED = 5;
+}
+
+enum PolicyViolationsFilter {
+  POLICY_VIOLATIONS_FILTER_UNSPECIFIED = 0;
+  POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS = 1;
+  POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS = 2;
 }
 
 message AttestationItem {

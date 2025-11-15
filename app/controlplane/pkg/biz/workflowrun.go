@@ -55,6 +55,8 @@ type WorkflowRun struct {
 	// The max revision of the contract at the time of the run
 	ContractRevisionLatest int
 	ProjectVersion         *ProjectVersion
+	// Whether the run has policy violations (nil if no policies were evaluated)
+	HasPolicyViolations *bool
 }
 
 type Attestation struct {
@@ -93,6 +95,7 @@ type WorkflowRunRepo interface {
 	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
 	SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
+	UpdatePolicyViolationsStatus(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*WorkflowRun, error)
@@ -347,14 +350,24 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		return nil, fmt.Errorf("saving attestation: %w", err)
 	}
 
+	// Extract and save policy violations status from the predicate
+	var hasPolicyViolations bool
+	if policyStatus := predicate.GetPolicyEvaluationStatus(); policyStatus != nil {
+		hasPolicyViolations = policyStatus.HasViolations
+	}
+	if err := uc.wfRunRepo.UpdatePolicyViolationsStatus(ctx, runID, hasPolicyViolations); err != nil {
+		return nil, fmt.Errorf("updating policy violations status: %w", err)
+	}
+
 	return &digest, nil
 }
 
 type RunListFilters struct {
-	WorkflowID *uuid.UUID
-	VersionID  *uuid.UUID
-	Status     WorkflowRunStatus
-	ProjectIDs []uuid.UUID
+	WorkflowID             *uuid.UUID
+	VersionID              *uuid.UUID
+	Status                 WorkflowRunStatus
+	ProjectIDs             []uuid.UUID
+	PolicyViolationsFilter *bool
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow

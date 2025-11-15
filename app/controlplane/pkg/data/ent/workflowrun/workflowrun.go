@@ -43,6 +43,8 @@ const (
 	FieldVersionID = "version_id"
 	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
 	FieldWorkflowID = "workflow_id"
+	// FieldHasPolicyViolations holds the string denoting the has_policy_violations field in the database.
+	FieldHasPolicyViolations = "has_policy_violations"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
@@ -106,6 +108,7 @@ var Columns = []string{
 	FieldContractRevisionLatest,
 	FieldVersionID,
 	FieldWorkflowID,
+	FieldHasPolicyViolations,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -215,6 +218,11 @@ func ByVersionID(opts ...sql.OrderTermOption) OrderOption {
 // ByWorkflowID orders the results by the workflow_id field.
 func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
+}
+
+// ByHasPolicyViolations orders the results by the has_policy_violations field.
+func ByHasPolicyViolations(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHasPolicyViolations, opts...).ToFunc()
 }
 
 // ByWorkflowField orders the results by workflow field.

@@ -24,6 +24,10 @@
     "^(finishedAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
+    "^(hasPolicyViolations)$": {
+      "description": "Whether the run has policy violations (null if no policies were evaluated)",
+      "type": "boolean"
+    },
     "^(jobUrl)$": {
       "type": "string"
     },
@@ -73,6 +77,10 @@
     },
     "finished_at": {
       "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "has_policy_violations": {
+      "description": "Whether the run has policy violations (null if no policies were evaluated)",
+      "type": "boolean"
     },
     "id": {
       "type": "string"

@@ -165,6 +165,20 @@ func (wrc *WorkflowRunCreate) SetWorkflowID(u uuid.UUID) *WorkflowRunCreate {
 	return wrc
 }
 
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (wrc *WorkflowRunCreate) SetHasPolicyViolations(b bool) *WorkflowRunCreate {
+	wrc.mutation.SetHasPolicyViolations(b)
+	return wrc
+}
+
+// SetNillableHasPolicyViolations sets the "has_policy_violations" field if the given value is not nil.
+func (wrc *WorkflowRunCreate) SetNillableHasPolicyViolations(b *bool) *WorkflowRunCreate {
+	if b != nil {
+		wrc.SetHasPolicyViolations(*b)
+	}
+	return wrc
+}
+
 // SetID sets the "id" field.
 func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
 	wrc.mutation.SetID(u)
@@ -401,6 +415,10 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 	if value, ok := wrc.mutation.ContractRevisionLatest(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 		_node.ContractRevisionLatest = value
+	}
+	if value, ok := wrc.mutation.HasPolicyViolations(); ok {
+		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
+		_node.HasPolicyViolations = &value
 	}
 	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -723,6 +741,24 @@ func (u *WorkflowRunUpsert) UpdateVersionID() *WorkflowRunUpsert {
 	return u
 }
 
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (u *WorkflowRunUpsert) SetHasPolicyViolations(v bool) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldHasPolicyViolations, v)
+	return u
+}
+
+// UpdateHasPolicyViolations sets the "has_policy_violations" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateHasPolicyViolations() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldHasPolicyViolations)
+	return u
+}
+
+// ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
+func (u *WorkflowRunUpsert) ClearHasPolicyViolations() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldHasPolicyViolations)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -991,6 +1027,27 @@ func (u *WorkflowRunUpsertOne) SetVersionID(v uuid.UUID) *WorkflowRunUpsertOne {
 func (u *WorkflowRunUpsertOne) UpdateVersionID() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.UpdateVersionID()
+	})
+}
+
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (u *WorkflowRunUpsertOne) SetHasPolicyViolations(v bool) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetHasPolicyViolations(v)
+	})
+}
+
+// UpdateHasPolicyViolations sets the "has_policy_violations" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateHasPolicyViolations() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateHasPolicyViolations()
+	})
+}
+
+// ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
+func (u *WorkflowRunUpsertOne) ClearHasPolicyViolations() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearHasPolicyViolations()
 	})
 }
 
@@ -1429,6 +1486,27 @@ func (u *WorkflowRunUpsertBulk) SetVersionID(v uuid.UUID) *WorkflowRunUpsertBulk
 func (u *WorkflowRunUpsertBulk) UpdateVersionID() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.UpdateVersionID()
+	})
+}
+
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (u *WorkflowRunUpsertBulk) SetHasPolicyViolations(v bool) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetHasPolicyViolations(v)
+	})
+}
+
+// UpdateHasPolicyViolations sets the "has_policy_violations" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateHasPolicyViolations() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateHasPolicyViolations()
+	})
+}
+
+// ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
+func (u *WorkflowRunUpsertBulk) ClearHasPolicyViolations() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearHasPolicyViolations()
 	})
 }
 
