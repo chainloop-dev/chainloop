@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -208,10 +207,7 @@ func (p *PolicyToLint) validateAndFormatRego(content, path string) string {
 		content = formatted
 	}
 
-	// 2. Structural validation
-	p.checkResultStructure(content, path, []string{"skipped", "violations", "skip_reason"})
-
-	// 3. Run Regal linter
+	// 2. Run Regal linter
 	p.runRegalLinter(path, content)
 
 	return content
@@ -224,30 +220,6 @@ func (p *PolicyToLint) applyOPAFmt(content, file string) string {
 		return content
 	}
 	return string(formatted)
-}
-
-func (p *PolicyToLint) checkResultStructure(content, path string, keys []string) {
-	// Regex to capture result := { ... } including multiline
-	re := regexp.MustCompile(`(?s)result\s*:=\s*\{(.+?)\}`)
-	match := re.FindStringSubmatch(content)
-	if match == nil {
-		p.AddError(path, "no result literal found", 0)
-		return
-	}
-
-	body := match[1]
-	// Find quoted keys inside the object literal
-	keyRe := regexp.MustCompile(`"([^"]+)"\s*:`)
-	found := make(map[string]bool)
-	for _, m := range keyRe.FindAllStringSubmatch(body, -1) {
-		found[m[1]] = true
-	}
-
-	for _, want := range keys {
-		if !found[want] {
-			p.AddError(path, fmt.Sprintf("missing %q key in result", want), 0)
-		}
-	}
 }
 
 // Runs the Regal linter on the given rego content and records any violations

@@ -121,39 +121,6 @@ func TestPolicyToLint_processFile(t *testing.T) {
 	})
 }
 
-func TestPolicyToLint_checkResultStructure(t *testing.T) {
-	t.Run("valid result structure", func(t *testing.T) {
-		policy := &PolicyToLint{}
-		content, err := os.ReadFile("testdata/valid.rego")
-		require.NoError(t, err)
-		policy.checkResultStructure(string(content), "test.rego", []string{"violations", "skip_reason", "skipped"})
-		assert.False(t, policy.HasErrors())
-	})
-
-	t.Run("missing result literal", func(t *testing.T) {
-		policy := &PolicyToLint{}
-		content := `package main
-
-output := {
-    "violations": []
-}`
-		policy.checkResultStructure(content, "test.rego", []string{"violations"})
-		assert.True(t, policy.HasErrors())
-		assert.Contains(t, policy.Errors[0].Message, "no result literal found")
-	})
-
-	t.Run("missing required keys", func(t *testing.T) {
-		policy := &PolicyToLint{}
-		content, err := os.ReadFile("testdata/missing-keys.rego")
-		require.NoError(t, err)
-		policy.checkResultStructure(string(content), "test.rego", []string{"violations", "skip_reason", "skipped"})
-		assert.True(t, policy.HasErrors())
-		assert.Len(t, policy.Errors, 2)
-		assert.Contains(t, policy.Errors[0].Message, `missing "skip_reason" key`)
-		assert.Contains(t, policy.Errors[1].Message, `missing "skipped" key`)
-	})
-}
-
 func TestPolicyToLint_formatViolationError(t *testing.T) {
 	policy := &PolicyToLint{}
 

@@ -1,0 +1,27 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-multiple-checks
+  description: Policy that performs multiple SBOM validation checks
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+
+        import rego.v1
+
+        violations contains msg if {
+            not input.metadata.component
+            msg := "missing metadata.component"
+        }
+
+        violations contains msg if {
+            count(input.components) < 2
+            msg := "too few components"
+        }
+
+        violations contains msg if {
+            not input.bomFormat
+            msg := "missing bomFormat"
+        }
