@@ -174,10 +174,11 @@ jobs:
         run: .github/workflows/utils/bump-project-version.sh ${{ github.ref_name }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           commit-message: Bump Chart and Dagger Version ${{ github.ref_name }}
           signoff: true
+          sign-commits: true
           base: main
           title: Bump Helm Chart and Dagger Version => ${{ github.ref_name }}
           body: |
