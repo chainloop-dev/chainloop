@@ -208,6 +208,8 @@ message WorkflowRunServiceListRequest {
     string: {uuid: true}
     ignore_empty: true
   }];
+  // by policy violations status
+  PolicyViolationsFilter policy_violations = 6;
   // pagination options
   CursorPaginationRequest pagination = 2;
 

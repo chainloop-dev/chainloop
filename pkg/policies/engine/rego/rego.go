@@ -20,8 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/v1/topdown/print"
@@ -300,6 +302,13 @@ func (r *Engine) Capabilities() *ast.Capabilities {
 		// Copy all builtins functions
 		localBuiltIns := make(map[string]*ast.Builtin, len(ast.BuiltinMap))
 		maps.Copy(localBuiltIns, ast.BuiltinMap)
+
+		// remove custom builtins self-declared non-restrictive
+		for k, builtin := range localBuiltIns {
+			if slices.Contains(builtin.Categories, builtins.NonRestrictiveBuiltin) {
+				delete(localBuiltIns, k)
+			}
+		}
 
 		// Remove not allowed builtins
 		for _, notAllowed := range builtinFuncNotAllowed {

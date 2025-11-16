@@ -223,6 +223,20 @@ func (r *WorkflowRunRepo) SaveBundle(ctx context.Context, wrID uuid.UUID, bundle
 	return nil
 }
 
+// UpdatePolicyViolationsStatus updates the policy violations status for a workflow run
+func (r *WorkflowRunRepo) UpdatePolicyViolationsStatus(ctx context.Context, id uuid.UUID, hasPolicyViolations bool) error {
+	run, err := r.data.DB.WorkflowRun.UpdateOneID(id).
+		SetHasPolicyViolations(hasPolicyViolations).
+		Save(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return err
+	} else if run == nil {
+		return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+	}
+
+	return nil
+}
+
 func (r *WorkflowRunRepo) GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error) {
 	att, err := r.data.DB.Attestation.Query().Where(attestation.WorkflowrunID(wrID)).First(ctx)
 	if err != nil {
@@ -292,6 +306,17 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	// or the project version
 	if filters != nil && filters.VersionID != nil {
 		q = q.Where(workflowrun.VersionID(*filters.VersionID))
+	}
+
+	// Append the policy violations filter if present
+	if filters != nil && filters.PolicyViolationsFilter != nil {
+		if *filters.PolicyViolationsFilter {
+			// Filter for runs WITH violations (has_policy_violations = true)
+			q = q.Where(workflowrun.HasPolicyViolations(true))
+		} else {
+			// Filter for runs WITHOUT violations (has_policy_violations = false)
+			q = q.Where(workflowrun.HasPolicyViolations(false))
+		}
 	}
 
 	if p.Cursor != nil {
@@ -367,6 +392,7 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 		CASBackends:            make([]*biz.CASBackend, 0),
 		ContractRevisionUsed:   wr.ContractRevisionUsed,
 		ContractRevisionLatest: wr.ContractRevisionLatest,
+		HasPolicyViolations:    wr.HasPolicyViolations,
 		Attestation: &biz.Attestation{
 			Digest: wr.AttestationDigest,
 		},

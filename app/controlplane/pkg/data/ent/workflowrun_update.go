@@ -230,6 +230,26 @@ func (wru *WorkflowRunUpdate) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpd
 	return wru
 }
 
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (wru *WorkflowRunUpdate) SetHasPolicyViolations(b bool) *WorkflowRunUpdate {
+	wru.mutation.SetHasPolicyViolations(b)
+	return wru
+}
+
+// SetNillableHasPolicyViolations sets the "has_policy_violations" field if the given value is not nil.
+func (wru *WorkflowRunUpdate) SetNillableHasPolicyViolations(b *bool) *WorkflowRunUpdate {
+	if b != nil {
+		wru.SetHasPolicyViolations(*b)
+	}
+	return wru
+}
+
+// ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
+func (wru *WorkflowRunUpdate) ClearHasPolicyViolations() *WorkflowRunUpdate {
+	wru.mutation.ClearHasPolicyViolations()
+	return wru
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (wru *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
 	wru.mutation.SetContractVersionID(id)
@@ -449,6 +469,12 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
+	}
+	if value, ok := wru.mutation.HasPolicyViolations(); ok {
+		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
+	}
+	if wru.mutation.HasPolicyViolationsCleared() {
+		_spec.ClearField(workflowrun.FieldHasPolicyViolations, field.TypeBool)
 	}
 	if wru.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -798,6 +824,26 @@ func (wruo *WorkflowRunUpdateOne) SetNillableVersionID(u *uuid.UUID) *WorkflowRu
 	return wruo
 }
 
+// SetHasPolicyViolations sets the "has_policy_violations" field.
+func (wruo *WorkflowRunUpdateOne) SetHasPolicyViolations(b bool) *WorkflowRunUpdateOne {
+	wruo.mutation.SetHasPolicyViolations(b)
+	return wruo
+}
+
+// SetNillableHasPolicyViolations sets the "has_policy_violations" field if the given value is not nil.
+func (wruo *WorkflowRunUpdateOne) SetNillableHasPolicyViolations(b *bool) *WorkflowRunUpdateOne {
+	if b != nil {
+		wruo.SetHasPolicyViolations(*b)
+	}
+	return wruo
+}
+
+// ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
+func (wruo *WorkflowRunUpdateOne) ClearHasPolicyViolations() *WorkflowRunUpdateOne {
+	wruo.mutation.ClearHasPolicyViolations()
+	return wruo
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (wruo *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
 	wruo.mutation.SetContractVersionID(id)
@@ -1047,6 +1093,12 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 	}
 	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
+	}
+	if value, ok := wruo.mutation.HasPolicyViolations(); ok {
+		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
+	}
+	if wruo.mutation.HasPolicyViolationsCleared() {
+		_spec.ClearField(workflowrun.FieldHasPolicyViolations, field.TypeBool)
 	}
 	if wruo.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
