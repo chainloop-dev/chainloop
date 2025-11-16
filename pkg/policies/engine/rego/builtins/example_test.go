@@ -45,18 +45,7 @@ result := chainloop.hello("world")`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create registry with HTTP built-ins
-			registry := NewRegistry()
 			require.NoError(t, RegisterHelloBuiltin())
-
-			// Get the built-in and add it to a new registry
-			helloBuiltin, ok := Get(helloBuiltinName)
-			require.True(t, ok)
-			require.NoError(t, registry.Register(helloBuiltin))
-
-			// Register globally (permissive mode)
-			require.NoError(t, registry.RegisterGlobal(true))
-
 			// Prepare rego evaluation
 			ctx := context.Background()
 			r := rego.New(

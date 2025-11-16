@@ -27,21 +27,16 @@ import (
 const helloBuiltinName = "chainloop.hello"
 
 func RegisterHelloBuiltin() error {
-	return Register(&BuiltinDef{
-		Name: helloBuiltinName,
-		Decl: &ast.Builtin{
-			Name: helloBuiltinName,
-			Decl: types.NewFunction(
-				types.Args(
-					types.Named("name", types.S), // Digest to fetch
-				),
-				types.Named("response", types.A), // Response as object
+	return Register(&ast.Builtin{
+		Name:        helloBuiltinName,
+		Description: "Example builtin",
+		Decl: types.NewFunction(
+			types.Args(
+				types.Named("name", types.S).Description("Name of the person to greet"), // Digest to fetch
 			),
-		},
-		Impl:          getHelloImpl,
-		SecurityLevel: SecurityLevelPermissive, // Only available in permissive mode
-		Description:   "Example builtin",
-	})
+			types.Named("response", types.A).Description("the hello world message"), // Response as object
+		),
+	}, getHelloImpl)
 }
 
 type helloResponse struct {
@@ -62,10 +57,4 @@ func getHelloImpl(_ topdown.BuiltinContext, operands []*ast.Term, iter func(*ast
 
 	// call the iterator with the output value
 	return iter(ast.NewTerm(ast.MustInterfaceToValue(helloResponse{message})))
-}
-
-func init() {
-	if err := RegisterHelloBuiltin(); err != nil {
-		panic(fmt.Sprintf("failed to register Hello builtin: %v", err))
-	}
 }

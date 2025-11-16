@@ -440,6 +440,9 @@ func TestRego_CustomBuiltinsPermissiveMode(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/custom_builtin_permissive.rego")
 	require.NoError(t, err)
 
+	// register builtin function
+	require.NoError(t, builtins.RegisterHelloBuiltin())
+
 	// Create engine in permissive mode
 	r := NewEngine(WithOperatingMode(EnvironmentModePermissive))
 	policy := &engine.Policy{
@@ -466,9 +469,17 @@ result := {
 
 violations contains msg if {
 	# Try to use a permissive-only built-in
-	response := chainloop.hello("world")
+	response := test.dangerous_func("world")
 	msg := "Request failed"
 }`)
+
+	require.NoError(t, builtins.Register(&ast.Builtin{
+		Name:       "test.dangerous_func",
+		Categories: []string{builtins.NonRestrictiveBuiltin},
+		Decl:       types.NewFunction(types.Args(types.S), types.S),
+	}, func(_ topdown.BuiltinContext, _ []*ast.Term, iter func(*ast.Term) error) error {
+		return iter(ast.StringTerm("test_value"))
+	}))
 
 	// Create engine in restrictive mode (default)
 	r := NewEngine()
@@ -485,23 +496,14 @@ violations contains msg if {
 	})
 }
 
-func TestRego_CustomBuiltinRegistry(t *testing.T) {
-	// Create a custom restrictive built-in for testing
-	testBuiltin := &builtins.BuiltinDef{
+func TestRego_CustomBuiltin(t *testing.T) {
+	// Create a custom built-in for testing
+	require.NoError(t, builtins.Register(&ast.Builtin{
 		Name: "test.restrictive_func",
-		Decl: &ast.Builtin{
-			Name: "test.restrictive_func",
-			Decl: types.NewFunction(types.Args(types.S), types.S),
-		},
-		Impl: func(_ topdown.BuiltinContext, _ []*ast.Term, iter func(*ast.Term) error) error {
-			return iter(ast.StringTerm("test_value"))
-		},
-		SecurityLevel: builtins.SecurityLevelRestrictive,
-		Description:   "Test restrictive function",
-	}
-
-	registry := builtins.NewRegistry()
-	require.NoError(t, registry.Register(testBuiltin))
+		Decl: types.NewFunction(types.Args(types.S), types.S),
+	}, func(_ topdown.BuiltinContext, _ []*ast.Term, iter func(*ast.Term) error) error {
+		return iter(ast.StringTerm("test_value"))
+	}))
 
 	regoContent := []byte(`package test
 import rego.v1
@@ -518,8 +520,8 @@ violations contains msg if {
 }`)
 
 	t.Run("custom restrictive builtin works in restrictive mode", func(t *testing.T) {
-		// Create engine with custom registry
-		r := NewEngine(WithBuiltinRegistry(registry))
+		// Create engine
+		r := NewEngine()
 		policy := &engine.Policy{
 			Name:   "test",
 			Source: regoContent,

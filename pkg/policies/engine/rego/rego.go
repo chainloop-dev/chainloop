@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
@@ -41,8 +42,6 @@ type Engine struct {
 	includeRawData bool
 	// enablePrint determines whether to enable print statements in rego policies
 	enablePrint bool
-	// builtinRegistry is the registry of custom built-in functions
-	builtinRegistry *builtins.Registry
 }
 
 type EngineOption func(*newEngineOptions)
@@ -71,18 +70,11 @@ func WithEnablePrint(enable bool) EngineOption {
 	}
 }
 
-func WithBuiltinRegistry(registry *builtins.Registry) EngineOption {
-	return func(e *newEngineOptions) {
-		e.builtinRegistry = registry
-	}
-}
-
 type newEngineOptions struct {
 	operatingMode         EnvironmentMode
 	allowedNetworkDomains []string
 	includeRawData        bool
 	enablePrint           bool
-	builtinRegistry       *builtins.Registry
 }
 
 // NewEngine creates a new policy engine with the given options
@@ -103,30 +95,13 @@ func NewEngine(opts ...EngineOption) *Engine {
 		"www.cisa.gov",
 	}
 
-	// Use global registry if none provided
-	registry := options.builtinRegistry
-	if registry == nil {
-		registry = builtins.NewRegistry()
-		// Register all built-ins from the global registry
-		for _, def := range builtins.All() {
-			_ = registry.Register(def)
-		}
-	}
-
-	engine := &Engine{
+	return &Engine{
 		operatingMode: options.operatingMode,
 		// append base allowed network domains to the user provided ones
 		allowedNetworkDomains: append(baseAllowedNetworkDomains, options.allowedNetworkDomains...),
 		includeRawData:        options.includeRawData,
 		enablePrint:           options.enablePrint,
-		builtinRegistry:       registry,
 	}
-
-	// Register ALL custom built-ins globally with OPA (both restrictive and permissive)
-	// The Capabilities() method will filter them based on operating mode
-	_ = registry.RegisterGlobal(true) // true = register all
-
-	return engine
 }
 
 // EnvironmentMode defines the mode of running the policy engine
@@ -328,16 +303,16 @@ func (r *Engine) Capabilities() *ast.Capabilities {
 		localBuiltIns := make(map[string]*ast.Builtin, len(ast.BuiltinMap))
 		maps.Copy(localBuiltIns, ast.BuiltinMap)
 
+		// remove custom builtins self-declared non-restrictive
+		for k, builtin := range localBuiltIns {
+			if slices.Contains(builtin.Categories, builtins.NonRestrictiveBuiltin) {
+				delete(localBuiltIns, k)
+			}
+		}
+
 		// Remove not allowed builtins
 		for _, notAllowed := range builtinFuncNotAllowed {
 			delete(localBuiltIns, notAllowed.Name)
-		}
-
-		// Remove permissive-only custom built-ins
-		for _, def := range r.builtinRegistry.All() {
-			if def.SecurityLevel == builtins.SecurityLevelPermissive {
-				delete(localBuiltIns, def.Name)
-			}
 		}
 
 		// Convert map to slice
