@@ -490,7 +490,7 @@ violations contains msg if {
 
 	t.Run("permissive builtin fails in restrictive mode", func(t *testing.T) {
 		_, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
-		// Should fail because chainloop.http_with_auth is not available in restrictive mode
+		// Should fail because test.dangerous_func is not available in restrictive mode
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "undefined function")
 	})
