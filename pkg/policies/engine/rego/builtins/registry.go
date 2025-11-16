@@ -19,9 +19,6 @@ import (
 	"github.com/open-policy-agent/opa/v1/topdown"
 )
 
-// SecurityLevel defines when a built-in function is allowed to execute
-type SecurityLevel int
-
 const (
 	// NonRestrictiveBuiltin is used in builtin definition categories to mark a builtin as non-suitable for Chainloop's restrictive mode
 	NonRestrictiveBuiltin = "non-restrictive"
