@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,10 @@ import (
 	"context"
 	"errors"
 	"regexp"
-	"strings"
 
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -32,8 +30,7 @@ import (
 )
 
 type Enforcer interface {
-	Enforce(sub string, p *authz.Policy) (bool, error)
-	EnforceWithPolicies(sub string, p *authz.Policy, allowedPolicies []*authz.Policy) (bool, error)
+	Enforce(ctx context.Context, sub string, p *authz.Policy) (bool, error)
 }
 
 // Check Authorization for the current API operation against the current user/token
@@ -61,7 +58,7 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 			// so for now we skip the authorization check for admin users since they are allowed to do anything
 			// TODO: fill out the rest of the policies in authz.ServerOperationsMap and remove this check
 			if authz.Role(subject).IsAdmin() {
-				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation)
+				logger.Infow("msg", "[authZ] skipped", "sub", subject, "operation", apiOperation, "component", "authz/middleware")
 				return handler(ctx, req)
 			}
 
@@ -76,44 +73,23 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 }
 
 func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer Enforcer, logger *log.Helper) error {
-	logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation)
+	logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation, "component", "authz/middleware")
 	// If there is no entry in the map for this API operation, we deny access
 	policies, err := policiesLookup(apiOperation)
 	if err != nil {
 		return errorsAPI.Forbidden("forbidden", err.Error())
 	}
 
-	// Check if this is an API token (subject starts with "api-token:")
-	if strings.HasPrefix(subject, "api-token:") {
-		// For API tokens, use ACL-based enforcement with token's policies
-		token := entities.CurrentAPIToken(ctx)
-		if token == nil {
-			return errorsAPI.InternalServer("internal error", "API token not found in context")
+	// For users, use role-based enforcement via Casbin
+	for _, p := range policies {
+		ok, err := enforcer.Enforce(ctx, subject, p)
+		if err != nil {
+			return errorsAPI.InternalServer("internal error", err.Error())
 		}
 
-		for _, p := range policies {
-			ok, err := enforcer.EnforceWithPolicies(subject, p, token.Policies)
-			if err != nil {
-				return errorsAPI.InternalServer("internal error", err.Error())
-			}
-
-			if !ok {
-				logger.Infow("msg", "[authZ] policy not found in token policies", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
-				return errorsAPI.Forbidden("forbidden", "operation not allowed")
-			}
-		}
-	} else {
-		// For users, use role-based enforcement via Casbin
-		for _, p := range policies {
-			ok, err := enforcer.Enforce(subject, p)
-			if err != nil {
-				return errorsAPI.InternalServer("internal error", err.Error())
-			}
-
-			if !ok {
-				logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action)
-				return errorsAPI.Forbidden("forbidden", "operation not allowed")
-			}
+		if !ok {
+			logger.Infow("msg", "[authZ] policy not found", "sub", subject, "operation", apiOperation, "resource", p.Resource, "action", p.Action, "component", "authz/middleware")
+			return errorsAPI.Forbidden("forbidden", "operation not allowed")
 		}
 	}
 

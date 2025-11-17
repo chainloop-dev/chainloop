@@ -73,20 +73,20 @@ type APITokenUseCase struct {
 	apiTokenRepo         APITokenRepo
 	logger               *log.Helper
 	jwtBuilder           *apitoken.Builder
-	enforcer             *authz.Enforcer
+	authz                *AuthzUseCase
 	DefaultAuthzPolicies []*authz.Policy
 	// Use Cases
 	orgUseCase *OrganizationUseCase
 	auditorUC  *AuditorUseCase
 }
 
-func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzE *authz.Enforcer, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
+func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzUC *AuthzUseCase, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
 		apiTokenRepo: apiTokenRepo,
 		orgUseCase:   orgUseCase,
 		auditorUC:    auditorUC,
 		logger:       servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
-		enforcer:     authzE,
+		authz:        authzUC,
 		DefaultAuthzPolicies: []*authz.Policy{
 			// Add permissions to workflow run
 			authz.PolicyWorkflowRunList, authz.PolicyWorkflowRunRead,

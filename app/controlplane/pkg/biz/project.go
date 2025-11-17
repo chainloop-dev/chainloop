@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ type ProjectsRepo interface {
 
 // ProjectUseCase is a use case for projects
 type ProjectUseCase struct {
-	logger   *log.Helper
-	enforcer *authz.Enforcer
+	logger *log.Helper
+	authz  *AuthzUseCase
 	// Use Cases
 	auditorUC       *AuditorUseCase
 	groupUC         *GroupUseCase
@@ -164,7 +164,7 @@ type AddMemberToProjectResult struct {
 	InvitationSent bool
 }
 
-func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase, orgInvitationUC *OrgInvitationUseCase, orgInvitationRepo OrgInvitationRepo, enforcer *authz.Enforcer) *ProjectUseCase {
+func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, membershipRepository MembershipRepo, auditorUC *AuditorUseCase, groupUC *GroupUseCase, membershipUC *MembershipUseCase, orgInvitationUC *OrgInvitationUseCase, orgInvitationRepo OrgInvitationRepo, authzUC *AuthzUseCase) *ProjectUseCase {
 	return &ProjectUseCase{
 		logger:               servicelogger.ScopedHelper(logger, "biz/project"),
 		projectsRepository:   projectsRepository,
@@ -174,7 +174,7 @@ func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, memb
 		membershipUC:         membershipUC,
 		orgInvitationUC:      orgInvitationUC,
 		orgInvitationRepo:    orgInvitationRepo,
-		enforcer:             enforcer,
+		authz:                authzUC,
 	}
 }
 
@@ -394,7 +394,7 @@ func (uc *ProjectUseCase) handleNonExistingUser(ctx context.Context, orgID, proj
 		return nil, fmt.Errorf("failed to check requester's role: %w", err)
 	}
 
-	pass, err := uc.enforcer.Enforce(string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)
+	pass, err := uc.authz.Enforce(ctx, string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check requester's role: %w", err)
 	}

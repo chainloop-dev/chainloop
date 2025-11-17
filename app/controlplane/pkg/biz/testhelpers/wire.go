@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewPromSpec,
 			NewPolicyProviderConfig,
 			policies.NewRegistry,
-			authz.NewInMemoryEnforcer,
+			authz.NewCasbinEnforcer,
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
@@ -62,6 +62,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			newAuthAllowList,
 			newJWTConfig,
 			authzConfig,
+			authzUseCaseConfig,
 			biz.NewIndexConfig,
 		),
 	)
@@ -69,6 +70,15 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 
 func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
+}
+
+func authzUseCaseConfig(conf *conf.Bootstrap, casbinEnforcer *authz.CasbinEnforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+	return &biz.AuthzUseCaseConfig{
+		CasbinEnforcer:      casbinEnforcer,
+		APITokenRepo:        apiTokenRepo,
+		RestrictOrgCreation: conf.RestrictOrgCreation,
+		Logger:              logger,
+	}
 }
 
 func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
