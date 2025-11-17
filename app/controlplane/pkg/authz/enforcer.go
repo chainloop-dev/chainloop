@@ -41,13 +41,13 @@ type Config struct {
 	RolesMap map[Role][]*Policy
 }
 
-type Enforcer struct {
+type CasbinEnforcer struct {
 	*casbin.Enforcer
 
 	config *Config
 }
 
-func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
+func (e *CasbinEnforcer) Enforce(sub string, p *Policy) (bool, error) {
 	// This enforcer does not support API token subjects
 	// this is due to the fact that API tokens are not stored in casbin yet
 	// To use them, make sure you use the AuthzUseCase.Enforce method instead
@@ -58,9 +58,9 @@ func (e *Enforcer) Enforce(sub string, p *Policy) (bool, error) {
 	return e.Enforcer.Enforce(sub, p.Resource, p.Action)
 }
 
-// NewEnforcer creates a new casbin authorization enforcer with in-memory storage.
+// NewCasbinEnforcer creates a new casbin authorization enforcer with in-memory storage.
 // Only static role policies from RolesMap are loaded
-func NewEnforcer(config *Config) (*Enforcer, error) {
+func NewCasbinEnforcer(config *Config) (*CasbinEnforcer, error) {
 	// load model defined in model.conf
 	m, err := model.NewModelFromString(string(modelFile))
 	if err != nil {
@@ -73,7 +73,7 @@ func NewEnforcer(config *Config) (*Enforcer, error) {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
 
-	e := &Enforcer{enforcer, config}
+	e := &CasbinEnforcer{enforcer, config}
 
 	// Initialize the enforcer with the roles map
 	if err := syncRBACRoles(e, config); err != nil {
@@ -83,7 +83,7 @@ func NewEnforcer(config *Config) (*Enforcer, error) {
 	return e, nil
 }
 
-func syncRBACRoles(e *Enforcer, c *Config) error {
+func syncRBACRoles(e *CasbinEnforcer, c *Config) error {
 	// allow to override config during sync
 	conf := c
 	if conf == nil {

@@ -54,7 +54,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewPromSpec,
 			NewPolicyProviderConfig,
 			policies.NewRegistry,
-			authz.NewEnforcer,
+			authz.NewCasbinEnforcer,
 			newNatsConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
@@ -72,9 +72,9 @@ func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
 }
 
-func authzUseCaseConfig(conf *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+func authzUseCaseConfig(conf *conf.Bootstrap, casbinEnforcer *authz.CasbinEnforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
 	return &biz.AuthzUseCaseConfig{
-		Enforcer:            enforcer,
+		CasbinEnforcer:      casbinEnforcer,
 		APITokenRepo:        apiTokenRepo,
 		RestrictOrgCreation: conf.RestrictOrgCreation,
 		Logger:              logger,

@@ -25,15 +25,14 @@ import (
 )
 
 type AuthzUseCase struct {
-	log *log.Helper
-	// actual CASBIN enforcer
-	enforcer            *authz.Enforcer
+	log                 *log.Helper
+	casbinEnforcer      *authz.CasbinEnforcer
 	apiTokenRepo        APITokenRepo
 	RestrictOrgCreation bool
 }
 
 type AuthzUseCaseConfig struct {
-	Enforcer            *authz.Enforcer
+	CasbinEnforcer      *authz.CasbinEnforcer
 	APITokenRepo        APITokenRepo
 	RestrictOrgCreation bool
 	Logger              log.Logger
@@ -43,7 +42,7 @@ func NewAuthzUseCase(config *AuthzUseCaseConfig) *AuthzUseCase {
 	return &AuthzUseCase{
 		log:                 log.NewHelper(log.With(config.Logger, "component", "biz/authz")),
 		apiTokenRepo:        config.APITokenRepo,
-		enforcer:            config.Enforcer,
+		casbinEnforcer:      config.CasbinEnforcer,
 		RestrictOrgCreation: config.RestrictOrgCreation,
 	}
 }
@@ -82,5 +81,5 @@ func (e *AuthzUseCase) Enforce(ctx context.Context, sub string, p *authz.Policy)
 		return false, nil
 	}
 
-	return e.enforcer.Enforce(sub, p)
+	return e.casbinEnforcer.Enforce(sub, p)
 }

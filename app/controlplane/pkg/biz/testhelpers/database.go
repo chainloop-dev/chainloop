@@ -71,7 +71,7 @@ type TestingUseCases struct {
 	OrgInvitation          *biz.OrgInvitationUseCase
 	Referrer               *biz.ReferrerUseCase
 	APIToken               *biz.APITokenUseCase
-	Enforcer               *authz.Enforcer
+	Enforcer               *authz.CasbinEnforcer
 	AttestationState       *biz.AttestationStateUseCase
 	ProjectVersion         *biz.ProjectVersionUseCase
 	Project                *biz.ProjectUseCase

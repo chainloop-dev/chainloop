@@ -31,7 +31,7 @@ import (
 
 func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
 	config := authzConfig()
-	enforcer, err := authz.NewEnforcer(config)
+	casbinEnforcer, err := authz.NewCasbinEnforcer(config)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -43,7 +43,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
-	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, enforcer, apiTokenRepo, logger)
+	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, casbinEnforcer, apiTokenRepo, logger)
 	authzUseCase := biz.NewAuthzUseCase(bizAuthzUseCaseConfig)
 	userRepo := data.NewUserRepo(dataData, logger)
 	groupRepo := data.NewGroupRepo(dataData, logger)
@@ -324,9 +324,9 @@ func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
 }
 
-func authzUseCaseConfig(conf2 *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+func authzUseCaseConfig(conf2 *conf.Bootstrap, casbinEnforcer *authz.CasbinEnforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
 	return &biz.AuthzUseCaseConfig{
-		Enforcer:            enforcer,
+		CasbinEnforcer:      casbinEnforcer,
 		APITokenRepo:        apiTokenRepo,
 		RestrictOrgCreation: conf2.RestrictOrgCreation,
 		Logger:              logger,

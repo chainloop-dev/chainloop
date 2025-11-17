@@ -129,13 +129,13 @@ func TestDoSync(t *testing.T) {
 	assert.Equal(t, "delete", got[0][2])
 }
 
-func testEnforcer(t *testing.T) (*Enforcer, io.Closer) {
+func testEnforcer(t *testing.T) (*CasbinEnforcer, io.Closer) {
 	f, err := os.CreateTemp(t.TempDir(), "policy*.csv")
 	if err != nil {
 		require.FailNow(t, err.Error())
 	}
 
-	enforcer, err := NewEnforcer(&Config{})
+	enforcer, err := NewCasbinEnforcer(&Config{})
 	require.NoError(t, err)
 	return enforcer, f
 }

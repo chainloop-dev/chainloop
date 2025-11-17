@@ -139,12 +139,12 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
 	config := authzConfig()
-	enforcer, err := authz.NewEnforcer(config)
+	casbinEnforcer, err := authz.NewCasbinEnforcer(config)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, enforcer, apiTokenRepo, logger)
+	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, casbinEnforcer, apiTokenRepo, logger)
 	authzUseCase := biz.NewAuthzUseCase(bizAuthzUseCaseConfig)
 	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, authzUseCase, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
@@ -190,7 +190,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		OrgInvitation:          orgInvitationUseCase,
 		Referrer:               referrerUseCase,
 		APIToken:               apiTokenUseCase,
-		Enforcer:               enforcer,
+		Enforcer:               casbinEnforcer,
 		AttestationState:       attestationStateUseCase,
 		ProjectVersion:         projectVersionUseCase,
 		Project:                projectUseCase,
@@ -213,9 +213,9 @@ func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
 }
 
-func authzUseCaseConfig(conf2 *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+func authzUseCaseConfig(conf2 *conf.Bootstrap, casbinEnforcer *authz.CasbinEnforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
 	return &biz.AuthzUseCaseConfig{
-		Enforcer:            enforcer,
+		CasbinEnforcer:      casbinEnforcer,
 		APITokenRepo:        apiTokenRepo,
 		RestrictOrgCreation: conf2.RestrictOrgCreation,
 		Logger:              logger,

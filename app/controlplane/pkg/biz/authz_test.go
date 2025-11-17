@@ -34,7 +34,7 @@ type authzTestSuite struct {
 	suite.Suite
 	useCase      *biz.AuthzUseCase
 	apiTokenRepo *bizMocks.APITokenRepo
-	enforcer     *authz.Enforcer
+	enforcer     *authz.CasbinEnforcer
 	logger       log.Logger
 }
 
@@ -44,13 +44,13 @@ func (s *authzTestSuite) SetupTest() {
 
 	// Create a real enforcer for testing
 	var err error
-	s.enforcer, err = authz.NewEnforcer(&authz.Config{
+	s.enforcer, err = authz.NewCasbinEnforcer(&authz.Config{
 		RolesMap: authz.RolesMap,
 	})
 	s.Require().NoError(err)
 
 	s.useCase = biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
-		Enforcer:            s.enforcer,
+		CasbinEnforcer:      s.enforcer,
 		APITokenRepo:        s.apiTokenRepo,
 		RestrictOrgCreation: false,
 		Logger:              s.logger,

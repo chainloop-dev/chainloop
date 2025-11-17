@@ -53,7 +53,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "FederatedAuthentication"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
-			authz.NewEnforcer,
+			authz.NewCasbinEnforcer,
 			policies.NewRegistry,
 			newApp,
 			newProtoValidator,
@@ -75,9 +75,9 @@ func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
 }
 
-func authzUseCaseConfig(conf *conf.Bootstrap, enforcer *authz.Enforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
+func authzUseCaseConfig(conf *conf.Bootstrap, casbinEnforcer *authz.CasbinEnforcer, apiTokenRepo biz.APITokenRepo, logger log.Logger) *biz.AuthzUseCaseConfig {
 	return &biz.AuthzUseCaseConfig{
-		Enforcer:            enforcer,
+		CasbinEnforcer:      casbinEnforcer,
 		APITokenRepo:        apiTokenRepo,
 		RestrictOrgCreation: conf.RestrictOrgCreation,
 		Logger:              logger,
