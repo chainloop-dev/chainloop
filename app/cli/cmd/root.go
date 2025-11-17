@@ -34,6 +34,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -155,6 +156,11 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			ActionOpts = newActionOpts(logger, conn, authToken)
+
+			// Add custom builtins to rego engine
+			if err = builtins.RegisterDiscoverBuiltin(conn); err != nil {
+				return fmt.Errorf("failed to register discover builtin: %w", err)
+			}
 
 			if !isTelemetryDisabled() {
 				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
