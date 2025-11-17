@@ -135,6 +135,11 @@ jobs:
               sbom_name="${repo_name}-sbom-${arch}"
 
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
+
+              # Add missing known licenses
+              ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "ariga.io/atlas/cmd/atlas" "Apache-2.0" type="library"
+              ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "github.com/ariga/language-tools/packages/language-server-go" "Apache-2.0" type="library"
+
               chainloop attestation add --name $container_name --value $entry --kind CONTAINER_IMAGE --attestation-id ${{ env.ATTESTATION_ID }}
               chainloop attestation add --name $sbom_name --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
 
