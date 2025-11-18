@@ -68,7 +68,9 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 		}
 
 		// Validate skip list and log warnings for unknown policy names
-		pgv.validateSkipList(ctx, group, groupAtt)
+		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
+			pgv.logger.Warn().Err(err).Msg("skip list validation warning")
+		}
 
 		// gather required policies
 		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupAtt, groupArgs)
@@ -130,7 +132,9 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 		}
 
 		// Validate skip list and log warnings for unknown policy names
-		pgv.validateSkipList(ctx, group, groupAtt)
+		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
+			pgv.logger.Warn().Err(err).Msg("skip list validation warning")
+		}
 
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
 			// Check if policy should be skipped
@@ -337,10 +341,10 @@ func (pgv *PolicyGroupVerifier) getPolicyName(ctx context.Context, attachment *v
 }
 
 // validateSkipList checks if policy names in the skip list exist in the group
-// and logs warnings for any unknown policy names
-func (pgv *PolicyGroupVerifier) validateSkipList(ctx context.Context, group *v1.PolicyGroup, groupAtt *v1.PolicyGroupAttachment) {
+// and returns an error if any unknown policy names are found
+func (pgv *PolicyGroupVerifier) validateSkipList(ctx context.Context, group *v1.PolicyGroup, groupAtt *v1.PolicyGroupAttachment) error {
 	if len(groupAtt.GetSkip()) == 0 {
-		return
+		return nil
 	}
 
 	// Collect all policy names in the group
@@ -368,10 +372,18 @@ func (pgv *PolicyGroupVerifier) validateSkipList(ctx context.Context, group *v1.
 		policyNames[name] = true
 	}
 
-	// Check each skip entry against collected policy names
+	// Check each skip entry against collected policy names and collect unknown ones
+	var unknownPolicies []string
 	for _, skipName := range groupAtt.GetSkip() {
 		if !policyNames[skipName] {
-			pgv.logger.Warn().Str("policy", skipName).Str("group", group.GetMetadata().GetName()).Msg("policy in skip list not found in group")
+			unknownPolicies = append(unknownPolicies, skipName)
 		}
 	}
+
+	// Return error if there are unknown policies
+	if len(unknownPolicies) > 0 {
+		return fmt.Errorf("policies in skip list not found in group %q: %v", group.GetMetadata().GetName(), unknownPolicies)
+	}
+
+	return nil
 }

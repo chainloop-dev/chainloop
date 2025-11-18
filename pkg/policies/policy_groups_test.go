@@ -612,3 +612,79 @@ func (s *groupsTestSuite) TestSkipBothMaterialAndAttestationPolicies() {
 	s.Require().NoError(err)
 	s.Len(attestationEvs, 0, "attestation policy should be skipped")
 }
+
+func (s *groupsTestSuite) TestValidateSkipList() {
+	cases := []struct {
+		name          string
+		policyGroup   string
+		skipPolicies  []string
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:         "empty skip list returns nil",
+			policyGroup:  "file://testdata/policy_group_multikind.yaml",
+			skipPolicies: []string{},
+			expectError:  false,
+		},
+		{
+			name:         "nil skip list returns nil",
+			policyGroup:  "file://testdata/policy_group_multikind.yaml",
+			skipPolicies: nil,
+			expectError:  false,
+		},
+		{
+			name:         "all valid policy names returns nil",
+			policyGroup:  "file://testdata/policy_group_multikind.yaml",
+			skipPolicies: []string{"policy-result-format"},
+			expectError:  false,
+		},
+		{
+			name:          "single unknown policy name returns error",
+			policyGroup:   "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:  []string{"non-existent"},
+			expectError:   true,
+			errorContains: "non-existent",
+		},
+		{
+			name:          "multiple unknown policy names returns error with all names",
+			policyGroup:   "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:  []string{"non-existent-1", "non-existent-2"},
+			expectError:   true,
+			errorContains: "non-existent-1",
+		},
+		{
+			name:          "mix of valid and invalid returns error with only invalid",
+			policyGroup:   "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:  []string{"policy-result-format", "non-existent"},
+			expectError:   true,
+			errorContains: "non-existent",
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			groupAtt := &v1.PolicyGroupAttachment{
+				Ref:  tc.policyGroup,
+				Skip: tc.skipPolicies,
+			}
+
+			group, _, err := LoadPolicyGroup(context.Background(), groupAtt, &LoadPolicyGroupOptions{
+				Logger: &s.logger,
+			})
+			s.Require().NoError(err)
+
+			verifier := NewPolicyGroupVerifier([]*v1.PolicyGroupAttachment{groupAtt}, nil, nil, &s.logger)
+			err = verifier.validateSkipList(context.Background(), group, groupAtt)
+
+			if tc.expectError {
+				s.Error(err)
+				if tc.errorContains != "" {
+					s.Contains(err.Error(), tc.errorContains)
+				}
+			} else {
+				s.NoError(err)
+			}
+		})
+	}
+}
