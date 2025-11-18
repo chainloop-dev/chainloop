@@ -21,6 +21,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
 )
@@ -164,11 +165,12 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 			}
 
 			v := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
-			group, _, err := new(FileGroupLoader).Load(context.TODO(), &v1.PolicyGroupAttachment{
+			groupAtt := &v1.PolicyGroupAttachment{
 				Ref: tc.schemaRef,
-			})
+			}
+			group, _, err := new(FileGroupLoader).Load(context.TODO(), groupAtt)
 			s.Require().NoError(err)
-			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group, nil)
+			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group, groupAtt, nil)
 			s.Require().NoError(err)
 			s.Len(atts, tc.expected)
 		})
@@ -426,4 +428,187 @@ func (s *groupsTestSuite) TestGroupInputs() {
 			}
 		})
 	}
+}
+
+func (s *groupsTestSuite) TestSkipPolicies() {
+	cases := []struct {
+		name                string
+		policyGroup         string
+		skipPolicies        []string
+		material            string
+		expectedEvaluations int
+		expectErr           bool
+	}{
+		{
+			name:                "no skip list - all policies run",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:        nil,
+			material:            `{"specVersion": "1.4"}`,
+			expectedEvaluations: 1, // policy-result-format policy runs
+		},
+		{
+			name:                "skip material policy",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:        []string{"policy-result-format"},
+			material:            `{"specVersion": "1.4"}`,
+			expectedEvaluations: 0, // policy-result-format policy skipped
+		},
+		{
+			name:                "skip non-existent policy - warning logged but continues",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:        []string{"non-existent-policy"},
+			material:            `{"specVersion": "1.4"}`,
+			expectedEvaluations: 1, // policy-result-format policy still runs
+		},
+		{
+			name:                "skip multiple policies including non-existent",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:        []string{"policy-result-format", "non-existent"},
+			material:            `{"specVersion": "1.4"}`,
+			expectedEvaluations: 0, // policy-result-format skipped
+		},
+		{
+			name:                "empty skip list",
+			policyGroup:         "file://testdata/policy_group_multikind.yaml",
+			skipPolicies:        []string{},
+			material:            `{"specVersion": "1.4"}`,
+			expectedEvaluations: 1,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v1.CraftingSchema{
+				Materials: []*v1.CraftingSchema_Material{
+					{
+						Name: "sbom",
+						Type: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+					},
+				},
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{
+						Ref:  tc.policyGroup,
+						Skip: tc.skipPolicies,
+					},
+				},
+			}
+
+			material := &api.Attestation_Material{
+				M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{
+					Content: []byte(tc.material),
+				}},
+				MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+				InlineCas:    true,
+			}
+
+			verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
+			evs, err := verifier.VerifyMaterial(context.Background(), material, "")
+
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(evs, tc.expectedEvaluations)
+		})
+	}
+}
+
+func (s *groupsTestSuite) TestSkipAttestationPolicies() {
+	cases := []struct {
+		name                string
+		policyGroup         string
+		skipPolicies        []string
+		expectedEvaluations int
+		expectErr           bool
+	}{
+		{
+			name:                "no skip list - attestation policy runs",
+			policyGroup:         "file://testdata/policy_group.yaml",
+			skipPolicies:        nil,
+			expectedEvaluations: 1, // workflow policy runs
+		},
+		{
+			name:                "skip attestation policy",
+			policyGroup:         "file://testdata/policy_group.yaml",
+			skipPolicies:        []string{"workflow"},
+			expectedEvaluations: 0, // workflow policy skipped
+		},
+		{
+			name:                "skip non-existent attestation policy",
+			policyGroup:         "file://testdata/policy_group.yaml",
+			skipPolicies:        []string{"non-existent"},
+			expectedEvaluations: 1, // workflow still runs
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v1.CraftingSchema{
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{
+						Ref:  tc.policyGroup,
+						Skip: tc.skipPolicies,
+					},
+				},
+			}
+
+			// Create a simple statement
+			statement := &intoto.Statement{
+				Type: "https://in-toto.io/Statement/v0.1",
+			}
+
+			verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
+			evs, err := verifier.VerifyStatement(context.Background(), statement)
+
+			if tc.expectErr {
+				s.Error(err)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(evs, tc.expectedEvaluations)
+		})
+	}
+}
+
+func (s *groupsTestSuite) TestSkipBothMaterialAndAttestationPolicies() {
+	schema := &v1.CraftingSchema{
+		Materials: []*v1.CraftingSchema_Material{
+			{
+				Name: "sbom",
+				Type: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+			},
+		},
+		PolicyGroups: []*v1.PolicyGroupAttachment{
+			{
+				Ref:  "file://testdata/policy_group_multikind.yaml",
+				Skip: []string{"policy-result-format", "workflow"},
+			},
+		},
+	}
+
+	// Test material evaluation - should be skipped
+	material := &api.Attestation_Material{
+		M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{
+			Content: []byte(`{"specVersion": "1.4"}`),
+		}},
+		MaterialType: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+		InlineCas:    true,
+	}
+
+	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
+	materialEvs, err := verifier.VerifyMaterial(context.Background(), material, "")
+	s.Require().NoError(err)
+	s.Len(materialEvs, 0, "material policy should be skipped")
+
+	// Test attestation evaluation - should be skipped
+	statement := &intoto.Statement{
+		Type: "https://in-toto.io/Statement/v0.1",
+	}
+
+	attestationEvs, err := verifier.VerifyStatement(context.Background(), statement)
+	s.Require().NoError(err)
+	s.Len(attestationEvs, 0, "attestation policy should be skipped")
 }

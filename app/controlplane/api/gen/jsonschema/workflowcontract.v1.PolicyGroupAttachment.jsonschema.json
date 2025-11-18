@@ -9,6 +9,13 @@
       "minLength": 1,
       "type": "string"
     },
+    "skip": {
+      "description": "policy names to skip (matched against metadata.name)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "with": {
       "additionalProperties": {
         "type": "string"

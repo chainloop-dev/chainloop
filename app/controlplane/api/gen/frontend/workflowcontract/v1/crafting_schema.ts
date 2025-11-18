@@ -518,6 +518,8 @@ export interface PolicyGroupAttachment {
   ref: string;
   /** group arguments */
   with: { [key: string]: string };
+  /** policy names to skip (matched against metadata.name) */
+  skip: string[];
 }
 
 export interface PolicyGroupAttachment_WithEntry {
@@ -2244,7 +2246,7 @@ export const AutoMatch = {
 };
 
 function createBasePolicyGroupAttachment(): PolicyGroupAttachment {
-  return { ref: "", with: {} };
+  return { ref: "", with: {}, skip: [] };
 }
 
 export const PolicyGroupAttachment = {
@@ -2255,6 +2257,9 @@ export const PolicyGroupAttachment = {
     Object.entries(message.with).forEach(([key, value]) => {
       PolicyGroupAttachment_WithEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).ldelim();
     });
+    for (const v of message.skip) {
+      writer.uint32(26).string(v!);
+    }
     return writer;
   },
 
@@ -2282,6 +2287,13 @@ export const PolicyGroupAttachment = {
             message.with[entry2.key] = entry2.value;
           }
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.skip.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2300,6 +2312,7 @@ export const PolicyGroupAttachment = {
           return acc;
         }, {})
         : {},
+      skip: Array.isArray(object?.skip) ? object.skip.map((e: any) => String(e)) : [],
     };
   },
 
@@ -2311,6 +2324,11 @@ export const PolicyGroupAttachment = {
       Object.entries(message.with).forEach(([k, v]) => {
         obj.with[k] = v;
       });
+    }
+    if (message.skip) {
+      obj.skip = message.skip.map((e) => e);
+    } else {
+      obj.skip = [];
     }
     return obj;
   },
@@ -2328,6 +2346,7 @@ export const PolicyGroupAttachment = {
       }
       return acc;
     }, {});
+    message.skip = object.skip?.map((e) => e) || [];
     return message;
   },
 };

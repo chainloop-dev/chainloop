@@ -67,8 +67,11 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return nil, NewPolicyError(err)
 		}
 
+		// Validate skip list and log warnings for unknown policy names
+		pgv.validateSkipList(ctx, group, groupAtt)
+
 		// gather required policies
-		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupArgs)
+		policyAtts, err := pgv.requiredPoliciesForMaterial(ctx, material, group, groupAtt, groupArgs)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
@@ -125,7 +128,23 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
+
+		// Validate skip list and log warnings for unknown policy names
+		pgv.validateSkipList(ctx, group, groupAtt)
+
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
+			// Check if policy should be skipped
+			policyName, err := pgv.getPolicyName(ctx, attachment)
+			if err != nil {
+				return nil, NewPolicyError(fmt.Errorf("failed to get policy name: %w", err))
+			}
+
+			// Skip if policy name is in the skip list
+			if slices.Contains(groupAtt.GetSkip(), policyName) {
+				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
+				continue
+			}
+
 			material, err := protojson.Marshal(statement)
 			if err != nil {
 				return nil, NewPolicyError(err)
@@ -211,7 +230,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 }
 
 // Gets the policies that can be applied to a material within a group
-func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup, groupArgs map[string]string) ([]*v1.PolicyAttachment, error) {
+func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context, material *api.Attestation_Material, group *v1.PolicyGroup, groupAtt *v1.PolicyGroupAttachment, groupArgs map[string]string) ([]*v1.PolicyAttachment, error) {
 	result := make([]*v1.PolicyAttachment, 0)
 
 	// 2. go through all materials in the group and look for the crafted material
@@ -234,6 +253,18 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 			}
 
 			if apply {
+				// Check if policy should be skipped
+				policyName, err := pgv.getPolicyName(ctx, policyAtt)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get policy name: %w", err)
+				}
+
+				// Skip if policy name is in the skip list
+				if slices.Contains(groupAtt.GetSkip(), policyName) {
+					pgv.logger.Debug().Str("policy", policyName).Msg("skipping policy per skip list")
+					continue
+				}
+
 				result = append(result, policyAtt)
 			}
 		}
@@ -281,4 +312,66 @@ func (pgv *PolicyGroupVerifier) shouldApplyPolicy(ctx context.Context, policyAtt
 	}
 
 	return false, nil
+}
+
+// getPolicyName extracts the metadata.name from a PolicyAttachment
+// It handles both embedded and referenced policies by loading the policy spec when needed
+func (pgv *PolicyGroupVerifier) getPolicyName(ctx context.Context, attachment *v1.PolicyAttachment) (string, error) {
+	// Case 1: Embedded policy - direct access
+	if embedded := attachment.GetEmbedded(); embedded != nil {
+		return embedded.GetMetadata().GetName(), nil
+	}
+
+	// Case 2: Referenced policy - must load it
+	if ref := attachment.GetRef(); ref != "" {
+		// Load the policy spec using existing loader infrastructure
+		policy, _, err := pgv.loadPolicySpec(ctx, attachment)
+		if err != nil {
+			return "", fmt.Errorf("failed to load policy to get name: %w", err)
+		}
+		return policy.GetMetadata().GetName(), nil
+	}
+
+	// Should never happen due to protobuf validation, but handle defensively
+	return "", errors.New("policy attachment has neither ref nor embedded policy")
+}
+
+// validateSkipList checks if policy names in the skip list exist in the group
+// and logs warnings for any unknown policy names
+func (pgv *PolicyGroupVerifier) validateSkipList(ctx context.Context, group *v1.PolicyGroup, groupAtt *v1.PolicyGroupAttachment) {
+	if len(groupAtt.GetSkip()) == 0 {
+		return
+	}
+
+	// Collect all policy names in the group
+	policyNames := make(map[string]bool)
+
+	// Collect material policy names
+	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
+		for _, policyAtt := range groupMaterial.GetPolicies() {
+			name, err := pgv.getPolicyName(ctx, policyAtt)
+			if err != nil {
+				pgv.logger.Warn().Err(err).Msg("failed to get policy name during skip list validation")
+				continue
+			}
+			policyNames[name] = true
+		}
+	}
+
+	// Collect attestation policy names
+	for _, policyAtt := range group.GetSpec().GetPolicies().GetAttestation() {
+		name, err := pgv.getPolicyName(ctx, policyAtt)
+		if err != nil {
+			pgv.logger.Warn().Err(err).Msg("failed to get policy name during skip list validation")
+			continue
+		}
+		policyNames[name] = true
+	}
+
+	// Check each skip entry against collected policy names
+	for _, skipName := range groupAtt.GetSkip() {
+		if !policyNames[skipName] {
+			pgv.logger.Warn().Str("policy", skipName).Str("group", group.GetMetadata().GetName()).Msg("policy in skip list not found in group")
+		}
+	}
 }

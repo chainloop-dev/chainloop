@@ -34,3 +34,7 @@ spec:
       - ref: file://attestation-policy.yaml
   policyGroups:
     - ref: file://testdata/policy_group.yaml
+      with:
+        user_name: "test-user"
+      skip:
+        - policy-to-skip
