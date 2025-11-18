@@ -145,7 +145,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
 			if shouldAskForConfirmation(cmd) && isUserToken && !flagYes {
-				if !confirmationPrompt(fmt.Sprintf("This command is will run against the organization %q", orgName)) {
+				if !confirmationPrompt(fmt.Sprintf("This command will run against the organization %q", orgName)) {
 					return errors.New("command canceled by user")
 				}
 			}
