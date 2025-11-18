@@ -103,6 +103,43 @@
                                                         },
                                                         "type": "array",
                                                         "description": "Array of context variables"
+                                                    },
+                                                    "bypass_configuration": {
+                                                        "items": {
+                                                            "properties": {
+                                                                "actor_id": {
+                                                                    "type": "integer",
+                                                                    "description": "The ID of the actor allowed to bypass"
+                                                                },
+                                                                "actor_type": {
+                                                                    "type": "string",
+                                                                    "description": "The type of the actor allowed to bypass (e.g."
+                                                                },
+                                                                "bypass_mode": {
+                                                                    "type": "string",
+                                                                    "description": "The bypass mode (e.g."
+                                                                },
+                                                                "actor_name": {
+                                                                    "type": "string",
+                                                                    "description": "Human-readable name of the actor"
+                                                                },
+                                                                "actor_login": {
+                                                                    "type": "string",
+                                                                    "description": "Login or username of the actor (if applicable)"
+                                                                },
+                                                                "actor_metadata": {
+                                                                    "additionalProperties": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "type": "object",
+                                                                    "description": "Provider-specific metadata about the actor"
+                                                                }
+                                                            },
+                                                            "additionalProperties": false,
+                                                            "type": "object"
+                                                        },
+                                                        "type": "array",
+                                                        "description": "Configuration for bypassing the rule"
                                                     }
                                                 },
                                                 "additionalProperties": false,
