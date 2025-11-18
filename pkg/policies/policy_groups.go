@@ -69,7 +69,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 
 		// Validate skip list and log warnings for unknown policy names
 		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
-			pgv.logger.Warn().Err(err).Msg("skip list validation warning")
+			pgv.logger.Warn().Err(err).Msg("some policies in skip list were not found in the policy group")
 		}
 
 		// gather required policies
@@ -133,7 +133,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 
 		// Validate skip list and log warnings for unknown policy names
 		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
-			pgv.logger.Warn().Err(err).Msg("skip list validation warning")
+			pgv.logger.Warn().Err(err).Msg("some policies in skip list were not found in the policy group")
 		}
 
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
