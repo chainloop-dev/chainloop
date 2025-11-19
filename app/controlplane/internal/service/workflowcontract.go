@@ -275,7 +275,7 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 		return pb.WorkflowContractVersionItem_RawBody_FORMAT_UNSPECIFIED
 	}
 
-	return &pb.WorkflowContractVersionItem{
+	item := &pb.WorkflowContractVersionItem{
 		Id:        schema.ID.String(),
 		CreatedAt: timestamppb.New(*schema.CreatedAt),
 		Revision:  int32(schema.Revision),
@@ -287,6 +287,12 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 			Format: formatTranslator(schema.Schema.Format),
 		},
 	}
+
+	if schema.Schema.Schemav2 != nil {
+		item.Description = schema.Schema.Schemav2.GetMetadata().GetDescription()
+	}
+
+	return item
 }
 
 // checkContractAccess checks if the current user can manage a contract

@@ -341,10 +341,11 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 	// and the new way which is the raw_body and raw_body_format pairs
 	// Regardless of what's stored, we want to make sure we always return the contract object that contains the raw and binary representation
 	var err error
-	// Scenario 1: contracts that have been stored (and not updated) before the introduction of the raw_body field will have an empty raw_body
-	// so we will generate a json representation of the contract to populate the raw_body field in that case
-	// that way clients can always expect a raw_body field to be present
+
 	if len(contract.Raw) == 0 {
+		// Scenario 1: contracts that have been stored (and not updated) before the introduction of the raw_body field will have an empty raw_body
+		// so we will generate a json representation of the contract to populate the raw_body field in that case
+		// that way clients can always expect a raw_body field to be present
 		schema := &schemav1.CraftingSchema{}
 		if err := proto.Unmarshal(w.Body, schema); err != nil {
 			return nil, err
@@ -354,20 +355,30 @@ func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*bi
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate fallback raw body: %w", err)
 		}
+	} else if len(w.Body) == 0 {
 		// Scenario 2: contracts that have been updated after the introduction of the raw_body field will have the raw_body field populated
 		// but we also want to keep the Body field populated for backward compatibility
 		// Note: UnmarshalAndValidateRawContract ensures both Schema (v1) and Schemav2 (v2) are populated for v2 contracts
-	} else if len(w.Body) == 0 {
 		parsedContract, err := biz.UnmarshalAndValidateRawContract(w.RawBody, w.RawBodyFormat)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal raw body: %w", err)
 		}
+
+		// return both v1 and v2 schemas
 		contract.Schema = parsedContract.Schema
+		contract.Schemav2 = parsedContract.Schemav2
 	}
 
-	return &biz.WorkflowContractVersion{
+	version := &biz.WorkflowContractVersion{
 		ID: w.ID, CreatedAt: toTimePtr(w.CreatedAt), Revision: w.Revision, Schema: contract,
-	}, nil
+	}
+
+	// Set description from raw contract since description is now versioned as well
+	if contract.Schemav2 != nil {
+		version.Description = contract.Schemav2.GetMetadata().GetDescription()
+	}
+
+	return version, nil
 }
 
 // wraps the given error
