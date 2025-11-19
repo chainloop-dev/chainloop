@@ -150,7 +150,7 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 
 	// Take the raw contract bytes and identify the format and validate it
 	if opts.ContractBytes != nil {
-		detectedContract, err := RawToSchemaContract(opts.ContractBytes)
+		detectedContract, err := identifyUnMarshalAndValidateRawContract(opts.ContractBytes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}

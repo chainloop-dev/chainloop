@@ -257,7 +257,7 @@ func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowCon
 	var contract *Contract
 	if len(opts.RawSchema) > 0 {
 		// Load the provided contract
-		c, err := RawToSchemaContract(opts.RawSchema)
+		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
@@ -391,7 +391,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 	var contract *Contract
 	if len(opts.RawSchema) > 0 {
-		c, err := RawToSchemaContract(opts.RawSchema)
+		c, err := identifyUnMarshalAndValidateRawContract(opts.RawSchema)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load contract: %w", err)
 		}
@@ -434,7 +434,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, token string) error {
 	// Validate that externally provided policies exist
-	c, err := RawToSchemaContract(rawSchema)
+	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
 		return NewErrValidation(err)
 	}
@@ -716,8 +716,8 @@ func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*C
 	return nil, NewErrValidation(fmt.Errorf("contract validation failed:\n  v2 Contract format error: %w\n  v1 CraftingSchema format error: %w", v2Err, v1Err))
 }
 
-// RawToSchemaContract Will try to figure out the format of the raw contract and validate it
-func RawToSchemaContract(raw []byte) (*Contract, error) {
+// Will try to figure out the format of the raw contract and validate it
+func identifyUnMarshalAndValidateRawContract(raw []byte) (*Contract, error) {
 	format, err := unmarshal.IdentifyFormat(raw)
 	if err != nil {
 		return nil, fmt.Errorf("identify contract: %w", err)
