@@ -327,7 +327,7 @@ func validateAndExtractMetadata(rawContract []byte, explicitName, explicitDesc s
 		if explicitName != "" && metadata.GetName() != "" {
 			// If both are provided but different, that's a conflict
 			if explicitName != metadata.GetName() {
-				return "", nil, errors.BadRequest("invalid", "name cannot be changed")
+				return "", nil, errors.BadRequest("invalid", "contract name cannot be changed")
 			}
 		}
 
