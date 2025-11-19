@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -69,7 +70,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 
 		// Validate skip list and log warnings for unknown policy names
 		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
-			pgv.logger.Warn().Err(err).Msg("some policies in skip list were not found in the policy group")
+			pgv.logger.Warn().Msg(err.Error())
 		}
 
 		// gather required policies
@@ -133,7 +134,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 
 		// Validate skip list and log warnings for unknown policy names
 		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
-			pgv.logger.Warn().Err(err).Msg("some policies in skip list were not found in the policy group")
+			pgv.logger.Warn().Msg(err.Error())
 		}
 
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
@@ -382,7 +383,7 @@ func (pgv *PolicyGroupVerifier) validateSkipList(ctx context.Context, group *v1.
 
 	// Return error if there are unknown policies
 	if len(unknownPolicies) > 0 {
-		return fmt.Errorf("policies in skip list not found in group %q: %v", group.GetMetadata().GetName(), unknownPolicies)
+		return fmt.Errorf("can't skip policy %q from the group %q. Policy not part of the group", strings.Join(unknownPolicies, ", "), group.GetMetadata().GetName())
 	}
 
 	return nil
