@@ -345,7 +345,17 @@ func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contract
 		return nil, err
 	}
 
-	return uc.repo.Describe(ctx, orgUUID, contractUUID, revision, opts...)
+	desc, err := uc.repo.Describe(ctx, orgUUID, contractUUID, revision, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the requested revision has a description, make it the default
+	if desc.Version.Description != "" {
+		desc.Contract.Description = desc.Version.Description
+	}
+
+	return desc, nil
 }
 
 func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionID string) (*WorkflowContractWithVersion, error) {

@@ -61,11 +61,12 @@ type WorkflowRef struct {
 }
 
 type WorkflowContractVersionItem struct {
-	ID        string                   `json:"id"`
-	Revision  int                      `json:"revision"`
-	CreatedAt *time.Time               `json:"createdAt"`
-	BodyV1    *schemav1.CraftingSchema `json:"bodyV1"`
-	RawBody   *ContractRawBody         `json:"rawBody"`
+	ID          string                   `json:"id"`
+	Revision    int                      `json:"revision"`
+	Description string                   `json:"description"`
+	CreatedAt   *time.Time               `json:"createdAt"`
+	BodyV1      *schemav1.CraftingSchema `json:"bodyV1"`
+	RawBody     *ContractRawBody         `json:"rawBody"`
 }
 
 type ContractRawBody struct {
@@ -123,8 +124,9 @@ func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContra
 func pbWorkflowContractVersionItemToAction(in *pb.WorkflowContractVersionItem) *WorkflowContractVersionItem {
 	return &WorkflowContractVersionItem{
 		Revision: int(in.GetRevision()), ID: in.GetId(), BodyV1: in.GetV1(),
-		CreatedAt: toTimePtr(in.GetCreatedAt().AsTime()),
-		RawBody:   &ContractRawBody{Body: string(in.RawContract.GetBody()), Format: in.RawContract.GetFormat().String()},
+		Description: in.Description,
+		CreatedAt:   toTimePtr(in.GetCreatedAt().AsTime()),
+		RawBody:     &ContractRawBody{Body: string(in.RawContract.GetBody()), Format: in.RawContract.GetFormat().String()},
 	}
 }
 

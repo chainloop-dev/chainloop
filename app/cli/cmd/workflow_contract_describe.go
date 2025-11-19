@@ -81,15 +81,21 @@ func encodeContractOutput(run *action.WorkflowContractWithVersionItem) error {
 
 func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWithVersionItem) error {
 	revision := contractWithVersion.Revision
-
 	c := contractWithVersion.Contract
+
+	// If available, show the description from the revision
+	description := c.Description
+	if revision.Description != "" {
+		description = revision.Description
+	}
+
 	t := output.NewTableWriter()
 	t.SetTitle("Contract")
 	t.AppendRow(table.Row{"Name", c.Name})
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Scope", c.ScopedEntity.String()})
 	t.AppendSeparator()
-	t.AppendRow(table.Row{"Description", c.Description})
+	t.AppendRow(table.Row{"Description", description})
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Associated Workflows", stringifyAssociatedWorkflows(contractWithVersion)})
 	t.AppendSeparator()
