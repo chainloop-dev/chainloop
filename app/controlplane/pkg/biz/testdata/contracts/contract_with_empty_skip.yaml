@@ -1,0 +1,14 @@
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: contract-with-empty-skip
+  description: Test contract with empty skip list
+spec:
+  materials:
+    - name: my-sbom
+      type: SBOM_CYCLONEDX_JSON
+  runner:
+    type: GITHUB_ACTION
+  policyGroups:
+    - ref: file://../testdata/policy_group_with_embedded.yaml
+      skip: []

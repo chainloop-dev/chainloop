@@ -1,0 +1,56 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: test-policy-group
+  description: Test policy group with embedded policies for skip list validation
+spec:
+  policies:
+    materials:
+      - type: SBOM_CYCLONEDX_JSON
+        policies:
+          - embedded:
+              metadata:
+                name: sbom-version-policy
+                description: Check SBOM version
+              spec:
+                policies:
+                  - kind: SBOM_CYCLONEDX_JSON
+                    embedded: |
+                      package main
+                      import rego.v1
+                      result := {
+                        "skipped": false,
+                        "violations": [],
+                        "skip_reason": "",
+                      }
+          - embedded:
+              metadata:
+                name: sbom-quality-policy
+                description: Check SBOM quality
+              spec:
+                policies:
+                  - kind: SBOM_CYCLONEDX_JSON
+                    embedded: |
+                      package main
+                      import rego.v1
+                      result := {
+                        "skipped": false,
+                        "violations": [],
+                        "skip_reason": "",
+                      }
+    attestation:
+      - embedded:
+          metadata:
+            name: attestation-policy
+            description: Validate attestation structure
+          spec:
+            policies:
+              - kind: ATTESTATION
+                embedded: |
+                  package main
+                  import rego.v1
+                  result := {
+                    "skipped": false,
+                    "violations": [],
+                    "skip_reason": "",
+                  }

@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -66,11 +65,6 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 		groupArgs, err := ComputeArguments(group.GetMetadata().GetName(), group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
-		}
-
-		// Validate skip list and log warnings for unknown policy names
-		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
-			pgv.logger.Warn().Msg(err.Error())
 		}
 
 		// gather required policies
@@ -130,11 +124,6 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 		groupArgs, err := ComputeArguments(group.GetMetadata().GetName(), group.GetSpec().GetInputs(), groupAtt.GetWith(), nil, pgv.logger)
 		if err != nil {
 			return nil, NewPolicyError(err)
-		}
-
-		// Validate skip list and log warnings for unknown policy names
-		if err := pgv.validateSkipList(ctx, group, groupAtt); err != nil {
-			pgv.logger.Warn().Msg(err.Error())
 		}
 
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
@@ -339,52 +328,4 @@ func (pgv *PolicyGroupVerifier) getPolicyName(ctx context.Context, attachment *v
 
 	// Should never happen due to protobuf validation, but handle defensively
 	return "", errors.New("policy attachment has neither ref nor embedded policy")
-}
-
-// validateSkipList checks if policy names in the skip list exist in the group
-// and returns an error if any unknown policy names are found
-func (pgv *PolicyGroupVerifier) validateSkipList(ctx context.Context, group *v1.PolicyGroup, groupAtt *v1.PolicyGroupAttachment) error {
-	if len(groupAtt.GetSkip()) == 0 {
-		return nil
-	}
-
-	// Collect all policy names in the group
-	policyNames := make(map[string]bool)
-
-	// Collect material policy names
-	for _, groupMaterial := range group.GetSpec().GetPolicies().GetMaterials() {
-		for _, policyAtt := range groupMaterial.GetPolicies() {
-			name, err := pgv.getPolicyName(ctx, policyAtt)
-			if err != nil {
-				pgv.logger.Warn().Err(err).Msg("failed to get policy name during skip list validation")
-				continue
-			}
-			policyNames[name] = true
-		}
-	}
-
-	// Collect attestation policy names
-	for _, policyAtt := range group.GetSpec().GetPolicies().GetAttestation() {
-		name, err := pgv.getPolicyName(ctx, policyAtt)
-		if err != nil {
-			pgv.logger.Warn().Err(err).Msg("failed to get policy name during skip list validation")
-			continue
-		}
-		policyNames[name] = true
-	}
-
-	// Check each skip entry against collected policy names and collect unknown ones
-	var unknownPolicies []string
-	for _, skipName := range groupAtt.GetSkip() {
-		if !policyNames[skipName] {
-			unknownPolicies = append(unknownPolicies, skipName)
-		}
-	}
-
-	// Return error if there are unknown policies
-	if len(unknownPolicies) > 0 {
-		return fmt.Errorf("can't skip policy %q from the group %q. Policy not part of the group", strings.Join(unknownPolicies, ", "), group.GetMetadata().GetName())
-	}
-
-	return nil
 }
