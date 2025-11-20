@@ -178,7 +178,8 @@ message PolicyReference {
 message WorkflowContractItem {
   string id = 1;
   string name = 2;
-  string description = 6;
+  // deprecated: description now belongs to the version, as it's versioned since the introduction of new contracts v2
+  string description = 6 [deprecated = true];
   google.protobuf.Timestamp created_at = 3;
   google.protobuf.Timestamp updated_at = 10;
   int32 latest_revision = 4;

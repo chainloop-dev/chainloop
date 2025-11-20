@@ -24,7 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
-	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -91,7 +91,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 
 	result := &pb.WorkflowContractServiceDescribeResponse_Result{
 		Contract: bizWorkFlowContractToPb(contractWithVersion.Contract),
-		Revision: bizWorkFlowContractVersionToPb(contractWithVersion.Version),
+		Revision: bizWorkFlowContractVersionToPb(contractWithVersion.Version, contractWithVersion.Contract),
 	}
 
 	return &pb.WorkflowContractServiceDescribeResponse{Result: result}, nil
@@ -199,7 +199,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	result := &pb.WorkflowContractServiceUpdateResponse_Result{
 		Contract: bizWorkFlowContractToPb(schemaWithVersion.Contract),
-		Revision: bizWorkFlowContractVersionToPb(schemaWithVersion.Version),
+		Revision: bizWorkFlowContractVersionToPb(schemaWithVersion.Version, schemaWithVersion.Contract),
 	}
 
 	return &pb.WorkflowContractServiceUpdateResponse{Result: result}, nil
@@ -261,7 +261,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 	return result
 }
 
-func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {
+func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion, contract *biz.WorkflowContract) *pb.WorkflowContractVersionItem {
 	formatTranslator := func(unmarshal.RawFormat) pb.WorkflowContractVersionItem_RawBody_Format {
 		switch schema.Schema.Format {
 		case unmarshal.RawFormatJSON:
@@ -288,8 +288,12 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 		},
 	}
 
+	// Standardize the API to always provide description in the version.
+	// Add description from the proper source (new schemav2 or legacy top level contract)
 	if schema.Schema.Schemav2 != nil {
 		item.Description = schema.Schema.Schemav2.GetMetadata().GetDescription()
+	} else {
+		item.Description = contract.Description
 	}
 
 	return item

@@ -40,6 +40,7 @@
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
     "description": {
+      "description": "deprecated: description now belongs to the version, as it's versioned since the introduction of new contracts v2",
       "type": "string"
     },
     "id": {

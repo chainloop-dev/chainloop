@@ -34,8 +34,9 @@ import (
 )
 
 type WorkflowContract struct {
-	ID                      uuid.UUID
-	Name                    string
+	ID   uuid.UUID
+	Name string
+	// Deprecated: use description from the version instead
 	Description             string
 	LatestRevision          int
 	LatestRevisionCreatedAt *time.Time
@@ -71,6 +72,7 @@ type Contract struct {
 	// Detected format as provided by the user
 	Format unmarshal.RawFormat
 	// marshalled proto v1 contract
+	// Deprecated: use Schemav2 instead
 	Schema *schemav1.CraftingSchema
 	// marshalled proto v2 contract
 	Schemav2 *schemav1.CraftingSchemaV2

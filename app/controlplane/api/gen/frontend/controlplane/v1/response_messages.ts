@@ -473,6 +473,11 @@ export interface PolicyReference_DigestEntry {
 export interface WorkflowContractItem {
   id: string;
   name: string;
+  /**
+   * deprecated: description now belongs to the version, as it's versioned since the introduction of new contracts v2
+   *
+   * @deprecated
+   */
   description: string;
   createdAt?: Date;
   updatedAt?: Date;

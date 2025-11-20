@@ -38,7 +38,7 @@ func newWorkflowContractDescribeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe the information of the contract",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			res, err := action.NewWorkflowContractDescribe(ActionOpts).Run(name, revision)
 			if err != nil {
 				return err
@@ -83,19 +83,13 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	revision := contractWithVersion.Revision
 	c := contractWithVersion.Contract
 
-	// If available, show the description from the revision
-	description := c.Description
-	if revision.Description != "" {
-		description = revision.Description
-	}
-
 	t := output.NewTableWriter()
 	t.SetTitle("Contract")
 	t.AppendRow(table.Row{"Name", c.Name})
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Scope", c.ScopedEntity.String()})
 	t.AppendSeparator()
-	t.AppendRow(table.Row{"Description", description})
+	t.AppendRow(table.Row{"Description", revision.Description}) // description is always provided through
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Associated Workflows", stringifyAssociatedWorkflows(contractWithVersion)})
 	t.AppendSeparator()
