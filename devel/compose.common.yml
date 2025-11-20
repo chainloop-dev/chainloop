@@ -17,21 +17,25 @@ services:
       interval: 2s
       retries: 10
 
-  # in memory-only vault for development
-  # note that secrets will get removed when the container is restarted
+  # Vault with persistence for development
   vault:
     image: docker.io/vault:1.12.3
     cap_add:
       - IPC_LOCK
     ports:
       - 8200:8200
-    environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=notasecret
+    volumes:
+      - ./vault-config.hcl:/vault/config/local.hcl
+      - ./vault-init.sh:/vault-init.sh
+      - vault_data:/vault/file
+    command: "/vault-init.sh"
     healthcheck:
       test: [ "CMD", "wget", "--spider", "http://127.0.0.1:8200/v1/sys/health" ]
       interval: 10s
       timeout: 3s
       retries: 10
       start_period: 5s
+
 volumes:
   postgresql_data:
+  vault_data:
