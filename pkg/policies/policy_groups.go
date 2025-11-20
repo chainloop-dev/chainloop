@@ -74,6 +74,17 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 		}
 
 		for _, policyAtt := range policyAtts {
+			// Check if policy should be skipped
+			skip, policyName, err := pgv.shouldSkipPolicy(ctx, policyAtt, groupAtt.GetSkip())
+			if err != nil {
+				return nil, NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
+			}
+
+			if skip {
+				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
+				continue
+			}
+
 			// Load material content
 			subject, err := material.GetEvaluableContent(path)
 			if err != nil {
@@ -128,13 +139,12 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
 			// Check if policy should be skipped
-			policyName, err := pgv.getPolicyName(ctx, attachment)
+			skip, policyName, err := pgv.shouldSkipPolicy(ctx, attachment, groupAtt.GetSkip())
 			if err != nil {
-				return nil, NewPolicyError(fmt.Errorf("failed to get policy name: %w", err))
+				return nil, NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
 			}
 
-			// Skip if policy name is in the skip list
-			if slices.Contains(groupAtt.GetSkip(), policyName) {
+			if skip {
 				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
 				continue
 			}
@@ -247,18 +257,6 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 			}
 
 			if apply {
-				// Check if policy should be skipped
-				policyName, err := pgv.getPolicyName(ctx, policyAtt)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get policy name: %w", err)
-				}
-
-				// Skip if policy name is in the skip list
-				if slices.Contains(groupAtt.GetSkip(), policyName) {
-					pgv.logger.Debug().Str("policy", policyName).Msg("skipping policy per skip list")
-					continue
-				}
-
 				result = append(result, policyAtt)
 			}
 		}
@@ -308,24 +306,22 @@ func (pgv *PolicyGroupVerifier) shouldApplyPolicy(ctx context.Context, policyAtt
 	return false, nil
 }
 
-// getPolicyName extracts the metadata.name from a PolicyAttachment
+// shouldSkipPolicy checks if a policy should be skipped based on the skip list
 // It handles both embedded and referenced policies by loading the policy spec when needed
-func (pgv *PolicyGroupVerifier) getPolicyName(ctx context.Context, attachment *v1.PolicyAttachment) (string, error) {
-	// Case 1: Embedded policy - direct access
-	if embedded := attachment.GetEmbedded(); embedded != nil {
-		return embedded.GetMetadata().GetName(), nil
+func (pgv *PolicyGroupVerifier) shouldSkipPolicy(ctx context.Context, attachment *v1.PolicyAttachment, skipList []string) (bool, string, error) {
+	if len(skipList) == 0 {
+		return false, "", nil
 	}
 
-	// Case 2: Referenced policy - must load it
-	if ref := attachment.GetRef(); ref != "" {
-		// Load the policy spec using existing loader infrastructure
-		policy, _, err := pgv.loadPolicySpec(ctx, attachment)
-		if err != nil {
-			return "", fmt.Errorf("failed to load policy to get name: %w", err)
-		}
-		return policy.GetMetadata().GetName(), nil
+	policy, _, err := pgv.loadPolicySpec(ctx, attachment)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to load policy to get name: %w", err)
 	}
 
-	// Should never happen due to protobuf validation, but handle defensively
-	return "", errors.New("policy attachment has neither ref nor embedded policy")
+	policyName := policy.GetMetadata().GetName()
+	if slices.Contains(skipList, policyName) {
+		return true, policyName, nil
+	}
+
+	return false, "", nil
 }
