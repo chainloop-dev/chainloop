@@ -619,6 +619,13 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy script: %w", err)
 		}
+
+		// Inject boilerplate if needed
+		script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
+		if err != nil {
+			return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+		}
+
 		scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
 	} else {
 		// multi-kind policies
@@ -629,6 +636,13 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 				if err != nil {
 					return nil, fmt.Errorf("failed to load policy script: %w", err)
 				}
+
+				// Inject boilerplate if needed
+				script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
+				if err != nil {
+					return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+				}
+
 				scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
 			}
 		}
