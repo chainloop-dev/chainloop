@@ -247,7 +247,8 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		LatestRevisionCreatedAt: timestamppb.New(*schema.LatestRevisionCreatedAt),
 		WorkflowNames:           workflowNames,
 		WorkflowRefs:            workflowRefs,
-		Description:             schema.Description,
+		//nolint:staticcheck
+		Description: schema.Description,
 	}
 
 	if schema.ScopedEntity != nil {
@@ -293,6 +294,7 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion, contrac
 	if schema.Schema.Schemav2 != nil {
 		item.Description = schema.Schema.Schemav2.GetMetadata().GetDescription()
 	} else {
+		//nolint:staticcheck
 		item.Description = contract.Description
 	}
 
