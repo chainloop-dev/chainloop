@@ -89,7 +89,7 @@ func contractDescribeTableOutput(contractWithVersion *action.WorkflowContractWit
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Scope", c.ScopedEntity.String()})
 	t.AppendSeparator()
-	t.AppendRow(table.Row{"Description", revision.Description}) // description is always provided through
+	t.AppendRow(table.Row{"Description", revision.Description}) // description is always provided through version
 	t.AppendSeparator()
 	t.AppendRow(table.Row{"Associated Workflows", stringifyAssociatedWorkflows(contractWithVersion)})
 	t.AppendSeparator()
