@@ -134,7 +134,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 
 	resp := &cpAPI.AttestationServiceGetContractResponse_Result{
 		Workflow: bizWorkflowToPb(wf),
-		Contract: bizWorkFlowContractVersionToPb(contractVersion.Version),
+		Contract: bizWorkFlowContractVersionToPb(contractVersion.Version, contractVersion.Contract),
 	}
 
 	return &cpAPI.AttestationServiceGetContractResponse{Result: resp}, nil

@@ -34,8 +34,9 @@ import (
 )
 
 type WorkflowContract struct {
-	ID                      uuid.UUID
-	Name                    string
+	ID   uuid.UUID
+	Name string
+	// Deprecated: use description from the version instead
 	Description             string
 	LatestRevision          int
 	LatestRevisionCreatedAt *time.Time
@@ -57,10 +58,11 @@ type ScopedEntity struct {
 }
 
 type WorkflowContractVersion struct {
-	ID        uuid.UUID
-	Revision  int
-	CreatedAt *time.Time
-	Schema    *Contract
+	ID          uuid.UUID
+	Description string
+	Revision    int
+	CreatedAt   *time.Time
+	Schema      *Contract
 }
 
 type Contract struct {
@@ -70,6 +72,7 @@ type Contract struct {
 	// Detected format as provided by the user
 	Format unmarshal.RawFormat
 	// marshalled proto v1 contract
+	// Deprecated: use Schemav2 instead
 	Schema *schemav1.CraftingSchema
 	// marshalled proto v2 contract
 	Schemav2 *schemav1.CraftingSchemaV2
@@ -344,7 +347,17 @@ func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contract
 		return nil, err
 	}
 
-	return uc.repo.Describe(ctx, orgUUID, contractUUID, revision, opts...)
+	desc, err := uc.repo.Describe(ctx, orgUUID, contractUUID, revision, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the requested revision has a description, make it the default
+	if desc.Version.Description != "" {
+		desc.Contract.Description = desc.Version.Description
+	}
+
+	return desc, nil
 }
 
 func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionID string) (*WorkflowContractWithVersion, error) {

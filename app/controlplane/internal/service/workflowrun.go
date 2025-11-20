@@ -183,7 +183,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 
 	wr := bizWorkFlowRunToPb(run)
 	wr.Workflow = bizWorkflowToPb(run.Workflow)
-	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractAndVersion.Version)
+	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractAndVersion.Version, contractAndVersion.Contract)
 	wr.ContractVersion.ContractName = contractAndVersion.Contract.Name
 	res := &pb.WorkflowRunServiceViewResponse_Result{
 		WorkflowRun:  wr,

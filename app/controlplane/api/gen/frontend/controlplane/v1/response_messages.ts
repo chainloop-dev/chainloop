@@ -473,6 +473,11 @@ export interface PolicyReference_DigestEntry {
 export interface WorkflowContractItem {
   id: string;
   name: string;
+  /**
+   * deprecated: description now belongs to the version, as it's versioned since the introduction of new contracts v2
+   *
+   * @deprecated
+   */
   description: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -515,8 +520,10 @@ export interface WorkflowContractVersionItem {
    */
   v1?: CraftingSchema | undefined;
   rawContract?: WorkflowContractVersionItem_RawBody;
-  /** The name of the contract used for this run */
+  /** The name of the contract */
   contractName: string;
+  /** The contract version description */
+  description: string;
 }
 
 export interface WorkflowContractVersionItem_RawBody {
@@ -3248,7 +3255,15 @@ export const WorkflowRef = {
 };
 
 function createBaseWorkflowContractVersionItem(): WorkflowContractVersionItem {
-  return { id: "", revision: 0, createdAt: undefined, v1: undefined, rawContract: undefined, contractName: "" };
+  return {
+    id: "",
+    revision: 0,
+    createdAt: undefined,
+    v1: undefined,
+    rawContract: undefined,
+    contractName: "",
+    description: "",
+  };
 }
 
 export const WorkflowContractVersionItem = {
@@ -3270,6 +3285,9 @@ export const WorkflowContractVersionItem = {
     }
     if (message.contractName !== "") {
       writer.uint32(50).string(message.contractName);
+    }
+    if (message.description !== "") {
+      writer.uint32(58).string(message.description);
     }
     return writer;
   },
@@ -3323,6 +3341,13 @@ export const WorkflowContractVersionItem = {
 
           message.contractName = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3342,6 +3367,7 @@ export const WorkflowContractVersionItem = {
         ? WorkflowContractVersionItem_RawBody.fromJSON(object.rawContract)
         : undefined,
       contractName: isSet(object.contractName) ? String(object.contractName) : "",
+      description: isSet(object.description) ? String(object.description) : "",
     };
   },
 
@@ -3355,6 +3381,7 @@ export const WorkflowContractVersionItem = {
       ? WorkflowContractVersionItem_RawBody.toJSON(message.rawContract)
       : undefined);
     message.contractName !== undefined && (obj.contractName = message.contractName);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
@@ -3372,6 +3399,7 @@ export const WorkflowContractVersionItem = {
       ? WorkflowContractVersionItem_RawBody.fromPartial(object.rawContract)
       : undefined;
     message.contractName = object.contractName ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };

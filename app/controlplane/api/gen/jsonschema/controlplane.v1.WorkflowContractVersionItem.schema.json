@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(contractName)$": {
-      "description": "The name of the contract used for this run",
+      "description": "The name of the contract",
       "type": "string"
     },
     "^(createdAt)$": {
@@ -16,11 +16,15 @@
   },
   "properties": {
     "contract_name": {
-      "description": "The name of the contract used for this run",
+      "description": "The name of the contract",
       "type": "string"
     },
     "created_at": {
       "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "description": {
+      "description": "The contract version description",
+      "type": "string"
     },
     "id": {
       "type": "string"

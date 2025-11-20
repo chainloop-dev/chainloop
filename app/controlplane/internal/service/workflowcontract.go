@@ -24,7 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
-	errors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -91,7 +91,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 
 	result := &pb.WorkflowContractServiceDescribeResponse_Result{
 		Contract: bizWorkFlowContractToPb(contractWithVersion.Contract),
-		Revision: bizWorkFlowContractVersionToPb(contractWithVersion.Version),
+		Revision: bizWorkFlowContractVersionToPb(contractWithVersion.Version, contractWithVersion.Contract),
 	}
 
 	return &pb.WorkflowContractServiceDescribeResponse{Result: result}, nil
@@ -134,7 +134,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	// Validate and extract contract name
-	contractName, err := validateAndExtractName(req.RawContract, req.Name)
+	contractName, description, err := validateAndExtractMetadata(req.RawContract, req.GetName(), req.GetDescription())
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID:       currentOrg.ID,
 		Name:        contractName,
-		Description: req.Description,
+		Description: description,
 		RawSchema:   req.RawContract,
 		ProjectID:   projectID,
 	})
@@ -160,7 +160,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	// Validate and extract contract name
-	contractName, err := validateAndExtractName(req.RawContract, req.GetName())
+	contractName, description, err := validateAndExtractMetadata(req.RawContract, req.GetName(), req.GetDescription())
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, contractName,
 		&biz.WorkflowContractUpdateOpts{
-			Description: req.Description,
+			Description: description,
 			RawSchema:   req.RawContract,
 		})
 	if err != nil {
@@ -199,7 +199,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	result := &pb.WorkflowContractServiceUpdateResponse_Result{
 		Contract: bizWorkFlowContractToPb(schemaWithVersion.Contract),
-		Revision: bizWorkFlowContractVersionToPb(schemaWithVersion.Version),
+		Revision: bizWorkFlowContractVersionToPb(schemaWithVersion.Version, schemaWithVersion.Contract),
 	}
 
 	return &pb.WorkflowContractServiceUpdateResponse{Result: result}, nil
@@ -247,7 +247,8 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		LatestRevisionCreatedAt: timestamppb.New(*schema.LatestRevisionCreatedAt),
 		WorkflowNames:           workflowNames,
 		WorkflowRefs:            workflowRefs,
-		Description:             schema.Description,
+		//nolint:staticcheck
+		Description: schema.Description,
 	}
 
 	if schema.ScopedEntity != nil {
@@ -261,7 +262,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 	return result
 }
 
-func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.WorkflowContractVersionItem {
+func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion, contract *biz.WorkflowContract) *pb.WorkflowContractVersionItem {
 	formatTranslator := func(unmarshal.RawFormat) pb.WorkflowContractVersionItem_RawBody_Format {
 		switch schema.Schema.Format {
 		case unmarshal.RawFormatJSON:
@@ -275,7 +276,7 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 		return pb.WorkflowContractVersionItem_RawBody_FORMAT_UNSPECIFIED
 	}
 
-	return &pb.WorkflowContractVersionItem{
+	item := &pb.WorkflowContractVersionItem{
 		Id:        schema.ID.String(),
 		CreatedAt: timestamppb.New(*schema.CreatedAt),
 		Revision:  int32(schema.Revision),
@@ -287,6 +288,17 @@ func bizWorkFlowContractVersionToPb(schema *biz.WorkflowContractVersion) *pb.Wor
 			Format: formatTranslator(schema.Schema.Format),
 		},
 	}
+
+	// Standardize the API to always provide description in the version.
+	// Add description from the proper source (new schemav2 or legacy top level contract)
+	if schema.Schema.Schemav2 != nil {
+		item.Description = schema.Schema.Schemav2.GetMetadata().GetDescription()
+	} else {
+		//nolint:staticcheck
+		item.Description = contract.Description
+	}
+
+	return item
 }
 
 // checkContractAccess checks if the current user can manage a contract
@@ -313,60 +325,64 @@ func (s *WorkflowContractService) checkContractAccess(ctx context.Context, contr
 // Returns error when:
 // - Neither explicit name nor metadata.name is provided
 // - Both are provided but have different values
-func validateAndExtractName(rawContract []byte, explicitName string) (string, error) {
+func validateAndExtractMetadata(rawContract []byte, explicitName, explicitDesc string) (string, *string, error) {
+	var name, desc string
+
 	// Extract name from v2 metadata if present
-	metadataName, err := extractNameFromMetadata(rawContract)
+	metadata, err := extractMetadata(rawContract)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	// Both provided
-	if explicitName != "" && metadataName != "" {
-		// If both are provided but different, that's a conflict
-		if explicitName != metadataName {
-			return "", errors.BadRequest("invalid", "conflicting names: explicit name and metadata.name are different")
+	if metadata != nil {
+		// Both provided
+		if explicitName != "" && metadata.GetName() != "" {
+			// If both are provided but different, that's a conflict
+			if explicitName != metadata.GetName() {
+				return "", nil, errors.BadRequest("invalid", "contract name cannot be changed")
+			}
 		}
-		// Names match, return it
-		return explicitName, nil
-	}
 
-	// Neither provided
-	if explicitName == "" && metadataName == "" {
-		if len(rawContract) == 0 {
-			return "", errors.BadRequest("invalid", "name is required when no contract is provided")
+		name = metadata.GetName()
+		desc = metadata.GetDescription()
+	} else {
+		// Neither provided
+		if explicitName == "" {
+			return "", nil, errors.BadRequest("invalid", "name is required: either provide explicit name or include metadata.name in the schema")
 		}
-		return "", errors.BadRequest("invalid", "name is required: either provide explicit name or include metadata.name in the schema")
+
+		name = explicitName
+		desc = explicitDesc
 	}
 
-	// Return whichever name was provided
-	if explicitName != "" {
-		return explicitName, nil
+	// description is optional, make sure we return a pointer or nil
+	var description *string
+	if desc != "" {
+		description = &desc
 	}
-	return metadataName, nil
+	return name, description, nil
 }
 
 // extractNameFromMetadata attempts to extract the name from metadata.name in v2 contracts
-func extractNameFromMetadata(rawContract []byte) (string, error) {
+func extractMetadata(rawContract []byte) (*schemav1.Metadata, error) {
 	if len(rawContract) == 0 {
-		return "", nil
+		return nil, nil
 	}
 
 	// Identify the format
 	format, err := unmarshal.IdentifyFormat(rawContract)
 	if err != nil {
-		return "", errors.BadRequest("invalid", "failed to identify contract format")
+		return nil, errors.BadRequest("invalid", "failed to identify contract format")
 	}
 
 	// Try parsing as v2 Contract
 	v2Contract := &schemav1.CraftingSchemaV2{}
 	if err := unmarshal.FromRaw(rawContract, format, v2Contract, true); err == nil {
 		if v2Contract.GetMetadata() != nil {
-			if metadataName := v2Contract.GetMetadata().GetName(); metadataName != "" {
-				return metadataName, nil
-			}
+			return v2Contract.GetMetadata(), nil
 		}
 	}
 
-	// If v2 parsing failed or no metadata name, return empty string
-	return "", nil
+	// If v2 parsing failed or no metadata, return nothing
+	return nil, nil
 }
