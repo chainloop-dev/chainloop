@@ -33,4 +33,8 @@ spec:
     attestation:
       - ref: file://attestation-policy.yaml
   policyGroups:
-    - ref: file://testdata/policy_group.yaml
+    - ref: sbom-quality
+      with:
+        user_name: "test-user"
+      skip:
+        - policy-to-skip

@@ -74,6 +74,17 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 		}
 
 		for _, policyAtt := range policyAtts {
+			// Check if policy should be skipped
+			skip, policyName, err := pgv.shouldSkipPolicy(ctx, policyAtt, groupAtt.GetSkip())
+			if err != nil {
+				return nil, NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
+			}
+
+			if skip {
+				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
+				continue
+			}
+
 			// Load material content
 			subject, err := material.GetEvaluableContent(path)
 			if err != nil {
@@ -125,7 +136,19 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}
+
 		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
+			// Check if policy should be skipped
+			skip, policyName, err := pgv.shouldSkipPolicy(ctx, attachment, groupAtt.GetSkip())
+			if err != nil {
+				return nil, NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
+			}
+
+			if skip {
+				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
+				continue
+			}
+
 			material, err := protojson.Marshal(statement)
 			if err != nil {
 				return nil, NewPolicyError(err)
@@ -281,4 +304,24 @@ func (pgv *PolicyGroupVerifier) shouldApplyPolicy(ctx context.Context, policyAtt
 	}
 
 	return false, nil
+}
+
+// shouldSkipPolicy checks if a policy should be skipped based on the skip list
+// It handles both embedded and referenced policies by loading the policy spec when needed
+func (pgv *PolicyGroupVerifier) shouldSkipPolicy(ctx context.Context, attachment *v1.PolicyAttachment, skipList []string) (bool, string, error) {
+	if len(skipList) == 0 {
+		return false, "", nil
+	}
+
+	policy, _, err := pgv.loadPolicySpec(ctx, attachment)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to load policy to get name: %w", err)
+	}
+
+	policyName := policy.GetMetadata().GetName()
+	if slices.Contains(skipList, policyName) {
+		return true, policyName, nil
+	}
+
+	return false, "", nil
 }

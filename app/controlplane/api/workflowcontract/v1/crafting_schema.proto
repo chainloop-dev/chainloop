@@ -344,6 +344,8 @@ message PolicyGroupAttachment {
   string ref = 1 [(buf.validate.field).string.min_len = 1];
   // group arguments
   map<string, string> with = 2;
+  // policy names to skip (matched against metadata.name)
+  repeated string skip = 3;
 }
 
 // Represents a group or policies

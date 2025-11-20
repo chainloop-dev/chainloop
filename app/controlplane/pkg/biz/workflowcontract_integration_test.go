@@ -17,6 +17,7 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -217,6 +218,24 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 		},
 	}
 
+	// Add skip list validation test cases
+	// Note: file:// refs are validated at runtime, not at contract creation time
+	// These tests verify the skip field is accepted and works correctly
+	skipListTestCases := []struct {
+		name         string
+		contractPath string
+		wantErrMsg   string
+	}{
+		{
+			name:         "contract with valid skip list",
+			contractPath: "testdata/contracts/contract_with_valid_skip.yaml",
+		},
+		{
+			name:         "contract with empty skip list",
+			contractPath: "testdata/contracts/contract_with_empty_skip.yaml",
+		},
+	}
+
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			contract, err := s.WorkflowContract.Create(ctx, tc.input)
@@ -236,6 +255,27 @@ func (s *workflowContractIntegrationTestSuite) TestCreate() {
 			if tc.wantName != "" {
 				s.Equal(tc.wantName, contract.Name)
 			}
+		})
+	}
+
+	// Run skip list validation tests
+	for i, tc := range skipListTestCases {
+		s.Run(tc.name, func() {
+			d, err := os.ReadFile(tc.contractPath)
+			require.NoError(s.T(), err)
+			// Generate RFC 1123 compliant contract name
+			contractName := fmt.Sprintf("skip-test-%d", i)
+			contract, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{
+				OrgID:     s.org.ID,
+				Name:      contractName,
+				RawSchema: d,
+			})
+			if tc.wantErrMsg != "" {
+				s.ErrorContains(err, tc.wantErrMsg)
+				return
+			}
+			require.NoError(s.T(), err)
+			s.NotEmpty(contract.ID)
 		})
 	}
 }

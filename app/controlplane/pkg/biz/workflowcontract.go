@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bufbuild/protoyaml-go"
@@ -457,7 +458,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 			}
 		}
 		for _, gatt := range schema.GetPolicyGroups() {
-			if _, err := uc.findPolicyGroup(gatt, token); err != nil {
+			if _, err := uc.findAndValidatePolicyGroup(gatt, token); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -477,7 +478,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 			}
 		}
 		for _, gatt := range spec.GetPolicyGroups() {
-			if _, err := uc.findPolicyGroup(gatt, token); err != nil {
+			if _, err := uc.findAndValidatePolicyGroup(gatt, token); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -539,33 +540,88 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAtt
 	return policy, nil
 }
 
-func (uc *WorkflowContractUseCase) findPolicyGroup(att *schemav1.PolicyGroupAttachment, token string) (*schemav1.PolicyGroup, error) {
-	// if it should come from a provider, check that it's available
-	// [chainloop://][provider/]name
-	if loader.IsProviderScheme(att.GetRef()) {
-		pr := loader.ProviderParts(att.GetRef())
-		remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, "", token)
-		if err != nil {
-			return nil, NewErrValidation(fmt.Errorf("failed to get policy group: %w", err))
-		}
-		if remoteGroup.PolicyGroup != nil {
-			// validate group arguments
-			with := att.GetWith()
-			for _, input := range remoteGroup.PolicyGroup.GetSpec().GetInputs() {
-				_, ok := with[input.GetName()]
-				if !ok && input.GetRequired() {
-					return nil, NewErrValidation(fmt.Errorf("missing required input %q for group", input.GetName()))
-				}
-				if input.GetRequired() && input.GetDefault() != "" {
-					return nil, NewErrValidation(fmt.Errorf("input %s can not be required and have a default at the same time", input.GetName()))
-				}
-			}
-		}
-		return remoteGroup.PolicyGroup, nil
+func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(att *schemav1.PolicyGroupAttachment, token string) (*schemav1.PolicyGroup, error) {
+	if !loader.IsProviderScheme(att.GetRef()) {
+		// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
+		return nil, nil
 	}
 
-	// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
-	return nil, nil
+	// if it should come from a provider, check that it's available
+	// [chainloop://][provider/]name
+	pr := loader.ProviderParts(att.GetRef())
+	remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, "", token)
+	if err != nil {
+		return nil, NewErrValidation(fmt.Errorf("failed to get policy group: %w", err))
+	}
+
+	if remoteGroup.PolicyGroup != nil {
+		// validate group arguments
+		with := att.GetWith()
+		for _, input := range remoteGroup.PolicyGroup.GetSpec().GetInputs() {
+			_, ok := with[input.GetName()]
+			if !ok && input.GetRequired() {
+				return nil, NewErrValidation(fmt.Errorf("missing required input %q for group", input.GetName()))
+			}
+
+			if input.GetRequired() && input.GetDefault() != "" {
+				return nil, NewErrValidation(fmt.Errorf("input %s can not be required and have a default at the same time", input.GetName()))
+			}
+		}
+	}
+
+	// Validate skip list
+	if err := uc.validateSkipList(remoteGroup.PolicyGroup, att, token); err != nil {
+		return nil, fmt.Errorf("failed to validate skip list: %w", err)
+	}
+
+	return remoteGroup.PolicyGroup, nil
+}
+
+// validateSkipList checks if policy names in the skip list exist in the group
+// and returns an error if any unknown policy names are found
+func (uc *WorkflowContractUseCase) validateSkipList(group *schemav1.PolicyGroup, groupAtt *schemav1.PolicyGroupAttachment, token string) error {
+	if len(groupAtt.GetSkip()) == 0 {
+		return nil
+	}
+
+	// Collect all policy names in the group
+	policyNames := make(map[string]bool)
+	policies := group.GetSpec().GetPolicies()
+
+	// Collect material policy names
+	for _, groupMaterial := range policies.GetMaterials() {
+		for _, policyAtt := range groupMaterial.GetPolicies() {
+			policy, err := uc.findAndValidatePolicy(policyAtt, token)
+			if err != nil {
+				return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
+			}
+			policyNames[policy.GetMetadata().GetName()] = true
+		}
+	}
+
+	// Collect attestation policy names
+	for _, policyAtt := range policies.GetAttestation() {
+		policy, err := uc.findAndValidatePolicy(policyAtt, token)
+		if err != nil {
+			return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
+		}
+		policyNames[policy.GetMetadata().GetName()] = true
+	}
+
+	// Check each skip entry against collected policy names and collect unknown ones
+	var unknownPolicies []string
+	for _, skipName := range groupAtt.GetSkip() {
+		if !policyNames[skipName] {
+			unknownPolicies = append(unknownPolicies, skipName)
+		}
+	}
+
+	// Return error if there are unknown policies
+	if len(unknownPolicies) > 0 {
+		return fmt.Errorf("policy %q not found in policy group %q", strings.Join(unknownPolicies, ", "), group.GetMetadata().GetName())
+	}
+
+	return nil
 }
 
 // Delete soft-deletes the entry
