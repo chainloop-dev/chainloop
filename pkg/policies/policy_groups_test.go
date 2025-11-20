@@ -170,7 +170,7 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 			}
 			group, _, err := new(FileGroupLoader).Load(context.TODO(), groupAtt)
 			s.Require().NoError(err)
-			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group, groupAtt, nil)
+			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group, nil)
 			s.Require().NoError(err)
 			s.Len(atts, tc.expected)
 		})
