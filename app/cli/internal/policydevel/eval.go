@@ -120,7 +120,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	}
 
 	if len(policyEvs) == 0 || policyEvs[0] == nil {
-		return nil, fmt.Errorf("no execution branch matched for kind %s", material.MaterialType.String())
+		return nil, fmt.Errorf("no execution branch matched, or all of them were ignored, for kind %s", material.MaterialType.String())
 	}
 
 	// Only one evaluation expected for a single policy attachment
