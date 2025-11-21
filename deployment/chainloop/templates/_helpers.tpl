@@ -74,11 +74,7 @@ secretPrefix: {{ required "secret prefix required" .secretPrefix | quote }}
 vault:
   {{- if and $.Values.development (or (not .vault) not .vault.address) }}
   address: {{ printf "http://%s-server:8200" (include "chainloop.vault.fullname" $) | quote }}
-  {{- if $tokenEnvVar }}
-  token: {{ $tokenEnvVar | quote }}
-  {{- else }}
-  {{- required "VAULT_DEV_ROOT_TOKEN_ID environment variable is required when development mode is enabled" (index $.Values.vault.server.extraEnvVars "VAULT_DEV_ROOT_TOKEN_ID") }}
-  {{- end }}
+  token: {{ default "notasecret" $tokenEnvVar | quote }}
 {{- else if (required "vault backend selected but configuration not provided" .vault ) }}
   address: {{ required "vault address required" .vault.address | quote }}
   token: {{ required "vault token required" .vault.token | quote }}
