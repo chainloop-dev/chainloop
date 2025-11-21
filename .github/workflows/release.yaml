@@ -168,6 +168,8 @@ jobs:
           chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Promote Chainloop Project Version
+        env:
+          CHAINLOOP_PROJECT_NAME: "chainloop"
         run: |
           current_version="$(cat .chainloop.yml | awk '/^projectVersion:/ {print $2}')"
           # Rename the existing pre-release into the actual release name
