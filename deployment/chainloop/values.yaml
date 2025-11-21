@@ -1690,14 +1690,109 @@ postgresql:
 ## @param vault.server.extraEnvVars[1].name Address to listen on development mode
 ## @param vault.server.extraEnvVars[1].value The address to listen on. Default: [::]:8200
 vault:
+  extraDeploy:
+    - |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: {{ include "vault.server.fullname" . }}-init
+        namespace: {{ include "common.names.namespace" . | quote }}
+        labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+          app.kubernetes.io/part-of: vault
+          app.kubernetes.io/component: server
+      data:
+        vault-init.sh: |
+          #!/bin/sh
+          #
+          # Copyright 2025 The Chainloop Authors.
+          #
+          # Licensed under the Apache License, Version 2.0 (the "License");
+          # you may not use this file except in compliance with the License.
+          # You may obtain a copy of the License at
+          #
+          #     http://www.apache.org/licenses/LICENSE-2.0
+          #
+          # Unless required by applicable law or agreed to in writing, software
+          # distributed under the License is distributed on an "AS IS" BASIS,
+          # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+          # See the License for the specific language governing permissions and
+          # limitations under the License.
+
+          set -e
+
+          # Start Vault in background
+          vault server -config /bitnami/vault/config/config.hcl &
+          PID=$!
+
+          # Wait for Vault to start
+          echo "Waiting for Vault to start..."
+          until vault status > /dev/null 2>&1; STATUS=$?; [ $STATUS -eq 0 ] || [ $STATUS -eq 2 ]; do
+              sleep 1
+          done
+
+          export VAULT_ADDR='http://127.0.0.1:8200'
+
+          # Initialize if not already initialized or if init.txt is invalid
+          if [ ! -f /bitnami/vault/data/init.txt ] || ! grep -q "Unseal Key 1:" /bitnami/vault/data/init.txt; then
+              echo "Initializing Vault..."
+              vault operator init -key-shares=1 -key-threshold=1 > /bitnami/vault/data/init.txt
+              echo "Vault initialized successfully"
+          else
+              echo "Vault already initialized, using existing keys"
+          fi
+
+          # Unseal
+          echo "Reading unseal key..."
+          UNSEAL_KEY=$(grep 'Unseal Key 1:' /bitnami/vault/data/init.txt | awk '{print $NF}')
+          if [ -z "$UNSEAL_KEY" ]; then
+              echo "ERROR: Failed to read unseal key from init.txt"
+              echo "Contents of init.txt:"
+              cat /bitnami/vault/data/init.txt || echo "Cannot read init.txt"
+              exit 1
+          fi
+          echo "Unsealing Vault..."
+          vault operator unseal "$UNSEAL_KEY"
+
+          # Login
+          ROOT_TOKEN=$(grep 'Initial Root Token:' /bitnami/vault/data/init.txt | awk '{print $NF}')
+          export VAULT_TOKEN=$ROOT_TOKEN
+
+          # Create 'notasecret' token if it doesn't exist
+          if ! vault token lookup notasecret > /dev/null 2>&1; then
+              echo "Creating 'notasecret' token..."
+              vault token create -id="notasecret" -policy="root"
+          fi
+
+          # Enable KV v2 secrets engine (required by controlplane)
+          if ! vault secrets list | grep -q "^secret/"; then
+              echo "Enabling KV v2 secrets engine at secret/..."
+              vault secrets enable -path=secret kv-v2
+          else
+              echo "Secrets engine already exists at secret/"
+          fi
+
+          # Keep container running
+          wait $PID
   server:
-    args: [
-      "server",
-      "-dev"
-    ]
-    extraEnvVars:
-      - name: VAULT_DEV_ROOT_TOKEN_ID
-        value: "notasecret"
-      - name: VAULT_DEV_LISTEN_ADDRESS
-        value: "[::]:8200"
-    config: "storage \"inmem\" {}\ndisable_mlock = true\nui = true\nservice_registration \"kubernetes\" {}"
+    command: ["/vault-init.sh"]
+    args: [""]
+    config: |
+      disable_mlock = true
+      ui = true
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+      storage "file" {
+        path = "/bitnami/vault/data"
+      }
+    extraVolumes:
+      - name: vault-init
+        configMap:
+          name: '{{ include "vault.server.fullname" . }}-init'
+          defaultMode: 0755
+    extraVolumeMounts:
+      - name: vault-init
+        mountPath: /vault-init.sh
+        subPath: vault-init.sh

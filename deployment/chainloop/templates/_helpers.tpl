@@ -77,7 +77,7 @@ vault:
   {{- if $tokenEnvVar }}
   token: {{ $tokenEnvVar | quote }}
   {{- else }}
-  {{- required "VAULT_DEV_ROOT_TOKEN_ID environment variable is required when development mode is enabled" (index $.Values.vault.server.extraEnvVars "VAULT_DEV_ROOT_TOKEN_ID") }}
+  token: "notasecret"
   {{- end }}
 {{- else if (required "vault backend selected but configuration not provided" .vault ) }}
   address: {{ required "vault address required" .vault.address | quote }}
