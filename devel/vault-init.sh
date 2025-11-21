@@ -49,10 +49,12 @@ else
     echo "Token 'notasecret' already exists."
 fi
 
-# Enable kv secrets engine at secret/ if not enabled
+# Enable KV v2 secrets engine at secret/ if not enabled
 if ! vault secrets list | grep -q "^secret/"; then
-    echo "Enabling kv secrets engine at secret/..."
-    vault secrets enable -path=secret kv
+    echo "Enabling KV v2 secrets engine at secret/..."
+    vault secrets enable -path=secret kv-v2
+else
+    echo "Secrets engine already exists at secret/"
 fi
 
 
