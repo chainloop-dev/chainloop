@@ -1,0 +1,25 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: group-with-inputs
+  description: test group
+  annotations:
+    category: test
+spec:
+  inputs:
+    - name: sbom_name
+      default: "sbom"
+    - name: user_name
+      required: true
+    - name: domainName
+      required: false
+      default: "chainloop.dev"
+  policies:
+    materials:
+      - name: "{{ inputs.sbom_name }}"
+        type: SBOM_CYCLONEDX_JSON
+        policies:
+          - ref: file://testdata/policy_with_inputs.yaml
+            with:
+              email: "{{inputs.user_name}}@{{inputs.domainName}}"
+
