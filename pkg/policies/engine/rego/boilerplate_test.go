@@ -71,6 +71,11 @@ func TestInjectBoilerplate(t *testing.T) {
 			inputFile:  "testfiles/boilerplate/source-commit-simplified.rego",
 			outputName: "source-commit-simplified-output.rego",
 		},
+		{
+			name:       "backwards compatibility, policy keeps untouched",
+			inputFile:  "testfiles/result_format.rego",
+			outputName: "result_format-output.rego",
+		},
 	}
 
 	for _, tc := range testCases {
