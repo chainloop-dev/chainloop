@@ -33,42 +33,42 @@ func TestInjectBoilerplate(t *testing.T) {
 	}{
 		{
 			name:       "simplified policy",
-			inputFile:  "testdata/simplified-policy.rego",
+			inputFile:  "testfiles/boilerplate/simplified-policy.rego",
 			outputName: "simplified-policy-output.rego",
 		},
 		{
 			name:       "full boilerplate exists",
-			inputFile:  "testdata/full-boilerplate.rego",
+			inputFile:  "testfiles/boilerplate/full-boilerplate.rego",
 			outputName: "full-boilerplate-output.rego",
 		},
 		{
 			name:       "user defined valid_input",
-			inputFile:  "testdata/custom-valid-input.rego",
+			inputFile:  "testfiles/boilerplate/custom-valid-input.rego",
 			outputName: "custom-valid-input-output.rego",
 		},
 		{
 			name:       "partial boilerplate",
-			inputFile:  "testdata/partial-boilerplate.rego",
+			inputFile:  "testfiles/boilerplate/partial-boilerplate.rego",
 			outputName: "partial-boilerplate-output.rego",
 		},
 		{
 			name:       "preserve multiple imports",
-			inputFile:  "testdata/multiple-imports.rego",
+			inputFile:  "testfiles/boilerplate/multiple-imports.rego",
 			outputName: "multiple-imports-output.rego",
 		},
 		{
 			name:       "with comments",
-			inputFile:  "testdata/with-comments.rego",
+			inputFile:  "testfiles/boilerplate/with-comments.rego",
 			outputName: "with-comments-output.rego",
 		},
 		{
 			name:       "only package and import",
-			inputFile:  "testdata/only-package-import.rego",
+			inputFile:  "testfiles/boilerplate/only-package-import.rego",
 			outputName: "only-package-import-output.rego",
 		},
 		{
 			name:       "real world source commit example",
-			inputFile:  "testdata/source-commit-simplified.rego",
+			inputFile:  "testfiles/boilerplate/source-commit-simplified.rego",
 			outputName: "source-commit-simplified-output.rego",
 		},
 	}
@@ -90,7 +90,7 @@ func TestInjectBoilerplate(t *testing.T) {
 func matchesOutput(t *testing.T, result []byte, outputName string) {
 	t.Helper()
 
-	outputPath := filepath.Join("testdata", "output", outputName)
+	outputPath := filepath.Join("testfiles/boilerplate", "output", outputName)
 
 	expected, err := os.ReadFile(outputPath)
 	require.NoError(t, err, "failed to read output file %s", outputPath)
@@ -103,7 +103,7 @@ func matchesOutput(t *testing.T, result []byte, outputName string) {
 }
 
 func TestDetectExistingRules(t *testing.T) {
-	policyBytes, err := os.ReadFile("testdata/detect-rules.rego")
+	policyBytes, err := os.ReadFile("testfiles/boilerplate/detect-rules.rego")
 	require.NoError(t, err)
 
 	module, err := ast.ParseModule("test", string(policyBytes))

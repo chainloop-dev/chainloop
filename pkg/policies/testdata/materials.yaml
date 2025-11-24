@@ -1,7 +1,0 @@
-apiVersion: workflowcontract.chainloop.dev/v1
-kind: Policy
-metadata:
-  name: materials
-spec:
-  type: ATTESTATION
-  path: materials.rego
