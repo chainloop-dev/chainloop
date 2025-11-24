@@ -1,5 +1,6 @@
 # Chainloop
 
+[![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=chainloop)](https://insights.linuxfoundation.org/project/chainloop)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/chainloop-dev/chainloop/badge)](https://securityscorecards.dev/viewer/?uri=github.com/chainloop-dev/chainloop)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chainloop-dev/chainloop)](https://goreportcard.com/report/github.com/chainloop-dev/chainloop)
 ![Test passing](https://github.com/chainloop-dev/chainloop/actions/workflows/test.yml/badge.svg?branch=main)
