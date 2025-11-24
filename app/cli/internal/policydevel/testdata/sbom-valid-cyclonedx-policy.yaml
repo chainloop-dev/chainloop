@@ -1,0 +1,22 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-valid-cyclonedx
+  description: Policy that validates SBOM is valid CycloneDX format
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+
+        import rego.v1
+
+        # Custom input validation
+        valid_input if {
+            input.bomFormat == "CycloneDX"
+        }
+
+        violations contains msg if {
+            count(input.components) == 0
+            msg := "SBOM has no components"
+        }

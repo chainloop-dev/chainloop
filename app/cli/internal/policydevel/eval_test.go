@@ -124,3 +124,67 @@ func TestEvaluate(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid material kind")
 	})
 }
+
+func TestEvaluateSimplifiedPolicies(t *testing.T) {
+	tempDir := t.TempDir()
+	logger := zerolog.New(os.Stderr)
+
+	sbomContent, err := os.ReadFile("testdata/test-sbom.json")
+	require.NoError(t, err)
+	sbomPath := filepath.Join(tempDir, "test-sbom.json")
+	require.NoError(t, os.WriteFile(sbomPath, sbomContent, 0600))
+
+	t.Run("sbom min components policy", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath:   "testdata/sbom-min-components-policy.yaml",
+			MaterialPath: sbomPath,
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+		assert.Len(t, result.Result.Violations, 1)
+		assert.Contains(t, result.Result.Violations[0], "at least 2 components")
+	})
+
+	t.Run("sbom metadata component policy", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath:   "testdata/sbom-metadata-component-policy.yaml",
+			MaterialPath: sbomPath,
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+		assert.Len(t, result.Result.Violations, 0)
+	})
+
+	t.Run("sbom valid cyclonedx policy", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath:   "testdata/sbom-valid-cyclonedx-policy.yaml",
+			MaterialPath: sbomPath,
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+		assert.Len(t, result.Result.Violations, 0)
+	})
+
+	t.Run("sbom multiple checks policy", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath:   "testdata/sbom-multiple-checks-policy.yaml",
+			MaterialPath: sbomPath,
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+		assert.Len(t, result.Result.Violations, 1)
+		assert.Contains(t, result.Result.Violations[0], "too few components")
+	})
+}

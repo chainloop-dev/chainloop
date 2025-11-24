@@ -1,0 +1,40 @@
+{{if .NeedsResult -}}
+result := {
+    "skipped": skipped,
+    "violations": violations,
+    "skip_reason": skip_reason,
+    "ignore": ignore,
+}
+
+{{end -}}
+{{if .NeedsDefaultSkipReason -}}
+default skip_reason := ""
+
+{{end -}}
+{{if .NeedsSkipReasonRule -}}
+skip_reason := m if {
+    not valid_input
+    m := "the file content is not recognized"
+}
+
+{{end -}}
+{{if .NeedsDefaultValidInput -}}
+default valid_input := true
+
+{{end -}}
+{{if .NeedsDefaultSkipped -}}
+default skipped := true
+
+{{end -}}
+{{if .NeedsSkippedRule -}}
+skipped := false if valid_input
+
+{{end -}}
+{{if .NeedsDefaultIgnore -}}
+default ignore := false
+
+{{end -}}
+{{if .NeedsDefaultViolations -}}
+default violations := []
+
+{{end -}}
