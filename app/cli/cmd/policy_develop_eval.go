@@ -33,7 +33,6 @@ func newPolicyDevelopEvalCmd() *cobra.Command {
 		policyPath       string
 		inputs           []string
 		allowedHostnames []string
-		debug            bool
 	)
 
 	cmd := &cobra.Command{
@@ -53,7 +52,7 @@ evaluates the policy against the provided material or attestation.`,
 				PolicyPath:       policyPath,
 				Inputs:           parseKeyValue(inputs),
 				AllowedHostnames: allowedHostnames,
-				Debug:            debug,
+				Debug:            flagDebug,
 			}
 
 			policyEval, err := action.NewPolicyEval(opts, ActionOpts)
@@ -77,7 +76,6 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Policy reference (./my-policy.yaml, https://my-domain.com/my-policy.yaml, chainloop://my-stored-policy)")
 	cmd.Flags().StringArrayVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
 	cmd.Flags().StringSliceVar(&allowedHostnames, "allowed-hostnames", []string{}, "Additional hostnames allowed for http.send requests in policies")
-	cmd.Flags().BoolVarP(&debug, "debug", "", false, "Include detailed evaluation inputs/outputs in JSON output and enable verbose logging")
 
 	return cmd
 }
