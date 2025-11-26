@@ -690,6 +690,26 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 	return scripts, nil
 }
 
+// decodeIfBase64Wasm checks if content is base64-encoded WASM and decodes it.
+// Returns the original content if it's not base64 or not WASM after decoding.
+func decodeIfBase64Wasm(content []byte) []byte {
+	// Try to decode as base64
+	decoded, err := base64.StdEncoding.DecodeString(string(content))
+	if err != nil {
+		// Not base64, return original content
+		return content
+	}
+
+	// Check if decoded content is WASM
+	if engine.DetectPolicyType(decoded) == engine.PolicyTypeWASM {
+		// It's base64-encoded WASM, return decoded bytes
+		return decoded
+	}
+
+	// Decoded but not WASM, return original content
+	return content
+}
+
 func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	var content []byte
 	var err error
@@ -706,6 +726,9 @@ func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}
+
+	// Decode base64 if this is a base64-encoded WASM policy
+	content = decodeIfBase64Wasm(content)
 
 	return content, nil
 }
@@ -727,6 +750,9 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec, basePath string) ([]byte, error
 	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}
+
+	// Decode base64 if this is a base64-encoded WASM policy
+	content = decodeIfBase64Wasm(content)
 
 	return content, nil
 }
