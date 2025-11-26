@@ -297,7 +297,7 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 		customHosts, err := os.ReadFile("testfiles/restrictive_mode_networking.rego")
 		require.NoError(t, err)
 
-		r := NewEngine(WithAllowedNetworkDomains("github.com"))
+		r := NewEngine(ToEngineOption(engine.WithAllowedHostnames("github.com")))
 		policy := &engine.Policy{
 			Name:   "policy",
 			Source: defaultHosts,

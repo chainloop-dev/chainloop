@@ -37,6 +37,7 @@ import (
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/wasm"
 )
 
 type PolicyError struct {
@@ -347,26 +348,60 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 }
 
 func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
-	engineOpts := []rego.EngineOption{}
+	// Detect policy type
+	policyType := engine.DetectPolicyType(script.Source)
+
+	pv.logger.Debug().Str("policy", script.Name).Str("type", string(policyType)).Msg("executing policy")
+
+	// Create appropriate engine
+	var policyEngine engine.PolicyEngine
+	var err error
+
+	// Build common options that apply to both engine types
+	var commonOpts []engine.CommonEngineOption
 
 	if pv.allowedHostnames != nil {
 		pv.logger.Debug().Strs("hostnames", pv.allowedHostnames).Msg("adding additional allowed hostnames")
-		engineOpts = append(engineOpts, rego.WithAllowedNetworkDomains(pv.allowedHostnames...))
+		commonOpts = append(commonOpts, engine.WithAllowedHostnames(pv.allowedHostnames...))
 	}
 
 	if pv.includeRawData {
-		engineOpts = append(engineOpts, rego.WithIncludeRawData(true))
+		commonOpts = append(commonOpts, engine.WithIncludeRawData(true))
 	}
 
 	if pv.enablePrint {
-		engineOpts = append(engineOpts, rego.WithEnablePrint(true))
+		commonOpts = append(commonOpts, engine.WithEnablePrint(true))
 	}
 
-	// verify the policy
-	ng := rego.NewEngine(engineOpts...)
-	res, err := ng.Verify(ctx, script, material, getInputArguments(args))
+	switch policyType {
+	case engine.PolicyTypeRego:
+		// Rego engine with common options
+		engineOpts := []rego.EngineOption{rego.ToEngineOption(commonOpts...)}
+		policyEngine = rego.NewEngine(engineOpts...)
+
+	case engine.PolicyTypeWASM:
+		// WASM engine with common options plus logger
+		wasmOpts := []wasm.EngineOption{
+			wasm.WithLogger(pv.logger),
+			wasm.ToEngineOption(commonOpts...),
+		}
+
+		policyEngine, err = wasm.NewEngine(wasmOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create WASM engine: %w", err)
+		}
+
+	default:
+		return nil, fmt.Errorf("unknown policy type: %s", policyType)
+	}
+
+	// Convert args from map[string]string to map[string]any
+	argsAny := getInputArguments(args)
+
+	// Execute using the selected engine
+	res, err := policyEngine.Verify(ctx, script, material, argsAny)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute policy : %w", err)
+		return nil, fmt.Errorf("failed to execute policy: %w", err)
 	}
 
 	return res, nil
@@ -620,10 +655,12 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 			return nil, fmt.Errorf("failed to load policy script: %w", err)
 		}
 
-		// Inject boilerplate if needed
-		script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
-		if err != nil {
-			return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+		// Inject boilerplate only for Rego policies, not WASM
+		if engine.DetectPolicyType(script) == engine.PolicyTypeRego {
+			script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
+			if err != nil {
+				return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+			}
 		}
 
 		scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
@@ -637,10 +674,12 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 					return nil, fmt.Errorf("failed to load policy script: %w", err)
 				}
 
-				// Inject boilerplate if needed
-				script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
-				if err != nil {
-					return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+				// Inject boilerplate only for Rego policies, not WASM
+				if engine.DetectPolicyType(script) == engine.PolicyTypeRego {
+					script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
+					if err != nil {
+						return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+					}
 				}
 
 				scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})

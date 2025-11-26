@@ -72,6 +72,7 @@ require (
 	github.com/bufbuild/protoyaml-go v0.1.11
 	github.com/casbin/casbin/v2 v2.103.0
 	github.com/denisbrodbeck/machineid v1.0.1
+	github.com/extism/go-sdk v1.7.1
 	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
@@ -145,6 +146,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/dylibso/observe-sdk/go v0.0.0-20240819160327-2d926c5d788a // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
@@ -168,6 +170,7 @@ require (
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
+	github.com/ianlancetaylor/demangle v0.0.0-20240805132620-81f5be970eca // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jellydator/ttlcache/v3 v3.3.0 // indirect
@@ -209,6 +212,8 @@ require (
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/styrainc/roast v0.15.0 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.2 // indirect
+	github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834 // indirect
+	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.0.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.9.0 // indirect
@@ -230,6 +235,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.36.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.6.0 // indirect
 	go.step.sm/crypto v0.51.2 // indirect
 	goa.design/goa v2.2.5+incompatible // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

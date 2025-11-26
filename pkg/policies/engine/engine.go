@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,63 @@ import (
 	"encoding/json"
 	"fmt"
 )
+
+// BaseAllowedHostnames are the default hostnames allowed for HTTP requests in policies
+var BaseAllowedHostnames = []string{
+	"www.chainloop.dev",
+	"www.cisa.gov",
+}
+
+// CommonEngineOptions contains configuration options shared by all policy engines
+type CommonEngineOptions struct {
+	AllowedHostnames []string
+	IncludeRawData   bool
+	EnablePrint      bool
+}
+
+// CommonEngineOption is a functional option for shared engine configuration
+type CommonEngineOption func(*CommonEngineOptions)
+
+// WithAllowedHostnames sets the list of allowed hostnames for HTTP requests
+// User-provided hostnames are appended to BaseAllowedHostnames
+func WithAllowedHostnames(hostnames ...string) CommonEngineOption {
+	return func(opts *CommonEngineOptions) {
+		opts.AllowedHostnames = append(opts.AllowedHostnames, hostnames...)
+	}
+}
+
+// WithIncludeRawData sets whether to include raw input/output data in results
+func WithIncludeRawData(include bool) CommonEngineOption {
+	return func(opts *CommonEngineOptions) {
+		opts.IncludeRawData = include
+	}
+}
+
+// WithEnablePrint enables print/log statements in policies
+func WithEnablePrint(enable bool) CommonEngineOption {
+	return func(opts *CommonEngineOptions) {
+		opts.EnablePrint = enable
+	}
+}
+
+// ApplyCommonOptions applies common options and returns the configured CommonEngineOptions
+// This automatically appends BaseAllowedHostnames to any user-provided hostnames
+func ApplyCommonOptions(opts ...CommonEngineOption) *CommonEngineOptions {
+	options := &CommonEngineOptions{
+		AllowedHostnames: make([]string, 0),
+		IncludeRawData:   false,
+		EnablePrint:      false,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// Append base allowed hostnames to user-provided ones
+	options.AllowedHostnames = append(options.AllowedHostnames, BaseAllowedHostnames...)
+
+	return options
+}
 
 type PolicyEngine interface {
 	// Verify verifies an input against a policy
