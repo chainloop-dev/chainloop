@@ -616,6 +616,19 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) e
 	}
 
 	defer func() {
+		// reload the backend in case some other instance updated it while we were validating
+		backend, err := uc.repo.FindByID(ctx, backendUUID)
+		if err != nil {
+			uc.logger.Errorw("msg", "finding backend after validation", "ID", id, "error", err)
+			return
+		} else if backend == nil {
+			uc.logger.Errorw("msg", "backend not found after validation", "ID", id)
+			return
+		}
+
+		// Store previous status for audit logging
+		previousStatus := backend.ValidationStatus
+
 		// Update the validation status and error
 		uc.logger.Infow("msg", "updating validation status", "ID", id, "status", validationStatus, "error", validationError)
 		if err := uc.repo.UpdateValidationStatus(ctx, backendUUID, validationStatus, validationError); err != nil {
@@ -623,12 +636,9 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) e
 			return
 		}
 
-		// Store previous status for audit logging
-		previousStatus := backend.ValidationStatus
-
 		// Log status change as an audit event if status has changed and auditor is available
 		if uc.auditorUC != nil && previousStatus != validationStatus {
-			uc.logger.Debugw("msg", "status changed, dispatching audit event",
+			uc.logger.Infow("msg", "status changed, dispatching audit event",
 				"backend", backend.ID,
 				"previousStatus", previousStatus,
 				"newStatus", validationStatus)

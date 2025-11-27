@@ -178,7 +178,7 @@ func main() {
 		// Start around 24h mark to avoid overlap with default checker
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
 			CheckInterval: 24 * time.Hour,
-			InitialDelay:  24 * time.Hour,
+			InitialDelay:  (24 * time.Hour) + jitter,
 			OnlyDefaults:  toPtr(false),
 		})
 	}
