@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
+	extism "github.com/extism/go-sdk"
 	opaAst "github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
@@ -158,12 +159,30 @@ func (p *PolicyToLint) loadReferencedPolicyFiles(baseDir string) error {
 }
 
 func (p *PolicyToLint) processFile(filePath string) error {
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	// WASM files: validate magic bytes
+	if ext == ".wasm" {
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read WASM file %s: %w", filePath, err)
+		}
+
+		// Verify magic bytes
+		if engine.DetectPolicyType(content) != engine.PolicyTypeWASM {
+			return fmt.Errorf("file has .wasm extension but is not a valid WASM file")
+		}
+
+		p.WASMFiles = append(p.WASMFiles, &File{Path: filePath, Content: content})
+		return nil
+	}
+
+	// Other files: read full content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
 
-	ext := strings.ToLower(filepath.Ext(filePath))
 	switch ext {
 	case ".yaml", ".yml":
 		p.YAMLFiles = append(p.YAMLFiles, &File{
@@ -172,16 +191,6 @@ func (p *PolicyToLint) processFile(filePath string) error {
 		})
 	case ".rego":
 		p.RegoFiles = append(p.RegoFiles, &File{
-			Path:    filePath,
-			Content: content,
-		})
-	case ".wasm":
-		// Detect if file is actually WASM using magic bytes
-		policyType := engine.DetectPolicyType(content)
-		if policyType != engine.PolicyTypeWASM {
-			return fmt.Errorf("file has .wasm extension but is not a valid WASM file")
-		}
-		p.WASMFiles = append(p.WASMFiles, &File{
 			Path:    filePath,
 			Content: content,
 		})
@@ -198,8 +207,10 @@ func (p *PolicyToLint) Validate() {
 		p.validateRegoFile(regoFile)
 	}
 
-	// WASM files are binary and cannot be linted
-	// Only verify they have valid WASM magic bytes (already done in processFile)
+	// Validate WASM files
+	for _, wasmFile := range p.WASMFiles {
+		p.validateWasmFile(wasmFile)
+	}
 }
 
 func (p *PolicyToLint) validateRegoFile(file *File) {
@@ -212,6 +223,35 @@ func (p *PolicyToLint) validateRegoFile(file *File) {
 		} else {
 			file.Content = []byte(formatted)
 		}
+	}
+}
+
+// validateWasmFile validates a WASM policy file by checking that it exports the required Execute function
+func (p *PolicyToLint) validateWasmFile(file *File) {
+	ctx := context.Background()
+
+	// Create Extism manifest
+	manifest := extism.Manifest{
+		Wasm: []extism.Wasm{
+			extism.WasmData{Data: file.Content},
+		},
+	}
+
+	cfg := extism.PluginConfig{
+		EnableWasi: true,
+	}
+
+	// Create plugin
+	plugin, err := extism.NewPlugin(ctx, manifest, cfg, []extism.HostFunction{})
+	if err != nil {
+		p.AddError(file.Path, fmt.Sprintf("failed to load WASM module: %v", err), 0)
+		return
+	}
+	defer plugin.Close(ctx)
+
+	// Check if Execute function is exported
+	if !plugin.FunctionExists("Execute") {
+		p.AddError(file.Path, "WASM module missing required 'Execute' function export", 0)
 	}
 }
 

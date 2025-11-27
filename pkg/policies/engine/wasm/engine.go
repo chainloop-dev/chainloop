@@ -30,6 +30,10 @@ import (
 // Ensure Engine implements PolicyEngine interface
 var _ engine.PolicyEngine = (*Engine)(nil)
 
+// entryFunction is the name of the function to call in the WASM module.
+// The engine expects this function to be present.
+const entryFunction = "Execute"
+
 // Engine implements the PolicyEngine interface for WASM policies
 type Engine struct {
 	executionTimeout time.Duration
@@ -147,6 +151,12 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 	defer plugin.Close(ctx)
 
+	// Check if Execute function is exported
+	if !plugin.FunctionExists(entryFunction) {
+		e.logger.Error().Str("policy", policy.Name).Str("function", entryFunction).Msg("WASM module missing required function export")
+		return nil, fmt.Errorf("wasm module validation failed: missing required '%s' function export", entryFunction)
+	}
+
 	// Set up logger for WASM plugin output
 	plugin.SetLogger(func(level extism.LogLevel, message string) {
 		switch level {
@@ -172,7 +182,7 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	e.logger.Debug().Str("policy", policy.Name).Dur("timeout", e.executionTimeout).Msg("Executing WASM policy with raw material input")
 
 	// Pass raw material bytes as input (args are in config)
-	exit, output, err := plugin.CallWithContext(execCtx, "Execute", input)
+	exit, output, err := plugin.CallWithContext(execCtx, entryFunction, input)
 	if err != nil {
 		// Parse the error to provide user-friendly messages
 		parsedErr := parseWasmError(err)
