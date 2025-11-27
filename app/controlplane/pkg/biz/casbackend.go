@@ -628,7 +628,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) e
 
 		// Log status change as an audit event if status has changed and auditor is available
 		if uc.auditorUC != nil && previousStatus != validationStatus {
-			uc.logger.Debugw("msg", "status changed, dispatching audit event",
+			uc.logger.Infow("msg", "status changed, dispatching audit event",
 				"backend", backend.ID,
 				"previousStatus", previousStatus,
 				"newStatus", validationStatus)
