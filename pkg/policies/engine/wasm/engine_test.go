@@ -28,7 +28,7 @@ func TestNewEngine(t *testing.T) {
 	t.Run("default options", func(t *testing.T) {
 		eng := NewEngine()
 		assert.NotNil(t, eng)
-		assert.Equal(t, 60*time.Second, eng.executionTimeout)
+		assert.Equal(t, 5*time.Second, eng.executionTimeout)
 		assert.False(t, eng.IncludeRawData)
 		assert.False(t, eng.EnablePrint)
 		// Base allowed hostnames should be included by default
