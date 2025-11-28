@@ -22,13 +22,11 @@ import (
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewEngine(t *testing.T) {
 	t.Run("default options", func(t *testing.T) {
-		eng, err := NewEngine()
-		require.NoError(t, err)
+		eng := NewEngine()
 		assert.NotNil(t, eng)
 		assert.Equal(t, 60*time.Second, eng.executionTimeout)
 		assert.False(t, eng.IncludeRawData)
@@ -39,15 +37,12 @@ func TestNewEngine(t *testing.T) {
 	})
 
 	t.Run("with custom options", func(t *testing.T) {
-		eng, err := NewEngine(
-			WithExecutionTimeout(30*time.Second),
-			ToEngineOption(
-				engine.WithIncludeRawData(true),
-				engine.WithEnablePrint(true),
-				engine.WithAllowedHostnames("api.example.com"),
-			),
+		eng := NewEngine(
+			engine.WithExecutionTimeout(30*time.Second),
+			engine.WithIncludeRawData(true),
+			engine.WithEnablePrint(true),
+			engine.WithAllowedHostnames("api.example.com"),
 		)
-		require.NoError(t, err)
 		assert.NotNil(t, eng)
 		assert.Equal(t, 30*time.Second, eng.executionTimeout)
 		assert.True(t, eng.IncludeRawData)
@@ -60,8 +55,7 @@ func TestNewEngine(t *testing.T) {
 }
 
 func TestEngineVerify_InvalidWASM(t *testing.T) {
-	eng, err := NewEngine()
-	require.NoError(t, err)
+	eng := NewEngine()
 
 	ctx := context.Background()
 	policy := &engine.Policy{
@@ -87,8 +81,7 @@ func TestEngineImplementsPolicyEngine(_ *testing.T) {
 }
 
 func TestMatchesParameters(t *testing.T) {
-	eng, err := NewEngine()
-	require.NoError(t, err)
+	eng := NewEngine()
 
 	ctx := context.Background()
 	policy := &engine.Policy{
@@ -103,8 +96,7 @@ func TestMatchesParameters(t *testing.T) {
 }
 
 func TestMatchesEvaluation(t *testing.T) {
-	eng, err := NewEngine()
-	require.NoError(t, err)
+	eng := NewEngine()
 
 	ctx := context.Background()
 	policy := &engine.Policy{

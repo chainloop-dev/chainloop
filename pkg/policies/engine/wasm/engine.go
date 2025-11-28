@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/builtins"
 
 	extism "github.com/extism/go-sdk"
 	"github.com/rs/zerolog"
@@ -42,56 +43,27 @@ type Engine struct {
 	*engine.CommonEngineOptions
 }
 
-// EngineOption is a functional option for configuring the Engine
-type EngineOption func(*newEngineOptions)
-
-// WithExecutionTimeout sets the maximum execution time for a policy
-func WithExecutionTimeout(timeout time.Duration) EngineOption {
-	return func(e *newEngineOptions) {
-		e.executionTimeout = timeout
-	}
-}
-
-// WithLogger sets the logger for the engine
-func WithLogger(logger *zerolog.Logger) EngineOption {
-	return func(e *newEngineOptions) {
-		e.logger = logger
-	}
-}
-
-// ToEngineOption converts common engine options to wasm-specific engine options
-func ToEngineOption(commonOpts ...engine.CommonEngineOption) EngineOption {
-	return func(e *newEngineOptions) {
-		e.commonOpts = append(e.commonOpts, commonOpts...)
-	}
-}
-
-type newEngineOptions struct {
-	executionTimeout time.Duration
-	logger           *zerolog.Logger
-	commonOpts       []engine.CommonEngineOption
-}
-
 // NewEngine creates a new WASM policy engine with the given options
-func NewEngine(opts ...EngineOption) (*Engine, error) {
-	// Create a noop logger by default
-	noopLogger := zerolog.Nop()
+func NewEngine(opts ...engine.Option) *Engine {
+	options := engine.ApplyOptions(opts...)
 
-	options := &newEngineOptions{
-		executionTimeout: 60 * time.Second,
-		logger:           &noopLogger,
-		commonOpts:       make([]engine.CommonEngineOption, 0),
+	// Extract WASM-specific options with defaults
+	executionTimeout := options.ExecutionTimeout
+	if executionTimeout == 0 {
+		executionTimeout = 5 * time.Second
 	}
 
-	for _, opt := range opts {
-		opt(options)
+	logger := options.Logger
+	if logger == nil {
+		noopLogger := zerolog.Nop()
+		logger = &noopLogger
 	}
 
 	return &Engine{
-		executionTimeout:    options.executionTimeout,
-		logger:              options.logger,
-		CommonEngineOptions: engine.ApplyCommonOptions(options.commonOpts...),
-	}, nil
+		executionTimeout:    executionTimeout,
+		logger:              logger,
+		CommonEngineOptions: options.CommonEngineOptions,
+	}
 }
 
 // Verify executes a WASM policy against the provided input
@@ -143,8 +115,14 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		EnableWasi: true,
 	}
 
-	// Create plugin (no custom host functions needed)
-	plugin, err := extism.NewPlugin(ctx, manifest, config, []extism.HostFunction{})
+	// Register host functions
+	var hostFunctions []extism.HostFunction
+	if e.ControlPlaneConnection != nil {
+		hostFunctions = append(hostFunctions, builtins.CreateDiscoverHostFunction(e.ControlPlaneConnection))
+	}
+
+	// Create plugin with host functions
+	plugin, err := extism.NewPlugin(ctx, manifest, config, hostFunctions)
 	if err != nil {
 		e.logger.Error().Err(err).Str("policy", policy.Name).Msg("Failed to create WASM plugin")
 		return nil, fmt.Errorf("failed to create WASM plugin: %w", err)

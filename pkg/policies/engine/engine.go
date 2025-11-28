@@ -19,6 +19,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
 )
 
 // BaseAllowedHostnames are the default hostnames allowed for HTTP requests in policies
@@ -29,43 +33,92 @@ var BaseAllowedHostnames = []string{
 
 // CommonEngineOptions contains configuration options shared by all policy engines
 type CommonEngineOptions struct {
-	AllowedHostnames []string
-	IncludeRawData   bool
-	EnablePrint      bool
+	AllowedHostnames       []string
+	IncludeRawData         bool
+	EnablePrint            bool
+	ControlPlaneConnection *grpc.ClientConn
 }
 
-// CommonEngineOption is a functional option for shared engine configuration
-type CommonEngineOption func(*CommonEngineOptions)
+// Option is a unified functional option for configuring policy engines
+type Option func(*Options)
+
+// Options contains all configuration options for policy engines
+type Options struct {
+	// Common options
+	*CommonEngineOptions
+
+	// Rego-specific options
+	// OperatingMode defines whether the Rego engine runs in restrictive (0) or permissive (1) mode
+	OperatingMode int32
+
+	// WASM-specific options
+	ExecutionTimeout time.Duration
+	Logger           *zerolog.Logger
+}
 
 // WithAllowedHostnames sets the list of allowed hostnames for HTTP requests
 // User-provided hostnames are appended to BaseAllowedHostnames
-func WithAllowedHostnames(hostnames ...string) CommonEngineOption {
-	return func(opts *CommonEngineOptions) {
+func WithAllowedHostnames(hostnames ...string) Option {
+	return func(opts *Options) {
 		opts.AllowedHostnames = append(opts.AllowedHostnames, hostnames...)
 	}
 }
 
 // WithIncludeRawData sets whether to include raw input/output data in results
-func WithIncludeRawData(include bool) CommonEngineOption {
-	return func(opts *CommonEngineOptions) {
+func WithIncludeRawData(include bool) Option {
+	return func(opts *Options) {
 		opts.IncludeRawData = include
 	}
 }
 
 // WithEnablePrint enables print/log statements in policies
-func WithEnablePrint(enable bool) CommonEngineOption {
-	return func(opts *CommonEngineOptions) {
+func WithEnablePrint(enable bool) Option {
+	return func(opts *Options) {
 		opts.EnablePrint = enable
 	}
 }
 
-// ApplyCommonOptions applies common options and returns the configured CommonEngineOptions
+// WithOperatingMode sets the Rego engine operating mode (restrictive or permissive)
+func WithOperatingMode(mode int32) Option {
+	return func(opts *Options) {
+		opts.OperatingMode = mode
+	}
+}
+
+// WithExecutionTimeout sets the WASM execution timeout
+func WithExecutionTimeout(timeout time.Duration) Option {
+	return func(opts *Options) {
+		opts.ExecutionTimeout = timeout
+	}
+}
+
+// WithLogger sets the WASM engine logger
+func WithLogger(logger *zerolog.Logger) Option {
+	return func(opts *Options) {
+		opts.Logger = logger
+	}
+}
+
+// WithGRPCConn sets the gRPC connection for builtin functions like discover
+func WithGRPCConn(conn *grpc.ClientConn) Option {
+	return func(opts *Options) {
+		opts.ControlPlaneConnection = conn
+	}
+}
+
+// ApplyOptions applies options and returns the configured Options
 // This automatically appends BaseAllowedHostnames to any user-provided hostnames
-func ApplyCommonOptions(opts ...CommonEngineOption) *CommonEngineOptions {
-	options := &CommonEngineOptions{
-		AllowedHostnames: make([]string, 0),
-		IncludeRawData:   false,
-		EnablePrint:      false,
+func ApplyOptions(opts ...Option) *Options {
+	options := &Options{
+		CommonEngineOptions: &CommonEngineOptions{
+			AllowedHostnames:       make([]string, 0),
+			IncludeRawData:         false,
+			EnablePrint:            false,
+			ControlPlaneConnection: nil,
+		},
+		OperatingMode:    0, // Default restrictive mode
+		ExecutionTimeout: 0,
+		Logger:           nil,
 	}
 
 	for _, opt := range opts {

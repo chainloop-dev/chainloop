@@ -39,43 +39,16 @@ type Engine struct {
 	*engine.CommonEngineOptions
 }
 
-type EngineOption func(*newEngineOptions)
-
-func WithOperatingMode(mode EnvironmentMode) EngineOption {
-	return func(e *newEngineOptions) {
-		e.operatingMode = mode
-	}
-}
-
-// ToEngineOption converts common engine options to rego-specific engine options
-func ToEngineOption(commonOpts ...engine.CommonEngineOption) EngineOption {
-	return func(e *newEngineOptions) {
-		e.commonOpts = append(e.commonOpts, commonOpts...)
-	}
-}
-
-type newEngineOptions struct {
-	operatingMode EnvironmentMode
-	commonOpts    []engine.CommonEngineOption
-}
-
 // NewEngine creates a new policy engine with the given options
 // default operating mode is EnvironmentModeRestrictive
 // default allowed hostnames are www.chainloop.dev and www.cisa.gov
 // user provided allowed hostnames are appended to the base ones
-func NewEngine(opts ...EngineOption) *Engine {
-	options := &newEngineOptions{
-		operatingMode: EnvironmentModeRestrictive,
-		commonOpts:    make([]engine.CommonEngineOption, 0),
-	}
-
-	for _, opt := range opts {
-		opt(options)
-	}
+func NewEngine(opts ...engine.Option) *Engine {
+	options := engine.ApplyOptions(opts...)
 
 	return &Engine{
-		operatingMode:       options.operatingMode,
-		CommonEngineOptions: engine.ApplyCommonOptions(options.commonOpts...),
+		operatingMode:       EnvironmentMode(options.OperatingMode),
+		CommonEngineOptions: options.CommonEngineOptions,
 	}
 }
 

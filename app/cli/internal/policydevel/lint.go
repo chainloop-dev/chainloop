@@ -161,29 +161,19 @@ func (p *PolicyToLint) loadReferencedPolicyFiles(baseDir string) error {
 func (p *PolicyToLint) processFile(filePath string) error {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
-	// WASM files: validate magic bytes
-	if ext == ".wasm" {
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to read WASM file %s: %w", filePath, err)
-		}
-
-		// Verify magic bytes
-		if engine.DetectPolicyType(content) != engine.PolicyTypeWASM {
-			return fmt.Errorf("file has .wasm extension but is not a valid WASM file")
-		}
-
-		p.WASMFiles = append(p.WASMFiles, &File{Path: filePath, Content: content})
-		return nil
-	}
-
-	// Other files: read full content
+	// Read file content once
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
 
 	switch ext {
+	case ".wasm":
+		// Verify magic bytes
+		if engine.DetectPolicyType(content) != engine.PolicyTypeWASM {
+			return fmt.Errorf("file has .wasm extension but is not a valid WASM file")
+		}
+		p.WASMFiles = append(p.WASMFiles, &File{Path: filePath, Content: content})
 	case ".yaml", ".yml":
 		p.YAMLFiles = append(p.YAMLFiles, &File{
 			Path:    filePath,

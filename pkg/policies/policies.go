@@ -30,6 +30,7 @@ import (
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/sigstore/cosign/v2/pkg/blob"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -65,6 +66,7 @@ type PolicyVerifier struct {
 	policies         *v1.Policies
 	logger           *zerolog.Logger
 	client           v13.AttestationServiceClient
+	grpcConn         *grpc.ClientConn
 	allowedHostnames []string
 	includeRawData   bool
 	enablePrint      bool
@@ -76,6 +78,7 @@ type PolicyVerifierOptions struct {
 	AllowedHostnames []string
 	IncludeRawData   bool
 	EnablePrint      bool
+	GRPCConn         *grpc.ClientConn
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -98,6 +101,12 @@ func WithEnablePrint(enable bool) PolicyVerifierOption {
 	}
 }
 
+func WithGRPCConn(conn *grpc.ClientConn) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.GRPCConn = conn
+	}
+}
+
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
@@ -108,6 +117,7 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		policies:         policies,
 		client:           client,
 		logger:           logger,
+		grpcConn:         options.GRPCConn,
 		allowedHostnames: options.AllowedHostnames,
 		includeRawData:   options.IncludeRawData,
 		enablePrint:      options.EnablePrint,
@@ -357,39 +367,35 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 	var policyEngine engine.PolicyEngine
 	var err error
 
-	// Build common options that apply to both engine types
-	var commonOpts []engine.CommonEngineOption
+	// Build engine options that apply to both engine types
+	var opts []engine.Option
 
 	if pv.allowedHostnames != nil {
 		pv.logger.Debug().Strs("hostnames", pv.allowedHostnames).Msg("adding additional allowed hostnames")
-		commonOpts = append(commonOpts, engine.WithAllowedHostnames(pv.allowedHostnames...))
+		opts = append(opts, engine.WithAllowedHostnames(pv.allowedHostnames...))
 	}
 
 	if pv.includeRawData {
-		commonOpts = append(commonOpts, engine.WithIncludeRawData(true))
+		opts = append(opts, engine.WithIncludeRawData(true))
 	}
 
 	if pv.enablePrint {
-		commonOpts = append(commonOpts, engine.WithEnablePrint(true))
+		opts = append(opts, engine.WithEnablePrint(true))
+	}
+
+	if pv.logger != nil {
+		opts = append(opts, engine.WithLogger(pv.logger))
+	}
+
+	if pv.grpcConn != nil {
+		opts = append(opts, engine.WithGRPCConn(pv.grpcConn))
 	}
 
 	switch policyType {
 	case engine.PolicyTypeRego:
-		// Rego engine with common options
-		engineOpts := []rego.EngineOption{rego.ToEngineOption(commonOpts...)}
-		policyEngine = rego.NewEngine(engineOpts...)
-
+		policyEngine = rego.NewEngine(opts...)
 	case engine.PolicyTypeWASM:
-		// WASM engine with common options plus logger
-		wasmOpts := []wasm.EngineOption{
-			wasm.WithLogger(pv.logger),
-			wasm.ToEngineOption(commonOpts...),
-		}
-
-		policyEngine, err = wasm.NewEngine(wasmOpts...)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create WASM engine: %w", err)
-		}
+		policyEngine = wasm.NewEngine(opts...)
 
 	default:
 		return nil, fmt.Errorf("unknown policy type: %s", policyType)
