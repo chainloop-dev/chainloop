@@ -297,7 +297,7 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 		customHosts, err := os.ReadFile("testfiles/restrictive_mode_networking.rego")
 		require.NoError(t, err)
 
-		r := NewEngine(WithAllowedNetworkDomains("github.com"))
+		r := NewEngine(engine.WithAllowedHostnames("github.com"))
 		policy := &engine.Policy{
 			Name:   "policy",
 			Source: defaultHosts,
@@ -320,7 +320,7 @@ func TestRego_WithPermissiveMode(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/permissive_mode.rego")
 	require.NoError(t, err)
 
-	r := NewEngine(WithOperatingMode(EnvironmentModePermissive))
+	r := NewEngine(engine.WithOperatingMode(int32(EnvironmentModePermissive)))
 	policy := &engine.Policy{
 		Name:   "policy",
 		Source: regoContent,
@@ -444,7 +444,7 @@ func TestRego_CustomBuiltinsPermissiveMode(t *testing.T) {
 	require.NoError(t, builtins.RegisterHelloBuiltin())
 
 	// Create engine in permissive mode
-	r := NewEngine(WithOperatingMode(EnvironmentModePermissive))
+	r := NewEngine(engine.WithOperatingMode(int32(EnvironmentModePermissive)))
 	policy := &engine.Policy{
 		Name:   "custom builtin test",
 		Source: regoContent,

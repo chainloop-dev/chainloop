@@ -35,72 +35,20 @@ type Engine struct {
 	// operatingMode defines the mode of running the policy engine
 	// by restricting or not the operations allowed by the compiler
 	operatingMode EnvironmentMode
-	// allowedNetworkDomains is a list of network domains that are allowed for the compiler to access
-	// when using http.send built-in function
-	allowedNetworkDomains []string
-	// includeRawData determines whether to collect raw evaluation data
-	includeRawData bool
-	// enablePrint determines whether to enable print statements in rego policies
-	enablePrint bool
-}
-
-type EngineOption func(*newEngineOptions)
-
-func WithOperatingMode(mode EnvironmentMode) EngineOption {
-	return func(e *newEngineOptions) {
-		e.operatingMode = mode
-	}
-}
-
-func WithAllowedNetworkDomains(domains ...string) EngineOption {
-	return func(e *newEngineOptions) {
-		e.allowedNetworkDomains = domains
-	}
-}
-
-func WithIncludeRawData(include bool) EngineOption {
-	return func(e *newEngineOptions) {
-		e.includeRawData = include
-	}
-}
-
-func WithEnablePrint(enable bool) EngineOption {
-	return func(e *newEngineOptions) {
-		e.enablePrint = enable
-	}
-}
-
-type newEngineOptions struct {
-	operatingMode         EnvironmentMode
-	allowedNetworkDomains []string
-	includeRawData        bool
-	enablePrint           bool
+	// Embed common engine options
+	*engine.CommonEngineOptions
 }
 
 // NewEngine creates a new policy engine with the given options
 // default operating mode is EnvironmentModeRestrictive
-// default allowed network domains are www.chainloop.dev and www.cisa.gov
-// user provided allowed network domains are appended to the base ones
-func NewEngine(opts ...EngineOption) *Engine {
-	options := &newEngineOptions{
-		operatingMode: EnvironmentModeRestrictive,
-	}
-
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	var baseAllowedNetworkDomains = []string{
-		"www.chainloop.dev",
-		"www.cisa.gov",
-	}
+// default allowed hostnames are www.chainloop.dev and www.cisa.gov
+// user provided allowed hostnames are appended to the base ones
+func NewEngine(opts ...engine.Option) *Engine {
+	options := engine.ApplyOptions(opts...)
 
 	return &Engine{
-		operatingMode: options.operatingMode,
-		// append base allowed network domains to the user provided ones
-		allowedNetworkDomains: append(baseAllowedNetworkDomains, options.allowedNetworkDomains...),
-		includeRawData:        options.includeRawData,
-		enablePrint:           options.enablePrint,
+		operatingMode:       EnvironmentMode(options.OperatingMode),
+		CommonEngineOptions: options.CommonEngineOptions,
 	}
 }
 
@@ -184,7 +132,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		options := []func(r *rego.Rego){regoInput, regoFunc, rego.Capabilities(r.Capabilities())}
 
 		// Add print support if enabled
-		if r.enablePrint {
+		if r.EnablePrint {
 			options = append(options,
 				rego.EnablePrintStatements(true),
 				rego.PrintHook(&regoOutputHook{}),
@@ -201,7 +149,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 
 	var rawData *engine.RawData
 	// Get raw results first if requested
-	if r.includeRawData {
+	if r.IncludeRawData {
 		if err := executeQuery(getRuleName(parsedModule.Package.Path, ""), r.operatingMode == EnvironmentModeRestrictive); err != nil {
 			return nil, err
 		}
@@ -322,7 +270,7 @@ func (r *Engine) Capabilities() *ast.Capabilities {
 		}
 
 		// Allow specific network domains
-		capabilities.AllowNet = r.allowedNetworkDomains
+		capabilities.AllowNet = r.AllowedHostnames
 
 	case EnvironmentModePermissive:
 		enabledBuiltin = capabilities.Builtins

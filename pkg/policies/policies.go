@@ -30,6 +30,7 @@ import (
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/sigstore/cosign/v2/pkg/blob"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -37,6 +38,7 @@ import (
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/wasm"
 )
 
 type PolicyError struct {
@@ -64,6 +66,7 @@ type PolicyVerifier struct {
 	policies         *v1.Policies
 	logger           *zerolog.Logger
 	client           v13.AttestationServiceClient
+	grpcConn         *grpc.ClientConn
 	allowedHostnames []string
 	includeRawData   bool
 	enablePrint      bool
@@ -75,6 +78,7 @@ type PolicyVerifierOptions struct {
 	AllowedHostnames []string
 	IncludeRawData   bool
 	EnablePrint      bool
+	GRPCConn         *grpc.ClientConn
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -97,6 +101,12 @@ func WithEnablePrint(enable bool) PolicyVerifierOption {
 	}
 }
 
+func WithGRPCConn(conn *grpc.ClientConn) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.GRPCConn = conn
+	}
+}
+
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
@@ -107,6 +117,7 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		policies:         policies,
 		client:           client,
 		logger:           logger,
+		grpcConn:         options.GRPCConn,
 		allowedHostnames: options.AllowedHostnames,
 		includeRawData:   options.IncludeRawData,
 		enablePrint:      options.EnablePrint,
@@ -347,26 +358,56 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 }
 
 func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Policy, material []byte, args map[string]string) (*engine.EvaluationResult, error) {
-	engineOpts := []rego.EngineOption{}
+	// Detect policy type
+	policyType := engine.DetectPolicyType(script.Source)
+
+	pv.logger.Debug().Str("policy", script.Name).Str("type", string(policyType)).Msg("executing policy")
+
+	// Create appropriate engine
+	var policyEngine engine.PolicyEngine
+	var err error
+
+	// Build engine options that apply to both engine types
+	var opts []engine.Option
 
 	if pv.allowedHostnames != nil {
 		pv.logger.Debug().Strs("hostnames", pv.allowedHostnames).Msg("adding additional allowed hostnames")
-		engineOpts = append(engineOpts, rego.WithAllowedNetworkDomains(pv.allowedHostnames...))
+		opts = append(opts, engine.WithAllowedHostnames(pv.allowedHostnames...))
 	}
 
 	if pv.includeRawData {
-		engineOpts = append(engineOpts, rego.WithIncludeRawData(true))
+		opts = append(opts, engine.WithIncludeRawData(true))
 	}
 
 	if pv.enablePrint {
-		engineOpts = append(engineOpts, rego.WithEnablePrint(true))
+		opts = append(opts, engine.WithEnablePrint(true))
 	}
 
-	// verify the policy
-	ng := rego.NewEngine(engineOpts...)
-	res, err := ng.Verify(ctx, script, material, getInputArguments(args))
+	if pv.logger != nil {
+		opts = append(opts, engine.WithLogger(pv.logger))
+	}
+
+	if pv.grpcConn != nil {
+		opts = append(opts, engine.WithGRPCConn(pv.grpcConn))
+	}
+
+	switch policyType {
+	case engine.PolicyTypeRego:
+		policyEngine = rego.NewEngine(opts...)
+	case engine.PolicyTypeWASM:
+		policyEngine = wasm.NewEngine(opts...)
+
+	default:
+		return nil, fmt.Errorf("unknown policy type: %s", policyType)
+	}
+
+	// Convert args from map[string]string to map[string]any
+	argsAny := getInputArguments(args)
+
+	// Execute using the selected engine
+	res, err := policyEngine.Verify(ctx, script, material, argsAny)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute policy : %w", err)
+		return nil, fmt.Errorf("failed to execute policy: %w", err)
 	}
 
 	return res, nil
@@ -620,10 +661,12 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 			return nil, fmt.Errorf("failed to load policy script: %w", err)
 		}
 
-		// Inject boilerplate if needed
-		script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
-		if err != nil {
-			return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+		// Inject boilerplate only for Rego policies, not WASM
+		if engine.DetectPolicyType(script) == engine.PolicyTypeRego {
+			script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
+			if err != nil {
+				return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+			}
 		}
 
 		scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
@@ -637,10 +680,12 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 					return nil, fmt.Errorf("failed to load policy script: %w", err)
 				}
 
-				// Inject boilerplate if needed
-				script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
-				if err != nil {
-					return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+				// Inject boilerplate only for Rego policies, not WASM
+				if engine.DetectPolicyType(script) == engine.PolicyTypeRego {
+					script, err = rego.InjectBoilerplate(script, policy.GetMetadata().GetName())
+					if err != nil {
+						return nil, fmt.Errorf("failed to inject boilerplate: %w", err)
+					}
 				}
 
 				scripts = append(scripts, &engine.Policy{Source: script, Name: policy.GetMetadata().GetName()})
@@ -649,6 +694,26 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 	}
 
 	return scripts, nil
+}
+
+// decodeIfBase64Wasm checks if content is base64-encoded WASM and decodes it.
+// Returns the original content if it's not base64 or not WASM after decoding.
+func decodeIfBase64Wasm(content []byte) []byte {
+	// Try to decode as base64
+	decoded, err := base64.StdEncoding.DecodeString(string(content))
+	if err != nil {
+		// Not base64, return original content
+		return content
+	}
+
+	// Check if decoded content is WASM
+	if engine.DetectPolicyType(decoded) == engine.PolicyTypeWASM {
+		// It's base64-encoded WASM, return decoded bytes
+		return decoded
+	}
+
+	// Decoded but not WASM, return original content
+	return content
 }
 
 func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
@@ -667,6 +732,9 @@ func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}
+
+	// Decode base64 if this is a base64-encoded WASM policy
+	content = decodeIfBase64Wasm(content)
 
 	return content, nil
 }
@@ -688,6 +756,9 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec, basePath string) ([]byte, error
 	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}
+
+	// Decode base64 if this is a base64-encoded WASM policy
+	content = decodeIfBase64Wasm(content)
 
 	return content, nil
 }

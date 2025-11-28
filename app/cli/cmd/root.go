@@ -34,7 +34,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
-	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine/builtins"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

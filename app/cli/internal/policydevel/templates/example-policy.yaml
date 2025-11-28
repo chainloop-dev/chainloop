@@ -18,7 +18,8 @@ spec:
       embedded: |
 {{.RegoContent | indent 8}}
       {{else -}}
-    # Path to external Rego policy file
-    # See docs: https://docs.chainloop.dev/guides/custom-policies#rego-policy-structure
+    # Path to external policy file (Rego or WASM)
+    # Rego: https://docs.chainloop.dev/guides/custom-policies#rego-policy-structure
+    # WASM: https://docs.chainloop.dev/guides/custom-policies#wasm-policy-structure
       path: {{.RegoPath}}
       {{end -}}

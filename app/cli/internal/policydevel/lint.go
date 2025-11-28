@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/resourceloader"
+	extism "github.com/extism/go-sdk"
 	opaAst "github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/styrainc/regal/pkg/config"
@@ -43,6 +45,7 @@ type PolicyToLint struct {
 	Path      string
 	YAMLFiles []*File
 	RegoFiles []*File
+	WASMFiles []*File
 	Format    bool
 	Config    string
 	Errors    []ValidationError
@@ -108,21 +111,21 @@ func Lookup(absPath, config string, format bool) (*PolicyToLint, error) {
 		return nil, err
 	}
 
-	// Load referenced rego files from all YAML files
-	if err := policy.loadReferencedRegoFiles(filepath.Dir(resolvedPath)); err != nil {
+	// Load referenced policy files (rego or wasm) from all YAML files
+	if err := policy.loadReferencedPolicyFiles(filepath.Dir(resolvedPath)); err != nil {
 		return nil, err
 	}
 
 	// Verify we found at least one valid file
-	if len(policy.YAMLFiles) == 0 && len(policy.RegoFiles) == 0 {
-		return nil, fmt.Errorf("no valid .yaml/.yml or .rego files found")
+	if len(policy.YAMLFiles) == 0 && len(policy.RegoFiles) == 0 && len(policy.WASMFiles) == 0 {
+		return nil, fmt.Errorf("no valid .yaml/.yml, .rego, or .wasm files found")
 	}
 
 	return policy, nil
 }
 
-// Loads referenced rego files from YAML files in the policy
-func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
+// Loads referenced policy files (rego or wasm) from YAML files in the policy
+func (p *PolicyToLint) loadReferencedPolicyFiles(baseDir string) error {
 	seen := make(map[string]struct{})
 	for _, yamlFile := range p.YAMLFiles {
 		var parsed v1.Policy
@@ -131,14 +134,14 @@ func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 			continue
 		}
 		for _, spec := range parsed.Spec.Policies {
-			regoPath := spec.GetPath()
-			if regoPath != "" {
+			policyPath := spec.GetPath()
+			if policyPath != "" {
 				// If path is relative, make it relative to the YAML file's directory
-				if !filepath.IsAbs(regoPath) {
-					regoPath = filepath.Join(baseDir, regoPath)
+				if !filepath.IsAbs(policyPath) {
+					policyPath = filepath.Join(baseDir, policyPath)
 				}
 
-				resolvedPath, err := resourceloader.GetPathForResource(regoPath)
+				resolvedPath, err := resourceloader.GetPathForResource(policyPath)
 				if err != nil {
 					return err
 				}
@@ -156,13 +159,21 @@ func (p *PolicyToLint) loadReferencedRegoFiles(baseDir string) error {
 }
 
 func (p *PolicyToLint) processFile(filePath string) error {
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	// Read file content once
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
 
-	ext := strings.ToLower(filepath.Ext(filePath))
 	switch ext {
+	case ".wasm":
+		// Verify magic bytes
+		if engine.DetectPolicyType(content) != engine.PolicyTypeWASM {
+			return fmt.Errorf("file has .wasm extension but is not a valid WASM file")
+		}
+		p.WASMFiles = append(p.WASMFiles, &File{Path: filePath, Content: content})
 	case ".yaml", ".yml":
 		p.YAMLFiles = append(p.YAMLFiles, &File{
 			Path:    filePath,
@@ -174,7 +185,7 @@ func (p *PolicyToLint) processFile(filePath string) error {
 			Content: content,
 		})
 	default:
-		return fmt.Errorf("unsupported file extension %s, must be .yaml/.yml or .rego", ext)
+		return fmt.Errorf("unsupported file extension %s, must be .yaml/.yml, .rego, or .wasm", ext)
 	}
 
 	return nil
@@ -184,6 +195,11 @@ func (p *PolicyToLint) Validate() {
 	// Validate standalone rego files
 	for _, regoFile := range p.RegoFiles {
 		p.validateRegoFile(regoFile)
+	}
+
+	// Validate WASM files
+	for _, wasmFile := range p.WASMFiles {
+		p.validateWasmFile(wasmFile)
 	}
 }
 
@@ -197,6 +213,35 @@ func (p *PolicyToLint) validateRegoFile(file *File) {
 		} else {
 			file.Content = []byte(formatted)
 		}
+	}
+}
+
+// validateWasmFile validates a WASM policy file by checking that it exports the required Execute function
+func (p *PolicyToLint) validateWasmFile(file *File) {
+	ctx := context.Background()
+
+	// Create Extism manifest
+	manifest := extism.Manifest{
+		Wasm: []extism.Wasm{
+			extism.WasmData{Data: file.Content},
+		},
+	}
+
+	cfg := extism.PluginConfig{
+		EnableWasi: true,
+	}
+
+	// Create plugin
+	plugin, err := extism.NewPlugin(ctx, manifest, cfg, []extism.HostFunction{})
+	if err != nil {
+		p.AddError(file.Path, fmt.Sprintf("failed to load WASM module: %v", err), 0)
+		return
+	}
+	defer plugin.Close(ctx)
+
+	// Check if Execute function is exported
+	if !plugin.FunctionExists("Execute") {
+		p.AddError(file.Path, "WASM module missing required 'Execute' function export", 0)
 	}
 }
 
