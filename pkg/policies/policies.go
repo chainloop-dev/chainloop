@@ -716,6 +716,12 @@ func decodeIfBase64Wasm(content []byte) []byte {
 	return content
 }
 
+// isURLPath checks if a path is an HTTP or HTTPS URL
+func isURLPath(path string) bool {
+	scheme, _ := RefParts(path)
+	return scheme == httpScheme || scheme == httpsScheme
+}
+
 func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	var content []byte
 	var err error
@@ -723,8 +729,14 @@ func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	case *v1.PolicySpecV2_Embedded:
 		content = []byte(source.Embedded)
 	case *v1.PolicySpecV2_Path:
-		// path relative to policy folder
-		scriptPath := filepath.Join(filepath.Dir(basePath), source.Path)
+		var scriptPath string
+		// If the path is a URL, use it directly. Otherwise, resolve it relative to basePath
+		if isURLPath(source.Path) {
+			scriptPath = source.Path
+		} else {
+			// path relative to policy folder
+			scriptPath = filepath.Join(filepath.Dir(basePath), source.Path)
+		}
 		content, err = blob.LoadFileOrURL(scriptPath)
 		if err != nil {
 			return nil, fmt.Errorf("loading policy content: %w", err)
@@ -747,8 +759,14 @@ func loadLegacyPolicyScript(spec *v1.PolicySpec, basePath string) ([]byte, error
 	case *v1.PolicySpec_Embedded:
 		content = []byte(source.Embedded)
 	case *v1.PolicySpec_Path:
-		// path relative to policy folder
-		scriptPath := filepath.Join(filepath.Dir(basePath), source.Path)
+		var scriptPath string
+		// If the path is a URL, use it directly. Otherwise, resolve it relative to basePath
+		if isURLPath(source.Path) {
+			scriptPath = source.Path
+		} else {
+			// path relative to policy folder
+			scriptPath = filepath.Join(filepath.Dir(basePath), source.Path)
+		}
 		content, err = blob.LoadFileOrURL(scriptPath)
 		if err != nil {
 			return nil, fmt.Errorf("loading policy content: %w", err)

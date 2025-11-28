@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1247,4 +1247,55 @@ func loadStatement(file string, s *suite.Suite) *intoto.Statement {
 	s.Require().NoError(err)
 
 	return &statement
+}
+
+func (s *testSuite) TestIsURLPath() {
+	cases := []struct {
+		name     string
+		path     string
+		expected bool
+	}{
+		{
+			name:     "http URL",
+			path:     "http://example.com/policy.rego",
+			expected: true,
+		},
+		{
+			name:     "https URL",
+			path:     "https://example.com/policy.rego",
+			expected: true,
+		},
+		{
+			name:     "relative file path",
+			path:     "policy.rego",
+			expected: false,
+		},
+		{
+			name:     "absolute file path",
+			path:     "/absolute/path/policy.rego",
+			expected: false,
+		},
+		{
+			name:     "file scheme",
+			path:     "file:///path/to/policy.rego",
+			expected: false,
+		},
+		{
+			name:     "chainloop scheme",
+			path:     "chainloop://provider/policy",
+			expected: false,
+		},
+		{
+			name:     "empty path",
+			path:     "",
+			expected: false,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			result := isURLPath(tc.path)
+			s.Equal(tc.expected, result)
+		})
+	}
 }
