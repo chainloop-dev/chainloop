@@ -1,0 +1,18 @@
+# SLSA source track validation contract
+# Validates repository security configuration including branch protection,
+# code review requirements, and commit signing policies
+schemaVersion: v1
+policies:
+  materials:
+    - ref: commits-signed-required
+      with:
+        branches: "main"
+policyGroups:
+  - ref: branch-protection
+    with:
+      branches: "main"
+  - ref: code-review
+    with:
+      branches: "main"
+# runner:
+#  type: GITHUB_ACTION # or GITLAB_PIPELINE
