@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -178,7 +178,7 @@ func TestFilesystemIsolation(t *testing.T) {
 			for _, violation := range result.Violations {
 				t.Logf("  - %s", violation.Violation)
 			}
-			t.Fatal("SECURITY ISSUE: WASM policy was able to access host filesystem without isolation")
+			require.FailNow(t, "SECURITY ISSUE: WASM policy was able to access host filesystem without isolation")
 		} else {
 			t.Log("Filesystem isolation is working correctly - policy was blocked from accessing host files")
 			t.Log("Verified: /etc/passwd, /etc/hosts, current directory, and root directory are all inaccessible")
