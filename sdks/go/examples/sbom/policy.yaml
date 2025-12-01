@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-validation
+  description: Validates CycloneDX SBOM structure and component completeness
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      path: policy.wasm

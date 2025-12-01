@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: policy-builtins
+  description: Policy that checks for policy violations in related attestations
+spec:
+  policies:
+    - kind: CONTAINER_IMAGE
+      path: policy.wasm

@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: git-commit-signature
+  description: Verifies that attestations reference a signed git commit
+spec:
+  policies:
+    - kind: ATTESTATION
+      path: policy.wasm

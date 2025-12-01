@@ -104,6 +104,7 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		},
 		Config:       configMap,
 		AllowedHosts: e.AllowedHostnames,
+		Timeout:      uint64(e.executionTimeout.Milliseconds()),
 	}
 
 	// Log allowed hosts configuration
@@ -116,10 +117,8 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 
 	// Register host functions
-	var hostFunctions []extism.HostFunction
-	if e.ControlPlaneConnection != nil {
-		hostFunctions = append(hostFunctions, builtins.CreateDiscoverHostFunction(e.ControlPlaneConnection))
-	}
+	// Registers in both "env" (for Go/TinyGo) and "extism:host/user" (for JavaScript) namespaces
+	hostFunctions := builtins.CreateDiscoverHostFunctions(e.ControlPlaneConnection)
 
 	// Create plugin with host functions
 	plugin, err := extism.NewPlugin(ctx, manifest, config, hostFunctions)

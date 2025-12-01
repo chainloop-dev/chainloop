@@ -41,6 +41,10 @@ bin/
 # Go releaser
 dist/
 
+# Node.js
+**/node_modules/
+**/dist/
+
 # Dev configuration associated with authentication
 */*/*/secret.yaml
 

@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: simple-js-example
+  description: Simple JavaScript policy example for string validation
+spec:
+  policies:
+    - kind: EVIDENCE
+      path: policy.wasm

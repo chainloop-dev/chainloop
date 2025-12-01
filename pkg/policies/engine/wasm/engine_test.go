@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@ package wasm
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewEngine(t *testing.T) {
@@ -108,4 +111,77 @@ func TestMatchesEvaluation(t *testing.T) {
 	matches, err := eng.MatchesEvaluation(ctx, policy, []string{"violation"}, map[string]string{"key": "value"})
 	assert.NoError(t, err)
 	assert.True(t, matches)
+}
+
+// TestSimpleWASMExecution verifies that basic WASM policy execution works
+func TestSimpleWASMExecution(t *testing.T) {
+	// Load a simple test WASM policy
+	wasmPath := filepath.Join("testdata", "simple_test_policy.wasm")
+	wasmBytes, err := os.ReadFile(wasmPath)
+	require.NoError(t, err, "Failed to load simple test WASM policy")
+
+	eng := NewEngine()
+	ctx := context.Background()
+
+	policy := &engine.Policy{
+		Name:   "simple-test",
+		Source: wasmBytes,
+	}
+	input := []byte(`{}`)
+
+	result, err := eng.Verify(ctx, policy, input, nil)
+	require.NoError(t, err, "Policy execution should not error")
+	require.NotNil(t, result)
+
+	// Should have one violation: "test violation"
+	assert.Len(t, result.Violations, 1)
+	assert.Equal(t, "test violation", result.Violations[0].Violation)
+}
+
+// TestFilesystemIsolation verifies that WASM policies CANNOT access the host filesystem
+//
+// IMPORTANT SECURITY VERIFICATION:
+// This test confirms that the Extism runtime provides filesystem isolation by default
+// when EnableWasi is true. Even without explicit AllowedPaths configuration, WASM policies
+// are sandboxed and cannot access sensitive host filesystem paths like:
+// - /etc/passwd, /etc/hosts (system files)
+// - / (root directory)
+// - . (current working directory)
+//
+// The test policy attempts to stat() these paths and reports violations if successful.
+// A passing test (no violations) means filesystem isolation is working correctly.
+func TestFilesystemIsolation(t *testing.T) {
+	// Load the compiled test WASM policy that attempts filesystem access
+	wasmPath := filepath.Join("testdata", "filesystem_test_policy.wasm")
+	wasmBytes, err := os.ReadFile(wasmPath)
+	require.NoError(t, err, "Failed to load test WASM policy - run 'make build-test-wasm' first")
+
+	eng := NewEngine()
+	ctx := context.Background()
+
+	policy := &engine.Policy{
+		Name:   "filesystem-security-test",
+		Source: wasmBytes,
+	}
+	input := []byte(`{}`) // Empty input, policy will try filesystem access
+
+	t.Run("verify filesystem isolation is working", func(t *testing.T) {
+		result, err := eng.Verify(ctx, policy, input, nil)
+		require.NoError(t, err, "Policy execution should not error")
+		require.NotNil(t, result)
+
+		// Check if the policy reported any security violations
+		// If there are violations, it means the policy was able to access host files (BAD)
+		// If there are no violations, it means filesystem access was blocked (GOOD)
+		if len(result.Violations) > 0 {
+			t.Logf("SECURITY WARNING: Policy accessed host filesystem!")
+			for _, violation := range result.Violations {
+				t.Logf("  - %s", violation.Violation)
+			}
+			t.Fatal("SECURITY ISSUE: WASM policy was able to access host filesystem without isolation")
+		} else {
+			t.Log("Filesystem isolation is working correctly - policy was blocked from accessing host files")
+			t.Log("Verified: /etc/passwd, /etc/hosts, current directory, and root directory are all inaccessible")
+		}
+	})
 }
