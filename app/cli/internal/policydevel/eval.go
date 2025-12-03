@@ -61,18 +61,18 @@ type EvalSummaryDebugInfo struct {
 }
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
-	// 1. Create crafting schema
-	policies, err := createPolicies(opts.PolicyPath, opts.Inputs)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Craft material with annotations
+	// 1. Craft material with annotations
 	material, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
 	if err != nil {
 		return nil, err
 	}
 	material.Annotations = opts.Annotations
+
+	// 2. Create policy attachment
+	policies, err := createPolicies(opts.PolicyPath, opts.Inputs, material.GetId())
+	if err != nil {
+		return nil, err
+	}
 
 	// 3. Verify material against policy
 	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, &logger)
@@ -83,7 +83,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	return summary, nil
 }
 
-func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
+func createPolicies(policyPath string, inputs map[string]string, materialID string) (*v1.Policies, error) {
 	// Check if the policy path already has a scheme (chainloop://, http://, https://, file://)
 	ref := policyPath
 	scheme, _ := policies.RefParts(policyPath)
@@ -97,6 +97,10 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 			{
 				Policy: &v1.PolicyAttachment_Ref{Ref: ref},
 				With:   inputs,
+				// Add selector to support generic policies
+				Selector: &v1.PolicyAttachment_MaterialSelector{
+					Name: materialID,
+				},
 			},
 		},
 		Attestation: nil,
@@ -168,6 +172,19 @@ func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*
 		Name:     "backend",
 		MaxSize:  0,
 		Uploader: nil, // Skip uploads
+	}
+
+	// If no material path provided, create empty material
+	if materialPath == "" {
+		return &v12.Attestation_Material{
+			Id:           "empty-input",
+			M: &v12.Attestation_Material_String_{
+				String_: &v12.Attestation_Material_KeyVal{
+					Id:    "empty-input",
+					Value: "{}",
+				},
+			},
+		}, nil
 	}
 
 	// Explicit kind

@@ -70,7 +70,6 @@ evaluates the policy against the provided material or attestation.`,
 	}
 
 	cmd.Flags().StringVar(&materialPath, "material", "", "Path to material or attestation file")
-	cobra.CheckErr(cmd.MarkFlagRequired("material"))
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("Kind of the material: %q", schemaapi.ListAvailableMaterialKind()))
 	cmd.Flags().StringSliceVar(&annotations, "annotation", []string{}, "Key-value pairs of material annotations (key=value)")
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Policy reference (./my-policy.yaml, https://my-domain.com/my-policy.yaml, chainloop://my-stored-policy)")
