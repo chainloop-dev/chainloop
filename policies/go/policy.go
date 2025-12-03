@@ -24,7 +24,7 @@
 //
 //	package main
 //
-//	import chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+//	import chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
 //
 //	type SBOM struct {
 //	    Components []Component `json:"components"`

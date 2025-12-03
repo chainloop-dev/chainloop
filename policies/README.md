@@ -17,7 +17,7 @@ Write policies in Go that compile to WASM using TinyGo.
 - **Documentation:** [go/README.md](./go/README.md)
 
 ```go
-import chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+import chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
 
 //export Execute
 func Execute() int32 {

@@ -39,7 +39,7 @@ import (
 	"fmt"
 	"strings"
 
-	chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
 )
 
 // Input represents the expected input structure.

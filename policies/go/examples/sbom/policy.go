@@ -34,7 +34,7 @@
 package main
 
 import (
-	chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
 )
 
 // CycloneDXBOM represents a CycloneDX SBOM structure.

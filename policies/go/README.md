@@ -19,7 +19,7 @@ A Go SDK for writing Chainloop policies that compile to WebAssembly with TinyGo.
 package main
 
 import (
-    chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+    chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
 )
 
 type Input struct {

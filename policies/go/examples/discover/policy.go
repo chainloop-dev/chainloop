@@ -40,7 +40,7 @@ package main
 import (
 	"fmt"
 
-	chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
 )
 
 // ContainerImage represents the container image material structure.
