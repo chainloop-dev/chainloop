@@ -8,6 +8,10 @@
                     "type": "string",
                     "description": "Unique identifier for the runner context schema version"
                 },
+                "generated_at": {
+                    "type": "string",
+                    "description": "Timestamp when the runner context was generated (RFC3339 format)"
+                },
                 "errors": {
                     "items": {
                         "properties": {
