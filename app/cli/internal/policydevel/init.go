@@ -39,9 +39,9 @@ const (
 
 const (
 	// Rego templates
-	regoTemplateDir  = "templates/rego"
-	regoPolicyFile   = "example-policy.rego"
-	regoYAMLFile     = "example-policy.yaml"
+	regoTemplateDir = "templates/rego"
+	regoPolicyFile  = "example-policy.rego"
+	regoYAMLFile    = "example-policy.yaml"
 
 	// WASM Go templates
 	wasmGoTemplateDir  = "templates/wasm-go"
