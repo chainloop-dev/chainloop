@@ -38,6 +38,9 @@ const (
 )
 
 const (
+	// General to all templates
+	policyYAMLFile = "policy.yaml"
+
 	// Rego templates
 	regoTemplateDir = "templates/rego"
 	regoPolicyFile  = "example-policy.rego"
@@ -47,7 +50,6 @@ const (
 	wasmGoTemplateDir  = "templates/wasm-go"
 	wasmGoPolicyFile   = "policy.go.tmpl"
 	wasmGoModFile      = "go.mod.tmpl"
-	wasmGoYAMLFile     = "policy.yaml"
 	wasmGoMakefileFile = "Makefile"
 
 	// WASM JS templates
@@ -56,7 +58,6 @@ const (
 	wasmJSPackageFile = "package.json"
 	wasmJSEsbuildFile = "esbuild.js"
 	wasmJSDTSFile     = "policy.d.ts"
-	wasmJSYAMLFile    = "policy.yaml"
 
 	// Defaults
 	defaultPolicyName        = "policy"
@@ -155,7 +156,7 @@ func initializeWasmGoPolicy(opts *InitOptions) error {
 		return fmt.Errorf("failed to read go.mod template: %w", err)
 	}
 
-	yamlContent, err := templateFS.ReadFile(filepath.Join(wasmGoTemplateDir, wasmGoYAMLFile))
+	yamlContent, err := templateFS.ReadFile(filepath.Join(wasmGoTemplateDir, policyYAMLFile))
 	if err != nil {
 		return fmt.Errorf("failed to read YAML template: %w", err)
 	}
@@ -227,7 +228,7 @@ func initializeWasmJSPolicy(opts *InitOptions) error {
 		return fmt.Errorf("failed to read policy.d.ts template: %w", err)
 	}
 
-	yamlContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, wasmJSYAMLFile))
+	yamlContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, policyYAMLFile))
 	if err != nil {
 		return fmt.Errorf("failed to read YAML template: %w", err)
 	}
