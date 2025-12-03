@@ -38,7 +38,7 @@ jobs:
 
       - name: Gather runner context data
         run: |
-          chainloop gather-runner-context --runner-token ${{ steps.generate-token.outputs.token }}
+          chainloop gather-runner-context --runner-token ${{ steps.generate-token.outputs.token }} --branches=main
 
       - name: Add runner context material to attestation
         run: |
