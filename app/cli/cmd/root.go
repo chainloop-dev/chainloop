@@ -58,7 +58,9 @@ const (
 	useAPIToken = "withAPITokenAuth"
 	// Ask for confirmation when user token is used and API token is preferred
 	confirmWhenUserToken = "confirmWhenUserToken"
-	appName              = "chainloop"
+	// Skip ActionOpts initialization for commands that operate locally
+	skipActionOptsInit = "skipActionOptsInit"
+	appName            = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	// Follow the convention stated on https://consoledonottrack.com/
@@ -102,8 +104,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
 
-			// Config management commands don't need connection setup
-			if isConfigManagementCommand(cmd) {
+			// Commands annotated with skipActionOptsInit don't need ActionOpts initialization
+			// These are local-only commands that don't interact with the control plane
+			if cmd.Annotations[skipActionOptsInit] == trueString {
 				return nil
 			}
 
@@ -490,23 +493,4 @@ func isAPITokenPreferred(cmd *cobra.Command) bool {
 
 func getConfigDir(appName string) string {
 	return filepath.Join(xdg.ConfigHome, appName)
-}
-
-// isConfigManagementCommand checks if the command is a config management command
-// that doesn't require action options initialization
-func isConfigManagementCommand(cmd *cobra.Command) bool {
-	// Walk up the command tree to find the parent
-	current := cmd
-	for current.Parent() != nil {
-		if current.Parent().Use == "config" {
-			switch current.Use {
-			// These config subcommands don't need action options
-			case "reset", "view", "save":
-				return true
-			}
-			return false
-		}
-		current = current.Parent()
-	}
-	return false
 }
