@@ -188,3 +188,52 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 		assert.Contains(t, result.Result.Violations[0], "too few components")
 	})
 }
+
+func TestEvaluateGenericPolicies(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+
+	t.Run("generic policy with valid input - no violations", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath: "testdata/generic-policy.yaml",
+			Inputs: map[string]string{
+				"environment": "staging",
+				"approved":    "false",
+			},
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+		assert.Empty(t, result.Result.SkipReasons)
+		assert.Empty(t, result.Result.Violations, "Expected no violations for valid staging deployment")
+	})
+
+	t.Run("generic policy with production unapproved - violation", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath: "testdata/generic-policy.yaml",
+			Inputs: map[string]string{
+				"environment": "production",
+				"approved":    "false",
+			},
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+		assert.Len(t, result.Result.Violations, 1)
+		assert.Contains(t, result.Result.Violations[0], "production requires approval")
+	})
+
+	t.Run("generic policy without required input - error", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath: "testdata/generic-policy.yaml",
+			Inputs:     map[string]string{},
+		}
+
+		_, err := Evaluate(opts, logger)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing required input")
+	})
+}
