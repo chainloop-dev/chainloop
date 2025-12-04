@@ -102,6 +102,11 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
 
+			// Config management commands don't need connection setup
+			if isConfigManagementCommand(cmd) {
+				return nil
+			}
+
 			if apiInsecure() {
 				logger.Warn().Msg("API contacted in insecure mode")
 			}
@@ -203,7 +208,10 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
-			return cleanup(ActionOpts.CPConnection)
+			if ActionOpts != nil {
+				return cleanup(ActionOpts.CPConnection)
+			}
+			return nil
 		},
 	}
 
@@ -482,4 +490,23 @@ func isAPITokenPreferred(cmd *cobra.Command) bool {
 
 func getConfigDir(appName string) string {
 	return filepath.Join(xdg.ConfigHome, appName)
+}
+
+// isConfigManagementCommand checks if the command is a config management command
+// that doesn't require action options initialization
+func isConfigManagementCommand(cmd *cobra.Command) bool {
+	// Walk up the command tree to find the parent
+	current := cmd
+	for current.Parent() != nil {
+		if current.Parent().Use == "config" {
+			switch current.Use {
+			// These config subcommands don't need action options
+			case "reset", "view", "save":
+				return true
+			}
+			return false
+		}
+		current = current.Parent()
+	}
+	return false
 }
