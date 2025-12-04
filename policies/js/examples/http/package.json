@@ -6,6 +6,6 @@
     "build": "node esbuild.js && extism-js dist/policy.js -i policy.d.ts -o policy.wasm"
   },
   "devDependencies": {
-    "esbuild": "^0.19.0"
+    "esbuild": "^0.25.0"
   }
 }
