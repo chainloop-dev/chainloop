@@ -236,4 +236,86 @@ func TestEvaluateGenericPolicies(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "missing required input")
 	})
+
+	t.Run("kind-only policy without material - should fail", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath: "testdata/kind-only-policy.yaml",
+			Inputs: map[string]string{
+				"environment": "production",
+			},
+		}
+
+		_, err := Evaluate(opts, logger)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no execution branch matched, or all of them were ignored")
+	})
+}
+
+func TestEvaluateMultiKindPolicies(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+
+	t.Run("multi-kind policy with generic evaluation - only generic script runs", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath: "testdata/multi-kind-policy.yaml",
+			Inputs: map[string]string{
+				"environment": "production",
+			},
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+
+		require.Len(t, result.Result.Violations, 1)
+		assert.Contains(t, result.Result.Violations[0], "Generic check")
+		assert.NotContains(t, result.Result.Violations[0], "SBOM-specific")
+	})
+
+	t.Run("multi-kind policy with generic evaluation - staging no violations", func(t *testing.T) {
+		opts := &EvalOptions{
+			PolicyPath: "testdata/multi-kind-policy.yaml",
+			Inputs: map[string]string{
+				"environment": "staging",
+			},
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+
+		assert.Empty(t, result.Result.Violations)
+	})
+
+	t.Run("multi-kind policy with SBOM material - only SBOM-specific policy runs", func(t *testing.T) {
+		tempDir := t.TempDir()
+
+		sbomContent := `{
+			"bomFormat": "CycloneDX",
+			"specVersion": "1.4",
+			"version": 1,
+			"components": []
+		}`
+		sbomPath := filepath.Join(tempDir, "test-sbom.json")
+		require.NoError(t, os.WriteFile(sbomPath, []byte(sbomContent), 0600))
+
+		opts := &EvalOptions{
+			PolicyPath:   "testdata/multi-kind-policy.yaml",
+			MaterialPath: sbomPath,
+			MaterialKind: "SBOM_CYCLONEDX_JSON",
+			Inputs: map[string]string{
+				"environment": "production",
+			},
+		}
+
+		result, err := Evaluate(opts, logger)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.False(t, result.Result.Skipped)
+
+		require.Len(t, result.Result.Violations, 2)
+		assert.Contains(t, result.Result.Violations[0], "Generic check")
+		assert.Contains(t, result.Result.Violations[1], "SBOM-specific check")
+	})
 }

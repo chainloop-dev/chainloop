@@ -1,0 +1,35 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: kind-only-policy
+  description: Policy with only kind-specific scripts (no generic)
+spec:
+  inputs:
+    - name: environment
+      description: Deployment environment
+      required: true
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        import rego.v1
+
+        result := {
+            "violations": violations,
+        }
+
+        violations contains "SBOM check failed" if {
+            true
+        }
+    - kind: CONTAINER_IMAGE
+      embedded: |
+        package main
+        import rego.v1
+
+        result := {
+            "violations": violations,
+        }
+
+        violations contains "Container check failed" if {
+            true
+        }

@@ -1,0 +1,35 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: multi-kind-policy
+  description: Policy with multiple kinds - generic and material-specific
+spec:
+  inputs:
+    - name: environment
+      description: Deployment environment
+      required: true
+  policies:
+    - embedded: |
+        package main
+        import rego.v1
+
+        result := {
+            "violations": violations,
+        }
+
+        violations contains msg if {
+            input.args.environment == "production"
+            msg := "Generic check: production deployments require additional validation"
+        }
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+        import rego.v1
+
+        result := {
+            "violations": violations,
+        }
+
+        violations contains "SBOM-specific check: this should not run for generic evaluation" if {
+            true
+        }
