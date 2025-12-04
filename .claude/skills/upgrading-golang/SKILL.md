@@ -99,6 +99,14 @@ FROM arigaio/atlas@sha256:NEW_DIGEST as base
 
 **7c. Update `./common.mk` for `make init`:**
 
+**IMPORTANT**: Before updating the version in common.mk, ALWAYS test that the Atlas version is available via the curl command:
+
+```bash
+curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- --version
+```
+
+If the command fails or the version is not available, do NOT update common.mk. Only the Docker image should be updated in this case.
+
 Update the Atlas CLI installation version in the `init` target:
 
 Pattern to replace:
