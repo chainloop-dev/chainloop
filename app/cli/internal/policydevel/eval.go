@@ -177,7 +177,7 @@ func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*
 	// If no material path provided, create empty material
 	if materialPath == "" {
 		return &v12.Attestation_Material{
-			Id:           "empty-input",
+			Id: "empty-input",
 			M: &v12.Attestation_Material_String_{
 				String_: &v12.Attestation_Material_KeyVal{
 					Id:    "empty-input",
