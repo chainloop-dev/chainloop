@@ -58,7 +58,9 @@ const (
 	useAPIToken = "withAPITokenAuth"
 	// Ask for confirmation when user token is used and API token is preferred
 	confirmWhenUserToken = "confirmWhenUserToken"
-	appName              = "chainloop"
+	// Skip ActionOpts initialization for commands that operate locally
+	skipActionOptsInit = "skipActionOptsInit"
+	appName            = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	// Follow the convention stated on https://consoledonottrack.com/
@@ -101,6 +103,12 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
+
+			// Commands annotated with skipActionOptsInit don't need ActionOpts initialization
+			// These are local-only commands that don't interact with the control plane
+			if cmd.Annotations[skipActionOptsInit] == trueString {
+				return nil
+			}
 
 			if apiInsecure() {
 				logger.Warn().Msg("API contacted in insecure mode")
@@ -203,7 +211,10 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
-			return cleanup(ActionOpts.CPConnection)
+			if ActionOpts != nil {
+				return cleanup(ActionOpts.CPConnection)
+			}
+			return nil
 		},
 	}
 
