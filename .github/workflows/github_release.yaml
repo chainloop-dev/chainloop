@@ -28,6 +28,7 @@ jobs:
       CHAINLOOP_WORKFLOW_NAME: chainloop-vault-release
       CHAINLOOP_PROJECT: chainloop
       GH_TOKEN: ${{ github.token }}
+      INPUT_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -37,12 +38,12 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
+          tag=$(echo -n "$INPUT_TAG" | cut -d / -f3)
           chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version "$tag"
 
       - name: Attest all assets
         run: |
-          tag=$(echo -n ${{inputs.tag}} | cut -d / -f3)
+          tag=$(echo -n "$INPUT_TAG" | cut -d / -f3)
           gh release download $tag -D /tmp/github-release
           for entry in $(ls /tmp/github-release); do
             # If the name is cas.cyclonedx.json, controlplane.cyclonedx.json or cli.cyclonedx.json, we need to add the attestation with the correct name
@@ -83,7 +84,7 @@ jobs:
         if: ${{ success() }}
         run: |
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ steps.attestation-push.outputs.attestation_sha }})"
-          current_notes=$(gh release view ${{inputs.tag}} --json body -q '.body')
+          current_notes=$(gh release view "$INPUT_TAG" --json body -q '.body')
 
           if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
             # Replace the existing Chainloop Attestation section with the new URL
@@ -94,4 +95,4 @@ jobs:
           fi
 
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit ${{inputs.tag}} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+          gh release edit "$INPUT_TAG" -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
