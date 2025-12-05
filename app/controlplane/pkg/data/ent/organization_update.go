@@ -133,6 +133,20 @@ func (ou *OrganizationUpdate) SetNillablePreventImplicitWorkflowCreation(b *bool
 	return ou
 }
 
+// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
+func (ou *OrganizationUpdate) SetPreventProjectScopedContracts(b bool) *OrganizationUpdate {
+	ou.mutation.SetPreventProjectScopedContracts(b)
+	return ou
+}
+
+// SetNillablePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillablePreventProjectScopedContracts(b *bool) *OrganizationUpdate {
+	if b != nil {
+		ou.SetPreventProjectScopedContracts(*b)
+	}
+	return ou
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ou *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	ou.mutation.AddMembershipIDs(ids...)
@@ -496,6 +510,9 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ou.mutation.PreventImplicitWorkflowCreation(); ok {
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
+	}
+	if value, ok := ou.mutation.PreventProjectScopedContracts(); ok {
+		_spec.SetField(organization.FieldPreventProjectScopedContracts, field.TypeBool, value)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -973,6 +990,20 @@ func (ouo *OrganizationUpdateOne) SetNillablePreventImplicitWorkflowCreation(b *
 	return ouo
 }
 
+// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
+func (ouo *OrganizationUpdateOne) SetPreventProjectScopedContracts(b bool) *OrganizationUpdateOne {
+	ouo.mutation.SetPreventProjectScopedContracts(b)
+	return ouo
+}
+
+// SetNillablePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillablePreventProjectScopedContracts(b *bool) *OrganizationUpdateOne {
+	if b != nil {
+		ouo.SetPreventProjectScopedContracts(*b)
+	}
+	return ouo
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (ouo *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	ouo.mutation.AddMembershipIDs(ids...)
@@ -1366,6 +1397,9 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	}
 	if value, ok := ouo.mutation.PreventImplicitWorkflowCreation(); ok {
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
+	}
+	if value, ok := ouo.mutation.PreventProjectScopedContracts(); ok {
+		_spec.SetField(organization.FieldPreventProjectScopedContracts, field.TypeBool, value)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

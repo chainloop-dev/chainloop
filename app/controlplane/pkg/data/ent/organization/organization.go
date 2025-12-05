@@ -29,6 +29,8 @@ const (
 	FieldPoliciesAllowedHostnames = "policies_allowed_hostnames"
 	// FieldPreventImplicitWorkflowCreation holds the string denoting the prevent_implicit_workflow_creation field in the database.
 	FieldPreventImplicitWorkflowCreation = "prevent_implicit_workflow_creation"
+	// FieldPreventProjectScopedContracts holds the string denoting the prevent_project_scoped_contracts field in the database.
+	FieldPreventProjectScopedContracts = "prevent_project_scoped_contracts"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -115,6 +117,7 @@ var Columns = []string{
 	FieldBlockOnPolicyViolation,
 	FieldPoliciesAllowedHostnames,
 	FieldPreventImplicitWorkflowCreation,
+	FieldPreventProjectScopedContracts,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -136,6 +139,8 @@ var (
 	DefaultBlockOnPolicyViolation bool
 	// DefaultPreventImplicitWorkflowCreation holds the default value on creation for the "prevent_implicit_workflow_creation" field.
 	DefaultPreventImplicitWorkflowCreation bool
+	// DefaultPreventProjectScopedContracts holds the default value on creation for the "prevent_project_scoped_contracts" field.
+	DefaultPreventProjectScopedContracts bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -176,6 +181,11 @@ func ByBlockOnPolicyViolation(opts ...sql.OrderTermOption) OrderOption {
 // ByPreventImplicitWorkflowCreation orders the results by the prevent_implicit_workflow_creation field.
 func ByPreventImplicitWorkflowCreation(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPreventImplicitWorkflowCreation, opts...).ToFunc()
+}
+
+// ByPreventProjectScopedContracts orders the results by the prevent_project_scoped_contracts field.
+func ByPreventProjectScopedContracts(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPreventProjectScopedContracts, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

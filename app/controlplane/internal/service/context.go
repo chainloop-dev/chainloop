@@ -122,6 +122,7 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 		DefaultPolicyViolationStrategy:  bizPolicyViolationBlockingStrategyToPb(m.BlockOnPolicyViolation),
 		PolicyAllowedHostnames:          m.PoliciesAllowedHostnames,
 		PreventImplicitWorkflowCreation: m.PreventImplicitWorkflowCreation,
+		PreventProjectScopedContracts:   m.PreventProjectScopedContracts,
 	}
 }
 

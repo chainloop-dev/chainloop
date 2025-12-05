@@ -34,12 +34,14 @@ type WorkflowContractService struct {
 	*service
 
 	contractUseCase *biz.WorkflowContractUseCase
+	orgUseCase      *biz.OrganizationUseCase
 }
 
-func NewWorkflowSchemaService(uc *biz.WorkflowContractUseCase, opts ...NewOpt) *WorkflowContractService {
+func NewWorkflowSchemaService(uc *biz.WorkflowContractUseCase, orgUC *biz.OrganizationUseCase, opts ...NewOpt) *WorkflowContractService {
 	return &WorkflowContractService{
 		service:         newService(opts...),
 		contractUseCase: uc,
+		orgUseCase:      orgUC,
 	}
 }
 
@@ -109,9 +111,20 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.BadRequest("invalid", "project is required")
 	}
 
+	// Check organization settings for project-scoped contracts
+	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	// if the project is provided we make sure it exists and the user has permission to it
 	var projectID *uuid.UUID
 	if req.ProjectReference.IsSet() {
+		// Check if organization prevents project-scoped contracts
+		if org.PreventProjectScopedContracts {
+			return nil, errors.BadRequest("invalid", "organization does not allow project-scoped contracts")
+		}
+
 		// Make sure the provided project exists and the user has permission to create tokens in it
 		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
 		if err != nil {
