@@ -423,6 +423,7 @@ var (
 		{Name: "block_on_policy_violation", Type: field.TypeBool, Default: false},
 		{Name: "policies_allowed_hostnames", Type: field.TypeJSON, Nullable: true},
 		{Name: "prevent_implicit_workflow_creation", Type: field.TypeBool, Default: false},
+		{Name: "prevent_project_scoped_contracts", Type: field.TypeBool, Default: false},
 	}
 	// OrganizationsTable holds the schema information for the "organizations" table.
 	OrganizationsTable = &schema.Table{

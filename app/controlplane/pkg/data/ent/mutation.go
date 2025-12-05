@@ -8707,6 +8707,7 @@ type OrganizationMutation struct {
 	policies_allowed_hostnames         *[]string
 	appendpolicies_allowed_hostnames   []string
 	prevent_implicit_workflow_creation *bool
+	prevent_project_scoped_contracts   *bool
 	clearedFields                      map[string]struct{}
 	memberships                        map[uuid.UUID]struct{}
 	removedmemberships                 map[uuid.UUID]struct{}
@@ -9133,6 +9134,42 @@ func (m *OrganizationMutation) OldPreventImplicitWorkflowCreation(ctx context.Co
 // ResetPreventImplicitWorkflowCreation resets all changes to the "prevent_implicit_workflow_creation" field.
 func (m *OrganizationMutation) ResetPreventImplicitWorkflowCreation() {
 	m.prevent_implicit_workflow_creation = nil
+}
+
+// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
+func (m *OrganizationMutation) SetPreventProjectScopedContracts(b bool) {
+	m.prevent_project_scoped_contracts = &b
+}
+
+// PreventProjectScopedContracts returns the value of the "prevent_project_scoped_contracts" field in the mutation.
+func (m *OrganizationMutation) PreventProjectScopedContracts() (r bool, exists bool) {
+	v := m.prevent_project_scoped_contracts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPreventProjectScopedContracts returns the old "prevent_project_scoped_contracts" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldPreventProjectScopedContracts(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPreventProjectScopedContracts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPreventProjectScopedContracts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreventProjectScopedContracts: %w", err)
+	}
+	return oldValue.PreventProjectScopedContracts, nil
+}
+
+// ResetPreventProjectScopedContracts resets all changes to the "prevent_project_scoped_contracts" field.
+func (m *OrganizationMutation) ResetPreventProjectScopedContracts() {
+	m.prevent_project_scoped_contracts = nil
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9601,7 +9638,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9622,6 +9659,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.prevent_implicit_workflow_creation != nil {
 		fields = append(fields, organization.FieldPreventImplicitWorkflowCreation)
+	}
+	if m.prevent_project_scoped_contracts != nil {
+		fields = append(fields, organization.FieldPreventProjectScopedContracts)
 	}
 	return fields
 }
@@ -9645,6 +9685,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.PoliciesAllowedHostnames()
 	case organization.FieldPreventImplicitWorkflowCreation:
 		return m.PreventImplicitWorkflowCreation()
+	case organization.FieldPreventProjectScopedContracts:
+		return m.PreventProjectScopedContracts()
 	}
 	return nil, false
 }
@@ -9668,6 +9710,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldPoliciesAllowedHostnames(ctx)
 	case organization.FieldPreventImplicitWorkflowCreation:
 		return m.OldPreventImplicitWorkflowCreation(ctx)
+	case organization.FieldPreventProjectScopedContracts:
+		return m.OldPreventProjectScopedContracts(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9725,6 +9769,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPreventImplicitWorkflowCreation(v)
+		return nil
+	case organization.FieldPreventProjectScopedContracts:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreventProjectScopedContracts(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -9810,6 +9861,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldPreventImplicitWorkflowCreation:
 		m.ResetPreventImplicitWorkflowCreation()
+		return nil
+	case organization.FieldPreventProjectScopedContracts:
+		m.ResetPreventProjectScopedContracts()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

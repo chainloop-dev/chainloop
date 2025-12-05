@@ -77,7 +77,11 @@ export interface OrganizationServiceUpdateRequest {
    */
   updatePoliciesAllowedHostnames: boolean;
   /** prevent workflows and projects from being created implicitly during attestation init */
-  preventImplicitWorkflowCreation?: boolean | undefined;
+  preventImplicitWorkflowCreation?:
+    | boolean
+    | undefined;
+  /** prevent_project_scoped_contracts restricts contract creation to only organization-level contracts */
+  preventProjectScopedContracts?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -666,6 +670,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     policiesAllowedHostnames: [],
     updatePoliciesAllowedHostnames: false,
     preventImplicitWorkflowCreation: undefined,
+    preventProjectScopedContracts: undefined,
   };
 }
 
@@ -685,6 +690,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.preventImplicitWorkflowCreation !== undefined) {
       writer.uint32(40).bool(message.preventImplicitWorkflowCreation);
+    }
+    if (message.preventProjectScopedContracts !== undefined) {
+      writer.uint32(48).bool(message.preventProjectScopedContracts);
     }
     return writer;
   },
@@ -731,6 +739,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.preventImplicitWorkflowCreation = reader.bool();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.preventProjectScopedContracts = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -753,6 +768,9 @@ export const OrganizationServiceUpdateRequest = {
       preventImplicitWorkflowCreation: isSet(object.preventImplicitWorkflowCreation)
         ? Boolean(object.preventImplicitWorkflowCreation)
         : undefined,
+      preventProjectScopedContracts: isSet(object.preventProjectScopedContracts)
+        ? Boolean(object.preventProjectScopedContracts)
+        : undefined,
     };
   },
 
@@ -769,6 +787,8 @@ export const OrganizationServiceUpdateRequest = {
       (obj.updatePoliciesAllowedHostnames = message.updatePoliciesAllowedHostnames);
     message.preventImplicitWorkflowCreation !== undefined &&
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
+    message.preventProjectScopedContracts !== undefined &&
+      (obj.preventProjectScopedContracts = message.preventProjectScopedContracts);
     return obj;
   },
 
@@ -787,6 +807,7 @@ export const OrganizationServiceUpdateRequest = {
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
     message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
+    message.preventProjectScopedContracts = object.preventProjectScopedContracts ?? undefined;
     return message;
   },
 };

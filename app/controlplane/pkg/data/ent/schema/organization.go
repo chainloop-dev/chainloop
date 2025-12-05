@@ -53,6 +53,8 @@ func (Organization) Fields() []ent.Field {
 		field.Strings("policies_allowed_hostnames").Optional(),
 		// prevent workflows and projects from being created implicitly during attestation init
 		field.Bool("prevent_implicit_workflow_creation").Default(false),
+		// prevent_project_scoped_contracts restricts contract creation to only organization-level contracts
+		field.Bool("prevent_project_scoped_contracts").Default(false),
 	}
 }
 

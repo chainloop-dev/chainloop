@@ -41,13 +41,15 @@ type Organization struct {
 	PoliciesAllowedHostnames []string
 	// PreventImplicitWorkflowCreation prevents workflows and projects from being created implicitly during attestation init
 	PreventImplicitWorkflowCreation bool
+	// PreventProjectScopedContracts restricts contract creation to only organization-level contracts
+	PreventProjectScopedContracts bool
 }
 
 type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
-	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, preventProjectScopedContracts *bool) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 }
 
@@ -187,7 +189,7 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool) (*Organization, error) {
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, preventProjectScopedContracts *bool) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -207,7 +209,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 	}
 
 	// Perform the update
-	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation)
+	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, preventProjectScopedContracts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	} else if org == nil {

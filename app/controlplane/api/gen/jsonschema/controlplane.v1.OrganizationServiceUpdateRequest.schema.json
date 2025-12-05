@@ -18,6 +18,10 @@
       "description": "prevent workflows and projects from being created implicitly during attestation init",
       "type": "boolean"
     },
+    "^(preventProjectScopedContracts)$": {
+      "description": "prevent_project_scoped_contracts restricts contract creation to only organization-level contracts",
+      "type": "boolean"
+    },
     "^(updatePoliciesAllowedHostnames)$": {
       "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",
       "type": "boolean"
@@ -41,6 +45,10 @@
     },
     "prevent_implicit_workflow_creation": {
       "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
+    },
+    "prevent_project_scoped_contracts": {
+      "description": "prevent_project_scoped_contracts restricts contract creation to only organization-level contracts",
       "type": "boolean"
     },
     "update_policies_allowed_hostnames": {

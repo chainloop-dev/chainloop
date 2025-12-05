@@ -209,6 +209,10 @@ func init() {
 	organizationDescPreventImplicitWorkflowCreation := organizationFields[7].Descriptor()
 	// organization.DefaultPreventImplicitWorkflowCreation holds the default value on creation for the prevent_implicit_workflow_creation field.
 	organization.DefaultPreventImplicitWorkflowCreation = organizationDescPreventImplicitWorkflowCreation.Default.(bool)
+	// organizationDescPreventProjectScopedContracts is the schema descriptor for prevent_project_scoped_contracts field.
+	organizationDescPreventProjectScopedContracts := organizationFields[8].Descriptor()
+	// organization.DefaultPreventProjectScopedContracts holds the default value on creation for the prevent_project_scoped_contracts field.
+	organization.DefaultPreventProjectScopedContracts = organizationDescPreventProjectScopedContracts.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
 	organizationDescID := organizationFields[0].Descriptor()
 	// organization.DefaultID holds the default value on creation for the id field.

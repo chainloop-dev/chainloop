@@ -608,6 +608,8 @@ export interface OrgItem {
   policyAllowedHostnames: string[];
   /** prevent workflows and projects from being created implicitly during attestation init */
   preventImplicitWorkflowCreation: boolean;
+  /** prevent_project_scoped_contracts restricts contract creation to only organization-level contracts */
+  preventProjectScopedContracts: boolean;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3756,6 +3758,7 @@ function createBaseOrgItem(): OrgItem {
     defaultPolicyViolationStrategy: 0,
     policyAllowedHostnames: [],
     preventImplicitWorkflowCreation: false,
+    preventProjectScopedContracts: false,
   };
 }
 
@@ -3781,6 +3784,9 @@ export const OrgItem = {
     }
     if (message.preventImplicitWorkflowCreation === true) {
       writer.uint32(56).bool(message.preventImplicitWorkflowCreation);
+    }
+    if (message.preventProjectScopedContracts === true) {
+      writer.uint32(64).bool(message.preventProjectScopedContracts);
     }
     return writer;
   },
@@ -3841,6 +3847,13 @@ export const OrgItem = {
 
           message.preventImplicitWorkflowCreation = reader.bool();
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.preventProjectScopedContracts = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3865,6 +3878,9 @@ export const OrgItem = {
       preventImplicitWorkflowCreation: isSet(object.preventImplicitWorkflowCreation)
         ? Boolean(object.preventImplicitWorkflowCreation)
         : false,
+      preventProjectScopedContracts: isSet(object.preventProjectScopedContracts)
+        ? Boolean(object.preventProjectScopedContracts)
+        : false,
     };
   },
 
@@ -3885,6 +3901,8 @@ export const OrgItem = {
     }
     message.preventImplicitWorkflowCreation !== undefined &&
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
+    message.preventProjectScopedContracts !== undefined &&
+      (obj.preventProjectScopedContracts = message.preventProjectScopedContracts);
     return obj;
   },
 
@@ -3901,6 +3919,7 @@ export const OrgItem = {
     message.defaultPolicyViolationStrategy = object.defaultPolicyViolationStrategy ?? 0;
     message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? false;
+    message.preventProjectScopedContracts = object.preventProjectScopedContracts ?? false;
     return message;
   },
 };

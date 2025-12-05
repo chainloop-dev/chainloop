@@ -34,6 +34,10 @@
       "description": "prevent workflows and projects from being created implicitly during attestation init",
       "type": "boolean"
     },
+    "^(prevent_project_scoped_contracts)$": {
+      "description": "prevent_project_scoped_contracts restricts contract creation to only organization-level contracts",
+      "type": "boolean"
+    },
     "^(updated_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
@@ -74,6 +78,10 @@
     },
     "preventImplicitWorkflowCreation": {
       "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
+    },
+    "preventProjectScopedContracts": {
+      "description": "prevent_project_scoped_contracts restricts contract creation to only organization-level contracts",
       "type": "boolean"
     },
     "updatedAt": {
