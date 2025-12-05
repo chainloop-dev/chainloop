@@ -456,7 +456,6 @@ func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (
 }
 
 func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte) (*VerificationResult, error) {
-
 	tr, err := uc.signingUseCase.GetTrustedRoot(ctx)
 	if err != nil {
 		if IsErrNotImplemented(err) {
