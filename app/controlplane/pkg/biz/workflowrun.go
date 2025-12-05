@@ -322,8 +322,19 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		return nil, fmt.Errorf("extracting predicate: %w", err)
 	}
 
+	// verify attestation (only if chainloop is the signer)
+	result, err := uc.verifyBundle(ctx, rawContent)
+	if err != nil {
+		return nil, err
+	}
+
+	// if it's verifiable, make sure it passed
+	if result != nil && !result.Result {
+		return nil, NewErrValidation(fmt.Errorf("attestation verification failed: %s", result.FailureReason))
+	}
+
 	// Run some validations on the predicate
-	// Attestations can include dependent attestations and we want to make sure they exist in the system
+	// Attestations can include dependent attestations, and we want to make sure they exist in the system
 	// Find any material of kind attestation and make sure they exist already
 	for _, m := range predicate.GetMaterials() {
 		if m.Type == schemaapi.CraftingSchema_Material_ATTESTATION.String() {
@@ -440,7 +451,11 @@ type VerificationResult struct {
 	FailureReason string
 }
 
-func (uc *WorkflowRunUseCase) Verify(ctx context.Context, run *WorkflowRun) (*VerificationResult, error) {
+func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (*VerificationResult, error) {
+	return uc.verifyBundle(ctx, run.Attestation.Bundle)
+}
+
+func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte) (*VerificationResult, error) {
 	tr, err := uc.signingUseCase.GetTrustedRoot(ctx)
 	if err != nil {
 		if IsErrNotImplemented(err) {
@@ -453,7 +468,7 @@ func (uc *WorkflowRunUseCase) Verify(ctx context.Context, run *WorkflowRun) (*Ve
 	if err != nil {
 		return nil, fmt.Errorf("parsing roots: %w", err)
 	}
-	err = verifier.VerifyBundle(ctx, run.Attestation.Bundle, verifierRoots)
+	err = verifier.VerifyBundle(ctx, bundle, verifierRoots)
 	if err != nil {
 		// if no verification material found, it's not verifiable
 		if errors.Is(err, verifier.ErrMissingVerificationMaterial) {
