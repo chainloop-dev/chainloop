@@ -159,6 +159,25 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	return result, nil
 }
 
+// EvaluateGeneric evaluates a single policy attachment.
+func (pv *PolicyVerifier) EvaluateGeneric(ctx context.Context, attachment *v1.PolicyAttachment) (*v12.PolicyEvaluation, error) {
+	// Use empty JSON as material input
+	input := []byte("{}")
+
+	// Evaluate without material context
+	ev, err := pv.evaluatePolicyAttachment(ctx, attachment, input,
+		&evalOpts{
+			kind: v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED,
+			name: "",
+		},
+	)
+	if err != nil {
+		return nil, NewPolicyError(err)
+	}
+
+	return ev, nil
+}
+
 type evalOpts struct {
 	name string
 	kind v1.CraftingSchema_Material_MaterialType
