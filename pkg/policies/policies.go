@@ -159,13 +159,10 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	return result, nil
 }
 
-// EvaluateGeneric evaluates a single policy attachment without material context.
-// This is used for generic policies that operate purely on input arguments.
-func (pv *PolicyVerifier) EvaluateGeneric(ctx context.Context, attachment *v1.PolicyAttachment, input []byte) (*v12.PolicyEvaluation, error) {
-	// Use empty JSON if no input provided
-	if len(input) == 0 {
-		input = []byte("{}")
-	}
+// EvaluateGeneric evaluates a single policy attachment.
+func (pv *PolicyVerifier) EvaluateGeneric(ctx context.Context, attachment *v1.PolicyAttachment) (*v12.PolicyEvaluation, error) {
+	// Use empty JSON as material input
+	input := []byte("{}")
 
 	// Evaluate without material context
 	ev, err := pv.evaluatePolicyAttachment(ctx, attachment, input,
