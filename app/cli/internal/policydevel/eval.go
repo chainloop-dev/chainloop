@@ -77,7 +77,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	material.Annotations = opts.Annotations
 
 	// 2. Create policy attachment
-	policies, err := createPolicies(opts.PolicyPath, opts.Inputs, material.GetId())
+	policies, err := createPolicies(opts.PolicyPath, opts.Inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func evaluateGeneric(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, er
 	return buildEvalSummary(policyEv, opts.Debug), nil
 }
 
-func createPolicies(policyPath string, inputs map[string]string, materialID string) (*v1.Policies, error) {
+func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
 	// Check if the policy path already has a scheme (chainloop://, http://, https://, file://)
 	ref := policyPath
 	scheme, _ := policies.RefParts(policyPath)
