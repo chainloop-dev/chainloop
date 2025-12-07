@@ -3,6 +3,10 @@
 # code review requirements, and commit signing policies
 schemaVersion: v1
 policies:
+  attestation:
+    - ref: runner-automated
+      with:
+        runner: "GITHUB_ACTION" # or GITLAB_PIPELINE
   materials:
     - ref: commits-signed-required
       with:
@@ -14,5 +18,5 @@ policyGroups:
   - ref: code-review
     with:
       branches: "main"
-# runner:
-#  type: GITHUB_ACTION # or GITLAB_PIPELINE
+runner:
+  type: GITHUB_ACTION # or GITLAB_PIPELINE

@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
 
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -42,6 +43,7 @@ type EvalOptions struct {
 	AllowedHostnames  []string
 	Debug             bool
 	AttestationClient controlplanev1.AttestationServiceClient
+	ControlPlaneConn  *grpc.ClientConn
 }
 
 type EvalResult struct {
@@ -81,7 +83,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	}
 
 	// 3. Verify material against policy
-	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, &logger)
+	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +106,7 @@ func evaluateGeneric(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, er
 	}
 
 	// Create policy verifier
-	verifierOpts := buildPolicyVerifierOptions(opts.AllowedHostnames, opts.Debug)
+	verifierOpts := buildPolicyVerifierOptions(opts.AllowedHostnames, opts.Debug, opts.ControlPlaneConn)
 	pol := &v1.Policies{}
 	v := policies.NewPolicyVerifier(pol, opts.AttestationClient, &logger, verifierOpts...)
 
@@ -141,8 +143,9 @@ func createPolicies(policyPath string, inputs map[string]string, materialID stri
 	}, nil
 }
 
-func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, logger *zerolog.Logger) (*EvalSummary, error) {
-	opts := buildPolicyVerifierOptions(allowedHostnames, debug)
+func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, logger *zerolog.Logger) (*EvalSummary, error) {
+	opts := buildPolicyVerifierOptions(allowedHostnames, debug, grpcConn)
+
 	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
 	if err != nil {
@@ -158,12 +161,13 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 }
 
 // buildPolicyVerifierOptions creates common policy verifier options
-func buildPolicyVerifierOptions(allowedHostnames []string, debug bool) []policies.PolicyVerifierOption {
+func buildPolicyVerifierOptions(allowedHostnames []string, debug bool, grpcConn *grpc.ClientConn) []policies.PolicyVerifierOption {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
 	}
 	opts = append(opts, policies.WithIncludeRawData(debug))
+	opts = append(opts, policies.WithGRPCConn(grpcConn))
 	opts = append(opts, policies.WithEnablePrint(enablePrint))
 	return opts
 }

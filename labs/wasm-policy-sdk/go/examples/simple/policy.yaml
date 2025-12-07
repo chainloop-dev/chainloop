@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: simple-validation
+  description: Simple string validation policy demonstrating basic SDK usage
+spec:
+  policies:
+    - kind: STRING
+      path: policy.wasm

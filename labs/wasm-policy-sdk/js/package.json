@@ -1,0 +1,30 @@
+{
+  "name": "@chainloop-dev/policy-sdk",
+  "version": "0.1.0",
+  "description": "Chainloop Policy SDK for JavaScript/TypeScript - Write WASM policies with ease",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "chainloop",
+    "policy",
+    "wasm",
+    "extism",
+    "supply-chain",
+    "security"
+  ],
+  "author": "Chainloop Authors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chainloop-dev/chainloop.git",
+    "directory": "sdks/js"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "README.md"
+  ],
+  "dependencies": {
+    "@extism/js-pdk": "^1.1.1"
+  }
+}

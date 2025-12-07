@@ -1,0 +1,12 @@
+{
+  "name": "simple-js-policy-example",
+  "version": "1.0.0",
+  "description": "Simple JavaScript policy example using Chainloop SDK",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.js && extism-js dist/policy.js -i policy.d.ts -o policy.wasm"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}

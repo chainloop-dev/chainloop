@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: http-example
+  description: Example policy demonstrating HTTP requests with hostname restrictions
+spec:
+  policies:
+    - kind: EVIDENCE
+      path: policy.wasm

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ func newConfigSaveCmd() *cobra.Command {
 		Use:     "save",
 		Short:   "Persist the current settings to the config file",
 		Example: "chainloop config save --control-plane localhost:1234 --artifact-cas localhost:1235",
+		Annotations: map[string]string{
+			skipActionOptsInit: trueString,
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return viper.WriteConfig()
 		},

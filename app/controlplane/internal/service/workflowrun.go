@@ -164,7 +164,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	var verificationResult *pb.WorkflowRunServiceViewResponse_VerificationResult
 	if req.Verify {
 		// it might be nil if it doesn't apply
-		vr, err := s.wrUseCase.Verify(ctx, run)
+		vr, err := s.wrUseCase.VerifyRun(ctx, run)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}

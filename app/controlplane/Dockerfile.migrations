@@ -2,9 +2,9 @@
 # See https://atlasgo.io/guides/deploying/image
 # NOTE: Updated to canary since there is a vulnerability in the latest stable release
 # from: arigaio/atlas:latest
-# docker run arigaio/atlas@sha256:3d12860d684122d74341cb99b0a31f0bf4a78fa223ebc9b32a1260ad6d0dbe95 version
-# atlas version v0.38.1-6b73979-canary
-FROM arigaio/atlas@sha256:3d12860d684122d74341cb99b0a31f0bf4a78fa223ebc9b32a1260ad6d0dbe95 as base
+# docker run arigaio/atlas@sha256:ea3f647b96cf61010deff910c97f8c092deda1db2be3b2b8f20780668bfcf32c version
+# atlas version v0.38.1-ce311d2-canary
+FROM arigaio/atlas@sha256:ea3f647b96cf61010deff910c97f8c092deda1db2be3b2b8f20780668bfcf32c as base
 
 FROM scratch
 # Update permissions to make it readable by the user
