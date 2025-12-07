@@ -111,7 +111,7 @@ func evaluateGeneric(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, er
 	v := policies.NewPolicyVerifier(pol, opts.AttestationClient, &logger, verifierOpts...)
 
 	// Evaluate generic policy
-	policyEv, err := v.EvaluateGeneric(context.Background(), attachment, nil)
+	policyEv, err := v.EvaluateGeneric(context.Background(), attachment)
 	if err != nil {
 		return nil, err
 	}
