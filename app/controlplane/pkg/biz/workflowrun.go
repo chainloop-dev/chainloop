@@ -324,10 +324,12 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 
 	// verify attestation (only if chainloop is the signer)
 	validation, err := uc.verifyBundle(ctx, rawContent)
-	// if it's not an invalid bundle, return the error
-	// invalid bundle is expected for old attestations so we skip validation
-	if err != nil && !errors.Is(err, verifier.ErrInvalidBundle) {
-		return nil, err
+	if err != nil {
+		if !errors.Is(err, verifier.ErrInvalidBundle) {
+			return nil, err
+		}
+		// invalid bundle is expected for old attestations so we skip validation
+		uc.logger.Warn("received an old attestation format, not a bundle: attestation verification skipped", "error", err)
 	}
 
 	// if it's verifiable, make sure it passed
