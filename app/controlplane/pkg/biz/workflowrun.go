@@ -323,14 +323,16 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	}
 
 	// verify attestation (only if chainloop is the signer)
-	result, err := uc.verifyBundle(ctx, rawContent)
-	if err != nil {
+	validation, err := uc.verifyBundle(ctx, rawContent)
+	// if it's not an invalid bundle, return the error
+	// invalid bundle is expected for old attestations so we skip validation
+	if err != nil && !errors.Is(err, verifier.ErrInvalidBundle) {
 		return nil, err
 	}
 
 	// if it's verifiable, make sure it passed
-	if result != nil && !result.Result {
-		return nil, NewErrValidation(fmt.Errorf("attestation verification failed: %s", result.FailureReason))
+	if validation != nil && !validation.Result {
+		return nil, NewErrValidation(fmt.Errorf("attestation verification failed: %s", validation.FailureReason))
 	}
 
 	// Run some validations on the predicate
@@ -473,6 +475,10 @@ func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte) (
 		// if no verification material found, it's not verifiable
 		if errors.Is(err, verifier.ErrMissingVerificationMaterial) {
 			return nil, nil
+		}
+
+		if errors.Is(err, verifier.ErrInvalidBundle) {
+			return nil, err
 		}
 
 		return &VerificationResult{Result: false, FailureReason: err.Error()}, nil
