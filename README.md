@@ -1,5 +1,8 @@
 # Chainloop
 
+[![Run in Smithery](https://smithery.ai/badge/skills/chainloop-dev)](https://smithery.ai/skills?ns=chainloop-dev&utm_source=github&utm_medium=badge)
+
+
 [![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=chainloop)](https://insights.linuxfoundation.org/project/chainloop)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/chainloop-dev/chainloop/badge)](https://securityscorecards.dev/viewer/?uri=github.com/chainloop-dev/chainloop)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chainloop-dev/chainloop)](https://goreportcard.com/report/github.com/chainloop-dev/chainloop)
