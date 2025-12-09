@@ -95,6 +95,13 @@
                                                                 "enabled": {
                                                                     "type": "string",
                                                                     "description": "Context variable enabled state"
+                                                                },
+                                                                "members": {
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "type": "array",
+                                                                    "description": "Team member logins (only populated for team contexts)"
                                                                 }
                                                             },
                                                             "additionalProperties": false,
@@ -199,6 +206,13 @@
                                                                             "enabled": {
                                                                                 "type": "string",
                                                                                 "description": "Context variable enabled state"
+                                                                            },
+                                                                            "members": {
+                                                                                "items": {
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "type": "array",
+                                                                                "description": "Team member logins (only populated for team contexts)"
                                                                             }
                                                                         },
                                                                         "additionalProperties": false,
@@ -276,6 +290,13 @@
                                                     "enabled": {
                                                         "type": "string",
                                                         "description": "Context variable enabled state"
+                                                    },
+                                                    "members": {
+                                                        "items": {
+                                                            "type": "string"
+                                                        },
+                                                        "type": "array",
+                                                        "description": "Team member logins (only populated for team contexts)"
                                                     }
                                                 },
                                                 "additionalProperties": false,
@@ -343,6 +364,13 @@
                                                                 "enabled": {
                                                                     "type": "string",
                                                                     "description": "Context variable enabled state"
+                                                                },
+                                                                "members": {
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "type": "array",
+                                                                    "description": "Team member logins (only populated for team contexts)"
                                                                 }
                                                             },
                                                             "additionalProperties": false,
