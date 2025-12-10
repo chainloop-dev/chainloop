@@ -1,0 +1,32 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: deployment-validation
+  description: Validates deployment configuration for any environment
+spec:
+  inputs:
+    - name: environment
+      description: Deployment environment (e.g., staging, production)
+      required: true
+    - name: approved
+      description: Whether the deployment is approved (true/false)
+      required: false
+  policies:
+    - embedded: |
+        package main
+
+        import rego.v1
+
+        result := {
+            "violations": violations,
+        }
+
+        # Convert string to boolean for approved
+        is_approved := input.args.approved == "true"
+
+        # Policy checks
+        violations contains msg if {
+            input.args.environment == "production"
+            not is_approved
+            msg := "Deployment to production requires approval"
+        }

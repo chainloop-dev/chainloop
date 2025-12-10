@@ -63,18 +63,24 @@ type EvalSummaryDebugInfo struct {
 }
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
-	// 1. Create crafting schema
-	policies, err := createPolicies(opts.PolicyPath, opts.Inputs)
-	if err != nil {
-		return nil, err
+	// Check if this is a generic policy evaluation
+	if opts.MaterialPath == "" {
+		return evaluateGeneric(opts, logger)
 	}
 
-	// 2. Craft material with annotations
+	// Material-based evaluation
+	// 1. Craft material with annotations
 	material, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
 	if err != nil {
 		return nil, err
 	}
 	material.Annotations = opts.Annotations
+
+	// 2. Create policy attachment
+	policies, err := createPolicies(opts.PolicyPath, opts.Inputs)
+	if err != nil {
+		return nil, err
+	}
 
 	// 3. Verify material against policy
 	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, &logger)
@@ -83,6 +89,38 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	}
 
 	return summary, nil
+}
+
+func evaluateGeneric(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
+	// Create policy attachment without material selector
+	ref := opts.PolicyPath
+	scheme, _ := policies.RefParts(opts.PolicyPath)
+	if scheme == "" {
+		// Default to file://
+		ref = fmt.Sprintf("file://%s", opts.PolicyPath)
+	}
+
+	attachment := &v1.PolicyAttachment{
+		Policy: &v1.PolicyAttachment_Ref{Ref: ref},
+		With:   opts.Inputs,
+	}
+
+	// Create policy verifier
+	verifierOpts := buildPolicyVerifierOptions(opts.AllowedHostnames, opts.Debug, opts.ControlPlaneConn)
+	pol := &v1.Policies{}
+	v := policies.NewPolicyVerifier(pol, opts.AttestationClient, &logger, verifierOpts...)
+
+	// Evaluate generic policy
+	policyEv, err := v.EvaluateGeneric(context.Background(), attachment)
+	if err != nil {
+		return nil, err
+	}
+
+	if policyEv == nil {
+		return nil, fmt.Errorf("no execution branch matched, or all of them were ignored")
+	}
+
+	return buildEvalSummary(policyEv, opts.Debug), nil
 }
 
 func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
@@ -106,14 +144,7 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 }
 
 func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, logger *zerolog.Logger) (*EvalSummary, error) {
-	var opts []policies.PolicyVerifierOption
-	if len(allowedHostnames) > 0 {
-		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
-	}
-
-	opts = append(opts, policies.WithIncludeRawData(debug))
-	opts = append(opts, policies.WithEnablePrint(enablePrint))
-	opts = append(opts, policies.WithGRPCConn(grpcConn))
+	opts := buildPolicyVerifierOptions(allowedHostnames, debug, grpcConn)
 
 	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
@@ -126,8 +157,23 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	}
 
 	// Only one evaluation expected for a single policy attachment
-	policyEv := policyEvs[0]
+	return buildEvalSummary(policyEvs[0], debug), nil
+}
 
+// buildPolicyVerifierOptions creates common policy verifier options
+func buildPolicyVerifierOptions(allowedHostnames []string, debug bool, grpcConn *grpc.ClientConn) []policies.PolicyVerifierOption {
+	var opts []policies.PolicyVerifierOption
+	if len(allowedHostnames) > 0 {
+		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
+	}
+	opts = append(opts, policies.WithIncludeRawData(debug))
+	opts = append(opts, policies.WithGRPCConn(grpcConn))
+	opts = append(opts, policies.WithEnablePrint(enablePrint))
+	return opts
+}
+
+// buildEvalSummary converts a PolicyEvaluation to an EvalSummary
+func buildEvalSummary(policyEv *v12.PolicyEvaluation, debug bool) *EvalSummary {
 	summary := &EvalSummary{
 		Result: &EvalResult{
 			Skipped:     policyEv.GetSkipped(),
@@ -152,7 +198,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 			if rr == nil {
 				continue
 			}
-			// Take the first input found, as we only allow one material input
+			// Take the first input found
 			if len(summary.DebugInfo.Inputs) == 0 && rr.Input != nil {
 				summary.DebugInfo.Inputs = append(summary.DebugInfo.Inputs, json.RawMessage(rr.Input))
 			}
@@ -163,7 +209,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 		}
 	}
 
-	return summary, nil
+	return summary
 }
 
 func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
