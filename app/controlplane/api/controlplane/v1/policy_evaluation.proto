@@ -4,49 +4,18 @@ package controlplane.v1;
 
 import "attestation/v1/crafting_state.proto";
 import "buf/validate/validate.proto";
-import "google/api/annotations.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service PolicyEvaluationService {
-  rpc Evaluate(PolicyEvaluationServiceEvaluateRequest) returns (PolicyEvaluationServiceEvaluateResponse) {
-    option (google.api.http) = {
-      post: "/policy-evaluations/evaluate"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Evaluate generic policy"
-      description: "Evaluates generic policy."
-      produces: ["application/json"]
-    };
-  }
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "PolicyEvaluationService"
-    description: "Generic policy evaluation service"
-  };
+  rpc Evaluate(PolicyEvaluationServiceEvaluateRequest) returns (PolicyEvaluationServiceEvaluateResponse);
 }
 
 message PolicyEvaluationServiceEvaluateRequest {
   string policy_reference = 1 [(buf.validate.field).string.min_len = 1];
   map<string, string> inputs = 2;
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "PolicyEvaluationServiceEvaluateRequest"
-      description: "Request to evaluate a generic policy"
-    }
-  };
 }
 
 message PolicyEvaluationServiceEvaluateResponse {
   attestation.v1.PolicyEvaluation result = 1;
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "PolicyEvaluationServiceEvaluateResponse"
-      description: "Response containing policy evaluation result"
-    }
-  };
 }
