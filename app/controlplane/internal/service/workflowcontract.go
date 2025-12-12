@@ -139,7 +139,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	// if the project is provided we make sure it exists and the user has permission to it
 	var projectID *uuid.UUID
 	if req.ProjectReference.IsSet() {
-		// Make sure the provided project exists and the user has permission to create contracts in it
+		// Make sure the provided project exists and the user has permission to create tokens in it
 		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
 		if err != nil {
 			return nil, err
