@@ -70,6 +70,14 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_RUNNER_VERSION", false},
 		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
+		// MR-specific variables
+		{"CI_PIPELINE_SOURCE", false},
+		{"CI_MERGE_REQUEST_IID", false},
+		{"CI_MERGE_REQUEST_TITLE", false},
+		{"CI_MERGE_REQUEST_DESCRIPTION", false},
+		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", false},
+		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", false},
+		{"CI_MERGE_REQUEST_PROJECT_URL", false},
 	}
 }
 

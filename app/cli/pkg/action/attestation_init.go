@@ -17,16 +17,21 @@ package action
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/internal/prinfo"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
 )
@@ -37,16 +42,22 @@ type AttestationInitOpts struct {
 	// Force the initialization and override any existing, in-progress ones.
 	// Note that this is only useful when local-based attestation state is configured
 	// since it's a protection to make sure you don't override the state by mistake
-	Force          bool
-	UseRemoteState bool
-	LocalStatePath string
+	Force              bool
+	UseRemoteState     bool
+	LocalStatePath     string
+	CASURI             string
+	CASCAPath          string // optional CA certificate for the CAS connection
+	ConnectionInsecure bool
 }
 
 type AttestationInit struct {
 	*ActionsOpts
-	dryRun, force  bool
-	c              *crafter.Crafter
-	useRemoteState bool
+	dryRun, force      bool
+	c                  *crafter.Crafter
+	useRemoteState     bool
+	casURI             string
+	casCAPath          string
+	connectionInsecure bool
 }
 
 // ErrAttestationAlreadyExist means that there is an attestation in progress
@@ -67,11 +78,14 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 	}
 
 	return &AttestationInit{
-		ActionsOpts:    cfg.ActionsOpts,
-		c:              c,
-		dryRun:         cfg.DryRun,
-		force:          cfg.Force,
-		useRemoteState: cfg.UseRemoteState,
+		ActionsOpts:        cfg.ActionsOpts,
+		c:                  c,
+		dryRun:             cfg.DryRun,
+		force:              cfg.Force,
+		useRemoteState:     cfg.UseRemoteState,
+		casURI:             cfg.CASURI,
+		casCAPath:          cfg.CASCAPath,
+		connectionInsecure: cfg.ConnectionInsecure,
 	}, nil
 }
 
@@ -219,6 +233,44 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		attestationID = workflowRun.GetId()
 	}
 
+	// Get CAS credentials for PR metadata upload
+	var casBackend = &casclient.CASBackend{Name: "not-set"}
+	if !action.dryRun && attestationID != "" {
+		creds, err := client.GetUploadCreds(ctx,
+			&pb.AttestationServiceGetUploadCredsRequest{
+				WorkflowRunId: attestationID,
+			},
+		)
+		if err != nil {
+			// Log warning but don't fail - will fall back to inline storage
+			action.Logger.Warn().Err(err).Msg("failed to get CAS credentials for PR metadata, will store inline")
+		} else {
+			b := creds.GetResult().GetBackend()
+			if b != nil {
+				casBackend.Name = b.Provider
+				casBackend.MaxSize = b.GetLimits().MaxBytes
+
+				// Set up CAS connection if not inline
+				if !b.IsInline && creds.Result.Token != "" {
+					var opts = []grpcconn.Option{
+						grpcconn.WithInsecure(action.connectionInsecure),
+					}
+					if action.casCAPath != "" {
+						opts = append(opts, grpcconn.WithCAFile(action.casCAPath))
+					}
+
+					artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
+					if err != nil {
+						action.Logger.Warn().Err(err).Msg("failed to create CAS connection, will store inline")
+					} else {
+						defer artifactCASConn.Close()
+						casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
+					}
+				}
+			}
+		}
+	}
+
 	var authInfo *clientAPI.Attestation_Auth
 	if action.AuthTokenRaw != "" {
 		authInfo, err = extractAuthInfo(action.AuthTokenRaw)
@@ -266,6 +318,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 		_ = action.c.Reset(ctx, attestationID)
 		return "", err
+	}
+
+	// Auto-collect PR/MR metadata if in PR/MR context
+	if err := action.autoCollectPRMetadata(ctx, attestationID, discoveredRunner, casBackend); err != nil {
+		action.Logger.Warn().Err(err).Msg("failed to auto-collect PR/MR metadata")
+		// Don't fail the init - this is best-effort
 	}
 
 	return attestationID, nil
@@ -369,6 +427,64 @@ func extractAuthInfo(authToken string) (*clientAPI.Attestation_Auth, error) {
 		Type: parsed.TokenType,
 		Id:   parsed.ID,
 	}, nil
+}
+
+// autoCollectPRMetadata automatically collects PR/MR metadata if running in a PR/MR context
+func (action *AttestationInit) autoCollectPRMetadata(ctx context.Context, attestationID string, runner crafter.SupportedRunner, casBackend *casclient.CASBackend) error {
+	// Detect if we're in a PR/MR context
+	isPR, metadata, err := crafter.DetectPRContext(runner)
+	if err != nil {
+		return fmt.Errorf("failed to detect PR/MR context: %w", err)
+	}
+
+	// If not in PR/MR context, nothing to do
+	if !isPR {
+		action.Logger.Debug().Msg("not in PR/MR context, skipping metadata collection")
+		return nil
+	}
+
+	action.Logger.Info().Str("platform", metadata.Platform).Str("number", metadata.Number).Msg("detected PR/MR context")
+
+	// Create the material
+	evidenceData := prinfo.NewEvidence(prinfo.Data{
+		Platform:     metadata.Platform,
+		Type:         metadata.Type,
+		Number:       metadata.Number,
+		Title:        metadata.Title,
+		Description:  metadata.Description,
+		SourceBranch: metadata.SourceBranch,
+		TargetBranch: metadata.TargetBranch,
+		URL:          metadata.URL,
+		Author:       metadata.Author,
+	})
+
+	// Marshal to JSON
+	jsonData, err := json.Marshal(evidenceData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal PR/MR metadata: %w", err)
+	}
+
+	// Create a temporary file for the metadata
+	tmpFile, err := os.CreateTemp("", "pr-metadata-*.json")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Write the JSON data to the temp file
+	if _, err := tmpFile.Write(jsonData); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to write metadata to temp file: %w", err)
+	}
+	tmpFile.Close()
+
+	// Add the material using the crafter with explicit CHAINLOOP_PR_INFO type
+	if _, err := action.c.AddMaterialContractFree(ctx, attestationID, v1.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), "pr-metadata", tmpFile.Name(), casBackend, nil); err != nil {
+		return fmt.Errorf("failed to add PR/MR metadata material: %w", err)
+	}
+
+	action.Logger.Info().Msg("successfully collected and attested PR/MR metadata")
+	return nil
 }
 
 // parseContractV2 attempts to parse a raw contract as V2 schema

@@ -37,9 +37,14 @@ type CSAFVersion string
 // RunnerContextVersion represents the version of Runner Context schema.
 type RunnerContextVersion string
 
+// PRInfoVersion represents the version of PR/MR Info schema.
+type PRInfoVersion string
+
 const (
 	// RunnerContextVersion0_1 represents Runner Context version 0.1 schema.
 	RunnerContextVersion0_1 RunnerContextVersion = "0.1"
+	// PRInfoVersion1_0 represents PR/MR Info version 1.0 schema.
+	PRInfoVersion1_0 PRInfoVersion = "1.0"
 	// CycloneDXVersion1_5 represents CycloneDX version 1.5 schema.
 	CycloneDXVersion1_5 CycloneDXVersion = "1.5"
 	// CycloneDXVersion1_6 represents CycloneDX version 1.6 schema.
@@ -76,8 +81,12 @@ var (
 	cvssSpecVersion4_0 string
 
 	// Runner Context schemas
-	//go:embed external_schemas/runnercontext/runner-context-response-0.1.schema.json
+	//go:embed internal_schemas/runnercontext/runner-context-response-0.1.schema.json
 	runnerContextSpecVersion0_1 string
+
+	// PR/MR Info schemas
+	//go:embed internal_schemas/prinfo/pr-info-1.0.schema.json
+	prInfoSpecVersion1_0 string
 )
 
 // schemaURLMapping maps the schema URL to the schema content. This is used to compile the schema validators
@@ -96,11 +105,13 @@ var schemaURLMapping = map[string]string{
 	"https://www.first.org/cvss/cvss-v3.1.json":                             cvssSpecVersion3_1,
 	"https://www.first.org/cvss/cvss-v4.0.json":                             cvssSpecVersion4_0,
 	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json": runnerContextSpecVersion0_1,
+	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":          prInfoSpecVersion1_0,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
 var compiledCSAFSchemas map[CSAFVersion]*jsonschema.Schema
 var compiledRunnerContextSchemas map[RunnerContextVersion]*jsonschema.Schema
+var compiledPRInfoSchemas map[PRInfoVersion]*jsonschema.Schema
 
 func init() {
 	compiler := jsonschema.NewCompiler()
@@ -118,6 +129,9 @@ func init() {
 
 	compiledRunnerContextSchemas = make(map[RunnerContextVersion]*jsonschema.Schema)
 	compiledRunnerContextSchemas[RunnerContextVersion0_1] = compiler.MustCompile("https://chainloop.dev/schemas/runner-context-response-0.1.schema.json")
+
+	compiledPRInfoSchemas = make(map[PRInfoVersion]*jsonschema.Schema)
+	compiledPRInfoSchemas[PRInfoVersion1_0] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json")
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
@@ -196,6 +210,28 @@ func ValidateChainloopRunnerContext(data interface{}, version RunnerContextVersi
 	schema, ok := compiledRunnerContextSchemas[version]
 	if !ok {
 		return errors.New("invalid runner context schema version")
+	}
+
+	if err := schema.Validate(data); err != nil {
+		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
+		if errors.As(err, &invalidJSONTypeError) {
+			return ErrInvalidJSONPayload
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ValidatePRInfo validates the PR/MR info schema.
+func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
+	if version == "" {
+		version = PRInfoVersion1_0
+	}
+
+	schema, ok := compiledPRInfoSchemas[version]
+	if !ok {
+		return errors.New("invalid PR info schema version")
 	}
 
 	if err := schema.Validate(data); err != nil {
