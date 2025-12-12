@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,14 +70,14 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_RUNNER_VERSION", false},
 		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
-		// MR-specific variables
-		{"CI_PIPELINE_SOURCE", false},
-		{"CI_MERGE_REQUEST_IID", false},
-		{"CI_MERGE_REQUEST_TITLE", false},
-		{"CI_MERGE_REQUEST_DESCRIPTION", false},
-		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", false},
-		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", false},
-		{"CI_MERGE_REQUEST_PROJECT_URL", false},
+		// MR-specific variables (optional - only present in MR contexts)
+		{"CI_PIPELINE_SOURCE", true},
+		{"CI_MERGE_REQUEST_IID", true},
+		{"CI_MERGE_REQUEST_TITLE", true},
+		{"CI_MERGE_REQUEST_DESCRIPTION", true},
+		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", true},
+		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", true},
+		{"CI_MERGE_REQUEST_PROJECT_URL", true},
 	}
 }
 
