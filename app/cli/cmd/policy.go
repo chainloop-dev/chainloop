@@ -25,6 +25,6 @@ func newPolicyCmd() *cobra.Command {
 		Short: "Craft chainloop policies",
 	}
 
-	cmd.AddCommand(newPolicyDevelopCmd())
+	cmd.AddCommand(newPolicyEvalCmd(), newPolicyDevelopCmd())
 	return cmd
 }

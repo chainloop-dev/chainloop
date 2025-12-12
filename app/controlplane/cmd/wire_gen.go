@@ -238,6 +238,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
 	groupService := service.NewGroupService(groupUseCase, v5...)
 	projectService := service.NewProjectService(v5...)
+	policyEvaluationUseCase := biz.NewPolicyEvaluationUseCase(organizationRepo, logger)
+	policyEvaluationService := service.NewPolicyEvaluationService(policyEvaluationUseCase, v5...)
 	federatedAuthentication := bootstrap.FederatedAuthentication
 	validator, err := newProtoValidator()
 	if err != nil {
@@ -278,6 +280,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		PrometheusSvc:       prometheusService,
 		GroupSvc:            groupService,
 		ProjectSvc:          projectService,
+		PolicyEvaluationSvc: policyEvaluationService,
 		Logger:              logger,
 		ServerConfig:        confServer,
 		AuthConfig:          auth,

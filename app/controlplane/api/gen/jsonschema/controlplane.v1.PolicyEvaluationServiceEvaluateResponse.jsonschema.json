@@ -1,0 +1,12 @@
+{
+  "$id": "controlplane.v1.PolicyEvaluationServiceEvaluateResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "$ref": "attestation.v1.PolicyEvaluation.jsonschema.json"
+    }
+  },
+  "title": "Policy Evaluation Service Evaluate Response",
+  "type": "object"
+}
