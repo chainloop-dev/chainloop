@@ -35,7 +35,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/rs/zerolog"
-	cosigntypes "github.com/sigstore/cosign/v2/pkg/types"
+	cosigntypes "github.com/sigstore/cosign/v3/pkg/types"
 )
 
 const (

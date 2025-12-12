@@ -35,7 +35,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/genproto/googleapis/bytestream"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
@@ -49,7 +49,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, validator *protovalidate.Validator, logger log.Logger) (*grpc.Server, error) {
+func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, validator protovalidate.Validator, logger log.Logger) (*grpc.Server, error) {
 	log := log.NewHelper(logger)
 	// Load the key on initialization instead of on every request
 	// TODO: implement jwks endpoint

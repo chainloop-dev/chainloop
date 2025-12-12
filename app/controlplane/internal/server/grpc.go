@@ -29,7 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -91,7 +91,7 @@ type Opts struct {
 	FederatedConfig *conf.FederatedAuthentication
 	BootstrapConfig *conf.Bootstrap
 	Credentials     credentials.ReaderWriter
-	Validator       *protovalidate.Validator
+	Validator       protovalidate.Validator
 }
 
 // NewGRPCServer new a gRPC server.

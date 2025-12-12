@@ -25,7 +25,7 @@ import (
 	"syscall"
 
 	"github.com/rs/zerolog"
-	"github.com/sigstore/cosign/v2/pkg/signature"
+	"github.com/sigstore/cosign/v3/pkg/signature"
 	sigstoresigner "github.com/sigstore/sigstore/pkg/signature"
 	"golang.org/x/term"
 )
