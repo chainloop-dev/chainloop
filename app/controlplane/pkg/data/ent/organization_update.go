@@ -133,16 +133,16 @@ func (ou *OrganizationUpdate) SetNillablePreventImplicitWorkflowCreation(b *bool
 	return ou
 }
 
-// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
-func (ou *OrganizationUpdate) SetPreventProjectScopedContracts(b bool) *OrganizationUpdate {
-	ou.mutation.SetPreventProjectScopedContracts(b)
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (ou *OrganizationUpdate) SetRestrictContractCreationToOrgAdmins(b bool) *OrganizationUpdate {
+	ou.mutation.SetRestrictContractCreationToOrgAdmins(b)
 	return ou
 }
 
-// SetNillablePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field if the given value is not nil.
-func (ou *OrganizationUpdate) SetNillablePreventProjectScopedContracts(b *bool) *OrganizationUpdate {
+// SetNillableRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableRestrictContractCreationToOrgAdmins(b *bool) *OrganizationUpdate {
 	if b != nil {
-		ou.SetPreventProjectScopedContracts(*b)
+		ou.SetRestrictContractCreationToOrgAdmins(*b)
 	}
 	return ou
 }
@@ -511,8 +511,8 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ou.mutation.PreventImplicitWorkflowCreation(); ok {
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 	}
-	if value, ok := ou.mutation.PreventProjectScopedContracts(); ok {
-		_spec.SetField(organization.FieldPreventProjectScopedContracts, field.TypeBool, value)
+	if value, ok := ou.mutation.RestrictContractCreationToOrgAdmins(); ok {
+		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
 	}
 	if ou.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -990,16 +990,16 @@ func (ouo *OrganizationUpdateOne) SetNillablePreventImplicitWorkflowCreation(b *
 	return ouo
 }
 
-// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
-func (ouo *OrganizationUpdateOne) SetPreventProjectScopedContracts(b bool) *OrganizationUpdateOne {
-	ouo.mutation.SetPreventProjectScopedContracts(b)
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (ouo *OrganizationUpdateOne) SetRestrictContractCreationToOrgAdmins(b bool) *OrganizationUpdateOne {
+	ouo.mutation.SetRestrictContractCreationToOrgAdmins(b)
 	return ouo
 }
 
-// SetNillablePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field if the given value is not nil.
-func (ouo *OrganizationUpdateOne) SetNillablePreventProjectScopedContracts(b *bool) *OrganizationUpdateOne {
+// SetNillableRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableRestrictContractCreationToOrgAdmins(b *bool) *OrganizationUpdateOne {
 	if b != nil {
-		ouo.SetPreventProjectScopedContracts(*b)
+		ouo.SetRestrictContractCreationToOrgAdmins(*b)
 	}
 	return ouo
 }
@@ -1398,8 +1398,8 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	if value, ok := ouo.mutation.PreventImplicitWorkflowCreation(); ok {
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 	}
-	if value, ok := ouo.mutation.PreventProjectScopedContracts(); ok {
-		_spec.SetField(organization.FieldPreventProjectScopedContracts, field.TypeBool, value)
+	if value, ok := ouo.mutation.RestrictContractCreationToOrgAdmins(); ok {
+		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
 	}
 	if ouo.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -205,7 +205,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
-	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, organizationUseCase, v5...)
+	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, organizationUseCase, userUseCase, v5...)
 	contextService := service.NewContextService(casBackendUseCase, userUseCase, v5...)
 	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, authzUseCase, v5...)
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v5...)

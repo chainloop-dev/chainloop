@@ -97,8 +97,8 @@ message OrganizationServiceUpdateRequest {
   // prevent workflows and projects from being created implicitly during attestation init
   optional bool prevent_implicit_workflow_creation = 5;
 
-  // prevent_project_scoped_contracts restricts contract creation to only organization-level contracts
-  optional bool prevent_project_scoped_contracts = 6;
+  // restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
+  optional bool restrict_contract_creation_to_org_admins = 6;
 }
 
 message OrganizationServiceUpdateResponse {

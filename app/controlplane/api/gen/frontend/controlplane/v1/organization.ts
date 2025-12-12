@@ -80,8 +80,8 @@ export interface OrganizationServiceUpdateRequest {
   preventImplicitWorkflowCreation?:
     | boolean
     | undefined;
-  /** prevent_project_scoped_contracts restricts contract creation to only organization-level contracts */
-  preventProjectScopedContracts?: boolean | undefined;
+  /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
+  restrictContractCreationToOrgAdmins?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -670,7 +670,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     policiesAllowedHostnames: [],
     updatePoliciesAllowedHostnames: false,
     preventImplicitWorkflowCreation: undefined,
-    preventProjectScopedContracts: undefined,
+    restrictContractCreationToOrgAdmins: undefined,
   };
 }
 
@@ -691,8 +691,8 @@ export const OrganizationServiceUpdateRequest = {
     if (message.preventImplicitWorkflowCreation !== undefined) {
       writer.uint32(40).bool(message.preventImplicitWorkflowCreation);
     }
-    if (message.preventProjectScopedContracts !== undefined) {
-      writer.uint32(48).bool(message.preventProjectScopedContracts);
+    if (message.restrictContractCreationToOrgAdmins !== undefined) {
+      writer.uint32(48).bool(message.restrictContractCreationToOrgAdmins);
     }
     return writer;
   },
@@ -744,7 +744,7 @@ export const OrganizationServiceUpdateRequest = {
             break;
           }
 
-          message.preventProjectScopedContracts = reader.bool();
+          message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -768,8 +768,8 @@ export const OrganizationServiceUpdateRequest = {
       preventImplicitWorkflowCreation: isSet(object.preventImplicitWorkflowCreation)
         ? Boolean(object.preventImplicitWorkflowCreation)
         : undefined,
-      preventProjectScopedContracts: isSet(object.preventProjectScopedContracts)
-        ? Boolean(object.preventProjectScopedContracts)
+      restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
+        ? Boolean(object.restrictContractCreationToOrgAdmins)
         : undefined,
     };
   },
@@ -787,8 +787,8 @@ export const OrganizationServiceUpdateRequest = {
       (obj.updatePoliciesAllowedHostnames = message.updatePoliciesAllowedHostnames);
     message.preventImplicitWorkflowCreation !== undefined &&
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
-    message.preventProjectScopedContracts !== undefined &&
-      (obj.preventProjectScopedContracts = message.preventProjectScopedContracts);
+    message.restrictContractCreationToOrgAdmins !== undefined &&
+      (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
     return obj;
   },
 
@@ -807,7 +807,7 @@ export const OrganizationServiceUpdateRequest = {
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
     message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
-    message.preventProjectScopedContracts = object.preventProjectScopedContracts ?? undefined;
+    message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? undefined;
     return message;
   },
 };

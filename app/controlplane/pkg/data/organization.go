@@ -77,12 +77,12 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, preventProjectScopedContracts *bool) (*biz.Organization, error) {
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
 		SetNillablePreventImplicitWorkflowCreation(preventImplicitWorkflowCreation).
-		SetNillablePreventProjectScopedContracts(preventProjectScopedContracts).
+		SetNillableRestrictContractCreationToOrgAdmins(restrictContractCreationToOrgAdmins).
 		SetUpdatedAt(time.Now())
 
 	if policiesAllowedHostnames != nil {
@@ -109,11 +109,11 @@ func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
 func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 	return &biz.Organization{
 		Name: eu.Name, ID: eu.ID.String(),
-		CreatedAt:                       toTimePtr(eu.CreatedAt),
-		UpdatedAt:                       toTimePtr(eu.UpdatedAt),
-		BlockOnPolicyViolation:          eu.BlockOnPolicyViolation,
-		PoliciesAllowedHostnames:        eu.PoliciesAllowedHostnames,
-		PreventImplicitWorkflowCreation: eu.PreventImplicitWorkflowCreation,
-		PreventProjectScopedContracts:   eu.PreventProjectScopedContracts,
+		CreatedAt:                           toTimePtr(eu.CreatedAt),
+		UpdatedAt:                           toTimePtr(eu.UpdatedAt),
+		BlockOnPolicyViolation:              eu.BlockOnPolicyViolation,
+		PoliciesAllowedHostnames:            eu.PoliciesAllowedHostnames,
+		PreventImplicitWorkflowCreation:     eu.PreventImplicitWorkflowCreation,
+		RestrictContractCreationToOrgAdmins: eu.RestrictContractCreationToOrgAdmins,
 	}
 }

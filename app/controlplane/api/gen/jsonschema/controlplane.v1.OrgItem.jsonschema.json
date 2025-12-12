@@ -34,8 +34,8 @@
       "description": "prevent workflows and projects from being created implicitly during attestation init",
       "type": "boolean"
     },
-    "^(prevent_project_scoped_contracts)$": {
-      "description": "prevent_project_scoped_contracts restricts contract creation to only organization-level contracts",
+    "^(restrict_contract_creation_to_org_admins)$": {
+      "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
       "type": "boolean"
     },
     "^(updated_at)$": {
@@ -80,8 +80,8 @@
       "description": "prevent workflows and projects from being created implicitly during attestation init",
       "type": "boolean"
     },
-    "preventProjectScopedContracts": {
-      "description": "prevent_project_scoped_contracts restricts contract creation to only organization-level contracts",
+    "restrictContractCreationToOrgAdmins": {
+      "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
       "type": "boolean"
     },
     "updatedAt": {

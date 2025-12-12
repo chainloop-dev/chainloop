@@ -35,13 +35,15 @@ type WorkflowContractService struct {
 
 	contractUseCase *biz.WorkflowContractUseCase
 	orgUseCase      *biz.OrganizationUseCase
+	userUC          *biz.UserUseCase
 }
 
-func NewWorkflowSchemaService(uc *biz.WorkflowContractUseCase, orgUC *biz.OrganizationUseCase, opts ...NewOpt) *WorkflowContractService {
+func NewWorkflowSchemaService(uc *biz.WorkflowContractUseCase, orgUC *biz.OrganizationUseCase, userUC *biz.UserUseCase, opts ...NewOpt) *WorkflowContractService {
 	return &WorkflowContractService{
 		service:         newService(opts...),
 		contractUseCase: uc,
 		orgUseCase:      orgUC,
+		userUC:          userUC,
 	}
 }
 
@@ -111,21 +113,33 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.BadRequest("invalid", "project is required")
 	}
 
-	// Check organization settings for project-scoped contracts
+	// Check organization settings for contract creation restriction
 	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// If setting is enabled, only org admins can create contracts (org-level or project-level)
+	if org.RestrictContractCreationToOrgAdmins {
+		currentUser, err := requireCurrentUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		membership, err := s.userUC.MembershipInOrg(ctx, currentUser.ID, currentOrg.Name)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		if !membership.Role.IsAdmin() {
+			return nil, errors.Forbidden("forbidden", "only organization admins can create contracts")
+		}
+	}
+
 	// if the project is provided we make sure it exists and the user has permission to it
 	var projectID *uuid.UUID
 	if req.ProjectReference.IsSet() {
-		// Check if organization prevents project-scoped contracts
-		if org.PreventProjectScopedContracts {
-			return nil, errors.BadRequest("invalid", "organization does not allow project-scoped contracts")
-		}
-
-		// Make sure the provided project exists and the user has permission to create tokens in it
+		// Make sure the provided project exists and the user has permission to create contracts in it
 		project, err := s.userHasPermissionOnProject(ctx, currentOrg.ID, req.GetProjectReference(), authz.PolicyWorkflowContractCreate)
 		if err != nil {
 			return nil, err

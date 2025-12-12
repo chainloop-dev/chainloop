@@ -281,8 +281,8 @@ message OrgItem {
   repeated string policy_allowed_hostnames = 5;
   // prevent workflows and projects from being created implicitly during attestation init
   bool prevent_implicit_workflow_creation = 7;
-  // prevent_project_scoped_contracts restricts contract creation to only organization-level contracts
-  bool prevent_project_scoped_contracts = 8;
+  // restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
+  bool restrict_contract_creation_to_org_admins = 8;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

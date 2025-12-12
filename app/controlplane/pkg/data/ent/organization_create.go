@@ -114,16 +114,16 @@ func (oc *OrganizationCreate) SetNillablePreventImplicitWorkflowCreation(b *bool
 	return oc
 }
 
-// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
-func (oc *OrganizationCreate) SetPreventProjectScopedContracts(b bool) *OrganizationCreate {
-	oc.mutation.SetPreventProjectScopedContracts(b)
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (oc *OrganizationCreate) SetRestrictContractCreationToOrgAdmins(b bool) *OrganizationCreate {
+	oc.mutation.SetRestrictContractCreationToOrgAdmins(b)
 	return oc
 }
 
-// SetNillablePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillablePreventProjectScopedContracts(b *bool) *OrganizationCreate {
+// SetNillableRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableRestrictContractCreationToOrgAdmins(b *bool) *OrganizationCreate {
 	if b != nil {
-		oc.SetPreventProjectScopedContracts(*b)
+		oc.SetRestrictContractCreationToOrgAdmins(*b)
 	}
 	return oc
 }
@@ -313,9 +313,9 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultPreventImplicitWorkflowCreation
 		oc.mutation.SetPreventImplicitWorkflowCreation(v)
 	}
-	if _, ok := oc.mutation.PreventProjectScopedContracts(); !ok {
-		v := organization.DefaultPreventProjectScopedContracts
-		oc.mutation.SetPreventProjectScopedContracts(v)
+	if _, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); !ok {
+		v := organization.DefaultRestrictContractCreationToOrgAdmins
+		oc.mutation.SetRestrictContractCreationToOrgAdmins(v)
 	}
 	if _, ok := oc.mutation.ID(); !ok {
 		v := organization.DefaultID()
@@ -340,8 +340,8 @@ func (oc *OrganizationCreate) check() error {
 	if _, ok := oc.mutation.PreventImplicitWorkflowCreation(); !ok {
 		return &ValidationError{Name: "prevent_implicit_workflow_creation", err: errors.New(`ent: missing required field "Organization.prevent_implicit_workflow_creation"`)}
 	}
-	if _, ok := oc.mutation.PreventProjectScopedContracts(); !ok {
-		return &ValidationError{Name: "prevent_project_scoped_contracts", err: errors.New(`ent: missing required field "Organization.prevent_project_scoped_contracts"`)}
+	if _, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); !ok {
+		return &ValidationError{Name: "restrict_contract_creation_to_org_admins", err: errors.New(`ent: missing required field "Organization.restrict_contract_creation_to_org_admins"`)}
 	}
 	return nil
 }
@@ -407,9 +407,9 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 		_node.PreventImplicitWorkflowCreation = value
 	}
-	if value, ok := oc.mutation.PreventProjectScopedContracts(); ok {
-		_spec.SetField(organization.FieldPreventProjectScopedContracts, field.TypeBool, value)
-		_node.PreventProjectScopedContracts = value
+	if value, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); ok {
+		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
+		_node.RestrictContractCreationToOrgAdmins = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -675,15 +675,15 @@ func (u *OrganizationUpsert) UpdatePreventImplicitWorkflowCreation() *Organizati
 	return u
 }
 
-// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
-func (u *OrganizationUpsert) SetPreventProjectScopedContracts(v bool) *OrganizationUpsert {
-	u.Set(organization.FieldPreventProjectScopedContracts, v)
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (u *OrganizationUpsert) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldRestrictContractCreationToOrgAdmins, v)
 	return u
 }
 
-// UpdatePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field to the value that was provided on create.
-func (u *OrganizationUpsert) UpdatePreventProjectScopedContracts() *OrganizationUpsert {
-	u.SetExcluded(organization.FieldPreventProjectScopedContracts)
+// UpdateRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldRestrictContractCreationToOrgAdmins)
 	return u
 }
 
@@ -836,17 +836,17 @@ func (u *OrganizationUpsertOne) UpdatePreventImplicitWorkflowCreation() *Organiz
 	})
 }
 
-// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
-func (u *OrganizationUpsertOne) SetPreventProjectScopedContracts(v bool) *OrganizationUpsertOne {
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (u *OrganizationUpsertOne) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.SetPreventProjectScopedContracts(v)
+		s.SetRestrictContractCreationToOrgAdmins(v)
 	})
 }
 
-// UpdatePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field to the value that was provided on create.
-func (u *OrganizationUpsertOne) UpdatePreventProjectScopedContracts() *OrganizationUpsertOne {
+// UpdateRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.UpdatePreventProjectScopedContracts()
+		s.UpdateRestrictContractCreationToOrgAdmins()
 	})
 }
 
@@ -1166,17 +1166,17 @@ func (u *OrganizationUpsertBulk) UpdatePreventImplicitWorkflowCreation() *Organi
 	})
 }
 
-// SetPreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field.
-func (u *OrganizationUpsertBulk) SetPreventProjectScopedContracts(v bool) *OrganizationUpsertBulk {
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (u *OrganizationUpsertBulk) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.SetPreventProjectScopedContracts(v)
+		s.SetRestrictContractCreationToOrgAdmins(v)
 	})
 }
 
-// UpdatePreventProjectScopedContracts sets the "prevent_project_scoped_contracts" field to the value that was provided on create.
-func (u *OrganizationUpsertBulk) UpdatePreventProjectScopedContracts() *OrganizationUpsertBulk {
+// UpdateRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
-		s.UpdatePreventProjectScopedContracts()
+		s.UpdateRestrictContractCreationToOrgAdmins()
 	})
 }
 
