@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func newAttestationInitCmd() *cobra.Command {
@@ -77,11 +78,14 @@ func newAttestationInitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationInit(
 				&action.AttestationInitOpts{
-					ActionsOpts:    ActionOpts,
-					DryRun:         attestationDryRun,
-					Force:          force,
-					UseRemoteState: useAttestationRemoteState,
-					LocalStatePath: attestationLocalStatePath,
+					ActionsOpts:        ActionOpts,
+					DryRun:             attestationDryRun,
+					Force:              force,
+					UseRemoteState:     useAttestationRemoteState,
+					LocalStatePath:     attestationLocalStatePath,
+					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
+					CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
+					ConnectionInsecure: apiInsecure(),
 				},
 			)
 			if err != nil {

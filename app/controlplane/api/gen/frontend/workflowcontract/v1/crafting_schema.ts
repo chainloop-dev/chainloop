@@ -200,6 +200,8 @@ export enum CraftingSchema_Material_MaterialType {
   SLSA_PROVENANCE = 24,
   /** CHAINLOOP_RUNNER_CONTEXT - The Chainloop CLI plugin for runner context */
   CHAINLOOP_RUNNER_CONTEXT = 25,
+  /** CHAINLOOP_PR_INFO - Pull Request / Merge Request metadata collected automatically during attestation */
+  CHAINLOOP_PR_INFO = 26,
   UNRECOGNIZED = -1,
 }
 
@@ -283,6 +285,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 25:
     case "CHAINLOOP_RUNNER_CONTEXT":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT;
+    case 26:
+    case "CHAINLOOP_PR_INFO":
+      return CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -344,6 +349,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SLSA_PROVENANCE";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT:
       return "CHAINLOOP_RUNNER_CONTEXT";
+    case CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO:
+      return "CHAINLOOP_PR_INFO";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,6 +101,10 @@ func (s *githubActionSuite) TestListEnvVars() {
 		{"GITHUB_SHA", false},
 		{"RUNNER_NAME", false},
 		{"RUNNER_OS", false},
+		{"GITHUB_EVENT_NAME", true},
+		{"GITHUB_HEAD_REF", true},
+		{"GITHUB_BASE_REF", true},
+		{"GITHUB_EVENT_PATH", true},
 	}, s.runner.ListEnvVars())
 }
 
@@ -138,6 +142,10 @@ var gitHubTestingEnvVars = map[string]string{
 	"GITHUB_SHA":              "1234567890",
 	"RUNNER_NAME":             "chainloop-runner",
 	"RUNNER_OS":               "linux",
+	"GITHUB_EVENT_NAME":       "pull_request",
+	"GITHUB_HEAD_REF":         "feature-branch",
+	"GITHUB_BASE_REF":         "main",
+	"GITHUB_EVENT_PATH":       "/tmp/event.json",
 }
 
 // Run the tests

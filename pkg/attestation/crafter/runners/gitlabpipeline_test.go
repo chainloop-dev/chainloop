@@ -91,6 +91,13 @@ func (s *gitlabPipelineSuite) TestListEnvVars() {
 		{"CI_RUNNER_VERSION", false},
 		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
+		{"CI_PIPELINE_SOURCE", true},
+		{"CI_MERGE_REQUEST_IID", true},
+		{"CI_MERGE_REQUEST_TITLE", true},
+		{"CI_MERGE_REQUEST_DESCRIPTION", true},
+		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", true},
+		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", true},
+		{"CI_MERGE_REQUEST_PROJECT_URL", true},
 	}, s.runner.ListEnvVars())
 }
 
@@ -98,24 +105,39 @@ func (s *gitlabPipelineSuite) TestResolveEnvVars() {
 	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
 	s.Empty(errors)
 	s.Equal(map[string]string{
-		"GITLAB_USER_EMAIL":     "foo@foo.com",
-		"GITLAB_USER_LOGIN":     "foo",
-		"CI_PROJECT_URL":        "https://gitlab.com/chainloop/chainloop",
-		"CI_COMMIT_SHA":         "1234567890",
-		"CI_JOB_URL":            "https://gitlab.com/chainloop/chainloop/-/jobs/123",
-		"CI_PIPELINE_URL":       "https://gitlab.com/chainloop/chainloop/-/pipelines/123",
-		"CI_RUNNER_VERSION":     "13.10.0",
-		"CI_RUNNER_DESCRIPTION": "chainloop-runner",
-		"CI_COMMIT_REF_NAME":    "main",
-		"CI_SERVER_URL":         "https://gitlab.com",
+		"GITLAB_USER_EMAIL":                   "foo@foo.com",
+		"GITLAB_USER_LOGIN":                   "foo",
+		"CI_PROJECT_URL":                      "https://gitlab.com/chainloop/chainloop",
+		"CI_COMMIT_SHA":                       "1234567890",
+		"CI_JOB_URL":                          "https://gitlab.com/chainloop/chainloop/-/jobs/123",
+		"CI_PIPELINE_URL":                     "https://gitlab.com/chainloop/chainloop/-/pipelines/123",
+		"CI_RUNNER_VERSION":                   "13.10.0",
+		"CI_RUNNER_DESCRIPTION":               "chainloop-runner",
+		"CI_COMMIT_REF_NAME":                  "main",
+		"CI_SERVER_URL":                       "https://gitlab.com",
+		"CI_PIPELINE_SOURCE":                  "merge_request_event",
+		"CI_MERGE_REQUEST_IID":                "42",
+		"CI_MERGE_REQUEST_TITLE":              "Add new feature",
+		"CI_MERGE_REQUEST_DESCRIPTION":        "Implements awesome feature",
+		"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature/awesome",
+		"CI_MERGE_REQUEST_TARGET_BRANCH_NAME": "main",
+		"CI_MERGE_REQUEST_PROJECT_URL":        "https://gitlab.com/chainloop/chainloop/-/merge_requests/42",
 	}, resolvedEnvVars)
 }
 
 func (s *gitlabPipelineSuite) TestResolveEnvVarsWithoutRunnerDescription() {
+	// Unset optional variables to test they can be missing
 	s.T().Setenv("CI_RUNNER_DESCRIPTION", "")
+	s.T().Setenv("CI_PIPELINE_SOURCE", "")
+	s.T().Setenv("CI_MERGE_REQUEST_IID", "")
+	s.T().Setenv("CI_MERGE_REQUEST_TITLE", "")
+	s.T().Setenv("CI_MERGE_REQUEST_DESCRIPTION", "")
+	s.T().Setenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "")
+	s.T().Setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "")
+	s.T().Setenv("CI_MERGE_REQUEST_PROJECT_URL", "")
 
 	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
-	s.Empty(errors, "Should not error when CI_RUNNER_DESCRIPTION is missing")
+	s.Empty(errors, "Should not error when optional variables are missing")
 
 	expected := map[string]string{
 		"GITLAB_USER_EMAIL":  "foo@foo.com",
@@ -155,6 +177,13 @@ func (s *gitlabPipelineSuite) SetupTest() {
 	t.Setenv("CI_RUNNER_DESCRIPTION", "chainloop-runner")
 	t.Setenv("CI_COMMIT_REF_NAME", "main")
 	t.Setenv("CI_SERVER_URL", "https://gitlab.com")
+	t.Setenv("CI_PIPELINE_SOURCE", "merge_request_event")
+	t.Setenv("CI_MERGE_REQUEST_IID", "42")
+	t.Setenv("CI_MERGE_REQUEST_TITLE", "Add new feature")
+	t.Setenv("CI_MERGE_REQUEST_DESCRIPTION", "Implements awesome feature")
+	t.Setenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "feature/awesome")
+	t.Setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "main")
+	t.Setenv("CI_MERGE_REQUEST_PROJECT_URL", "https://gitlab.com/chainloop/chainloop/-/merge_requests/42")
 }
 
 // Run the tests

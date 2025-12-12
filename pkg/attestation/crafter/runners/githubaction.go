@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,6 +89,11 @@ func (r *GitHubAction) ListEnvVars() []*EnvVarDefinition {
 		{"GITHUB_SHA", false},
 		{"RUNNER_NAME", false},
 		{"RUNNER_OS", false},
+		// PR-specific variables (optional - only present in PR contexts)
+		{"GITHUB_EVENT_NAME", true},
+		{"GITHUB_HEAD_REF", true},
+		{"GITHUB_BASE_REF", true},
+		{"GITHUB_EVENT_PATH", true},
 	}
 }
 

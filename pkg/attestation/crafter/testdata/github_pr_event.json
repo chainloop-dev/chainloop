@@ -1,0 +1,11 @@
+{
+  "pull_request": {
+    "number": 123,
+    "title": "Add new feature",
+    "body": "This PR adds a new feature to the system.\n\nSigned-off-by: John Doe <john@example.com>",
+    "html_url": "https://github.com/owner/repo/pull/123",
+    "user": {
+      "login": "johndoe"
+    }
+  }
+}
