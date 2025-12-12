@@ -86,6 +86,11 @@ func PreventImplicitWorkflowCreation(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldPreventImplicitWorkflowCreation, v))
 }
 
+// RestrictContractCreationToOrgAdmins applies equality check predicate on the "restrict_contract_creation_to_org_admins" field. It's identical to RestrictContractCreationToOrgAdminsEQ.
+func RestrictContractCreationToOrgAdmins(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldRestrictContractCreationToOrgAdmins, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldName, v))
@@ -309,6 +314,16 @@ func PreventImplicitWorkflowCreationEQ(v bool) predicate.Organization {
 // PreventImplicitWorkflowCreationNEQ applies the NEQ predicate on the "prevent_implicit_workflow_creation" field.
 func PreventImplicitWorkflowCreationNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldPreventImplicitWorkflowCreation, v))
+}
+
+// RestrictContractCreationToOrgAdminsEQ applies the EQ predicate on the "restrict_contract_creation_to_org_admins" field.
+func RestrictContractCreationToOrgAdminsEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldRestrictContractCreationToOrgAdmins, v))
+}
+
+// RestrictContractCreationToOrgAdminsNEQ applies the NEQ predicate on the "restrict_contract_creation_to_org_admins" field.
+func RestrictContractCreationToOrgAdminsNEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldRestrictContractCreationToOrgAdmins, v))
 }
 
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.

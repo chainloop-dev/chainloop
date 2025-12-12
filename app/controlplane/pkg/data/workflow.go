@@ -118,6 +118,11 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			contract, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &defaultContractName)
 			if err != nil {
 				if ent.IsNotFound(err) {
+					// Check if contract creation is restricted to org admins
+					if opts.OrgRestrictContractCreationToAdmins && !opts.UserIsOrgAdmin {
+						return biz.NewErrUnauthorizedStr("only organization admins can create contracts")
+					}
+
 					// Create a new contract associated with the workflow
 					contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
 						OrgID:     orgUUID,

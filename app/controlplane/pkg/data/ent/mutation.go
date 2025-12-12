@@ -8696,45 +8696,46 @@ func (m *OrgInvitationMutation) ResetEdge(name string) error {
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
-	op                                 Op
-	typ                                string
-	id                                 *uuid.UUID
-	name                               *string
-	created_at                         *time.Time
-	updated_at                         *time.Time
-	deleted_at                         *time.Time
-	block_on_policy_violation          *bool
-	policies_allowed_hostnames         *[]string
-	appendpolicies_allowed_hostnames   []string
-	prevent_implicit_workflow_creation *bool
-	clearedFields                      map[string]struct{}
-	memberships                        map[uuid.UUID]struct{}
-	removedmemberships                 map[uuid.UUID]struct{}
-	clearedmemberships                 bool
-	workflow_contracts                 map[uuid.UUID]struct{}
-	removedworkflow_contracts          map[uuid.UUID]struct{}
-	clearedworkflow_contracts          bool
-	workflows                          map[uuid.UUID]struct{}
-	removedworkflows                   map[uuid.UUID]struct{}
-	clearedworkflows                   bool
-	cas_backends                       map[uuid.UUID]struct{}
-	removedcas_backends                map[uuid.UUID]struct{}
-	clearedcas_backends                bool
-	integrations                       map[uuid.UUID]struct{}
-	removedintegrations                map[uuid.UUID]struct{}
-	clearedintegrations                bool
-	api_tokens                         map[uuid.UUID]struct{}
-	removedapi_tokens                  map[uuid.UUID]struct{}
-	clearedapi_tokens                  bool
-	projects                           map[uuid.UUID]struct{}
-	removedprojects                    map[uuid.UUID]struct{}
-	clearedprojects                    bool
-	groups                             map[uuid.UUID]struct{}
-	removedgroups                      map[uuid.UUID]struct{}
-	clearedgroups                      bool
-	done                               bool
-	oldValue                           func(context.Context) (*Organization, error)
-	predicates                         []predicate.Organization
+	op                                       Op
+	typ                                      string
+	id                                       *uuid.UUID
+	name                                     *string
+	created_at                               *time.Time
+	updated_at                               *time.Time
+	deleted_at                               *time.Time
+	block_on_policy_violation                *bool
+	policies_allowed_hostnames               *[]string
+	appendpolicies_allowed_hostnames         []string
+	prevent_implicit_workflow_creation       *bool
+	restrict_contract_creation_to_org_admins *bool
+	clearedFields                            map[string]struct{}
+	memberships                              map[uuid.UUID]struct{}
+	removedmemberships                       map[uuid.UUID]struct{}
+	clearedmemberships                       bool
+	workflow_contracts                       map[uuid.UUID]struct{}
+	removedworkflow_contracts                map[uuid.UUID]struct{}
+	clearedworkflow_contracts                bool
+	workflows                                map[uuid.UUID]struct{}
+	removedworkflows                         map[uuid.UUID]struct{}
+	clearedworkflows                         bool
+	cas_backends                             map[uuid.UUID]struct{}
+	removedcas_backends                      map[uuid.UUID]struct{}
+	clearedcas_backends                      bool
+	integrations                             map[uuid.UUID]struct{}
+	removedintegrations                      map[uuid.UUID]struct{}
+	clearedintegrations                      bool
+	api_tokens                               map[uuid.UUID]struct{}
+	removedapi_tokens                        map[uuid.UUID]struct{}
+	clearedapi_tokens                        bool
+	projects                                 map[uuid.UUID]struct{}
+	removedprojects                          map[uuid.UUID]struct{}
+	clearedprojects                          bool
+	groups                                   map[uuid.UUID]struct{}
+	removedgroups                            map[uuid.UUID]struct{}
+	clearedgroups                            bool
+	done                                     bool
+	oldValue                                 func(context.Context) (*Organization, error)
+	predicates                               []predicate.Organization
 }
 
 var _ ent.Mutation = (*OrganizationMutation)(nil)
@@ -9133,6 +9134,42 @@ func (m *OrganizationMutation) OldPreventImplicitWorkflowCreation(ctx context.Co
 // ResetPreventImplicitWorkflowCreation resets all changes to the "prevent_implicit_workflow_creation" field.
 func (m *OrganizationMutation) ResetPreventImplicitWorkflowCreation() {
 	m.prevent_implicit_workflow_creation = nil
+}
+
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (m *OrganizationMutation) SetRestrictContractCreationToOrgAdmins(b bool) {
+	m.restrict_contract_creation_to_org_admins = &b
+}
+
+// RestrictContractCreationToOrgAdmins returns the value of the "restrict_contract_creation_to_org_admins" field in the mutation.
+func (m *OrganizationMutation) RestrictContractCreationToOrgAdmins() (r bool, exists bool) {
+	v := m.restrict_contract_creation_to_org_admins
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRestrictContractCreationToOrgAdmins returns the old "restrict_contract_creation_to_org_admins" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldRestrictContractCreationToOrgAdmins(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRestrictContractCreationToOrgAdmins is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRestrictContractCreationToOrgAdmins requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRestrictContractCreationToOrgAdmins: %w", err)
+	}
+	return oldValue.RestrictContractCreationToOrgAdmins, nil
+}
+
+// ResetRestrictContractCreationToOrgAdmins resets all changes to the "restrict_contract_creation_to_org_admins" field.
+func (m *OrganizationMutation) ResetRestrictContractCreationToOrgAdmins() {
+	m.restrict_contract_creation_to_org_admins = nil
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9601,7 +9638,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9622,6 +9659,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.prevent_implicit_workflow_creation != nil {
 		fields = append(fields, organization.FieldPreventImplicitWorkflowCreation)
+	}
+	if m.restrict_contract_creation_to_org_admins != nil {
+		fields = append(fields, organization.FieldRestrictContractCreationToOrgAdmins)
 	}
 	return fields
 }
@@ -9645,6 +9685,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.PoliciesAllowedHostnames()
 	case organization.FieldPreventImplicitWorkflowCreation:
 		return m.PreventImplicitWorkflowCreation()
+	case organization.FieldRestrictContractCreationToOrgAdmins:
+		return m.RestrictContractCreationToOrgAdmins()
 	}
 	return nil, false
 }
@@ -9668,6 +9710,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldPoliciesAllowedHostnames(ctx)
 	case organization.FieldPreventImplicitWorkflowCreation:
 		return m.OldPreventImplicitWorkflowCreation(ctx)
+	case organization.FieldRestrictContractCreationToOrgAdmins:
+		return m.OldRestrictContractCreationToOrgAdmins(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9725,6 +9769,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPreventImplicitWorkflowCreation(v)
+		return nil
+	case organization.FieldRestrictContractCreationToOrgAdmins:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRestrictContractCreationToOrgAdmins(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -9810,6 +9861,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldPreventImplicitWorkflowCreation:
 		m.ResetPreventImplicitWorkflowCreation()
+		return nil
+	case organization.FieldRestrictContractCreationToOrgAdmins:
+		m.ResetRestrictContractCreationToOrgAdmins()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
