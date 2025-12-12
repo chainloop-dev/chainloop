@@ -29,29 +29,41 @@ func newPolicyDevelopInitCmd() *cobra.Command {
 		name        string
 		description string
 		directory   string
+		policyType  string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new policy",
 		Long: `Initialize a new policy by creating template policy files in the specified directory.
-By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
-		Example: `  
-  # Initialize in current directory with separate files
+
+Policy Types:
+  rego      - Create a Rego-based policy using Open Policy Agent (default)
+  wasm-go   - Create a WebAssembly policy using Go and TinyGo
+  wasm-js   - Create a WebAssembly policy using JavaScript and Extism`,
+		Example: `  # Initialize a Rego policy in current directory (default)
   chainloop policy develop init
 
-  # Initialize in specific directory with embedded format and policy name
-  chainloop policy develop init --directory ./policies --embedded --name mypolicy`,
+  # Initialize a Rego policy with custom name
+  chainloop policy develop init --type rego --name my-policy
+
+  # Initialize a WASM Go policy
+  chainloop policy develop init --type wasm-go --name my-policy --directory ./policies
+
+  # Initialize a WASM JS policy
+  chainloop policy develop init --type wasm-js --name validation --description "My validation policy"`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			if directory == "" {
 				directory = "."
 			}
+
 			opts := &action.PolicyInitOpts{
 				Force:       force,
 				Embedded:    embedded,
 				Name:        name,
 				Description: description,
 				Directory:   directory,
+				PolicyType:  policyType,
 			}
 
 			policyInit, err := action.NewPolicyInit(opts, ActionOpts)
@@ -70,9 +82,11 @@ By default, it creates chainloop-policy.yaml and chainloop-policy.rego files.`,
 	}
 
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "overwrite existing files")
-	cmd.Flags().BoolVar(&embedded, "embedded", false, "initialize an embedded policy (single YAML file)")
+	cmd.Flags().BoolVar(&embedded, "embedded", false, "initialize an embedded policy (single YAML file, Rego only)")
 	cmd.Flags().StringVar(&name, "name", "", "name of the policy")
 	cmd.Flags().StringVar(&description, "description", "", "description of the policy")
-	cmd.Flags().StringVar(&directory, "directory", "", "directory for policy")
+	cmd.Flags().StringVar(&directory, "directory", "", "directory for policy files")
+	cmd.Flags().StringVar(&policyType, "type", "", "policy type: rego (default), wasm-go, or wasm-js")
+
 	return cmd
 }
