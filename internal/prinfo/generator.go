@@ -61,7 +61,7 @@ func (g *Generator) Save(schema *jsonschema.Schema, outputDir, version string) e
 	}
 
 	outputFile := fmt.Sprintf("%s/pr-info-%s.schema.json", outputDir, version)
-	if err := os.WriteFile(outputFile, schemaJSON, 0644); err != nil {
+	if err := os.WriteFile(outputFile, schemaJSON, 0600); err != nil {
 		return fmt.Errorf("failed to write schema to file: %w", err)
 	}
 
