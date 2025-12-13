@@ -39,7 +39,7 @@ message WorkflowContractServiceListResponse {
 
 message WorkflowContractServiceCreateRequest {
   string name = 1 [(buf.validate.field) = {
-    ignore_empty: true
+    ignore: IGNORE_UNSPECIFIED
     cel: {
       id: "name.dns-1123"
       message: "must contain only lowercase letters, numbers, and hyphens."
@@ -62,7 +62,7 @@ message WorkflowContractServiceCreateResponse {
 
 message WorkflowContractServiceUpdateRequest {
   string name = 1 [(buf.validate.field) = {
-    ignore_empty: true
+    ignore: IGNORE_UNSPECIFIED
     cel: {
       id: "name.dns-1123"
       message: "must contain only lowercase letters, numbers, and hyphens."

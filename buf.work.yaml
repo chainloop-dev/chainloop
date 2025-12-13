@@ -1,9 +1,0 @@
-version: v1
-directories:
-  - app/controlplane/api
-  - app/controlplane/internal/conf
-  - app/controlplane/pkg/conf
-  - app/artifact-cas/internal/conf
-  - app/artifact-cas/api
-  - pkg/credentials/api
-  - pkg/attestation/crafter/api

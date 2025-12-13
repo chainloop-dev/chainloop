@@ -1,27 +1,26 @@
-version: v1
+version: v2
 plugins:
-  - name: go
+  - local: protoc-gen-go
     out: .
     opt: paths=source_relative
-  - name: go-errors
+  - local: protoc-gen-go-errors
     out: .
     opt: paths=source_relative
-  - name: go-grpc
-    out: .
-    opt:
-      - paths=source_relative
-  - name: go-http
+  - local: protoc-gen-go-grpc
     out: .
     opt: paths=source_relative
-  - plugin: buf.build/community/stephenh-ts-proto:v1.151.1
+  - local: protoc-gen-go-http
+    out: .
+    opt: paths=source_relative
+  - remote: buf.build/community/stephenh-ts-proto:v1.151.1
     out: ./gen/frontend
     opt:
-      - outputClientImpl=grpc-web # client implementation it generates
-      - esModuleInterop=true # use imports as required in modern ts setups
-      - useOptionals=messages # use optional TypeScript properties instead of undefined
-  - plugin: buf.build/bufbuild/protoschema-jsonschema:v0.2.0
+      - outputClientImpl=grpc-web
+      - esModuleInterop=true
+      - useOptionals=messages
+  - remote: buf.build/bufbuild/protoschema-jsonschema:v0.2.0
     out: ./gen/jsonschema
-  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.26.3
+  - remote: buf.build/grpc-ecosystem/openapiv2:v2.26.3
     out: gen/temp-openapi
     opt:
       - allow_merge=true

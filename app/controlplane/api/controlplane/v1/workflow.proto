@@ -45,7 +45,7 @@ message WorkflowServiceCreateRequest {
   string project_name = 2 [(buf.validate.field).string = {min_len: 1}];
   // The name of the workflow contract
   string contract_name = 3 [(buf.validate.field) = {
-    ignore_empty: true
+    ignore: IGNORE_UNSPECIFIED
     cel: {
       message: "must contain only lowercase letters, numbers, and hyphens."
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
@@ -120,25 +120,20 @@ message WorkflowServiceListRequest {
   // If the workflow is public
   optional bool workflow_public = 5;
   // The type of runner that ran the workflow
-  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 6 [
-    (buf.validate.field).enum = {
-      not_in: [0]
-    },
-    (buf.validate.field).ignore_empty = true
-  ];
+  workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 6;
   // The status of the last workflow run
   RunStatus workflow_run_last_status = 7 [
     (buf.validate.field).enum = {
       not_in: [0]
     },
-    (buf.validate.field).ignore_empty = true
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
   // The time window for the last known workflow activity
   WorkflowActivityWindow workflow_last_activity_window = 8 [
     (buf.validate.field).enum = {
       not_in: [0]
     },
-    (buf.validate.field).ignore_empty = true
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
   // Pagination options
   OffsetPaginationRequest pagination = 9;
