@@ -191,7 +191,7 @@ message WorkflowRunServiceListRequest {
   // Filters
   // by workflow
   string workflow_name = 1 [(buf.validate.field) = {
-    ignore: IGNORE_UNSPECIFIED
+    ignore: IGNORE_IF_ZERO_VALUE
     cel: {
       message: "must contain only lowercase letters, numbers, and hyphens."
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
@@ -206,7 +206,7 @@ message WorkflowRunServiceListRequest {
   // by project version
   string project_version = 5 [(buf.validate.field) = {
     string: {uuid: true}
-    ignore: IGNORE_UNSPECIFIED
+    ignore: IGNORE_IF_ZERO_VALUE
   }];
   // by policy violations status
   PolicyViolationsFilter policy_violations = 6;

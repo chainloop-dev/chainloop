@@ -45,7 +45,7 @@ message WorkflowServiceCreateRequest {
   string project_name = 2 [(buf.validate.field).string = {min_len: 1}];
   // The name of the workflow contract
   string contract_name = 3 [(buf.validate.field) = {
-    ignore: IGNORE_UNSPECIFIED
+    ignore: IGNORE_IF_ZERO_VALUE
     cel: {
       message: "must contain only lowercase letters, numbers, and hyphens."
       expression: "this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
