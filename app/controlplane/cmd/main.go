@@ -23,7 +23,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	"github.com/getsentry/sentry-go"
 	"github.com/nats-io/nats.go"
 	flag "github.com/spf13/pflag"
@@ -280,6 +280,6 @@ func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err e
 	return
 }
 
-func newProtoValidator() (*protovalidate.Validator, error) {
+func newProtoValidator() (protovalidate.Validator, error) {
 	return protovalidate.New()
 }

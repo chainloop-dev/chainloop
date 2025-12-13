@@ -103,9 +103,9 @@ message GroupServiceUpdateRequest {
   IdentityReference group_reference = 1 [(buf.validate.field).required = true];
 
   // New name for the group (if provided)
-  optional string new_name = 3 [(buf.validate.field).ignore_empty = true];
+  optional string new_name = 3 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE];
   // New description for the group (if provided)
-  optional string new_description = 4 [(buf.validate.field).ignore_empty = true];
+  optional string new_description = 4 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE];
 }
 
 // GroupServiceUpdateResponse contains the updated group information
@@ -135,9 +135,9 @@ message GroupServiceListMembersRequest {
   // IdentityReference is used to specify the group by either its ID or name
   IdentityReference group_reference = 1 [(buf.validate.field).required = true];
   // Optional filter to search only by maintainers or not
-  optional bool maintainers = 3 [(buf.validate.field).ignore_empty = true];
+  optional bool maintainers = 3 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE];
   // Optional filter to search by member email address
-  optional string member_email = 4 [(buf.validate.field).ignore_empty = true];
+  optional string member_email = 4 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE];
   // Pagination parameters to limit and offset results
   OffsetPaginationRequest pagination = 5;
 }

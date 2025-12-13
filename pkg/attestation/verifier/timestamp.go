@@ -87,7 +87,7 @@ func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 				return fmt.Errorf("could not get verification material: %w", err)
 			}
 			// verify signing certificate issuing time
-			if vc != nil && vc.GetCertificate() != nil && !vc.ValidAtTime(ts.Time, nil) {
+			if vc != nil && vc.Certificate() != nil && !vc.ValidAtTime(ts.Time, nil) {
 				continue
 			}
 			verifiedTimestamps = append(verifiedTimestamps, ts)

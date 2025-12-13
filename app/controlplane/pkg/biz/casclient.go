@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"

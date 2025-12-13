@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	api "github.com/chainloop-dev/chainloop/pkg/credentials/api/credentials/v1"
 	"github.com/chainloop-dev/chainloop/pkg/credentials/aws"

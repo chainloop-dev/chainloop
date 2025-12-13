@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bufbuild/protoyaml-go"
+	"buf.build/go/protoyaml"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"

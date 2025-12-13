@@ -22,7 +22,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
-	"github.com/sigstore/cosign/v2/pkg/blob"
+	"github.com/sigstore/cosign/v3/pkg/blob"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

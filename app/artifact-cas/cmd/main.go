@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
@@ -145,7 +145,7 @@ func main() {
 	}
 }
 
-func newProtoValidator() (*protovalidate.Validator, error) {
+func newProtoValidator() (protovalidate.Validator, error) {
 	return protovalidate.New()
 }
 

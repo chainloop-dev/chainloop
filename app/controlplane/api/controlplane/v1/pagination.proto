@@ -33,7 +33,7 @@ message CursorPaginationRequest {
       gte: 1
       lte: 100
     },
-    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
 }
 

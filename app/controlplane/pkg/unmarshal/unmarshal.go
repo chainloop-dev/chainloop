@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
+	"buf.build/go/protovalidate"
+	"buf.build/go/protoyaml"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/bufbuild/protovalidate-go"
-	"github.com/bufbuild/protoyaml-go"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
@@ -45,8 +45,19 @@ func (RawFormat) Values() (kinds []string) {
 	return
 }
 
+// validatorAdapter adapts protovalidate.Validator to work with protoyaml.Validator.
+// protovalidate v1.1.0 changed the Validate signature to accept variadic options,
+// but protoyaml v0.6.0 expects the old signature without options.
+type validatorAdapter struct {
+	validator protovalidate.Validator
+}
+
+func (v *validatorAdapter) Validate(msg proto.Message) error {
+	return v.validator.Validate(msg)
+}
+
 func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) error {
-	var validator *protovalidate.Validator
+	var validator protovalidate.Validator
 	var err error
 
 	if doValidate {
@@ -65,7 +76,7 @@ func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) 
 		// protoyaml allows validating the contract while unmarshalling
 		yamlOpts := protoyaml.UnmarshalOptions{}
 		if doValidate {
-			yamlOpts.Validator = validator
+			yamlOpts.Validator = &validatorAdapter{validator: validator}
 		}
 
 		if err := yamlOpts.Unmarshal(body, out); err != nil {
