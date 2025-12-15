@@ -27,12 +27,12 @@ type Data struct {
 	Platform     string `json:"platform" jsonschema:"required,enum=github,enum=gitlab,description=The CI/CD platform"`
 	Type         string `json:"type" jsonschema:"required,enum=pull_request,enum=merge_request,description=The type of change request"`
 	Number       string `json:"number" jsonschema:"required,description=The PR/MR number or identifier"`
-	Title        string `json:"title,omitempty" jsonschema:"description=The PR/MR title"`
-	Description  string `json:"description,omitempty" jsonschema:"description=The PR/MR description or body"`
-	SourceBranch string `json:"source_branch,omitempty" jsonschema:"description=The source branch name"`
-	TargetBranch string `json:"target_branch,omitempty" jsonschema:"description=The target branch name"`
+	Title        string `json:"title" jsonschema:"description=The PR/MR title"`
+	Description  string `json:"description" jsonschema:"description=The PR/MR description or body"`
+	SourceBranch string `json:"source_branch" jsonschema:"description=The source branch name"`
+	TargetBranch string `json:"target_branch" jsonschema:"description=The target branch name"`
 	URL          string `json:"url" jsonschema:"required,format=uri,description=Direct URL to the PR/MR"`
-	Author       string `json:"author,omitempty" jsonschema:"description=Username of the PR/MR author"`
+	Author       string `json:"author" jsonschema:"description=Username of the PR/MR author"`
 }
 
 // Evidence represents the complete evidence structure for PR/MR metadata
