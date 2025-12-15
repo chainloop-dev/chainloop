@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemavalidators
+package prinfo
 
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -122,7 +124,7 @@ func TestValidatePRInfo(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = ValidatePRInfo(data, PRInfoVersion1_0)
+			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_0)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
