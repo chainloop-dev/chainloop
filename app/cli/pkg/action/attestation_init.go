@@ -234,7 +234,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	if !action.dryRun && attestationID != "" {
 		connectionCloserFn, err := getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
 		if err != nil {
-			// This should never happen in lenient mode, but handle it just in case
+			// We don't want to fail the attestation initialization if CAS setup fails, it's a best-effort feature for PR/MR metadata
 			action.Logger.Warn().Err(err).Msg("unexpected error getting CAS backend")
 		}
 		if connectionCloserFn != nil {
