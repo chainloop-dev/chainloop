@@ -238,6 +238,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			action.Logger.Warn().Err(err).Msg("unexpected error getting CAS backend")
 		}
 		if connectionCloserFn != nil {
+			// nolint: errcheck
 			defer connectionCloserFn()
 		}
 	}

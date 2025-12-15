@@ -104,6 +104,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 			return nil, fmt.Errorf("failed to get CAS backend: %w", getCASBackendErr)
 		}
 		if connectionCloserFn != nil {
+			// nolint: errcheck
 			defer connectionCloserFn()
 		}
 	}
