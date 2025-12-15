@@ -144,6 +144,8 @@ message CraftingSchema {
       SLSA_PROVENANCE = 24;
       // The Chainloop CLI plugin for runner context
       CHAINLOOP_RUNNER_CONTEXT = 25;
+      // Pull Request / Merge Request metadata collected automatically during attestation
+      CHAINLOOP_PR_INFO = 26;
     }
   }
 }
