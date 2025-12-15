@@ -48,7 +48,7 @@ func DetectPRContext(runner SupportedRunner) (bool, *PRMetadata, error) {
 		for _, err := range errs {
 			combinedErrs += (*err).Error() + "\n"
 		}
-		return false, nil, fmt.Errorf(combinedErrs)
+		return false, nil, fmt.Errorf("failed to resolve env vars: %s", combinedErrs)
 	}
 
 	switch runner.ID() {
