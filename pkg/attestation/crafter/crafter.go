@@ -17,6 +17,7 @@ package crafter
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -30,6 +31,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
+	"github.com/chainloop-dev/chainloop/internal/prinfo"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -469,6 +471,64 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
+	return nil
+}
+
+// AutoCollectPRMetadata automatically collects PR/MR metadata if running in a PR/MR context
+func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID string, runner SupportedRunner, casBackend *casclient.CASBackend) error {
+	// Detect if we're in a PR/MR context
+	isPR, metadata, err := DetectPRContext(runner)
+	if err != nil {
+		return fmt.Errorf("failed to detect PR/MR context: %w", err)
+	}
+
+	// If not in PR/MR context, nothing to do
+	if !isPR {
+		c.Logger.Debug().Msg("not in PR/MR context, skipping metadata collection")
+		return nil
+	}
+
+	c.Logger.Info().Str("platform", metadata.Platform).Str("number", metadata.Number).Msg("detected PR/MR context")
+
+	// Create the material
+	evidenceData := prinfo.NewEvidence(prinfo.Data{
+		Platform:     metadata.Platform,
+		Type:         metadata.Type,
+		Number:       metadata.Number,
+		Title:        metadata.Title,
+		Description:  metadata.Description,
+		SourceBranch: metadata.SourceBranch,
+		TargetBranch: metadata.TargetBranch,
+		URL:          metadata.URL,
+		Author:       metadata.Author,
+	})
+
+	// Marshal to JSON
+	jsonData, err := json.Marshal(evidenceData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal PR/MR metadata: %w", err)
+	}
+
+	// Create a temporary file for the metadata
+	tmpFile, err := os.CreateTemp("", "pr-metadata-*.json")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Write the JSON data to the temp file
+	if _, err := tmpFile.Write(jsonData); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to write metadata to temp file: %w", err)
+	}
+	tmpFile.Close()
+
+	// Add the material using the crafter with explicit CHAINLOOP_PR_INFO type
+	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), "pr-metadata", tmpFile.Name(), casBackend, nil); err != nil {
+		return fmt.Errorf("failed to add PR/MR metadata material: %w", err)
+	}
+
+	c.Logger.Info().Msg("successfully collected and attested PR/MR metadata")
 	return nil
 }
 
