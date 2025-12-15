@@ -418,6 +418,8 @@ export interface PolicyAttachment {
   with: { [key: string]: string };
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
+  /** If true, the policy will act as a gate, failing the attestation if the policy fails */
+  gate: boolean;
 }
 
 export interface PolicyAttachment_WithEntry {
@@ -1295,7 +1297,15 @@ export const Policies = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, embedded: undefined, selector: undefined, disabled: false, with: {}, requirements: [] };
+  return {
+    ref: undefined,
+    embedded: undefined,
+    selector: undefined,
+    disabled: false,
+    with: {},
+    requirements: [],
+    gate: false,
+  };
 }
 
 export const PolicyAttachment = {
@@ -1317,6 +1327,9 @@ export const PolicyAttachment = {
     });
     for (const v of message.requirements) {
       writer.uint32(50).string(v!);
+    }
+    if (message.gate === true) {
+      writer.uint32(56).bool(message.gate);
     }
     return writer;
   },
@@ -1373,6 +1386,13 @@ export const PolicyAttachment = {
 
           message.requirements.push(reader.string());
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1395,6 +1415,7 @@ export const PolicyAttachment = {
         }, {})
         : {},
       requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
+      gate: isSet(object.gate) ? Boolean(object.gate) : false,
     };
   },
 
@@ -1416,6 +1437,7 @@ export const PolicyAttachment = {
     } else {
       obj.requirements = [];
     }
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -1440,6 +1462,7 @@ export const PolicyAttachment = {
       return acc;
     }, {});
     message.requirements = object.requirements?.map((e) => e) || [];
+    message.gate = object.gate ?? false;
     return message;
   },
 };
