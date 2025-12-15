@@ -100,7 +100,6 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 }
 
 // getCASBackend tries to get CAS upload credentials and set up a CAS client
-// If strict is true, errors are returned; if false, warnings are logged and nil error is returned
 func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (func() error, error) {
 	credsResp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
 		WorkflowRunId: workflowRunID,
