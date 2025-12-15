@@ -269,6 +269,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		SkipReasons:  reasons,
 		Requirements: attachment.Requirements,
 		RawResults:   engineRawResultsToAPIRawResults(rawResults),
+		Gate:         attachment.GetGate(),
 	}, nil
 }
 

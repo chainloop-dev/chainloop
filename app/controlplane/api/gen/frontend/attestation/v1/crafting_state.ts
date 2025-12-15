@@ -283,6 +283,8 @@ export interface PolicyEvaluation {
   requirements: string[];
   /** Raw inputs and outputs from the policy engine, preserved for debugging. */
   rawResults: PolicyEvaluation_RawResult[];
+  /** Whether the policy evaluation result should block the attestation (inherited from the policy attachment) */
+  gate: boolean;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -2108,6 +2110,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     groupReference: undefined,
     requirements: [],
     rawResults: [],
+    gate: false,
   };
 }
 
@@ -2163,6 +2166,9 @@ export const PolicyEvaluation = {
     }
     for (const v of message.rawResults) {
       PolicyEvaluation_RawResult.encode(v!, writer.uint32(146).fork()).ldelim();
+    }
+    if (message.gate === true) {
+      writer.uint32(152).bool(message.gate);
     }
     return writer;
   },
@@ -2299,6 +2305,13 @@ export const PolicyEvaluation = {
 
           message.rawResults.push(PolicyEvaluation_RawResult.decode(reader, reader.uint32()));
           continue;
+        case 19:
+          if (tag !== 152) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2347,6 +2360,7 @@ export const PolicyEvaluation = {
       rawResults: Array.isArray(object?.rawResults)
         ? object.rawResults.map((e: any) => PolicyEvaluation_RawResult.fromJSON(e))
         : [],
+      gate: isSet(object.gate) ? Boolean(object.gate) : false,
     };
   },
 
@@ -2403,6 +2417,7 @@ export const PolicyEvaluation = {
     } else {
       obj.rawResults = [];
     }
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -2446,6 +2461,7 @@ export const PolicyEvaluation = {
       : undefined;
     message.requirements = object.requirements?.map((e) => e) || [];
     message.rawResults = object.rawResults?.map((e) => PolicyEvaluation_RawResult.fromPartial(e)) || [];
+    message.gate = object.gate ?? false;
     return message;
   },
 };

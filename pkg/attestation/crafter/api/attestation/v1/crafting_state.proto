@@ -257,6 +257,9 @@ message PolicyEvaluation {
   // Raw inputs and outputs from the policy engine, preserved for debugging.
   repeated RawResult raw_results = 18;
 
+  // Whether the policy evaluation result should block the attestation (inherited from the policy attachment)
+  bool gate = 19;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];

@@ -122,8 +122,20 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("failed to render output: %w", err)
 			}
 
-			// We do a final check to see if the attestation has policy violations
-			// and fail the command if needed
+			// Block if any of the policies has been configured as a gate
+			for _, evaluations := range res.Status.PolicyEvaluations {
+				for _, eval := range evaluations {
+					if len(eval.Violations) > 0 && eval.Gate {
+						if bypassPolicyCheck {
+							logger.Warn().Msg(exceptionBypassPolicyCheck)
+							continue
+						}
+						return fmt.Errorf("your contract requires the policy %q to pass before continuing", eval.Name)
+					}
+				}
+			}
+
+			// Do a final check in case the operator has configured the attestation to be blocked on any policy violation
 			if res.Status.MustBlockOnPolicyViolations {
 				if bypassPolicyCheck {
 					logger.Warn().Msg(exceptionBypassPolicyCheck)
