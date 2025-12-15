@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
 )
@@ -37,16 +38,22 @@ type AttestationInitOpts struct {
 	// Force the initialization and override any existing, in-progress ones.
 	// Note that this is only useful when local-based attestation state is configured
 	// since it's a protection to make sure you don't override the state by mistake
-	Force          bool
-	UseRemoteState bool
-	LocalStatePath string
+	Force              bool
+	UseRemoteState     bool
+	LocalStatePath     string
+	CASURI             string
+	CASCAPath          string // optional CA certificate for the CAS connection
+	ConnectionInsecure bool
 }
 
 type AttestationInit struct {
 	*ActionsOpts
-	dryRun, force  bool
-	c              *crafter.Crafter
-	useRemoteState bool
+	dryRun, force      bool
+	c                  *crafter.Crafter
+	useRemoteState     bool
+	casURI             string
+	casCAPath          string
+	connectionInsecure bool
 }
 
 // ErrAttestationAlreadyExist means that there is an attestation in progress
@@ -67,11 +74,14 @@ func NewAttestationInit(cfg *AttestationInitOpts) (*AttestationInit, error) {
 	}
 
 	return &AttestationInit{
-		ActionsOpts:    cfg.ActionsOpts,
-		c:              c,
-		dryRun:         cfg.DryRun,
-		force:          cfg.Force,
-		useRemoteState: cfg.UseRemoteState,
+		ActionsOpts:        cfg.ActionsOpts,
+		c:                  c,
+		dryRun:             cfg.DryRun,
+		force:              cfg.Force,
+		useRemoteState:     cfg.UseRemoteState,
+		casURI:             cfg.CASURI,
+		casCAPath:          cfg.CASCAPath,
+		connectionInsecure: cfg.ConnectionInsecure,
 	}, nil
 }
 
@@ -219,6 +229,20 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		attestationID = workflowRun.GetId()
 	}
 
+	// Get CAS credentials for PR metadata upload
+	var casBackend = &casclient.CASBackend{Name: "not-set"}
+	if !action.dryRun && attestationID != "" {
+		connectionCloserFn, err := getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		if err != nil {
+			// We don't want to fail the attestation initialization if CAS setup fails, it's a best-effort feature for PR/MR metadata
+			action.Logger.Warn().Err(err).Msg("unexpected error getting CAS backend")
+		}
+		if connectionCloserFn != nil {
+			// nolint: errcheck
+			defer connectionCloserFn()
+		}
+	}
+
 	var authInfo *clientAPI.Attestation_Auth
 	if action.AuthTokenRaw != "" {
 		authInfo, err = extractAuthInfo(action.AuthTokenRaw)
@@ -266,6 +290,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 		_ = action.c.Reset(ctx, attestationID)
 		return "", err
+	}
+
+	// Auto-collect PR/MR metadata if in PR/MR context
+	if err := action.c.AutoCollectPRMetadata(ctx, attestationID, discoveredRunner, casBackend); err != nil {
+		action.Logger.Warn().Err(err).Msg("failed to auto-collect PR/MR metadata")
+		// Don't fail the init - this is best-effort
 	}
 
 	return attestationID, nil

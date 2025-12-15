@@ -16,6 +16,7 @@
 package action
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +26,9 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/remote"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
+
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
@@ -93,4 +97,52 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 	attClient := pb.NewAttestationServiceClient(conn)
 
 	return crafter.NewCrafter(stateManager, attClient, opts...)
+}
+
+// getCASBackend tries to get CAS upload credentials and set up a CAS client
+func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (func() error, error) {
+	credsResp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
+		WorkflowRunId: workflowRunID,
+	})
+	if err != nil {
+		// Log warning but don't fail - will fall back to inline storage
+		logger.Warn().Err(err).Msg("failed to get CAS credentials for PR metadata, will store inline")
+		return nil, fmt.Errorf("getting upload creds: %w", err)
+	}
+
+	if credsResp == nil || credsResp.GetResult() == nil {
+		logger.Debug().Msg("no upload creds result, will store inline")
+		return nil, fmt.Errorf("getting upload creds: %w", err)
+	}
+
+	result := credsResp.GetResult()
+	backend := result.GetBackend()
+	if backend == nil {
+		logger.Debug().Msg("no backend info in upload creds, will store inline")
+		return nil, fmt.Errorf("no backend found in upload creds")
+	}
+
+	casBackend.Name = backend.Provider
+	if backend.GetLimits() != nil {
+		casBackend.MaxSize = backend.GetLimits().MaxBytes
+	}
+
+	// Only attempt to create a CAS connection when not inline and token is present
+	if backend.IsInline || result.Token == "" {
+		return nil, nil
+	}
+
+	opts := []grpcconn.Option{grpcconn.WithInsecure(casConnectionInsecure)}
+	if casCAPath != "" {
+		opts = append(opts, grpcconn.WithCAFile(casCAPath))
+	}
+
+	artifactCASConn, err := grpcconn.New(casURI, result.Token, opts...)
+	if err != nil {
+		logger.Warn().Err(err).Msg("failed to create CAS connection, will store inline")
+		return nil, fmt.Errorf("creating CAS connection: %w", err)
+	}
+
+	casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(logger))
+	return artifactCASConn.Close, nil
 }
