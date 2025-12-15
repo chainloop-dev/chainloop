@@ -28,7 +28,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
-	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
 )
@@ -233,38 +232,13 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	// Get CAS credentials for PR metadata upload
 	var casBackend = &casclient.CASBackend{Name: "not-set"}
 	if !action.dryRun && attestationID != "" {
-		creds, err := client.GetUploadCreds(ctx,
-			&pb.AttestationServiceGetUploadCredsRequest{
-				WorkflowRunId: attestationID,
-			},
-		)
+		connectionCloserFn, err := getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
 		if err != nil {
-			// Log warning but don't fail - will fall back to inline storage
-			action.Logger.Warn().Err(err).Msg("failed to get CAS credentials for PR metadata, will store inline")
-		} else {
-			b := creds.GetResult().GetBackend()
-			if b != nil {
-				casBackend.Name = b.Provider
-				casBackend.MaxSize = b.GetLimits().MaxBytes
-
-				// Set up CAS connection if not inline
-				if !b.IsInline && creds.Result.Token != "" {
-					var opts = []grpcconn.Option{
-						grpcconn.WithInsecure(action.connectionInsecure),
-					}
-					if action.casCAPath != "" {
-						opts = append(opts, grpcconn.WithCAFile(action.casCAPath))
-					}
-
-					artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
-					if err != nil {
-						action.Logger.Warn().Err(err).Msg("failed to create CAS connection, will store inline")
-					} else {
-						defer artifactCASConn.Close()
-						casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
-					}
-				}
-			}
+			// This should never happen in lenient mode, but handle it just in case
+			action.Logger.Warn().Err(err).Msg("unexpected error getting CAS backend")
+		}
+		if connectionCloserFn != nil {
+			defer connectionCloserFn()
 		}
 	}
 
