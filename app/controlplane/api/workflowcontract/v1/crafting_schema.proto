@@ -171,6 +171,10 @@ message CraftingSchemaV2Spec {
   Policies policies = 4;
   // Policy groups to apply to this contract
   repeated PolicyGroupAttachment policy_groups = 5;
+  // List of annotations that can be used to add metadata to the attestation
+  // this metadata can be used later on by the integrations engine to filter and interpolate data
+  // It works in addition to the annotations defined in the materials and the runner
+  repeated Annotation annotations = 6;
 }
 
 message Annotation {
