@@ -3,12 +3,16 @@ kind: "Contract"
 metadata: {
 	name: "contract"
 	description: "Comprehensive contract for Skynet project in CUE format"
-	// Arbitrary set of annotations can be added to the contract and will be part of the attestation
-	annotations: {
-		version: "oss" // if the value is left empty, it will be required and resolved at attestation time
-	}
 }
 spec: {
+	// Arbitrary set of annotations can be added to the contract and will be part of the attestation
+	annotations: [
+		{
+			name:  "version"
+			value: "oss" // if the value is left empty, it will be required and resolved at attestation time
+		},
+	]
+
 	// Three required and one optional materials of three different kinds
 	// The output flag indicates that the material will be part of the attestation subject
 	materials: [
