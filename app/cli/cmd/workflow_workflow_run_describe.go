@@ -268,7 +268,11 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
 			msg = strings.Join(violations, prefix)
 		}
 
-		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", ev.Name, msg)})
+		name := ev.Name
+		if ev.Gate {
+			name = fmt.Sprintf("%s (gate)", ev.Name)
+		}
+		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", name, msg)})
 	}
 }
 
