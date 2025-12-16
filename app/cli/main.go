@@ -78,6 +78,8 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		}
 	}
 
+	var gateErr *cmd.GateError
+	
 	// Make overrides
 	switch {
 	case v1.IsCasBackendErrorReasonRequired(err):
@@ -101,6 +103,9 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	case errors.Is(err, cmd.ErrBlockedByPolicyViolation):
 		// default exit code for policy violations
 		exitCode = 3
+	case errors.As(err, &gateErr):
+		// exit code for gate errors
+		exitCode = 4
 	}
 
 	return msg, exitCode

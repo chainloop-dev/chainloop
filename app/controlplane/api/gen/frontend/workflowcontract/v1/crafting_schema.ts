@@ -425,7 +425,7 @@ export interface PolicyAttachment {
   with: { [key: string]: string };
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
-  /** If true, the policy will act as a gate, failing the attestation if the policy fails */
+  /** If true, the policy will act as a gate, returning an error code if the policy fails */
   gate: boolean;
 }
 

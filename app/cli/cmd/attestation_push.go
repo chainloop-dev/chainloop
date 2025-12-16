@@ -130,7 +130,7 @@ func newAttestationPushCmd() *cobra.Command {
 							logger.Warn().Msg(exceptionBypassPolicyCheck)
 							continue
 						}
-						return fmt.Errorf("your contract requires the policy %q to pass before continuing", eval.Name)
+						return NewGateError(eval.Name)
 					}
 				}
 			}
@@ -170,3 +170,15 @@ var (
 	ErrBlockedByPolicyViolation = fmt.Errorf("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --%s", exceptionFlagName)
 	exceptionBypassPolicyCheck  = fmt.Sprintf("Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --%s as soon as possible.", exceptionFlagName)
 )
+
+type GateError struct {
+	PolicyName string
+}
+
+func NewGateError(policyName string) error {
+	return &GateError{PolicyName: policyName}
+}
+
+func (e *GateError) Error() string {
+	return fmt.Sprintf("the policy %q is configured as a gate and has violations", e.PolicyName)
+}

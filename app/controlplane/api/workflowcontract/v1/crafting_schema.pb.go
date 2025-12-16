@@ -661,7 +661,7 @@ type PolicyAttachment struct {
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
-	// If true, the policy will act as a gate, failing the attestation if the policy fails
+	// If true, the policy will act as a gate, returning an error code if the policy fails
 	Gate bool `protobuf:"varint,7,opt,name=gate,proto3" json:"gate,omitempty"`
 }
 

@@ -13,7 +13,7 @@
       "description": "meant to be used to embed the policy in the contract"
     },
     "gate": {
-      "description": "If true, the policy will act as a gate, failing the attestation if the policy fails",
+      "description": "If true, the policy will act as a gate, returning an error code if the policy fails",
       "type": "boolean"
     },
     "ref": {
