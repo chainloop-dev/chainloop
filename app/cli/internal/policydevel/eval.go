@@ -70,7 +70,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	}
 
 	// 2. Craft material with annotations
-	material, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
+	material, err := CraftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,9 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	return summary, nil
 }
 
-func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
+// CraftMaterial creates an attestation material from a file path, with optional explicit kind or auto-detection.
+// This is a shared utility function used by both policy eval and policy devel eval commands.
+func CraftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
 	backend := &casclient.CASBackend{
 		Name:     "backend",
 		MaxSize:  0,

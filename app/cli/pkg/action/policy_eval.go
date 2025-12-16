@@ -19,11 +19,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/policydevel"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	attestationapi "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
-	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 )
 
@@ -107,7 +106,7 @@ func (action *PolicyEvaluate) Run(ctx context.Context) (*attestationapi.PolicyEv
 	// 5. Evaluate: either material-based or generic
 	if action.opts.MaterialPath != "" {
 		// Material-based evaluation
-		material, err := action.craftMaterial(ctx)
+		material, err := policydevel.CraftMaterial(action.opts.MaterialPath, action.opts.Kind, &action.Logger)
 		if err != nil {
 			return nil, fmt.Errorf("crafting material: %w", err)
 		}
@@ -136,44 +135,4 @@ func (action *PolicyEvaluate) Run(ctx context.Context) (*attestationapi.PolicyEv
 	}
 
 	return policyEv, nil
-}
-
-func (action *PolicyEvaluate) craftMaterial(ctx context.Context) (*attestationapi.Attestation_Material, error) {
-	backend := &casclient.CASBackend{
-		Name:     "backend",
-		MaxSize:  0,
-		Uploader: nil, // Skip uploads
-	}
-
-	// Explicit kind
-	if action.opts.Kind != "" {
-		kind, ok := schemaapi.CraftingSchema_Material_MaterialType_value[action.opts.Kind]
-		if !ok {
-			return nil, fmt.Errorf("invalid material kind: %s", action.opts.Kind)
-		}
-		return action.craft(ctx, schemaapi.CraftingSchema_Material_MaterialType(kind), "material", backend)
-	}
-
-	// Auto-detect kind
-	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
-		m, err := action.craft(ctx, kind, "auto-detected-material", backend)
-		if err == nil {
-			return m, nil
-		}
-	}
-
-	return nil, fmt.Errorf("could not auto-detect material kind for: %s", action.opts.MaterialPath)
-}
-
-func (action *PolicyEvaluate) craft(ctx context.Context, kind schemaapi.CraftingSchema_Material_MaterialType, name string, backend *casclient.CASBackend) (*attestationapi.Attestation_Material, error) {
-	materialSchema := &schemaapi.CraftingSchema_Material{
-		Type: kind,
-		Name: name,
-	}
-
-	m, err := materials.Craft(ctx, materialSchema, action.opts.MaterialPath, backend, nil, &action.Logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to craft material (kind=%s): %w", kind.String(), err)
-	}
-	return m, nil
 }

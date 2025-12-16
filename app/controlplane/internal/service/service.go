@@ -60,7 +60,6 @@ var ProviderSet = wire.NewSet(
 	NewPrometheusService,
 	NewGroupService,
 	NewProjectService,
-	NewPolicyEvaluationService,
 	wire.Struct(new(NewWorkflowRunServiceOpts), "*"),
 	wire.Struct(new(NewAttestationServiceOpts), "*"),
 	wire.Struct(new(NewAttestationStateServiceOpt), "*"),
