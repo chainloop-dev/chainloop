@@ -79,7 +79,7 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	}
 
 	var gateErr *cmd.GateError
-	
+
 	// Make overrides
 	switch {
 	case v1.IsCasBackendErrorReasonRequired(err):
