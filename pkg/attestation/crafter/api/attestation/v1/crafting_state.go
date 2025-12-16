@@ -304,15 +304,7 @@ func (state *CraftingState) GetAnnotations() []*v1.Annotation {
 	case *CraftingState_InputSchema:
 		return schema.InputSchema.GetAnnotations()
 	case *CraftingState_SchemaV2:
-		annotations := schema.SchemaV2.GetMetadata().GetAnnotations()
-		result := make([]*v1.Annotation, 0, len(annotations))
-		for name, value := range annotations {
-			result = append(result, &v1.Annotation{
-				Name:  name,
-				Value: value,
-			})
-		}
-		return result
+		return schema.SchemaV2.GetSpec().GetAnnotations()
 	default:
 		return nil
 	}

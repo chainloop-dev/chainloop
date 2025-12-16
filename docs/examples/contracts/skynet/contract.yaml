@@ -3,10 +3,12 @@ kind: Contract
 metadata:
   name: contract
   description: Comprehensive contract for Skynet project
+spec:
   # Arbitrary set of annotations can be added to the contract and will be part of the attestation
   annotations:
-    version: oss # if the value is left empty, it will be required and resolved at attestation time
-spec:
+    - name: version
+      value: oss # if the value is left empty, it will be required and resolved at attestation time
+  
   # https://docs.chainloop.dev/reference/operator/material-types
   materials:
     # CONTAINER_IMAGE kinds will get resolved to retrieve their repository digest

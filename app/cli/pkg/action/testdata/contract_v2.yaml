@@ -3,10 +3,12 @@ kind: Contract
 metadata:
   name: test-contract-v2
   description: Test contract in V2 format
-  annotations:
-    version: "1.0.0"
-    team: test-team
 spec:
+  annotations:
+    - name: version
+      value: "1.0.0"
+    - name: team
+      value: test-team
   materials:
     - type: CONTAINER_IMAGE
       name: skynet-control-plane
