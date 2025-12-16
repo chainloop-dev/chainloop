@@ -132,7 +132,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		}
 
 		if !membership.Role.IsAdmin() {
-			return nil, errors.Forbidden("forbidden", "only organization admins can create contracts")
+			return nil, errors.Forbidden("forbidden", "contract creation is restricted to organization administrators. Please contact your administrator")
 		}
 	}
 

@@ -120,7 +120,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 				if ent.IsNotFound(err) {
 					// Check if contract creation is restricted to org admins
 					if opts.OrgRestrictContractCreationToAdmins && !opts.UserIsOrgAdmin {
-						return biz.NewErrUnauthorizedStr("only organization admins can create contracts")
+						return biz.NewErrUnauthorizedStr("contract creation is restricted to organization administrators. Please use existing contracts or contact your administrator")
 					}
 
 					// Create a new contract associated with the workflow
