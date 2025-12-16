@@ -36,7 +36,7 @@ func newPolicyEvalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "eval",
 		Short: "Evaluate a policy",
-		Long: `Evaluate a policy.
+		Long: `Evaluate a policy with organization settings.
 
 This command uses organization context to evaluate policies.
 
