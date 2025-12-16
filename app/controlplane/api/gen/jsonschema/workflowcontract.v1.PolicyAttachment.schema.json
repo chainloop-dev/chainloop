@@ -12,6 +12,10 @@
       "$ref": "workflowcontract.v1.Policy.schema.json",
       "description": "meant to be used to embed the policy in the contract"
     },
+    "gate": {
+      "description": "If true, the policy will act as a gate, returning an error code if the policy fails",
+      "type": "boolean"
+    },
     "ref": {
       "description": "policy reference, it might be in URI format.",
       "minLength": 1,

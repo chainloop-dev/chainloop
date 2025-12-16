@@ -122,8 +122,20 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("failed to render output: %w", err)
 			}
 
-			// We do a final check to see if the attestation has policy violations
-			// and fail the command if needed
+			// Block if any of the policies has been configured as a gate
+			for _, evaluations := range res.Status.PolicyEvaluations {
+				for _, eval := range evaluations {
+					if len(eval.Violations) > 0 && eval.Gate {
+						if bypassPolicyCheck {
+							logger.Warn().Msg(exceptionBypassPolicyCheck)
+							continue
+						}
+						return NewGateError(eval.Name)
+					}
+				}
+			}
+
+			// Do a final check in case the operator has configured the attestation to be blocked on any policy violation
 			if res.Status.MustBlockOnPolicyViolations {
 				if bypassPolicyCheck {
 					logger.Warn().Msg(exceptionBypassPolicyCheck)
@@ -158,3 +170,15 @@ var (
 	ErrBlockedByPolicyViolation = fmt.Errorf("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --%s", exceptionFlagName)
 	exceptionBypassPolicyCheck  = fmt.Sprintf("Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --%s as soon as possible.", exceptionFlagName)
 )
+
+type GateError struct {
+	PolicyName string
+}
+
+func NewGateError(policyName string) error {
+	return &GateError{PolicyName: policyName}
+}
+
+func (e *GateError) Error() string {
+	return fmt.Sprintf("the policy %q is configured as a gate and has violations", e.PolicyName)
+}

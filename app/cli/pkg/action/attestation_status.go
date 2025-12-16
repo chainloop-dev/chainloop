@@ -158,10 +158,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 			return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 		}
 
-		res.PolicyEvaluations, res.HasPolicyViolations, err = getPolicyEvaluations(c)
-		if err != nil {
-			return nil, fmt.Errorf("getting policy evaluations: %w", err)
-		}
+		res.PolicyEvaluations, res.HasPolicyViolations = getPolicyEvaluations(c)
 	}
 
 	if v := workflowMeta.GetVersion(); v != nil {
@@ -211,7 +208,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
-func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool, error) {
+func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
 	var hasViolations bool
@@ -234,7 +231,7 @@ func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, b
 		}
 	}
 
-	return evaluations, hasViolations, nil
+	return evaluations, hasViolations
 }
 
 // populateMaterials populates the materials in the attestation result regardless of where they are defined
@@ -415,5 +412,6 @@ func policyEvaluationStateToActionForStatus(in *v1.PolicyEvaluation) *PolicyEval
 		Violations:      violations,
 		Skipped:         in.Skipped,
 		SkipReasons:     in.SkipReasons,
+		Gate:            in.Gate,
 	}
 }

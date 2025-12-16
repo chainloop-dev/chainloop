@@ -104,6 +104,7 @@ type PolicyEvaluation struct {
 	Type            string             `json:"type"`
 	Skipped         bool               `json:"skipped"`
 	SkipReasons     []string           `json:"skip_reasons,omitempty"`
+	Gate            bool               `json:"gate,omitempty"`
 }
 
 type PolicyViolation struct {

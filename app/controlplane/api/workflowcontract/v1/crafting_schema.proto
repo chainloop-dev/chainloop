@@ -233,6 +233,9 @@ message PolicyAttachment {
     }
   }];
 
+  // If true, the policy will act as a gate, returning an error code if the policy fails
+  bool gate = 7;
+
   message MaterialSelector {
     // material name
     string name = 1;

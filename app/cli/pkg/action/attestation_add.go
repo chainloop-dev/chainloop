@@ -173,11 +173,7 @@ func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestat
 		return nil, err
 	}
 
-	policyEvaluations, _, err := getPolicyEvaluations(crafter)
-
-	if err != nil {
-		return nil, fmt.Errorf("getting policy evaluations: %w", err)
-	}
+	policyEvaluations, _ := getPolicyEvaluations(crafter)
 
 	return policyEvaluations, nil
 }
