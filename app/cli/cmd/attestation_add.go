@@ -132,7 +132,7 @@ func newAttestationAddCmd() *cobra.Command {
 							if len(eval.Violations) > 0 && eval.Gate {
 								if !skipPushOnGateFailure {
 									// Auto-push incomplete attestation
-									logger.Info().Msgf("Gated policy %q failed during material add, pushing attesstation", eval.Name)
+									logger.Info().Msgf("Gated policy %q failed during material add, pushing attestation", eval.Name)
 
 									if err := a.PushIncompleteAttestation(cmd.Context(), attestationID); err != nil {
 										return fmt.Errorf("failed to auto-push: %w", err)
