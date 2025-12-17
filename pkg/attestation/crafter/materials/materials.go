@@ -24,8 +24,8 @@ import (
 	"os"
 	"time"
 
-	"code.cloudfoundry.org/bytefmt"
 	"buf.build/go/protovalidate"
+	"code.cloudfoundry.org/bytefmt"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
