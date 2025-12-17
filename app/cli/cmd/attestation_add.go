@@ -137,8 +137,6 @@ func newAttestationAddCmd() *cobra.Command {
 									if err := a.PushIncompleteAttestation(cmd.Context(), attestationID); err != nil {
 										return fmt.Errorf("failed to auto-push: %w", err)
 									}
-
-									logger.Info().Msg("push completed")
 								}
 								return NewGateError(eval.Name)
 							}
