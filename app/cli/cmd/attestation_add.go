@@ -119,9 +119,22 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					return output.EncodeOutput(flagOutputFormat, resp, func(s *action.AttestationStatusMaterial) error {
+					if err := output.EncodeOutput(flagOutputFormat, resp, func(s *action.AttestationStatusMaterial) error {
 						return displayMaterialInfo(s, policies[resp.Name])
-					})
+					}); err != nil {
+						return err
+					}
+
+					// Check for gated policy violations
+					for _, evaluations := range policies {
+						for _, eval := range evaluations {
+							if len(eval.Violations) > 0 && eval.Gate {
+								return NewGateError(eval.Name)
+							}
+						}
+					}
+
+					return nil
 				},
 			)
 		},
