@@ -38,7 +38,7 @@ func newAttestationAddCmd() *cobra.Command {
 	var name, value, kind string
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
-	var skipPushOnGateFailure bool
+	var bypassPolicyCheck bool
 
 	// OCI registry credentials can be passed as flags or environment variables
 	var registryServer, registryUsername, registryPassword string
@@ -130,7 +130,7 @@ func newAttestationAddCmd() *cobra.Command {
 					for _, evaluations := range policies {
 						for _, eval := range evaluations {
 							if len(eval.Violations) > 0 && eval.Gate {
-								if !skipPushOnGateFailure {
+								if !bypassPolicyCheck {
 									// Auto-push incomplete attestation
 									logger.Info().Msgf("Gated policy %q failed during material add, pushing attestation", eval.Name)
 
@@ -164,7 +164,7 @@ func newAttestationAddCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
-	cmd.Flags().BoolVar(&skipPushOnGateFailure, "skip-push-on-gate-failure", false, "do not push attestation when a gated policy fails")
+	cmd.Flags().BoolVar(&bypassPolicyCheck, exceptionFlagName, false, "do not push attestation when a gated policy fails")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
