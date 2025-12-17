@@ -38,8 +38,9 @@ type AttestationPushOpts struct {
 	*ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
-	LocalStatePath string
-	SignServerOpts *SignServerOpts
+	LocalStatePath      string
+	SignServerOpts      *SignServerOpts
+	ValidateAttestation bool
 }
 
 // SignServerOpts holds SignServer integration options
@@ -60,6 +61,7 @@ type AttestationPush struct {
 	*ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
 	localStatePath                             string
+	validateAttestation                        bool
 	signServerOpts                             *SignServerOpts
 	*newCrafterOpts
 }
@@ -67,14 +69,15 @@ type AttestationPush struct {
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger), crafter.WithAuthRawToken(cfg.AuthTokenRaw)}
 	return &AttestationPush{
-		ActionsOpts:    cfg.ActionsOpts,
-		keyPath:        cfg.KeyPath,
-		cliVersion:     cfg.CLIVersion,
-		cliDigest:      cfg.CLIDigest,
-		bundlePath:     cfg.BundlePath,
-		signServerOpts: cfg.SignServerOpts,
-		localStatePath: cfg.LocalStatePath,
-		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
+		ActionsOpts:         cfg.ActionsOpts,
+		keyPath:             cfg.KeyPath,
+		cliVersion:          cfg.CLIVersion,
+		cliDigest:           cfg.CLIDigest,
+		bundlePath:          cfg.BundlePath,
+		signServerOpts:      cfg.SignServerOpts,
+		localStatePath:      cfg.LocalStatePath,
+		validateAttestation: cfg.ValidateAttestation,
+		newCrafterOpts:      &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 	}, nil
 }
 
@@ -145,11 +148,13 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Set the annotations
 	crafter.CraftingState.Attestation.Annotations = craftedAnnotations
 
-	if err := crafter.ValidateAttestation(); err != nil {
-		return nil, err
-	}
+	if action.validateAttestation {
+		if err := crafter.ValidateAttestation(); err != nil {
+			return nil, err
+		}
 
-	action.Logger.Debug().Msg("validation completed")
+		action.Logger.Debug().Msg("validation completed")
+	}
 
 	// Update status annotations
 	finalAnnotations := make([]*Annotation, 0, len(craftedAnnotations))

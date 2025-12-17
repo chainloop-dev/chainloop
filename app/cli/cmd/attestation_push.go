@@ -76,6 +76,7 @@ func newAttestationPushCmd() *cobra.Command {
 					AuthClientCertPath: signServerAuthCertPath,
 					AuthClientCertPass: signServerAuthCertPass,
 				},
+				ValidateAttestation: true, // Always validate on push
 			})
 			if err != nil {
 				return fmt.Errorf("failed to load action: %w", err)

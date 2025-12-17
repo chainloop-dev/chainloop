@@ -177,3 +177,24 @@ func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestat
 
 	return policyEvaluations, nil
 }
+
+// PushIncompleteAttestation pushes an incomplete attestation to the control plane
+func (action *AttestationAdd) PushIncompleteAttestation(ctx context.Context, attestationID string) error {
+	pushAction, err := NewAttestationPush(&AttestationPushOpts{
+		ActionsOpts:         action.ActionsOpts,
+		KeyPath:             "", // Keyless mode only
+		LocalStatePath:      action.localStatePath,
+		ValidateAttestation: false, // Skip validation, attestation might be incomplete
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create push action: %w", err)
+	}
+
+	// Execute push with bypass enabled to skip policy checks
+	_, err = pushAction.Run(ctx, attestationID, nil, true)
+	if err != nil {
+		return fmt.Errorf("failed to auto-push incomplete attestation: %w", err)
+	}
+
+	return nil
+}
