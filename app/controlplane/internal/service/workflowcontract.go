@@ -121,17 +121,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 
 	// If setting is enabled, only org admins can create contracts (org-level or project-level)
 	if org.RestrictContractCreationToOrgAdmins {
-		currentUser, err := requireCurrentUser(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		membership, err := s.userUC.MembershipInOrg(ctx, currentUser.ID, currentOrg.Name)
-		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
-		}
-
-		if !membership.Role.IsAdmin() {
+		if !isUserOrgAdmin(ctx) {
 			return nil, errors.Forbidden("forbidden", "contract creation is restricted to organization administrators. Please contact your administrator")
 		}
 	}
