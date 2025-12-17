@@ -71,7 +71,7 @@ func (*Attestation) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Attestation fields.
-func (a *Attestation) assignValues(columns []string, values []any) error {
+func (_m *Attestation) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -81,28 +81,28 @@ func (a *Attestation) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				a.ID = *value
+				_m.ID = *value
 			}
 		case attestation.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				a.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case attestation.FieldBundle:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field bundle", values[i])
 			} else if value != nil {
-				a.Bundle = *value
+				_m.Bundle = *value
 			}
 		case attestation.FieldWorkflowrunID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field workflowrun_id", values[i])
 			} else if value != nil {
-				a.WorkflowrunID = *value
+				_m.WorkflowrunID = *value
 			}
 		default:
-			a.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -110,46 +110,46 @@ func (a *Attestation) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Attestation.
 // This includes values selected through modifiers, order, etc.
-func (a *Attestation) Value(name string) (ent.Value, error) {
-	return a.selectValues.Get(name)
+func (_m *Attestation) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryWorkflowrun queries the "workflowrun" edge of the Attestation entity.
-func (a *Attestation) QueryWorkflowrun() *WorkflowRunQuery {
-	return NewAttestationClient(a.config).QueryWorkflowrun(a)
+func (_m *Attestation) QueryWorkflowrun() *WorkflowRunQuery {
+	return NewAttestationClient(_m.config).QueryWorkflowrun(_m)
 }
 
 // Update returns a builder for updating this Attestation.
 // Note that you need to call Attestation.Unwrap() before calling this method if this Attestation
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (a *Attestation) Update() *AttestationUpdateOne {
-	return NewAttestationClient(a.config).UpdateOne(a)
+func (_m *Attestation) Update() *AttestationUpdateOne {
+	return NewAttestationClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Attestation entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (a *Attestation) Unwrap() *Attestation {
-	_tx, ok := a.config.driver.(*txDriver)
+func (_m *Attestation) Unwrap() *Attestation {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Attestation is not a transactional entity")
 	}
-	a.config.driver = _tx.drv
-	return a
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (a *Attestation) String() string {
+func (_m *Attestation) String() string {
 	var builder strings.Builder
 	builder.WriteString("Attestation(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("bundle=")
-	builder.WriteString(fmt.Sprintf("%v", a.Bundle))
+	builder.WriteString(fmt.Sprintf("%v", _m.Bundle))
 	builder.WriteString(", ")
 	builder.WriteString("workflowrun_id=")
-	builder.WriteString(fmt.Sprintf("%v", a.WorkflowrunID))
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowrunID))
 	builder.WriteByte(')')
 	return builder.String()
 }

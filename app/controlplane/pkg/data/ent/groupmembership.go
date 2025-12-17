@@ -91,7 +91,7 @@ func (*GroupMembership) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the GroupMembership fields.
-func (gm *GroupMembership) assignValues(columns []string, values []any) error {
+func (_m *GroupMembership) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -101,46 +101,46 @@ func (gm *GroupMembership) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				gm.ID = *value
+				_m.ID = *value
 			}
 		case groupmembership.FieldGroupID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field group_id", values[i])
 			} else if value != nil {
-				gm.GroupID = *value
+				_m.GroupID = *value
 			}
 		case groupmembership.FieldUserID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
 			} else if value != nil {
-				gm.UserID = *value
+				_m.UserID = *value
 			}
 		case groupmembership.FieldMaintainer:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field maintainer", values[i])
 			} else if value.Valid {
-				gm.Maintainer = value.Bool
+				_m.Maintainer = value.Bool
 			}
 		case groupmembership.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				gm.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case groupmembership.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				gm.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case groupmembership.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				gm.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		default:
-			gm.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -148,60 +148,60 @@ func (gm *GroupMembership) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the GroupMembership.
 // This includes values selected through modifiers, order, etc.
-func (gm *GroupMembership) Value(name string) (ent.Value, error) {
-	return gm.selectValues.Get(name)
+func (_m *GroupMembership) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryGroup queries the "group" edge of the GroupMembership entity.
-func (gm *GroupMembership) QueryGroup() *GroupQuery {
-	return NewGroupMembershipClient(gm.config).QueryGroup(gm)
+func (_m *GroupMembership) QueryGroup() *GroupQuery {
+	return NewGroupMembershipClient(_m.config).QueryGroup(_m)
 }
 
 // QueryUser queries the "user" edge of the GroupMembership entity.
-func (gm *GroupMembership) QueryUser() *UserQuery {
-	return NewGroupMembershipClient(gm.config).QueryUser(gm)
+func (_m *GroupMembership) QueryUser() *UserQuery {
+	return NewGroupMembershipClient(_m.config).QueryUser(_m)
 }
 
 // Update returns a builder for updating this GroupMembership.
 // Note that you need to call GroupMembership.Unwrap() before calling this method if this GroupMembership
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (gm *GroupMembership) Update() *GroupMembershipUpdateOne {
-	return NewGroupMembershipClient(gm.config).UpdateOne(gm)
+func (_m *GroupMembership) Update() *GroupMembershipUpdateOne {
+	return NewGroupMembershipClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the GroupMembership entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (gm *GroupMembership) Unwrap() *GroupMembership {
-	_tx, ok := gm.config.driver.(*txDriver)
+func (_m *GroupMembership) Unwrap() *GroupMembership {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: GroupMembership is not a transactional entity")
 	}
-	gm.config.driver = _tx.drv
-	return gm
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (gm *GroupMembership) String() string {
+func (_m *GroupMembership) String() string {
 	var builder strings.Builder
 	builder.WriteString("GroupMembership(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", gm.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("group_id=")
-	builder.WriteString(fmt.Sprintf("%v", gm.GroupID))
+	builder.WriteString(fmt.Sprintf("%v", _m.GroupID))
 	builder.WriteString(", ")
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", gm.UserID))
+	builder.WriteString(fmt.Sprintf("%v", _m.UserID))
 	builder.WriteString(", ")
 	builder.WriteString("maintainer=")
-	builder.WriteString(fmt.Sprintf("%v", gm.Maintainer))
+	builder.WriteString(fmt.Sprintf("%v", _m.Maintainer))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(gm.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(gm.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(gm.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

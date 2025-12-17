@@ -32,421 +32,421 @@ type WorkflowUpdate struct {
 }
 
 // Where appends a list predicates to the WorkflowUpdate builder.
-func (wu *WorkflowUpdate) Where(ps ...predicate.Workflow) *WorkflowUpdate {
-	wu.mutation.Where(ps...)
-	return wu
+func (_u *WorkflowUpdate) Where(ps ...predicate.Workflow) *WorkflowUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetProjectOld sets the "project_old" field.
-func (wu *WorkflowUpdate) SetProjectOld(s string) *WorkflowUpdate {
-	wu.mutation.SetProjectOld(s)
-	return wu
+func (_u *WorkflowUpdate) SetProjectOld(v string) *WorkflowUpdate {
+	_u.mutation.SetProjectOld(v)
+	return _u
 }
 
 // SetNillableProjectOld sets the "project_old" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableProjectOld(s *string) *WorkflowUpdate {
-	if s != nil {
-		wu.SetProjectOld(*s)
+func (_u *WorkflowUpdate) SetNillableProjectOld(v *string) *WorkflowUpdate {
+	if v != nil {
+		_u.SetProjectOld(*v)
 	}
-	return wu
+	return _u
 }
 
 // ClearProjectOld clears the value of the "project_old" field.
-func (wu *WorkflowUpdate) ClearProjectOld() *WorkflowUpdate {
-	wu.mutation.ClearProjectOld()
-	return wu
+func (_u *WorkflowUpdate) ClearProjectOld() *WorkflowUpdate {
+	_u.mutation.ClearProjectOld()
+	return _u
 }
 
 // SetTeam sets the "team" field.
-func (wu *WorkflowUpdate) SetTeam(s string) *WorkflowUpdate {
-	wu.mutation.SetTeam(s)
-	return wu
+func (_u *WorkflowUpdate) SetTeam(v string) *WorkflowUpdate {
+	_u.mutation.SetTeam(v)
+	return _u
 }
 
 // SetNillableTeam sets the "team" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableTeam(s *string) *WorkflowUpdate {
-	if s != nil {
-		wu.SetTeam(*s)
+func (_u *WorkflowUpdate) SetNillableTeam(v *string) *WorkflowUpdate {
+	if v != nil {
+		_u.SetTeam(*v)
 	}
-	return wu
+	return _u
 }
 
 // ClearTeam clears the value of the "team" field.
-func (wu *WorkflowUpdate) ClearTeam() *WorkflowUpdate {
-	wu.mutation.ClearTeam()
-	return wu
+func (_u *WorkflowUpdate) ClearTeam() *WorkflowUpdate {
+	_u.mutation.ClearTeam()
+	return _u
 }
 
 // SetRunsCount sets the "runs_count" field.
-func (wu *WorkflowUpdate) SetRunsCount(i int) *WorkflowUpdate {
-	wu.mutation.ResetRunsCount()
-	wu.mutation.SetRunsCount(i)
-	return wu
+func (_u *WorkflowUpdate) SetRunsCount(v int) *WorkflowUpdate {
+	_u.mutation.ResetRunsCount()
+	_u.mutation.SetRunsCount(v)
+	return _u
 }
 
 // SetNillableRunsCount sets the "runs_count" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableRunsCount(i *int) *WorkflowUpdate {
-	if i != nil {
-		wu.SetRunsCount(*i)
+func (_u *WorkflowUpdate) SetNillableRunsCount(v *int) *WorkflowUpdate {
+	if v != nil {
+		_u.SetRunsCount(*v)
 	}
-	return wu
+	return _u
 }
 
-// AddRunsCount adds i to the "runs_count" field.
-func (wu *WorkflowUpdate) AddRunsCount(i int) *WorkflowUpdate {
-	wu.mutation.AddRunsCount(i)
-	return wu
+// AddRunsCount adds value to the "runs_count" field.
+func (_u *WorkflowUpdate) AddRunsCount(v int) *WorkflowUpdate {
+	_u.mutation.AddRunsCount(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (wu *WorkflowUpdate) SetUpdatedAt(t time.Time) *WorkflowUpdate {
-	wu.mutation.SetUpdatedAt(t)
-	return wu
+func (_u *WorkflowUpdate) SetUpdatedAt(v time.Time) *WorkflowUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableUpdatedAt(t *time.Time) *WorkflowUpdate {
-	if t != nil {
-		wu.SetUpdatedAt(*t)
+func (_u *WorkflowUpdate) SetNillableUpdatedAt(v *time.Time) *WorkflowUpdate {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return wu
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (wu *WorkflowUpdate) SetDeletedAt(t time.Time) *WorkflowUpdate {
-	wu.mutation.SetDeletedAt(t)
-	return wu
+func (_u *WorkflowUpdate) SetDeletedAt(v time.Time) *WorkflowUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableDeletedAt(t *time.Time) *WorkflowUpdate {
-	if t != nil {
-		wu.SetDeletedAt(*t)
+func (_u *WorkflowUpdate) SetNillableDeletedAt(v *time.Time) *WorkflowUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return wu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (wu *WorkflowUpdate) ClearDeletedAt() *WorkflowUpdate {
-	wu.mutation.ClearDeletedAt()
-	return wu
+func (_u *WorkflowUpdate) ClearDeletedAt() *WorkflowUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetPublic sets the "public" field.
-func (wu *WorkflowUpdate) SetPublic(b bool) *WorkflowUpdate {
-	wu.mutation.SetPublic(b)
-	return wu
+func (_u *WorkflowUpdate) SetPublic(v bool) *WorkflowUpdate {
+	_u.mutation.SetPublic(v)
+	return _u
 }
 
 // SetNillablePublic sets the "public" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillablePublic(b *bool) *WorkflowUpdate {
-	if b != nil {
-		wu.SetPublic(*b)
+func (_u *WorkflowUpdate) SetNillablePublic(v *bool) *WorkflowUpdate {
+	if v != nil {
+		_u.SetPublic(*v)
 	}
-	return wu
+	return _u
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (wu *WorkflowUpdate) SetOrganizationID(u uuid.UUID) *WorkflowUpdate {
-	wu.mutation.SetOrganizationID(u)
-	return wu
+func (_u *WorkflowUpdate) SetOrganizationID(v uuid.UUID) *WorkflowUpdate {
+	_u.mutation.SetOrganizationID(v)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableOrganizationID(u *uuid.UUID) *WorkflowUpdate {
-	if u != nil {
-		wu.SetOrganizationID(*u)
+func (_u *WorkflowUpdate) SetNillableOrganizationID(v *uuid.UUID) *WorkflowUpdate {
+	if v != nil {
+		_u.SetOrganizationID(*v)
 	}
-	return wu
+	return _u
 }
 
 // SetProjectID sets the "project_id" field.
-func (wu *WorkflowUpdate) SetProjectID(u uuid.UUID) *WorkflowUpdate {
-	wu.mutation.SetProjectID(u)
-	return wu
+func (_u *WorkflowUpdate) SetProjectID(v uuid.UUID) *WorkflowUpdate {
+	_u.mutation.SetProjectID(v)
+	return _u
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableProjectID(u *uuid.UUID) *WorkflowUpdate {
-	if u != nil {
-		wu.SetProjectID(*u)
+func (_u *WorkflowUpdate) SetNillableProjectID(v *uuid.UUID) *WorkflowUpdate {
+	if v != nil {
+		_u.SetProjectID(*v)
 	}
-	return wu
+	return _u
 }
 
 // SetLatestRun sets the "latest_run" field.
-func (wu *WorkflowUpdate) SetLatestRun(u uuid.UUID) *WorkflowUpdate {
-	wu.mutation.SetLatestRun(u)
-	return wu
+func (_u *WorkflowUpdate) SetLatestRun(v uuid.UUID) *WorkflowUpdate {
+	_u.mutation.SetLatestRun(v)
+	return _u
 }
 
 // SetNillableLatestRun sets the "latest_run" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableLatestRun(u *uuid.UUID) *WorkflowUpdate {
-	if u != nil {
-		wu.SetLatestRun(*u)
+func (_u *WorkflowUpdate) SetNillableLatestRun(v *uuid.UUID) *WorkflowUpdate {
+	if v != nil {
+		_u.SetLatestRun(*v)
 	}
-	return wu
+	return _u
 }
 
 // ClearLatestRun clears the value of the "latest_run" field.
-func (wu *WorkflowUpdate) ClearLatestRun() *WorkflowUpdate {
-	wu.mutation.ClearLatestRun()
-	return wu
+func (_u *WorkflowUpdate) ClearLatestRun() *WorkflowUpdate {
+	_u.mutation.ClearLatestRun()
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (wu *WorkflowUpdate) SetDescription(s string) *WorkflowUpdate {
-	wu.mutation.SetDescription(s)
-	return wu
+func (_u *WorkflowUpdate) SetDescription(v string) *WorkflowUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableDescription(s *string) *WorkflowUpdate {
-	if s != nil {
-		wu.SetDescription(*s)
+func (_u *WorkflowUpdate) SetNillableDescription(v *string) *WorkflowUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return wu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (wu *WorkflowUpdate) ClearDescription() *WorkflowUpdate {
-	wu.mutation.ClearDescription()
-	return wu
+func (_u *WorkflowUpdate) ClearDescription() *WorkflowUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (wu *WorkflowUpdate) SetMetadata(m map[string]interface{}) *WorkflowUpdate {
-	wu.mutation.SetMetadata(m)
-	return wu
+func (_u *WorkflowUpdate) SetMetadata(v map[string]interface{}) *WorkflowUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // ClearMetadata clears the value of the "metadata" field.
-func (wu *WorkflowUpdate) ClearMetadata() *WorkflowUpdate {
-	wu.mutation.ClearMetadata()
-	return wu
+func (_u *WorkflowUpdate) ClearMetadata() *WorkflowUpdate {
+	_u.mutation.ClearMetadata()
+	return _u
 }
 
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
-func (wu *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.AddRobotaccountIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.AddRobotaccountIDs(ids...)
+	return _u
 }
 
 // AddRobotaccounts adds the "robotaccounts" edges to the RobotAccount entity.
-func (wu *WorkflowUpdate) AddRobotaccounts(r ...*RobotAccount) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdate) AddRobotaccounts(v ...*RobotAccount) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.AddRobotaccountIDs(ids...)
+	return _u.AddRobotaccountIDs(ids...)
 }
 
 // AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
-func (wu *WorkflowUpdate) AddWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.AddWorkflowrunIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) AddWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.AddWorkflowrunIDs(ids...)
+	return _u
 }
 
 // AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
-func (wu *WorkflowUpdate) AddWorkflowruns(w ...*WorkflowRun) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *WorkflowUpdate) AddWorkflowruns(v ...*WorkflowRun) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.AddWorkflowrunIDs(ids...)
+	return _u.AddWorkflowrunIDs(ids...)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (wu *WorkflowUpdate) SetOrganization(o *Organization) *WorkflowUpdate {
-	return wu.SetOrganizationID(o.ID)
+func (_u *WorkflowUpdate) SetOrganization(v *Organization) *WorkflowUpdate {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
-func (wu *WorkflowUpdate) SetContractID(id uuid.UUID) *WorkflowUpdate {
-	wu.mutation.SetContractID(id)
-	return wu
+func (_u *WorkflowUpdate) SetContractID(id uuid.UUID) *WorkflowUpdate {
+	_u.mutation.SetContractID(id)
+	return _u
 }
 
 // SetContract sets the "contract" edge to the WorkflowContract entity.
-func (wu *WorkflowUpdate) SetContract(w *WorkflowContract) *WorkflowUpdate {
-	return wu.SetContractID(w.ID)
+func (_u *WorkflowUpdate) SetContract(v *WorkflowContract) *WorkflowUpdate {
+	return _u.SetContractID(v.ID)
 }
 
 // AddIntegrationAttachmentIDs adds the "integration_attachments" edge to the IntegrationAttachment entity by IDs.
-func (wu *WorkflowUpdate) AddIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.AddIntegrationAttachmentIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) AddIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.AddIntegrationAttachmentIDs(ids...)
+	return _u
 }
 
 // AddIntegrationAttachments adds the "integration_attachments" edges to the IntegrationAttachment entity.
-func (wu *WorkflowUpdate) AddIntegrationAttachments(i ...*IntegrationAttachment) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *WorkflowUpdate) AddIntegrationAttachments(v ...*IntegrationAttachment) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.AddIntegrationAttachmentIDs(ids...)
+	return _u.AddIntegrationAttachmentIDs(ids...)
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (wu *WorkflowUpdate) SetProject(p *Project) *WorkflowUpdate {
-	return wu.SetProjectID(p.ID)
+func (_u *WorkflowUpdate) SetProject(v *Project) *WorkflowUpdate {
+	return _u.SetProjectID(v.ID)
 }
 
 // SetLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID.
-func (wu *WorkflowUpdate) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowUpdate {
-	wu.mutation.SetLatestWorkflowRunID(id)
-	return wu
+func (_u *WorkflowUpdate) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowUpdate {
+	_u.mutation.SetLatestWorkflowRunID(id)
+	return _u
 }
 
 // SetNillableLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
-func (wu *WorkflowUpdate) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowUpdate {
+func (_u *WorkflowUpdate) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowUpdate {
 	if id != nil {
-		wu = wu.SetLatestWorkflowRunID(*id)
+		_u = _u.SetLatestWorkflowRunID(*id)
 	}
-	return wu
+	return _u
 }
 
 // SetLatestWorkflowRun sets the "latest_workflow_run" edge to the WorkflowRun entity.
-func (wu *WorkflowUpdate) SetLatestWorkflowRun(w *WorkflowRun) *WorkflowUpdate {
-	return wu.SetLatestWorkflowRunID(w.ID)
+func (_u *WorkflowUpdate) SetLatestWorkflowRun(v *WorkflowRun) *WorkflowUpdate {
+	return _u.SetLatestWorkflowRunID(v.ID)
 }
 
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
-func (wu *WorkflowUpdate) AddReferrerIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.AddReferrerIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) AddReferrerIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.AddReferrerIDs(ids...)
+	return _u
 }
 
 // AddReferrers adds the "referrers" edges to the Referrer entity.
-func (wu *WorkflowUpdate) AddReferrers(r ...*Referrer) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdate) AddReferrers(v ...*Referrer) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.AddReferrerIDs(ids...)
+	return _u.AddReferrerIDs(ids...)
 }
 
 // Mutation returns the WorkflowMutation object of the builder.
-func (wu *WorkflowUpdate) Mutation() *WorkflowMutation {
-	return wu.mutation
+func (_u *WorkflowUpdate) Mutation() *WorkflowMutation {
+	return _u.mutation
 }
 
 // ClearRobotaccounts clears all "robotaccounts" edges to the RobotAccount entity.
-func (wu *WorkflowUpdate) ClearRobotaccounts() *WorkflowUpdate {
-	wu.mutation.ClearRobotaccounts()
-	return wu
+func (_u *WorkflowUpdate) ClearRobotaccounts() *WorkflowUpdate {
+	_u.mutation.ClearRobotaccounts()
+	return _u
 }
 
 // RemoveRobotaccountIDs removes the "robotaccounts" edge to RobotAccount entities by IDs.
-func (wu *WorkflowUpdate) RemoveRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.RemoveRobotaccountIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) RemoveRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.RemoveRobotaccountIDs(ids...)
+	return _u
 }
 
 // RemoveRobotaccounts removes "robotaccounts" edges to RobotAccount entities.
-func (wu *WorkflowUpdate) RemoveRobotaccounts(r ...*RobotAccount) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdate) RemoveRobotaccounts(v ...*RobotAccount) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.RemoveRobotaccountIDs(ids...)
+	return _u.RemoveRobotaccountIDs(ids...)
 }
 
 // ClearWorkflowruns clears all "workflowruns" edges to the WorkflowRun entity.
-func (wu *WorkflowUpdate) ClearWorkflowruns() *WorkflowUpdate {
-	wu.mutation.ClearWorkflowruns()
-	return wu
+func (_u *WorkflowUpdate) ClearWorkflowruns() *WorkflowUpdate {
+	_u.mutation.ClearWorkflowruns()
+	return _u
 }
 
 // RemoveWorkflowrunIDs removes the "workflowruns" edge to WorkflowRun entities by IDs.
-func (wu *WorkflowUpdate) RemoveWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.RemoveWorkflowrunIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) RemoveWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.RemoveWorkflowrunIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflowruns removes "workflowruns" edges to WorkflowRun entities.
-func (wu *WorkflowUpdate) RemoveWorkflowruns(w ...*WorkflowRun) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *WorkflowUpdate) RemoveWorkflowruns(v ...*WorkflowRun) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.RemoveWorkflowrunIDs(ids...)
+	return _u.RemoveWorkflowrunIDs(ids...)
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (wu *WorkflowUpdate) ClearOrganization() *WorkflowUpdate {
-	wu.mutation.ClearOrganization()
-	return wu
+func (_u *WorkflowUpdate) ClearOrganization() *WorkflowUpdate {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearContract clears the "contract" edge to the WorkflowContract entity.
-func (wu *WorkflowUpdate) ClearContract() *WorkflowUpdate {
-	wu.mutation.ClearContract()
-	return wu
+func (_u *WorkflowUpdate) ClearContract() *WorkflowUpdate {
+	_u.mutation.ClearContract()
+	return _u
 }
 
 // ClearIntegrationAttachments clears all "integration_attachments" edges to the IntegrationAttachment entity.
-func (wu *WorkflowUpdate) ClearIntegrationAttachments() *WorkflowUpdate {
-	wu.mutation.ClearIntegrationAttachments()
-	return wu
+func (_u *WorkflowUpdate) ClearIntegrationAttachments() *WorkflowUpdate {
+	_u.mutation.ClearIntegrationAttachments()
+	return _u
 }
 
 // RemoveIntegrationAttachmentIDs removes the "integration_attachments" edge to IntegrationAttachment entities by IDs.
-func (wu *WorkflowUpdate) RemoveIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.RemoveIntegrationAttachmentIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) RemoveIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.RemoveIntegrationAttachmentIDs(ids...)
+	return _u
 }
 
 // RemoveIntegrationAttachments removes "integration_attachments" edges to IntegrationAttachment entities.
-func (wu *WorkflowUpdate) RemoveIntegrationAttachments(i ...*IntegrationAttachment) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *WorkflowUpdate) RemoveIntegrationAttachments(v ...*IntegrationAttachment) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.RemoveIntegrationAttachmentIDs(ids...)
+	return _u.RemoveIntegrationAttachmentIDs(ids...)
 }
 
 // ClearProject clears the "project" edge to the Project entity.
-func (wu *WorkflowUpdate) ClearProject() *WorkflowUpdate {
-	wu.mutation.ClearProject()
-	return wu
+func (_u *WorkflowUpdate) ClearProject() *WorkflowUpdate {
+	_u.mutation.ClearProject()
+	return _u
 }
 
 // ClearLatestWorkflowRun clears the "latest_workflow_run" edge to the WorkflowRun entity.
-func (wu *WorkflowUpdate) ClearLatestWorkflowRun() *WorkflowUpdate {
-	wu.mutation.ClearLatestWorkflowRun()
-	return wu
+func (_u *WorkflowUpdate) ClearLatestWorkflowRun() *WorkflowUpdate {
+	_u.mutation.ClearLatestWorkflowRun()
+	return _u
 }
 
 // ClearReferrers clears all "referrers" edges to the Referrer entity.
-func (wu *WorkflowUpdate) ClearReferrers() *WorkflowUpdate {
-	wu.mutation.ClearReferrers()
-	return wu
+func (_u *WorkflowUpdate) ClearReferrers() *WorkflowUpdate {
+	_u.mutation.ClearReferrers()
+	return _u
 }
 
 // RemoveReferrerIDs removes the "referrers" edge to Referrer entities by IDs.
-func (wu *WorkflowUpdate) RemoveReferrerIDs(ids ...uuid.UUID) *WorkflowUpdate {
-	wu.mutation.RemoveReferrerIDs(ids...)
-	return wu
+func (_u *WorkflowUpdate) RemoveReferrerIDs(ids ...uuid.UUID) *WorkflowUpdate {
+	_u.mutation.RemoveReferrerIDs(ids...)
+	return _u
 }
 
 // RemoveReferrers removes "referrers" edges to Referrer entities.
-func (wu *WorkflowUpdate) RemoveReferrers(r ...*Referrer) *WorkflowUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdate) RemoveReferrers(v ...*Referrer) *WorkflowUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wu.RemoveReferrerIDs(ids...)
+	return _u.RemoveReferrerIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (wu *WorkflowUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, wu.sqlSave, wu.mutation, wu.hooks)
+func (_u *WorkflowUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wu *WorkflowUpdate) SaveX(ctx context.Context) int {
-	affected, err := wu.Save(ctx)
+func (_u *WorkflowUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -454,93 +454,93 @@ func (wu *WorkflowUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (wu *WorkflowUpdate) Exec(ctx context.Context) error {
-	_, err := wu.Save(ctx)
+func (_u *WorkflowUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wu *WorkflowUpdate) ExecX(ctx context.Context) {
-	if err := wu.Exec(ctx); err != nil {
+func (_u *WorkflowUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wu *WorkflowUpdate) check() error {
-	if wu.mutation.OrganizationCleared() && len(wu.mutation.OrganizationIDs()) > 0 {
+func (_u *WorkflowUpdate) check() error {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.organization"`)
 	}
-	if wu.mutation.ContractCleared() && len(wu.mutation.ContractIDs()) > 0 {
+	if _u.mutation.ContractCleared() && len(_u.mutation.ContractIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.contract"`)
 	}
-	if wu.mutation.ProjectCleared() && len(wu.mutation.ProjectIDs()) > 0 {
+	if _u.mutation.ProjectCleared() && len(_u.mutation.ProjectIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.project"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (wu *WorkflowUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowUpdate {
-	wu.modifiers = append(wu.modifiers, modifiers...)
-	return wu
+func (_u *WorkflowUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := wu.check(); err != nil {
-		return n, err
+func (_u *WorkflowUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(workflow.Table, workflow.Columns, sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID))
-	if ps := wu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := wu.mutation.ProjectOld(); ok {
+	if value, ok := _u.mutation.ProjectOld(); ok {
 		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
 	}
-	if wu.mutation.ProjectOldCleared() {
+	if _u.mutation.ProjectOldCleared() {
 		_spec.ClearField(workflow.FieldProjectOld, field.TypeString)
 	}
-	if value, ok := wu.mutation.Team(); ok {
+	if value, ok := _u.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
 	}
-	if wu.mutation.TeamCleared() {
+	if _u.mutation.TeamCleared() {
 		_spec.ClearField(workflow.FieldTeam, field.TypeString)
 	}
-	if value, ok := wu.mutation.RunsCount(); ok {
+	if value, ok := _u.mutation.RunsCount(); ok {
 		_spec.SetField(workflow.FieldRunsCount, field.TypeInt, value)
 	}
-	if value, ok := wu.mutation.AddedRunsCount(); ok {
+	if value, ok := _u.mutation.AddedRunsCount(); ok {
 		_spec.AddField(workflow.FieldRunsCount, field.TypeInt, value)
 	}
-	if value, ok := wu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(workflow.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := wu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(workflow.FieldDeletedAt, field.TypeTime, value)
 	}
-	if wu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(workflow.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := wu.mutation.Public(); ok {
+	if value, ok := _u.mutation.Public(); ok {
 		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
 	}
-	if value, ok := wu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(workflow.FieldDescription, field.TypeString, value)
 	}
-	if wu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(workflow.FieldDescription, field.TypeString)
 	}
-	if value, ok := wu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(workflow.FieldMetadata, field.TypeJSON, value)
 	}
-	if wu.mutation.MetadataCleared() {
+	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(workflow.FieldMetadata, field.TypeJSON)
 	}
-	if wu.mutation.RobotaccountsCleared() {
+	if _u.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -553,7 +553,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.RemovedRobotaccountsIDs(); len(nodes) > 0 && !wu.mutation.RobotaccountsCleared() {
+	if nodes := _u.mutation.RemovedRobotaccountsIDs(); len(nodes) > 0 && !_u.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -569,7 +569,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.RobotaccountsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RobotaccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -585,7 +585,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.WorkflowrunsCleared() {
+	if _u.mutation.WorkflowrunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -598,7 +598,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !wu.mutation.WorkflowrunsCleared() {
+	if nodes := _u.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowrunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -614,7 +614,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -630,7 +630,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -643,7 +643,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -659,7 +659,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.ContractCleared() {
+	if _u.mutation.ContractCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -672,7 +672,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.ContractIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ContractIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -688,7 +688,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.IntegrationAttachmentsCleared() {
+	if _u.mutation.IntegrationAttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -701,7 +701,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.RemovedIntegrationAttachmentsIDs(); len(nodes) > 0 && !wu.mutation.IntegrationAttachmentsCleared() {
+	if nodes := _u.mutation.RemovedIntegrationAttachmentsIDs(); len(nodes) > 0 && !_u.mutation.IntegrationAttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -717,7 +717,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.IntegrationAttachmentsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.IntegrationAttachmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -733,7 +733,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.ProjectCleared() {
+	if _u.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -746,7 +746,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -762,7 +762,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.LatestWorkflowRunCleared() {
+	if _u.mutation.LatestWorkflowRunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -775,7 +775,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -791,7 +791,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wu.mutation.ReferrersCleared() {
+	if _u.mutation.ReferrersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -804,7 +804,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.RemovedReferrersIDs(); len(nodes) > 0 && !wu.mutation.ReferrersCleared() {
+	if nodes := _u.mutation.RemovedReferrersIDs(); len(nodes) > 0 && !_u.mutation.ReferrersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -820,7 +820,7 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wu.mutation.ReferrersIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ReferrersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -836,8 +836,8 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(wu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, wu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflow.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -845,8 +845,8 @@ func (wu *WorkflowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	wu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // WorkflowUpdateOne is the builder for updating a single Workflow entity.
@@ -859,428 +859,428 @@ type WorkflowUpdateOne struct {
 }
 
 // SetProjectOld sets the "project_old" field.
-func (wuo *WorkflowUpdateOne) SetProjectOld(s string) *WorkflowUpdateOne {
-	wuo.mutation.SetProjectOld(s)
-	return wuo
+func (_u *WorkflowUpdateOne) SetProjectOld(v string) *WorkflowUpdateOne {
+	_u.mutation.SetProjectOld(v)
+	return _u
 }
 
 // SetNillableProjectOld sets the "project_old" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableProjectOld(s *string) *WorkflowUpdateOne {
-	if s != nil {
-		wuo.SetProjectOld(*s)
+func (_u *WorkflowUpdateOne) SetNillableProjectOld(v *string) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetProjectOld(*v)
 	}
-	return wuo
+	return _u
 }
 
 // ClearProjectOld clears the value of the "project_old" field.
-func (wuo *WorkflowUpdateOne) ClearProjectOld() *WorkflowUpdateOne {
-	wuo.mutation.ClearProjectOld()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearProjectOld() *WorkflowUpdateOne {
+	_u.mutation.ClearProjectOld()
+	return _u
 }
 
 // SetTeam sets the "team" field.
-func (wuo *WorkflowUpdateOne) SetTeam(s string) *WorkflowUpdateOne {
-	wuo.mutation.SetTeam(s)
-	return wuo
+func (_u *WorkflowUpdateOne) SetTeam(v string) *WorkflowUpdateOne {
+	_u.mutation.SetTeam(v)
+	return _u
 }
 
 // SetNillableTeam sets the "team" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableTeam(s *string) *WorkflowUpdateOne {
-	if s != nil {
-		wuo.SetTeam(*s)
+func (_u *WorkflowUpdateOne) SetNillableTeam(v *string) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetTeam(*v)
 	}
-	return wuo
+	return _u
 }
 
 // ClearTeam clears the value of the "team" field.
-func (wuo *WorkflowUpdateOne) ClearTeam() *WorkflowUpdateOne {
-	wuo.mutation.ClearTeam()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearTeam() *WorkflowUpdateOne {
+	_u.mutation.ClearTeam()
+	return _u
 }
 
 // SetRunsCount sets the "runs_count" field.
-func (wuo *WorkflowUpdateOne) SetRunsCount(i int) *WorkflowUpdateOne {
-	wuo.mutation.ResetRunsCount()
-	wuo.mutation.SetRunsCount(i)
-	return wuo
+func (_u *WorkflowUpdateOne) SetRunsCount(v int) *WorkflowUpdateOne {
+	_u.mutation.ResetRunsCount()
+	_u.mutation.SetRunsCount(v)
+	return _u
 }
 
 // SetNillableRunsCount sets the "runs_count" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableRunsCount(i *int) *WorkflowUpdateOne {
-	if i != nil {
-		wuo.SetRunsCount(*i)
+func (_u *WorkflowUpdateOne) SetNillableRunsCount(v *int) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetRunsCount(*v)
 	}
-	return wuo
+	return _u
 }
 
-// AddRunsCount adds i to the "runs_count" field.
-func (wuo *WorkflowUpdateOne) AddRunsCount(i int) *WorkflowUpdateOne {
-	wuo.mutation.AddRunsCount(i)
-	return wuo
+// AddRunsCount adds value to the "runs_count" field.
+func (_u *WorkflowUpdateOne) AddRunsCount(v int) *WorkflowUpdateOne {
+	_u.mutation.AddRunsCount(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (wuo *WorkflowUpdateOne) SetUpdatedAt(t time.Time) *WorkflowUpdateOne {
-	wuo.mutation.SetUpdatedAt(t)
-	return wuo
+func (_u *WorkflowUpdateOne) SetUpdatedAt(v time.Time) *WorkflowUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableUpdatedAt(t *time.Time) *WorkflowUpdateOne {
-	if t != nil {
-		wuo.SetUpdatedAt(*t)
+func (_u *WorkflowUpdateOne) SetNillableUpdatedAt(v *time.Time) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return wuo
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (wuo *WorkflowUpdateOne) SetDeletedAt(t time.Time) *WorkflowUpdateOne {
-	wuo.mutation.SetDeletedAt(t)
-	return wuo
+func (_u *WorkflowUpdateOne) SetDeletedAt(v time.Time) *WorkflowUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableDeletedAt(t *time.Time) *WorkflowUpdateOne {
-	if t != nil {
-		wuo.SetDeletedAt(*t)
+func (_u *WorkflowUpdateOne) SetNillableDeletedAt(v *time.Time) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return wuo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (wuo *WorkflowUpdateOne) ClearDeletedAt() *WorkflowUpdateOne {
-	wuo.mutation.ClearDeletedAt()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearDeletedAt() *WorkflowUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetPublic sets the "public" field.
-func (wuo *WorkflowUpdateOne) SetPublic(b bool) *WorkflowUpdateOne {
-	wuo.mutation.SetPublic(b)
-	return wuo
+func (_u *WorkflowUpdateOne) SetPublic(v bool) *WorkflowUpdateOne {
+	_u.mutation.SetPublic(v)
+	return _u
 }
 
 // SetNillablePublic sets the "public" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillablePublic(b *bool) *WorkflowUpdateOne {
-	if b != nil {
-		wuo.SetPublic(*b)
+func (_u *WorkflowUpdateOne) SetNillablePublic(v *bool) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetPublic(*v)
 	}
-	return wuo
+	return _u
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (wuo *WorkflowUpdateOne) SetOrganizationID(u uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.SetOrganizationID(u)
-	return wuo
+func (_u *WorkflowUpdateOne) SetOrganizationID(v uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.SetOrganizationID(v)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *WorkflowUpdateOne {
-	if u != nil {
-		wuo.SetOrganizationID(*u)
+func (_u *WorkflowUpdateOne) SetNillableOrganizationID(v *uuid.UUID) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetOrganizationID(*v)
 	}
-	return wuo
+	return _u
 }
 
 // SetProjectID sets the "project_id" field.
-func (wuo *WorkflowUpdateOne) SetProjectID(u uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.SetProjectID(u)
-	return wuo
+func (_u *WorkflowUpdateOne) SetProjectID(v uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.SetProjectID(v)
+	return _u
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableProjectID(u *uuid.UUID) *WorkflowUpdateOne {
-	if u != nil {
-		wuo.SetProjectID(*u)
+func (_u *WorkflowUpdateOne) SetNillableProjectID(v *uuid.UUID) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetProjectID(*v)
 	}
-	return wuo
+	return _u
 }
 
 // SetLatestRun sets the "latest_run" field.
-func (wuo *WorkflowUpdateOne) SetLatestRun(u uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.SetLatestRun(u)
-	return wuo
+func (_u *WorkflowUpdateOne) SetLatestRun(v uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.SetLatestRun(v)
+	return _u
 }
 
 // SetNillableLatestRun sets the "latest_run" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableLatestRun(u *uuid.UUID) *WorkflowUpdateOne {
-	if u != nil {
-		wuo.SetLatestRun(*u)
+func (_u *WorkflowUpdateOne) SetNillableLatestRun(v *uuid.UUID) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetLatestRun(*v)
 	}
-	return wuo
+	return _u
 }
 
 // ClearLatestRun clears the value of the "latest_run" field.
-func (wuo *WorkflowUpdateOne) ClearLatestRun() *WorkflowUpdateOne {
-	wuo.mutation.ClearLatestRun()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearLatestRun() *WorkflowUpdateOne {
+	_u.mutation.ClearLatestRun()
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (wuo *WorkflowUpdateOne) SetDescription(s string) *WorkflowUpdateOne {
-	wuo.mutation.SetDescription(s)
-	return wuo
+func (_u *WorkflowUpdateOne) SetDescription(v string) *WorkflowUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableDescription(s *string) *WorkflowUpdateOne {
-	if s != nil {
-		wuo.SetDescription(*s)
+func (_u *WorkflowUpdateOne) SetNillableDescription(v *string) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return wuo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (wuo *WorkflowUpdateOne) ClearDescription() *WorkflowUpdateOne {
-	wuo.mutation.ClearDescription()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearDescription() *WorkflowUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (wuo *WorkflowUpdateOne) SetMetadata(m map[string]interface{}) *WorkflowUpdateOne {
-	wuo.mutation.SetMetadata(m)
-	return wuo
+func (_u *WorkflowUpdateOne) SetMetadata(v map[string]interface{}) *WorkflowUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // ClearMetadata clears the value of the "metadata" field.
-func (wuo *WorkflowUpdateOne) ClearMetadata() *WorkflowUpdateOne {
-	wuo.mutation.ClearMetadata()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearMetadata() *WorkflowUpdateOne {
+	_u.mutation.ClearMetadata()
+	return _u
 }
 
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
-func (wuo *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.AddRobotaccountIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.AddRobotaccountIDs(ids...)
+	return _u
 }
 
 // AddRobotaccounts adds the "robotaccounts" edges to the RobotAccount entity.
-func (wuo *WorkflowUpdateOne) AddRobotaccounts(r ...*RobotAccount) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdateOne) AddRobotaccounts(v ...*RobotAccount) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.AddRobotaccountIDs(ids...)
+	return _u.AddRobotaccountIDs(ids...)
 }
 
 // AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
-func (wuo *WorkflowUpdateOne) AddWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.AddWorkflowrunIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) AddWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.AddWorkflowrunIDs(ids...)
+	return _u
 }
 
 // AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
-func (wuo *WorkflowUpdateOne) AddWorkflowruns(w ...*WorkflowRun) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *WorkflowUpdateOne) AddWorkflowruns(v ...*WorkflowRun) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.AddWorkflowrunIDs(ids...)
+	return _u.AddWorkflowrunIDs(ids...)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (wuo *WorkflowUpdateOne) SetOrganization(o *Organization) *WorkflowUpdateOne {
-	return wuo.SetOrganizationID(o.ID)
+func (_u *WorkflowUpdateOne) SetOrganization(v *Organization) *WorkflowUpdateOne {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
-func (wuo *WorkflowUpdateOne) SetContractID(id uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.SetContractID(id)
-	return wuo
+func (_u *WorkflowUpdateOne) SetContractID(id uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.SetContractID(id)
+	return _u
 }
 
 // SetContract sets the "contract" edge to the WorkflowContract entity.
-func (wuo *WorkflowUpdateOne) SetContract(w *WorkflowContract) *WorkflowUpdateOne {
-	return wuo.SetContractID(w.ID)
+func (_u *WorkflowUpdateOne) SetContract(v *WorkflowContract) *WorkflowUpdateOne {
+	return _u.SetContractID(v.ID)
 }
 
 // AddIntegrationAttachmentIDs adds the "integration_attachments" edge to the IntegrationAttachment entity by IDs.
-func (wuo *WorkflowUpdateOne) AddIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.AddIntegrationAttachmentIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) AddIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.AddIntegrationAttachmentIDs(ids...)
+	return _u
 }
 
 // AddIntegrationAttachments adds the "integration_attachments" edges to the IntegrationAttachment entity.
-func (wuo *WorkflowUpdateOne) AddIntegrationAttachments(i ...*IntegrationAttachment) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *WorkflowUpdateOne) AddIntegrationAttachments(v ...*IntegrationAttachment) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.AddIntegrationAttachmentIDs(ids...)
+	return _u.AddIntegrationAttachmentIDs(ids...)
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (wuo *WorkflowUpdateOne) SetProject(p *Project) *WorkflowUpdateOne {
-	return wuo.SetProjectID(p.ID)
+func (_u *WorkflowUpdateOne) SetProject(v *Project) *WorkflowUpdateOne {
+	return _u.SetProjectID(v.ID)
 }
 
 // SetLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID.
-func (wuo *WorkflowUpdateOne) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.SetLatestWorkflowRunID(id)
-	return wuo
+func (_u *WorkflowUpdateOne) SetLatestWorkflowRunID(id uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.SetLatestWorkflowRunID(id)
+	return _u
 }
 
 // SetNillableLatestWorkflowRunID sets the "latest_workflow_run" edge to the WorkflowRun entity by ID if the given value is not nil.
-func (wuo *WorkflowUpdateOne) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowUpdateOne {
+func (_u *WorkflowUpdateOne) SetNillableLatestWorkflowRunID(id *uuid.UUID) *WorkflowUpdateOne {
 	if id != nil {
-		wuo = wuo.SetLatestWorkflowRunID(*id)
+		_u = _u.SetLatestWorkflowRunID(*id)
 	}
-	return wuo
+	return _u
 }
 
 // SetLatestWorkflowRun sets the "latest_workflow_run" edge to the WorkflowRun entity.
-func (wuo *WorkflowUpdateOne) SetLatestWorkflowRun(w *WorkflowRun) *WorkflowUpdateOne {
-	return wuo.SetLatestWorkflowRunID(w.ID)
+func (_u *WorkflowUpdateOne) SetLatestWorkflowRun(v *WorkflowRun) *WorkflowUpdateOne {
+	return _u.SetLatestWorkflowRunID(v.ID)
 }
 
 // AddReferrerIDs adds the "referrers" edge to the Referrer entity by IDs.
-func (wuo *WorkflowUpdateOne) AddReferrerIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.AddReferrerIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) AddReferrerIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.AddReferrerIDs(ids...)
+	return _u
 }
 
 // AddReferrers adds the "referrers" edges to the Referrer entity.
-func (wuo *WorkflowUpdateOne) AddReferrers(r ...*Referrer) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdateOne) AddReferrers(v ...*Referrer) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.AddReferrerIDs(ids...)
+	return _u.AddReferrerIDs(ids...)
 }
 
 // Mutation returns the WorkflowMutation object of the builder.
-func (wuo *WorkflowUpdateOne) Mutation() *WorkflowMutation {
-	return wuo.mutation
+func (_u *WorkflowUpdateOne) Mutation() *WorkflowMutation {
+	return _u.mutation
 }
 
 // ClearRobotaccounts clears all "robotaccounts" edges to the RobotAccount entity.
-func (wuo *WorkflowUpdateOne) ClearRobotaccounts() *WorkflowUpdateOne {
-	wuo.mutation.ClearRobotaccounts()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearRobotaccounts() *WorkflowUpdateOne {
+	_u.mutation.ClearRobotaccounts()
+	return _u
 }
 
 // RemoveRobotaccountIDs removes the "robotaccounts" edge to RobotAccount entities by IDs.
-func (wuo *WorkflowUpdateOne) RemoveRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.RemoveRobotaccountIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) RemoveRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.RemoveRobotaccountIDs(ids...)
+	return _u
 }
 
 // RemoveRobotaccounts removes "robotaccounts" edges to RobotAccount entities.
-func (wuo *WorkflowUpdateOne) RemoveRobotaccounts(r ...*RobotAccount) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdateOne) RemoveRobotaccounts(v ...*RobotAccount) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.RemoveRobotaccountIDs(ids...)
+	return _u.RemoveRobotaccountIDs(ids...)
 }
 
 // ClearWorkflowruns clears all "workflowruns" edges to the WorkflowRun entity.
-func (wuo *WorkflowUpdateOne) ClearWorkflowruns() *WorkflowUpdateOne {
-	wuo.mutation.ClearWorkflowruns()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearWorkflowruns() *WorkflowUpdateOne {
+	_u.mutation.ClearWorkflowruns()
+	return _u
 }
 
 // RemoveWorkflowrunIDs removes the "workflowruns" edge to WorkflowRun entities by IDs.
-func (wuo *WorkflowUpdateOne) RemoveWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.RemoveWorkflowrunIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) RemoveWorkflowrunIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.RemoveWorkflowrunIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflowruns removes "workflowruns" edges to WorkflowRun entities.
-func (wuo *WorkflowUpdateOne) RemoveWorkflowruns(w ...*WorkflowRun) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *WorkflowUpdateOne) RemoveWorkflowruns(v ...*WorkflowRun) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.RemoveWorkflowrunIDs(ids...)
+	return _u.RemoveWorkflowrunIDs(ids...)
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (wuo *WorkflowUpdateOne) ClearOrganization() *WorkflowUpdateOne {
-	wuo.mutation.ClearOrganization()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearOrganization() *WorkflowUpdateOne {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearContract clears the "contract" edge to the WorkflowContract entity.
-func (wuo *WorkflowUpdateOne) ClearContract() *WorkflowUpdateOne {
-	wuo.mutation.ClearContract()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearContract() *WorkflowUpdateOne {
+	_u.mutation.ClearContract()
+	return _u
 }
 
 // ClearIntegrationAttachments clears all "integration_attachments" edges to the IntegrationAttachment entity.
-func (wuo *WorkflowUpdateOne) ClearIntegrationAttachments() *WorkflowUpdateOne {
-	wuo.mutation.ClearIntegrationAttachments()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearIntegrationAttachments() *WorkflowUpdateOne {
+	_u.mutation.ClearIntegrationAttachments()
+	return _u
 }
 
 // RemoveIntegrationAttachmentIDs removes the "integration_attachments" edge to IntegrationAttachment entities by IDs.
-func (wuo *WorkflowUpdateOne) RemoveIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.RemoveIntegrationAttachmentIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) RemoveIntegrationAttachmentIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.RemoveIntegrationAttachmentIDs(ids...)
+	return _u
 }
 
 // RemoveIntegrationAttachments removes "integration_attachments" edges to IntegrationAttachment entities.
-func (wuo *WorkflowUpdateOne) RemoveIntegrationAttachments(i ...*IntegrationAttachment) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *WorkflowUpdateOne) RemoveIntegrationAttachments(v ...*IntegrationAttachment) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.RemoveIntegrationAttachmentIDs(ids...)
+	return _u.RemoveIntegrationAttachmentIDs(ids...)
 }
 
 // ClearProject clears the "project" edge to the Project entity.
-func (wuo *WorkflowUpdateOne) ClearProject() *WorkflowUpdateOne {
-	wuo.mutation.ClearProject()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearProject() *WorkflowUpdateOne {
+	_u.mutation.ClearProject()
+	return _u
 }
 
 // ClearLatestWorkflowRun clears the "latest_workflow_run" edge to the WorkflowRun entity.
-func (wuo *WorkflowUpdateOne) ClearLatestWorkflowRun() *WorkflowUpdateOne {
-	wuo.mutation.ClearLatestWorkflowRun()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearLatestWorkflowRun() *WorkflowUpdateOne {
+	_u.mutation.ClearLatestWorkflowRun()
+	return _u
 }
 
 // ClearReferrers clears all "referrers" edges to the Referrer entity.
-func (wuo *WorkflowUpdateOne) ClearReferrers() *WorkflowUpdateOne {
-	wuo.mutation.ClearReferrers()
-	return wuo
+func (_u *WorkflowUpdateOne) ClearReferrers() *WorkflowUpdateOne {
+	_u.mutation.ClearReferrers()
+	return _u
 }
 
 // RemoveReferrerIDs removes the "referrers" edge to Referrer entities by IDs.
-func (wuo *WorkflowUpdateOne) RemoveReferrerIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
-	wuo.mutation.RemoveReferrerIDs(ids...)
-	return wuo
+func (_u *WorkflowUpdateOne) RemoveReferrerIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.RemoveReferrerIDs(ids...)
+	return _u
 }
 
 // RemoveReferrers removes "referrers" edges to Referrer entities.
-func (wuo *WorkflowUpdateOne) RemoveReferrers(r ...*Referrer) *WorkflowUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *WorkflowUpdateOne) RemoveReferrers(v ...*Referrer) *WorkflowUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wuo.RemoveReferrerIDs(ids...)
+	return _u.RemoveReferrerIDs(ids...)
 }
 
 // Where appends a list predicates to the WorkflowUpdate builder.
-func (wuo *WorkflowUpdateOne) Where(ps ...predicate.Workflow) *WorkflowUpdateOne {
-	wuo.mutation.Where(ps...)
-	return wuo
+func (_u *WorkflowUpdateOne) Where(ps ...predicate.Workflow) *WorkflowUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (wuo *WorkflowUpdateOne) Select(field string, fields ...string) *WorkflowUpdateOne {
-	wuo.fields = append([]string{field}, fields...)
-	return wuo
+func (_u *WorkflowUpdateOne) Select(field string, fields ...string) *WorkflowUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Workflow entity.
-func (wuo *WorkflowUpdateOne) Save(ctx context.Context) (*Workflow, error) {
-	return withHooks(ctx, wuo.sqlSave, wuo.mutation, wuo.hooks)
+func (_u *WorkflowUpdateOne) Save(ctx context.Context) (*Workflow, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wuo *WorkflowUpdateOne) SaveX(ctx context.Context) *Workflow {
-	node, err := wuo.Save(ctx)
+func (_u *WorkflowUpdateOne) SaveX(ctx context.Context) *Workflow {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -1288,49 +1288,49 @@ func (wuo *WorkflowUpdateOne) SaveX(ctx context.Context) *Workflow {
 }
 
 // Exec executes the query on the entity.
-func (wuo *WorkflowUpdateOne) Exec(ctx context.Context) error {
-	_, err := wuo.Save(ctx)
+func (_u *WorkflowUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wuo *WorkflowUpdateOne) ExecX(ctx context.Context) {
-	if err := wuo.Exec(ctx); err != nil {
+func (_u *WorkflowUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wuo *WorkflowUpdateOne) check() error {
-	if wuo.mutation.OrganizationCleared() && len(wuo.mutation.OrganizationIDs()) > 0 {
+func (_u *WorkflowUpdateOne) check() error {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.organization"`)
 	}
-	if wuo.mutation.ContractCleared() && len(wuo.mutation.ContractIDs()) > 0 {
+	if _u.mutation.ContractCleared() && len(_u.mutation.ContractIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.contract"`)
 	}
-	if wuo.mutation.ProjectCleared() && len(wuo.mutation.ProjectIDs()) > 0 {
+	if _u.mutation.ProjectCleared() && len(_u.mutation.ProjectIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Workflow.project"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (wuo *WorkflowUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowUpdateOne {
-	wuo.modifiers = append(wuo.modifiers, modifiers...)
-	return wuo
+func (_u *WorkflowUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err error) {
-	if err := wuo.check(); err != nil {
+func (_u *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(workflow.Table, workflow.Columns, sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID))
-	id, ok := wuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Workflow.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := wuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, workflow.FieldID)
 		for _, f := range fields {
@@ -1342,56 +1342,56 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 			}
 		}
 	}
-	if ps := wuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := wuo.mutation.ProjectOld(); ok {
+	if value, ok := _u.mutation.ProjectOld(); ok {
 		_spec.SetField(workflow.FieldProjectOld, field.TypeString, value)
 	}
-	if wuo.mutation.ProjectOldCleared() {
+	if _u.mutation.ProjectOldCleared() {
 		_spec.ClearField(workflow.FieldProjectOld, field.TypeString)
 	}
-	if value, ok := wuo.mutation.Team(); ok {
+	if value, ok := _u.mutation.Team(); ok {
 		_spec.SetField(workflow.FieldTeam, field.TypeString, value)
 	}
-	if wuo.mutation.TeamCleared() {
+	if _u.mutation.TeamCleared() {
 		_spec.ClearField(workflow.FieldTeam, field.TypeString)
 	}
-	if value, ok := wuo.mutation.RunsCount(); ok {
+	if value, ok := _u.mutation.RunsCount(); ok {
 		_spec.SetField(workflow.FieldRunsCount, field.TypeInt, value)
 	}
-	if value, ok := wuo.mutation.AddedRunsCount(); ok {
+	if value, ok := _u.mutation.AddedRunsCount(); ok {
 		_spec.AddField(workflow.FieldRunsCount, field.TypeInt, value)
 	}
-	if value, ok := wuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(workflow.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := wuo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(workflow.FieldDeletedAt, field.TypeTime, value)
 	}
-	if wuo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(workflow.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := wuo.mutation.Public(); ok {
+	if value, ok := _u.mutation.Public(); ok {
 		_spec.SetField(workflow.FieldPublic, field.TypeBool, value)
 	}
-	if value, ok := wuo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(workflow.FieldDescription, field.TypeString, value)
 	}
-	if wuo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(workflow.FieldDescription, field.TypeString)
 	}
-	if value, ok := wuo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(workflow.FieldMetadata, field.TypeJSON, value)
 	}
-	if wuo.mutation.MetadataCleared() {
+	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(workflow.FieldMetadata, field.TypeJSON)
 	}
-	if wuo.mutation.RobotaccountsCleared() {
+	if _u.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1404,7 +1404,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.RemovedRobotaccountsIDs(); len(nodes) > 0 && !wuo.mutation.RobotaccountsCleared() {
+	if nodes := _u.mutation.RemovedRobotaccountsIDs(); len(nodes) > 0 && !_u.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1420,7 +1420,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.RobotaccountsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RobotaccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1436,7 +1436,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.WorkflowrunsCleared() {
+	if _u.mutation.WorkflowrunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1449,7 +1449,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !wuo.mutation.WorkflowrunsCleared() {
+	if nodes := _u.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowrunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1465,7 +1465,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1481,7 +1481,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -1494,7 +1494,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -1510,7 +1510,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.ContractCleared() {
+	if _u.mutation.ContractCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -1523,7 +1523,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.ContractIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ContractIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -1539,7 +1539,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.IntegrationAttachmentsCleared() {
+	if _u.mutation.IntegrationAttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1552,7 +1552,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.RemovedIntegrationAttachmentsIDs(); len(nodes) > 0 && !wuo.mutation.IntegrationAttachmentsCleared() {
+	if nodes := _u.mutation.RemovedIntegrationAttachmentsIDs(); len(nodes) > 0 && !_u.mutation.IntegrationAttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1568,7 +1568,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.IntegrationAttachmentsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.IntegrationAttachmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1584,7 +1584,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.ProjectCleared() {
+	if _u.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -1597,7 +1597,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -1613,7 +1613,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.LatestWorkflowRunCleared() {
+	if _u.mutation.LatestWorkflowRunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -1626,7 +1626,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.LatestWorkflowRunIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -1642,7 +1642,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wuo.mutation.ReferrersCleared() {
+	if _u.mutation.ReferrersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1655,7 +1655,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.RemovedReferrersIDs(); len(nodes) > 0 && !wuo.mutation.ReferrersCleared() {
+	if nodes := _u.mutation.RemovedReferrersIDs(); len(nodes) > 0 && !_u.mutation.ReferrersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1671,7 +1671,7 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wuo.mutation.ReferrersIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ReferrersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1687,11 +1687,11 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(wuo.modifiers...)
-	_node = &Workflow{config: wuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Workflow{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, wuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflow.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1699,6 +1699,6 @@ func (wuo *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err
 		}
 		return nil, err
 	}
-	wuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

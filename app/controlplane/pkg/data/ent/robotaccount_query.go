@@ -34,44 +34,44 @@ type RobotAccountQuery struct {
 }
 
 // Where adds a new predicate for the RobotAccountQuery builder.
-func (raq *RobotAccountQuery) Where(ps ...predicate.RobotAccount) *RobotAccountQuery {
-	raq.predicates = append(raq.predicates, ps...)
-	return raq
+func (_q *RobotAccountQuery) Where(ps ...predicate.RobotAccount) *RobotAccountQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (raq *RobotAccountQuery) Limit(limit int) *RobotAccountQuery {
-	raq.ctx.Limit = &limit
-	return raq
+func (_q *RobotAccountQuery) Limit(limit int) *RobotAccountQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (raq *RobotAccountQuery) Offset(offset int) *RobotAccountQuery {
-	raq.ctx.Offset = &offset
-	return raq
+func (_q *RobotAccountQuery) Offset(offset int) *RobotAccountQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (raq *RobotAccountQuery) Unique(unique bool) *RobotAccountQuery {
-	raq.ctx.Unique = &unique
-	return raq
+func (_q *RobotAccountQuery) Unique(unique bool) *RobotAccountQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (raq *RobotAccountQuery) Order(o ...robotaccount.OrderOption) *RobotAccountQuery {
-	raq.order = append(raq.order, o...)
-	return raq
+func (_q *RobotAccountQuery) Order(o ...robotaccount.OrderOption) *RobotAccountQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryWorkflow chains the current query on the "workflow" edge.
-func (raq *RobotAccountQuery) QueryWorkflow() *WorkflowQuery {
-	query := (&WorkflowClient{config: raq.config}).Query()
+func (_q *RobotAccountQuery) QueryWorkflow() *WorkflowQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := raq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := raq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -80,7 +80,7 @@ func (raq *RobotAccountQuery) QueryWorkflow() *WorkflowQuery {
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, robotaccount.WorkflowTable, robotaccount.WorkflowColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(raq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -88,8 +88,8 @@ func (raq *RobotAccountQuery) QueryWorkflow() *WorkflowQuery {
 
 // First returns the first RobotAccount entity from the query.
 // Returns a *NotFoundError when no RobotAccount was found.
-func (raq *RobotAccountQuery) First(ctx context.Context) (*RobotAccount, error) {
-	nodes, err := raq.Limit(1).All(setContextOp(ctx, raq.ctx, ent.OpQueryFirst))
+func (_q *RobotAccountQuery) First(ctx context.Context) (*RobotAccount, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +100,8 @@ func (raq *RobotAccountQuery) First(ctx context.Context) (*RobotAccount, error) 
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (raq *RobotAccountQuery) FirstX(ctx context.Context) *RobotAccount {
-	node, err := raq.First(ctx)
+func (_q *RobotAccountQuery) FirstX(ctx context.Context) *RobotAccount {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -110,9 +110,9 @@ func (raq *RobotAccountQuery) FirstX(ctx context.Context) *RobotAccount {
 
 // FirstID returns the first RobotAccount ID from the query.
 // Returns a *NotFoundError when no RobotAccount ID was found.
-func (raq *RobotAccountQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *RobotAccountQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = raq.Limit(1).IDs(setContextOp(ctx, raq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -123,8 +123,8 @@ func (raq *RobotAccountQuery) FirstID(ctx context.Context) (id uuid.UUID, err er
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (raq *RobotAccountQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := raq.FirstID(ctx)
+func (_q *RobotAccountQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -134,8 +134,8 @@ func (raq *RobotAccountQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single RobotAccount entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one RobotAccount entity is found.
 // Returns a *NotFoundError when no RobotAccount entities are found.
-func (raq *RobotAccountQuery) Only(ctx context.Context) (*RobotAccount, error) {
-	nodes, err := raq.Limit(2).All(setContextOp(ctx, raq.ctx, ent.OpQueryOnly))
+func (_q *RobotAccountQuery) Only(ctx context.Context) (*RobotAccount, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +150,8 @@ func (raq *RobotAccountQuery) Only(ctx context.Context) (*RobotAccount, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (raq *RobotAccountQuery) OnlyX(ctx context.Context) *RobotAccount {
-	node, err := raq.Only(ctx)
+func (_q *RobotAccountQuery) OnlyX(ctx context.Context) *RobotAccount {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -161,9 +161,9 @@ func (raq *RobotAccountQuery) OnlyX(ctx context.Context) *RobotAccount {
 // OnlyID is like Only, but returns the only RobotAccount ID in the query.
 // Returns a *NotSingularError when more than one RobotAccount ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (raq *RobotAccountQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *RobotAccountQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = raq.Limit(2).IDs(setContextOp(ctx, raq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -178,8 +178,8 @@ func (raq *RobotAccountQuery) OnlyID(ctx context.Context) (id uuid.UUID, err err
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (raq *RobotAccountQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := raq.OnlyID(ctx)
+func (_q *RobotAccountQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -187,18 +187,18 @@ func (raq *RobotAccountQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of RobotAccounts.
-func (raq *RobotAccountQuery) All(ctx context.Context) ([]*RobotAccount, error) {
-	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryAll)
-	if err := raq.prepareQuery(ctx); err != nil {
+func (_q *RobotAccountQuery) All(ctx context.Context) ([]*RobotAccount, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*RobotAccount, *RobotAccountQuery]()
-	return withInterceptors[[]*RobotAccount](ctx, raq, qr, raq.inters)
+	return withInterceptors[[]*RobotAccount](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (raq *RobotAccountQuery) AllX(ctx context.Context) []*RobotAccount {
-	nodes, err := raq.All(ctx)
+func (_q *RobotAccountQuery) AllX(ctx context.Context) []*RobotAccount {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -206,20 +206,20 @@ func (raq *RobotAccountQuery) AllX(ctx context.Context) []*RobotAccount {
 }
 
 // IDs executes the query and returns a list of RobotAccount IDs.
-func (raq *RobotAccountQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if raq.ctx.Unique == nil && raq.path != nil {
-		raq.Unique(true)
+func (_q *RobotAccountQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryIDs)
-	if err = raq.Select(robotaccount.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(robotaccount.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (raq *RobotAccountQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := raq.IDs(ctx)
+func (_q *RobotAccountQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -227,17 +227,17 @@ func (raq *RobotAccountQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (raq *RobotAccountQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryCount)
-	if err := raq.prepareQuery(ctx); err != nil {
+func (_q *RobotAccountQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, raq, querierCount[*RobotAccountQuery](), raq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*RobotAccountQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (raq *RobotAccountQuery) CountX(ctx context.Context) int {
-	count, err := raq.Count(ctx)
+func (_q *RobotAccountQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -245,9 +245,9 @@ func (raq *RobotAccountQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (raq *RobotAccountQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, raq.ctx, ent.OpQueryExist)
-	switch _, err := raq.FirstID(ctx); {
+func (_q *RobotAccountQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -258,8 +258,8 @@ func (raq *RobotAccountQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (raq *RobotAccountQuery) ExistX(ctx context.Context) bool {
-	exist, err := raq.Exist(ctx)
+func (_q *RobotAccountQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -268,33 +268,33 @@ func (raq *RobotAccountQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the RobotAccountQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (raq *RobotAccountQuery) Clone() *RobotAccountQuery {
-	if raq == nil {
+func (_q *RobotAccountQuery) Clone() *RobotAccountQuery {
+	if _q == nil {
 		return nil
 	}
 	return &RobotAccountQuery{
-		config:       raq.config,
-		ctx:          raq.ctx.Clone(),
-		order:        append([]robotaccount.OrderOption{}, raq.order...),
-		inters:       append([]Interceptor{}, raq.inters...),
-		predicates:   append([]predicate.RobotAccount{}, raq.predicates...),
-		withWorkflow: raq.withWorkflow.Clone(),
+		config:       _q.config,
+		ctx:          _q.ctx.Clone(),
+		order:        append([]robotaccount.OrderOption{}, _q.order...),
+		inters:       append([]Interceptor{}, _q.inters...),
+		predicates:   append([]predicate.RobotAccount{}, _q.predicates...),
+		withWorkflow: _q.withWorkflow.Clone(),
 		// clone intermediate query.
-		sql:       raq.sql.Clone(),
-		path:      raq.path,
-		modifiers: append([]func(*sql.Selector){}, raq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithWorkflow tells the query-builder to eager-load the nodes that are connected to
 // the "workflow" edge. The optional arguments are used to configure the query builder of the edge.
-func (raq *RobotAccountQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *RobotAccountQuery {
-	query := (&WorkflowClient{config: raq.config}).Query()
+func (_q *RobotAccountQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *RobotAccountQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	raq.withWorkflow = query
-	return raq
+	_q.withWorkflow = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,10 +311,10 @@ func (raq *RobotAccountQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *RobotA
 //		GroupBy(robotaccount.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (raq *RobotAccountQuery) GroupBy(field string, fields ...string) *RobotAccountGroupBy {
-	raq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &RobotAccountGroupBy{build: raq}
-	grbuild.flds = &raq.ctx.Fields
+func (_q *RobotAccountQuery) GroupBy(field string, fields ...string) *RobotAccountGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &RobotAccountGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = robotaccount.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -332,55 +332,55 @@ func (raq *RobotAccountQuery) GroupBy(field string, fields ...string) *RobotAcco
 //	client.RobotAccount.Query().
 //		Select(robotaccount.FieldName).
 //		Scan(ctx, &v)
-func (raq *RobotAccountQuery) Select(fields ...string) *RobotAccountSelect {
-	raq.ctx.Fields = append(raq.ctx.Fields, fields...)
-	sbuild := &RobotAccountSelect{RobotAccountQuery: raq}
+func (_q *RobotAccountQuery) Select(fields ...string) *RobotAccountSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &RobotAccountSelect{RobotAccountQuery: _q}
 	sbuild.label = robotaccount.Label
-	sbuild.flds, sbuild.scan = &raq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a RobotAccountSelect configured with the given aggregations.
-func (raq *RobotAccountQuery) Aggregate(fns ...AggregateFunc) *RobotAccountSelect {
-	return raq.Select().Aggregate(fns...)
+func (_q *RobotAccountQuery) Aggregate(fns ...AggregateFunc) *RobotAccountSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (raq *RobotAccountQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range raq.inters {
+func (_q *RobotAccountQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, raq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range raq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !robotaccount.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if raq.path != nil {
-		prev, err := raq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		raq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (raq *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*RobotAccount, error) {
+func (_q *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*RobotAccount, error) {
 	var (
 		nodes       = []*RobotAccount{}
-		withFKs     = raq.withFKs
-		_spec       = raq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			raq.withWorkflow != nil,
+			_q.withWorkflow != nil,
 		}
 	)
-	if raq.withWorkflow != nil {
+	if _q.withWorkflow != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -390,25 +390,25 @@ func (raq *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		return (*RobotAccount).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &RobotAccount{config: raq.config}
+		node := &RobotAccount{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(raq.modifiers) > 0 {
-		_spec.Modifiers = raq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, raq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := raq.withWorkflow; query != nil {
-		if err := raq.loadWorkflow(ctx, query, nodes, nil,
+	if query := _q.withWorkflow; query != nil {
+		if err := _q.loadWorkflow(ctx, query, nodes, nil,
 			func(n *RobotAccount, e *Workflow) { n.Edges.Workflow = e }); err != nil {
 			return nil, err
 		}
@@ -416,7 +416,7 @@ func (raq *RobotAccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	return nodes, nil
 }
 
-func (raq *RobotAccountQuery) loadWorkflow(ctx context.Context, query *WorkflowQuery, nodes []*RobotAccount, init func(*RobotAccount), assign func(*RobotAccount, *Workflow)) error {
+func (_q *RobotAccountQuery) loadWorkflow(ctx context.Context, query *WorkflowQuery, nodes []*RobotAccount, init func(*RobotAccount), assign func(*RobotAccount, *Workflow)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*RobotAccount)
 	for i := range nodes {
@@ -449,27 +449,27 @@ func (raq *RobotAccountQuery) loadWorkflow(ctx context.Context, query *WorkflowQ
 	return nil
 }
 
-func (raq *RobotAccountQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := raq.querySpec()
-	if len(raq.modifiers) > 0 {
-		_spec.Modifiers = raq.modifiers
+func (_q *RobotAccountQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = raq.ctx.Fields
-	if len(raq.ctx.Fields) > 0 {
-		_spec.Unique = raq.ctx.Unique != nil && *raq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, raq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (raq *RobotAccountQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *RobotAccountQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
-	_spec.From = raq.sql
-	if unique := raq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if raq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := raq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, robotaccount.FieldID)
 		for i := range fields {
@@ -478,20 +478,20 @@ func (raq *RobotAccountQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := raq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := raq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := raq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := raq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -501,36 +501,36 @@ func (raq *RobotAccountQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (raq *RobotAccountQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(raq.driver.Dialect())
+func (_q *RobotAccountQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(robotaccount.Table)
-	columns := raq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = robotaccount.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if raq.sql != nil {
-		selector = raq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if raq.ctx.Unique != nil && *raq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range raq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range raq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range raq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := raq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := raq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -539,33 +539,33 @@ func (raq *RobotAccountQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (raq *RobotAccountQuery) ForUpdate(opts ...sql.LockOption) *RobotAccountQuery {
-	if raq.driver.Dialect() == dialect.Postgres {
-		raq.Unique(false)
+func (_q *RobotAccountQuery) ForUpdate(opts ...sql.LockOption) *RobotAccountQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	raq.modifiers = append(raq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return raq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (raq *RobotAccountQuery) ForShare(opts ...sql.LockOption) *RobotAccountQuery {
-	if raq.driver.Dialect() == dialect.Postgres {
-		raq.Unique(false)
+func (_q *RobotAccountQuery) ForShare(opts ...sql.LockOption) *RobotAccountQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	raq.modifiers = append(raq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return raq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (raq *RobotAccountQuery) Modify(modifiers ...func(s *sql.Selector)) *RobotAccountSelect {
-	raq.modifiers = append(raq.modifiers, modifiers...)
-	return raq.Select()
+func (_q *RobotAccountQuery) Modify(modifiers ...func(s *sql.Selector)) *RobotAccountSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // RobotAccountGroupBy is the group-by builder for RobotAccount entities.
@@ -575,41 +575,41 @@ type RobotAccountGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (ragb *RobotAccountGroupBy) Aggregate(fns ...AggregateFunc) *RobotAccountGroupBy {
-	ragb.fns = append(ragb.fns, fns...)
-	return ragb
+func (_g *RobotAccountGroupBy) Aggregate(fns ...AggregateFunc) *RobotAccountGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ragb *RobotAccountGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ragb.build.ctx, ent.OpQueryGroupBy)
-	if err := ragb.build.prepareQuery(ctx); err != nil {
+func (_g *RobotAccountGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*RobotAccountQuery, *RobotAccountGroupBy](ctx, ragb.build, ragb, ragb.build.inters, v)
+	return scanWithInterceptors[*RobotAccountQuery, *RobotAccountGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (ragb *RobotAccountGroupBy) sqlScan(ctx context.Context, root *RobotAccountQuery, v any) error {
+func (_g *RobotAccountGroupBy) sqlScan(ctx context.Context, root *RobotAccountQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(ragb.fns))
-	for _, fn := range ragb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*ragb.flds)+len(ragb.fns))
-		for _, f := range *ragb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*ragb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ragb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -623,27 +623,27 @@ type RobotAccountSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (ras *RobotAccountSelect) Aggregate(fns ...AggregateFunc) *RobotAccountSelect {
-	ras.fns = append(ras.fns, fns...)
-	return ras
+func (_s *RobotAccountSelect) Aggregate(fns ...AggregateFunc) *RobotAccountSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ras *RobotAccountSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ras.ctx, ent.OpQuerySelect)
-	if err := ras.prepareQuery(ctx); err != nil {
+func (_s *RobotAccountSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*RobotAccountQuery, *RobotAccountSelect](ctx, ras.RobotAccountQuery, ras, ras.inters, v)
+	return scanWithInterceptors[*RobotAccountQuery, *RobotAccountSelect](ctx, _s.RobotAccountQuery, _s, _s.inters, v)
 }
 
-func (ras *RobotAccountSelect) sqlScan(ctx context.Context, root *RobotAccountQuery, v any) error {
+func (_s *RobotAccountSelect) sqlScan(ctx context.Context, root *RobotAccountQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(ras.fns))
-	for _, fn := range ras.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*ras.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -651,7 +651,7 @@ func (ras *RobotAccountSelect) sqlScan(ctx context.Context, root *RobotAccountQu
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ras.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -659,7 +659,7 @@ func (ras *RobotAccountSelect) sqlScan(ctx context.Context, root *RobotAccountQu
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (ras *RobotAccountSelect) Modify(modifiers ...func(s *sql.Selector)) *RobotAccountSelect {
-	ras.modifiers = append(ras.modifiers, modifiers...)
-	return ras
+func (_s *RobotAccountSelect) Modify(modifiers ...func(s *sql.Selector)) *RobotAccountSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

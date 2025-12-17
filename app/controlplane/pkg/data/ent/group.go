@@ -92,7 +92,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Group fields.
-func (gr *Group) assignValues(columns []string, values []any) error {
+func (_m *Group) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -102,52 +102,52 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				gr.ID = *value
+				_m.ID = *value
 			}
 		case group.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				gr.Name = value.String
+				_m.Name = value.String
 			}
 		case group.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				gr.Description = value.String
+				_m.Description = value.String
 			}
 		case group.FieldOrganizationID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
-				gr.OrganizationID = *value
+				_m.OrganizationID = *value
 			}
 		case group.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				gr.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case group.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				gr.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case group.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				gr.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case group.FieldMemberCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field member_count", values[i])
 			} else if value.Valid {
-				gr.MemberCount = int(value.Int64)
+				_m.MemberCount = int(value.Int64)
 			}
 		default:
-			gr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -155,63 +155,63 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Group.
 // This includes values selected through modifiers, order, etc.
-func (gr *Group) Value(name string) (ent.Value, error) {
-	return gr.selectValues.Get(name)
+func (_m *Group) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryGroupMemberships queries the "group_memberships" edge of the Group entity.
-func (gr *Group) QueryGroupMemberships() *GroupMembershipQuery {
-	return NewGroupClient(gr.config).QueryGroupMemberships(gr)
+func (_m *Group) QueryGroupMemberships() *GroupMembershipQuery {
+	return NewGroupClient(_m.config).QueryGroupMemberships(_m)
 }
 
 // QueryOrganization queries the "organization" edge of the Group entity.
-func (gr *Group) QueryOrganization() *OrganizationQuery {
-	return NewGroupClient(gr.config).QueryOrganization(gr)
+func (_m *Group) QueryOrganization() *OrganizationQuery {
+	return NewGroupClient(_m.config).QueryOrganization(_m)
 }
 
 // Update returns a builder for updating this Group.
 // Note that you need to call Group.Unwrap() before calling this method if this Group
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (gr *Group) Update() *GroupUpdateOne {
-	return NewGroupClient(gr.config).UpdateOne(gr)
+func (_m *Group) Update() *GroupUpdateOne {
+	return NewGroupClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Group entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (gr *Group) Unwrap() *Group {
-	_tx, ok := gr.config.driver.(*txDriver)
+func (_m *Group) Unwrap() *Group {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Group is not a transactional entity")
 	}
-	gr.config.driver = _tx.drv
-	return gr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (gr *Group) String() string {
+func (_m *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", gr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(gr.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(gr.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
-	builder.WriteString(fmt.Sprintf("%v", gr.OrganizationID))
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(gr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(gr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(gr.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("member_count=")
-	builder.WriteString(fmt.Sprintf("%v", gr.MemberCount))
+	builder.WriteString(fmt.Sprintf("%v", _m.MemberCount))
 	builder.WriteByte(')')
 	return builder.String()
 }

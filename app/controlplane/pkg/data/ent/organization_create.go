@@ -33,249 +33,249 @@ type OrganizationCreate struct {
 }
 
 // SetName sets the "name" field.
-func (oc *OrganizationCreate) SetName(s string) *OrganizationCreate {
-	oc.mutation.SetName(s)
-	return oc
+func (_c *OrganizationCreate) SetName(v string) *OrganizationCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (oc *OrganizationCreate) SetCreatedAt(t time.Time) *OrganizationCreate {
-	oc.mutation.SetCreatedAt(t)
-	return oc
+func (_c *OrganizationCreate) SetCreatedAt(v time.Time) *OrganizationCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCreate {
-	if t != nil {
-		oc.SetCreatedAt(*t)
+func (_c *OrganizationCreate) SetNillableCreatedAt(v *time.Time) *OrganizationCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return oc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (oc *OrganizationCreate) SetUpdatedAt(t time.Time) *OrganizationCreate {
-	oc.mutation.SetUpdatedAt(t)
-	return oc
+func (_c *OrganizationCreate) SetUpdatedAt(v time.Time) *OrganizationCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableUpdatedAt(t *time.Time) *OrganizationCreate {
-	if t != nil {
-		oc.SetUpdatedAt(*t)
+func (_c *OrganizationCreate) SetNillableUpdatedAt(v *time.Time) *OrganizationCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return oc
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (oc *OrganizationCreate) SetDeletedAt(t time.Time) *OrganizationCreate {
-	oc.mutation.SetDeletedAt(t)
-	return oc
+func (_c *OrganizationCreate) SetDeletedAt(v time.Time) *OrganizationCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableDeletedAt(t *time.Time) *OrganizationCreate {
-	if t != nil {
-		oc.SetDeletedAt(*t)
+func (_c *OrganizationCreate) SetNillableDeletedAt(v *time.Time) *OrganizationCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return oc
+	return _c
 }
 
 // SetBlockOnPolicyViolation sets the "block_on_policy_violation" field.
-func (oc *OrganizationCreate) SetBlockOnPolicyViolation(b bool) *OrganizationCreate {
-	oc.mutation.SetBlockOnPolicyViolation(b)
-	return oc
+func (_c *OrganizationCreate) SetBlockOnPolicyViolation(v bool) *OrganizationCreate {
+	_c.mutation.SetBlockOnPolicyViolation(v)
+	return _c
 }
 
 // SetNillableBlockOnPolicyViolation sets the "block_on_policy_violation" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableBlockOnPolicyViolation(b *bool) *OrganizationCreate {
-	if b != nil {
-		oc.SetBlockOnPolicyViolation(*b)
+func (_c *OrganizationCreate) SetNillableBlockOnPolicyViolation(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetBlockOnPolicyViolation(*v)
 	}
-	return oc
+	return _c
 }
 
 // SetPoliciesAllowedHostnames sets the "policies_allowed_hostnames" field.
-func (oc *OrganizationCreate) SetPoliciesAllowedHostnames(s []string) *OrganizationCreate {
-	oc.mutation.SetPoliciesAllowedHostnames(s)
-	return oc
+func (_c *OrganizationCreate) SetPoliciesAllowedHostnames(v []string) *OrganizationCreate {
+	_c.mutation.SetPoliciesAllowedHostnames(v)
+	return _c
 }
 
 // SetPreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field.
-func (oc *OrganizationCreate) SetPreventImplicitWorkflowCreation(b bool) *OrganizationCreate {
-	oc.mutation.SetPreventImplicitWorkflowCreation(b)
-	return oc
+func (_c *OrganizationCreate) SetPreventImplicitWorkflowCreation(v bool) *OrganizationCreate {
+	_c.mutation.SetPreventImplicitWorkflowCreation(v)
+	return _c
 }
 
 // SetNillablePreventImplicitWorkflowCreation sets the "prevent_implicit_workflow_creation" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillablePreventImplicitWorkflowCreation(b *bool) *OrganizationCreate {
-	if b != nil {
-		oc.SetPreventImplicitWorkflowCreation(*b)
+func (_c *OrganizationCreate) SetNillablePreventImplicitWorkflowCreation(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetPreventImplicitWorkflowCreation(*v)
 	}
-	return oc
+	return _c
 }
 
 // SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
-func (oc *OrganizationCreate) SetRestrictContractCreationToOrgAdmins(b bool) *OrganizationCreate {
-	oc.mutation.SetRestrictContractCreationToOrgAdmins(b)
-	return oc
+func (_c *OrganizationCreate) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationCreate {
+	_c.mutation.SetRestrictContractCreationToOrgAdmins(v)
+	return _c
 }
 
 // SetNillableRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableRestrictContractCreationToOrgAdmins(b *bool) *OrganizationCreate {
-	if b != nil {
-		oc.SetRestrictContractCreationToOrgAdmins(*b)
+func (_c *OrganizationCreate) SetNillableRestrictContractCreationToOrgAdmins(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetRestrictContractCreationToOrgAdmins(*v)
 	}
-	return oc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
-	oc.mutation.SetID(u)
-	return oc
+func (_c *OrganizationCreate) SetID(v uuid.UUID) *OrganizationCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableID(u *uuid.UUID) *OrganizationCreate {
-	if u != nil {
-		oc.SetID(*u)
+func (_c *OrganizationCreate) SetNillableID(v *uuid.UUID) *OrganizationCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return oc
+	return _c
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
-func (oc *OrganizationCreate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddMembershipIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddMembershipIDs(ids...)
+	return _c
 }
 
 // AddMemberships adds the "memberships" edges to the Membership entity.
-func (oc *OrganizationCreate) AddMemberships(m ...*Membership) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+func (_c *OrganizationCreate) AddMemberships(v ...*Membership) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddMembershipIDs(ids...)
+	return _c.AddMembershipIDs(ids...)
 }
 
 // AddWorkflowContractIDs adds the "workflow_contracts" edge to the WorkflowContract entity by IDs.
-func (oc *OrganizationCreate) AddWorkflowContractIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddWorkflowContractIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddWorkflowContractIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddWorkflowContractIDs(ids...)
+	return _c
 }
 
 // AddWorkflowContracts adds the "workflow_contracts" edges to the WorkflowContract entity.
-func (oc *OrganizationCreate) AddWorkflowContracts(w ...*WorkflowContract) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *OrganizationCreate) AddWorkflowContracts(v ...*WorkflowContract) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddWorkflowContractIDs(ids...)
+	return _c.AddWorkflowContractIDs(ids...)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (oc *OrganizationCreate) AddWorkflowIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddWorkflowIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddWorkflowIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddWorkflowIDs(ids...)
+	return _c
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (oc *OrganizationCreate) AddWorkflows(w ...*Workflow) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *OrganizationCreate) AddWorkflows(v ...*Workflow) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddWorkflowIDs(ids...)
+	return _c.AddWorkflowIDs(ids...)
 }
 
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
-func (oc *OrganizationCreate) AddCasBackendIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddCasBackendIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddCasBackendIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddCasBackendIDs(ids...)
+	return _c
 }
 
 // AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
-func (oc *OrganizationCreate) AddCasBackends(c ...*CASBackend) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_c *OrganizationCreate) AddCasBackends(v ...*CASBackend) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddCasBackendIDs(ids...)
+	return _c.AddCasBackendIDs(ids...)
 }
 
 // AddIntegrationIDs adds the "integrations" edge to the Integration entity by IDs.
-func (oc *OrganizationCreate) AddIntegrationIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddIntegrationIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddIntegrationIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddIntegrationIDs(ids...)
+	return _c
 }
 
 // AddIntegrations adds the "integrations" edges to the Integration entity.
-func (oc *OrganizationCreate) AddIntegrations(i ...*Integration) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_c *OrganizationCreate) AddIntegrations(v ...*Integration) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddIntegrationIDs(ids...)
+	return _c.AddIntegrationIDs(ids...)
 }
 
 // AddAPITokenIDs adds the "api_tokens" edge to the APIToken entity by IDs.
-func (oc *OrganizationCreate) AddAPITokenIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddAPITokenIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddAPITokenIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddAPITokenIDs(ids...)
+	return _c
 }
 
 // AddAPITokens adds the "api_tokens" edges to the APIToken entity.
-func (oc *OrganizationCreate) AddAPITokens(a ...*APIToken) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_c *OrganizationCreate) AddAPITokens(v ...*APIToken) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddAPITokenIDs(ids...)
+	return _c.AddAPITokenIDs(ids...)
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (oc *OrganizationCreate) AddProjectIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddProjectIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddProjectIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddProjectIDs(ids...)
+	return _c
 }
 
 // AddProjects adds the "projects" edges to the Project entity.
-func (oc *OrganizationCreate) AddProjects(p ...*Project) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_c *OrganizationCreate) AddProjects(v ...*Project) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddProjectIDs(ids...)
+	return _c.AddProjectIDs(ids...)
 }
 
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (oc *OrganizationCreate) AddGroupIDs(ids ...uuid.UUID) *OrganizationCreate {
-	oc.mutation.AddGroupIDs(ids...)
-	return oc
+func (_c *OrganizationCreate) AddGroupIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddGroupIDs(ids...)
+	return _c
 }
 
 // AddGroups adds the "groups" edges to the Group entity.
-func (oc *OrganizationCreate) AddGroups(g ...*Group) *OrganizationCreate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_c *OrganizationCreate) AddGroups(v ...*Group) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return oc.AddGroupIDs(ids...)
+	return _c.AddGroupIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
-func (oc *OrganizationCreate) Mutation() *OrganizationMutation {
-	return oc.mutation
+func (_c *OrganizationCreate) Mutation() *OrganizationMutation {
+	return _c.mutation
 }
 
 // Save creates the Organization in the database.
-func (oc *OrganizationCreate) Save(ctx context.Context) (*Organization, error) {
-	oc.defaults()
-	return withHooks(ctx, oc.sqlSave, oc.mutation, oc.hooks)
+func (_c *OrganizationCreate) Save(ctx context.Context) (*Organization, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (oc *OrganizationCreate) SaveX(ctx context.Context) *Organization {
-	v, err := oc.Save(ctx)
+func (_c *OrganizationCreate) SaveX(ctx context.Context) *Organization {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -283,75 +283,75 @@ func (oc *OrganizationCreate) SaveX(ctx context.Context) *Organization {
 }
 
 // Exec executes the query.
-func (oc *OrganizationCreate) Exec(ctx context.Context) error {
-	_, err := oc.Save(ctx)
+func (_c *OrganizationCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oc *OrganizationCreate) ExecX(ctx context.Context) {
-	if err := oc.Exec(ctx); err != nil {
+func (_c *OrganizationCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (oc *OrganizationCreate) defaults() {
-	if _, ok := oc.mutation.CreatedAt(); !ok {
+func (_c *OrganizationCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := organization.DefaultCreatedAt()
-		oc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := oc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := organization.DefaultUpdatedAt()
-		oc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
+	if _, ok := _c.mutation.BlockOnPolicyViolation(); !ok {
 		v := organization.DefaultBlockOnPolicyViolation
-		oc.mutation.SetBlockOnPolicyViolation(v)
+		_c.mutation.SetBlockOnPolicyViolation(v)
 	}
-	if _, ok := oc.mutation.PreventImplicitWorkflowCreation(); !ok {
+	if _, ok := _c.mutation.PreventImplicitWorkflowCreation(); !ok {
 		v := organization.DefaultPreventImplicitWorkflowCreation
-		oc.mutation.SetPreventImplicitWorkflowCreation(v)
+		_c.mutation.SetPreventImplicitWorkflowCreation(v)
 	}
-	if _, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); !ok {
+	if _, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); !ok {
 		v := organization.DefaultRestrictContractCreationToOrgAdmins
-		oc.mutation.SetRestrictContractCreationToOrgAdmins(v)
+		_c.mutation.SetRestrictContractCreationToOrgAdmins(v)
 	}
-	if _, ok := oc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := organization.DefaultID()
-		oc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (oc *OrganizationCreate) check() error {
-	if _, ok := oc.mutation.Name(); !ok {
+func (_c *OrganizationCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Organization.name"`)}
 	}
-	if _, ok := oc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
 	}
-	if _, ok := oc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Organization.updated_at"`)}
 	}
-	if _, ok := oc.mutation.BlockOnPolicyViolation(); !ok {
+	if _, ok := _c.mutation.BlockOnPolicyViolation(); !ok {
 		return &ValidationError{Name: "block_on_policy_violation", err: errors.New(`ent: missing required field "Organization.block_on_policy_violation"`)}
 	}
-	if _, ok := oc.mutation.PreventImplicitWorkflowCreation(); !ok {
+	if _, ok := _c.mutation.PreventImplicitWorkflowCreation(); !ok {
 		return &ValidationError{Name: "prevent_implicit_workflow_creation", err: errors.New(`ent: missing required field "Organization.prevent_implicit_workflow_creation"`)}
 	}
-	if _, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); !ok {
+	if _, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); !ok {
 		return &ValidationError{Name: "restrict_contract_creation_to_org_admins", err: errors.New(`ent: missing required field "Organization.restrict_contract_creation_to_org_admins"`)}
 	}
 	return nil
 }
 
-func (oc *OrganizationCreate) sqlSave(ctx context.Context) (*Organization, error) {
-	if err := oc.check(); err != nil {
+func (_c *OrganizationCreate) sqlSave(ctx context.Context) (*Organization, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := oc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, oc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -364,54 +364,54 @@ func (oc *OrganizationCreate) sqlSave(ctx context.Context) (*Organization, error
 			return nil, err
 		}
 	}
-	oc.mutation.id = &_node.ID
-	oc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec) {
+func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Organization{config: oc.config}
+		_node = &Organization{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(organization.Table, sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = oc.conflict
-	if id, ok := oc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := oc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(organization.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := oc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := oc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := oc.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := oc.mutation.BlockOnPolicyViolation(); ok {
+	if value, ok := _c.mutation.BlockOnPolicyViolation(); ok {
 		_spec.SetField(organization.FieldBlockOnPolicyViolation, field.TypeBool, value)
 		_node.BlockOnPolicyViolation = value
 	}
-	if value, ok := oc.mutation.PoliciesAllowedHostnames(); ok {
+	if value, ok := _c.mutation.PoliciesAllowedHostnames(); ok {
 		_spec.SetField(organization.FieldPoliciesAllowedHostnames, field.TypeJSON, value)
 		_node.PoliciesAllowedHostnames = value
 	}
-	if value, ok := oc.mutation.PreventImplicitWorkflowCreation(); ok {
+	if value, ok := _c.mutation.PreventImplicitWorkflowCreation(); ok {
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 		_node.PreventImplicitWorkflowCreation = value
 	}
-	if value, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); ok {
+	if value, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
 		_node.RestrictContractCreationToOrgAdmins = value
 	}
-	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -427,7 +427,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.WorkflowContractsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowContractsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -443,7 +443,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -459,7 +459,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.CasBackendsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.CasBackendsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -475,7 +475,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.IntegrationsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.IntegrationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -491,7 +491,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.APITokensIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.APITokensIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -507,7 +507,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.ProjectsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -523,7 +523,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -558,10 +558,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (oc *OrganizationCreate) OnConflict(opts ...sql.ConflictOption) *OrganizationUpsertOne {
-	oc.conflict = opts
+func (_c *OrganizationCreate) OnConflict(opts ...sql.ConflictOption) *OrganizationUpsertOne {
+	_c.conflict = opts
 	return &OrganizationUpsertOne{
-		create: oc,
+		create: _c,
 	}
 }
 
@@ -571,10 +571,10 @@ func (oc *OrganizationCreate) OnConflict(opts ...sql.ConflictOption) *Organizati
 //	client.Organization.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (oc *OrganizationCreate) OnConflictColumns(columns ...string) *OrganizationUpsertOne {
-	oc.conflict = append(oc.conflict, sql.ConflictColumns(columns...))
+func (_c *OrganizationCreate) OnConflictColumns(columns ...string) *OrganizationUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &OrganizationUpsertOne{
-		create: oc,
+		create: _c,
 	}
 }
 
@@ -897,16 +897,16 @@ type OrganizationCreateBulk struct {
 }
 
 // Save creates the Organization entities in the database.
-func (ocb *OrganizationCreateBulk) Save(ctx context.Context) ([]*Organization, error) {
-	if ocb.err != nil {
-		return nil, ocb.err
+func (_c *OrganizationCreateBulk) Save(ctx context.Context) ([]*Organization, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(ocb.builders))
-	nodes := make([]*Organization, len(ocb.builders))
-	mutators := make([]Mutator, len(ocb.builders))
-	for i := range ocb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Organization, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := ocb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*OrganizationMutation)
@@ -920,12 +920,12 @@ func (ocb *OrganizationCreateBulk) Save(ctx context.Context) ([]*Organization, e
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, ocb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = ocb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ocb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -945,7 +945,7 @@ func (ocb *OrganizationCreateBulk) Save(ctx context.Context) ([]*Organization, e
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, ocb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -953,8 +953,8 @@ func (ocb *OrganizationCreateBulk) Save(ctx context.Context) ([]*Organization, e
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ocb *OrganizationCreateBulk) SaveX(ctx context.Context) []*Organization {
-	v, err := ocb.Save(ctx)
+func (_c *OrganizationCreateBulk) SaveX(ctx context.Context) []*Organization {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -962,14 +962,14 @@ func (ocb *OrganizationCreateBulk) SaveX(ctx context.Context) []*Organization {
 }
 
 // Exec executes the query.
-func (ocb *OrganizationCreateBulk) Exec(ctx context.Context) error {
-	_, err := ocb.Save(ctx)
+func (_c *OrganizationCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ocb *OrganizationCreateBulk) ExecX(ctx context.Context) {
-	if err := ocb.Exec(ctx); err != nil {
+func (_c *OrganizationCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -989,10 +989,10 @@ func (ocb *OrganizationCreateBulk) ExecX(ctx context.Context) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (ocb *OrganizationCreateBulk) OnConflict(opts ...sql.ConflictOption) *OrganizationUpsertBulk {
-	ocb.conflict = opts
+func (_c *OrganizationCreateBulk) OnConflict(opts ...sql.ConflictOption) *OrganizationUpsertBulk {
+	_c.conflict = opts
 	return &OrganizationUpsertBulk{
-		create: ocb,
+		create: _c,
 	}
 }
 
@@ -1002,10 +1002,10 @@ func (ocb *OrganizationCreateBulk) OnConflict(opts ...sql.ConflictOption) *Organ
 //	client.Organization.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (ocb *OrganizationCreateBulk) OnConflictColumns(columns ...string) *OrganizationUpsertBulk {
-	ocb.conflict = append(ocb.conflict, sql.ConflictColumns(columns...))
+func (_c *OrganizationCreateBulk) OnConflictColumns(columns ...string) *OrganizationUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &OrganizationUpsertBulk{
-		create: ocb,
+		create: _c,
 	}
 }
 

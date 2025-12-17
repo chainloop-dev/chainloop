@@ -20,56 +20,56 @@ type GroupMembershipDelete struct {
 }
 
 // Where appends a list predicates to the GroupMembershipDelete builder.
-func (gmd *GroupMembershipDelete) Where(ps ...predicate.GroupMembership) *GroupMembershipDelete {
-	gmd.mutation.Where(ps...)
-	return gmd
+func (_d *GroupMembershipDelete) Where(ps ...predicate.GroupMembership) *GroupMembershipDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (gmd *GroupMembershipDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, gmd.sqlExec, gmd.mutation, gmd.hooks)
+func (_d *GroupMembershipDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (gmd *GroupMembershipDelete) ExecX(ctx context.Context) int {
-	n, err := gmd.Exec(ctx)
+func (_d *GroupMembershipDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (gmd *GroupMembershipDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *GroupMembershipDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(groupmembership.Table, sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID))
-	if ps := gmd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, gmd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	gmd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // GroupMembershipDeleteOne is the builder for deleting a single GroupMembership entity.
 type GroupMembershipDeleteOne struct {
-	gmd *GroupMembershipDelete
+	_d *GroupMembershipDelete
 }
 
 // Where appends a list predicates to the GroupMembershipDelete builder.
-func (gmdo *GroupMembershipDeleteOne) Where(ps ...predicate.GroupMembership) *GroupMembershipDeleteOne {
-	gmdo.gmd.mutation.Where(ps...)
-	return gmdo
+func (_d *GroupMembershipDeleteOne) Where(ps ...predicate.GroupMembership) *GroupMembershipDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (gmdo *GroupMembershipDeleteOne) Exec(ctx context.Context) error {
-	n, err := gmdo.gmd.Exec(ctx)
+func (_d *GroupMembershipDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (gmdo *GroupMembershipDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (gmdo *GroupMembershipDeleteOne) ExecX(ctx context.Context) {
-	if err := gmdo.Exec(ctx); err != nil {
+func (_d *GroupMembershipDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

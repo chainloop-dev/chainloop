@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 )
 
 // Custom validations

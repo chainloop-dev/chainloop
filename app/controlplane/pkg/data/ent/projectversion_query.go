@@ -36,44 +36,44 @@ type ProjectVersionQuery struct {
 }
 
 // Where adds a new predicate for the ProjectVersionQuery builder.
-func (pvq *ProjectVersionQuery) Where(ps ...predicate.ProjectVersion) *ProjectVersionQuery {
-	pvq.predicates = append(pvq.predicates, ps...)
-	return pvq
+func (_q *ProjectVersionQuery) Where(ps ...predicate.ProjectVersion) *ProjectVersionQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (pvq *ProjectVersionQuery) Limit(limit int) *ProjectVersionQuery {
-	pvq.ctx.Limit = &limit
-	return pvq
+func (_q *ProjectVersionQuery) Limit(limit int) *ProjectVersionQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (pvq *ProjectVersionQuery) Offset(offset int) *ProjectVersionQuery {
-	pvq.ctx.Offset = &offset
-	return pvq
+func (_q *ProjectVersionQuery) Offset(offset int) *ProjectVersionQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (pvq *ProjectVersionQuery) Unique(unique bool) *ProjectVersionQuery {
-	pvq.ctx.Unique = &unique
-	return pvq
+func (_q *ProjectVersionQuery) Unique(unique bool) *ProjectVersionQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (pvq *ProjectVersionQuery) Order(o ...projectversion.OrderOption) *ProjectVersionQuery {
-	pvq.order = append(pvq.order, o...)
-	return pvq
+func (_q *ProjectVersionQuery) Order(o ...projectversion.OrderOption) *ProjectVersionQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryProject chains the current query on the "project" edge.
-func (pvq *ProjectVersionQuery) QueryProject() *ProjectQuery {
-	query := (&ProjectClient{config: pvq.config}).Query()
+func (_q *ProjectVersionQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pvq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := pvq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -82,20 +82,20 @@ func (pvq *ProjectVersionQuery) QueryProject() *ProjectQuery {
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, projectversion.ProjectTable, projectversion.ProjectColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(pvq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryRuns chains the current query on the "runs" edge.
-func (pvq *ProjectVersionQuery) QueryRuns() *WorkflowRunQuery {
-	query := (&WorkflowRunClient{config: pvq.config}).Query()
+func (_q *ProjectVersionQuery) QueryRuns() *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pvq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := pvq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -104,7 +104,7 @@ func (pvq *ProjectVersionQuery) QueryRuns() *WorkflowRunQuery {
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, projectversion.RunsTable, projectversion.RunsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(pvq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -112,8 +112,8 @@ func (pvq *ProjectVersionQuery) QueryRuns() *WorkflowRunQuery {
 
 // First returns the first ProjectVersion entity from the query.
 // Returns a *NotFoundError when no ProjectVersion was found.
-func (pvq *ProjectVersionQuery) First(ctx context.Context) (*ProjectVersion, error) {
-	nodes, err := pvq.Limit(1).All(setContextOp(ctx, pvq.ctx, ent.OpQueryFirst))
+func (_q *ProjectVersionQuery) First(ctx context.Context) (*ProjectVersion, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ func (pvq *ProjectVersionQuery) First(ctx context.Context) (*ProjectVersion, err
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) FirstX(ctx context.Context) *ProjectVersion {
-	node, err := pvq.First(ctx)
+func (_q *ProjectVersionQuery) FirstX(ctx context.Context) *ProjectVersion {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -134,9 +134,9 @@ func (pvq *ProjectVersionQuery) FirstX(ctx context.Context) *ProjectVersion {
 
 // FirstID returns the first ProjectVersion ID from the query.
 // Returns a *NotFoundError when no ProjectVersion ID was found.
-func (pvq *ProjectVersionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ProjectVersionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = pvq.Limit(1).IDs(setContextOp(ctx, pvq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -147,8 +147,8 @@ func (pvq *ProjectVersionQuery) FirstID(ctx context.Context) (id uuid.UUID, err 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := pvq.FirstID(ctx)
+func (_q *ProjectVersionQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -158,8 +158,8 @@ func (pvq *ProjectVersionQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single ProjectVersion entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one ProjectVersion entity is found.
 // Returns a *NotFoundError when no ProjectVersion entities are found.
-func (pvq *ProjectVersionQuery) Only(ctx context.Context) (*ProjectVersion, error) {
-	nodes, err := pvq.Limit(2).All(setContextOp(ctx, pvq.ctx, ent.OpQueryOnly))
+func (_q *ProjectVersionQuery) Only(ctx context.Context) (*ProjectVersion, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +174,8 @@ func (pvq *ProjectVersionQuery) Only(ctx context.Context) (*ProjectVersion, erro
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) OnlyX(ctx context.Context) *ProjectVersion {
-	node, err := pvq.Only(ctx)
+func (_q *ProjectVersionQuery) OnlyX(ctx context.Context) *ProjectVersion {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -185,9 +185,9 @@ func (pvq *ProjectVersionQuery) OnlyX(ctx context.Context) *ProjectVersion {
 // OnlyID is like Only, but returns the only ProjectVersion ID in the query.
 // Returns a *NotSingularError when more than one ProjectVersion ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pvq *ProjectVersionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ProjectVersionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = pvq.Limit(2).IDs(setContextOp(ctx, pvq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -202,8 +202,8 @@ func (pvq *ProjectVersionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err e
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := pvq.OnlyID(ctx)
+func (_q *ProjectVersionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -211,18 +211,18 @@ func (pvq *ProjectVersionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of ProjectVersions.
-func (pvq *ProjectVersionQuery) All(ctx context.Context) ([]*ProjectVersion, error) {
-	ctx = setContextOp(ctx, pvq.ctx, ent.OpQueryAll)
-	if err := pvq.prepareQuery(ctx); err != nil {
+func (_q *ProjectVersionQuery) All(ctx context.Context) ([]*ProjectVersion, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*ProjectVersion, *ProjectVersionQuery]()
-	return withInterceptors[[]*ProjectVersion](ctx, pvq, qr, pvq.inters)
+	return withInterceptors[[]*ProjectVersion](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) AllX(ctx context.Context) []*ProjectVersion {
-	nodes, err := pvq.All(ctx)
+func (_q *ProjectVersionQuery) AllX(ctx context.Context) []*ProjectVersion {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -230,20 +230,20 @@ func (pvq *ProjectVersionQuery) AllX(ctx context.Context) []*ProjectVersion {
 }
 
 // IDs executes the query and returns a list of ProjectVersion IDs.
-func (pvq *ProjectVersionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if pvq.ctx.Unique == nil && pvq.path != nil {
-		pvq.Unique(true)
+func (_q *ProjectVersionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, pvq.ctx, ent.OpQueryIDs)
-	if err = pvq.Select(projectversion.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(projectversion.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := pvq.IDs(ctx)
+func (_q *ProjectVersionQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -251,17 +251,17 @@ func (pvq *ProjectVersionQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (pvq *ProjectVersionQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, pvq.ctx, ent.OpQueryCount)
-	if err := pvq.prepareQuery(ctx); err != nil {
+func (_q *ProjectVersionQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, pvq, querierCount[*ProjectVersionQuery](), pvq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ProjectVersionQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) CountX(ctx context.Context) int {
-	count, err := pvq.Count(ctx)
+func (_q *ProjectVersionQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -269,9 +269,9 @@ func (pvq *ProjectVersionQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (pvq *ProjectVersionQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, pvq.ctx, ent.OpQueryExist)
-	switch _, err := pvq.FirstID(ctx); {
+func (_q *ProjectVersionQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -282,8 +282,8 @@ func (pvq *ProjectVersionQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (pvq *ProjectVersionQuery) ExistX(ctx context.Context) bool {
-	exist, err := pvq.Exist(ctx)
+func (_q *ProjectVersionQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -292,45 +292,45 @@ func (pvq *ProjectVersionQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the ProjectVersionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (pvq *ProjectVersionQuery) Clone() *ProjectVersionQuery {
-	if pvq == nil {
+func (_q *ProjectVersionQuery) Clone() *ProjectVersionQuery {
+	if _q == nil {
 		return nil
 	}
 	return &ProjectVersionQuery{
-		config:      pvq.config,
-		ctx:         pvq.ctx.Clone(),
-		order:       append([]projectversion.OrderOption{}, pvq.order...),
-		inters:      append([]Interceptor{}, pvq.inters...),
-		predicates:  append([]predicate.ProjectVersion{}, pvq.predicates...),
-		withProject: pvq.withProject.Clone(),
-		withRuns:    pvq.withRuns.Clone(),
+		config:      _q.config,
+		ctx:         _q.ctx.Clone(),
+		order:       append([]projectversion.OrderOption{}, _q.order...),
+		inters:      append([]Interceptor{}, _q.inters...),
+		predicates:  append([]predicate.ProjectVersion{}, _q.predicates...),
+		withProject: _q.withProject.Clone(),
+		withRuns:    _q.withRuns.Clone(),
 		// clone intermediate query.
-		sql:       pvq.sql.Clone(),
-		path:      pvq.path,
-		modifiers: append([]func(*sql.Selector){}, pvq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithProject tells the query-builder to eager-load the nodes that are connected to
 // the "project" edge. The optional arguments are used to configure the query builder of the edge.
-func (pvq *ProjectVersionQuery) WithProject(opts ...func(*ProjectQuery)) *ProjectVersionQuery {
-	query := (&ProjectClient{config: pvq.config}).Query()
+func (_q *ProjectVersionQuery) WithProject(opts ...func(*ProjectQuery)) *ProjectVersionQuery {
+	query := (&ProjectClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pvq.withProject = query
-	return pvq
+	_q.withProject = query
+	return _q
 }
 
 // WithRuns tells the query-builder to eager-load the nodes that are connected to
 // the "runs" edge. The optional arguments are used to configure the query builder of the edge.
-func (pvq *ProjectVersionQuery) WithRuns(opts ...func(*WorkflowRunQuery)) *ProjectVersionQuery {
-	query := (&WorkflowRunClient{config: pvq.config}).Query()
+func (_q *ProjectVersionQuery) WithRuns(opts ...func(*WorkflowRunQuery)) *ProjectVersionQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pvq.withRuns = query
-	return pvq
+	_q.withRuns = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -347,10 +347,10 @@ func (pvq *ProjectVersionQuery) WithRuns(opts ...func(*WorkflowRunQuery)) *Proje
 //		GroupBy(projectversion.FieldVersion).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (pvq *ProjectVersionQuery) GroupBy(field string, fields ...string) *ProjectVersionGroupBy {
-	pvq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ProjectVersionGroupBy{build: pvq}
-	grbuild.flds = &pvq.ctx.Fields
+func (_q *ProjectVersionQuery) GroupBy(field string, fields ...string) *ProjectVersionGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &ProjectVersionGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = projectversion.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -368,83 +368,83 @@ func (pvq *ProjectVersionQuery) GroupBy(field string, fields ...string) *Project
 //	client.ProjectVersion.Query().
 //		Select(projectversion.FieldVersion).
 //		Scan(ctx, &v)
-func (pvq *ProjectVersionQuery) Select(fields ...string) *ProjectVersionSelect {
-	pvq.ctx.Fields = append(pvq.ctx.Fields, fields...)
-	sbuild := &ProjectVersionSelect{ProjectVersionQuery: pvq}
+func (_q *ProjectVersionQuery) Select(fields ...string) *ProjectVersionSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &ProjectVersionSelect{ProjectVersionQuery: _q}
 	sbuild.label = projectversion.Label
-	sbuild.flds, sbuild.scan = &pvq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a ProjectVersionSelect configured with the given aggregations.
-func (pvq *ProjectVersionQuery) Aggregate(fns ...AggregateFunc) *ProjectVersionSelect {
-	return pvq.Select().Aggregate(fns...)
+func (_q *ProjectVersionQuery) Aggregate(fns ...AggregateFunc) *ProjectVersionSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (pvq *ProjectVersionQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range pvq.inters {
+func (_q *ProjectVersionQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, pvq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range pvq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !projectversion.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if pvq.path != nil {
-		prev, err := pvq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		pvq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (pvq *ProjectVersionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ProjectVersion, error) {
+func (_q *ProjectVersionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ProjectVersion, error) {
 	var (
 		nodes       = []*ProjectVersion{}
-		_spec       = pvq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			pvq.withProject != nil,
-			pvq.withRuns != nil,
+			_q.withProject != nil,
+			_q.withRuns != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ProjectVersion).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &ProjectVersion{config: pvq.config}
+		node := &ProjectVersion{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(pvq.modifiers) > 0 {
-		_spec.Modifiers = pvq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, pvq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pvq.withProject; query != nil {
-		if err := pvq.loadProject(ctx, query, nodes, nil,
+	if query := _q.withProject; query != nil {
+		if err := _q.loadProject(ctx, query, nodes, nil,
 			func(n *ProjectVersion, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := pvq.withRuns; query != nil {
-		if err := pvq.loadRuns(ctx, query, nodes,
+	if query := _q.withRuns; query != nil {
+		if err := _q.loadRuns(ctx, query, nodes,
 			func(n *ProjectVersion) { n.Edges.Runs = []*WorkflowRun{} },
 			func(n *ProjectVersion, e *WorkflowRun) { n.Edges.Runs = append(n.Edges.Runs, e) }); err != nil {
 			return nil, err
@@ -453,7 +453,7 @@ func (pvq *ProjectVersionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	return nodes, nil
 }
 
-func (pvq *ProjectVersionQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectVersion, init func(*ProjectVersion), assign func(*ProjectVersion, *Project)) error {
+func (_q *ProjectVersionQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectVersion, init func(*ProjectVersion), assign func(*ProjectVersion, *Project)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*ProjectVersion)
 	for i := range nodes {
@@ -482,7 +482,7 @@ func (pvq *ProjectVersionQuery) loadProject(ctx context.Context, query *ProjectQ
 	}
 	return nil
 }
-func (pvq *ProjectVersionQuery) loadRuns(ctx context.Context, query *WorkflowRunQuery, nodes []*ProjectVersion, init func(*ProjectVersion), assign func(*ProjectVersion, *WorkflowRun)) error {
+func (_q *ProjectVersionQuery) loadRuns(ctx context.Context, query *WorkflowRunQuery, nodes []*ProjectVersion, init func(*ProjectVersion), assign func(*ProjectVersion, *WorkflowRun)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*ProjectVersion)
 	for i := range nodes {
@@ -514,27 +514,27 @@ func (pvq *ProjectVersionQuery) loadRuns(ctx context.Context, query *WorkflowRun
 	return nil
 }
 
-func (pvq *ProjectVersionQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := pvq.querySpec()
-	if len(pvq.modifiers) > 0 {
-		_spec.Modifiers = pvq.modifiers
+func (_q *ProjectVersionQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = pvq.ctx.Fields
-	if len(pvq.ctx.Fields) > 0 {
-		_spec.Unique = pvq.ctx.Unique != nil && *pvq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, pvq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (pvq *ProjectVersionQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *ProjectVersionQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(projectversion.Table, projectversion.Columns, sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID))
-	_spec.From = pvq.sql
-	if unique := pvq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if pvq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := pvq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, projectversion.FieldID)
 		for i := range fields {
@@ -542,24 +542,24 @@ func (pvq *ProjectVersionQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if pvq.withProject != nil {
+		if _q.withProject != nil {
 			_spec.Node.AddColumnOnce(projectversion.FieldProjectID)
 		}
 	}
-	if ps := pvq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := pvq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := pvq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := pvq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -569,36 +569,36 @@ func (pvq *ProjectVersionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (pvq *ProjectVersionQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(pvq.driver.Dialect())
+func (_q *ProjectVersionQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(projectversion.Table)
-	columns := pvq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = projectversion.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if pvq.sql != nil {
-		selector = pvq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if pvq.ctx.Unique != nil && *pvq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range pvq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range pvq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range pvq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := pvq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := pvq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -607,33 +607,33 @@ func (pvq *ProjectVersionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (pvq *ProjectVersionQuery) ForUpdate(opts ...sql.LockOption) *ProjectVersionQuery {
-	if pvq.driver.Dialect() == dialect.Postgres {
-		pvq.Unique(false)
+func (_q *ProjectVersionQuery) ForUpdate(opts ...sql.LockOption) *ProjectVersionQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	pvq.modifiers = append(pvq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return pvq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (pvq *ProjectVersionQuery) ForShare(opts ...sql.LockOption) *ProjectVersionQuery {
-	if pvq.driver.Dialect() == dialect.Postgres {
-		pvq.Unique(false)
+func (_q *ProjectVersionQuery) ForShare(opts ...sql.LockOption) *ProjectVersionQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	pvq.modifiers = append(pvq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return pvq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (pvq *ProjectVersionQuery) Modify(modifiers ...func(s *sql.Selector)) *ProjectVersionSelect {
-	pvq.modifiers = append(pvq.modifiers, modifiers...)
-	return pvq.Select()
+func (_q *ProjectVersionQuery) Modify(modifiers ...func(s *sql.Selector)) *ProjectVersionSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // ProjectVersionGroupBy is the group-by builder for ProjectVersion entities.
@@ -643,41 +643,41 @@ type ProjectVersionGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (pvgb *ProjectVersionGroupBy) Aggregate(fns ...AggregateFunc) *ProjectVersionGroupBy {
-	pvgb.fns = append(pvgb.fns, fns...)
-	return pvgb
+func (_g *ProjectVersionGroupBy) Aggregate(fns ...AggregateFunc) *ProjectVersionGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (pvgb *ProjectVersionGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, pvgb.build.ctx, ent.OpQueryGroupBy)
-	if err := pvgb.build.prepareQuery(ctx); err != nil {
+func (_g *ProjectVersionGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ProjectVersionQuery, *ProjectVersionGroupBy](ctx, pvgb.build, pvgb, pvgb.build.inters, v)
+	return scanWithInterceptors[*ProjectVersionQuery, *ProjectVersionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (pvgb *ProjectVersionGroupBy) sqlScan(ctx context.Context, root *ProjectVersionQuery, v any) error {
+func (_g *ProjectVersionGroupBy) sqlScan(ctx context.Context, root *ProjectVersionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(pvgb.fns))
-	for _, fn := range pvgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*pvgb.flds)+len(pvgb.fns))
-		for _, f := range *pvgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*pvgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pvgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -691,27 +691,27 @@ type ProjectVersionSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (pvs *ProjectVersionSelect) Aggregate(fns ...AggregateFunc) *ProjectVersionSelect {
-	pvs.fns = append(pvs.fns, fns...)
-	return pvs
+func (_s *ProjectVersionSelect) Aggregate(fns ...AggregateFunc) *ProjectVersionSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (pvs *ProjectVersionSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, pvs.ctx, ent.OpQuerySelect)
-	if err := pvs.prepareQuery(ctx); err != nil {
+func (_s *ProjectVersionSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ProjectVersionQuery, *ProjectVersionSelect](ctx, pvs.ProjectVersionQuery, pvs, pvs.inters, v)
+	return scanWithInterceptors[*ProjectVersionQuery, *ProjectVersionSelect](ctx, _s.ProjectVersionQuery, _s, _s.inters, v)
 }
 
-func (pvs *ProjectVersionSelect) sqlScan(ctx context.Context, root *ProjectVersionQuery, v any) error {
+func (_s *ProjectVersionSelect) sqlScan(ctx context.Context, root *ProjectVersionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(pvs.fns))
-	for _, fn := range pvs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*pvs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -719,7 +719,7 @@ func (pvs *ProjectVersionSelect) sqlScan(ctx context.Context, root *ProjectVersi
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pvs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -727,7 +727,7 @@ func (pvs *ProjectVersionSelect) sqlScan(ctx context.Context, root *ProjectVersi
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (pvs *ProjectVersionSelect) Modify(modifiers ...func(s *sql.Selector)) *ProjectVersionSelect {
-	pvs.modifiers = append(pvs.modifiers, modifiers...)
-	return pvs
+func (_s *ProjectVersionSelect) Modify(modifiers ...func(s *sql.Selector)) *ProjectVersionSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

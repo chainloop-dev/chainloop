@@ -28,136 +28,136 @@ type ProjectCreate struct {
 }
 
 // SetName sets the "name" field.
-func (pc *ProjectCreate) SetName(s string) *ProjectCreate {
-	pc.mutation.SetName(s)
-	return pc
+func (_c *ProjectCreate) SetName(v string) *ProjectCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (pc *ProjectCreate) SetDescription(s string) *ProjectCreate {
-	pc.mutation.SetDescription(s)
-	return pc
+func (_c *ProjectCreate) SetDescription(v string) *ProjectCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableDescription(s *string) *ProjectCreate {
-	if s != nil {
-		pc.SetDescription(*s)
+func (_c *ProjectCreate) SetNillableDescription(v *string) *ProjectCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (pc *ProjectCreate) SetCreatedAt(t time.Time) *ProjectCreate {
-	pc.mutation.SetCreatedAt(t)
-	return pc
+func (_c *ProjectCreate) SetCreatedAt(v time.Time) *ProjectCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableCreatedAt(t *time.Time) *ProjectCreate {
-	if t != nil {
-		pc.SetCreatedAt(*t)
+func (_c *ProjectCreate) SetNillableCreatedAt(v *time.Time) *ProjectCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pc *ProjectCreate) SetUpdatedAt(t time.Time) *ProjectCreate {
-	pc.mutation.SetUpdatedAt(t)
-	return pc
+func (_c *ProjectCreate) SetUpdatedAt(v time.Time) *ProjectCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableUpdatedAt(t *time.Time) *ProjectCreate {
-	if t != nil {
-		pc.SetUpdatedAt(*t)
+func (_c *ProjectCreate) SetNillableUpdatedAt(v *time.Time) *ProjectCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (pc *ProjectCreate) SetDeletedAt(t time.Time) *ProjectCreate {
-	pc.mutation.SetDeletedAt(t)
-	return pc
+func (_c *ProjectCreate) SetDeletedAt(v time.Time) *ProjectCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableDeletedAt(t *time.Time) *ProjectCreate {
-	if t != nil {
-		pc.SetDeletedAt(*t)
+func (_c *ProjectCreate) SetNillableDeletedAt(v *time.Time) *ProjectCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (pc *ProjectCreate) SetOrganizationID(u uuid.UUID) *ProjectCreate {
-	pc.mutation.SetOrganizationID(u)
-	return pc
+func (_c *ProjectCreate) SetOrganizationID(v uuid.UUID) *ProjectCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (pc *ProjectCreate) SetID(u uuid.UUID) *ProjectCreate {
-	pc.mutation.SetID(u)
-	return pc
+func (_c *ProjectCreate) SetID(v uuid.UUID) *ProjectCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableID(u *uuid.UUID) *ProjectCreate {
-	if u != nil {
-		pc.SetID(*u)
+func (_c *ProjectCreate) SetNillableID(v *uuid.UUID) *ProjectCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (pc *ProjectCreate) SetOrganization(o *Organization) *ProjectCreate {
-	return pc.SetOrganizationID(o.ID)
+func (_c *ProjectCreate) SetOrganization(v *Organization) *ProjectCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (pc *ProjectCreate) AddWorkflowIDs(ids ...uuid.UUID) *ProjectCreate {
-	pc.mutation.AddWorkflowIDs(ids...)
-	return pc
+func (_c *ProjectCreate) AddWorkflowIDs(ids ...uuid.UUID) *ProjectCreate {
+	_c.mutation.AddWorkflowIDs(ids...)
+	return _c
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (pc *ProjectCreate) AddWorkflows(w ...*Workflow) *ProjectCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *ProjectCreate) AddWorkflows(v ...*Workflow) *ProjectCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pc.AddWorkflowIDs(ids...)
+	return _c.AddWorkflowIDs(ids...)
 }
 
 // AddVersionIDs adds the "versions" edge to the ProjectVersion entity by IDs.
-func (pc *ProjectCreate) AddVersionIDs(ids ...uuid.UUID) *ProjectCreate {
-	pc.mutation.AddVersionIDs(ids...)
-	return pc
+func (_c *ProjectCreate) AddVersionIDs(ids ...uuid.UUID) *ProjectCreate {
+	_c.mutation.AddVersionIDs(ids...)
+	return _c
 }
 
 // AddVersions adds the "versions" edges to the ProjectVersion entity.
-func (pc *ProjectCreate) AddVersions(p ...*ProjectVersion) *ProjectCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_c *ProjectCreate) AddVersions(v ...*ProjectVersion) *ProjectCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pc.AddVersionIDs(ids...)
+	return _c.AddVersionIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
-func (pc *ProjectCreate) Mutation() *ProjectMutation {
-	return pc.mutation
+func (_c *ProjectCreate) Mutation() *ProjectMutation {
+	return _c.mutation
 }
 
 // Save creates the Project in the database.
-func (pc *ProjectCreate) Save(ctx context.Context) (*Project, error) {
-	pc.defaults()
-	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
+func (_c *ProjectCreate) Save(ctx context.Context) (*Project, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (pc *ProjectCreate) SaveX(ctx context.Context) *Project {
-	v, err := pc.Save(ctx)
+func (_c *ProjectCreate) SaveX(ctx context.Context) *Project {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -165,65 +165,65 @@ func (pc *ProjectCreate) SaveX(ctx context.Context) *Project {
 }
 
 // Exec executes the query.
-func (pc *ProjectCreate) Exec(ctx context.Context) error {
-	_, err := pc.Save(ctx)
+func (_c *ProjectCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pc *ProjectCreate) ExecX(ctx context.Context) {
-	if err := pc.Exec(ctx); err != nil {
+func (_c *ProjectCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pc *ProjectCreate) defaults() {
-	if _, ok := pc.mutation.CreatedAt(); !ok {
+func (_c *ProjectCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := project.DefaultCreatedAt()
-		pc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := pc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := project.DefaultUpdatedAt()
-		pc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := pc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := project.DefaultID()
-		pc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pc *ProjectCreate) check() error {
-	if _, ok := pc.mutation.Name(); !ok {
+func (_c *ProjectCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Project.name"`)}
 	}
-	if v, ok := pc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := project.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Project.name": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Project.created_at"`)}
 	}
-	if _, ok := pc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Project.updated_at"`)}
 	}
-	if _, ok := pc.mutation.OrganizationID(); !ok {
+	if _, ok := _c.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "Project.organization_id"`)}
 	}
-	if len(pc.mutation.OrganizationIDs()) == 0 {
+	if len(_c.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Project.organization"`)}
 	}
 	return nil
 }
 
-func (pc *ProjectCreate) sqlSave(ctx context.Context) (*Project, error) {
-	if err := pc.check(); err != nil {
+func (_c *ProjectCreate) sqlSave(ctx context.Context) (*Project, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := pc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -236,42 +236,42 @@ func (pc *ProjectCreate) sqlSave(ctx context.Context) (*Project, error) {
 			return nil, err
 		}
 	}
-	pc.mutation.id = &_node.ID
-	pc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
+func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Project{config: pc.config}
+		_node = &Project{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(project.Table, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = pc.conflict
-	if id, ok := pc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := pc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(project.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := pc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(project.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := pc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(project.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := pc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(project.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := pc.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(project.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if nodes := pc.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -288,7 +288,7 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -304,7 +304,7 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.VersionsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -339,10 +339,10 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (pc *ProjectCreate) OnConflict(opts ...sql.ConflictOption) *ProjectUpsertOne {
-	pc.conflict = opts
+func (_c *ProjectCreate) OnConflict(opts ...sql.ConflictOption) *ProjectUpsertOne {
+	_c.conflict = opts
 	return &ProjectUpsertOne{
-		create: pc,
+		create: _c,
 	}
 }
 
@@ -352,10 +352,10 @@ func (pc *ProjectCreate) OnConflict(opts ...sql.ConflictOption) *ProjectUpsertOn
 //	client.Project.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pc *ProjectCreate) OnConflictColumns(columns ...string) *ProjectUpsertOne {
-	pc.conflict = append(pc.conflict, sql.ConflictColumns(columns...))
+func (_c *ProjectCreate) OnConflictColumns(columns ...string) *ProjectUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProjectUpsertOne{
-		create: pc,
+		create: _c,
 	}
 }
 
@@ -580,16 +580,16 @@ type ProjectCreateBulk struct {
 }
 
 // Save creates the Project entities in the database.
-func (pcb *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
-	if pcb.err != nil {
-		return nil, pcb.err
+func (_c *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(pcb.builders))
-	nodes := make([]*Project, len(pcb.builders))
-	mutators := make([]Mutator, len(pcb.builders))
-	for i := range pcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Project, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := pcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ProjectMutation)
@@ -603,12 +603,12 @@ func (pcb *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, pcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = pcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -628,7 +628,7 @@ func (pcb *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, pcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -636,8 +636,8 @@ func (pcb *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pcb *ProjectCreateBulk) SaveX(ctx context.Context) []*Project {
-	v, err := pcb.Save(ctx)
+func (_c *ProjectCreateBulk) SaveX(ctx context.Context) []*Project {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -645,14 +645,14 @@ func (pcb *ProjectCreateBulk) SaveX(ctx context.Context) []*Project {
 }
 
 // Exec executes the query.
-func (pcb *ProjectCreateBulk) Exec(ctx context.Context) error {
-	_, err := pcb.Save(ctx)
+func (_c *ProjectCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pcb *ProjectCreateBulk) ExecX(ctx context.Context) {
-	if err := pcb.Exec(ctx); err != nil {
+func (_c *ProjectCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -672,10 +672,10 @@ func (pcb *ProjectCreateBulk) ExecX(ctx context.Context) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (pcb *ProjectCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProjectUpsertBulk {
-	pcb.conflict = opts
+func (_c *ProjectCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProjectUpsertBulk {
+	_c.conflict = opts
 	return &ProjectUpsertBulk{
-		create: pcb,
+		create: _c,
 	}
 }
 
@@ -685,10 +685,10 @@ func (pcb *ProjectCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProjectUps
 //	client.Project.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pcb *ProjectCreateBulk) OnConflictColumns(columns ...string) *ProjectUpsertBulk {
-	pcb.conflict = append(pcb.conflict, sql.ConflictColumns(columns...))
+func (_c *ProjectCreateBulk) OnConflictColumns(columns ...string) *ProjectUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProjectUpsertBulk{
-		create: pcb,
+		create: _c,
 	}
 }
 

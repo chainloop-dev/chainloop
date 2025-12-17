@@ -29,148 +29,148 @@ type OrgInvitationUpdate struct {
 }
 
 // Where appends a list predicates to the OrgInvitationUpdate builder.
-func (oiu *OrgInvitationUpdate) Where(ps ...predicate.OrgInvitation) *OrgInvitationUpdate {
-	oiu.mutation.Where(ps...)
-	return oiu
+func (_u *OrgInvitationUpdate) Where(ps ...predicate.OrgInvitation) *OrgInvitationUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (oiu *OrgInvitationUpdate) SetStatus(bis biz.OrgInvitationStatus) *OrgInvitationUpdate {
-	oiu.mutation.SetStatus(bis)
-	return oiu
+func (_u *OrgInvitationUpdate) SetStatus(v biz.OrgInvitationStatus) *OrgInvitationUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (oiu *OrgInvitationUpdate) SetNillableStatus(bis *biz.OrgInvitationStatus) *OrgInvitationUpdate {
-	if bis != nil {
-		oiu.SetStatus(*bis)
+func (_u *OrgInvitationUpdate) SetNillableStatus(v *biz.OrgInvitationStatus) *OrgInvitationUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return oiu
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (oiu *OrgInvitationUpdate) SetDeletedAt(t time.Time) *OrgInvitationUpdate {
-	oiu.mutation.SetDeletedAt(t)
-	return oiu
+func (_u *OrgInvitationUpdate) SetDeletedAt(v time.Time) *OrgInvitationUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (oiu *OrgInvitationUpdate) SetNillableDeletedAt(t *time.Time) *OrgInvitationUpdate {
-	if t != nil {
-		oiu.SetDeletedAt(*t)
+func (_u *OrgInvitationUpdate) SetNillableDeletedAt(v *time.Time) *OrgInvitationUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return oiu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (oiu *OrgInvitationUpdate) ClearDeletedAt() *OrgInvitationUpdate {
-	oiu.mutation.ClearDeletedAt()
-	return oiu
+func (_u *OrgInvitationUpdate) ClearDeletedAt() *OrgInvitationUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (oiu *OrgInvitationUpdate) SetOrganizationID(u uuid.UUID) *OrgInvitationUpdate {
-	oiu.mutation.SetOrganizationID(u)
-	return oiu
+func (_u *OrgInvitationUpdate) SetOrganizationID(v uuid.UUID) *OrgInvitationUpdate {
+	_u.mutation.SetOrganizationID(v)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (oiu *OrgInvitationUpdate) SetNillableOrganizationID(u *uuid.UUID) *OrgInvitationUpdate {
-	if u != nil {
-		oiu.SetOrganizationID(*u)
+func (_u *OrgInvitationUpdate) SetNillableOrganizationID(v *uuid.UUID) *OrgInvitationUpdate {
+	if v != nil {
+		_u.SetOrganizationID(*v)
 	}
-	return oiu
+	return _u
 }
 
 // SetSenderID sets the "sender_id" field.
-func (oiu *OrgInvitationUpdate) SetSenderID(u uuid.UUID) *OrgInvitationUpdate {
-	oiu.mutation.SetSenderID(u)
-	return oiu
+func (_u *OrgInvitationUpdate) SetSenderID(v uuid.UUID) *OrgInvitationUpdate {
+	_u.mutation.SetSenderID(v)
+	return _u
 }
 
 // SetNillableSenderID sets the "sender_id" field if the given value is not nil.
-func (oiu *OrgInvitationUpdate) SetNillableSenderID(u *uuid.UUID) *OrgInvitationUpdate {
-	if u != nil {
-		oiu.SetSenderID(*u)
+func (_u *OrgInvitationUpdate) SetNillableSenderID(v *uuid.UUID) *OrgInvitationUpdate {
+	if v != nil {
+		_u.SetSenderID(*v)
 	}
-	return oiu
+	return _u
 }
 
 // SetRole sets the "role" field.
-func (oiu *OrgInvitationUpdate) SetRole(a authz.Role) *OrgInvitationUpdate {
-	oiu.mutation.SetRole(a)
-	return oiu
+func (_u *OrgInvitationUpdate) SetRole(v authz.Role) *OrgInvitationUpdate {
+	_u.mutation.SetRole(v)
+	return _u
 }
 
 // SetNillableRole sets the "role" field if the given value is not nil.
-func (oiu *OrgInvitationUpdate) SetNillableRole(a *authz.Role) *OrgInvitationUpdate {
-	if a != nil {
-		oiu.SetRole(*a)
+func (_u *OrgInvitationUpdate) SetNillableRole(v *authz.Role) *OrgInvitationUpdate {
+	if v != nil {
+		_u.SetRole(*v)
 	}
-	return oiu
+	return _u
 }
 
 // ClearRole clears the value of the "role" field.
-func (oiu *OrgInvitationUpdate) ClearRole() *OrgInvitationUpdate {
-	oiu.mutation.ClearRole()
-	return oiu
+func (_u *OrgInvitationUpdate) ClearRole() *OrgInvitationUpdate {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // SetContext sets the "context" field.
-func (oiu *OrgInvitationUpdate) SetContext(bic biz.OrgInvitationContext) *OrgInvitationUpdate {
-	oiu.mutation.SetContext(bic)
-	return oiu
+func (_u *OrgInvitationUpdate) SetContext(v biz.OrgInvitationContext) *OrgInvitationUpdate {
+	_u.mutation.SetContext(v)
+	return _u
 }
 
 // SetNillableContext sets the "context" field if the given value is not nil.
-func (oiu *OrgInvitationUpdate) SetNillableContext(bic *biz.OrgInvitationContext) *OrgInvitationUpdate {
-	if bic != nil {
-		oiu.SetContext(*bic)
+func (_u *OrgInvitationUpdate) SetNillableContext(v *biz.OrgInvitationContext) *OrgInvitationUpdate {
+	if v != nil {
+		_u.SetContext(*v)
 	}
-	return oiu
+	return _u
 }
 
 // ClearContext clears the value of the "context" field.
-func (oiu *OrgInvitationUpdate) ClearContext() *OrgInvitationUpdate {
-	oiu.mutation.ClearContext()
-	return oiu
+func (_u *OrgInvitationUpdate) ClearContext() *OrgInvitationUpdate {
+	_u.mutation.ClearContext()
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (oiu *OrgInvitationUpdate) SetOrganization(o *Organization) *OrgInvitationUpdate {
-	return oiu.SetOrganizationID(o.ID)
+func (_u *OrgInvitationUpdate) SetOrganization(v *Organization) *OrgInvitationUpdate {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // SetSender sets the "sender" edge to the User entity.
-func (oiu *OrgInvitationUpdate) SetSender(u *User) *OrgInvitationUpdate {
-	return oiu.SetSenderID(u.ID)
+func (_u *OrgInvitationUpdate) SetSender(v *User) *OrgInvitationUpdate {
+	return _u.SetSenderID(v.ID)
 }
 
 // Mutation returns the OrgInvitationMutation object of the builder.
-func (oiu *OrgInvitationUpdate) Mutation() *OrgInvitationMutation {
-	return oiu.mutation
+func (_u *OrgInvitationUpdate) Mutation() *OrgInvitationMutation {
+	return _u.mutation
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (oiu *OrgInvitationUpdate) ClearOrganization() *OrgInvitationUpdate {
-	oiu.mutation.ClearOrganization()
-	return oiu
+func (_u *OrgInvitationUpdate) ClearOrganization() *OrgInvitationUpdate {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearSender clears the "sender" edge to the User entity.
-func (oiu *OrgInvitationUpdate) ClearSender() *OrgInvitationUpdate {
-	oiu.mutation.ClearSender()
-	return oiu
+func (_u *OrgInvitationUpdate) ClearSender() *OrgInvitationUpdate {
+	_u.mutation.ClearSender()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (oiu *OrgInvitationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, oiu.sqlSave, oiu.mutation, oiu.hooks)
+func (_u *OrgInvitationUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (oiu *OrgInvitationUpdate) SaveX(ctx context.Context) int {
-	affected, err := oiu.Save(ctx)
+func (_u *OrgInvitationUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -178,79 +178,79 @@ func (oiu *OrgInvitationUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (oiu *OrgInvitationUpdate) Exec(ctx context.Context) error {
-	_, err := oiu.Save(ctx)
+func (_u *OrgInvitationUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oiu *OrgInvitationUpdate) ExecX(ctx context.Context) {
-	if err := oiu.Exec(ctx); err != nil {
+func (_u *OrgInvitationUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (oiu *OrgInvitationUpdate) check() error {
-	if v, ok := oiu.mutation.Status(); ok {
+func (_u *OrgInvitationUpdate) check() error {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := orginvitation.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.status": %w`, err)}
 		}
 	}
-	if v, ok := oiu.mutation.Role(); ok {
+	if v, ok := _u.mutation.Role(); ok {
 		if err := orginvitation.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
 		}
 	}
-	if oiu.mutation.OrganizationCleared() && len(oiu.mutation.OrganizationIDs()) > 0 {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
 	}
-	if oiu.mutation.SenderCleared() && len(oiu.mutation.SenderIDs()) > 0 {
+	if _u.mutation.SenderCleared() && len(_u.mutation.SenderIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.sender"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (oiu *OrgInvitationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *OrgInvitationUpdate {
-	oiu.modifiers = append(oiu.modifiers, modifiers...)
-	return oiu
+func (_u *OrgInvitationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *OrgInvitationUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := oiu.check(); err != nil {
-		return n, err
+func (_u *OrgInvitationUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(orginvitation.Table, orginvitation.Columns, sqlgraph.NewFieldSpec(orginvitation.FieldID, field.TypeUUID))
-	if ps := oiu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := oiu.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(orginvitation.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := oiu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(orginvitation.FieldDeletedAt, field.TypeTime, value)
 	}
-	if oiu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(orginvitation.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := oiu.mutation.Role(); ok {
+	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(orginvitation.FieldRole, field.TypeEnum, value)
 	}
-	if oiu.mutation.RoleCleared() {
+	if _u.mutation.RoleCleared() {
 		_spec.ClearField(orginvitation.FieldRole, field.TypeEnum)
 	}
-	if value, ok := oiu.mutation.Context(); ok {
+	if value, ok := _u.mutation.Context(); ok {
 		_spec.SetField(orginvitation.FieldContext, field.TypeJSON, value)
 	}
-	if oiu.mutation.ContextCleared() {
+	if _u.mutation.ContextCleared() {
 		_spec.ClearField(orginvitation.FieldContext, field.TypeJSON)
 	}
-	if oiu.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -263,7 +263,7 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := oiu.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -279,7 +279,7 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if oiu.mutation.SenderCleared() {
+	if _u.mutation.SenderCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -292,7 +292,7 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := oiu.mutation.SenderIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SenderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -308,8 +308,8 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(oiu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, oiu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{orginvitation.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -317,8 +317,8 @@ func (oiu *OrgInvitationUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		return 0, err
 	}
-	oiu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // OrgInvitationUpdateOne is the builder for updating a single OrgInvitation entity.
@@ -331,155 +331,155 @@ type OrgInvitationUpdateOne struct {
 }
 
 // SetStatus sets the "status" field.
-func (oiuo *OrgInvitationUpdateOne) SetStatus(bis biz.OrgInvitationStatus) *OrgInvitationUpdateOne {
-	oiuo.mutation.SetStatus(bis)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) SetStatus(v biz.OrgInvitationStatus) *OrgInvitationUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (oiuo *OrgInvitationUpdateOne) SetNillableStatus(bis *biz.OrgInvitationStatus) *OrgInvitationUpdateOne {
-	if bis != nil {
-		oiuo.SetStatus(*bis)
+func (_u *OrgInvitationUpdateOne) SetNillableStatus(v *biz.OrgInvitationStatus) *OrgInvitationUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return oiuo
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (oiuo *OrgInvitationUpdateOne) SetDeletedAt(t time.Time) *OrgInvitationUpdateOne {
-	oiuo.mutation.SetDeletedAt(t)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) SetDeletedAt(v time.Time) *OrgInvitationUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (oiuo *OrgInvitationUpdateOne) SetNillableDeletedAt(t *time.Time) *OrgInvitationUpdateOne {
-	if t != nil {
-		oiuo.SetDeletedAt(*t)
+func (_u *OrgInvitationUpdateOne) SetNillableDeletedAt(v *time.Time) *OrgInvitationUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return oiuo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (oiuo *OrgInvitationUpdateOne) ClearDeletedAt() *OrgInvitationUpdateOne {
-	oiuo.mutation.ClearDeletedAt()
-	return oiuo
+func (_u *OrgInvitationUpdateOne) ClearDeletedAt() *OrgInvitationUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (oiuo *OrgInvitationUpdateOne) SetOrganizationID(u uuid.UUID) *OrgInvitationUpdateOne {
-	oiuo.mutation.SetOrganizationID(u)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) SetOrganizationID(v uuid.UUID) *OrgInvitationUpdateOne {
+	_u.mutation.SetOrganizationID(v)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (oiuo *OrgInvitationUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *OrgInvitationUpdateOne {
-	if u != nil {
-		oiuo.SetOrganizationID(*u)
+func (_u *OrgInvitationUpdateOne) SetNillableOrganizationID(v *uuid.UUID) *OrgInvitationUpdateOne {
+	if v != nil {
+		_u.SetOrganizationID(*v)
 	}
-	return oiuo
+	return _u
 }
 
 // SetSenderID sets the "sender_id" field.
-func (oiuo *OrgInvitationUpdateOne) SetSenderID(u uuid.UUID) *OrgInvitationUpdateOne {
-	oiuo.mutation.SetSenderID(u)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) SetSenderID(v uuid.UUID) *OrgInvitationUpdateOne {
+	_u.mutation.SetSenderID(v)
+	return _u
 }
 
 // SetNillableSenderID sets the "sender_id" field if the given value is not nil.
-func (oiuo *OrgInvitationUpdateOne) SetNillableSenderID(u *uuid.UUID) *OrgInvitationUpdateOne {
-	if u != nil {
-		oiuo.SetSenderID(*u)
+func (_u *OrgInvitationUpdateOne) SetNillableSenderID(v *uuid.UUID) *OrgInvitationUpdateOne {
+	if v != nil {
+		_u.SetSenderID(*v)
 	}
-	return oiuo
+	return _u
 }
 
 // SetRole sets the "role" field.
-func (oiuo *OrgInvitationUpdateOne) SetRole(a authz.Role) *OrgInvitationUpdateOne {
-	oiuo.mutation.SetRole(a)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) SetRole(v authz.Role) *OrgInvitationUpdateOne {
+	_u.mutation.SetRole(v)
+	return _u
 }
 
 // SetNillableRole sets the "role" field if the given value is not nil.
-func (oiuo *OrgInvitationUpdateOne) SetNillableRole(a *authz.Role) *OrgInvitationUpdateOne {
-	if a != nil {
-		oiuo.SetRole(*a)
+func (_u *OrgInvitationUpdateOne) SetNillableRole(v *authz.Role) *OrgInvitationUpdateOne {
+	if v != nil {
+		_u.SetRole(*v)
 	}
-	return oiuo
+	return _u
 }
 
 // ClearRole clears the value of the "role" field.
-func (oiuo *OrgInvitationUpdateOne) ClearRole() *OrgInvitationUpdateOne {
-	oiuo.mutation.ClearRole()
-	return oiuo
+func (_u *OrgInvitationUpdateOne) ClearRole() *OrgInvitationUpdateOne {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // SetContext sets the "context" field.
-func (oiuo *OrgInvitationUpdateOne) SetContext(bic biz.OrgInvitationContext) *OrgInvitationUpdateOne {
-	oiuo.mutation.SetContext(bic)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) SetContext(v biz.OrgInvitationContext) *OrgInvitationUpdateOne {
+	_u.mutation.SetContext(v)
+	return _u
 }
 
 // SetNillableContext sets the "context" field if the given value is not nil.
-func (oiuo *OrgInvitationUpdateOne) SetNillableContext(bic *biz.OrgInvitationContext) *OrgInvitationUpdateOne {
-	if bic != nil {
-		oiuo.SetContext(*bic)
+func (_u *OrgInvitationUpdateOne) SetNillableContext(v *biz.OrgInvitationContext) *OrgInvitationUpdateOne {
+	if v != nil {
+		_u.SetContext(*v)
 	}
-	return oiuo
+	return _u
 }
 
 // ClearContext clears the value of the "context" field.
-func (oiuo *OrgInvitationUpdateOne) ClearContext() *OrgInvitationUpdateOne {
-	oiuo.mutation.ClearContext()
-	return oiuo
+func (_u *OrgInvitationUpdateOne) ClearContext() *OrgInvitationUpdateOne {
+	_u.mutation.ClearContext()
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (oiuo *OrgInvitationUpdateOne) SetOrganization(o *Organization) *OrgInvitationUpdateOne {
-	return oiuo.SetOrganizationID(o.ID)
+func (_u *OrgInvitationUpdateOne) SetOrganization(v *Organization) *OrgInvitationUpdateOne {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // SetSender sets the "sender" edge to the User entity.
-func (oiuo *OrgInvitationUpdateOne) SetSender(u *User) *OrgInvitationUpdateOne {
-	return oiuo.SetSenderID(u.ID)
+func (_u *OrgInvitationUpdateOne) SetSender(v *User) *OrgInvitationUpdateOne {
+	return _u.SetSenderID(v.ID)
 }
 
 // Mutation returns the OrgInvitationMutation object of the builder.
-func (oiuo *OrgInvitationUpdateOne) Mutation() *OrgInvitationMutation {
-	return oiuo.mutation
+func (_u *OrgInvitationUpdateOne) Mutation() *OrgInvitationMutation {
+	return _u.mutation
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (oiuo *OrgInvitationUpdateOne) ClearOrganization() *OrgInvitationUpdateOne {
-	oiuo.mutation.ClearOrganization()
-	return oiuo
+func (_u *OrgInvitationUpdateOne) ClearOrganization() *OrgInvitationUpdateOne {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearSender clears the "sender" edge to the User entity.
-func (oiuo *OrgInvitationUpdateOne) ClearSender() *OrgInvitationUpdateOne {
-	oiuo.mutation.ClearSender()
-	return oiuo
+func (_u *OrgInvitationUpdateOne) ClearSender() *OrgInvitationUpdateOne {
+	_u.mutation.ClearSender()
+	return _u
 }
 
 // Where appends a list predicates to the OrgInvitationUpdate builder.
-func (oiuo *OrgInvitationUpdateOne) Where(ps ...predicate.OrgInvitation) *OrgInvitationUpdateOne {
-	oiuo.mutation.Where(ps...)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) Where(ps ...predicate.OrgInvitation) *OrgInvitationUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (oiuo *OrgInvitationUpdateOne) Select(field string, fields ...string) *OrgInvitationUpdateOne {
-	oiuo.fields = append([]string{field}, fields...)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) Select(field string, fields ...string) *OrgInvitationUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated OrgInvitation entity.
-func (oiuo *OrgInvitationUpdateOne) Save(ctx context.Context) (*OrgInvitation, error) {
-	return withHooks(ctx, oiuo.sqlSave, oiuo.mutation, oiuo.hooks)
+func (_u *OrgInvitationUpdateOne) Save(ctx context.Context) (*OrgInvitation, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (oiuo *OrgInvitationUpdateOne) SaveX(ctx context.Context) *OrgInvitation {
-	node, err := oiuo.Save(ctx)
+func (_u *OrgInvitationUpdateOne) SaveX(ctx context.Context) *OrgInvitation {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -487,56 +487,56 @@ func (oiuo *OrgInvitationUpdateOne) SaveX(ctx context.Context) *OrgInvitation {
 }
 
 // Exec executes the query on the entity.
-func (oiuo *OrgInvitationUpdateOne) Exec(ctx context.Context) error {
-	_, err := oiuo.Save(ctx)
+func (_u *OrgInvitationUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (oiuo *OrgInvitationUpdateOne) ExecX(ctx context.Context) {
-	if err := oiuo.Exec(ctx); err != nil {
+func (_u *OrgInvitationUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (oiuo *OrgInvitationUpdateOne) check() error {
-	if v, ok := oiuo.mutation.Status(); ok {
+func (_u *OrgInvitationUpdateOne) check() error {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := orginvitation.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.status": %w`, err)}
 		}
 	}
-	if v, ok := oiuo.mutation.Role(); ok {
+	if v, ok := _u.mutation.Role(); ok {
 		if err := orginvitation.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
 		}
 	}
-	if oiuo.mutation.OrganizationCleared() && len(oiuo.mutation.OrganizationIDs()) > 0 {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
 	}
-	if oiuo.mutation.SenderCleared() && len(oiuo.mutation.SenderIDs()) > 0 {
+	if _u.mutation.SenderCleared() && len(_u.mutation.SenderIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.sender"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (oiuo *OrgInvitationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *OrgInvitationUpdateOne {
-	oiuo.modifiers = append(oiuo.modifiers, modifiers...)
-	return oiuo
+func (_u *OrgInvitationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *OrgInvitationUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvitation, err error) {
-	if err := oiuo.check(); err != nil {
+func (_u *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvitation, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(orginvitation.Table, orginvitation.Columns, sqlgraph.NewFieldSpec(orginvitation.FieldID, field.TypeUUID))
-	id, ok := oiuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "OrgInvitation.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := oiuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, orginvitation.FieldID)
 		for _, f := range fields {
@@ -548,35 +548,35 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 			}
 		}
 	}
-	if ps := oiuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := oiuo.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(orginvitation.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := oiuo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(orginvitation.FieldDeletedAt, field.TypeTime, value)
 	}
-	if oiuo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(orginvitation.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := oiuo.mutation.Role(); ok {
+	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(orginvitation.FieldRole, field.TypeEnum, value)
 	}
-	if oiuo.mutation.RoleCleared() {
+	if _u.mutation.RoleCleared() {
 		_spec.ClearField(orginvitation.FieldRole, field.TypeEnum)
 	}
-	if value, ok := oiuo.mutation.Context(); ok {
+	if value, ok := _u.mutation.Context(); ok {
 		_spec.SetField(orginvitation.FieldContext, field.TypeJSON, value)
 	}
-	if oiuo.mutation.ContextCleared() {
+	if _u.mutation.ContextCleared() {
 		_spec.ClearField(orginvitation.FieldContext, field.TypeJSON)
 	}
-	if oiuo.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -589,7 +589,7 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := oiuo.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -605,7 +605,7 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if oiuo.mutation.SenderCleared() {
+	if _u.mutation.SenderCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -618,7 +618,7 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := oiuo.mutation.SenderIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SenderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -634,11 +634,11 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(oiuo.modifiers...)
-	_node = &OrgInvitation{config: oiuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &OrgInvitation{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, oiuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{orginvitation.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -646,6 +646,6 @@ func (oiuo *OrgInvitationUpdateOne) sqlSave(ctx context.Context) (_node *OrgInvi
 		}
 		return nil, err
 	}
-	oiuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

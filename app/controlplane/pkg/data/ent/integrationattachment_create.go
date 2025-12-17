@@ -27,89 +27,89 @@ type IntegrationAttachmentCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (iac *IntegrationAttachmentCreate) SetCreatedAt(t time.Time) *IntegrationAttachmentCreate {
-	iac.mutation.SetCreatedAt(t)
-	return iac
+func (_c *IntegrationAttachmentCreate) SetCreatedAt(v time.Time) *IntegrationAttachmentCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (iac *IntegrationAttachmentCreate) SetNillableCreatedAt(t *time.Time) *IntegrationAttachmentCreate {
-	if t != nil {
-		iac.SetCreatedAt(*t)
+func (_c *IntegrationAttachmentCreate) SetNillableCreatedAt(v *time.Time) *IntegrationAttachmentCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return iac
+	return _c
 }
 
 // SetConfiguration sets the "configuration" field.
-func (iac *IntegrationAttachmentCreate) SetConfiguration(b []byte) *IntegrationAttachmentCreate {
-	iac.mutation.SetConfiguration(b)
-	return iac
+func (_c *IntegrationAttachmentCreate) SetConfiguration(v []byte) *IntegrationAttachmentCreate {
+	_c.mutation.SetConfiguration(v)
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (iac *IntegrationAttachmentCreate) SetDeletedAt(t time.Time) *IntegrationAttachmentCreate {
-	iac.mutation.SetDeletedAt(t)
-	return iac
+func (_c *IntegrationAttachmentCreate) SetDeletedAt(v time.Time) *IntegrationAttachmentCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (iac *IntegrationAttachmentCreate) SetNillableDeletedAt(t *time.Time) *IntegrationAttachmentCreate {
-	if t != nil {
-		iac.SetDeletedAt(*t)
+func (_c *IntegrationAttachmentCreate) SetNillableDeletedAt(v *time.Time) *IntegrationAttachmentCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return iac
+	return _c
 }
 
 // SetWorkflowID sets the "workflow_id" field.
-func (iac *IntegrationAttachmentCreate) SetWorkflowID(u uuid.UUID) *IntegrationAttachmentCreate {
-	iac.mutation.SetWorkflowID(u)
-	return iac
+func (_c *IntegrationAttachmentCreate) SetWorkflowID(v uuid.UUID) *IntegrationAttachmentCreate {
+	_c.mutation.SetWorkflowID(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (iac *IntegrationAttachmentCreate) SetID(u uuid.UUID) *IntegrationAttachmentCreate {
-	iac.mutation.SetID(u)
-	return iac
+func (_c *IntegrationAttachmentCreate) SetID(v uuid.UUID) *IntegrationAttachmentCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (iac *IntegrationAttachmentCreate) SetNillableID(u *uuid.UUID) *IntegrationAttachmentCreate {
-	if u != nil {
-		iac.SetID(*u)
+func (_c *IntegrationAttachmentCreate) SetNillableID(v *uuid.UUID) *IntegrationAttachmentCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return iac
+	return _c
 }
 
 // SetIntegrationID sets the "integration" edge to the Integration entity by ID.
-func (iac *IntegrationAttachmentCreate) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentCreate {
-	iac.mutation.SetIntegrationID(id)
-	return iac
+func (_c *IntegrationAttachmentCreate) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentCreate {
+	_c.mutation.SetIntegrationID(id)
+	return _c
 }
 
 // SetIntegration sets the "integration" edge to the Integration entity.
-func (iac *IntegrationAttachmentCreate) SetIntegration(i *Integration) *IntegrationAttachmentCreate {
-	return iac.SetIntegrationID(i.ID)
+func (_c *IntegrationAttachmentCreate) SetIntegration(v *Integration) *IntegrationAttachmentCreate {
+	return _c.SetIntegrationID(v.ID)
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (iac *IntegrationAttachmentCreate) SetWorkflow(w *Workflow) *IntegrationAttachmentCreate {
-	return iac.SetWorkflowID(w.ID)
+func (_c *IntegrationAttachmentCreate) SetWorkflow(v *Workflow) *IntegrationAttachmentCreate {
+	return _c.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the IntegrationAttachmentMutation object of the builder.
-func (iac *IntegrationAttachmentCreate) Mutation() *IntegrationAttachmentMutation {
-	return iac.mutation
+func (_c *IntegrationAttachmentCreate) Mutation() *IntegrationAttachmentMutation {
+	return _c.mutation
 }
 
 // Save creates the IntegrationAttachment in the database.
-func (iac *IntegrationAttachmentCreate) Save(ctx context.Context) (*IntegrationAttachment, error) {
-	iac.defaults()
-	return withHooks(ctx, iac.sqlSave, iac.mutation, iac.hooks)
+func (_c *IntegrationAttachmentCreate) Save(ctx context.Context) (*IntegrationAttachment, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (iac *IntegrationAttachmentCreate) SaveX(ctx context.Context) *IntegrationAttachment {
-	v, err := iac.Save(ctx)
+func (_c *IntegrationAttachmentCreate) SaveX(ctx context.Context) *IntegrationAttachment {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -117,53 +117,53 @@ func (iac *IntegrationAttachmentCreate) SaveX(ctx context.Context) *IntegrationA
 }
 
 // Exec executes the query.
-func (iac *IntegrationAttachmentCreate) Exec(ctx context.Context) error {
-	_, err := iac.Save(ctx)
+func (_c *IntegrationAttachmentCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (iac *IntegrationAttachmentCreate) ExecX(ctx context.Context) {
-	if err := iac.Exec(ctx); err != nil {
+func (_c *IntegrationAttachmentCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (iac *IntegrationAttachmentCreate) defaults() {
-	if _, ok := iac.mutation.CreatedAt(); !ok {
+func (_c *IntegrationAttachmentCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := integrationattachment.DefaultCreatedAt()
-		iac.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := iac.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := integrationattachment.DefaultID()
-		iac.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (iac *IntegrationAttachmentCreate) check() error {
-	if _, ok := iac.mutation.CreatedAt(); !ok {
+func (_c *IntegrationAttachmentCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IntegrationAttachment.created_at"`)}
 	}
-	if _, ok := iac.mutation.WorkflowID(); !ok {
+	if _, ok := _c.mutation.WorkflowID(); !ok {
 		return &ValidationError{Name: "workflow_id", err: errors.New(`ent: missing required field "IntegrationAttachment.workflow_id"`)}
 	}
-	if len(iac.mutation.IntegrationIDs()) == 0 {
+	if len(_c.mutation.IntegrationIDs()) == 0 {
 		return &ValidationError{Name: "integration", err: errors.New(`ent: missing required edge "IntegrationAttachment.integration"`)}
 	}
-	if len(iac.mutation.WorkflowIDs()) == 0 {
+	if len(_c.mutation.WorkflowIDs()) == 0 {
 		return &ValidationError{Name: "workflow", err: errors.New(`ent: missing required edge "IntegrationAttachment.workflow"`)}
 	}
 	return nil
 }
 
-func (iac *IntegrationAttachmentCreate) sqlSave(ctx context.Context) (*IntegrationAttachment, error) {
-	if err := iac.check(); err != nil {
+func (_c *IntegrationAttachmentCreate) sqlSave(ctx context.Context) (*IntegrationAttachment, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := iac.createSpec()
-	if err := sqlgraph.CreateNode(ctx, iac.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -176,34 +176,34 @@ func (iac *IntegrationAttachmentCreate) sqlSave(ctx context.Context) (*Integrati
 			return nil, err
 		}
 	}
-	iac.mutation.id = &_node.ID
-	iac.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *sqlgraph.CreateSpec) {
+func (_c *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *sqlgraph.CreateSpec) {
 	var (
-		_node = &IntegrationAttachment{config: iac.config}
+		_node = &IntegrationAttachment{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(integrationattachment.Table, sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = iac.conflict
-	if id, ok := iac.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := iac.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(integrationattachment.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := iac.mutation.Configuration(); ok {
+	if value, ok := _c.mutation.Configuration(); ok {
 		_spec.SetField(integrationattachment.FieldConfiguration, field.TypeBytes, value)
 		_node.Configuration = value
 	}
-	if value, ok := iac.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if nodes := iac.mutation.IntegrationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.IntegrationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -220,7 +220,7 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 		_node.integration_attachment_integration = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := iac.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -256,10 +256,10 @@ func (iac *IntegrationAttachmentCreate) createSpec() (*IntegrationAttachment, *s
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (iac *IntegrationAttachmentCreate) OnConflict(opts ...sql.ConflictOption) *IntegrationAttachmentUpsertOne {
-	iac.conflict = opts
+func (_c *IntegrationAttachmentCreate) OnConflict(opts ...sql.ConflictOption) *IntegrationAttachmentUpsertOne {
+	_c.conflict = opts
 	return &IntegrationAttachmentUpsertOne{
-		create: iac,
+		create: _c,
 	}
 }
 
@@ -269,10 +269,10 @@ func (iac *IntegrationAttachmentCreate) OnConflict(opts ...sql.ConflictOption) *
 //	client.IntegrationAttachment.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (iac *IntegrationAttachmentCreate) OnConflictColumns(columns ...string) *IntegrationAttachmentUpsertOne {
-	iac.conflict = append(iac.conflict, sql.ConflictColumns(columns...))
+func (_c *IntegrationAttachmentCreate) OnConflictColumns(columns ...string) *IntegrationAttachmentUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &IntegrationAttachmentUpsertOne{
-		create: iac,
+		create: _c,
 	}
 }
 
@@ -491,16 +491,16 @@ type IntegrationAttachmentCreateBulk struct {
 }
 
 // Save creates the IntegrationAttachment entities in the database.
-func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*IntegrationAttachment, error) {
-	if iacb.err != nil {
-		return nil, iacb.err
+func (_c *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*IntegrationAttachment, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(iacb.builders))
-	nodes := make([]*IntegrationAttachment, len(iacb.builders))
-	mutators := make([]Mutator, len(iacb.builders))
-	for i := range iacb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*IntegrationAttachment, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := iacb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*IntegrationAttachmentMutation)
@@ -514,12 +514,12 @@ func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*Integ
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, iacb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = iacb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, iacb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -539,7 +539,7 @@ func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*Integ
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, iacb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -547,8 +547,8 @@ func (iacb *IntegrationAttachmentCreateBulk) Save(ctx context.Context) ([]*Integ
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (iacb *IntegrationAttachmentCreateBulk) SaveX(ctx context.Context) []*IntegrationAttachment {
-	v, err := iacb.Save(ctx)
+func (_c *IntegrationAttachmentCreateBulk) SaveX(ctx context.Context) []*IntegrationAttachment {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -556,14 +556,14 @@ func (iacb *IntegrationAttachmentCreateBulk) SaveX(ctx context.Context) []*Integ
 }
 
 // Exec executes the query.
-func (iacb *IntegrationAttachmentCreateBulk) Exec(ctx context.Context) error {
-	_, err := iacb.Save(ctx)
+func (_c *IntegrationAttachmentCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (iacb *IntegrationAttachmentCreateBulk) ExecX(ctx context.Context) {
-	if err := iacb.Exec(ctx); err != nil {
+func (_c *IntegrationAttachmentCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -583,10 +583,10 @@ func (iacb *IntegrationAttachmentCreateBulk) ExecX(ctx context.Context) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (iacb *IntegrationAttachmentCreateBulk) OnConflict(opts ...sql.ConflictOption) *IntegrationAttachmentUpsertBulk {
-	iacb.conflict = opts
+func (_c *IntegrationAttachmentCreateBulk) OnConflict(opts ...sql.ConflictOption) *IntegrationAttachmentUpsertBulk {
+	_c.conflict = opts
 	return &IntegrationAttachmentUpsertBulk{
-		create: iacb,
+		create: _c,
 	}
 }
 
@@ -596,10 +596,10 @@ func (iacb *IntegrationAttachmentCreateBulk) OnConflict(opts ...sql.ConflictOpti
 //	client.IntegrationAttachment.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (iacb *IntegrationAttachmentCreateBulk) OnConflictColumns(columns ...string) *IntegrationAttachmentUpsertBulk {
-	iacb.conflict = append(iacb.conflict, sql.ConflictColumns(columns...))
+func (_c *IntegrationAttachmentCreateBulk) OnConflictColumns(columns ...string) *IntegrationAttachmentUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &IntegrationAttachmentUpsertBulk{
-		create: iacb,
+		create: _c,
 	}
 }
 

@@ -20,56 +20,56 @@ type MembershipDelete struct {
 }
 
 // Where appends a list predicates to the MembershipDelete builder.
-func (md *MembershipDelete) Where(ps ...predicate.Membership) *MembershipDelete {
-	md.mutation.Where(ps...)
-	return md
+func (_d *MembershipDelete) Where(ps ...predicate.Membership) *MembershipDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (md *MembershipDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, md.sqlExec, md.mutation, md.hooks)
+func (_d *MembershipDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (md *MembershipDelete) ExecX(ctx context.Context) int {
-	n, err := md.Exec(ctx)
+func (_d *MembershipDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (md *MembershipDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *MembershipDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(membership.Table, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
-	if ps := md.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, md.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	md.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // MembershipDeleteOne is the builder for deleting a single Membership entity.
 type MembershipDeleteOne struct {
-	md *MembershipDelete
+	_d *MembershipDelete
 }
 
 // Where appends a list predicates to the MembershipDelete builder.
-func (mdo *MembershipDeleteOne) Where(ps ...predicate.Membership) *MembershipDeleteOne {
-	mdo.md.mutation.Where(ps...)
-	return mdo
+func (_d *MembershipDeleteOne) Where(ps ...predicate.Membership) *MembershipDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (mdo *MembershipDeleteOne) Exec(ctx context.Context) error {
-	n, err := mdo.md.Exec(ctx)
+func (_d *MembershipDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (mdo *MembershipDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (mdo *MembershipDeleteOne) ExecX(ctx context.Context) {
-	if err := mdo.Exec(ctx); err != nil {
+func (_d *MembershipDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

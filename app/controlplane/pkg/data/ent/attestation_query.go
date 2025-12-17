@@ -33,44 +33,44 @@ type AttestationQuery struct {
 }
 
 // Where adds a new predicate for the AttestationQuery builder.
-func (aq *AttestationQuery) Where(ps ...predicate.Attestation) *AttestationQuery {
-	aq.predicates = append(aq.predicates, ps...)
-	return aq
+func (_q *AttestationQuery) Where(ps ...predicate.Attestation) *AttestationQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (aq *AttestationQuery) Limit(limit int) *AttestationQuery {
-	aq.ctx.Limit = &limit
-	return aq
+func (_q *AttestationQuery) Limit(limit int) *AttestationQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (aq *AttestationQuery) Offset(offset int) *AttestationQuery {
-	aq.ctx.Offset = &offset
-	return aq
+func (_q *AttestationQuery) Offset(offset int) *AttestationQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (aq *AttestationQuery) Unique(unique bool) *AttestationQuery {
-	aq.ctx.Unique = &unique
-	return aq
+func (_q *AttestationQuery) Unique(unique bool) *AttestationQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (aq *AttestationQuery) Order(o ...attestation.OrderOption) *AttestationQuery {
-	aq.order = append(aq.order, o...)
-	return aq
+func (_q *AttestationQuery) Order(o ...attestation.OrderOption) *AttestationQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryWorkflowrun chains the current query on the "workflowrun" edge.
-func (aq *AttestationQuery) QueryWorkflowrun() *WorkflowRunQuery {
-	query := (&WorkflowRunClient{config: aq.config}).Query()
+func (_q *AttestationQuery) QueryWorkflowrun() *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := aq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := aq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -79,7 +79,7 @@ func (aq *AttestationQuery) QueryWorkflowrun() *WorkflowRunQuery {
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, attestation.WorkflowrunTable, attestation.WorkflowrunColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -87,8 +87,8 @@ func (aq *AttestationQuery) QueryWorkflowrun() *WorkflowRunQuery {
 
 // First returns the first Attestation entity from the query.
 // Returns a *NotFoundError when no Attestation was found.
-func (aq *AttestationQuery) First(ctx context.Context) (*Attestation, error) {
-	nodes, err := aq.Limit(1).All(setContextOp(ctx, aq.ctx, ent.OpQueryFirst))
+func (_q *AttestationQuery) First(ctx context.Context) (*Attestation, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +99,8 @@ func (aq *AttestationQuery) First(ctx context.Context) (*Attestation, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (aq *AttestationQuery) FirstX(ctx context.Context) *Attestation {
-	node, err := aq.First(ctx)
+func (_q *AttestationQuery) FirstX(ctx context.Context) *Attestation {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -109,9 +109,9 @@ func (aq *AttestationQuery) FirstX(ctx context.Context) *Attestation {
 
 // FirstID returns the first Attestation ID from the query.
 // Returns a *NotFoundError when no Attestation ID was found.
-func (aq *AttestationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *AttestationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = aq.Limit(1).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -122,8 +122,8 @@ func (aq *AttestationQuery) FirstID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (aq *AttestationQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := aq.FirstID(ctx)
+func (_q *AttestationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -133,8 +133,8 @@ func (aq *AttestationQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single Attestation entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Attestation entity is found.
 // Returns a *NotFoundError when no Attestation entities are found.
-func (aq *AttestationQuery) Only(ctx context.Context) (*Attestation, error) {
-	nodes, err := aq.Limit(2).All(setContextOp(ctx, aq.ctx, ent.OpQueryOnly))
+func (_q *AttestationQuery) Only(ctx context.Context) (*Attestation, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +149,8 @@ func (aq *AttestationQuery) Only(ctx context.Context) (*Attestation, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (aq *AttestationQuery) OnlyX(ctx context.Context) *Attestation {
-	node, err := aq.Only(ctx)
+func (_q *AttestationQuery) OnlyX(ctx context.Context) *Attestation {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -160,9 +160,9 @@ func (aq *AttestationQuery) OnlyX(ctx context.Context) *Attestation {
 // OnlyID is like Only, but returns the only Attestation ID in the query.
 // Returns a *NotSingularError when more than one Attestation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (aq *AttestationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *AttestationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = aq.Limit(2).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -177,8 +177,8 @@ func (aq *AttestationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (aq *AttestationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := aq.OnlyID(ctx)
+func (_q *AttestationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -186,18 +186,18 @@ func (aq *AttestationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of Attestations.
-func (aq *AttestationQuery) All(ctx context.Context) ([]*Attestation, error) {
-	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryAll)
-	if err := aq.prepareQuery(ctx); err != nil {
+func (_q *AttestationQuery) All(ctx context.Context) ([]*Attestation, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*Attestation, *AttestationQuery]()
-	return withInterceptors[[]*Attestation](ctx, aq, qr, aq.inters)
+	return withInterceptors[[]*Attestation](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (aq *AttestationQuery) AllX(ctx context.Context) []*Attestation {
-	nodes, err := aq.All(ctx)
+func (_q *AttestationQuery) AllX(ctx context.Context) []*Attestation {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -205,20 +205,20 @@ func (aq *AttestationQuery) AllX(ctx context.Context) []*Attestation {
 }
 
 // IDs executes the query and returns a list of Attestation IDs.
-func (aq *AttestationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if aq.ctx.Unique == nil && aq.path != nil {
-		aq.Unique(true)
+func (_q *AttestationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryIDs)
-	if err = aq.Select(attestation.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(attestation.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (aq *AttestationQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := aq.IDs(ctx)
+func (_q *AttestationQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -226,17 +226,17 @@ func (aq *AttestationQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (aq *AttestationQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryCount)
-	if err := aq.prepareQuery(ctx); err != nil {
+func (_q *AttestationQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, aq, querierCount[*AttestationQuery](), aq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*AttestationQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (aq *AttestationQuery) CountX(ctx context.Context) int {
-	count, err := aq.Count(ctx)
+func (_q *AttestationQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -244,9 +244,9 @@ func (aq *AttestationQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (aq *AttestationQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryExist)
-	switch _, err := aq.FirstID(ctx); {
+func (_q *AttestationQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -257,8 +257,8 @@ func (aq *AttestationQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (aq *AttestationQuery) ExistX(ctx context.Context) bool {
-	exist, err := aq.Exist(ctx)
+func (_q *AttestationQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -267,33 +267,33 @@ func (aq *AttestationQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the AttestationQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (aq *AttestationQuery) Clone() *AttestationQuery {
-	if aq == nil {
+func (_q *AttestationQuery) Clone() *AttestationQuery {
+	if _q == nil {
 		return nil
 	}
 	return &AttestationQuery{
-		config:          aq.config,
-		ctx:             aq.ctx.Clone(),
-		order:           append([]attestation.OrderOption{}, aq.order...),
-		inters:          append([]Interceptor{}, aq.inters...),
-		predicates:      append([]predicate.Attestation{}, aq.predicates...),
-		withWorkflowrun: aq.withWorkflowrun.Clone(),
+		config:          _q.config,
+		ctx:             _q.ctx.Clone(),
+		order:           append([]attestation.OrderOption{}, _q.order...),
+		inters:          append([]Interceptor{}, _q.inters...),
+		predicates:      append([]predicate.Attestation{}, _q.predicates...),
+		withWorkflowrun: _q.withWorkflowrun.Clone(),
 		// clone intermediate query.
-		sql:       aq.sql.Clone(),
-		path:      aq.path,
-		modifiers: append([]func(*sql.Selector){}, aq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithWorkflowrun tells the query-builder to eager-load the nodes that are connected to
 // the "workflowrun" edge. The optional arguments are used to configure the query builder of the edge.
-func (aq *AttestationQuery) WithWorkflowrun(opts ...func(*WorkflowRunQuery)) *AttestationQuery {
-	query := (&WorkflowRunClient{config: aq.config}).Query()
+func (_q *AttestationQuery) WithWorkflowrun(opts ...func(*WorkflowRunQuery)) *AttestationQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	aq.withWorkflowrun = query
-	return aq
+	_q.withWorkflowrun = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -310,10 +310,10 @@ func (aq *AttestationQuery) WithWorkflowrun(opts ...func(*WorkflowRunQuery)) *At
 //		GroupBy(attestation.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (aq *AttestationQuery) GroupBy(field string, fields ...string) *AttestationGroupBy {
-	aq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &AttestationGroupBy{build: aq}
-	grbuild.flds = &aq.ctx.Fields
+func (_q *AttestationQuery) GroupBy(field string, fields ...string) *AttestationGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &AttestationGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = attestation.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -331,76 +331,76 @@ func (aq *AttestationQuery) GroupBy(field string, fields ...string) *Attestation
 //	client.Attestation.Query().
 //		Select(attestation.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (aq *AttestationQuery) Select(fields ...string) *AttestationSelect {
-	aq.ctx.Fields = append(aq.ctx.Fields, fields...)
-	sbuild := &AttestationSelect{AttestationQuery: aq}
+func (_q *AttestationQuery) Select(fields ...string) *AttestationSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &AttestationSelect{AttestationQuery: _q}
 	sbuild.label = attestation.Label
-	sbuild.flds, sbuild.scan = &aq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a AttestationSelect configured with the given aggregations.
-func (aq *AttestationQuery) Aggregate(fns ...AggregateFunc) *AttestationSelect {
-	return aq.Select().Aggregate(fns...)
+func (_q *AttestationQuery) Aggregate(fns ...AggregateFunc) *AttestationSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (aq *AttestationQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range aq.inters {
+func (_q *AttestationQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, aq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range aq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !attestation.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if aq.path != nil {
-		prev, err := aq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		aq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (aq *AttestationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Attestation, error) {
+func (_q *AttestationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Attestation, error) {
 	var (
 		nodes       = []*Attestation{}
-		_spec       = aq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			aq.withWorkflowrun != nil,
+			_q.withWorkflowrun != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Attestation).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Attestation{config: aq.config}
+		node := &Attestation{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(aq.modifiers) > 0 {
-		_spec.Modifiers = aq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, aq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := aq.withWorkflowrun; query != nil {
-		if err := aq.loadWorkflowrun(ctx, query, nodes, nil,
+	if query := _q.withWorkflowrun; query != nil {
+		if err := _q.loadWorkflowrun(ctx, query, nodes, nil,
 			func(n *Attestation, e *WorkflowRun) { n.Edges.Workflowrun = e }); err != nil {
 			return nil, err
 		}
@@ -408,7 +408,7 @@ func (aq *AttestationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
-func (aq *AttestationQuery) loadWorkflowrun(ctx context.Context, query *WorkflowRunQuery, nodes []*Attestation, init func(*Attestation), assign func(*Attestation, *WorkflowRun)) error {
+func (_q *AttestationQuery) loadWorkflowrun(ctx context.Context, query *WorkflowRunQuery, nodes []*Attestation, init func(*Attestation), assign func(*Attestation, *WorkflowRun)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Attestation)
 	for i := range nodes {
@@ -438,27 +438,27 @@ func (aq *AttestationQuery) loadWorkflowrun(ctx context.Context, query *Workflow
 	return nil
 }
 
-func (aq *AttestationQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := aq.querySpec()
-	if len(aq.modifiers) > 0 {
-		_spec.Modifiers = aq.modifiers
+func (_q *AttestationQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = aq.ctx.Fields
-	if len(aq.ctx.Fields) > 0 {
-		_spec.Unique = aq.ctx.Unique != nil && *aq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, aq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (aq *AttestationQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *AttestationQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(attestation.Table, attestation.Columns, sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID))
-	_spec.From = aq.sql
-	if unique := aq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if aq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := aq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, attestation.FieldID)
 		for i := range fields {
@@ -466,24 +466,24 @@ func (aq *AttestationQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if aq.withWorkflowrun != nil {
+		if _q.withWorkflowrun != nil {
 			_spec.Node.AddColumnOnce(attestation.FieldWorkflowrunID)
 		}
 	}
-	if ps := aq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := aq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := aq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := aq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -493,36 +493,36 @@ func (aq *AttestationQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (aq *AttestationQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(aq.driver.Dialect())
+func (_q *AttestationQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(attestation.Table)
-	columns := aq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = attestation.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if aq.sql != nil {
-		selector = aq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if aq.ctx.Unique != nil && *aq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range aq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range aq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range aq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := aq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := aq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -531,33 +531,33 @@ func (aq *AttestationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (aq *AttestationQuery) ForUpdate(opts ...sql.LockOption) *AttestationQuery {
-	if aq.driver.Dialect() == dialect.Postgres {
-		aq.Unique(false)
+func (_q *AttestationQuery) ForUpdate(opts ...sql.LockOption) *AttestationQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	aq.modifiers = append(aq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return aq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (aq *AttestationQuery) ForShare(opts ...sql.LockOption) *AttestationQuery {
-	if aq.driver.Dialect() == dialect.Postgres {
-		aq.Unique(false)
+func (_q *AttestationQuery) ForShare(opts ...sql.LockOption) *AttestationQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	aq.modifiers = append(aq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return aq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (aq *AttestationQuery) Modify(modifiers ...func(s *sql.Selector)) *AttestationSelect {
-	aq.modifiers = append(aq.modifiers, modifiers...)
-	return aq.Select()
+func (_q *AttestationQuery) Modify(modifiers ...func(s *sql.Selector)) *AttestationSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // AttestationGroupBy is the group-by builder for Attestation entities.
@@ -567,41 +567,41 @@ type AttestationGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (agb *AttestationGroupBy) Aggregate(fns ...AggregateFunc) *AttestationGroupBy {
-	agb.fns = append(agb.fns, fns...)
-	return agb
+func (_g *AttestationGroupBy) Aggregate(fns ...AggregateFunc) *AttestationGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (agb *AttestationGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, agb.build.ctx, ent.OpQueryGroupBy)
-	if err := agb.build.prepareQuery(ctx); err != nil {
+func (_g *AttestationGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*AttestationQuery, *AttestationGroupBy](ctx, agb.build, agb, agb.build.inters, v)
+	return scanWithInterceptors[*AttestationQuery, *AttestationGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (agb *AttestationGroupBy) sqlScan(ctx context.Context, root *AttestationQuery, v any) error {
+func (_g *AttestationGroupBy) sqlScan(ctx context.Context, root *AttestationQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(agb.fns))
-	for _, fn := range agb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*agb.flds)+len(agb.fns))
-		for _, f := range *agb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*agb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := agb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -615,27 +615,27 @@ type AttestationSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (as *AttestationSelect) Aggregate(fns ...AggregateFunc) *AttestationSelect {
-	as.fns = append(as.fns, fns...)
-	return as
+func (_s *AttestationSelect) Aggregate(fns ...AggregateFunc) *AttestationSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (as *AttestationSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, as.ctx, ent.OpQuerySelect)
-	if err := as.prepareQuery(ctx); err != nil {
+func (_s *AttestationSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*AttestationQuery, *AttestationSelect](ctx, as.AttestationQuery, as, as.inters, v)
+	return scanWithInterceptors[*AttestationQuery, *AttestationSelect](ctx, _s.AttestationQuery, _s, _s.inters, v)
 }
 
-func (as *AttestationSelect) sqlScan(ctx context.Context, root *AttestationQuery, v any) error {
+func (_s *AttestationSelect) sqlScan(ctx context.Context, root *AttestationQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(as.fns))
-	for _, fn := range as.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*as.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -643,7 +643,7 @@ func (as *AttestationSelect) sqlScan(ctx context.Context, root *AttestationQuery
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := as.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -651,7 +651,7 @@ func (as *AttestationSelect) sqlScan(ctx context.Context, root *AttestationQuery
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (as *AttestationSelect) Modify(modifiers ...func(s *sql.Selector)) *AttestationSelect {
-	as.modifiers = append(as.modifiers, modifiers...)
-	return as
+func (_s *AttestationSelect) Modify(modifiers ...func(s *sql.Selector)) *AttestationSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

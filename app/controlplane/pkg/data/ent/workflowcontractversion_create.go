@@ -27,98 +27,98 @@ type WorkflowContractVersionCreate struct {
 }
 
 // SetBody sets the "body" field.
-func (wcvc *WorkflowContractVersionCreate) SetBody(b []byte) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetBody(b)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetBody(v []byte) *WorkflowContractVersionCreate {
+	_c.mutation.SetBody(v)
+	return _c
 }
 
 // SetRawBody sets the "raw_body" field.
-func (wcvc *WorkflowContractVersionCreate) SetRawBody(b []byte) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetRawBody(b)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetRawBody(v []byte) *WorkflowContractVersionCreate {
+	_c.mutation.SetRawBody(v)
+	return _c
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvc *WorkflowContractVersionCreate) SetRawBodyFormat(uf unmarshal.RawFormat) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetRawBodyFormat(uf)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetRawBodyFormat(v unmarshal.RawFormat) *WorkflowContractVersionCreate {
+	_c.mutation.SetRawBodyFormat(v)
+	return _c
 }
 
 // SetRevision sets the "revision" field.
-func (wcvc *WorkflowContractVersionCreate) SetRevision(i int) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetRevision(i)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetRevision(v int) *WorkflowContractVersionCreate {
+	_c.mutation.SetRevision(v)
+	return _c
 }
 
 // SetNillableRevision sets the "revision" field if the given value is not nil.
-func (wcvc *WorkflowContractVersionCreate) SetNillableRevision(i *int) *WorkflowContractVersionCreate {
-	if i != nil {
-		wcvc.SetRevision(*i)
+func (_c *WorkflowContractVersionCreate) SetNillableRevision(v *int) *WorkflowContractVersionCreate {
+	if v != nil {
+		_c.SetRevision(*v)
 	}
-	return wcvc
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (wcvc *WorkflowContractVersionCreate) SetCreatedAt(t time.Time) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetCreatedAt(t)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetCreatedAt(v time.Time) *WorkflowContractVersionCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (wcvc *WorkflowContractVersionCreate) SetNillableCreatedAt(t *time.Time) *WorkflowContractVersionCreate {
-	if t != nil {
-		wcvc.SetCreatedAt(*t)
+func (_c *WorkflowContractVersionCreate) SetNillableCreatedAt(v *time.Time) *WorkflowContractVersionCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return wcvc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (wcvc *WorkflowContractVersionCreate) SetID(u uuid.UUID) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetID(u)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetID(v uuid.UUID) *WorkflowContractVersionCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (wcvc *WorkflowContractVersionCreate) SetNillableID(u *uuid.UUID) *WorkflowContractVersionCreate {
-	if u != nil {
-		wcvc.SetID(*u)
+func (_c *WorkflowContractVersionCreate) SetNillableID(v *uuid.UUID) *WorkflowContractVersionCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return wcvc
+	return _c
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
-func (wcvc *WorkflowContractVersionCreate) SetContractID(id uuid.UUID) *WorkflowContractVersionCreate {
-	wcvc.mutation.SetContractID(id)
-	return wcvc
+func (_c *WorkflowContractVersionCreate) SetContractID(id uuid.UUID) *WorkflowContractVersionCreate {
+	_c.mutation.SetContractID(id)
+	return _c
 }
 
 // SetNillableContractID sets the "contract" edge to the WorkflowContract entity by ID if the given value is not nil.
-func (wcvc *WorkflowContractVersionCreate) SetNillableContractID(id *uuid.UUID) *WorkflowContractVersionCreate {
+func (_c *WorkflowContractVersionCreate) SetNillableContractID(id *uuid.UUID) *WorkflowContractVersionCreate {
 	if id != nil {
-		wcvc = wcvc.SetContractID(*id)
+		_c = _c.SetContractID(*id)
 	}
-	return wcvc
+	return _c
 }
 
 // SetContract sets the "contract" edge to the WorkflowContract entity.
-func (wcvc *WorkflowContractVersionCreate) SetContract(w *WorkflowContract) *WorkflowContractVersionCreate {
-	return wcvc.SetContractID(w.ID)
+func (_c *WorkflowContractVersionCreate) SetContract(v *WorkflowContract) *WorkflowContractVersionCreate {
+	return _c.SetContractID(v.ID)
 }
 
 // Mutation returns the WorkflowContractVersionMutation object of the builder.
-func (wcvc *WorkflowContractVersionCreate) Mutation() *WorkflowContractVersionMutation {
-	return wcvc.mutation
+func (_c *WorkflowContractVersionCreate) Mutation() *WorkflowContractVersionMutation {
+	return _c.mutation
 }
 
 // Save creates the WorkflowContractVersion in the database.
-func (wcvc *WorkflowContractVersionCreate) Save(ctx context.Context) (*WorkflowContractVersion, error) {
-	wcvc.defaults()
-	return withHooks(ctx, wcvc.sqlSave, wcvc.mutation, wcvc.hooks)
+func (_c *WorkflowContractVersionCreate) Save(ctx context.Context) (*WorkflowContractVersion, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (wcvc *WorkflowContractVersionCreate) SaveX(ctx context.Context) *WorkflowContractVersion {
-	v, err := wcvc.Save(ctx)
+func (_c *WorkflowContractVersionCreate) SaveX(ctx context.Context) *WorkflowContractVersion {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -126,67 +126,67 @@ func (wcvc *WorkflowContractVersionCreate) SaveX(ctx context.Context) *WorkflowC
 }
 
 // Exec executes the query.
-func (wcvc *WorkflowContractVersionCreate) Exec(ctx context.Context) error {
-	_, err := wcvc.Save(ctx)
+func (_c *WorkflowContractVersionCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcvc *WorkflowContractVersionCreate) ExecX(ctx context.Context) {
-	if err := wcvc.Exec(ctx); err != nil {
+func (_c *WorkflowContractVersionCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (wcvc *WorkflowContractVersionCreate) defaults() {
-	if _, ok := wcvc.mutation.Revision(); !ok {
+func (_c *WorkflowContractVersionCreate) defaults() {
+	if _, ok := _c.mutation.Revision(); !ok {
 		v := workflowcontractversion.DefaultRevision
-		wcvc.mutation.SetRevision(v)
+		_c.mutation.SetRevision(v)
 	}
-	if _, ok := wcvc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := workflowcontractversion.DefaultCreatedAt()
-		wcvc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := wcvc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := workflowcontractversion.DefaultID()
-		wcvc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wcvc *WorkflowContractVersionCreate) check() error {
-	if _, ok := wcvc.mutation.RawBody(); !ok {
+func (_c *WorkflowContractVersionCreate) check() error {
+	if _, ok := _c.mutation.RawBody(); !ok {
 		return &ValidationError{Name: "raw_body", err: errors.New(`ent: missing required field "WorkflowContractVersion.raw_body"`)}
 	}
-	if v, ok := wcvc.mutation.RawBody(); ok {
+	if v, ok := _c.mutation.RawBody(); ok {
 		if err := workflowcontractversion.RawBodyValidator(v); err != nil {
 			return &ValidationError{Name: "raw_body", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body": %w`, err)}
 		}
 	}
-	if _, ok := wcvc.mutation.RawBodyFormat(); !ok {
+	if _, ok := _c.mutation.RawBodyFormat(); !ok {
 		return &ValidationError{Name: "raw_body_format", err: errors.New(`ent: missing required field "WorkflowContractVersion.raw_body_format"`)}
 	}
-	if v, ok := wcvc.mutation.RawBodyFormat(); ok {
+	if v, ok := _c.mutation.RawBodyFormat(); ok {
 		if err := workflowcontractversion.RawBodyFormatValidator(v); err != nil {
 			return &ValidationError{Name: "raw_body_format", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body_format": %w`, err)}
 		}
 	}
-	if _, ok := wcvc.mutation.Revision(); !ok {
+	if _, ok := _c.mutation.Revision(); !ok {
 		return &ValidationError{Name: "revision", err: errors.New(`ent: missing required field "WorkflowContractVersion.revision"`)}
 	}
-	if _, ok := wcvc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkflowContractVersion.created_at"`)}
 	}
 	return nil
 }
 
-func (wcvc *WorkflowContractVersionCreate) sqlSave(ctx context.Context) (*WorkflowContractVersion, error) {
-	if err := wcvc.check(); err != nil {
+func (_c *WorkflowContractVersionCreate) sqlSave(ctx context.Context) (*WorkflowContractVersion, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := wcvc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, wcvc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -199,42 +199,42 @@ func (wcvc *WorkflowContractVersionCreate) sqlSave(ctx context.Context) (*Workfl
 			return nil, err
 		}
 	}
-	wcvc.mutation.id = &_node.ID
-	wcvc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (wcvc *WorkflowContractVersionCreate) createSpec() (*WorkflowContractVersion, *sqlgraph.CreateSpec) {
+func (_c *WorkflowContractVersionCreate) createSpec() (*WorkflowContractVersion, *sqlgraph.CreateSpec) {
 	var (
-		_node = &WorkflowContractVersion{config: wcvc.config}
+		_node = &WorkflowContractVersion{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(workflowcontractversion.Table, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = wcvc.conflict
-	if id, ok := wcvc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := wcvc.mutation.Body(); ok {
+	if value, ok := _c.mutation.Body(); ok {
 		_spec.SetField(workflowcontractversion.FieldBody, field.TypeBytes, value)
 		_node.Body = value
 	}
-	if value, ok := wcvc.mutation.RawBody(); ok {
+	if value, ok := _c.mutation.RawBody(); ok {
 		_spec.SetField(workflowcontractversion.FieldRawBody, field.TypeBytes, value)
 		_node.RawBody = value
 	}
-	if value, ok := wcvc.mutation.RawBodyFormat(); ok {
+	if value, ok := _c.mutation.RawBodyFormat(); ok {
 		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
 		_node.RawBodyFormat = value
 	}
-	if value, ok := wcvc.mutation.Revision(); ok {
+	if value, ok := _c.mutation.Revision(); ok {
 		_spec.SetField(workflowcontractversion.FieldRevision, field.TypeInt, value)
 		_node.Revision = value
 	}
-	if value, ok := wcvc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(workflowcontractversion.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := wcvc.mutation.ContractIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ContractIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -270,10 +270,10 @@ func (wcvc *WorkflowContractVersionCreate) createSpec() (*WorkflowContractVersio
 //			SetBody(v+v).
 //		}).
 //		Exec(ctx)
-func (wcvc *WorkflowContractVersionCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowContractVersionUpsertOne {
-	wcvc.conflict = opts
+func (_c *WorkflowContractVersionCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowContractVersionUpsertOne {
+	_c.conflict = opts
 	return &WorkflowContractVersionUpsertOne{
-		create: wcvc,
+		create: _c,
 	}
 }
 
@@ -283,10 +283,10 @@ func (wcvc *WorkflowContractVersionCreate) OnConflict(opts ...sql.ConflictOption
 //	client.WorkflowContractVersion.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (wcvc *WorkflowContractVersionCreate) OnConflictColumns(columns ...string) *WorkflowContractVersionUpsertOne {
-	wcvc.conflict = append(wcvc.conflict, sql.ConflictColumns(columns...))
+func (_c *WorkflowContractVersionCreate) OnConflictColumns(columns ...string) *WorkflowContractVersionUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &WorkflowContractVersionUpsertOne{
-		create: wcvc,
+		create: _c,
 	}
 }
 
@@ -436,16 +436,16 @@ type WorkflowContractVersionCreateBulk struct {
 }
 
 // Save creates the WorkflowContractVersion entities in the database.
-func (wcvcb *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*WorkflowContractVersion, error) {
-	if wcvcb.err != nil {
-		return nil, wcvcb.err
+func (_c *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*WorkflowContractVersion, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(wcvcb.builders))
-	nodes := make([]*WorkflowContractVersion, len(wcvcb.builders))
-	mutators := make([]Mutator, len(wcvcb.builders))
-	for i := range wcvcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*WorkflowContractVersion, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := wcvcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*WorkflowContractVersionMutation)
@@ -459,12 +459,12 @@ func (wcvcb *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*Wo
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, wcvcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = wcvcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, wcvcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -484,7 +484,7 @@ func (wcvcb *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*Wo
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, wcvcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -492,8 +492,8 @@ func (wcvcb *WorkflowContractVersionCreateBulk) Save(ctx context.Context) ([]*Wo
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wcvcb *WorkflowContractVersionCreateBulk) SaveX(ctx context.Context) []*WorkflowContractVersion {
-	v, err := wcvcb.Save(ctx)
+func (_c *WorkflowContractVersionCreateBulk) SaveX(ctx context.Context) []*WorkflowContractVersion {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -501,14 +501,14 @@ func (wcvcb *WorkflowContractVersionCreateBulk) SaveX(ctx context.Context) []*Wo
 }
 
 // Exec executes the query.
-func (wcvcb *WorkflowContractVersionCreateBulk) Exec(ctx context.Context) error {
-	_, err := wcvcb.Save(ctx)
+func (_c *WorkflowContractVersionCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcvcb *WorkflowContractVersionCreateBulk) ExecX(ctx context.Context) {
-	if err := wcvcb.Exec(ctx); err != nil {
+func (_c *WorkflowContractVersionCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -528,10 +528,10 @@ func (wcvcb *WorkflowContractVersionCreateBulk) ExecX(ctx context.Context) {
 //			SetBody(v+v).
 //		}).
 //		Exec(ctx)
-func (wcvcb *WorkflowContractVersionCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowContractVersionUpsertBulk {
-	wcvcb.conflict = opts
+func (_c *WorkflowContractVersionCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowContractVersionUpsertBulk {
+	_c.conflict = opts
 	return &WorkflowContractVersionUpsertBulk{
-		create: wcvcb,
+		create: _c,
 	}
 }
 
@@ -541,10 +541,10 @@ func (wcvcb *WorkflowContractVersionCreateBulk) OnConflict(opts ...sql.ConflictO
 //	client.WorkflowContractVersion.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (wcvcb *WorkflowContractVersionCreateBulk) OnConflictColumns(columns ...string) *WorkflowContractVersionUpsertBulk {
-	wcvcb.conflict = append(wcvcb.conflict, sql.ConflictColumns(columns...))
+func (_c *WorkflowContractVersionCreateBulk) OnConflictColumns(columns ...string) *WorkflowContractVersionUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &WorkflowContractVersionUpsertBulk{
-		create: wcvcb,
+		create: _c,
 	}
 }
 

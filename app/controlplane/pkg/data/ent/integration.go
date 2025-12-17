@@ -95,69 +95,69 @@ func (*Integration) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Integration fields.
-func (i *Integration) assignValues(columns []string, values []any) error {
+func (_m *Integration) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
-	for j := range columns {
-		switch columns[j] {
+	for i := range columns {
+		switch columns[i] {
 		case integration.FieldID:
-			if value, ok := values[j].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[j])
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				i.ID = *value
+				_m.ID = *value
 			}
 		case integration.FieldName:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[j])
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				i.Name = value.String
+				_m.Name = value.String
 			}
 		case integration.FieldKind:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field kind", values[j])
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field kind", values[i])
 			} else if value.Valid {
-				i.Kind = value.String
+				_m.Kind = value.String
 			}
 		case integration.FieldDescription:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field description", values[j])
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				i.Description = value.String
+				_m.Description = value.String
 			}
 		case integration.FieldSecretName:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field secret_name", values[j])
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field secret_name", values[i])
 			} else if value.Valid {
-				i.SecretName = value.String
+				_m.SecretName = value.String
 			}
 		case integration.FieldCreatedAt:
-			if value, ok := values[j].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[j])
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				i.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case integration.FieldConfiguration:
-			if value, ok := values[j].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field configuration", values[j])
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field configuration", values[i])
 			} else if value != nil {
-				i.Configuration = *value
+				_m.Configuration = *value
 			}
 		case integration.FieldDeletedAt:
-			if value, ok := values[j].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field deleted_at", values[j])
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				i.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case integration.ForeignKeys[0]:
-			if value, ok := values[j].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field organization_integrations", values[j])
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_integrations", values[i])
 			} else if value.Valid {
-				i.organization_integrations = new(uuid.UUID)
-				*i.organization_integrations = *value.S.(*uuid.UUID)
+				_m.organization_integrations = new(uuid.UUID)
+				*_m.organization_integrations = *value.S.(*uuid.UUID)
 			}
 		default:
-			i.selectValues.Set(columns[j], values[j])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -165,63 +165,63 @@ func (i *Integration) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Integration.
 // This includes values selected through modifiers, order, etc.
-func (i *Integration) Value(name string) (ent.Value, error) {
-	return i.selectValues.Get(name)
+func (_m *Integration) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryAttachments queries the "attachments" edge of the Integration entity.
-func (i *Integration) QueryAttachments() *IntegrationAttachmentQuery {
-	return NewIntegrationClient(i.config).QueryAttachments(i)
+func (_m *Integration) QueryAttachments() *IntegrationAttachmentQuery {
+	return NewIntegrationClient(_m.config).QueryAttachments(_m)
 }
 
 // QueryOrganization queries the "organization" edge of the Integration entity.
-func (i *Integration) QueryOrganization() *OrganizationQuery {
-	return NewIntegrationClient(i.config).QueryOrganization(i)
+func (_m *Integration) QueryOrganization() *OrganizationQuery {
+	return NewIntegrationClient(_m.config).QueryOrganization(_m)
 }
 
 // Update returns a builder for updating this Integration.
 // Note that you need to call Integration.Unwrap() before calling this method if this Integration
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (i *Integration) Update() *IntegrationUpdateOne {
-	return NewIntegrationClient(i.config).UpdateOne(i)
+func (_m *Integration) Update() *IntegrationUpdateOne {
+	return NewIntegrationClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Integration entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (i *Integration) Unwrap() *Integration {
-	_tx, ok := i.config.driver.(*txDriver)
+func (_m *Integration) Unwrap() *Integration {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Integration is not a transactional entity")
 	}
-	i.config.driver = _tx.drv
-	return i
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (i *Integration) String() string {
+func (_m *Integration) String() string {
 	var builder strings.Builder
 	builder.WriteString("Integration(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", i.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(i.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("kind=")
-	builder.WriteString(i.Kind)
+	builder.WriteString(_m.Kind)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(i.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
-	builder.WriteString(i.SecretName)
+	builder.WriteString(_m.SecretName)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(i.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("configuration=")
-	builder.WriteString(fmt.Sprintf("%v", i.Configuration))
+	builder.WriteString(fmt.Sprintf("%v", _m.Configuration))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(i.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

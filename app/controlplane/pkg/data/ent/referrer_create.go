@@ -26,122 +26,122 @@ type ReferrerCreate struct {
 }
 
 // SetDigest sets the "digest" field.
-func (rc *ReferrerCreate) SetDigest(s string) *ReferrerCreate {
-	rc.mutation.SetDigest(s)
-	return rc
+func (_c *ReferrerCreate) SetDigest(v string) *ReferrerCreate {
+	_c.mutation.SetDigest(v)
+	return _c
 }
 
 // SetKind sets the "kind" field.
-func (rc *ReferrerCreate) SetKind(s string) *ReferrerCreate {
-	rc.mutation.SetKind(s)
-	return rc
+func (_c *ReferrerCreate) SetKind(v string) *ReferrerCreate {
+	_c.mutation.SetKind(v)
+	return _c
 }
 
 // SetDownloadable sets the "downloadable" field.
-func (rc *ReferrerCreate) SetDownloadable(b bool) *ReferrerCreate {
-	rc.mutation.SetDownloadable(b)
-	return rc
+func (_c *ReferrerCreate) SetDownloadable(v bool) *ReferrerCreate {
+	_c.mutation.SetDownloadable(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (rc *ReferrerCreate) SetCreatedAt(t time.Time) *ReferrerCreate {
-	rc.mutation.SetCreatedAt(t)
-	return rc
+func (_c *ReferrerCreate) SetCreatedAt(v time.Time) *ReferrerCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (rc *ReferrerCreate) SetNillableCreatedAt(t *time.Time) *ReferrerCreate {
-	if t != nil {
-		rc.SetCreatedAt(*t)
+func (_c *ReferrerCreate) SetNillableCreatedAt(v *time.Time) *ReferrerCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (rc *ReferrerCreate) SetMetadata(m map[string]string) *ReferrerCreate {
-	rc.mutation.SetMetadata(m)
-	return rc
+func (_c *ReferrerCreate) SetMetadata(v map[string]string) *ReferrerCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetAnnotations sets the "annotations" field.
-func (rc *ReferrerCreate) SetAnnotations(m map[string]string) *ReferrerCreate {
-	rc.mutation.SetAnnotations(m)
-	return rc
+func (_c *ReferrerCreate) SetAnnotations(v map[string]string) *ReferrerCreate {
+	_c.mutation.SetAnnotations(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (rc *ReferrerCreate) SetID(u uuid.UUID) *ReferrerCreate {
-	rc.mutation.SetID(u)
-	return rc
+func (_c *ReferrerCreate) SetID(v uuid.UUID) *ReferrerCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (rc *ReferrerCreate) SetNillableID(u *uuid.UUID) *ReferrerCreate {
-	if u != nil {
-		rc.SetID(*u)
+func (_c *ReferrerCreate) SetNillableID(v *uuid.UUID) *ReferrerCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return rc
+	return _c
 }
 
 // AddReferredByIDs adds the "referred_by" edge to the Referrer entity by IDs.
-func (rc *ReferrerCreate) AddReferredByIDs(ids ...uuid.UUID) *ReferrerCreate {
-	rc.mutation.AddReferredByIDs(ids...)
-	return rc
+func (_c *ReferrerCreate) AddReferredByIDs(ids ...uuid.UUID) *ReferrerCreate {
+	_c.mutation.AddReferredByIDs(ids...)
+	return _c
 }
 
 // AddReferredBy adds the "referred_by" edges to the Referrer entity.
-func (rc *ReferrerCreate) AddReferredBy(r ...*Referrer) *ReferrerCreate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_c *ReferrerCreate) AddReferredBy(v ...*Referrer) *ReferrerCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddReferredByIDs(ids...)
+	return _c.AddReferredByIDs(ids...)
 }
 
 // AddReferenceIDs adds the "references" edge to the Referrer entity by IDs.
-func (rc *ReferrerCreate) AddReferenceIDs(ids ...uuid.UUID) *ReferrerCreate {
-	rc.mutation.AddReferenceIDs(ids...)
-	return rc
+func (_c *ReferrerCreate) AddReferenceIDs(ids ...uuid.UUID) *ReferrerCreate {
+	_c.mutation.AddReferenceIDs(ids...)
+	return _c
 }
 
 // AddReferences adds the "references" edges to the Referrer entity.
-func (rc *ReferrerCreate) AddReferences(r ...*Referrer) *ReferrerCreate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_c *ReferrerCreate) AddReferences(v ...*Referrer) *ReferrerCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddReferenceIDs(ids...)
+	return _c.AddReferenceIDs(ids...)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (rc *ReferrerCreate) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerCreate {
-	rc.mutation.AddWorkflowIDs(ids...)
-	return rc
+func (_c *ReferrerCreate) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerCreate {
+	_c.mutation.AddWorkflowIDs(ids...)
+	return _c
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (rc *ReferrerCreate) AddWorkflows(w ...*Workflow) *ReferrerCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *ReferrerCreate) AddWorkflows(v ...*Workflow) *ReferrerCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddWorkflowIDs(ids...)
+	return _c.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the ReferrerMutation object of the builder.
-func (rc *ReferrerCreate) Mutation() *ReferrerMutation {
-	return rc.mutation
+func (_c *ReferrerCreate) Mutation() *ReferrerMutation {
+	return _c.mutation
 }
 
 // Save creates the Referrer in the database.
-func (rc *ReferrerCreate) Save(ctx context.Context) (*Referrer, error) {
-	rc.defaults()
-	return withHooks(ctx, rc.sqlSave, rc.mutation, rc.hooks)
+func (_c *ReferrerCreate) Save(ctx context.Context) (*Referrer, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (rc *ReferrerCreate) SaveX(ctx context.Context) *Referrer {
-	v, err := rc.Save(ctx)
+func (_c *ReferrerCreate) SaveX(ctx context.Context) *Referrer {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -149,53 +149,53 @@ func (rc *ReferrerCreate) SaveX(ctx context.Context) *Referrer {
 }
 
 // Exec executes the query.
-func (rc *ReferrerCreate) Exec(ctx context.Context) error {
-	_, err := rc.Save(ctx)
+func (_c *ReferrerCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rc *ReferrerCreate) ExecX(ctx context.Context) {
-	if err := rc.Exec(ctx); err != nil {
+func (_c *ReferrerCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (rc *ReferrerCreate) defaults() {
-	if _, ok := rc.mutation.CreatedAt(); !ok {
+func (_c *ReferrerCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := referrer.DefaultCreatedAt()
-		rc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := rc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := referrer.DefaultID()
-		rc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (rc *ReferrerCreate) check() error {
-	if _, ok := rc.mutation.Digest(); !ok {
+func (_c *ReferrerCreate) check() error {
+	if _, ok := _c.mutation.Digest(); !ok {
 		return &ValidationError{Name: "digest", err: errors.New(`ent: missing required field "Referrer.digest"`)}
 	}
-	if _, ok := rc.mutation.Kind(); !ok {
+	if _, ok := _c.mutation.Kind(); !ok {
 		return &ValidationError{Name: "kind", err: errors.New(`ent: missing required field "Referrer.kind"`)}
 	}
-	if _, ok := rc.mutation.Downloadable(); !ok {
+	if _, ok := _c.mutation.Downloadable(); !ok {
 		return &ValidationError{Name: "downloadable", err: errors.New(`ent: missing required field "Referrer.downloadable"`)}
 	}
-	if _, ok := rc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Referrer.created_at"`)}
 	}
 	return nil
 }
 
-func (rc *ReferrerCreate) sqlSave(ctx context.Context) (*Referrer, error) {
-	if err := rc.check(); err != nil {
+func (_c *ReferrerCreate) sqlSave(ctx context.Context) (*Referrer, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := rc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -208,46 +208,46 @@ func (rc *ReferrerCreate) sqlSave(ctx context.Context) (*Referrer, error) {
 			return nil, err
 		}
 	}
-	rc.mutation.id = &_node.ID
-	rc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
+func (_c *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Referrer{config: rc.config}
+		_node = &Referrer{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(referrer.Table, sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = rc.conflict
-	if id, ok := rc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := rc.mutation.Digest(); ok {
+	if value, ok := _c.mutation.Digest(); ok {
 		_spec.SetField(referrer.FieldDigest, field.TypeString, value)
 		_node.Digest = value
 	}
-	if value, ok := rc.mutation.Kind(); ok {
+	if value, ok := _c.mutation.Kind(); ok {
 		_spec.SetField(referrer.FieldKind, field.TypeString, value)
 		_node.Kind = value
 	}
-	if value, ok := rc.mutation.Downloadable(); ok {
+	if value, ok := _c.mutation.Downloadable(); ok {
 		_spec.SetField(referrer.FieldDownloadable, field.TypeBool, value)
 		_node.Downloadable = value
 	}
-	if value, ok := rc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(referrer.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := rc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(referrer.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := rc.mutation.Annotations(); ok {
+	if value, ok := _c.mutation.Annotations(); ok {
 		_spec.SetField(referrer.FieldAnnotations, field.TypeJSON, value)
 		_node.Annotations = value
 	}
-	if nodes := rc.mutation.ReferredByIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ReferredByIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -263,7 +263,7 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.ReferencesIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ReferencesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -279,7 +279,7 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -314,10 +314,10 @@ func (rc *ReferrerCreate) createSpec() (*Referrer, *sqlgraph.CreateSpec) {
 //			SetDigest(v+v).
 //		}).
 //		Exec(ctx)
-func (rc *ReferrerCreate) OnConflict(opts ...sql.ConflictOption) *ReferrerUpsertOne {
-	rc.conflict = opts
+func (_c *ReferrerCreate) OnConflict(opts ...sql.ConflictOption) *ReferrerUpsertOne {
+	_c.conflict = opts
 	return &ReferrerUpsertOne{
-		create: rc,
+		create: _c,
 	}
 }
 
@@ -327,10 +327,10 @@ func (rc *ReferrerCreate) OnConflict(opts ...sql.ConflictOption) *ReferrerUpsert
 //	client.Referrer.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (rc *ReferrerCreate) OnConflictColumns(columns ...string) *ReferrerUpsertOne {
-	rc.conflict = append(rc.conflict, sql.ConflictColumns(columns...))
+func (_c *ReferrerCreate) OnConflictColumns(columns ...string) *ReferrerUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ReferrerUpsertOne{
-		create: rc,
+		create: _c,
 	}
 }
 
@@ -460,16 +460,16 @@ type ReferrerCreateBulk struct {
 }
 
 // Save creates the Referrer entities in the database.
-func (rcb *ReferrerCreateBulk) Save(ctx context.Context) ([]*Referrer, error) {
-	if rcb.err != nil {
-		return nil, rcb.err
+func (_c *ReferrerCreateBulk) Save(ctx context.Context) ([]*Referrer, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(rcb.builders))
-	nodes := make([]*Referrer, len(rcb.builders))
-	mutators := make([]Mutator, len(rcb.builders))
-	for i := range rcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Referrer, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := rcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ReferrerMutation)
@@ -483,12 +483,12 @@ func (rcb *ReferrerCreateBulk) Save(ctx context.Context) ([]*Referrer, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, rcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = rcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -508,7 +508,7 @@ func (rcb *ReferrerCreateBulk) Save(ctx context.Context) ([]*Referrer, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, rcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -516,8 +516,8 @@ func (rcb *ReferrerCreateBulk) Save(ctx context.Context) ([]*Referrer, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (rcb *ReferrerCreateBulk) SaveX(ctx context.Context) []*Referrer {
-	v, err := rcb.Save(ctx)
+func (_c *ReferrerCreateBulk) SaveX(ctx context.Context) []*Referrer {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -525,14 +525,14 @@ func (rcb *ReferrerCreateBulk) SaveX(ctx context.Context) []*Referrer {
 }
 
 // Exec executes the query.
-func (rcb *ReferrerCreateBulk) Exec(ctx context.Context) error {
-	_, err := rcb.Save(ctx)
+func (_c *ReferrerCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rcb *ReferrerCreateBulk) ExecX(ctx context.Context) {
-	if err := rcb.Exec(ctx); err != nil {
+func (_c *ReferrerCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -552,10 +552,10 @@ func (rcb *ReferrerCreateBulk) ExecX(ctx context.Context) {
 //			SetDigest(v+v).
 //		}).
 //		Exec(ctx)
-func (rcb *ReferrerCreateBulk) OnConflict(opts ...sql.ConflictOption) *ReferrerUpsertBulk {
-	rcb.conflict = opts
+func (_c *ReferrerCreateBulk) OnConflict(opts ...sql.ConflictOption) *ReferrerUpsertBulk {
+	_c.conflict = opts
 	return &ReferrerUpsertBulk{
-		create: rcb,
+		create: _c,
 	}
 }
 
@@ -565,10 +565,10 @@ func (rcb *ReferrerCreateBulk) OnConflict(opts ...sql.ConflictOption) *ReferrerU
 //	client.Referrer.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (rcb *ReferrerCreateBulk) OnConflictColumns(columns ...string) *ReferrerUpsertBulk {
-	rcb.conflict = append(rcb.conflict, sql.ConflictColumns(columns...))
+func (_c *ReferrerCreateBulk) OnConflictColumns(columns ...string) *ReferrerUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ReferrerUpsertBulk{
-		create: rcb,
+		create: _c,
 	}
 }
 

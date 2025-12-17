@@ -26,83 +26,83 @@ type RobotAccountUpdate struct {
 }
 
 // Where appends a list predicates to the RobotAccountUpdate builder.
-func (rau *RobotAccountUpdate) Where(ps ...predicate.RobotAccount) *RobotAccountUpdate {
-	rau.mutation.Where(ps...)
-	return rau
+func (_u *RobotAccountUpdate) Where(ps ...predicate.RobotAccount) *RobotAccountUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (rau *RobotAccountUpdate) SetName(s string) *RobotAccountUpdate {
-	rau.mutation.SetName(s)
-	return rau
+func (_u *RobotAccountUpdate) SetName(v string) *RobotAccountUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (rau *RobotAccountUpdate) SetNillableName(s *string) *RobotAccountUpdate {
-	if s != nil {
-		rau.SetName(*s)
+func (_u *RobotAccountUpdate) SetNillableName(v *string) *RobotAccountUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return rau
+	return _u
 }
 
 // SetRevokedAt sets the "revoked_at" field.
-func (rau *RobotAccountUpdate) SetRevokedAt(t time.Time) *RobotAccountUpdate {
-	rau.mutation.SetRevokedAt(t)
-	return rau
+func (_u *RobotAccountUpdate) SetRevokedAt(v time.Time) *RobotAccountUpdate {
+	_u.mutation.SetRevokedAt(v)
+	return _u
 }
 
 // SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
-func (rau *RobotAccountUpdate) SetNillableRevokedAt(t *time.Time) *RobotAccountUpdate {
-	if t != nil {
-		rau.SetRevokedAt(*t)
+func (_u *RobotAccountUpdate) SetNillableRevokedAt(v *time.Time) *RobotAccountUpdate {
+	if v != nil {
+		_u.SetRevokedAt(*v)
 	}
-	return rau
+	return _u
 }
 
 // ClearRevokedAt clears the value of the "revoked_at" field.
-func (rau *RobotAccountUpdate) ClearRevokedAt() *RobotAccountUpdate {
-	rau.mutation.ClearRevokedAt()
-	return rau
+func (_u *RobotAccountUpdate) ClearRevokedAt() *RobotAccountUpdate {
+	_u.mutation.ClearRevokedAt()
+	return _u
 }
 
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (rau *RobotAccountUpdate) SetWorkflowID(id uuid.UUID) *RobotAccountUpdate {
-	rau.mutation.SetWorkflowID(id)
-	return rau
+func (_u *RobotAccountUpdate) SetWorkflowID(id uuid.UUID) *RobotAccountUpdate {
+	_u.mutation.SetWorkflowID(id)
+	return _u
 }
 
 // SetNillableWorkflowID sets the "workflow" edge to the Workflow entity by ID if the given value is not nil.
-func (rau *RobotAccountUpdate) SetNillableWorkflowID(id *uuid.UUID) *RobotAccountUpdate {
+func (_u *RobotAccountUpdate) SetNillableWorkflowID(id *uuid.UUID) *RobotAccountUpdate {
 	if id != nil {
-		rau = rau.SetWorkflowID(*id)
+		_u = _u.SetWorkflowID(*id)
 	}
-	return rau
+	return _u
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (rau *RobotAccountUpdate) SetWorkflow(w *Workflow) *RobotAccountUpdate {
-	return rau.SetWorkflowID(w.ID)
+func (_u *RobotAccountUpdate) SetWorkflow(v *Workflow) *RobotAccountUpdate {
+	return _u.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the RobotAccountMutation object of the builder.
-func (rau *RobotAccountUpdate) Mutation() *RobotAccountMutation {
-	return rau.mutation
+func (_u *RobotAccountUpdate) Mutation() *RobotAccountMutation {
+	return _u.mutation
 }
 
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
-func (rau *RobotAccountUpdate) ClearWorkflow() *RobotAccountUpdate {
-	rau.mutation.ClearWorkflow()
-	return rau
+func (_u *RobotAccountUpdate) ClearWorkflow() *RobotAccountUpdate {
+	_u.mutation.ClearWorkflow()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (rau *RobotAccountUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, rau.sqlSave, rau.mutation, rau.hooks)
+func (_u *RobotAccountUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (rau *RobotAccountUpdate) SaveX(ctx context.Context) int {
-	affected, err := rau.Save(ctx)
+func (_u *RobotAccountUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -110,43 +110,43 @@ func (rau *RobotAccountUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (rau *RobotAccountUpdate) Exec(ctx context.Context) error {
-	_, err := rau.Save(ctx)
+func (_u *RobotAccountUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rau *RobotAccountUpdate) ExecX(ctx context.Context) {
-	if err := rau.Exec(ctx); err != nil {
+func (_u *RobotAccountUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (rau *RobotAccountUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdate {
-	rau.modifiers = append(rau.modifiers, modifiers...)
-	return rau
+func (_u *RobotAccountUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
+func (_u *RobotAccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
-	if ps := rau.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := rau.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(robotaccount.FieldName, field.TypeString, value)
 	}
-	if value, ok := rau.mutation.RevokedAt(); ok {
+	if value, ok := _u.mutation.RevokedAt(); ok {
 		_spec.SetField(robotaccount.FieldRevokedAt, field.TypeTime, value)
 	}
-	if rau.mutation.RevokedAtCleared() {
+	if _u.mutation.RevokedAtCleared() {
 		_spec.ClearField(robotaccount.FieldRevokedAt, field.TypeTime)
 	}
-	if rau.mutation.WorkflowCleared() {
+	if _u.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -159,7 +159,7 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := rau.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -175,8 +175,8 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(rau.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, rau.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{robotaccount.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -184,8 +184,8 @@ func (rau *RobotAccountUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	rau.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // RobotAccountUpdateOne is the builder for updating a single RobotAccount entity.
@@ -198,90 +198,90 @@ type RobotAccountUpdateOne struct {
 }
 
 // SetName sets the "name" field.
-func (rauo *RobotAccountUpdateOne) SetName(s string) *RobotAccountUpdateOne {
-	rauo.mutation.SetName(s)
-	return rauo
+func (_u *RobotAccountUpdateOne) SetName(v string) *RobotAccountUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (rauo *RobotAccountUpdateOne) SetNillableName(s *string) *RobotAccountUpdateOne {
-	if s != nil {
-		rauo.SetName(*s)
+func (_u *RobotAccountUpdateOne) SetNillableName(v *string) *RobotAccountUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return rauo
+	return _u
 }
 
 // SetRevokedAt sets the "revoked_at" field.
-func (rauo *RobotAccountUpdateOne) SetRevokedAt(t time.Time) *RobotAccountUpdateOne {
-	rauo.mutation.SetRevokedAt(t)
-	return rauo
+func (_u *RobotAccountUpdateOne) SetRevokedAt(v time.Time) *RobotAccountUpdateOne {
+	_u.mutation.SetRevokedAt(v)
+	return _u
 }
 
 // SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
-func (rauo *RobotAccountUpdateOne) SetNillableRevokedAt(t *time.Time) *RobotAccountUpdateOne {
-	if t != nil {
-		rauo.SetRevokedAt(*t)
+func (_u *RobotAccountUpdateOne) SetNillableRevokedAt(v *time.Time) *RobotAccountUpdateOne {
+	if v != nil {
+		_u.SetRevokedAt(*v)
 	}
-	return rauo
+	return _u
 }
 
 // ClearRevokedAt clears the value of the "revoked_at" field.
-func (rauo *RobotAccountUpdateOne) ClearRevokedAt() *RobotAccountUpdateOne {
-	rauo.mutation.ClearRevokedAt()
-	return rauo
+func (_u *RobotAccountUpdateOne) ClearRevokedAt() *RobotAccountUpdateOne {
+	_u.mutation.ClearRevokedAt()
+	return _u
 }
 
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (rauo *RobotAccountUpdateOne) SetWorkflowID(id uuid.UUID) *RobotAccountUpdateOne {
-	rauo.mutation.SetWorkflowID(id)
-	return rauo
+func (_u *RobotAccountUpdateOne) SetWorkflowID(id uuid.UUID) *RobotAccountUpdateOne {
+	_u.mutation.SetWorkflowID(id)
+	return _u
 }
 
 // SetNillableWorkflowID sets the "workflow" edge to the Workflow entity by ID if the given value is not nil.
-func (rauo *RobotAccountUpdateOne) SetNillableWorkflowID(id *uuid.UUID) *RobotAccountUpdateOne {
+func (_u *RobotAccountUpdateOne) SetNillableWorkflowID(id *uuid.UUID) *RobotAccountUpdateOne {
 	if id != nil {
-		rauo = rauo.SetWorkflowID(*id)
+		_u = _u.SetWorkflowID(*id)
 	}
-	return rauo
+	return _u
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (rauo *RobotAccountUpdateOne) SetWorkflow(w *Workflow) *RobotAccountUpdateOne {
-	return rauo.SetWorkflowID(w.ID)
+func (_u *RobotAccountUpdateOne) SetWorkflow(v *Workflow) *RobotAccountUpdateOne {
+	return _u.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the RobotAccountMutation object of the builder.
-func (rauo *RobotAccountUpdateOne) Mutation() *RobotAccountMutation {
-	return rauo.mutation
+func (_u *RobotAccountUpdateOne) Mutation() *RobotAccountMutation {
+	return _u.mutation
 }
 
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
-func (rauo *RobotAccountUpdateOne) ClearWorkflow() *RobotAccountUpdateOne {
-	rauo.mutation.ClearWorkflow()
-	return rauo
+func (_u *RobotAccountUpdateOne) ClearWorkflow() *RobotAccountUpdateOne {
+	_u.mutation.ClearWorkflow()
+	return _u
 }
 
 // Where appends a list predicates to the RobotAccountUpdate builder.
-func (rauo *RobotAccountUpdateOne) Where(ps ...predicate.RobotAccount) *RobotAccountUpdateOne {
-	rauo.mutation.Where(ps...)
-	return rauo
+func (_u *RobotAccountUpdateOne) Where(ps ...predicate.RobotAccount) *RobotAccountUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (rauo *RobotAccountUpdateOne) Select(field string, fields ...string) *RobotAccountUpdateOne {
-	rauo.fields = append([]string{field}, fields...)
-	return rauo
+func (_u *RobotAccountUpdateOne) Select(field string, fields ...string) *RobotAccountUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated RobotAccount entity.
-func (rauo *RobotAccountUpdateOne) Save(ctx context.Context) (*RobotAccount, error) {
-	return withHooks(ctx, rauo.sqlSave, rauo.mutation, rauo.hooks)
+func (_u *RobotAccountUpdateOne) Save(ctx context.Context) (*RobotAccount, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (rauo *RobotAccountUpdateOne) SaveX(ctx context.Context) *RobotAccount {
-	node, err := rauo.Save(ctx)
+func (_u *RobotAccountUpdateOne) SaveX(ctx context.Context) *RobotAccount {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -289,32 +289,32 @@ func (rauo *RobotAccountUpdateOne) SaveX(ctx context.Context) *RobotAccount {
 }
 
 // Exec executes the query on the entity.
-func (rauo *RobotAccountUpdateOne) Exec(ctx context.Context) error {
-	_, err := rauo.Save(ctx)
+func (_u *RobotAccountUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rauo *RobotAccountUpdateOne) ExecX(ctx context.Context) {
-	if err := rauo.Exec(ctx); err != nil {
+func (_u *RobotAccountUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (rauo *RobotAccountUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdateOne {
-	rauo.modifiers = append(rauo.modifiers, modifiers...)
-	return rauo
+func (_u *RobotAccountUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RobotAccountUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAccount, err error) {
+func (_u *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAccount, err error) {
 	_spec := sqlgraph.NewUpdateSpec(robotaccount.Table, robotaccount.Columns, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
-	id, ok := rauo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "RobotAccount.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := rauo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, robotaccount.FieldID)
 		for _, f := range fields {
@@ -326,23 +326,23 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 			}
 		}
 	}
-	if ps := rauo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := rauo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(robotaccount.FieldName, field.TypeString, value)
 	}
-	if value, ok := rauo.mutation.RevokedAt(); ok {
+	if value, ok := _u.mutation.RevokedAt(); ok {
 		_spec.SetField(robotaccount.FieldRevokedAt, field.TypeTime, value)
 	}
-	if rauo.mutation.RevokedAtCleared() {
+	if _u.mutation.RevokedAtCleared() {
 		_spec.ClearField(robotaccount.FieldRevokedAt, field.TypeTime)
 	}
-	if rauo.mutation.WorkflowCleared() {
+	if _u.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -355,7 +355,7 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := rauo.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -371,11 +371,11 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(rauo.modifiers...)
-	_node = &RobotAccount{config: rauo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &RobotAccount{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, rauo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{robotaccount.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -383,6 +383,6 @@ func (rauo *RobotAccountUpdateOne) sqlSave(ctx context.Context) (_node *RobotAcc
 		}
 		return nil, err
 	}
-	rauo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

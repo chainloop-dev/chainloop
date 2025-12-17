@@ -74,7 +74,7 @@ func (*RobotAccount) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the RobotAccount fields.
-func (ra *RobotAccount) assignValues(columns []string, values []any) error {
+func (_m *RobotAccount) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -84,35 +84,35 @@ func (ra *RobotAccount) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				ra.ID = *value
+				_m.ID = *value
 			}
 		case robotaccount.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				ra.Name = value.String
+				_m.Name = value.String
 			}
 		case robotaccount.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				ra.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case robotaccount.FieldRevokedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field revoked_at", values[i])
 			} else if value.Valid {
-				ra.RevokedAt = value.Time
+				_m.RevokedAt = value.Time
 			}
 		case robotaccount.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_robotaccounts", values[i])
 			} else if value.Valid {
-				ra.workflow_robotaccounts = new(uuid.UUID)
-				*ra.workflow_robotaccounts = *value.S.(*uuid.UUID)
+				_m.workflow_robotaccounts = new(uuid.UUID)
+				*_m.workflow_robotaccounts = *value.S.(*uuid.UUID)
 			}
 		default:
-			ra.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -120,46 +120,46 @@ func (ra *RobotAccount) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the RobotAccount.
 // This includes values selected through modifiers, order, etc.
-func (ra *RobotAccount) Value(name string) (ent.Value, error) {
-	return ra.selectValues.Get(name)
+func (_m *RobotAccount) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryWorkflow queries the "workflow" edge of the RobotAccount entity.
-func (ra *RobotAccount) QueryWorkflow() *WorkflowQuery {
-	return NewRobotAccountClient(ra.config).QueryWorkflow(ra)
+func (_m *RobotAccount) QueryWorkflow() *WorkflowQuery {
+	return NewRobotAccountClient(_m.config).QueryWorkflow(_m)
 }
 
 // Update returns a builder for updating this RobotAccount.
 // Note that you need to call RobotAccount.Unwrap() before calling this method if this RobotAccount
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (ra *RobotAccount) Update() *RobotAccountUpdateOne {
-	return NewRobotAccountClient(ra.config).UpdateOne(ra)
+func (_m *RobotAccount) Update() *RobotAccountUpdateOne {
+	return NewRobotAccountClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the RobotAccount entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (ra *RobotAccount) Unwrap() *RobotAccount {
-	_tx, ok := ra.config.driver.(*txDriver)
+func (_m *RobotAccount) Unwrap() *RobotAccount {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: RobotAccount is not a transactional entity")
 	}
-	ra.config.driver = _tx.drv
-	return ra
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (ra *RobotAccount) String() string {
+func (_m *RobotAccount) String() string {
 	var builder strings.Builder
 	builder.WriteString("RobotAccount(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", ra.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(ra.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(ra.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("revoked_at=")
-	builder.WriteString(ra.RevokedAt.Format(time.ANSIC))
+	builder.WriteString(_m.RevokedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

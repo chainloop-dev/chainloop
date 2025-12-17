@@ -27,98 +27,98 @@ type IntegrationAttachmentUpdate struct {
 }
 
 // Where appends a list predicates to the IntegrationAttachmentUpdate builder.
-func (iau *IntegrationAttachmentUpdate) Where(ps ...predicate.IntegrationAttachment) *IntegrationAttachmentUpdate {
-	iau.mutation.Where(ps...)
-	return iau
+func (_u *IntegrationAttachmentUpdate) Where(ps ...predicate.IntegrationAttachment) *IntegrationAttachmentUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetConfiguration sets the "configuration" field.
-func (iau *IntegrationAttachmentUpdate) SetConfiguration(b []byte) *IntegrationAttachmentUpdate {
-	iau.mutation.SetConfiguration(b)
-	return iau
+func (_u *IntegrationAttachmentUpdate) SetConfiguration(v []byte) *IntegrationAttachmentUpdate {
+	_u.mutation.SetConfiguration(v)
+	return _u
 }
 
 // ClearConfiguration clears the value of the "configuration" field.
-func (iau *IntegrationAttachmentUpdate) ClearConfiguration() *IntegrationAttachmentUpdate {
-	iau.mutation.ClearConfiguration()
-	return iau
+func (_u *IntegrationAttachmentUpdate) ClearConfiguration() *IntegrationAttachmentUpdate {
+	_u.mutation.ClearConfiguration()
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (iau *IntegrationAttachmentUpdate) SetDeletedAt(t time.Time) *IntegrationAttachmentUpdate {
-	iau.mutation.SetDeletedAt(t)
-	return iau
+func (_u *IntegrationAttachmentUpdate) SetDeletedAt(v time.Time) *IntegrationAttachmentUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (iau *IntegrationAttachmentUpdate) SetNillableDeletedAt(t *time.Time) *IntegrationAttachmentUpdate {
-	if t != nil {
-		iau.SetDeletedAt(*t)
+func (_u *IntegrationAttachmentUpdate) SetNillableDeletedAt(v *time.Time) *IntegrationAttachmentUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return iau
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (iau *IntegrationAttachmentUpdate) ClearDeletedAt() *IntegrationAttachmentUpdate {
-	iau.mutation.ClearDeletedAt()
-	return iau
+func (_u *IntegrationAttachmentUpdate) ClearDeletedAt() *IntegrationAttachmentUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetWorkflowID sets the "workflow_id" field.
-func (iau *IntegrationAttachmentUpdate) SetWorkflowID(u uuid.UUID) *IntegrationAttachmentUpdate {
-	iau.mutation.SetWorkflowID(u)
-	return iau
+func (_u *IntegrationAttachmentUpdate) SetWorkflowID(v uuid.UUID) *IntegrationAttachmentUpdate {
+	_u.mutation.SetWorkflowID(v)
+	return _u
 }
 
 // SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
-func (iau *IntegrationAttachmentUpdate) SetNillableWorkflowID(u *uuid.UUID) *IntegrationAttachmentUpdate {
-	if u != nil {
-		iau.SetWorkflowID(*u)
+func (_u *IntegrationAttachmentUpdate) SetNillableWorkflowID(v *uuid.UUID) *IntegrationAttachmentUpdate {
+	if v != nil {
+		_u.SetWorkflowID(*v)
 	}
-	return iau
+	return _u
 }
 
 // SetIntegrationID sets the "integration" edge to the Integration entity by ID.
-func (iau *IntegrationAttachmentUpdate) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentUpdate {
-	iau.mutation.SetIntegrationID(id)
-	return iau
+func (_u *IntegrationAttachmentUpdate) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentUpdate {
+	_u.mutation.SetIntegrationID(id)
+	return _u
 }
 
 // SetIntegration sets the "integration" edge to the Integration entity.
-func (iau *IntegrationAttachmentUpdate) SetIntegration(i *Integration) *IntegrationAttachmentUpdate {
-	return iau.SetIntegrationID(i.ID)
+func (_u *IntegrationAttachmentUpdate) SetIntegration(v *Integration) *IntegrationAttachmentUpdate {
+	return _u.SetIntegrationID(v.ID)
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (iau *IntegrationAttachmentUpdate) SetWorkflow(w *Workflow) *IntegrationAttachmentUpdate {
-	return iau.SetWorkflowID(w.ID)
+func (_u *IntegrationAttachmentUpdate) SetWorkflow(v *Workflow) *IntegrationAttachmentUpdate {
+	return _u.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the IntegrationAttachmentMutation object of the builder.
-func (iau *IntegrationAttachmentUpdate) Mutation() *IntegrationAttachmentMutation {
-	return iau.mutation
+func (_u *IntegrationAttachmentUpdate) Mutation() *IntegrationAttachmentMutation {
+	return _u.mutation
 }
 
 // ClearIntegration clears the "integration" edge to the Integration entity.
-func (iau *IntegrationAttachmentUpdate) ClearIntegration() *IntegrationAttachmentUpdate {
-	iau.mutation.ClearIntegration()
-	return iau
+func (_u *IntegrationAttachmentUpdate) ClearIntegration() *IntegrationAttachmentUpdate {
+	_u.mutation.ClearIntegration()
+	return _u
 }
 
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
-func (iau *IntegrationAttachmentUpdate) ClearWorkflow() *IntegrationAttachmentUpdate {
-	iau.mutation.ClearWorkflow()
-	return iau
+func (_u *IntegrationAttachmentUpdate) ClearWorkflow() *IntegrationAttachmentUpdate {
+	_u.mutation.ClearWorkflow()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (iau *IntegrationAttachmentUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, iau.sqlSave, iau.mutation, iau.hooks)
+func (_u *IntegrationAttachmentUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (iau *IntegrationAttachmentUpdate) SaveX(ctx context.Context) int {
-	affected, err := iau.Save(ctx)
+func (_u *IntegrationAttachmentUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -126,60 +126,60 @@ func (iau *IntegrationAttachmentUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (iau *IntegrationAttachmentUpdate) Exec(ctx context.Context) error {
-	_, err := iau.Save(ctx)
+func (_u *IntegrationAttachmentUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (iau *IntegrationAttachmentUpdate) ExecX(ctx context.Context) {
-	if err := iau.Exec(ctx); err != nil {
+func (_u *IntegrationAttachmentUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (iau *IntegrationAttachmentUpdate) check() error {
-	if iau.mutation.IntegrationCleared() && len(iau.mutation.IntegrationIDs()) > 0 {
+func (_u *IntegrationAttachmentUpdate) check() error {
+	if _u.mutation.IntegrationCleared() && len(_u.mutation.IntegrationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
-	if iau.mutation.WorkflowCleared() && len(iau.mutation.WorkflowIDs()) > 0 {
+	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.workflow"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (iau *IntegrationAttachmentUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationAttachmentUpdate {
-	iau.modifiers = append(iau.modifiers, modifiers...)
-	return iau
+func (_u *IntegrationAttachmentUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationAttachmentUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := iau.check(); err != nil {
-		return n, err
+func (_u *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(integrationattachment.Table, integrationattachment.Columns, sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID))
-	if ps := iau.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := iau.mutation.Configuration(); ok {
+	if value, ok := _u.mutation.Configuration(); ok {
 		_spec.SetField(integrationattachment.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iau.mutation.ConfigurationCleared() {
+	if _u.mutation.ConfigurationCleared() {
 		_spec.ClearField(integrationattachment.FieldConfiguration, field.TypeBytes)
 	}
-	if value, ok := iau.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)
 	}
-	if iau.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(integrationattachment.FieldDeletedAt, field.TypeTime)
 	}
-	if iau.mutation.IntegrationCleared() {
+	if _u.mutation.IntegrationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -192,7 +192,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iau.mutation.IntegrationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.IntegrationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -208,7 +208,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if iau.mutation.WorkflowCleared() {
+	if _u.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -221,7 +221,7 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iau.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -237,8 +237,8 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(iau.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, iau.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{integrationattachment.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -246,8 +246,8 @@ func (iau *IntegrationAttachmentUpdate) sqlSave(ctx context.Context) (n int, err
 		}
 		return 0, err
 	}
-	iau.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // IntegrationAttachmentUpdateOne is the builder for updating a single IntegrationAttachment entity.
@@ -260,105 +260,105 @@ type IntegrationAttachmentUpdateOne struct {
 }
 
 // SetConfiguration sets the "configuration" field.
-func (iauo *IntegrationAttachmentUpdateOne) SetConfiguration(b []byte) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetConfiguration(b)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) SetConfiguration(v []byte) *IntegrationAttachmentUpdateOne {
+	_u.mutation.SetConfiguration(v)
+	return _u
 }
 
 // ClearConfiguration clears the value of the "configuration" field.
-func (iauo *IntegrationAttachmentUpdateOne) ClearConfiguration() *IntegrationAttachmentUpdateOne {
-	iauo.mutation.ClearConfiguration()
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) ClearConfiguration() *IntegrationAttachmentUpdateOne {
+	_u.mutation.ClearConfiguration()
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (iauo *IntegrationAttachmentUpdateOne) SetDeletedAt(t time.Time) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetDeletedAt(t)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) SetDeletedAt(v time.Time) *IntegrationAttachmentUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (iauo *IntegrationAttachmentUpdateOne) SetNillableDeletedAt(t *time.Time) *IntegrationAttachmentUpdateOne {
-	if t != nil {
-		iauo.SetDeletedAt(*t)
+func (_u *IntegrationAttachmentUpdateOne) SetNillableDeletedAt(v *time.Time) *IntegrationAttachmentUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return iauo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (iauo *IntegrationAttachmentUpdateOne) ClearDeletedAt() *IntegrationAttachmentUpdateOne {
-	iauo.mutation.ClearDeletedAt()
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) ClearDeletedAt() *IntegrationAttachmentUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetWorkflowID sets the "workflow_id" field.
-func (iauo *IntegrationAttachmentUpdateOne) SetWorkflowID(u uuid.UUID) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetWorkflowID(u)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) SetWorkflowID(v uuid.UUID) *IntegrationAttachmentUpdateOne {
+	_u.mutation.SetWorkflowID(v)
+	return _u
 }
 
 // SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
-func (iauo *IntegrationAttachmentUpdateOne) SetNillableWorkflowID(u *uuid.UUID) *IntegrationAttachmentUpdateOne {
-	if u != nil {
-		iauo.SetWorkflowID(*u)
+func (_u *IntegrationAttachmentUpdateOne) SetNillableWorkflowID(v *uuid.UUID) *IntegrationAttachmentUpdateOne {
+	if v != nil {
+		_u.SetWorkflowID(*v)
 	}
-	return iauo
+	return _u
 }
 
 // SetIntegrationID sets the "integration" edge to the Integration entity by ID.
-func (iauo *IntegrationAttachmentUpdateOne) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.SetIntegrationID(id)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) SetIntegrationID(id uuid.UUID) *IntegrationAttachmentUpdateOne {
+	_u.mutation.SetIntegrationID(id)
+	return _u
 }
 
 // SetIntegration sets the "integration" edge to the Integration entity.
-func (iauo *IntegrationAttachmentUpdateOne) SetIntegration(i *Integration) *IntegrationAttachmentUpdateOne {
-	return iauo.SetIntegrationID(i.ID)
+func (_u *IntegrationAttachmentUpdateOne) SetIntegration(v *Integration) *IntegrationAttachmentUpdateOne {
+	return _u.SetIntegrationID(v.ID)
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (iauo *IntegrationAttachmentUpdateOne) SetWorkflow(w *Workflow) *IntegrationAttachmentUpdateOne {
-	return iauo.SetWorkflowID(w.ID)
+func (_u *IntegrationAttachmentUpdateOne) SetWorkflow(v *Workflow) *IntegrationAttachmentUpdateOne {
+	return _u.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the IntegrationAttachmentMutation object of the builder.
-func (iauo *IntegrationAttachmentUpdateOne) Mutation() *IntegrationAttachmentMutation {
-	return iauo.mutation
+func (_u *IntegrationAttachmentUpdateOne) Mutation() *IntegrationAttachmentMutation {
+	return _u.mutation
 }
 
 // ClearIntegration clears the "integration" edge to the Integration entity.
-func (iauo *IntegrationAttachmentUpdateOne) ClearIntegration() *IntegrationAttachmentUpdateOne {
-	iauo.mutation.ClearIntegration()
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) ClearIntegration() *IntegrationAttachmentUpdateOne {
+	_u.mutation.ClearIntegration()
+	return _u
 }
 
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
-func (iauo *IntegrationAttachmentUpdateOne) ClearWorkflow() *IntegrationAttachmentUpdateOne {
-	iauo.mutation.ClearWorkflow()
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) ClearWorkflow() *IntegrationAttachmentUpdateOne {
+	_u.mutation.ClearWorkflow()
+	return _u
 }
 
 // Where appends a list predicates to the IntegrationAttachmentUpdate builder.
-func (iauo *IntegrationAttachmentUpdateOne) Where(ps ...predicate.IntegrationAttachment) *IntegrationAttachmentUpdateOne {
-	iauo.mutation.Where(ps...)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) Where(ps ...predicate.IntegrationAttachment) *IntegrationAttachmentUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (iauo *IntegrationAttachmentUpdateOne) Select(field string, fields ...string) *IntegrationAttachmentUpdateOne {
-	iauo.fields = append([]string{field}, fields...)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) Select(field string, fields ...string) *IntegrationAttachmentUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated IntegrationAttachment entity.
-func (iauo *IntegrationAttachmentUpdateOne) Save(ctx context.Context) (*IntegrationAttachment, error) {
-	return withHooks(ctx, iauo.sqlSave, iauo.mutation, iauo.hooks)
+func (_u *IntegrationAttachmentUpdateOne) Save(ctx context.Context) (*IntegrationAttachment, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (iauo *IntegrationAttachmentUpdateOne) SaveX(ctx context.Context) *IntegrationAttachment {
-	node, err := iauo.Save(ctx)
+func (_u *IntegrationAttachmentUpdateOne) SaveX(ctx context.Context) *IntegrationAttachment {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -366,46 +366,46 @@ func (iauo *IntegrationAttachmentUpdateOne) SaveX(ctx context.Context) *Integrat
 }
 
 // Exec executes the query on the entity.
-func (iauo *IntegrationAttachmentUpdateOne) Exec(ctx context.Context) error {
-	_, err := iauo.Save(ctx)
+func (_u *IntegrationAttachmentUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (iauo *IntegrationAttachmentUpdateOne) ExecX(ctx context.Context) {
-	if err := iauo.Exec(ctx); err != nil {
+func (_u *IntegrationAttachmentUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (iauo *IntegrationAttachmentUpdateOne) check() error {
-	if iauo.mutation.IntegrationCleared() && len(iauo.mutation.IntegrationIDs()) > 0 {
+func (_u *IntegrationAttachmentUpdateOne) check() error {
+	if _u.mutation.IntegrationCleared() && len(_u.mutation.IntegrationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.integration"`)
 	}
-	if iauo.mutation.WorkflowCleared() && len(iauo.mutation.WorkflowIDs()) > 0 {
+	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IntegrationAttachment.workflow"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (iauo *IntegrationAttachmentUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationAttachmentUpdateOne {
-	iauo.modifiers = append(iauo.modifiers, modifiers...)
-	return iauo
+func (_u *IntegrationAttachmentUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationAttachmentUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node *IntegrationAttachment, err error) {
-	if err := iauo.check(); err != nil {
+func (_u *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node *IntegrationAttachment, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(integrationattachment.Table, integrationattachment.Columns, sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID))
-	id, ok := iauo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "IntegrationAttachment.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := iauo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, integrationattachment.FieldID)
 		for _, f := range fields {
@@ -417,26 +417,26 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 			}
 		}
 	}
-	if ps := iauo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := iauo.mutation.Configuration(); ok {
+	if value, ok := _u.mutation.Configuration(); ok {
 		_spec.SetField(integrationattachment.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iauo.mutation.ConfigurationCleared() {
+	if _u.mutation.ConfigurationCleared() {
 		_spec.ClearField(integrationattachment.FieldConfiguration, field.TypeBytes)
 	}
-	if value, ok := iauo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(integrationattachment.FieldDeletedAt, field.TypeTime, value)
 	}
-	if iauo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(integrationattachment.FieldDeletedAt, field.TypeTime)
 	}
-	if iauo.mutation.IntegrationCleared() {
+	if _u.mutation.IntegrationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -449,7 +449,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iauo.mutation.IntegrationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.IntegrationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -465,7 +465,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if iauo.mutation.WorkflowCleared() {
+	if _u.mutation.WorkflowCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -478,7 +478,7 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iauo.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -494,11 +494,11 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(iauo.modifiers...)
-	_node = &IntegrationAttachment{config: iauo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &IntegrationAttachment{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, iauo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{integrationattachment.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -506,6 +506,6 @@ func (iauo *IntegrationAttachmentUpdateOne) sqlSave(ctx context.Context) (_node 
 		}
 		return nil, err
 	}
-	iauo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

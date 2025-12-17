@@ -27,174 +27,174 @@ type GroupUpdate struct {
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
-func (gu *GroupUpdate) Where(ps ...predicate.Group) *GroupUpdate {
-	gu.mutation.Where(ps...)
-	return gu
+func (_u *GroupUpdate) Where(ps ...predicate.Group) *GroupUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (gu *GroupUpdate) SetName(s string) *GroupUpdate {
-	gu.mutation.SetName(s)
-	return gu
+func (_u *GroupUpdate) SetName(v string) *GroupUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableName(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetName(*s)
+func (_u *GroupUpdate) SetNillableName(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return gu
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (gu *GroupUpdate) SetDescription(s string) *GroupUpdate {
-	gu.mutation.SetDescription(s)
-	return gu
+func (_u *GroupUpdate) SetDescription(v string) *GroupUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableDescription(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetDescription(*s)
+func (_u *GroupUpdate) SetNillableDescription(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return gu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (gu *GroupUpdate) ClearDescription() *GroupUpdate {
-	gu.mutation.ClearDescription()
-	return gu
+func (_u *GroupUpdate) ClearDescription() *GroupUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (gu *GroupUpdate) SetOrganizationID(u uuid.UUID) *GroupUpdate {
-	gu.mutation.SetOrganizationID(u)
-	return gu
+func (_u *GroupUpdate) SetOrganizationID(v uuid.UUID) *GroupUpdate {
+	_u.mutation.SetOrganizationID(v)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableOrganizationID(u *uuid.UUID) *GroupUpdate {
-	if u != nil {
-		gu.SetOrganizationID(*u)
+func (_u *GroupUpdate) SetNillableOrganizationID(v *uuid.UUID) *GroupUpdate {
+	if v != nil {
+		_u.SetOrganizationID(*v)
 	}
-	return gu
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (gu *GroupUpdate) SetUpdatedAt(t time.Time) *GroupUpdate {
-	gu.mutation.SetUpdatedAt(t)
-	return gu
+func (_u *GroupUpdate) SetUpdatedAt(v time.Time) *GroupUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableUpdatedAt(t *time.Time) *GroupUpdate {
-	if t != nil {
-		gu.SetUpdatedAt(*t)
+func (_u *GroupUpdate) SetNillableUpdatedAt(v *time.Time) *GroupUpdate {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return gu
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (gu *GroupUpdate) SetDeletedAt(t time.Time) *GroupUpdate {
-	gu.mutation.SetDeletedAt(t)
-	return gu
+func (_u *GroupUpdate) SetDeletedAt(v time.Time) *GroupUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableDeletedAt(t *time.Time) *GroupUpdate {
-	if t != nil {
-		gu.SetDeletedAt(*t)
+func (_u *GroupUpdate) SetNillableDeletedAt(v *time.Time) *GroupUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return gu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (gu *GroupUpdate) ClearDeletedAt() *GroupUpdate {
-	gu.mutation.ClearDeletedAt()
-	return gu
+func (_u *GroupUpdate) ClearDeletedAt() *GroupUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetMemberCount sets the "member_count" field.
-func (gu *GroupUpdate) SetMemberCount(i int) *GroupUpdate {
-	gu.mutation.ResetMemberCount()
-	gu.mutation.SetMemberCount(i)
-	return gu
+func (_u *GroupUpdate) SetMemberCount(v int) *GroupUpdate {
+	_u.mutation.ResetMemberCount()
+	_u.mutation.SetMemberCount(v)
+	return _u
 }
 
 // SetNillableMemberCount sets the "member_count" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableMemberCount(i *int) *GroupUpdate {
-	if i != nil {
-		gu.SetMemberCount(*i)
+func (_u *GroupUpdate) SetNillableMemberCount(v *int) *GroupUpdate {
+	if v != nil {
+		_u.SetMemberCount(*v)
 	}
-	return gu
+	return _u
 }
 
-// AddMemberCount adds i to the "member_count" field.
-func (gu *GroupUpdate) AddMemberCount(i int) *GroupUpdate {
-	gu.mutation.AddMemberCount(i)
-	return gu
+// AddMemberCount adds value to the "member_count" field.
+func (_u *GroupUpdate) AddMemberCount(v int) *GroupUpdate {
+	_u.mutation.AddMemberCount(v)
+	return _u
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (gu *GroupUpdate) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdate {
-	gu.mutation.AddGroupMembershipIDs(ids...)
-	return gu
+func (_u *GroupUpdate) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.AddGroupMembershipIDs(ids...)
+	return _u
 }
 
 // AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
-func (gu *GroupUpdate) AddGroupMemberships(g ...*GroupMembership) *GroupUpdate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *GroupUpdate) AddGroupMemberships(v ...*GroupMembership) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return gu.AddGroupMembershipIDs(ids...)
+	return _u.AddGroupMembershipIDs(ids...)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (gu *GroupUpdate) SetOrganization(o *Organization) *GroupUpdate {
-	return gu.SetOrganizationID(o.ID)
+func (_u *GroupUpdate) SetOrganization(v *Organization) *GroupUpdate {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // Mutation returns the GroupMutation object of the builder.
-func (gu *GroupUpdate) Mutation() *GroupMutation {
-	return gu.mutation
+func (_u *GroupUpdate) Mutation() *GroupMutation {
+	return _u.mutation
 }
 
 // ClearGroupMemberships clears all "group_memberships" edges to the GroupMembership entity.
-func (gu *GroupUpdate) ClearGroupMemberships() *GroupUpdate {
-	gu.mutation.ClearGroupMemberships()
-	return gu
+func (_u *GroupUpdate) ClearGroupMemberships() *GroupUpdate {
+	_u.mutation.ClearGroupMemberships()
+	return _u
 }
 
 // RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
-func (gu *GroupUpdate) RemoveGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdate {
-	gu.mutation.RemoveGroupMembershipIDs(ids...)
-	return gu
+func (_u *GroupUpdate) RemoveGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.RemoveGroupMembershipIDs(ids...)
+	return _u
 }
 
 // RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
-func (gu *GroupUpdate) RemoveGroupMemberships(g ...*GroupMembership) *GroupUpdate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *GroupUpdate) RemoveGroupMemberships(v ...*GroupMembership) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return gu.RemoveGroupMembershipIDs(ids...)
+	return _u.RemoveGroupMembershipIDs(ids...)
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (gu *GroupUpdate) ClearOrganization() *GroupUpdate {
-	gu.mutation.ClearOrganization()
-	return gu
+func (_u *GroupUpdate) ClearOrganization() *GroupUpdate {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (gu *GroupUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, gu.sqlSave, gu.mutation, gu.hooks)
+func (_u *GroupUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (gu *GroupUpdate) SaveX(ctx context.Context) int {
-	affected, err := gu.Save(ctx)
+func (_u *GroupUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -202,74 +202,74 @@ func (gu *GroupUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (gu *GroupUpdate) Exec(ctx context.Context) error {
-	_, err := gu.Save(ctx)
+func (_u *GroupUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (gu *GroupUpdate) ExecX(ctx context.Context) {
-	if err := gu.Exec(ctx); err != nil {
+func (_u *GroupUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (gu *GroupUpdate) check() error {
-	if v, ok := gu.mutation.Name(); ok {
+func (_u *GroupUpdate) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
-	if gu.mutation.OrganizationCleared() && len(gu.mutation.OrganizationIDs()) > 0 {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Group.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (gu *GroupUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *GroupUpdate {
-	gu.modifiers = append(gu.modifiers, modifiers...)
-	return gu
+func (_u *GroupUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *GroupUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := gu.check(); err != nil {
-		return n, err
+func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(group.Table, group.Columns, sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID))
-	if ps := gu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := gu.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 	}
-	if value, ok := gu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 	}
-	if gu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if value, ok := gu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := gu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(group.FieldDeletedAt, field.TypeTime, value)
 	}
-	if gu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(group.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := gu.mutation.MemberCount(); ok {
+	if value, ok := _u.mutation.MemberCount(); ok {
 		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
 	}
-	if value, ok := gu.mutation.AddedMemberCount(); ok {
+	if value, ok := _u.mutation.AddedMemberCount(); ok {
 		_spec.AddField(group.FieldMemberCount, field.TypeInt, value)
 	}
-	if gu.mutation.GroupMembershipsCleared() {
+	if _u.mutation.GroupMembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -282,7 +282,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !gu.mutation.GroupMembershipsCleared() {
+	if nodes := _u.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !_u.mutation.GroupMembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -298,7 +298,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -314,7 +314,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if gu.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -327,7 +327,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -343,8 +343,8 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(gu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -352,8 +352,8 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	gu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // GroupUpdateOne is the builder for updating a single Group entity.
@@ -366,181 +366,181 @@ type GroupUpdateOne struct {
 }
 
 // SetName sets the "name" field.
-func (guo *GroupUpdateOne) SetName(s string) *GroupUpdateOne {
-	guo.mutation.SetName(s)
-	return guo
+func (_u *GroupUpdateOne) SetName(v string) *GroupUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableName(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetName(*s)
+func (_u *GroupUpdateOne) SetNillableName(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return guo
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (guo *GroupUpdateOne) SetDescription(s string) *GroupUpdateOne {
-	guo.mutation.SetDescription(s)
-	return guo
+func (_u *GroupUpdateOne) SetDescription(v string) *GroupUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableDescription(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetDescription(*s)
+func (_u *GroupUpdateOne) SetNillableDescription(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return guo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (guo *GroupUpdateOne) ClearDescription() *GroupUpdateOne {
-	guo.mutation.ClearDescription()
-	return guo
+func (_u *GroupUpdateOne) ClearDescription() *GroupUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (guo *GroupUpdateOne) SetOrganizationID(u uuid.UUID) *GroupUpdateOne {
-	guo.mutation.SetOrganizationID(u)
-	return guo
+func (_u *GroupUpdateOne) SetOrganizationID(v uuid.UUID) *GroupUpdateOne {
+	_u.mutation.SetOrganizationID(v)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableOrganizationID(u *uuid.UUID) *GroupUpdateOne {
-	if u != nil {
-		guo.SetOrganizationID(*u)
+func (_u *GroupUpdateOne) SetNillableOrganizationID(v *uuid.UUID) *GroupUpdateOne {
+	if v != nil {
+		_u.SetOrganizationID(*v)
 	}
-	return guo
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (guo *GroupUpdateOne) SetUpdatedAt(t time.Time) *GroupUpdateOne {
-	guo.mutation.SetUpdatedAt(t)
-	return guo
+func (_u *GroupUpdateOne) SetUpdatedAt(v time.Time) *GroupUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableUpdatedAt(t *time.Time) *GroupUpdateOne {
-	if t != nil {
-		guo.SetUpdatedAt(*t)
+func (_u *GroupUpdateOne) SetNillableUpdatedAt(v *time.Time) *GroupUpdateOne {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return guo
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (guo *GroupUpdateOne) SetDeletedAt(t time.Time) *GroupUpdateOne {
-	guo.mutation.SetDeletedAt(t)
-	return guo
+func (_u *GroupUpdateOne) SetDeletedAt(v time.Time) *GroupUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableDeletedAt(t *time.Time) *GroupUpdateOne {
-	if t != nil {
-		guo.SetDeletedAt(*t)
+func (_u *GroupUpdateOne) SetNillableDeletedAt(v *time.Time) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return guo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (guo *GroupUpdateOne) ClearDeletedAt() *GroupUpdateOne {
-	guo.mutation.ClearDeletedAt()
-	return guo
+func (_u *GroupUpdateOne) ClearDeletedAt() *GroupUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetMemberCount sets the "member_count" field.
-func (guo *GroupUpdateOne) SetMemberCount(i int) *GroupUpdateOne {
-	guo.mutation.ResetMemberCount()
-	guo.mutation.SetMemberCount(i)
-	return guo
+func (_u *GroupUpdateOne) SetMemberCount(v int) *GroupUpdateOne {
+	_u.mutation.ResetMemberCount()
+	_u.mutation.SetMemberCount(v)
+	return _u
 }
 
 // SetNillableMemberCount sets the "member_count" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableMemberCount(i *int) *GroupUpdateOne {
-	if i != nil {
-		guo.SetMemberCount(*i)
+func (_u *GroupUpdateOne) SetNillableMemberCount(v *int) *GroupUpdateOne {
+	if v != nil {
+		_u.SetMemberCount(*v)
 	}
-	return guo
+	return _u
 }
 
-// AddMemberCount adds i to the "member_count" field.
-func (guo *GroupUpdateOne) AddMemberCount(i int) *GroupUpdateOne {
-	guo.mutation.AddMemberCount(i)
-	return guo
+// AddMemberCount adds value to the "member_count" field.
+func (_u *GroupUpdateOne) AddMemberCount(v int) *GroupUpdateOne {
+	_u.mutation.AddMemberCount(v)
+	return _u
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (guo *GroupUpdateOne) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdateOne {
-	guo.mutation.AddGroupMembershipIDs(ids...)
-	return guo
+func (_u *GroupUpdateOne) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.AddGroupMembershipIDs(ids...)
+	return _u
 }
 
 // AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
-func (guo *GroupUpdateOne) AddGroupMemberships(g ...*GroupMembership) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *GroupUpdateOne) AddGroupMemberships(v ...*GroupMembership) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return guo.AddGroupMembershipIDs(ids...)
+	return _u.AddGroupMembershipIDs(ids...)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (guo *GroupUpdateOne) SetOrganization(o *Organization) *GroupUpdateOne {
-	return guo.SetOrganizationID(o.ID)
+func (_u *GroupUpdateOne) SetOrganization(v *Organization) *GroupUpdateOne {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // Mutation returns the GroupMutation object of the builder.
-func (guo *GroupUpdateOne) Mutation() *GroupMutation {
-	return guo.mutation
+func (_u *GroupUpdateOne) Mutation() *GroupMutation {
+	return _u.mutation
 }
 
 // ClearGroupMemberships clears all "group_memberships" edges to the GroupMembership entity.
-func (guo *GroupUpdateOne) ClearGroupMemberships() *GroupUpdateOne {
-	guo.mutation.ClearGroupMemberships()
-	return guo
+func (_u *GroupUpdateOne) ClearGroupMemberships() *GroupUpdateOne {
+	_u.mutation.ClearGroupMemberships()
+	return _u
 }
 
 // RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
-func (guo *GroupUpdateOne) RemoveGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdateOne {
-	guo.mutation.RemoveGroupMembershipIDs(ids...)
-	return guo
+func (_u *GroupUpdateOne) RemoveGroupMembershipIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.RemoveGroupMembershipIDs(ids...)
+	return _u
 }
 
 // RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
-func (guo *GroupUpdateOne) RemoveGroupMemberships(g ...*GroupMembership) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *GroupUpdateOne) RemoveGroupMemberships(v ...*GroupMembership) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return guo.RemoveGroupMembershipIDs(ids...)
+	return _u.RemoveGroupMembershipIDs(ids...)
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (guo *GroupUpdateOne) ClearOrganization() *GroupUpdateOne {
-	guo.mutation.ClearOrganization()
-	return guo
+func (_u *GroupUpdateOne) ClearOrganization() *GroupUpdateOne {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
-func (guo *GroupUpdateOne) Where(ps ...predicate.Group) *GroupUpdateOne {
-	guo.mutation.Where(ps...)
-	return guo
+func (_u *GroupUpdateOne) Where(ps ...predicate.Group) *GroupUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (guo *GroupUpdateOne) Select(field string, fields ...string) *GroupUpdateOne {
-	guo.fields = append([]string{field}, fields...)
-	return guo
+func (_u *GroupUpdateOne) Select(field string, fields ...string) *GroupUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Group entity.
-func (guo *GroupUpdateOne) Save(ctx context.Context) (*Group, error) {
-	return withHooks(ctx, guo.sqlSave, guo.mutation, guo.hooks)
+func (_u *GroupUpdateOne) Save(ctx context.Context) (*Group, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (guo *GroupUpdateOne) SaveX(ctx context.Context) *Group {
-	node, err := guo.Save(ctx)
+func (_u *GroupUpdateOne) SaveX(ctx context.Context) *Group {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -548,48 +548,48 @@ func (guo *GroupUpdateOne) SaveX(ctx context.Context) *Group {
 }
 
 // Exec executes the query on the entity.
-func (guo *GroupUpdateOne) Exec(ctx context.Context) error {
-	_, err := guo.Save(ctx)
+func (_u *GroupUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (guo *GroupUpdateOne) ExecX(ctx context.Context) {
-	if err := guo.Exec(ctx); err != nil {
+func (_u *GroupUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (guo *GroupUpdateOne) check() error {
-	if v, ok := guo.mutation.Name(); ok {
+func (_u *GroupUpdateOne) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
-	if guo.mutation.OrganizationCleared() && len(guo.mutation.OrganizationIDs()) > 0 {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Group.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (guo *GroupUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *GroupUpdateOne {
-	guo.modifiers = append(guo.modifiers, modifiers...)
-	return guo
+func (_u *GroupUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *GroupUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error) {
-	if err := guo.check(); err != nil {
+func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(group.Table, group.Columns, sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID))
-	id, ok := guo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Group.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := guo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, group.FieldID)
 		for _, f := range fields {
@@ -601,38 +601,38 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			}
 		}
 	}
-	if ps := guo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := guo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 	}
-	if value, ok := guo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 	}
-	if guo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if value, ok := guo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := guo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(group.FieldDeletedAt, field.TypeTime, value)
 	}
-	if guo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(group.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := guo.mutation.MemberCount(); ok {
+	if value, ok := _u.mutation.MemberCount(); ok {
 		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
 	}
-	if value, ok := guo.mutation.AddedMemberCount(); ok {
+	if value, ok := _u.mutation.AddedMemberCount(); ok {
 		_spec.AddField(group.FieldMemberCount, field.TypeInt, value)
 	}
-	if guo.mutation.GroupMembershipsCleared() {
+	if _u.mutation.GroupMembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -645,7 +645,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !guo.mutation.GroupMembershipsCleared() {
+	if nodes := _u.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !_u.mutation.GroupMembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -661,7 +661,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -677,7 +677,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if guo.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -690,7 +690,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -706,11 +706,11 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(guo.modifiers...)
-	_node = &Group{config: guo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Group{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, guo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -718,6 +718,6 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		return nil, err
 	}
-	guo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

@@ -23,24 +23,24 @@ type AttestationUpdate struct {
 }
 
 // Where appends a list predicates to the AttestationUpdate builder.
-func (au *AttestationUpdate) Where(ps ...predicate.Attestation) *AttestationUpdate {
-	au.mutation.Where(ps...)
-	return au
+func (_u *AttestationUpdate) Where(ps ...predicate.Attestation) *AttestationUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Mutation returns the AttestationMutation object of the builder.
-func (au *AttestationUpdate) Mutation() *AttestationMutation {
-	return au.mutation
+func (_u *AttestationUpdate) Mutation() *AttestationMutation {
+	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (au *AttestationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, au.sqlSave, au.mutation, au.hooks)
+func (_u *AttestationUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (au *AttestationUpdate) SaveX(ctx context.Context) int {
-	affected, err := au.Save(ctx)
+func (_u *AttestationUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -48,46 +48,46 @@ func (au *AttestationUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (au *AttestationUpdate) Exec(ctx context.Context) error {
-	_, err := au.Save(ctx)
+func (_u *AttestationUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (au *AttestationUpdate) ExecX(ctx context.Context) {
-	if err := au.Exec(ctx); err != nil {
+func (_u *AttestationUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (au *AttestationUpdate) check() error {
-	if au.mutation.WorkflowrunCleared() && len(au.mutation.WorkflowrunIDs()) > 0 {
+func (_u *AttestationUpdate) check() error {
+	if _u.mutation.WorkflowrunCleared() && len(_u.mutation.WorkflowrunIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Attestation.workflowrun"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (au *AttestationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AttestationUpdate {
-	au.modifiers = append(au.modifiers, modifiers...)
-	return au
+func (_u *AttestationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AttestationUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (au *AttestationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := au.check(); err != nil {
-		return n, err
+func (_u *AttestationUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(attestation.Table, attestation.Columns, sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID))
-	if ps := au.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	_spec.AddModifiers(au.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{attestation.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -95,8 +95,8 @@ func (au *AttestationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	au.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // AttestationUpdateOne is the builder for updating a single Attestation entity.
@@ -109,31 +109,31 @@ type AttestationUpdateOne struct {
 }
 
 // Mutation returns the AttestationMutation object of the builder.
-func (auo *AttestationUpdateOne) Mutation() *AttestationMutation {
-	return auo.mutation
+func (_u *AttestationUpdateOne) Mutation() *AttestationMutation {
+	return _u.mutation
 }
 
 // Where appends a list predicates to the AttestationUpdate builder.
-func (auo *AttestationUpdateOne) Where(ps ...predicate.Attestation) *AttestationUpdateOne {
-	auo.mutation.Where(ps...)
-	return auo
+func (_u *AttestationUpdateOne) Where(ps ...predicate.Attestation) *AttestationUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (auo *AttestationUpdateOne) Select(field string, fields ...string) *AttestationUpdateOne {
-	auo.fields = append([]string{field}, fields...)
-	return auo
+func (_u *AttestationUpdateOne) Select(field string, fields ...string) *AttestationUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Attestation entity.
-func (auo *AttestationUpdateOne) Save(ctx context.Context) (*Attestation, error) {
-	return withHooks(ctx, auo.sqlSave, auo.mutation, auo.hooks)
+func (_u *AttestationUpdateOne) Save(ctx context.Context) (*Attestation, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (auo *AttestationUpdateOne) SaveX(ctx context.Context) *Attestation {
-	node, err := auo.Save(ctx)
+func (_u *AttestationUpdateOne) SaveX(ctx context.Context) *Attestation {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -141,43 +141,43 @@ func (auo *AttestationUpdateOne) SaveX(ctx context.Context) *Attestation {
 }
 
 // Exec executes the query on the entity.
-func (auo *AttestationUpdateOne) Exec(ctx context.Context) error {
-	_, err := auo.Save(ctx)
+func (_u *AttestationUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (auo *AttestationUpdateOne) ExecX(ctx context.Context) {
-	if err := auo.Exec(ctx); err != nil {
+func (_u *AttestationUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (auo *AttestationUpdateOne) check() error {
-	if auo.mutation.WorkflowrunCleared() && len(auo.mutation.WorkflowrunIDs()) > 0 {
+func (_u *AttestationUpdateOne) check() error {
+	if _u.mutation.WorkflowrunCleared() && len(_u.mutation.WorkflowrunIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Attestation.workflowrun"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (auo *AttestationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AttestationUpdateOne {
-	auo.modifiers = append(auo.modifiers, modifiers...)
-	return auo
+func (_u *AttestationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AttestationUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (auo *AttestationUpdateOne) sqlSave(ctx context.Context) (_node *Attestation, err error) {
-	if err := auo.check(); err != nil {
+func (_u *AttestationUpdateOne) sqlSave(ctx context.Context) (_node *Attestation, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(attestation.Table, attestation.Columns, sqlgraph.NewFieldSpec(attestation.FieldID, field.TypeUUID))
-	id, ok := auo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Attestation.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := auo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, attestation.FieldID)
 		for _, f := range fields {
@@ -189,18 +189,18 @@ func (auo *AttestationUpdateOne) sqlSave(ctx context.Context) (_node *Attestatio
 			}
 		}
 	}
-	if ps := auo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	_spec.AddModifiers(auo.modifiers...)
-	_node = &Attestation{config: auo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Attestation{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, auo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{attestation.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -208,6 +208,6 @@ func (auo *AttestationUpdateOne) sqlSave(ctx context.Context) (_node *Attestatio
 		}
 		return nil, err
 	}
-	auo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

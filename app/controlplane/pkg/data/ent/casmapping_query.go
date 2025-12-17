@@ -38,44 +38,44 @@ type CASMappingQuery struct {
 }
 
 // Where adds a new predicate for the CASMappingQuery builder.
-func (cmq *CASMappingQuery) Where(ps ...predicate.CASMapping) *CASMappingQuery {
-	cmq.predicates = append(cmq.predicates, ps...)
-	return cmq
+func (_q *CASMappingQuery) Where(ps ...predicate.CASMapping) *CASMappingQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (cmq *CASMappingQuery) Limit(limit int) *CASMappingQuery {
-	cmq.ctx.Limit = &limit
-	return cmq
+func (_q *CASMappingQuery) Limit(limit int) *CASMappingQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (cmq *CASMappingQuery) Offset(offset int) *CASMappingQuery {
-	cmq.ctx.Offset = &offset
-	return cmq
+func (_q *CASMappingQuery) Offset(offset int) *CASMappingQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (cmq *CASMappingQuery) Unique(unique bool) *CASMappingQuery {
-	cmq.ctx.Unique = &unique
-	return cmq
+func (_q *CASMappingQuery) Unique(unique bool) *CASMappingQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (cmq *CASMappingQuery) Order(o ...casmapping.OrderOption) *CASMappingQuery {
-	cmq.order = append(cmq.order, o...)
-	return cmq
+func (_q *CASMappingQuery) Order(o ...casmapping.OrderOption) *CASMappingQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryCasBackend chains the current query on the "cas_backend" edge.
-func (cmq *CASMappingQuery) QueryCasBackend() *CASBackendQuery {
-	query := (&CASBackendClient{config: cmq.config}).Query()
+func (_q *CASMappingQuery) QueryCasBackend() *CASBackendQuery {
+	query := (&CASBackendClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cmq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cmq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -84,20 +84,20 @@ func (cmq *CASMappingQuery) QueryCasBackend() *CASBackendQuery {
 			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.CasBackendTable, casmapping.CasBackendColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryOrganization chains the current query on the "organization" edge.
-func (cmq *CASMappingQuery) QueryOrganization() *OrganizationQuery {
-	query := (&OrganizationClient{config: cmq.config}).Query()
+func (_q *CASMappingQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cmq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cmq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -106,20 +106,20 @@ func (cmq *CASMappingQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.OrganizationTable, casmapping.OrganizationColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryProject chains the current query on the "project" edge.
-func (cmq *CASMappingQuery) QueryProject() *ProjectQuery {
-	query := (&ProjectClient{config: cmq.config}).Query()
+func (_q *CASMappingQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cmq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cmq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func (cmq *CASMappingQuery) QueryProject() *ProjectQuery {
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.ProjectTable, casmapping.ProjectColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(cmq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -136,8 +136,8 @@ func (cmq *CASMappingQuery) QueryProject() *ProjectQuery {
 
 // First returns the first CASMapping entity from the query.
 // Returns a *NotFoundError when no CASMapping was found.
-func (cmq *CASMappingQuery) First(ctx context.Context) (*CASMapping, error) {
-	nodes, err := cmq.Limit(1).All(setContextOp(ctx, cmq.ctx, ent.OpQueryFirst))
+func (_q *CASMappingQuery) First(ctx context.Context) (*CASMapping, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (cmq *CASMappingQuery) First(ctx context.Context) (*CASMapping, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (cmq *CASMappingQuery) FirstX(ctx context.Context) *CASMapping {
-	node, err := cmq.First(ctx)
+func (_q *CASMappingQuery) FirstX(ctx context.Context) *CASMapping {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -158,9 +158,9 @@ func (cmq *CASMappingQuery) FirstX(ctx context.Context) *CASMapping {
 
 // FirstID returns the first CASMapping ID from the query.
 // Returns a *NotFoundError when no CASMapping ID was found.
-func (cmq *CASMappingQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *CASMappingQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cmq.Limit(1).IDs(setContextOp(ctx, cmq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -171,8 +171,8 @@ func (cmq *CASMappingQuery) FirstID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (cmq *CASMappingQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := cmq.FirstID(ctx)
+func (_q *CASMappingQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -182,8 +182,8 @@ func (cmq *CASMappingQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single CASMapping entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one CASMapping entity is found.
 // Returns a *NotFoundError when no CASMapping entities are found.
-func (cmq *CASMappingQuery) Only(ctx context.Context) (*CASMapping, error) {
-	nodes, err := cmq.Limit(2).All(setContextOp(ctx, cmq.ctx, ent.OpQueryOnly))
+func (_q *CASMappingQuery) Only(ctx context.Context) (*CASMapping, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +198,8 @@ func (cmq *CASMappingQuery) Only(ctx context.Context) (*CASMapping, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (cmq *CASMappingQuery) OnlyX(ctx context.Context) *CASMapping {
-	node, err := cmq.Only(ctx)
+func (_q *CASMappingQuery) OnlyX(ctx context.Context) *CASMapping {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -209,9 +209,9 @@ func (cmq *CASMappingQuery) OnlyX(ctx context.Context) *CASMapping {
 // OnlyID is like Only, but returns the only CASMapping ID in the query.
 // Returns a *NotSingularError when more than one CASMapping ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (cmq *CASMappingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *CASMappingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cmq.Limit(2).IDs(setContextOp(ctx, cmq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -226,8 +226,8 @@ func (cmq *CASMappingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (cmq *CASMappingQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := cmq.OnlyID(ctx)
+func (_q *CASMappingQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -235,18 +235,18 @@ func (cmq *CASMappingQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of CASMappings.
-func (cmq *CASMappingQuery) All(ctx context.Context) ([]*CASMapping, error) {
-	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryAll)
-	if err := cmq.prepareQuery(ctx); err != nil {
+func (_q *CASMappingQuery) All(ctx context.Context) ([]*CASMapping, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*CASMapping, *CASMappingQuery]()
-	return withInterceptors[[]*CASMapping](ctx, cmq, qr, cmq.inters)
+	return withInterceptors[[]*CASMapping](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (cmq *CASMappingQuery) AllX(ctx context.Context) []*CASMapping {
-	nodes, err := cmq.All(ctx)
+func (_q *CASMappingQuery) AllX(ctx context.Context) []*CASMapping {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -254,20 +254,20 @@ func (cmq *CASMappingQuery) AllX(ctx context.Context) []*CASMapping {
 }
 
 // IDs executes the query and returns a list of CASMapping IDs.
-func (cmq *CASMappingQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if cmq.ctx.Unique == nil && cmq.path != nil {
-		cmq.Unique(true)
+func (_q *CASMappingQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryIDs)
-	if err = cmq.Select(casmapping.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(casmapping.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (cmq *CASMappingQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := cmq.IDs(ctx)
+func (_q *CASMappingQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -275,17 +275,17 @@ func (cmq *CASMappingQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (cmq *CASMappingQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryCount)
-	if err := cmq.prepareQuery(ctx); err != nil {
+func (_q *CASMappingQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, cmq, querierCount[*CASMappingQuery](), cmq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*CASMappingQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (cmq *CASMappingQuery) CountX(ctx context.Context) int {
-	count, err := cmq.Count(ctx)
+func (_q *CASMappingQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -293,9 +293,9 @@ func (cmq *CASMappingQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (cmq *CASMappingQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, cmq.ctx, ent.OpQueryExist)
-	switch _, err := cmq.FirstID(ctx); {
+func (_q *CASMappingQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -306,8 +306,8 @@ func (cmq *CASMappingQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (cmq *CASMappingQuery) ExistX(ctx context.Context) bool {
-	exist, err := cmq.Exist(ctx)
+func (_q *CASMappingQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -316,57 +316,57 @@ func (cmq *CASMappingQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the CASMappingQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (cmq *CASMappingQuery) Clone() *CASMappingQuery {
-	if cmq == nil {
+func (_q *CASMappingQuery) Clone() *CASMappingQuery {
+	if _q == nil {
 		return nil
 	}
 	return &CASMappingQuery{
-		config:           cmq.config,
-		ctx:              cmq.ctx.Clone(),
-		order:            append([]casmapping.OrderOption{}, cmq.order...),
-		inters:           append([]Interceptor{}, cmq.inters...),
-		predicates:       append([]predicate.CASMapping{}, cmq.predicates...),
-		withCasBackend:   cmq.withCasBackend.Clone(),
-		withOrganization: cmq.withOrganization.Clone(),
-		withProject:      cmq.withProject.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]casmapping.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.CASMapping{}, _q.predicates...),
+		withCasBackend:   _q.withCasBackend.Clone(),
+		withOrganization: _q.withOrganization.Clone(),
+		withProject:      _q.withProject.Clone(),
 		// clone intermediate query.
-		sql:       cmq.sql.Clone(),
-		path:      cmq.path,
-		modifiers: append([]func(*sql.Selector){}, cmq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithCasBackend tells the query-builder to eager-load the nodes that are connected to
 // the "cas_backend" edge. The optional arguments are used to configure the query builder of the edge.
-func (cmq *CASMappingQuery) WithCasBackend(opts ...func(*CASBackendQuery)) *CASMappingQuery {
-	query := (&CASBackendClient{config: cmq.config}).Query()
+func (_q *CASMappingQuery) WithCasBackend(opts ...func(*CASBackendQuery)) *CASMappingQuery {
+	query := (&CASBackendClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	cmq.withCasBackend = query
-	return cmq
+	_q.withCasBackend = query
+	return _q
 }
 
 // WithOrganization tells the query-builder to eager-load the nodes that are connected to
 // the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (cmq *CASMappingQuery) WithOrganization(opts ...func(*OrganizationQuery)) *CASMappingQuery {
-	query := (&OrganizationClient{config: cmq.config}).Query()
+func (_q *CASMappingQuery) WithOrganization(opts ...func(*OrganizationQuery)) *CASMappingQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	cmq.withOrganization = query
-	return cmq
+	_q.withOrganization = query
+	return _q
 }
 
 // WithProject tells the query-builder to eager-load the nodes that are connected to
 // the "project" edge. The optional arguments are used to configure the query builder of the edge.
-func (cmq *CASMappingQuery) WithProject(opts ...func(*ProjectQuery)) *CASMappingQuery {
-	query := (&ProjectClient{config: cmq.config}).Query()
+func (_q *CASMappingQuery) WithProject(opts ...func(*ProjectQuery)) *CASMappingQuery {
+	query := (&ProjectClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	cmq.withProject = query
-	return cmq
+	_q.withProject = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -383,10 +383,10 @@ func (cmq *CASMappingQuery) WithProject(opts ...func(*ProjectQuery)) *CASMapping
 //		GroupBy(casmapping.FieldDigest).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (cmq *CASMappingQuery) GroupBy(field string, fields ...string) *CASMappingGroupBy {
-	cmq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &CASMappingGroupBy{build: cmq}
-	grbuild.flds = &cmq.ctx.Fields
+func (_q *CASMappingQuery) GroupBy(field string, fields ...string) *CASMappingGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &CASMappingGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = casmapping.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -404,57 +404,57 @@ func (cmq *CASMappingQuery) GroupBy(field string, fields ...string) *CASMappingG
 //	client.CASMapping.Query().
 //		Select(casmapping.FieldDigest).
 //		Scan(ctx, &v)
-func (cmq *CASMappingQuery) Select(fields ...string) *CASMappingSelect {
-	cmq.ctx.Fields = append(cmq.ctx.Fields, fields...)
-	sbuild := &CASMappingSelect{CASMappingQuery: cmq}
+func (_q *CASMappingQuery) Select(fields ...string) *CASMappingSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &CASMappingSelect{CASMappingQuery: _q}
 	sbuild.label = casmapping.Label
-	sbuild.flds, sbuild.scan = &cmq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a CASMappingSelect configured with the given aggregations.
-func (cmq *CASMappingQuery) Aggregate(fns ...AggregateFunc) *CASMappingSelect {
-	return cmq.Select().Aggregate(fns...)
+func (_q *CASMappingQuery) Aggregate(fns ...AggregateFunc) *CASMappingSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (cmq *CASMappingQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range cmq.inters {
+func (_q *CASMappingQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, cmq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range cmq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !casmapping.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if cmq.path != nil {
-		prev, err := cmq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		cmq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CASMapping, error) {
+func (_q *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CASMapping, error) {
 	var (
 		nodes       = []*CASMapping{}
-		withFKs     = cmq.withFKs
-		_spec       = cmq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
-			cmq.withCasBackend != nil,
-			cmq.withOrganization != nil,
-			cmq.withProject != nil,
+			_q.withCasBackend != nil,
+			_q.withOrganization != nil,
+			_q.withProject != nil,
 		}
 	)
-	if cmq.withCasBackend != nil {
+	if _q.withCasBackend != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -464,37 +464,37 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		return (*CASMapping).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &CASMapping{config: cmq.config}
+		node := &CASMapping{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(cmq.modifiers) > 0 {
-		_spec.Modifiers = cmq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, cmq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := cmq.withCasBackend; query != nil {
-		if err := cmq.loadCasBackend(ctx, query, nodes, nil,
+	if query := _q.withCasBackend; query != nil {
+		if err := _q.loadCasBackend(ctx, query, nodes, nil,
 			func(n *CASMapping, e *CASBackend) { n.Edges.CasBackend = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := cmq.withOrganization; query != nil {
-		if err := cmq.loadOrganization(ctx, query, nodes, nil,
+	if query := _q.withOrganization; query != nil {
+		if err := _q.loadOrganization(ctx, query, nodes, nil,
 			func(n *CASMapping, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := cmq.withProject; query != nil {
-		if err := cmq.loadProject(ctx, query, nodes, nil,
+	if query := _q.withProject; query != nil {
+		if err := _q.loadProject(ctx, query, nodes, nil,
 			func(n *CASMapping, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
@@ -502,7 +502,7 @@ func (cmq *CASMappingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
-func (cmq *CASMappingQuery) loadCasBackend(ctx context.Context, query *CASBackendQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *CASBackend)) error {
+func (_q *CASMappingQuery) loadCasBackend(ctx context.Context, query *CASBackendQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *CASBackend)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASMapping)
 	for i := range nodes {
@@ -534,7 +534,7 @@ func (cmq *CASMappingQuery) loadCasBackend(ctx context.Context, query *CASBacken
 	}
 	return nil
 }
-func (cmq *CASMappingQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *Organization)) error {
+func (_q *CASMappingQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *Organization)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASMapping)
 	for i := range nodes {
@@ -563,7 +563,7 @@ func (cmq *CASMappingQuery) loadOrganization(ctx context.Context, query *Organiz
 	}
 	return nil
 }
-func (cmq *CASMappingQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *Project)) error {
+func (_q *CASMappingQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*CASMapping, init func(*CASMapping), assign func(*CASMapping, *Project)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASMapping)
 	for i := range nodes {
@@ -593,27 +593,27 @@ func (cmq *CASMappingQuery) loadProject(ctx context.Context, query *ProjectQuery
 	return nil
 }
 
-func (cmq *CASMappingQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := cmq.querySpec()
-	if len(cmq.modifiers) > 0 {
-		_spec.Modifiers = cmq.modifiers
+func (_q *CASMappingQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = cmq.ctx.Fields
-	if len(cmq.ctx.Fields) > 0 {
-		_spec.Unique = cmq.ctx.Unique != nil && *cmq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, cmq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (cmq *CASMappingQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *CASMappingQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(casmapping.Table, casmapping.Columns, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
-	_spec.From = cmq.sql
-	if unique := cmq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if cmq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := cmq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, casmapping.FieldID)
 		for i := range fields {
@@ -621,27 +621,27 @@ func (cmq *CASMappingQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if cmq.withOrganization != nil {
+		if _q.withOrganization != nil {
 			_spec.Node.AddColumnOnce(casmapping.FieldOrganizationID)
 		}
-		if cmq.withProject != nil {
+		if _q.withProject != nil {
 			_spec.Node.AddColumnOnce(casmapping.FieldProjectID)
 		}
 	}
-	if ps := cmq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := cmq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := cmq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := cmq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -651,36 +651,36 @@ func (cmq *CASMappingQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (cmq *CASMappingQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(cmq.driver.Dialect())
+func (_q *CASMappingQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(casmapping.Table)
-	columns := cmq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = casmapping.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if cmq.sql != nil {
-		selector = cmq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if cmq.ctx.Unique != nil && *cmq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range cmq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range cmq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range cmq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := cmq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := cmq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -689,33 +689,33 @@ func (cmq *CASMappingQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (cmq *CASMappingQuery) ForUpdate(opts ...sql.LockOption) *CASMappingQuery {
-	if cmq.driver.Dialect() == dialect.Postgres {
-		cmq.Unique(false)
+func (_q *CASMappingQuery) ForUpdate(opts ...sql.LockOption) *CASMappingQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	cmq.modifiers = append(cmq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return cmq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (cmq *CASMappingQuery) ForShare(opts ...sql.LockOption) *CASMappingQuery {
-	if cmq.driver.Dialect() == dialect.Postgres {
-		cmq.Unique(false)
+func (_q *CASMappingQuery) ForShare(opts ...sql.LockOption) *CASMappingQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	cmq.modifiers = append(cmq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return cmq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (cmq *CASMappingQuery) Modify(modifiers ...func(s *sql.Selector)) *CASMappingSelect {
-	cmq.modifiers = append(cmq.modifiers, modifiers...)
-	return cmq.Select()
+func (_q *CASMappingQuery) Modify(modifiers ...func(s *sql.Selector)) *CASMappingSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // CASMappingGroupBy is the group-by builder for CASMapping entities.
@@ -725,41 +725,41 @@ type CASMappingGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (cmgb *CASMappingGroupBy) Aggregate(fns ...AggregateFunc) *CASMappingGroupBy {
-	cmgb.fns = append(cmgb.fns, fns...)
-	return cmgb
+func (_g *CASMappingGroupBy) Aggregate(fns ...AggregateFunc) *CASMappingGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (cmgb *CASMappingGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cmgb.build.ctx, ent.OpQueryGroupBy)
-	if err := cmgb.build.prepareQuery(ctx); err != nil {
+func (_g *CASMappingGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*CASMappingQuery, *CASMappingGroupBy](ctx, cmgb.build, cmgb, cmgb.build.inters, v)
+	return scanWithInterceptors[*CASMappingQuery, *CASMappingGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (cmgb *CASMappingGroupBy) sqlScan(ctx context.Context, root *CASMappingQuery, v any) error {
+func (_g *CASMappingGroupBy) sqlScan(ctx context.Context, root *CASMappingQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(cmgb.fns))
-	for _, fn := range cmgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*cmgb.flds)+len(cmgb.fns))
-		for _, f := range *cmgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*cmgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := cmgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -773,27 +773,27 @@ type CASMappingSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (cms *CASMappingSelect) Aggregate(fns ...AggregateFunc) *CASMappingSelect {
-	cms.fns = append(cms.fns, fns...)
-	return cms
+func (_s *CASMappingSelect) Aggregate(fns ...AggregateFunc) *CASMappingSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (cms *CASMappingSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cms.ctx, ent.OpQuerySelect)
-	if err := cms.prepareQuery(ctx); err != nil {
+func (_s *CASMappingSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*CASMappingQuery, *CASMappingSelect](ctx, cms.CASMappingQuery, cms, cms.inters, v)
+	return scanWithInterceptors[*CASMappingQuery, *CASMappingSelect](ctx, _s.CASMappingQuery, _s, _s.inters, v)
 }
 
-func (cms *CASMappingSelect) sqlScan(ctx context.Context, root *CASMappingQuery, v any) error {
+func (_s *CASMappingSelect) sqlScan(ctx context.Context, root *CASMappingQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(cms.fns))
-	for _, fn := range cms.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*cms.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -801,7 +801,7 @@ func (cms *CASMappingSelect) sqlScan(ctx context.Context, root *CASMappingQuery,
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := cms.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -809,7 +809,7 @@ func (cms *CASMappingSelect) sqlScan(ctx context.Context, root *CASMappingQuery,
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (cms *CASMappingSelect) Modify(modifiers ...func(s *sql.Selector)) *CASMappingSelect {
-	cms.modifiers = append(cms.modifiers, modifiers...)
-	return cms
+func (_s *CASMappingSelect) Modify(modifiers ...func(s *sql.Selector)) *CASMappingSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

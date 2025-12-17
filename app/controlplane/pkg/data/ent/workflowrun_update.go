@@ -31,335 +31,335 @@ type WorkflowRunUpdate struct {
 }
 
 // Where appends a list predicates to the WorkflowRunUpdate builder.
-func (wru *WorkflowRunUpdate) Where(ps ...predicate.WorkflowRun) *WorkflowRunUpdate {
-	wru.mutation.Where(ps...)
-	return wru
+func (_u *WorkflowRunUpdate) Where(ps ...predicate.WorkflowRun) *WorkflowRunUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetFinishedAt sets the "finished_at" field.
-func (wru *WorkflowRunUpdate) SetFinishedAt(t time.Time) *WorkflowRunUpdate {
-	wru.mutation.SetFinishedAt(t)
-	return wru
+func (_u *WorkflowRunUpdate) SetFinishedAt(v time.Time) *WorkflowRunUpdate {
+	_u.mutation.SetFinishedAt(v)
+	return _u
 }
 
 // SetNillableFinishedAt sets the "finished_at" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableFinishedAt(t *time.Time) *WorkflowRunUpdate {
-	if t != nil {
-		wru.SetFinishedAt(*t)
+func (_u *WorkflowRunUpdate) SetNillableFinishedAt(v *time.Time) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetFinishedAt(*v)
 	}
-	return wru
+	return _u
 }
 
 // ClearFinishedAt clears the value of the "finished_at" field.
-func (wru *WorkflowRunUpdate) ClearFinishedAt() *WorkflowRunUpdate {
-	wru.mutation.ClearFinishedAt()
-	return wru
+func (_u *WorkflowRunUpdate) ClearFinishedAt() *WorkflowRunUpdate {
+	_u.mutation.ClearFinishedAt()
+	return _u
 }
 
 // SetState sets the "state" field.
-func (wru *WorkflowRunUpdate) SetState(brs biz.WorkflowRunStatus) *WorkflowRunUpdate {
-	wru.mutation.SetState(brs)
-	return wru
+func (_u *WorkflowRunUpdate) SetState(v biz.WorkflowRunStatus) *WorkflowRunUpdate {
+	_u.mutation.SetState(v)
+	return _u
 }
 
 // SetNillableState sets the "state" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableState(brs *biz.WorkflowRunStatus) *WorkflowRunUpdate {
-	if brs != nil {
-		wru.SetState(*brs)
+func (_u *WorkflowRunUpdate) SetNillableState(v *biz.WorkflowRunStatus) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetState(*v)
 	}
-	return wru
+	return _u
 }
 
 // SetReason sets the "reason" field.
-func (wru *WorkflowRunUpdate) SetReason(s string) *WorkflowRunUpdate {
-	wru.mutation.SetReason(s)
-	return wru
+func (_u *WorkflowRunUpdate) SetReason(v string) *WorkflowRunUpdate {
+	_u.mutation.SetReason(v)
+	return _u
 }
 
 // SetNillableReason sets the "reason" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableReason(s *string) *WorkflowRunUpdate {
-	if s != nil {
-		wru.SetReason(*s)
+func (_u *WorkflowRunUpdate) SetNillableReason(v *string) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetReason(*v)
 	}
-	return wru
+	return _u
 }
 
 // ClearReason clears the value of the "reason" field.
-func (wru *WorkflowRunUpdate) ClearReason() *WorkflowRunUpdate {
-	wru.mutation.ClearReason()
-	return wru
+func (_u *WorkflowRunUpdate) ClearReason() *WorkflowRunUpdate {
+	_u.mutation.ClearReason()
+	return _u
 }
 
 // SetRunURL sets the "run_url" field.
-func (wru *WorkflowRunUpdate) SetRunURL(s string) *WorkflowRunUpdate {
-	wru.mutation.SetRunURL(s)
-	return wru
+func (_u *WorkflowRunUpdate) SetRunURL(v string) *WorkflowRunUpdate {
+	_u.mutation.SetRunURL(v)
+	return _u
 }
 
 // SetNillableRunURL sets the "run_url" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableRunURL(s *string) *WorkflowRunUpdate {
-	if s != nil {
-		wru.SetRunURL(*s)
+func (_u *WorkflowRunUpdate) SetNillableRunURL(v *string) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetRunURL(*v)
 	}
-	return wru
+	return _u
 }
 
 // ClearRunURL clears the value of the "run_url" field.
-func (wru *WorkflowRunUpdate) ClearRunURL() *WorkflowRunUpdate {
-	wru.mutation.ClearRunURL()
-	return wru
+func (_u *WorkflowRunUpdate) ClearRunURL() *WorkflowRunUpdate {
+	_u.mutation.ClearRunURL()
+	return _u
 }
 
 // SetRunnerType sets the "runner_type" field.
-func (wru *WorkflowRunUpdate) SetRunnerType(s string) *WorkflowRunUpdate {
-	wru.mutation.SetRunnerType(s)
-	return wru
+func (_u *WorkflowRunUpdate) SetRunnerType(v string) *WorkflowRunUpdate {
+	_u.mutation.SetRunnerType(v)
+	return _u
 }
 
 // SetNillableRunnerType sets the "runner_type" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableRunnerType(s *string) *WorkflowRunUpdate {
-	if s != nil {
-		wru.SetRunnerType(*s)
+func (_u *WorkflowRunUpdate) SetNillableRunnerType(v *string) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetRunnerType(*v)
 	}
-	return wru
+	return _u
 }
 
 // ClearRunnerType clears the value of the "runner_type" field.
-func (wru *WorkflowRunUpdate) ClearRunnerType() *WorkflowRunUpdate {
-	wru.mutation.ClearRunnerType()
-	return wru
+func (_u *WorkflowRunUpdate) ClearRunnerType() *WorkflowRunUpdate {
+	_u.mutation.ClearRunnerType()
+	return _u
 }
 
 // SetAttestation sets the "attestation" field.
-func (wru *WorkflowRunUpdate) SetAttestation(d *dsse.Envelope) *WorkflowRunUpdate {
-	wru.mutation.SetAttestation(d)
-	return wru
+func (_u *WorkflowRunUpdate) SetAttestation(v *dsse.Envelope) *WorkflowRunUpdate {
+	_u.mutation.SetAttestation(v)
+	return _u
 }
 
 // ClearAttestation clears the value of the "attestation" field.
-func (wru *WorkflowRunUpdate) ClearAttestation() *WorkflowRunUpdate {
-	wru.mutation.ClearAttestation()
-	return wru
+func (_u *WorkflowRunUpdate) ClearAttestation() *WorkflowRunUpdate {
+	_u.mutation.ClearAttestation()
+	return _u
 }
 
 // SetAttestationDigest sets the "attestation_digest" field.
-func (wru *WorkflowRunUpdate) SetAttestationDigest(s string) *WorkflowRunUpdate {
-	wru.mutation.SetAttestationDigest(s)
-	return wru
+func (_u *WorkflowRunUpdate) SetAttestationDigest(v string) *WorkflowRunUpdate {
+	_u.mutation.SetAttestationDigest(v)
+	return _u
 }
 
 // SetNillableAttestationDigest sets the "attestation_digest" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableAttestationDigest(s *string) *WorkflowRunUpdate {
-	if s != nil {
-		wru.SetAttestationDigest(*s)
+func (_u *WorkflowRunUpdate) SetNillableAttestationDigest(v *string) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetAttestationDigest(*v)
 	}
-	return wru
+	return _u
 }
 
 // ClearAttestationDigest clears the value of the "attestation_digest" field.
-func (wru *WorkflowRunUpdate) ClearAttestationDigest() *WorkflowRunUpdate {
-	wru.mutation.ClearAttestationDigest()
-	return wru
+func (_u *WorkflowRunUpdate) ClearAttestationDigest() *WorkflowRunUpdate {
+	_u.mutation.ClearAttestationDigest()
+	return _u
 }
 
 // SetAttestationState sets the "attestation_state" field.
-func (wru *WorkflowRunUpdate) SetAttestationState(b []byte) *WorkflowRunUpdate {
-	wru.mutation.SetAttestationState(b)
-	return wru
+func (_u *WorkflowRunUpdate) SetAttestationState(v []byte) *WorkflowRunUpdate {
+	_u.mutation.SetAttestationState(v)
+	return _u
 }
 
 // ClearAttestationState clears the value of the "attestation_state" field.
-func (wru *WorkflowRunUpdate) ClearAttestationState() *WorkflowRunUpdate {
-	wru.mutation.ClearAttestationState()
-	return wru
+func (_u *WorkflowRunUpdate) ClearAttestationState() *WorkflowRunUpdate {
+	_u.mutation.ClearAttestationState()
+	return _u
 }
 
 // SetContractRevisionUsed sets the "contract_revision_used" field.
-func (wru *WorkflowRunUpdate) SetContractRevisionUsed(i int) *WorkflowRunUpdate {
-	wru.mutation.ResetContractRevisionUsed()
-	wru.mutation.SetContractRevisionUsed(i)
-	return wru
+func (_u *WorkflowRunUpdate) SetContractRevisionUsed(v int) *WorkflowRunUpdate {
+	_u.mutation.ResetContractRevisionUsed()
+	_u.mutation.SetContractRevisionUsed(v)
+	return _u
 }
 
 // SetNillableContractRevisionUsed sets the "contract_revision_used" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableContractRevisionUsed(i *int) *WorkflowRunUpdate {
-	if i != nil {
-		wru.SetContractRevisionUsed(*i)
+func (_u *WorkflowRunUpdate) SetNillableContractRevisionUsed(v *int) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetContractRevisionUsed(*v)
 	}
-	return wru
+	return _u
 }
 
-// AddContractRevisionUsed adds i to the "contract_revision_used" field.
-func (wru *WorkflowRunUpdate) AddContractRevisionUsed(i int) *WorkflowRunUpdate {
-	wru.mutation.AddContractRevisionUsed(i)
-	return wru
+// AddContractRevisionUsed adds value to the "contract_revision_used" field.
+func (_u *WorkflowRunUpdate) AddContractRevisionUsed(v int) *WorkflowRunUpdate {
+	_u.mutation.AddContractRevisionUsed(v)
+	return _u
 }
 
 // SetContractRevisionLatest sets the "contract_revision_latest" field.
-func (wru *WorkflowRunUpdate) SetContractRevisionLatest(i int) *WorkflowRunUpdate {
-	wru.mutation.ResetContractRevisionLatest()
-	wru.mutation.SetContractRevisionLatest(i)
-	return wru
+func (_u *WorkflowRunUpdate) SetContractRevisionLatest(v int) *WorkflowRunUpdate {
+	_u.mutation.ResetContractRevisionLatest()
+	_u.mutation.SetContractRevisionLatest(v)
+	return _u
 }
 
 // SetNillableContractRevisionLatest sets the "contract_revision_latest" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableContractRevisionLatest(i *int) *WorkflowRunUpdate {
-	if i != nil {
-		wru.SetContractRevisionLatest(*i)
+func (_u *WorkflowRunUpdate) SetNillableContractRevisionLatest(v *int) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetContractRevisionLatest(*v)
 	}
-	return wru
+	return _u
 }
 
-// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
-func (wru *WorkflowRunUpdate) AddContractRevisionLatest(i int) *WorkflowRunUpdate {
-	wru.mutation.AddContractRevisionLatest(i)
-	return wru
+// AddContractRevisionLatest adds value to the "contract_revision_latest" field.
+func (_u *WorkflowRunUpdate) AddContractRevisionLatest(v int) *WorkflowRunUpdate {
+	_u.mutation.AddContractRevisionLatest(v)
+	return _u
 }
 
 // SetVersionID sets the "version_id" field.
-func (wru *WorkflowRunUpdate) SetVersionID(u uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.SetVersionID(u)
-	return wru
+func (_u *WorkflowRunUpdate) SetVersionID(v uuid.UUID) *WorkflowRunUpdate {
+	_u.mutation.SetVersionID(v)
+	return _u
 }
 
 // SetNillableVersionID sets the "version_id" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpdate {
-	if u != nil {
-		wru.SetVersionID(*u)
+func (_u *WorkflowRunUpdate) SetNillableVersionID(v *uuid.UUID) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetVersionID(*v)
 	}
-	return wru
+	return _u
 }
 
 // SetHasPolicyViolations sets the "has_policy_violations" field.
-func (wru *WorkflowRunUpdate) SetHasPolicyViolations(b bool) *WorkflowRunUpdate {
-	wru.mutation.SetHasPolicyViolations(b)
-	return wru
+func (_u *WorkflowRunUpdate) SetHasPolicyViolations(v bool) *WorkflowRunUpdate {
+	_u.mutation.SetHasPolicyViolations(v)
+	return _u
 }
 
 // SetNillableHasPolicyViolations sets the "has_policy_violations" field if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableHasPolicyViolations(b *bool) *WorkflowRunUpdate {
-	if b != nil {
-		wru.SetHasPolicyViolations(*b)
+func (_u *WorkflowRunUpdate) SetNillableHasPolicyViolations(v *bool) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetHasPolicyViolations(*v)
 	}
-	return wru
+	return _u
 }
 
 // ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
-func (wru *WorkflowRunUpdate) ClearHasPolicyViolations() *WorkflowRunUpdate {
-	wru.mutation.ClearHasPolicyViolations()
-	return wru
+func (_u *WorkflowRunUpdate) ClearHasPolicyViolations() *WorkflowRunUpdate {
+	_u.mutation.ClearHasPolicyViolations()
+	return _u
 }
 
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
-func (wru *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.SetContractVersionID(id)
-	return wru
+func (_u *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
+	_u.mutation.SetContractVersionID(id)
+	return _u
 }
 
 // SetNillableContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableContractVersionID(id *uuid.UUID) *WorkflowRunUpdate {
+func (_u *WorkflowRunUpdate) SetNillableContractVersionID(id *uuid.UUID) *WorkflowRunUpdate {
 	if id != nil {
-		wru = wru.SetContractVersionID(*id)
+		_u = _u.SetContractVersionID(*id)
 	}
-	return wru
+	return _u
 }
 
 // SetContractVersion sets the "contract_version" edge to the WorkflowContractVersion entity.
-func (wru *WorkflowRunUpdate) SetContractVersion(w *WorkflowContractVersion) *WorkflowRunUpdate {
-	return wru.SetContractVersionID(w.ID)
+func (_u *WorkflowRunUpdate) SetContractVersion(v *WorkflowContractVersion) *WorkflowRunUpdate {
+	return _u.SetContractVersionID(v.ID)
 }
 
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
-func (wru *WorkflowRunUpdate) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.AddCasBackendIDs(ids...)
-	return wru
+func (_u *WorkflowRunUpdate) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdate {
+	_u.mutation.AddCasBackendIDs(ids...)
+	return _u
 }
 
 // AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
-func (wru *WorkflowRunUpdate) AddCasBackends(c ...*CASBackend) *WorkflowRunUpdate {
-	ids := make([]uuid.UUID, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_u *WorkflowRunUpdate) AddCasBackends(v ...*CASBackend) *WorkflowRunUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wru.AddCasBackendIDs(ids...)
+	return _u.AddCasBackendIDs(ids...)
 }
 
 // SetVersion sets the "version" edge to the ProjectVersion entity.
-func (wru *WorkflowRunUpdate) SetVersion(p *ProjectVersion) *WorkflowRunUpdate {
-	return wru.SetVersionID(p.ID)
+func (_u *WorkflowRunUpdate) SetVersion(v *ProjectVersion) *WorkflowRunUpdate {
+	return _u.SetVersionID(v.ID)
 }
 
 // SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
-func (wru *WorkflowRunUpdate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.SetAttestationBundleID(id)
-	return wru
+func (_u *WorkflowRunUpdate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdate {
+	_u.mutation.SetAttestationBundleID(id)
+	return _u
 }
 
 // SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
-func (wru *WorkflowRunUpdate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdate {
+func (_u *WorkflowRunUpdate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdate {
 	if id != nil {
-		wru = wru.SetAttestationBundleID(*id)
+		_u = _u.SetAttestationBundleID(*id)
 	}
-	return wru
+	return _u
 }
 
 // SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
-func (wru *WorkflowRunUpdate) SetAttestationBundle(a *Attestation) *WorkflowRunUpdate {
-	return wru.SetAttestationBundleID(a.ID)
+func (_u *WorkflowRunUpdate) SetAttestationBundle(v *Attestation) *WorkflowRunUpdate {
+	return _u.SetAttestationBundleID(v.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
-func (wru *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
-	return wru.mutation
+func (_u *WorkflowRunUpdate) Mutation() *WorkflowRunMutation {
+	return _u.mutation
 }
 
 // ClearContractVersion clears the "contract_version" edge to the WorkflowContractVersion entity.
-func (wru *WorkflowRunUpdate) ClearContractVersion() *WorkflowRunUpdate {
-	wru.mutation.ClearContractVersion()
-	return wru
+func (_u *WorkflowRunUpdate) ClearContractVersion() *WorkflowRunUpdate {
+	_u.mutation.ClearContractVersion()
+	return _u
 }
 
 // ClearCasBackends clears all "cas_backends" edges to the CASBackend entity.
-func (wru *WorkflowRunUpdate) ClearCasBackends() *WorkflowRunUpdate {
-	wru.mutation.ClearCasBackends()
-	return wru
+func (_u *WorkflowRunUpdate) ClearCasBackends() *WorkflowRunUpdate {
+	_u.mutation.ClearCasBackends()
+	return _u
 }
 
 // RemoveCasBackendIDs removes the "cas_backends" edge to CASBackend entities by IDs.
-func (wru *WorkflowRunUpdate) RemoveCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdate {
-	wru.mutation.RemoveCasBackendIDs(ids...)
-	return wru
+func (_u *WorkflowRunUpdate) RemoveCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdate {
+	_u.mutation.RemoveCasBackendIDs(ids...)
+	return _u
 }
 
 // RemoveCasBackends removes "cas_backends" edges to CASBackend entities.
-func (wru *WorkflowRunUpdate) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUpdate {
-	ids := make([]uuid.UUID, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_u *WorkflowRunUpdate) RemoveCasBackends(v ...*CASBackend) *WorkflowRunUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wru.RemoveCasBackendIDs(ids...)
+	return _u.RemoveCasBackendIDs(ids...)
 }
 
 // ClearVersion clears the "version" edge to the ProjectVersion entity.
-func (wru *WorkflowRunUpdate) ClearVersion() *WorkflowRunUpdate {
-	wru.mutation.ClearVersion()
-	return wru
+func (_u *WorkflowRunUpdate) ClearVersion() *WorkflowRunUpdate {
+	_u.mutation.ClearVersion()
+	return _u
 }
 
 // ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
-func (wru *WorkflowRunUpdate) ClearAttestationBundle() *WorkflowRunUpdate {
-	wru.mutation.ClearAttestationBundle()
-	return wru
+func (_u *WorkflowRunUpdate) ClearAttestationBundle() *WorkflowRunUpdate {
+	_u.mutation.ClearAttestationBundle()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (wru *WorkflowRunUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, wru.sqlSave, wru.mutation, wru.hooks)
+func (_u *WorkflowRunUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wru *WorkflowRunUpdate) SaveX(ctx context.Context) int {
-	affected, err := wru.Save(ctx)
+func (_u *WorkflowRunUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -367,116 +367,116 @@ func (wru *WorkflowRunUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (wru *WorkflowRunUpdate) Exec(ctx context.Context) error {
-	_, err := wru.Save(ctx)
+func (_u *WorkflowRunUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wru *WorkflowRunUpdate) ExecX(ctx context.Context) {
-	if err := wru.Exec(ctx); err != nil {
+func (_u *WorkflowRunUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wru *WorkflowRunUpdate) check() error {
-	if v, ok := wru.mutation.State(); ok {
+func (_u *WorkflowRunUpdate) check() error {
+	if v, ok := _u.mutation.State(); ok {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
 	}
-	if wru.mutation.WorkflowCleared() && len(wru.mutation.WorkflowIDs()) > 0 {
+	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
-	if wru.mutation.VersionCleared() && len(wru.mutation.VersionIDs()) > 0 {
+	if _u.mutation.VersionCleared() && len(_u.mutation.VersionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (wru *WorkflowRunUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowRunUpdate {
-	wru.modifiers = append(wru.modifiers, modifiers...)
-	return wru
+func (_u *WorkflowRunUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowRunUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := wru.check(); err != nil {
-		return n, err
+func (_u *WorkflowRunUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(workflowrun.Table, workflowrun.Columns, sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID))
-	if ps := wru.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := wru.mutation.FinishedAt(); ok {
+	if value, ok := _u.mutation.FinishedAt(); ok {
 		_spec.SetField(workflowrun.FieldFinishedAt, field.TypeTime, value)
 	}
-	if wru.mutation.FinishedAtCleared() {
+	if _u.mutation.FinishedAtCleared() {
 		_spec.ClearField(workflowrun.FieldFinishedAt, field.TypeTime)
 	}
-	if value, ok := wru.mutation.State(); ok {
+	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(workflowrun.FieldState, field.TypeEnum, value)
 	}
-	if value, ok := wru.mutation.Reason(); ok {
+	if value, ok := _u.mutation.Reason(); ok {
 		_spec.SetField(workflowrun.FieldReason, field.TypeString, value)
 	}
-	if wru.mutation.ReasonCleared() {
+	if _u.mutation.ReasonCleared() {
 		_spec.ClearField(workflowrun.FieldReason, field.TypeString)
 	}
-	if value, ok := wru.mutation.RunURL(); ok {
+	if value, ok := _u.mutation.RunURL(); ok {
 		_spec.SetField(workflowrun.FieldRunURL, field.TypeString, value)
 	}
-	if wru.mutation.RunURLCleared() {
+	if _u.mutation.RunURLCleared() {
 		_spec.ClearField(workflowrun.FieldRunURL, field.TypeString)
 	}
-	if value, ok := wru.mutation.RunnerType(); ok {
+	if value, ok := _u.mutation.RunnerType(); ok {
 		_spec.SetField(workflowrun.FieldRunnerType, field.TypeString, value)
 	}
-	if wru.mutation.RunnerTypeCleared() {
+	if _u.mutation.RunnerTypeCleared() {
 		_spec.ClearField(workflowrun.FieldRunnerType, field.TypeString)
 	}
-	if value, ok := wru.mutation.Attestation(); ok {
+	if value, ok := _u.mutation.Attestation(); ok {
 		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
 	}
-	if wru.mutation.AttestationCleared() {
+	if _u.mutation.AttestationCleared() {
 		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
 	}
-	if value, ok := wru.mutation.AttestationDigest(); ok {
+	if value, ok := _u.mutation.AttestationDigest(); ok {
 		_spec.SetField(workflowrun.FieldAttestationDigest, field.TypeString, value)
 	}
-	if wru.mutation.AttestationDigestCleared() {
+	if _u.mutation.AttestationDigestCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationDigest, field.TypeString)
 	}
-	if value, ok := wru.mutation.AttestationState(); ok {
+	if value, ok := _u.mutation.AttestationState(); ok {
 		_spec.SetField(workflowrun.FieldAttestationState, field.TypeBytes, value)
 	}
-	if wru.mutation.AttestationStateCleared() {
+	if _u.mutation.AttestationStateCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationState, field.TypeBytes)
 	}
-	if value, ok := wru.mutation.ContractRevisionUsed(); ok {
+	if value, ok := _u.mutation.ContractRevisionUsed(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 	}
-	if value, ok := wru.mutation.AddedContractRevisionUsed(); ok {
+	if value, ok := _u.mutation.AddedContractRevisionUsed(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 	}
-	if value, ok := wru.mutation.ContractRevisionLatest(); ok {
+	if value, ok := _u.mutation.ContractRevisionLatest(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if value, ok := wru.mutation.AddedContractRevisionLatest(); ok {
+	if value, ok := _u.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if value, ok := wru.mutation.HasPolicyViolations(); ok {
+	if value, ok := _u.mutation.HasPolicyViolations(); ok {
 		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
 	}
-	if wru.mutation.HasPolicyViolationsCleared() {
+	if _u.mutation.HasPolicyViolationsCleared() {
 		_spec.ClearField(workflowrun.FieldHasPolicyViolations, field.TypeBool)
 	}
-	if wru.mutation.ContractVersionCleared() {
+	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -489,7 +489,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wru.mutation.ContractVersionIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ContractVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -505,7 +505,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wru.mutation.CasBackendsCleared() {
+	if _u.mutation.CasBackendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -518,7 +518,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wru.mutation.RemovedCasBackendsIDs(); len(nodes) > 0 && !wru.mutation.CasBackendsCleared() {
+	if nodes := _u.mutation.RemovedCasBackendsIDs(); len(nodes) > 0 && !_u.mutation.CasBackendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -534,7 +534,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wru.mutation.CasBackendsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.CasBackendsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -550,7 +550,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wru.mutation.VersionCleared() {
+	if _u.mutation.VersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -563,7 +563,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wru.mutation.VersionIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.VersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -579,7 +579,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wru.mutation.AttestationBundleCleared() {
+	if _u.mutation.AttestationBundleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -592,7 +592,7 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wru.mutation.AttestationBundleIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.AttestationBundleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -608,8 +608,8 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(wru.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, wru.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowrun.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -617,8 +617,8 @@ func (wru *WorkflowRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	wru.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // WorkflowRunUpdateOne is the builder for updating a single WorkflowRun entity.
@@ -631,342 +631,342 @@ type WorkflowRunUpdateOne struct {
 }
 
 // SetFinishedAt sets the "finished_at" field.
-func (wruo *WorkflowRunUpdateOne) SetFinishedAt(t time.Time) *WorkflowRunUpdateOne {
-	wruo.mutation.SetFinishedAt(t)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetFinishedAt(v time.Time) *WorkflowRunUpdateOne {
+	_u.mutation.SetFinishedAt(v)
+	return _u
 }
 
 // SetNillableFinishedAt sets the "finished_at" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableFinishedAt(t *time.Time) *WorkflowRunUpdateOne {
-	if t != nil {
-		wruo.SetFinishedAt(*t)
+func (_u *WorkflowRunUpdateOne) SetNillableFinishedAt(v *time.Time) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetFinishedAt(*v)
 	}
-	return wruo
+	return _u
 }
 
 // ClearFinishedAt clears the value of the "finished_at" field.
-func (wruo *WorkflowRunUpdateOne) ClearFinishedAt() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearFinishedAt()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearFinishedAt() *WorkflowRunUpdateOne {
+	_u.mutation.ClearFinishedAt()
+	return _u
 }
 
 // SetState sets the "state" field.
-func (wruo *WorkflowRunUpdateOne) SetState(brs biz.WorkflowRunStatus) *WorkflowRunUpdateOne {
-	wruo.mutation.SetState(brs)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetState(v biz.WorkflowRunStatus) *WorkflowRunUpdateOne {
+	_u.mutation.SetState(v)
+	return _u
 }
 
 // SetNillableState sets the "state" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableState(brs *biz.WorkflowRunStatus) *WorkflowRunUpdateOne {
-	if brs != nil {
-		wruo.SetState(*brs)
+func (_u *WorkflowRunUpdateOne) SetNillableState(v *biz.WorkflowRunStatus) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetState(*v)
 	}
-	return wruo
+	return _u
 }
 
 // SetReason sets the "reason" field.
-func (wruo *WorkflowRunUpdateOne) SetReason(s string) *WorkflowRunUpdateOne {
-	wruo.mutation.SetReason(s)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetReason(v string) *WorkflowRunUpdateOne {
+	_u.mutation.SetReason(v)
+	return _u
 }
 
 // SetNillableReason sets the "reason" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableReason(s *string) *WorkflowRunUpdateOne {
-	if s != nil {
-		wruo.SetReason(*s)
+func (_u *WorkflowRunUpdateOne) SetNillableReason(v *string) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetReason(*v)
 	}
-	return wruo
+	return _u
 }
 
 // ClearReason clears the value of the "reason" field.
-func (wruo *WorkflowRunUpdateOne) ClearReason() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearReason()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearReason() *WorkflowRunUpdateOne {
+	_u.mutation.ClearReason()
+	return _u
 }
 
 // SetRunURL sets the "run_url" field.
-func (wruo *WorkflowRunUpdateOne) SetRunURL(s string) *WorkflowRunUpdateOne {
-	wruo.mutation.SetRunURL(s)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetRunURL(v string) *WorkflowRunUpdateOne {
+	_u.mutation.SetRunURL(v)
+	return _u
 }
 
 // SetNillableRunURL sets the "run_url" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableRunURL(s *string) *WorkflowRunUpdateOne {
-	if s != nil {
-		wruo.SetRunURL(*s)
+func (_u *WorkflowRunUpdateOne) SetNillableRunURL(v *string) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetRunURL(*v)
 	}
-	return wruo
+	return _u
 }
 
 // ClearRunURL clears the value of the "run_url" field.
-func (wruo *WorkflowRunUpdateOne) ClearRunURL() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearRunURL()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearRunURL() *WorkflowRunUpdateOne {
+	_u.mutation.ClearRunURL()
+	return _u
 }
 
 // SetRunnerType sets the "runner_type" field.
-func (wruo *WorkflowRunUpdateOne) SetRunnerType(s string) *WorkflowRunUpdateOne {
-	wruo.mutation.SetRunnerType(s)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetRunnerType(v string) *WorkflowRunUpdateOne {
+	_u.mutation.SetRunnerType(v)
+	return _u
 }
 
 // SetNillableRunnerType sets the "runner_type" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableRunnerType(s *string) *WorkflowRunUpdateOne {
-	if s != nil {
-		wruo.SetRunnerType(*s)
+func (_u *WorkflowRunUpdateOne) SetNillableRunnerType(v *string) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetRunnerType(*v)
 	}
-	return wruo
+	return _u
 }
 
 // ClearRunnerType clears the value of the "runner_type" field.
-func (wruo *WorkflowRunUpdateOne) ClearRunnerType() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearRunnerType()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearRunnerType() *WorkflowRunUpdateOne {
+	_u.mutation.ClearRunnerType()
+	return _u
 }
 
 // SetAttestation sets the "attestation" field.
-func (wruo *WorkflowRunUpdateOne) SetAttestation(d *dsse.Envelope) *WorkflowRunUpdateOne {
-	wruo.mutation.SetAttestation(d)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetAttestation(v *dsse.Envelope) *WorkflowRunUpdateOne {
+	_u.mutation.SetAttestation(v)
+	return _u
 }
 
 // ClearAttestation clears the value of the "attestation" field.
-func (wruo *WorkflowRunUpdateOne) ClearAttestation() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearAttestation()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearAttestation() *WorkflowRunUpdateOne {
+	_u.mutation.ClearAttestation()
+	return _u
 }
 
 // SetAttestationDigest sets the "attestation_digest" field.
-func (wruo *WorkflowRunUpdateOne) SetAttestationDigest(s string) *WorkflowRunUpdateOne {
-	wruo.mutation.SetAttestationDigest(s)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetAttestationDigest(v string) *WorkflowRunUpdateOne {
+	_u.mutation.SetAttestationDigest(v)
+	return _u
 }
 
 // SetNillableAttestationDigest sets the "attestation_digest" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableAttestationDigest(s *string) *WorkflowRunUpdateOne {
-	if s != nil {
-		wruo.SetAttestationDigest(*s)
+func (_u *WorkflowRunUpdateOne) SetNillableAttestationDigest(v *string) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetAttestationDigest(*v)
 	}
-	return wruo
+	return _u
 }
 
 // ClearAttestationDigest clears the value of the "attestation_digest" field.
-func (wruo *WorkflowRunUpdateOne) ClearAttestationDigest() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearAttestationDigest()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearAttestationDigest() *WorkflowRunUpdateOne {
+	_u.mutation.ClearAttestationDigest()
+	return _u
 }
 
 // SetAttestationState sets the "attestation_state" field.
-func (wruo *WorkflowRunUpdateOne) SetAttestationState(b []byte) *WorkflowRunUpdateOne {
-	wruo.mutation.SetAttestationState(b)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetAttestationState(v []byte) *WorkflowRunUpdateOne {
+	_u.mutation.SetAttestationState(v)
+	return _u
 }
 
 // ClearAttestationState clears the value of the "attestation_state" field.
-func (wruo *WorkflowRunUpdateOne) ClearAttestationState() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearAttestationState()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearAttestationState() *WorkflowRunUpdateOne {
+	_u.mutation.ClearAttestationState()
+	return _u
 }
 
 // SetContractRevisionUsed sets the "contract_revision_used" field.
-func (wruo *WorkflowRunUpdateOne) SetContractRevisionUsed(i int) *WorkflowRunUpdateOne {
-	wruo.mutation.ResetContractRevisionUsed()
-	wruo.mutation.SetContractRevisionUsed(i)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetContractRevisionUsed(v int) *WorkflowRunUpdateOne {
+	_u.mutation.ResetContractRevisionUsed()
+	_u.mutation.SetContractRevisionUsed(v)
+	return _u
 }
 
 // SetNillableContractRevisionUsed sets the "contract_revision_used" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableContractRevisionUsed(i *int) *WorkflowRunUpdateOne {
-	if i != nil {
-		wruo.SetContractRevisionUsed(*i)
+func (_u *WorkflowRunUpdateOne) SetNillableContractRevisionUsed(v *int) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetContractRevisionUsed(*v)
 	}
-	return wruo
+	return _u
 }
 
-// AddContractRevisionUsed adds i to the "contract_revision_used" field.
-func (wruo *WorkflowRunUpdateOne) AddContractRevisionUsed(i int) *WorkflowRunUpdateOne {
-	wruo.mutation.AddContractRevisionUsed(i)
-	return wruo
+// AddContractRevisionUsed adds value to the "contract_revision_used" field.
+func (_u *WorkflowRunUpdateOne) AddContractRevisionUsed(v int) *WorkflowRunUpdateOne {
+	_u.mutation.AddContractRevisionUsed(v)
+	return _u
 }
 
 // SetContractRevisionLatest sets the "contract_revision_latest" field.
-func (wruo *WorkflowRunUpdateOne) SetContractRevisionLatest(i int) *WorkflowRunUpdateOne {
-	wruo.mutation.ResetContractRevisionLatest()
-	wruo.mutation.SetContractRevisionLatest(i)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetContractRevisionLatest(v int) *WorkflowRunUpdateOne {
+	_u.mutation.ResetContractRevisionLatest()
+	_u.mutation.SetContractRevisionLatest(v)
+	return _u
 }
 
 // SetNillableContractRevisionLatest sets the "contract_revision_latest" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableContractRevisionLatest(i *int) *WorkflowRunUpdateOne {
-	if i != nil {
-		wruo.SetContractRevisionLatest(*i)
+func (_u *WorkflowRunUpdateOne) SetNillableContractRevisionLatest(v *int) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetContractRevisionLatest(*v)
 	}
-	return wruo
+	return _u
 }
 
-// AddContractRevisionLatest adds i to the "contract_revision_latest" field.
-func (wruo *WorkflowRunUpdateOne) AddContractRevisionLatest(i int) *WorkflowRunUpdateOne {
-	wruo.mutation.AddContractRevisionLatest(i)
-	return wruo
+// AddContractRevisionLatest adds value to the "contract_revision_latest" field.
+func (_u *WorkflowRunUpdateOne) AddContractRevisionLatest(v int) *WorkflowRunUpdateOne {
+	_u.mutation.AddContractRevisionLatest(v)
+	return _u
 }
 
 // SetVersionID sets the "version_id" field.
-func (wruo *WorkflowRunUpdateOne) SetVersionID(u uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.SetVersionID(u)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetVersionID(v uuid.UUID) *WorkflowRunUpdateOne {
+	_u.mutation.SetVersionID(v)
+	return _u
 }
 
 // SetNillableVersionID sets the "version_id" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableVersionID(u *uuid.UUID) *WorkflowRunUpdateOne {
-	if u != nil {
-		wruo.SetVersionID(*u)
+func (_u *WorkflowRunUpdateOne) SetNillableVersionID(v *uuid.UUID) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetVersionID(*v)
 	}
-	return wruo
+	return _u
 }
 
 // SetHasPolicyViolations sets the "has_policy_violations" field.
-func (wruo *WorkflowRunUpdateOne) SetHasPolicyViolations(b bool) *WorkflowRunUpdateOne {
-	wruo.mutation.SetHasPolicyViolations(b)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetHasPolicyViolations(v bool) *WorkflowRunUpdateOne {
+	_u.mutation.SetHasPolicyViolations(v)
+	return _u
 }
 
 // SetNillableHasPolicyViolations sets the "has_policy_violations" field if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableHasPolicyViolations(b *bool) *WorkflowRunUpdateOne {
-	if b != nil {
-		wruo.SetHasPolicyViolations(*b)
+func (_u *WorkflowRunUpdateOne) SetNillableHasPolicyViolations(v *bool) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetHasPolicyViolations(*v)
 	}
-	return wruo
+	return _u
 }
 
 // ClearHasPolicyViolations clears the value of the "has_policy_violations" field.
-func (wruo *WorkflowRunUpdateOne) ClearHasPolicyViolations() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearHasPolicyViolations()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearHasPolicyViolations() *WorkflowRunUpdateOne {
+	_u.mutation.ClearHasPolicyViolations()
+	return _u
 }
 
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
-func (wruo *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.SetContractVersionID(id)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
+	_u.mutation.SetContractVersionID(id)
+	return _u
 }
 
 // SetNillableContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableContractVersionID(id *uuid.UUID) *WorkflowRunUpdateOne {
+func (_u *WorkflowRunUpdateOne) SetNillableContractVersionID(id *uuid.UUID) *WorkflowRunUpdateOne {
 	if id != nil {
-		wruo = wruo.SetContractVersionID(*id)
+		_u = _u.SetContractVersionID(*id)
 	}
-	return wruo
+	return _u
 }
 
 // SetContractVersion sets the "contract_version" edge to the WorkflowContractVersion entity.
-func (wruo *WorkflowRunUpdateOne) SetContractVersion(w *WorkflowContractVersion) *WorkflowRunUpdateOne {
-	return wruo.SetContractVersionID(w.ID)
+func (_u *WorkflowRunUpdateOne) SetContractVersion(v *WorkflowContractVersion) *WorkflowRunUpdateOne {
+	return _u.SetContractVersionID(v.ID)
 }
 
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
-func (wruo *WorkflowRunUpdateOne) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.AddCasBackendIDs(ids...)
-	return wruo
+func (_u *WorkflowRunUpdateOne) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdateOne {
+	_u.mutation.AddCasBackendIDs(ids...)
+	return _u
 }
 
 // AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
-func (wruo *WorkflowRunUpdateOne) AddCasBackends(c ...*CASBackend) *WorkflowRunUpdateOne {
-	ids := make([]uuid.UUID, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_u *WorkflowRunUpdateOne) AddCasBackends(v ...*CASBackend) *WorkflowRunUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wruo.AddCasBackendIDs(ids...)
+	return _u.AddCasBackendIDs(ids...)
 }
 
 // SetVersion sets the "version" edge to the ProjectVersion entity.
-func (wruo *WorkflowRunUpdateOne) SetVersion(p *ProjectVersion) *WorkflowRunUpdateOne {
-	return wruo.SetVersionID(p.ID)
+func (_u *WorkflowRunUpdateOne) SetVersion(v *ProjectVersion) *WorkflowRunUpdateOne {
+	return _u.SetVersionID(v.ID)
 }
 
 // SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
-func (wruo *WorkflowRunUpdateOne) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.SetAttestationBundleID(id)
-	return wruo
+func (_u *WorkflowRunUpdateOne) SetAttestationBundleID(id uuid.UUID) *WorkflowRunUpdateOne {
+	_u.mutation.SetAttestationBundleID(id)
+	return _u
 }
 
 // SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
-func (wruo *WorkflowRunUpdateOne) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdateOne {
+func (_u *WorkflowRunUpdateOne) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunUpdateOne {
 	if id != nil {
-		wruo = wruo.SetAttestationBundleID(*id)
+		_u = _u.SetAttestationBundleID(*id)
 	}
-	return wruo
+	return _u
 }
 
 // SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
-func (wruo *WorkflowRunUpdateOne) SetAttestationBundle(a *Attestation) *WorkflowRunUpdateOne {
-	return wruo.SetAttestationBundleID(a.ID)
+func (_u *WorkflowRunUpdateOne) SetAttestationBundle(v *Attestation) *WorkflowRunUpdateOne {
+	return _u.SetAttestationBundleID(v.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
-func (wruo *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
-	return wruo.mutation
+func (_u *WorkflowRunUpdateOne) Mutation() *WorkflowRunMutation {
+	return _u.mutation
 }
 
 // ClearContractVersion clears the "contract_version" edge to the WorkflowContractVersion entity.
-func (wruo *WorkflowRunUpdateOne) ClearContractVersion() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearContractVersion()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearContractVersion() *WorkflowRunUpdateOne {
+	_u.mutation.ClearContractVersion()
+	return _u
 }
 
 // ClearCasBackends clears all "cas_backends" edges to the CASBackend entity.
-func (wruo *WorkflowRunUpdateOne) ClearCasBackends() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearCasBackends()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearCasBackends() *WorkflowRunUpdateOne {
+	_u.mutation.ClearCasBackends()
+	return _u
 }
 
 // RemoveCasBackendIDs removes the "cas_backends" edge to CASBackend entities by IDs.
-func (wruo *WorkflowRunUpdateOne) RemoveCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdateOne {
-	wruo.mutation.RemoveCasBackendIDs(ids...)
-	return wruo
+func (_u *WorkflowRunUpdateOne) RemoveCasBackendIDs(ids ...uuid.UUID) *WorkflowRunUpdateOne {
+	_u.mutation.RemoveCasBackendIDs(ids...)
+	return _u
 }
 
 // RemoveCasBackends removes "cas_backends" edges to CASBackend entities.
-func (wruo *WorkflowRunUpdateOne) RemoveCasBackends(c ...*CASBackend) *WorkflowRunUpdateOne {
-	ids := make([]uuid.UUID, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_u *WorkflowRunUpdateOne) RemoveCasBackends(v ...*CASBackend) *WorkflowRunUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wruo.RemoveCasBackendIDs(ids...)
+	return _u.RemoveCasBackendIDs(ids...)
 }
 
 // ClearVersion clears the "version" edge to the ProjectVersion entity.
-func (wruo *WorkflowRunUpdateOne) ClearVersion() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearVersion()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearVersion() *WorkflowRunUpdateOne {
+	_u.mutation.ClearVersion()
+	return _u
 }
 
 // ClearAttestationBundle clears the "attestation_bundle" edge to the Attestation entity.
-func (wruo *WorkflowRunUpdateOne) ClearAttestationBundle() *WorkflowRunUpdateOne {
-	wruo.mutation.ClearAttestationBundle()
-	return wruo
+func (_u *WorkflowRunUpdateOne) ClearAttestationBundle() *WorkflowRunUpdateOne {
+	_u.mutation.ClearAttestationBundle()
+	return _u
 }
 
 // Where appends a list predicates to the WorkflowRunUpdate builder.
-func (wruo *WorkflowRunUpdateOne) Where(ps ...predicate.WorkflowRun) *WorkflowRunUpdateOne {
-	wruo.mutation.Where(ps...)
-	return wruo
+func (_u *WorkflowRunUpdateOne) Where(ps ...predicate.WorkflowRun) *WorkflowRunUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (wruo *WorkflowRunUpdateOne) Select(field string, fields ...string) *WorkflowRunUpdateOne {
-	wruo.fields = append([]string{field}, fields...)
-	return wruo
+func (_u *WorkflowRunUpdateOne) Select(field string, fields ...string) *WorkflowRunUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated WorkflowRun entity.
-func (wruo *WorkflowRunUpdateOne) Save(ctx context.Context) (*WorkflowRun, error) {
-	return withHooks(ctx, wruo.sqlSave, wruo.mutation, wruo.hooks)
+func (_u *WorkflowRunUpdateOne) Save(ctx context.Context) (*WorkflowRun, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wruo *WorkflowRunUpdateOne) SaveX(ctx context.Context) *WorkflowRun {
-	node, err := wruo.Save(ctx)
+func (_u *WorkflowRunUpdateOne) SaveX(ctx context.Context) *WorkflowRun {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -974,51 +974,51 @@ func (wruo *WorkflowRunUpdateOne) SaveX(ctx context.Context) *WorkflowRun {
 }
 
 // Exec executes the query on the entity.
-func (wruo *WorkflowRunUpdateOne) Exec(ctx context.Context) error {
-	_, err := wruo.Save(ctx)
+func (_u *WorkflowRunUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wruo *WorkflowRunUpdateOne) ExecX(ctx context.Context) {
-	if err := wruo.Exec(ctx); err != nil {
+func (_u *WorkflowRunUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wruo *WorkflowRunUpdateOne) check() error {
-	if v, ok := wruo.mutation.State(); ok {
+func (_u *WorkflowRunUpdateOne) check() error {
+	if v, ok := _u.mutation.State(); ok {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
 	}
-	if wruo.mutation.WorkflowCleared() && len(wruo.mutation.WorkflowIDs()) > 0 {
+	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
-	if wruo.mutation.VersionCleared() && len(wruo.mutation.VersionIDs()) > 0 {
+	if _u.mutation.VersionCleared() && len(_u.mutation.VersionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (wruo *WorkflowRunUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowRunUpdateOne {
-	wruo.modifiers = append(wruo.modifiers, modifiers...)
-	return wruo
+func (_u *WorkflowRunUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowRunUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun, err error) {
-	if err := wruo.check(); err != nil {
+func (_u *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(workflowrun.Table, workflowrun.Columns, sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID))
-	id, ok := wruo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "WorkflowRun.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := wruo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, workflowrun.FieldID)
 		for _, f := range fields {
@@ -1030,77 +1030,77 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 			}
 		}
 	}
-	if ps := wruo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := wruo.mutation.FinishedAt(); ok {
+	if value, ok := _u.mutation.FinishedAt(); ok {
 		_spec.SetField(workflowrun.FieldFinishedAt, field.TypeTime, value)
 	}
-	if wruo.mutation.FinishedAtCleared() {
+	if _u.mutation.FinishedAtCleared() {
 		_spec.ClearField(workflowrun.FieldFinishedAt, field.TypeTime)
 	}
-	if value, ok := wruo.mutation.State(); ok {
+	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(workflowrun.FieldState, field.TypeEnum, value)
 	}
-	if value, ok := wruo.mutation.Reason(); ok {
+	if value, ok := _u.mutation.Reason(); ok {
 		_spec.SetField(workflowrun.FieldReason, field.TypeString, value)
 	}
-	if wruo.mutation.ReasonCleared() {
+	if _u.mutation.ReasonCleared() {
 		_spec.ClearField(workflowrun.FieldReason, field.TypeString)
 	}
-	if value, ok := wruo.mutation.RunURL(); ok {
+	if value, ok := _u.mutation.RunURL(); ok {
 		_spec.SetField(workflowrun.FieldRunURL, field.TypeString, value)
 	}
-	if wruo.mutation.RunURLCleared() {
+	if _u.mutation.RunURLCleared() {
 		_spec.ClearField(workflowrun.FieldRunURL, field.TypeString)
 	}
-	if value, ok := wruo.mutation.RunnerType(); ok {
+	if value, ok := _u.mutation.RunnerType(); ok {
 		_spec.SetField(workflowrun.FieldRunnerType, field.TypeString, value)
 	}
-	if wruo.mutation.RunnerTypeCleared() {
+	if _u.mutation.RunnerTypeCleared() {
 		_spec.ClearField(workflowrun.FieldRunnerType, field.TypeString)
 	}
-	if value, ok := wruo.mutation.Attestation(); ok {
+	if value, ok := _u.mutation.Attestation(); ok {
 		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
 	}
-	if wruo.mutation.AttestationCleared() {
+	if _u.mutation.AttestationCleared() {
 		_spec.ClearField(workflowrun.FieldAttestation, field.TypeJSON)
 	}
-	if value, ok := wruo.mutation.AttestationDigest(); ok {
+	if value, ok := _u.mutation.AttestationDigest(); ok {
 		_spec.SetField(workflowrun.FieldAttestationDigest, field.TypeString, value)
 	}
-	if wruo.mutation.AttestationDigestCleared() {
+	if _u.mutation.AttestationDigestCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationDigest, field.TypeString)
 	}
-	if value, ok := wruo.mutation.AttestationState(); ok {
+	if value, ok := _u.mutation.AttestationState(); ok {
 		_spec.SetField(workflowrun.FieldAttestationState, field.TypeBytes, value)
 	}
-	if wruo.mutation.AttestationStateCleared() {
+	if _u.mutation.AttestationStateCleared() {
 		_spec.ClearField(workflowrun.FieldAttestationState, field.TypeBytes)
 	}
-	if value, ok := wruo.mutation.ContractRevisionUsed(); ok {
+	if value, ok := _u.mutation.ContractRevisionUsed(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 	}
-	if value, ok := wruo.mutation.AddedContractRevisionUsed(); ok {
+	if value, ok := _u.mutation.AddedContractRevisionUsed(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 	}
-	if value, ok := wruo.mutation.ContractRevisionLatest(); ok {
+	if value, ok := _u.mutation.ContractRevisionLatest(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if value, ok := wruo.mutation.AddedContractRevisionLatest(); ok {
+	if value, ok := _u.mutation.AddedContractRevisionLatest(); ok {
 		_spec.AddField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 	}
-	if value, ok := wruo.mutation.HasPolicyViolations(); ok {
+	if value, ok := _u.mutation.HasPolicyViolations(); ok {
 		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
 	}
-	if wruo.mutation.HasPolicyViolationsCleared() {
+	if _u.mutation.HasPolicyViolationsCleared() {
 		_spec.ClearField(workflowrun.FieldHasPolicyViolations, field.TypeBool)
 	}
-	if wruo.mutation.ContractVersionCleared() {
+	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -1113,7 +1113,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wruo.mutation.ContractVersionIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ContractVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -1129,7 +1129,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wruo.mutation.CasBackendsCleared() {
+	if _u.mutation.CasBackendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1142,7 +1142,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wruo.mutation.RemovedCasBackendsIDs(); len(nodes) > 0 && !wruo.mutation.CasBackendsCleared() {
+	if nodes := _u.mutation.RemovedCasBackendsIDs(); len(nodes) > 0 && !_u.mutation.CasBackendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1158,7 +1158,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wruo.mutation.CasBackendsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.CasBackendsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1174,7 +1174,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wruo.mutation.VersionCleared() {
+	if _u.mutation.VersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -1187,7 +1187,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wruo.mutation.VersionIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.VersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -1203,7 +1203,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if wruo.mutation.AttestationBundleCleared() {
+	if _u.mutation.AttestationBundleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -1216,7 +1216,7 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wruo.mutation.AttestationBundleIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.AttestationBundleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -1232,11 +1232,11 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(wruo.modifiers...)
-	_node = &WorkflowRun{config: wruo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &WorkflowRun{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, wruo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowrun.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1244,6 +1244,6 @@ func (wruo *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowR
 		}
 		return nil, err
 	}
-	wruo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

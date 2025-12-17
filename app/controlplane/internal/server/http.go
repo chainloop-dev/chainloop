@@ -23,7 +23,7 @@ import (
 	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
 	"github.com/golang-jwt/jwt/v4"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -104,7 +104,7 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 // Custom kraos middleware based on the protovalidate middleware
 // https://pkg.go.dev/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/protovalidate#UnaryServerInterceptor
 // but tailored specifically for the http server
-func protoValidateHTTPMiddleware(validator *protovalidate.Validator) middleware.Middleware {
+func protoValidateHTTPMiddleware(validator protovalidate.Validator) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			switch msg := req.(type) {

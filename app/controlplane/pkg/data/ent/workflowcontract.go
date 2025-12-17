@@ -105,7 +105,7 @@ func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the WorkflowContract fields.
-func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
+func (_m *WorkflowContract) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -115,59 +115,59 @@ func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				wc.ID = *value
+				_m.ID = *value
 			}
 		case workflowcontract.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				wc.Name = value.String
+				_m.Name = value.String
 			}
 		case workflowcontract.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				wc.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case workflowcontract.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				wc.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case workflowcontract.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				wc.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case workflowcontract.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				wc.Description = value.String
+				_m.Description = value.String
 			}
 		case workflowcontract.FieldScopedResourceType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field scoped_resource_type", values[i])
 			} else if value.Valid {
-				wc.ScopedResourceType = biz.ContractScope(value.String)
+				_m.ScopedResourceType = biz.ContractScope(value.String)
 			}
 		case workflowcontract.FieldScopedResourceID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field scoped_resource_id", values[i])
 			} else if value != nil {
-				wc.ScopedResourceID = *value
+				_m.ScopedResourceID = *value
 			}
 		case workflowcontract.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_workflow_contracts", values[i])
 			} else if value.Valid {
-				wc.organization_workflow_contracts = new(uuid.UUID)
-				*wc.organization_workflow_contracts = *value.S.(*uuid.UUID)
+				_m.organization_workflow_contracts = new(uuid.UUID)
+				*_m.organization_workflow_contracts = *value.S.(*uuid.UUID)
 			}
 		default:
-			wc.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -175,68 +175,68 @@ func (wc *WorkflowContract) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the WorkflowContract.
 // This includes values selected through modifiers, order, etc.
-func (wc *WorkflowContract) Value(name string) (ent.Value, error) {
-	return wc.selectValues.Get(name)
+func (_m *WorkflowContract) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryVersions queries the "versions" edge of the WorkflowContract entity.
-func (wc *WorkflowContract) QueryVersions() *WorkflowContractVersionQuery {
-	return NewWorkflowContractClient(wc.config).QueryVersions(wc)
+func (_m *WorkflowContract) QueryVersions() *WorkflowContractVersionQuery {
+	return NewWorkflowContractClient(_m.config).QueryVersions(_m)
 }
 
 // QueryOrganization queries the "organization" edge of the WorkflowContract entity.
-func (wc *WorkflowContract) QueryOrganization() *OrganizationQuery {
-	return NewWorkflowContractClient(wc.config).QueryOrganization(wc)
+func (_m *WorkflowContract) QueryOrganization() *OrganizationQuery {
+	return NewWorkflowContractClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryWorkflows queries the "workflows" edge of the WorkflowContract entity.
-func (wc *WorkflowContract) QueryWorkflows() *WorkflowQuery {
-	return NewWorkflowContractClient(wc.config).QueryWorkflows(wc)
+func (_m *WorkflowContract) QueryWorkflows() *WorkflowQuery {
+	return NewWorkflowContractClient(_m.config).QueryWorkflows(_m)
 }
 
 // Update returns a builder for updating this WorkflowContract.
 // Note that you need to call WorkflowContract.Unwrap() before calling this method if this WorkflowContract
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (wc *WorkflowContract) Update() *WorkflowContractUpdateOne {
-	return NewWorkflowContractClient(wc.config).UpdateOne(wc)
+func (_m *WorkflowContract) Update() *WorkflowContractUpdateOne {
+	return NewWorkflowContractClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the WorkflowContract entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (wc *WorkflowContract) Unwrap() *WorkflowContract {
-	_tx, ok := wc.config.driver.(*txDriver)
+func (_m *WorkflowContract) Unwrap() *WorkflowContract {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: WorkflowContract is not a transactional entity")
 	}
-	wc.config.driver = _tx.drv
-	return wc
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (wc *WorkflowContract) String() string {
+func (_m *WorkflowContract) String() string {
 	var builder strings.Builder
 	builder.WriteString("WorkflowContract(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", wc.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(wc.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(wc.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(wc.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(wc.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(wc.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("scoped_resource_type=")
-	builder.WriteString(fmt.Sprintf("%v", wc.ScopedResourceType))
+	builder.WriteString(fmt.Sprintf("%v", _m.ScopedResourceType))
 	builder.WriteString(", ")
 	builder.WriteString("scoped_resource_id=")
-	builder.WriteString(fmt.Sprintf("%v", wc.ScopedResourceID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ScopedResourceID))
 	builder.WriteByte(')')
 	return builder.String()
 }

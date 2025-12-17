@@ -189,7 +189,7 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Workflow fields.
-func (w *Workflow) assignValues(columns []string, values []any) error {
+func (_m *Workflow) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -199,86 +199,86 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				w.ID = *value
+				_m.ID = *value
 			}
 		case workflow.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				w.Name = value.String
+				_m.Name = value.String
 			}
 		case workflow.FieldProjectOld:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_old", values[i])
 			} else if value.Valid {
-				w.ProjectOld = value.String
+				_m.ProjectOld = value.String
 			}
 		case workflow.FieldTeam:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field team", values[i])
 			} else if value.Valid {
-				w.Team = value.String
+				_m.Team = value.String
 			}
 		case workflow.FieldRunsCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field runs_count", values[i])
 			} else if value.Valid {
-				w.RunsCount = int(value.Int64)
+				_m.RunsCount = int(value.Int64)
 			}
 		case workflow.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				w.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case workflow.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				w.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case workflow.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				w.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case workflow.FieldPublic:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field public", values[i])
 			} else if value.Valid {
-				w.Public = value.Bool
+				_m.Public = value.Bool
 			}
 		case workflow.FieldOrganizationID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
-				w.OrganizationID = *value
+				_m.OrganizationID = *value
 			}
 		case workflow.FieldProjectID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
 			} else if value != nil {
-				w.ProjectID = *value
+				_m.ProjectID = *value
 			}
 		case workflow.FieldLatestRun:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field latest_run", values[i])
 			} else if value.Valid {
-				w.LatestRun = new(uuid.UUID)
-				*w.LatestRun = *value.S.(*uuid.UUID)
+				_m.LatestRun = new(uuid.UUID)
+				*_m.LatestRun = *value.S.(*uuid.UUID)
 			}
 		case workflow.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				w.Description = value.String
+				_m.Description = value.String
 			}
 		case workflow.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &w.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -286,11 +286,11 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_contract", values[i])
 			} else if value.Valid {
-				w.workflow_contract = new(uuid.UUID)
-				*w.workflow_contract = *value.S.(*uuid.UUID)
+				_m.workflow_contract = new(uuid.UUID)
+				*_m.workflow_contract = *value.S.(*uuid.UUID)
 			}
 		default:
-			w.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -298,113 +298,113 @@ func (w *Workflow) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Workflow.
 // This includes values selected through modifiers, order, etc.
-func (w *Workflow) Value(name string) (ent.Value, error) {
-	return w.selectValues.Get(name)
+func (_m *Workflow) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryRobotaccounts queries the "robotaccounts" edge of the Workflow entity.
-func (w *Workflow) QueryRobotaccounts() *RobotAccountQuery {
-	return NewWorkflowClient(w.config).QueryRobotaccounts(w)
+func (_m *Workflow) QueryRobotaccounts() *RobotAccountQuery {
+	return NewWorkflowClient(_m.config).QueryRobotaccounts(_m)
 }
 
 // QueryWorkflowruns queries the "workflowruns" edge of the Workflow entity.
-func (w *Workflow) QueryWorkflowruns() *WorkflowRunQuery {
-	return NewWorkflowClient(w.config).QueryWorkflowruns(w)
+func (_m *Workflow) QueryWorkflowruns() *WorkflowRunQuery {
+	return NewWorkflowClient(_m.config).QueryWorkflowruns(_m)
 }
 
 // QueryOrganization queries the "organization" edge of the Workflow entity.
-func (w *Workflow) QueryOrganization() *OrganizationQuery {
-	return NewWorkflowClient(w.config).QueryOrganization(w)
+func (_m *Workflow) QueryOrganization() *OrganizationQuery {
+	return NewWorkflowClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryContract queries the "contract" edge of the Workflow entity.
-func (w *Workflow) QueryContract() *WorkflowContractQuery {
-	return NewWorkflowClient(w.config).QueryContract(w)
+func (_m *Workflow) QueryContract() *WorkflowContractQuery {
+	return NewWorkflowClient(_m.config).QueryContract(_m)
 }
 
 // QueryIntegrationAttachments queries the "integration_attachments" edge of the Workflow entity.
-func (w *Workflow) QueryIntegrationAttachments() *IntegrationAttachmentQuery {
-	return NewWorkflowClient(w.config).QueryIntegrationAttachments(w)
+func (_m *Workflow) QueryIntegrationAttachments() *IntegrationAttachmentQuery {
+	return NewWorkflowClient(_m.config).QueryIntegrationAttachments(_m)
 }
 
 // QueryProject queries the "project" edge of the Workflow entity.
-func (w *Workflow) QueryProject() *ProjectQuery {
-	return NewWorkflowClient(w.config).QueryProject(w)
+func (_m *Workflow) QueryProject() *ProjectQuery {
+	return NewWorkflowClient(_m.config).QueryProject(_m)
 }
 
 // QueryLatestWorkflowRun queries the "latest_workflow_run" edge of the Workflow entity.
-func (w *Workflow) QueryLatestWorkflowRun() *WorkflowRunQuery {
-	return NewWorkflowClient(w.config).QueryLatestWorkflowRun(w)
+func (_m *Workflow) QueryLatestWorkflowRun() *WorkflowRunQuery {
+	return NewWorkflowClient(_m.config).QueryLatestWorkflowRun(_m)
 }
 
 // QueryReferrers queries the "referrers" edge of the Workflow entity.
-func (w *Workflow) QueryReferrers() *ReferrerQuery {
-	return NewWorkflowClient(w.config).QueryReferrers(w)
+func (_m *Workflow) QueryReferrers() *ReferrerQuery {
+	return NewWorkflowClient(_m.config).QueryReferrers(_m)
 }
 
 // Update returns a builder for updating this Workflow.
 // Note that you need to call Workflow.Unwrap() before calling this method if this Workflow
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (w *Workflow) Update() *WorkflowUpdateOne {
-	return NewWorkflowClient(w.config).UpdateOne(w)
+func (_m *Workflow) Update() *WorkflowUpdateOne {
+	return NewWorkflowClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Workflow entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (w *Workflow) Unwrap() *Workflow {
-	_tx, ok := w.config.driver.(*txDriver)
+func (_m *Workflow) Unwrap() *Workflow {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Workflow is not a transactional entity")
 	}
-	w.config.driver = _tx.drv
-	return w
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (w *Workflow) String() string {
+func (_m *Workflow) String() string {
 	var builder strings.Builder
 	builder.WriteString("Workflow(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", w.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(w.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("project_old=")
-	builder.WriteString(w.ProjectOld)
+	builder.WriteString(_m.ProjectOld)
 	builder.WriteString(", ")
 	builder.WriteString("team=")
-	builder.WriteString(w.Team)
+	builder.WriteString(_m.Team)
 	builder.WriteString(", ")
 	builder.WriteString("runs_count=")
-	builder.WriteString(fmt.Sprintf("%v", w.RunsCount))
+	builder.WriteString(fmt.Sprintf("%v", _m.RunsCount))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(w.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(w.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(w.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("public=")
-	builder.WriteString(fmt.Sprintf("%v", w.Public))
+	builder.WriteString(fmt.Sprintf("%v", _m.Public))
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
-	builder.WriteString(fmt.Sprintf("%v", w.OrganizationID))
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", w.ProjectID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))
 	builder.WriteString(", ")
-	if v := w.LatestRun; v != nil {
+	if v := _m.LatestRun; v != nil {
 		builder.WriteString("latest_run=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(w.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", w.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -1,0 +1,134 @@
+version: v2
+modules:
+  - path: app/artifact-cas/api
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: app/artifact-cas/internal/conf
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      ignore_only:
+        PACKAGE_DEFINED:
+          - app/artifact-cas/internal/conf/conf.proto
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: app/controlplane/api
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      ignore_only:
+        ENUM_VALUE_PREFIX:
+          - app/controlplane/api/workflowcontract/v1/crafting_schema.proto
+        ENUM_ZERO_VALUE_SUFFIX:
+          - app/controlplane/api/controlplane/v1/pagination.proto
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: app/controlplane/internal/conf
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      ignore_only:
+        PACKAGE_DEFINED:
+          - app/controlplane/internal/conf/conf.proto
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: app/controlplane/pkg/conf
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: app/controlplane/plugins/sdk/v1/plugin/api
+    lint:
+      use:
+        - DEFAULT
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      ignore_only:
+        PACKAGE_DIRECTORY_MATCH:
+          - app/controlplane/plugins/sdk/v1/plugin/api/fanout.proto
+        PACKAGE_VERSION_SUFFIX:
+          - app/controlplane/plugins/sdk/v1/plugin/api/fanout.proto
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: pkg/attestation/crafter/api
+    lint:
+      use:
+        - DEFAULT
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+  - path: pkg/credentials/api
+    lint:
+      use:
+        - DEFAULT
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+deps:
+  - buf.build/bufbuild/protovalidate:v1.1.0
+  - buf.build/googleapis/googleapis:4ed3bc159a8b4ac68fe253218760d035
+  - buf.build/grpc-ecosystem/grpc-gateway:v2.26.3
+  - buf.build/kratos-go/kratos:e1d52e944e3845c6862a566db322432d

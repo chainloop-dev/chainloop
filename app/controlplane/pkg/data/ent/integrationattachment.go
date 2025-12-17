@@ -90,7 +90,7 @@ func (*IntegrationAttachment) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the IntegrationAttachment fields.
-func (ia *IntegrationAttachment) assignValues(columns []string, values []any) error {
+func (_m *IntegrationAttachment) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -100,41 +100,41 @@ func (ia *IntegrationAttachment) assignValues(columns []string, values []any) er
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				ia.ID = *value
+				_m.ID = *value
 			}
 		case integrationattachment.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				ia.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case integrationattachment.FieldConfiguration:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field configuration", values[i])
 			} else if value != nil {
-				ia.Configuration = *value
+				_m.Configuration = *value
 			}
 		case integrationattachment.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				ia.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case integrationattachment.FieldWorkflowID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_id", values[i])
 			} else if value != nil {
-				ia.WorkflowID = *value
+				_m.WorkflowID = *value
 			}
 		case integrationattachment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field integration_attachment_integration", values[i])
 			} else if value.Valid {
-				ia.integration_attachment_integration = new(uuid.UUID)
-				*ia.integration_attachment_integration = *value.S.(*uuid.UUID)
+				_m.integration_attachment_integration = new(uuid.UUID)
+				*_m.integration_attachment_integration = *value.S.(*uuid.UUID)
 			}
 		default:
-			ia.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -142,54 +142,54 @@ func (ia *IntegrationAttachment) assignValues(columns []string, values []any) er
 
 // Value returns the ent.Value that was dynamically selected and assigned to the IntegrationAttachment.
 // This includes values selected through modifiers, order, etc.
-func (ia *IntegrationAttachment) Value(name string) (ent.Value, error) {
-	return ia.selectValues.Get(name)
+func (_m *IntegrationAttachment) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryIntegration queries the "integration" edge of the IntegrationAttachment entity.
-func (ia *IntegrationAttachment) QueryIntegration() *IntegrationQuery {
-	return NewIntegrationAttachmentClient(ia.config).QueryIntegration(ia)
+func (_m *IntegrationAttachment) QueryIntegration() *IntegrationQuery {
+	return NewIntegrationAttachmentClient(_m.config).QueryIntegration(_m)
 }
 
 // QueryWorkflow queries the "workflow" edge of the IntegrationAttachment entity.
-func (ia *IntegrationAttachment) QueryWorkflow() *WorkflowQuery {
-	return NewIntegrationAttachmentClient(ia.config).QueryWorkflow(ia)
+func (_m *IntegrationAttachment) QueryWorkflow() *WorkflowQuery {
+	return NewIntegrationAttachmentClient(_m.config).QueryWorkflow(_m)
 }
 
 // Update returns a builder for updating this IntegrationAttachment.
 // Note that you need to call IntegrationAttachment.Unwrap() before calling this method if this IntegrationAttachment
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (ia *IntegrationAttachment) Update() *IntegrationAttachmentUpdateOne {
-	return NewIntegrationAttachmentClient(ia.config).UpdateOne(ia)
+func (_m *IntegrationAttachment) Update() *IntegrationAttachmentUpdateOne {
+	return NewIntegrationAttachmentClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the IntegrationAttachment entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (ia *IntegrationAttachment) Unwrap() *IntegrationAttachment {
-	_tx, ok := ia.config.driver.(*txDriver)
+func (_m *IntegrationAttachment) Unwrap() *IntegrationAttachment {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: IntegrationAttachment is not a transactional entity")
 	}
-	ia.config.driver = _tx.drv
-	return ia
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (ia *IntegrationAttachment) String() string {
+func (_m *IntegrationAttachment) String() string {
 	var builder strings.Builder
 	builder.WriteString("IntegrationAttachment(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", ia.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(ia.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("configuration=")
-	builder.WriteString(fmt.Sprintf("%v", ia.Configuration))
+	builder.WriteString(fmt.Sprintf("%v", _m.Configuration))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(ia.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("workflow_id=")
-	builder.WriteString(fmt.Sprintf("%v", ia.WorkflowID))
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowID))
 	builder.WriteByte(')')
 	return builder.String()
 }

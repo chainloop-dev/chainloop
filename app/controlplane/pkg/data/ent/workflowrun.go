@@ -158,7 +158,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the WorkflowRun fields.
-func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
+func (_m *WorkflowRun) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -168,49 +168,49 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				wr.ID = *value
+				_m.ID = *value
 			}
 		case workflowrun.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				wr.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case workflowrun.FieldFinishedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field finished_at", values[i])
 			} else if value.Valid {
-				wr.FinishedAt = value.Time
+				_m.FinishedAt = value.Time
 			}
 		case workflowrun.FieldState:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field state", values[i])
 			} else if value.Valid {
-				wr.State = biz.WorkflowRunStatus(value.String)
+				_m.State = biz.WorkflowRunStatus(value.String)
 			}
 		case workflowrun.FieldReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field reason", values[i])
 			} else if value.Valid {
-				wr.Reason = value.String
+				_m.Reason = value.String
 			}
 		case workflowrun.FieldRunURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field run_url", values[i])
 			} else if value.Valid {
-				wr.RunURL = value.String
+				_m.RunURL = value.String
 			}
 		case workflowrun.FieldRunnerType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field runner_type", values[i])
 			} else if value.Valid {
-				wr.RunnerType = value.String
+				_m.RunnerType = value.String
 			}
 		case workflowrun.FieldAttestation:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field attestation", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &wr.Attestation); err != nil {
+				if err := json.Unmarshal(*value, &_m.Attestation); err != nil {
 					return fmt.Errorf("unmarshal field attestation: %w", err)
 				}
 			}
@@ -218,54 +218,54 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field attestation_digest", values[i])
 			} else if value.Valid {
-				wr.AttestationDigest = value.String
+				_m.AttestationDigest = value.String
 			}
 		case workflowrun.FieldAttestationState:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field attestation_state", values[i])
 			} else if value != nil {
-				wr.AttestationState = *value
+				_m.AttestationState = *value
 			}
 		case workflowrun.FieldContractRevisionUsed:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field contract_revision_used", values[i])
 			} else if value.Valid {
-				wr.ContractRevisionUsed = int(value.Int64)
+				_m.ContractRevisionUsed = int(value.Int64)
 			}
 		case workflowrun.FieldContractRevisionLatest:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field contract_revision_latest", values[i])
 			} else if value.Valid {
-				wr.ContractRevisionLatest = int(value.Int64)
+				_m.ContractRevisionLatest = int(value.Int64)
 			}
 		case workflowrun.FieldVersionID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field version_id", values[i])
 			} else if value != nil {
-				wr.VersionID = *value
+				_m.VersionID = *value
 			}
 		case workflowrun.FieldWorkflowID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_id", values[i])
 			} else if value != nil {
-				wr.WorkflowID = *value
+				_m.WorkflowID = *value
 			}
 		case workflowrun.FieldHasPolicyViolations:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field has_policy_violations", values[i])
 			} else if value.Valid {
-				wr.HasPolicyViolations = new(bool)
-				*wr.HasPolicyViolations = value.Bool
+				_m.HasPolicyViolations = new(bool)
+				*_m.HasPolicyViolations = value.Bool
 			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
 			} else if value.Valid {
-				wr.workflow_run_contract_version = new(uuid.UUID)
-				*wr.workflow_run_contract_version = *value.S.(*uuid.UUID)
+				_m.workflow_run_contract_version = new(uuid.UUID)
+				*_m.workflow_run_contract_version = *value.S.(*uuid.UUID)
 			}
 		default:
-			wr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -273,98 +273,98 @@ func (wr *WorkflowRun) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the WorkflowRun.
 // This includes values selected through modifiers, order, etc.
-func (wr *WorkflowRun) Value(name string) (ent.Value, error) {
-	return wr.selectValues.Get(name)
+func (_m *WorkflowRun) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryWorkflow queries the "workflow" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryWorkflow() *WorkflowQuery {
-	return NewWorkflowRunClient(wr.config).QueryWorkflow(wr)
+func (_m *WorkflowRun) QueryWorkflow() *WorkflowQuery {
+	return NewWorkflowRunClient(_m.config).QueryWorkflow(_m)
 }
 
 // QueryContractVersion queries the "contract_version" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryContractVersion() *WorkflowContractVersionQuery {
-	return NewWorkflowRunClient(wr.config).QueryContractVersion(wr)
+func (_m *WorkflowRun) QueryContractVersion() *WorkflowContractVersionQuery {
+	return NewWorkflowRunClient(_m.config).QueryContractVersion(_m)
 }
 
 // QueryCasBackends queries the "cas_backends" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryCasBackends() *CASBackendQuery {
-	return NewWorkflowRunClient(wr.config).QueryCasBackends(wr)
+func (_m *WorkflowRun) QueryCasBackends() *CASBackendQuery {
+	return NewWorkflowRunClient(_m.config).QueryCasBackends(_m)
 }
 
 // QueryVersion queries the "version" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryVersion() *ProjectVersionQuery {
-	return NewWorkflowRunClient(wr.config).QueryVersion(wr)
+func (_m *WorkflowRun) QueryVersion() *ProjectVersionQuery {
+	return NewWorkflowRunClient(_m.config).QueryVersion(_m)
 }
 
 // QueryAttestationBundle queries the "attestation_bundle" edge of the WorkflowRun entity.
-func (wr *WorkflowRun) QueryAttestationBundle() *AttestationQuery {
-	return NewWorkflowRunClient(wr.config).QueryAttestationBundle(wr)
+func (_m *WorkflowRun) QueryAttestationBundle() *AttestationQuery {
+	return NewWorkflowRunClient(_m.config).QueryAttestationBundle(_m)
 }
 
 // Update returns a builder for updating this WorkflowRun.
 // Note that you need to call WorkflowRun.Unwrap() before calling this method if this WorkflowRun
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (wr *WorkflowRun) Update() *WorkflowRunUpdateOne {
-	return NewWorkflowRunClient(wr.config).UpdateOne(wr)
+func (_m *WorkflowRun) Update() *WorkflowRunUpdateOne {
+	return NewWorkflowRunClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the WorkflowRun entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (wr *WorkflowRun) Unwrap() *WorkflowRun {
-	_tx, ok := wr.config.driver.(*txDriver)
+func (_m *WorkflowRun) Unwrap() *WorkflowRun {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: WorkflowRun is not a transactional entity")
 	}
-	wr.config.driver = _tx.drv
-	return wr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (wr *WorkflowRun) String() string {
+func (_m *WorkflowRun) String() string {
 	var builder strings.Builder
 	builder.WriteString("WorkflowRun(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", wr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(wr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("finished_at=")
-	builder.WriteString(wr.FinishedAt.Format(time.ANSIC))
+	builder.WriteString(_m.FinishedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("state=")
-	builder.WriteString(fmt.Sprintf("%v", wr.State))
+	builder.WriteString(fmt.Sprintf("%v", _m.State))
 	builder.WriteString(", ")
 	builder.WriteString("reason=")
-	builder.WriteString(wr.Reason)
+	builder.WriteString(_m.Reason)
 	builder.WriteString(", ")
 	builder.WriteString("run_url=")
-	builder.WriteString(wr.RunURL)
+	builder.WriteString(_m.RunURL)
 	builder.WriteString(", ")
 	builder.WriteString("runner_type=")
-	builder.WriteString(wr.RunnerType)
+	builder.WriteString(_m.RunnerType)
 	builder.WriteString(", ")
 	builder.WriteString("attestation=")
-	builder.WriteString(fmt.Sprintf("%v", wr.Attestation))
+	builder.WriteString(fmt.Sprintf("%v", _m.Attestation))
 	builder.WriteString(", ")
 	builder.WriteString("attestation_digest=")
-	builder.WriteString(wr.AttestationDigest)
+	builder.WriteString(_m.AttestationDigest)
 	builder.WriteString(", ")
 	builder.WriteString("attestation_state=")
-	builder.WriteString(fmt.Sprintf("%v", wr.AttestationState))
+	builder.WriteString(fmt.Sprintf("%v", _m.AttestationState))
 	builder.WriteString(", ")
 	builder.WriteString("contract_revision_used=")
-	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionUsed))
+	builder.WriteString(fmt.Sprintf("%v", _m.ContractRevisionUsed))
 	builder.WriteString(", ")
 	builder.WriteString("contract_revision_latest=")
-	builder.WriteString(fmt.Sprintf("%v", wr.ContractRevisionLatest))
+	builder.WriteString(fmt.Sprintf("%v", _m.ContractRevisionLatest))
 	builder.WriteString(", ")
 	builder.WriteString("version_id=")
-	builder.WriteString(fmt.Sprintf("%v", wr.VersionID))
+	builder.WriteString(fmt.Sprintf("%v", _m.VersionID))
 	builder.WriteString(", ")
 	builder.WriteString("workflow_id=")
-	builder.WriteString(fmt.Sprintf("%v", wr.WorkflowID))
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowID))
 	builder.WriteString(", ")
-	if v := wr.HasPolicyViolations; v != nil {
+	if v := _m.HasPolicyViolations; v != nil {
 		builder.WriteString("has_policy_violations=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}

@@ -20,56 +20,56 @@ type CASBackendDelete struct {
 }
 
 // Where appends a list predicates to the CASBackendDelete builder.
-func (cbd *CASBackendDelete) Where(ps ...predicate.CASBackend) *CASBackendDelete {
-	cbd.mutation.Where(ps...)
-	return cbd
+func (_d *CASBackendDelete) Where(ps ...predicate.CASBackend) *CASBackendDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (cbd *CASBackendDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, cbd.sqlExec, cbd.mutation, cbd.hooks)
+func (_d *CASBackendDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cbd *CASBackendDelete) ExecX(ctx context.Context) int {
-	n, err := cbd.Exec(ctx)
+func (_d *CASBackendDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (cbd *CASBackendDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *CASBackendDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(casbackend.Table, sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID))
-	if ps := cbd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, cbd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	cbd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // CASBackendDeleteOne is the builder for deleting a single CASBackend entity.
 type CASBackendDeleteOne struct {
-	cbd *CASBackendDelete
+	_d *CASBackendDelete
 }
 
 // Where appends a list predicates to the CASBackendDelete builder.
-func (cbdo *CASBackendDeleteOne) Where(ps ...predicate.CASBackend) *CASBackendDeleteOne {
-	cbdo.cbd.mutation.Where(ps...)
-	return cbdo
+func (_d *CASBackendDeleteOne) Where(ps ...predicate.CASBackend) *CASBackendDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (cbdo *CASBackendDeleteOne) Exec(ctx context.Context) error {
-	n, err := cbdo.cbd.Exec(ctx)
+func (_d *CASBackendDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (cbdo *CASBackendDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cbdo *CASBackendDeleteOne) ExecX(ctx context.Context) {
-	if err := cbdo.Exec(ctx); err != nil {
+func (_d *CASBackendDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

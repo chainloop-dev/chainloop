@@ -27,150 +27,150 @@ type ProjectUpdate struct {
 }
 
 // Where appends a list predicates to the ProjectUpdate builder.
-func (pu *ProjectUpdate) Where(ps ...predicate.Project) *ProjectUpdate {
-	pu.mutation.Where(ps...)
-	return pu
+func (_u *ProjectUpdate) Where(ps ...predicate.Project) *ProjectUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (pu *ProjectUpdate) SetDescription(s string) *ProjectUpdate {
-	pu.mutation.SetDescription(s)
-	return pu
+func (_u *ProjectUpdate) SetDescription(v string) *ProjectUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableDescription(s *string) *ProjectUpdate {
-	if s != nil {
-		pu.SetDescription(*s)
+func (_u *ProjectUpdate) SetNillableDescription(v *string) *ProjectUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return pu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (pu *ProjectUpdate) ClearDescription() *ProjectUpdate {
-	pu.mutation.ClearDescription()
-	return pu
+func (_u *ProjectUpdate) ClearDescription() *ProjectUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pu *ProjectUpdate) SetUpdatedAt(t time.Time) *ProjectUpdate {
-	pu.mutation.SetUpdatedAt(t)
-	return pu
+func (_u *ProjectUpdate) SetUpdatedAt(v time.Time) *ProjectUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableUpdatedAt(t *time.Time) *ProjectUpdate {
-	if t != nil {
-		pu.SetUpdatedAt(*t)
+func (_u *ProjectUpdate) SetNillableUpdatedAt(v *time.Time) *ProjectUpdate {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (pu *ProjectUpdate) SetDeletedAt(t time.Time) *ProjectUpdate {
-	pu.mutation.SetDeletedAt(t)
-	return pu
+func (_u *ProjectUpdate) SetDeletedAt(v time.Time) *ProjectUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableDeletedAt(t *time.Time) *ProjectUpdate {
-	if t != nil {
-		pu.SetDeletedAt(*t)
+func (_u *ProjectUpdate) SetNillableDeletedAt(v *time.Time) *ProjectUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return pu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (pu *ProjectUpdate) ClearDeletedAt() *ProjectUpdate {
-	pu.mutation.ClearDeletedAt()
-	return pu
+func (_u *ProjectUpdate) ClearDeletedAt() *ProjectUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (pu *ProjectUpdate) AddWorkflowIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.AddWorkflowIDs(ids...)
-	return pu
+func (_u *ProjectUpdate) AddWorkflowIDs(ids ...uuid.UUID) *ProjectUpdate {
+	_u.mutation.AddWorkflowIDs(ids...)
+	return _u
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (pu *ProjectUpdate) AddWorkflows(w ...*Workflow) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectUpdate) AddWorkflows(v ...*Workflow) *ProjectUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pu.AddWorkflowIDs(ids...)
+	return _u.AddWorkflowIDs(ids...)
 }
 
 // AddVersionIDs adds the "versions" edge to the ProjectVersion entity by IDs.
-func (pu *ProjectUpdate) AddVersionIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.AddVersionIDs(ids...)
-	return pu
+func (_u *ProjectUpdate) AddVersionIDs(ids ...uuid.UUID) *ProjectUpdate {
+	_u.mutation.AddVersionIDs(ids...)
+	return _u
 }
 
 // AddVersions adds the "versions" edges to the ProjectVersion entity.
-func (pu *ProjectUpdate) AddVersions(p ...*ProjectVersion) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProjectUpdate) AddVersions(v ...*ProjectVersion) *ProjectUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pu.AddVersionIDs(ids...)
+	return _u.AddVersionIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
-func (pu *ProjectUpdate) Mutation() *ProjectMutation {
-	return pu.mutation
+func (_u *ProjectUpdate) Mutation() *ProjectMutation {
+	return _u.mutation
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
-func (pu *ProjectUpdate) ClearWorkflows() *ProjectUpdate {
-	pu.mutation.ClearWorkflows()
-	return pu
+func (_u *ProjectUpdate) ClearWorkflows() *ProjectUpdate {
+	_u.mutation.ClearWorkflows()
+	return _u
 }
 
 // RemoveWorkflowIDs removes the "workflows" edge to Workflow entities by IDs.
-func (pu *ProjectUpdate) RemoveWorkflowIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.RemoveWorkflowIDs(ids...)
-	return pu
+func (_u *ProjectUpdate) RemoveWorkflowIDs(ids ...uuid.UUID) *ProjectUpdate {
+	_u.mutation.RemoveWorkflowIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflows removes "workflows" edges to Workflow entities.
-func (pu *ProjectUpdate) RemoveWorkflows(w ...*Workflow) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectUpdate) RemoveWorkflows(v ...*Workflow) *ProjectUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pu.RemoveWorkflowIDs(ids...)
+	return _u.RemoveWorkflowIDs(ids...)
 }
 
 // ClearVersions clears all "versions" edges to the ProjectVersion entity.
-func (pu *ProjectUpdate) ClearVersions() *ProjectUpdate {
-	pu.mutation.ClearVersions()
-	return pu
+func (_u *ProjectUpdate) ClearVersions() *ProjectUpdate {
+	_u.mutation.ClearVersions()
+	return _u
 }
 
 // RemoveVersionIDs removes the "versions" edge to ProjectVersion entities by IDs.
-func (pu *ProjectUpdate) RemoveVersionIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.RemoveVersionIDs(ids...)
-	return pu
+func (_u *ProjectUpdate) RemoveVersionIDs(ids ...uuid.UUID) *ProjectUpdate {
+	_u.mutation.RemoveVersionIDs(ids...)
+	return _u
 }
 
 // RemoveVersions removes "versions" edges to ProjectVersion entities.
-func (pu *ProjectUpdate) RemoveVersions(p ...*ProjectVersion) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProjectUpdate) RemoveVersions(v ...*ProjectVersion) *ProjectUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pu.RemoveVersionIDs(ids...)
+	return _u.RemoveVersionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (pu *ProjectUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, pu.sqlSave, pu.mutation, pu.hooks)
+func (_u *ProjectUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pu *ProjectUpdate) SaveX(ctx context.Context) int {
-	affected, err := pu.Save(ctx)
+func (_u *ProjectUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -178,60 +178,60 @@ func (pu *ProjectUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (pu *ProjectUpdate) Exec(ctx context.Context) error {
-	_, err := pu.Save(ctx)
+func (_u *ProjectUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pu *ProjectUpdate) ExecX(ctx context.Context) {
-	if err := pu.Exec(ctx); err != nil {
+func (_u *ProjectUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pu *ProjectUpdate) check() error {
-	if pu.mutation.OrganizationCleared() && len(pu.mutation.OrganizationIDs()) > 0 {
+func (_u *ProjectUpdate) check() error {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Project.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (pu *ProjectUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectUpdate {
-	pu.modifiers = append(pu.modifiers, modifiers...)
-	return pu
+func (_u *ProjectUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pu.check(); err != nil {
-		return n, err
+func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
-	if ps := pu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(project.FieldDescription, field.TypeString, value)
 	}
-	if pu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(project.FieldDescription, field.TypeString)
 	}
-	if value, ok := pu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(project.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := pu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(project.FieldDeletedAt, field.TypeTime, value)
 	}
-	if pu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(project.FieldDeletedAt, field.TypeTime)
 	}
-	if pu.mutation.WorkflowsCleared() {
+	if _u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -244,7 +244,7 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !pu.mutation.WorkflowsCleared() {
+	if nodes := _u.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -260,7 +260,7 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -276,7 +276,7 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pu.mutation.VersionsCleared() {
+	if _u.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -289,7 +289,7 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !pu.mutation.VersionsCleared() {
+	if nodes := _u.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !_u.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -305,7 +305,7 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.VersionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -321,8 +321,8 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(pu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{project.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -330,8 +330,8 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	pu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ProjectUpdateOne is the builder for updating a single Project entity.
@@ -344,157 +344,157 @@ type ProjectUpdateOne struct {
 }
 
 // SetDescription sets the "description" field.
-func (puo *ProjectUpdateOne) SetDescription(s string) *ProjectUpdateOne {
-	puo.mutation.SetDescription(s)
-	return puo
+func (_u *ProjectUpdateOne) SetDescription(v string) *ProjectUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableDescription(s *string) *ProjectUpdateOne {
-	if s != nil {
-		puo.SetDescription(*s)
+func (_u *ProjectUpdateOne) SetNillableDescription(v *string) *ProjectUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return puo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (puo *ProjectUpdateOne) ClearDescription() *ProjectUpdateOne {
-	puo.mutation.ClearDescription()
-	return puo
+func (_u *ProjectUpdateOne) ClearDescription() *ProjectUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (puo *ProjectUpdateOne) SetUpdatedAt(t time.Time) *ProjectUpdateOne {
-	puo.mutation.SetUpdatedAt(t)
-	return puo
+func (_u *ProjectUpdateOne) SetUpdatedAt(v time.Time) *ProjectUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableUpdatedAt(t *time.Time) *ProjectUpdateOne {
-	if t != nil {
-		puo.SetUpdatedAt(*t)
+func (_u *ProjectUpdateOne) SetNillableUpdatedAt(v *time.Time) *ProjectUpdateOne {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (puo *ProjectUpdateOne) SetDeletedAt(t time.Time) *ProjectUpdateOne {
-	puo.mutation.SetDeletedAt(t)
-	return puo
+func (_u *ProjectUpdateOne) SetDeletedAt(v time.Time) *ProjectUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableDeletedAt(t *time.Time) *ProjectUpdateOne {
-	if t != nil {
-		puo.SetDeletedAt(*t)
+func (_u *ProjectUpdateOne) SetNillableDeletedAt(v *time.Time) *ProjectUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return puo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (puo *ProjectUpdateOne) ClearDeletedAt() *ProjectUpdateOne {
-	puo.mutation.ClearDeletedAt()
-	return puo
+func (_u *ProjectUpdateOne) ClearDeletedAt() *ProjectUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (puo *ProjectUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.AddWorkflowIDs(ids...)
-	return puo
+func (_u *ProjectUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ProjectUpdateOne {
+	_u.mutation.AddWorkflowIDs(ids...)
+	return _u
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (puo *ProjectUpdateOne) AddWorkflows(w ...*Workflow) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectUpdateOne) AddWorkflows(v ...*Workflow) *ProjectUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return puo.AddWorkflowIDs(ids...)
+	return _u.AddWorkflowIDs(ids...)
 }
 
 // AddVersionIDs adds the "versions" edge to the ProjectVersion entity by IDs.
-func (puo *ProjectUpdateOne) AddVersionIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.AddVersionIDs(ids...)
-	return puo
+func (_u *ProjectUpdateOne) AddVersionIDs(ids ...uuid.UUID) *ProjectUpdateOne {
+	_u.mutation.AddVersionIDs(ids...)
+	return _u
 }
 
 // AddVersions adds the "versions" edges to the ProjectVersion entity.
-func (puo *ProjectUpdateOne) AddVersions(p ...*ProjectVersion) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProjectUpdateOne) AddVersions(v ...*ProjectVersion) *ProjectUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return puo.AddVersionIDs(ids...)
+	return _u.AddVersionIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
-func (puo *ProjectUpdateOne) Mutation() *ProjectMutation {
-	return puo.mutation
+func (_u *ProjectUpdateOne) Mutation() *ProjectMutation {
+	return _u.mutation
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
-func (puo *ProjectUpdateOne) ClearWorkflows() *ProjectUpdateOne {
-	puo.mutation.ClearWorkflows()
-	return puo
+func (_u *ProjectUpdateOne) ClearWorkflows() *ProjectUpdateOne {
+	_u.mutation.ClearWorkflows()
+	return _u
 }
 
 // RemoveWorkflowIDs removes the "workflows" edge to Workflow entities by IDs.
-func (puo *ProjectUpdateOne) RemoveWorkflowIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.RemoveWorkflowIDs(ids...)
-	return puo
+func (_u *ProjectUpdateOne) RemoveWorkflowIDs(ids ...uuid.UUID) *ProjectUpdateOne {
+	_u.mutation.RemoveWorkflowIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflows removes "workflows" edges to Workflow entities.
-func (puo *ProjectUpdateOne) RemoveWorkflows(w ...*Workflow) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectUpdateOne) RemoveWorkflows(v ...*Workflow) *ProjectUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return puo.RemoveWorkflowIDs(ids...)
+	return _u.RemoveWorkflowIDs(ids...)
 }
 
 // ClearVersions clears all "versions" edges to the ProjectVersion entity.
-func (puo *ProjectUpdateOne) ClearVersions() *ProjectUpdateOne {
-	puo.mutation.ClearVersions()
-	return puo
+func (_u *ProjectUpdateOne) ClearVersions() *ProjectUpdateOne {
+	_u.mutation.ClearVersions()
+	return _u
 }
 
 // RemoveVersionIDs removes the "versions" edge to ProjectVersion entities by IDs.
-func (puo *ProjectUpdateOne) RemoveVersionIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.RemoveVersionIDs(ids...)
-	return puo
+func (_u *ProjectUpdateOne) RemoveVersionIDs(ids ...uuid.UUID) *ProjectUpdateOne {
+	_u.mutation.RemoveVersionIDs(ids...)
+	return _u
 }
 
 // RemoveVersions removes "versions" edges to ProjectVersion entities.
-func (puo *ProjectUpdateOne) RemoveVersions(p ...*ProjectVersion) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProjectUpdateOne) RemoveVersions(v ...*ProjectVersion) *ProjectUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return puo.RemoveVersionIDs(ids...)
+	return _u.RemoveVersionIDs(ids...)
 }
 
 // Where appends a list predicates to the ProjectUpdate builder.
-func (puo *ProjectUpdateOne) Where(ps ...predicate.Project) *ProjectUpdateOne {
-	puo.mutation.Where(ps...)
-	return puo
+func (_u *ProjectUpdateOne) Where(ps ...predicate.Project) *ProjectUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (puo *ProjectUpdateOne) Select(field string, fields ...string) *ProjectUpdateOne {
-	puo.fields = append([]string{field}, fields...)
-	return puo
+func (_u *ProjectUpdateOne) Select(field string, fields ...string) *ProjectUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Project entity.
-func (puo *ProjectUpdateOne) Save(ctx context.Context) (*Project, error) {
-	return withHooks(ctx, puo.sqlSave, puo.mutation, puo.hooks)
+func (_u *ProjectUpdateOne) Save(ctx context.Context) (*Project, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (puo *ProjectUpdateOne) SaveX(ctx context.Context) *Project {
-	node, err := puo.Save(ctx)
+func (_u *ProjectUpdateOne) SaveX(ctx context.Context) *Project {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -502,43 +502,43 @@ func (puo *ProjectUpdateOne) SaveX(ctx context.Context) *Project {
 }
 
 // Exec executes the query on the entity.
-func (puo *ProjectUpdateOne) Exec(ctx context.Context) error {
-	_, err := puo.Save(ctx)
+func (_u *ProjectUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (puo *ProjectUpdateOne) ExecX(ctx context.Context) {
-	if err := puo.Exec(ctx); err != nil {
+func (_u *ProjectUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (puo *ProjectUpdateOne) check() error {
-	if puo.mutation.OrganizationCleared() && len(puo.mutation.OrganizationIDs()) > 0 {
+func (_u *ProjectUpdateOne) check() error {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Project.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (puo *ProjectUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectUpdateOne {
-	puo.modifiers = append(puo.modifiers, modifiers...)
-	return puo
+func (_u *ProjectUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err error) {
-	if err := puo.check(); err != nil {
+func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
-	id, ok := puo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Project.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := puo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, project.FieldID)
 		for _, f := range fields {
@@ -550,29 +550,29 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			}
 		}
 	}
-	if ps := puo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := puo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(project.FieldDescription, field.TypeString, value)
 	}
-	if puo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(project.FieldDescription, field.TypeString)
 	}
-	if value, ok := puo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(project.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := puo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(project.FieldDeletedAt, field.TypeTime, value)
 	}
-	if puo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(project.FieldDeletedAt, field.TypeTime)
 	}
-	if puo.mutation.WorkflowsCleared() {
+	if _u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -585,7 +585,7 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !puo.mutation.WorkflowsCleared() {
+	if nodes := _u.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -601,7 +601,7 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -617,7 +617,7 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if puo.mutation.VersionsCleared() {
+	if _u.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -630,7 +630,7 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !puo.mutation.VersionsCleared() {
+	if nodes := _u.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !_u.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -646,7 +646,7 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.VersionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -662,11 +662,11 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(puo.modifiers...)
-	_node = &Project{config: puo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Project{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{project.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -674,6 +674,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		return nil, err
 	}
-	puo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

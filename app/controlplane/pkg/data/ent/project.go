@@ -99,7 +99,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Project fields.
-func (pr *Project) assignValues(columns []string, values []any) error {
+func (_m *Project) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -109,46 +109,46 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				pr.ID = *value
+				_m.ID = *value
 			}
 		case project.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				pr.Name = value.String
+				_m.Name = value.String
 			}
 		case project.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				pr.Description = value.String
+				_m.Description = value.String
 			}
 		case project.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				pr.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case project.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				pr.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case project.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				pr.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case project.FieldOrganizationID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
-				pr.OrganizationID = *value
+				_m.OrganizationID = *value
 			}
 		default:
-			pr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -156,65 +156,65 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Project.
 // This includes values selected through modifiers, order, etc.
-func (pr *Project) Value(name string) (ent.Value, error) {
-	return pr.selectValues.Get(name)
+func (_m *Project) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the Project entity.
-func (pr *Project) QueryOrganization() *OrganizationQuery {
-	return NewProjectClient(pr.config).QueryOrganization(pr)
+func (_m *Project) QueryOrganization() *OrganizationQuery {
+	return NewProjectClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryWorkflows queries the "workflows" edge of the Project entity.
-func (pr *Project) QueryWorkflows() *WorkflowQuery {
-	return NewProjectClient(pr.config).QueryWorkflows(pr)
+func (_m *Project) QueryWorkflows() *WorkflowQuery {
+	return NewProjectClient(_m.config).QueryWorkflows(_m)
 }
 
 // QueryVersions queries the "versions" edge of the Project entity.
-func (pr *Project) QueryVersions() *ProjectVersionQuery {
-	return NewProjectClient(pr.config).QueryVersions(pr)
+func (_m *Project) QueryVersions() *ProjectVersionQuery {
+	return NewProjectClient(_m.config).QueryVersions(_m)
 }
 
 // Update returns a builder for updating this Project.
 // Note that you need to call Project.Unwrap() before calling this method if this Project
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (pr *Project) Update() *ProjectUpdateOne {
-	return NewProjectClient(pr.config).UpdateOne(pr)
+func (_m *Project) Update() *ProjectUpdateOne {
+	return NewProjectClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Project entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (pr *Project) Unwrap() *Project {
-	_tx, ok := pr.config.driver.(*txDriver)
+func (_m *Project) Unwrap() *Project {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Project is not a transactional entity")
 	}
-	pr.config.driver = _tx.drv
-	return pr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (pr *Project) String() string {
+func (_m *Project) String() string {
 	var builder strings.Builder
 	builder.WriteString("Project(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(pr.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(pr.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(pr.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
-	builder.WriteString(fmt.Sprintf("%v", pr.OrganizationID))
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
 	builder.WriteByte(')')
 	return builder.String()
 }

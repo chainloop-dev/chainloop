@@ -36,44 +36,44 @@ type ReferrerQuery struct {
 }
 
 // Where adds a new predicate for the ReferrerQuery builder.
-func (rq *ReferrerQuery) Where(ps ...predicate.Referrer) *ReferrerQuery {
-	rq.predicates = append(rq.predicates, ps...)
-	return rq
+func (_q *ReferrerQuery) Where(ps ...predicate.Referrer) *ReferrerQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (rq *ReferrerQuery) Limit(limit int) *ReferrerQuery {
-	rq.ctx.Limit = &limit
-	return rq
+func (_q *ReferrerQuery) Limit(limit int) *ReferrerQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (rq *ReferrerQuery) Offset(offset int) *ReferrerQuery {
-	rq.ctx.Offset = &offset
-	return rq
+func (_q *ReferrerQuery) Offset(offset int) *ReferrerQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (rq *ReferrerQuery) Unique(unique bool) *ReferrerQuery {
-	rq.ctx.Unique = &unique
-	return rq
+func (_q *ReferrerQuery) Unique(unique bool) *ReferrerQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (rq *ReferrerQuery) Order(o ...referrer.OrderOption) *ReferrerQuery {
-	rq.order = append(rq.order, o...)
-	return rq
+func (_q *ReferrerQuery) Order(o ...referrer.OrderOption) *ReferrerQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryReferredBy chains the current query on the "referred_by" edge.
-func (rq *ReferrerQuery) QueryReferredBy() *ReferrerQuery {
-	query := (&ReferrerClient{config: rq.config}).Query()
+func (_q *ReferrerQuery) QueryReferredBy() *ReferrerQuery {
+	query := (&ReferrerClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -82,20 +82,20 @@ func (rq *ReferrerQuery) QueryReferredBy() *ReferrerQuery {
 			sqlgraph.To(referrer.Table, referrer.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, referrer.ReferredByTable, referrer.ReferredByPrimaryKey...),
 		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryReferences chains the current query on the "references" edge.
-func (rq *ReferrerQuery) QueryReferences() *ReferrerQuery {
-	query := (&ReferrerClient{config: rq.config}).Query()
+func (_q *ReferrerQuery) QueryReferences() *ReferrerQuery {
+	query := (&ReferrerClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -104,20 +104,20 @@ func (rq *ReferrerQuery) QueryReferences() *ReferrerQuery {
 			sqlgraph.To(referrer.Table, referrer.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.ReferencesTable, referrer.ReferencesPrimaryKey...),
 		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryWorkflows chains the current query on the "workflows" edge.
-func (rq *ReferrerQuery) QueryWorkflows() *WorkflowQuery {
-	query := (&WorkflowClient{config: rq.config}).Query()
+func (_q *ReferrerQuery) QueryWorkflows() *WorkflowQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func (rq *ReferrerQuery) QueryWorkflows() *WorkflowQuery {
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.WorkflowsTable, referrer.WorkflowsPrimaryKey...),
 		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -134,8 +134,8 @@ func (rq *ReferrerQuery) QueryWorkflows() *WorkflowQuery {
 
 // First returns the first Referrer entity from the query.
 // Returns a *NotFoundError when no Referrer was found.
-func (rq *ReferrerQuery) First(ctx context.Context) (*Referrer, error) {
-	nodes, err := rq.Limit(1).All(setContextOp(ctx, rq.ctx, ent.OpQueryFirst))
+func (_q *ReferrerQuery) First(ctx context.Context) (*Referrer, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +146,8 @@ func (rq *ReferrerQuery) First(ctx context.Context) (*Referrer, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (rq *ReferrerQuery) FirstX(ctx context.Context) *Referrer {
-	node, err := rq.First(ctx)
+func (_q *ReferrerQuery) FirstX(ctx context.Context) *Referrer {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -156,9 +156,9 @@ func (rq *ReferrerQuery) FirstX(ctx context.Context) *Referrer {
 
 // FirstID returns the first Referrer ID from the query.
 // Returns a *NotFoundError when no Referrer ID was found.
-func (rq *ReferrerQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ReferrerQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = rq.Limit(1).IDs(setContextOp(ctx, rq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -169,8 +169,8 @@ func (rq *ReferrerQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (rq *ReferrerQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := rq.FirstID(ctx)
+func (_q *ReferrerQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -180,8 +180,8 @@ func (rq *ReferrerQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single Referrer entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Referrer entity is found.
 // Returns a *NotFoundError when no Referrer entities are found.
-func (rq *ReferrerQuery) Only(ctx context.Context) (*Referrer, error) {
-	nodes, err := rq.Limit(2).All(setContextOp(ctx, rq.ctx, ent.OpQueryOnly))
+func (_q *ReferrerQuery) Only(ctx context.Context) (*Referrer, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -196,8 +196,8 @@ func (rq *ReferrerQuery) Only(ctx context.Context) (*Referrer, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (rq *ReferrerQuery) OnlyX(ctx context.Context) *Referrer {
-	node, err := rq.Only(ctx)
+func (_q *ReferrerQuery) OnlyX(ctx context.Context) *Referrer {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -207,9 +207,9 @@ func (rq *ReferrerQuery) OnlyX(ctx context.Context) *Referrer {
 // OnlyID is like Only, but returns the only Referrer ID in the query.
 // Returns a *NotSingularError when more than one Referrer ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (rq *ReferrerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ReferrerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = rq.Limit(2).IDs(setContextOp(ctx, rq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -224,8 +224,8 @@ func (rq *ReferrerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (rq *ReferrerQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := rq.OnlyID(ctx)
+func (_q *ReferrerQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -233,18 +233,18 @@ func (rq *ReferrerQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of Referrers.
-func (rq *ReferrerQuery) All(ctx context.Context) ([]*Referrer, error) {
-	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryAll)
-	if err := rq.prepareQuery(ctx); err != nil {
+func (_q *ReferrerQuery) All(ctx context.Context) ([]*Referrer, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*Referrer, *ReferrerQuery]()
-	return withInterceptors[[]*Referrer](ctx, rq, qr, rq.inters)
+	return withInterceptors[[]*Referrer](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (rq *ReferrerQuery) AllX(ctx context.Context) []*Referrer {
-	nodes, err := rq.All(ctx)
+func (_q *ReferrerQuery) AllX(ctx context.Context) []*Referrer {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -252,20 +252,20 @@ func (rq *ReferrerQuery) AllX(ctx context.Context) []*Referrer {
 }
 
 // IDs executes the query and returns a list of Referrer IDs.
-func (rq *ReferrerQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if rq.ctx.Unique == nil && rq.path != nil {
-		rq.Unique(true)
+func (_q *ReferrerQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryIDs)
-	if err = rq.Select(referrer.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(referrer.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (rq *ReferrerQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := rq.IDs(ctx)
+func (_q *ReferrerQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -273,17 +273,17 @@ func (rq *ReferrerQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (rq *ReferrerQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryCount)
-	if err := rq.prepareQuery(ctx); err != nil {
+func (_q *ReferrerQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, rq, querierCount[*ReferrerQuery](), rq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ReferrerQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (rq *ReferrerQuery) CountX(ctx context.Context) int {
-	count, err := rq.Count(ctx)
+func (_q *ReferrerQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -291,9 +291,9 @@ func (rq *ReferrerQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (rq *ReferrerQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryExist)
-	switch _, err := rq.FirstID(ctx); {
+func (_q *ReferrerQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -304,8 +304,8 @@ func (rq *ReferrerQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (rq *ReferrerQuery) ExistX(ctx context.Context) bool {
-	exist, err := rq.Exist(ctx)
+func (_q *ReferrerQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -314,57 +314,57 @@ func (rq *ReferrerQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the ReferrerQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (rq *ReferrerQuery) Clone() *ReferrerQuery {
-	if rq == nil {
+func (_q *ReferrerQuery) Clone() *ReferrerQuery {
+	if _q == nil {
 		return nil
 	}
 	return &ReferrerQuery{
-		config:         rq.config,
-		ctx:            rq.ctx.Clone(),
-		order:          append([]referrer.OrderOption{}, rq.order...),
-		inters:         append([]Interceptor{}, rq.inters...),
-		predicates:     append([]predicate.Referrer{}, rq.predicates...),
-		withReferredBy: rq.withReferredBy.Clone(),
-		withReferences: rq.withReferences.Clone(),
-		withWorkflows:  rq.withWorkflows.Clone(),
+		config:         _q.config,
+		ctx:            _q.ctx.Clone(),
+		order:          append([]referrer.OrderOption{}, _q.order...),
+		inters:         append([]Interceptor{}, _q.inters...),
+		predicates:     append([]predicate.Referrer{}, _q.predicates...),
+		withReferredBy: _q.withReferredBy.Clone(),
+		withReferences: _q.withReferences.Clone(),
+		withWorkflows:  _q.withWorkflows.Clone(),
 		// clone intermediate query.
-		sql:       rq.sql.Clone(),
-		path:      rq.path,
-		modifiers: append([]func(*sql.Selector){}, rq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithReferredBy tells the query-builder to eager-load the nodes that are connected to
 // the "referred_by" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReferrerQuery) WithReferredBy(opts ...func(*ReferrerQuery)) *ReferrerQuery {
-	query := (&ReferrerClient{config: rq.config}).Query()
+func (_q *ReferrerQuery) WithReferredBy(opts ...func(*ReferrerQuery)) *ReferrerQuery {
+	query := (&ReferrerClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withReferredBy = query
-	return rq
+	_q.withReferredBy = query
+	return _q
 }
 
 // WithReferences tells the query-builder to eager-load the nodes that are connected to
 // the "references" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReferrerQuery) WithReferences(opts ...func(*ReferrerQuery)) *ReferrerQuery {
-	query := (&ReferrerClient{config: rq.config}).Query()
+func (_q *ReferrerQuery) WithReferences(opts ...func(*ReferrerQuery)) *ReferrerQuery {
+	query := (&ReferrerClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withReferences = query
-	return rq
+	_q.withReferences = query
+	return _q
 }
 
 // WithWorkflows tells the query-builder to eager-load the nodes that are connected to
 // the "workflows" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReferrerQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ReferrerQuery {
-	query := (&WorkflowClient{config: rq.config}).Query()
+func (_q *ReferrerQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ReferrerQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withWorkflows = query
-	return rq
+	_q.withWorkflows = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -381,10 +381,10 @@ func (rq *ReferrerQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ReferrerQu
 //		GroupBy(referrer.FieldDigest).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (rq *ReferrerQuery) GroupBy(field string, fields ...string) *ReferrerGroupBy {
-	rq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ReferrerGroupBy{build: rq}
-	grbuild.flds = &rq.ctx.Fields
+func (_q *ReferrerQuery) GroupBy(field string, fields ...string) *ReferrerGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &ReferrerGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = referrer.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -402,92 +402,92 @@ func (rq *ReferrerQuery) GroupBy(field string, fields ...string) *ReferrerGroupB
 //	client.Referrer.Query().
 //		Select(referrer.FieldDigest).
 //		Scan(ctx, &v)
-func (rq *ReferrerQuery) Select(fields ...string) *ReferrerSelect {
-	rq.ctx.Fields = append(rq.ctx.Fields, fields...)
-	sbuild := &ReferrerSelect{ReferrerQuery: rq}
+func (_q *ReferrerQuery) Select(fields ...string) *ReferrerSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &ReferrerSelect{ReferrerQuery: _q}
 	sbuild.label = referrer.Label
-	sbuild.flds, sbuild.scan = &rq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a ReferrerSelect configured with the given aggregations.
-func (rq *ReferrerQuery) Aggregate(fns ...AggregateFunc) *ReferrerSelect {
-	return rq.Select().Aggregate(fns...)
+func (_q *ReferrerQuery) Aggregate(fns ...AggregateFunc) *ReferrerSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (rq *ReferrerQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range rq.inters {
+func (_q *ReferrerQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, rq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range rq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !referrer.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if rq.path != nil {
-		prev, err := rq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		rq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (rq *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Referrer, error) {
+func (_q *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Referrer, error) {
 	var (
 		nodes       = []*Referrer{}
-		_spec       = rq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
-			rq.withReferredBy != nil,
-			rq.withReferences != nil,
-			rq.withWorkflows != nil,
+			_q.withReferredBy != nil,
+			_q.withReferences != nil,
+			_q.withWorkflows != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Referrer).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Referrer{config: rq.config}
+		node := &Referrer{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(rq.modifiers) > 0 {
-		_spec.Modifiers = rq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, rq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := rq.withReferredBy; query != nil {
-		if err := rq.loadReferredBy(ctx, query, nodes,
+	if query := _q.withReferredBy; query != nil {
+		if err := _q.loadReferredBy(ctx, query, nodes,
 			func(n *Referrer) { n.Edges.ReferredBy = []*Referrer{} },
 			func(n *Referrer, e *Referrer) { n.Edges.ReferredBy = append(n.Edges.ReferredBy, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := rq.withReferences; query != nil {
-		if err := rq.loadReferences(ctx, query, nodes,
+	if query := _q.withReferences; query != nil {
+		if err := _q.loadReferences(ctx, query, nodes,
 			func(n *Referrer) { n.Edges.References = []*Referrer{} },
 			func(n *Referrer, e *Referrer) { n.Edges.References = append(n.Edges.References, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := rq.withWorkflows; query != nil {
-		if err := rq.loadWorkflows(ctx, query, nodes,
+	if query := _q.withWorkflows; query != nil {
+		if err := _q.loadWorkflows(ctx, query, nodes,
 			func(n *Referrer) { n.Edges.Workflows = []*Workflow{} },
 			func(n *Referrer, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
 			return nil, err
@@ -496,7 +496,7 @@ func (rq *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ref
 	return nodes, nil
 }
 
-func (rq *ReferrerQuery) loadReferredBy(ctx context.Context, query *ReferrerQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Referrer)) error {
+func (_q *ReferrerQuery) loadReferredBy(ctx context.Context, query *ReferrerQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Referrer)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*Referrer)
 	nids := make(map[uuid.UUID]map[*Referrer]struct{})
@@ -557,7 +557,7 @@ func (rq *ReferrerQuery) loadReferredBy(ctx context.Context, query *ReferrerQuer
 	}
 	return nil
 }
-func (rq *ReferrerQuery) loadReferences(ctx context.Context, query *ReferrerQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Referrer)) error {
+func (_q *ReferrerQuery) loadReferences(ctx context.Context, query *ReferrerQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Referrer)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*Referrer)
 	nids := make(map[uuid.UUID]map[*Referrer]struct{})
@@ -618,7 +618,7 @@ func (rq *ReferrerQuery) loadReferences(ctx context.Context, query *ReferrerQuer
 	}
 	return nil
 }
-func (rq *ReferrerQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Workflow)) error {
+func (_q *ReferrerQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *Workflow)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*Referrer)
 	nids := make(map[uuid.UUID]map[*Referrer]struct{})
@@ -680,27 +680,27 @@ func (rq *ReferrerQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery
 	return nil
 }
 
-func (rq *ReferrerQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := rq.querySpec()
-	if len(rq.modifiers) > 0 {
-		_spec.Modifiers = rq.modifiers
+func (_q *ReferrerQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = rq.ctx.Fields
-	if len(rq.ctx.Fields) > 0 {
-		_spec.Unique = rq.ctx.Unique != nil && *rq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, rq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (rq *ReferrerQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *ReferrerQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(referrer.Table, referrer.Columns, sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID))
-	_spec.From = rq.sql
-	if unique := rq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if rq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := rq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, referrer.FieldID)
 		for i := range fields {
@@ -709,20 +709,20 @@ func (rq *ReferrerQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := rq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := rq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := rq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := rq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -732,36 +732,36 @@ func (rq *ReferrerQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (rq *ReferrerQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(rq.driver.Dialect())
+func (_q *ReferrerQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(referrer.Table)
-	columns := rq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = referrer.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if rq.sql != nil {
-		selector = rq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if rq.ctx.Unique != nil && *rq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range rq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range rq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range rq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := rq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := rq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -770,33 +770,33 @@ func (rq *ReferrerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (rq *ReferrerQuery) ForUpdate(opts ...sql.LockOption) *ReferrerQuery {
-	if rq.driver.Dialect() == dialect.Postgres {
-		rq.Unique(false)
+func (_q *ReferrerQuery) ForUpdate(opts ...sql.LockOption) *ReferrerQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	rq.modifiers = append(rq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return rq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (rq *ReferrerQuery) ForShare(opts ...sql.LockOption) *ReferrerQuery {
-	if rq.driver.Dialect() == dialect.Postgres {
-		rq.Unique(false)
+func (_q *ReferrerQuery) ForShare(opts ...sql.LockOption) *ReferrerQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	rq.modifiers = append(rq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return rq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (rq *ReferrerQuery) Modify(modifiers ...func(s *sql.Selector)) *ReferrerSelect {
-	rq.modifiers = append(rq.modifiers, modifiers...)
-	return rq.Select()
+func (_q *ReferrerQuery) Modify(modifiers ...func(s *sql.Selector)) *ReferrerSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // ReferrerGroupBy is the group-by builder for Referrer entities.
@@ -806,41 +806,41 @@ type ReferrerGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (rgb *ReferrerGroupBy) Aggregate(fns ...AggregateFunc) *ReferrerGroupBy {
-	rgb.fns = append(rgb.fns, fns...)
-	return rgb
+func (_g *ReferrerGroupBy) Aggregate(fns ...AggregateFunc) *ReferrerGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (rgb *ReferrerGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, rgb.build.ctx, ent.OpQueryGroupBy)
-	if err := rgb.build.prepareQuery(ctx); err != nil {
+func (_g *ReferrerGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ReferrerQuery, *ReferrerGroupBy](ctx, rgb.build, rgb, rgb.build.inters, v)
+	return scanWithInterceptors[*ReferrerQuery, *ReferrerGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (rgb *ReferrerGroupBy) sqlScan(ctx context.Context, root *ReferrerQuery, v any) error {
+func (_g *ReferrerGroupBy) sqlScan(ctx context.Context, root *ReferrerQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(rgb.fns))
-	for _, fn := range rgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*rgb.flds)+len(rgb.fns))
-		for _, f := range *rgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*rgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := rgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -854,27 +854,27 @@ type ReferrerSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (rs *ReferrerSelect) Aggregate(fns ...AggregateFunc) *ReferrerSelect {
-	rs.fns = append(rs.fns, fns...)
-	return rs
+func (_s *ReferrerSelect) Aggregate(fns ...AggregateFunc) *ReferrerSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (rs *ReferrerSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, rs.ctx, ent.OpQuerySelect)
-	if err := rs.prepareQuery(ctx); err != nil {
+func (_s *ReferrerSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ReferrerQuery, *ReferrerSelect](ctx, rs.ReferrerQuery, rs, rs.inters, v)
+	return scanWithInterceptors[*ReferrerQuery, *ReferrerSelect](ctx, _s.ReferrerQuery, _s, _s.inters, v)
 }
 
-func (rs *ReferrerSelect) sqlScan(ctx context.Context, root *ReferrerQuery, v any) error {
+func (_s *ReferrerSelect) sqlScan(ctx context.Context, root *ReferrerQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(rs.fns))
-	for _, fn := range rs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*rs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -882,7 +882,7 @@ func (rs *ReferrerSelect) sqlScan(ctx context.Context, root *ReferrerQuery, v an
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := rs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -890,7 +890,7 @@ func (rs *ReferrerSelect) sqlScan(ctx context.Context, root *ReferrerQuery, v an
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (rs *ReferrerSelect) Modify(modifiers ...func(s *sql.Selector)) *ReferrerSelect {
-	rs.modifiers = append(rs.modifiers, modifiers...)
-	return rs
+func (_s *ReferrerSelect) Modify(modifiers ...func(s *sql.Selector)) *ReferrerSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

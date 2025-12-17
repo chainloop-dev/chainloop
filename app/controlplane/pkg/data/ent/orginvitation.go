@@ -100,7 +100,7 @@ func (*OrgInvitation) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the OrgInvitation fields.
-func (oi *OrgInvitation) assignValues(columns []string, values []any) error {
+func (_m *OrgInvitation) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -110,60 +110,60 @@ func (oi *OrgInvitation) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				oi.ID = *value
+				_m.ID = *value
 			}
 		case orginvitation.FieldReceiverEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field receiver_email", values[i])
 			} else if value.Valid {
-				oi.ReceiverEmail = value.String
+				_m.ReceiverEmail = value.String
 			}
 		case orginvitation.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				oi.Status = biz.OrgInvitationStatus(value.String)
+				_m.Status = biz.OrgInvitationStatus(value.String)
 			}
 		case orginvitation.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				oi.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case orginvitation.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				oi.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case orginvitation.FieldOrganizationID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
-				oi.OrganizationID = *value
+				_m.OrganizationID = *value
 			}
 		case orginvitation.FieldSenderID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field sender_id", values[i])
 			} else if value != nil {
-				oi.SenderID = *value
+				_m.SenderID = *value
 			}
 		case orginvitation.FieldRole:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
-				oi.Role = authz.Role(value.String)
+				_m.Role = authz.Role(value.String)
 			}
 		case orginvitation.FieldContext:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field context", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &oi.Context); err != nil {
+				if err := json.Unmarshal(*value, &_m.Context); err != nil {
 					return fmt.Errorf("unmarshal field context: %w", err)
 				}
 			}
 		default:
-			oi.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -171,66 +171,66 @@ func (oi *OrgInvitation) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the OrgInvitation.
 // This includes values selected through modifiers, order, etc.
-func (oi *OrgInvitation) Value(name string) (ent.Value, error) {
-	return oi.selectValues.Get(name)
+func (_m *OrgInvitation) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the OrgInvitation entity.
-func (oi *OrgInvitation) QueryOrganization() *OrganizationQuery {
-	return NewOrgInvitationClient(oi.config).QueryOrganization(oi)
+func (_m *OrgInvitation) QueryOrganization() *OrganizationQuery {
+	return NewOrgInvitationClient(_m.config).QueryOrganization(_m)
 }
 
 // QuerySender queries the "sender" edge of the OrgInvitation entity.
-func (oi *OrgInvitation) QuerySender() *UserQuery {
-	return NewOrgInvitationClient(oi.config).QuerySender(oi)
+func (_m *OrgInvitation) QuerySender() *UserQuery {
+	return NewOrgInvitationClient(_m.config).QuerySender(_m)
 }
 
 // Update returns a builder for updating this OrgInvitation.
 // Note that you need to call OrgInvitation.Unwrap() before calling this method if this OrgInvitation
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (oi *OrgInvitation) Update() *OrgInvitationUpdateOne {
-	return NewOrgInvitationClient(oi.config).UpdateOne(oi)
+func (_m *OrgInvitation) Update() *OrgInvitationUpdateOne {
+	return NewOrgInvitationClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the OrgInvitation entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (oi *OrgInvitation) Unwrap() *OrgInvitation {
-	_tx, ok := oi.config.driver.(*txDriver)
+func (_m *OrgInvitation) Unwrap() *OrgInvitation {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: OrgInvitation is not a transactional entity")
 	}
-	oi.config.driver = _tx.drv
-	return oi
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (oi *OrgInvitation) String() string {
+func (_m *OrgInvitation) String() string {
 	var builder strings.Builder
 	builder.WriteString("OrgInvitation(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", oi.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("receiver_email=")
-	builder.WriteString(oi.ReceiverEmail)
+	builder.WriteString(_m.ReceiverEmail)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", oi.Status))
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(oi.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(oi.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
-	builder.WriteString(fmt.Sprintf("%v", oi.OrganizationID))
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
 	builder.WriteString(", ")
 	builder.WriteString("sender_id=")
-	builder.WriteString(fmt.Sprintf("%v", oi.SenderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.SenderID))
 	builder.WriteString(", ")
 	builder.WriteString("role=")
-	builder.WriteString(fmt.Sprintf("%v", oi.Role))
+	builder.WriteString(fmt.Sprintf("%v", _m.Role))
 	builder.WriteString(", ")
 	builder.WriteString("context=")
-	builder.WriteString(fmt.Sprintf("%v", oi.Context))
+	builder.WriteString(fmt.Sprintf("%v", _m.Context))
 	builder.WriteByte(')')
 	return builder.String()
 }

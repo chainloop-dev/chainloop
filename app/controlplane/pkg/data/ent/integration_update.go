@@ -27,129 +27,129 @@ type IntegrationUpdate struct {
 }
 
 // Where appends a list predicates to the IntegrationUpdate builder.
-func (iu *IntegrationUpdate) Where(ps ...predicate.Integration) *IntegrationUpdate {
-	iu.mutation.Where(ps...)
-	return iu
+func (_u *IntegrationUpdate) Where(ps ...predicate.Integration) *IntegrationUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (iu *IntegrationUpdate) SetDescription(s string) *IntegrationUpdate {
-	iu.mutation.SetDescription(s)
-	return iu
+func (_u *IntegrationUpdate) SetDescription(v string) *IntegrationUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (iu *IntegrationUpdate) SetNillableDescription(s *string) *IntegrationUpdate {
-	if s != nil {
-		iu.SetDescription(*s)
+func (_u *IntegrationUpdate) SetNillableDescription(v *string) *IntegrationUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return iu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (iu *IntegrationUpdate) ClearDescription() *IntegrationUpdate {
-	iu.mutation.ClearDescription()
-	return iu
+func (_u *IntegrationUpdate) ClearDescription() *IntegrationUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetConfiguration sets the "configuration" field.
-func (iu *IntegrationUpdate) SetConfiguration(b []byte) *IntegrationUpdate {
-	iu.mutation.SetConfiguration(b)
-	return iu
+func (_u *IntegrationUpdate) SetConfiguration(v []byte) *IntegrationUpdate {
+	_u.mutation.SetConfiguration(v)
+	return _u
 }
 
 // ClearConfiguration clears the value of the "configuration" field.
-func (iu *IntegrationUpdate) ClearConfiguration() *IntegrationUpdate {
-	iu.mutation.ClearConfiguration()
-	return iu
+func (_u *IntegrationUpdate) ClearConfiguration() *IntegrationUpdate {
+	_u.mutation.ClearConfiguration()
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (iu *IntegrationUpdate) SetDeletedAt(t time.Time) *IntegrationUpdate {
-	iu.mutation.SetDeletedAt(t)
-	return iu
+func (_u *IntegrationUpdate) SetDeletedAt(v time.Time) *IntegrationUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (iu *IntegrationUpdate) SetNillableDeletedAt(t *time.Time) *IntegrationUpdate {
-	if t != nil {
-		iu.SetDeletedAt(*t)
+func (_u *IntegrationUpdate) SetNillableDeletedAt(v *time.Time) *IntegrationUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return iu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (iu *IntegrationUpdate) ClearDeletedAt() *IntegrationUpdate {
-	iu.mutation.ClearDeletedAt()
-	return iu
+func (_u *IntegrationUpdate) ClearDeletedAt() *IntegrationUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // AddAttachmentIDs adds the "attachments" edge to the IntegrationAttachment entity by IDs.
-func (iu *IntegrationUpdate) AddAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdate {
-	iu.mutation.AddAttachmentIDs(ids...)
-	return iu
+func (_u *IntegrationUpdate) AddAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdate {
+	_u.mutation.AddAttachmentIDs(ids...)
+	return _u
 }
 
 // AddAttachments adds the "attachments" edges to the IntegrationAttachment entity.
-func (iu *IntegrationUpdate) AddAttachments(i ...*IntegrationAttachment) *IntegrationUpdate {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *IntegrationUpdate) AddAttachments(v ...*IntegrationAttachment) *IntegrationUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return iu.AddAttachmentIDs(ids...)
+	return _u.AddAttachmentIDs(ids...)
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (iu *IntegrationUpdate) SetOrganizationID(id uuid.UUID) *IntegrationUpdate {
-	iu.mutation.SetOrganizationID(id)
-	return iu
+func (_u *IntegrationUpdate) SetOrganizationID(id uuid.UUID) *IntegrationUpdate {
+	_u.mutation.SetOrganizationID(id)
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (iu *IntegrationUpdate) SetOrganization(o *Organization) *IntegrationUpdate {
-	return iu.SetOrganizationID(o.ID)
+func (_u *IntegrationUpdate) SetOrganization(v *Organization) *IntegrationUpdate {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // Mutation returns the IntegrationMutation object of the builder.
-func (iu *IntegrationUpdate) Mutation() *IntegrationMutation {
-	return iu.mutation
+func (_u *IntegrationUpdate) Mutation() *IntegrationMutation {
+	return _u.mutation
 }
 
 // ClearAttachments clears all "attachments" edges to the IntegrationAttachment entity.
-func (iu *IntegrationUpdate) ClearAttachments() *IntegrationUpdate {
-	iu.mutation.ClearAttachments()
-	return iu
+func (_u *IntegrationUpdate) ClearAttachments() *IntegrationUpdate {
+	_u.mutation.ClearAttachments()
+	return _u
 }
 
 // RemoveAttachmentIDs removes the "attachments" edge to IntegrationAttachment entities by IDs.
-func (iu *IntegrationUpdate) RemoveAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdate {
-	iu.mutation.RemoveAttachmentIDs(ids...)
-	return iu
+func (_u *IntegrationUpdate) RemoveAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdate {
+	_u.mutation.RemoveAttachmentIDs(ids...)
+	return _u
 }
 
 // RemoveAttachments removes "attachments" edges to IntegrationAttachment entities.
-func (iu *IntegrationUpdate) RemoveAttachments(i ...*IntegrationAttachment) *IntegrationUpdate {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *IntegrationUpdate) RemoveAttachments(v ...*IntegrationAttachment) *IntegrationUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return iu.RemoveAttachmentIDs(ids...)
+	return _u.RemoveAttachmentIDs(ids...)
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (iu *IntegrationUpdate) ClearOrganization() *IntegrationUpdate {
-	iu.mutation.ClearOrganization()
-	return iu
+func (_u *IntegrationUpdate) ClearOrganization() *IntegrationUpdate {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (iu *IntegrationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, iu.sqlSave, iu.mutation, iu.hooks)
+func (_u *IntegrationUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (iu *IntegrationUpdate) SaveX(ctx context.Context) int {
-	affected, err := iu.Save(ctx)
+func (_u *IntegrationUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -157,63 +157,63 @@ func (iu *IntegrationUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (iu *IntegrationUpdate) Exec(ctx context.Context) error {
-	_, err := iu.Save(ctx)
+func (_u *IntegrationUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (iu *IntegrationUpdate) ExecX(ctx context.Context) {
-	if err := iu.Exec(ctx); err != nil {
+func (_u *IntegrationUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (iu *IntegrationUpdate) check() error {
-	if iu.mutation.OrganizationCleared() && len(iu.mutation.OrganizationIDs()) > 0 {
+func (_u *IntegrationUpdate) check() error {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (iu *IntegrationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationUpdate {
-	iu.modifiers = append(iu.modifiers, modifiers...)
-	return iu
+func (_u *IntegrationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := iu.check(); err != nil {
-		return n, err
+func (_u *IntegrationUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(integration.Table, integration.Columns, sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID))
-	if ps := iu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := iu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(integration.FieldDescription, field.TypeString, value)
 	}
-	if iu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(integration.FieldDescription, field.TypeString)
 	}
-	if value, ok := iu.mutation.Configuration(); ok {
+	if value, ok := _u.mutation.Configuration(); ok {
 		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iu.mutation.ConfigurationCleared() {
+	if _u.mutation.ConfigurationCleared() {
 		_spec.ClearField(integration.FieldConfiguration, field.TypeBytes)
 	}
-	if value, ok := iu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)
 	}
-	if iu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(integration.FieldDeletedAt, field.TypeTime)
 	}
-	if iu.mutation.AttachmentsCleared() {
+	if _u.mutation.AttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -226,7 +226,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iu.mutation.RemovedAttachmentsIDs(); len(nodes) > 0 && !iu.mutation.AttachmentsCleared() {
+	if nodes := _u.mutation.RemovedAttachmentsIDs(); len(nodes) > 0 && !_u.mutation.AttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -242,7 +242,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iu.mutation.AttachmentsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.AttachmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -258,7 +258,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if iu.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -271,7 +271,7 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iu.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -287,8 +287,8 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(iu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, iu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{integration.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -296,8 +296,8 @@ func (iu *IntegrationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	iu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // IntegrationUpdateOne is the builder for updating a single Integration entity.
@@ -310,136 +310,136 @@ type IntegrationUpdateOne struct {
 }
 
 // SetDescription sets the "description" field.
-func (iuo *IntegrationUpdateOne) SetDescription(s string) *IntegrationUpdateOne {
-	iuo.mutation.SetDescription(s)
-	return iuo
+func (_u *IntegrationUpdateOne) SetDescription(v string) *IntegrationUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (iuo *IntegrationUpdateOne) SetNillableDescription(s *string) *IntegrationUpdateOne {
-	if s != nil {
-		iuo.SetDescription(*s)
+func (_u *IntegrationUpdateOne) SetNillableDescription(v *string) *IntegrationUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return iuo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (iuo *IntegrationUpdateOne) ClearDescription() *IntegrationUpdateOne {
-	iuo.mutation.ClearDescription()
-	return iuo
+func (_u *IntegrationUpdateOne) ClearDescription() *IntegrationUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetConfiguration sets the "configuration" field.
-func (iuo *IntegrationUpdateOne) SetConfiguration(b []byte) *IntegrationUpdateOne {
-	iuo.mutation.SetConfiguration(b)
-	return iuo
+func (_u *IntegrationUpdateOne) SetConfiguration(v []byte) *IntegrationUpdateOne {
+	_u.mutation.SetConfiguration(v)
+	return _u
 }
 
 // ClearConfiguration clears the value of the "configuration" field.
-func (iuo *IntegrationUpdateOne) ClearConfiguration() *IntegrationUpdateOne {
-	iuo.mutation.ClearConfiguration()
-	return iuo
+func (_u *IntegrationUpdateOne) ClearConfiguration() *IntegrationUpdateOne {
+	_u.mutation.ClearConfiguration()
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (iuo *IntegrationUpdateOne) SetDeletedAt(t time.Time) *IntegrationUpdateOne {
-	iuo.mutation.SetDeletedAt(t)
-	return iuo
+func (_u *IntegrationUpdateOne) SetDeletedAt(v time.Time) *IntegrationUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (iuo *IntegrationUpdateOne) SetNillableDeletedAt(t *time.Time) *IntegrationUpdateOne {
-	if t != nil {
-		iuo.SetDeletedAt(*t)
+func (_u *IntegrationUpdateOne) SetNillableDeletedAt(v *time.Time) *IntegrationUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return iuo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (iuo *IntegrationUpdateOne) ClearDeletedAt() *IntegrationUpdateOne {
-	iuo.mutation.ClearDeletedAt()
-	return iuo
+func (_u *IntegrationUpdateOne) ClearDeletedAt() *IntegrationUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // AddAttachmentIDs adds the "attachments" edge to the IntegrationAttachment entity by IDs.
-func (iuo *IntegrationUpdateOne) AddAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdateOne {
-	iuo.mutation.AddAttachmentIDs(ids...)
-	return iuo
+func (_u *IntegrationUpdateOne) AddAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdateOne {
+	_u.mutation.AddAttachmentIDs(ids...)
+	return _u
 }
 
 // AddAttachments adds the "attachments" edges to the IntegrationAttachment entity.
-func (iuo *IntegrationUpdateOne) AddAttachments(i ...*IntegrationAttachment) *IntegrationUpdateOne {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *IntegrationUpdateOne) AddAttachments(v ...*IntegrationAttachment) *IntegrationUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return iuo.AddAttachmentIDs(ids...)
+	return _u.AddAttachmentIDs(ids...)
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (iuo *IntegrationUpdateOne) SetOrganizationID(id uuid.UUID) *IntegrationUpdateOne {
-	iuo.mutation.SetOrganizationID(id)
-	return iuo
+func (_u *IntegrationUpdateOne) SetOrganizationID(id uuid.UUID) *IntegrationUpdateOne {
+	_u.mutation.SetOrganizationID(id)
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (iuo *IntegrationUpdateOne) SetOrganization(o *Organization) *IntegrationUpdateOne {
-	return iuo.SetOrganizationID(o.ID)
+func (_u *IntegrationUpdateOne) SetOrganization(v *Organization) *IntegrationUpdateOne {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // Mutation returns the IntegrationMutation object of the builder.
-func (iuo *IntegrationUpdateOne) Mutation() *IntegrationMutation {
-	return iuo.mutation
+func (_u *IntegrationUpdateOne) Mutation() *IntegrationMutation {
+	return _u.mutation
 }
 
 // ClearAttachments clears all "attachments" edges to the IntegrationAttachment entity.
-func (iuo *IntegrationUpdateOne) ClearAttachments() *IntegrationUpdateOne {
-	iuo.mutation.ClearAttachments()
-	return iuo
+func (_u *IntegrationUpdateOne) ClearAttachments() *IntegrationUpdateOne {
+	_u.mutation.ClearAttachments()
+	return _u
 }
 
 // RemoveAttachmentIDs removes the "attachments" edge to IntegrationAttachment entities by IDs.
-func (iuo *IntegrationUpdateOne) RemoveAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdateOne {
-	iuo.mutation.RemoveAttachmentIDs(ids...)
-	return iuo
+func (_u *IntegrationUpdateOne) RemoveAttachmentIDs(ids ...uuid.UUID) *IntegrationUpdateOne {
+	_u.mutation.RemoveAttachmentIDs(ids...)
+	return _u
 }
 
 // RemoveAttachments removes "attachments" edges to IntegrationAttachment entities.
-func (iuo *IntegrationUpdateOne) RemoveAttachments(i ...*IntegrationAttachment) *IntegrationUpdateOne {
-	ids := make([]uuid.UUID, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
+func (_u *IntegrationUpdateOne) RemoveAttachments(v ...*IntegrationAttachment) *IntegrationUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return iuo.RemoveAttachmentIDs(ids...)
+	return _u.RemoveAttachmentIDs(ids...)
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (iuo *IntegrationUpdateOne) ClearOrganization() *IntegrationUpdateOne {
-	iuo.mutation.ClearOrganization()
-	return iuo
+func (_u *IntegrationUpdateOne) ClearOrganization() *IntegrationUpdateOne {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // Where appends a list predicates to the IntegrationUpdate builder.
-func (iuo *IntegrationUpdateOne) Where(ps ...predicate.Integration) *IntegrationUpdateOne {
-	iuo.mutation.Where(ps...)
-	return iuo
+func (_u *IntegrationUpdateOne) Where(ps ...predicate.Integration) *IntegrationUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (iuo *IntegrationUpdateOne) Select(field string, fields ...string) *IntegrationUpdateOne {
-	iuo.fields = append([]string{field}, fields...)
-	return iuo
+func (_u *IntegrationUpdateOne) Select(field string, fields ...string) *IntegrationUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Integration entity.
-func (iuo *IntegrationUpdateOne) Save(ctx context.Context) (*Integration, error) {
-	return withHooks(ctx, iuo.sqlSave, iuo.mutation, iuo.hooks)
+func (_u *IntegrationUpdateOne) Save(ctx context.Context) (*Integration, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (iuo *IntegrationUpdateOne) SaveX(ctx context.Context) *Integration {
-	node, err := iuo.Save(ctx)
+func (_u *IntegrationUpdateOne) SaveX(ctx context.Context) *Integration {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -447,43 +447,43 @@ func (iuo *IntegrationUpdateOne) SaveX(ctx context.Context) *Integration {
 }
 
 // Exec executes the query on the entity.
-func (iuo *IntegrationUpdateOne) Exec(ctx context.Context) error {
-	_, err := iuo.Save(ctx)
+func (_u *IntegrationUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (iuo *IntegrationUpdateOne) ExecX(ctx context.Context) {
-	if err := iuo.Exec(ctx); err != nil {
+func (_u *IntegrationUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (iuo *IntegrationUpdateOne) check() error {
-	if iuo.mutation.OrganizationCleared() && len(iuo.mutation.OrganizationIDs()) > 0 {
+func (_u *IntegrationUpdateOne) check() error {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Integration.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (iuo *IntegrationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationUpdateOne {
-	iuo.modifiers = append(iuo.modifiers, modifiers...)
-	return iuo
+func (_u *IntegrationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *IntegrationUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integration, err error) {
-	if err := iuo.check(); err != nil {
+func (_u *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integration, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(integration.Table, integration.Columns, sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID))
-	id, ok := iuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Integration.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := iuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, integration.FieldID)
 		for _, f := range fields {
@@ -495,32 +495,32 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 			}
 		}
 	}
-	if ps := iuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := iuo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(integration.FieldDescription, field.TypeString, value)
 	}
-	if iuo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(integration.FieldDescription, field.TypeString)
 	}
-	if value, ok := iuo.mutation.Configuration(); ok {
+	if value, ok := _u.mutation.Configuration(); ok {
 		_spec.SetField(integration.FieldConfiguration, field.TypeBytes, value)
 	}
-	if iuo.mutation.ConfigurationCleared() {
+	if _u.mutation.ConfigurationCleared() {
 		_spec.ClearField(integration.FieldConfiguration, field.TypeBytes)
 	}
-	if value, ok := iuo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(integration.FieldDeletedAt, field.TypeTime, value)
 	}
-	if iuo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(integration.FieldDeletedAt, field.TypeTime)
 	}
-	if iuo.mutation.AttachmentsCleared() {
+	if _u.mutation.AttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -533,7 +533,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iuo.mutation.RemovedAttachmentsIDs(); len(nodes) > 0 && !iuo.mutation.AttachmentsCleared() {
+	if nodes := _u.mutation.RemovedAttachmentsIDs(); len(nodes) > 0 && !_u.mutation.AttachmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -549,7 +549,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iuo.mutation.AttachmentsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.AttachmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -565,7 +565,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if iuo.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -578,7 +578,7 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iuo.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -594,11 +594,11 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(iuo.modifiers...)
-	_node = &Integration{config: iuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Integration{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, iuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{integration.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -606,6 +606,6 @@ func (iuo *IntegrationUpdateOne) sqlSave(ctx context.Context) (_node *Integratio
 		}
 		return nil, err
 	}
-	iuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

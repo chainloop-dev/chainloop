@@ -28,209 +28,209 @@ type MembershipCreate struct {
 }
 
 // SetCurrent sets the "current" field.
-func (mc *MembershipCreate) SetCurrent(b bool) *MembershipCreate {
-	mc.mutation.SetCurrent(b)
-	return mc
+func (_c *MembershipCreate) SetCurrent(v bool) *MembershipCreate {
+	_c.mutation.SetCurrent(v)
+	return _c
 }
 
 // SetNillableCurrent sets the "current" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableCurrent(b *bool) *MembershipCreate {
-	if b != nil {
-		mc.SetCurrent(*b)
+func (_c *MembershipCreate) SetNillableCurrent(v *bool) *MembershipCreate {
+	if v != nil {
+		_c.SetCurrent(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (mc *MembershipCreate) SetCreatedAt(t time.Time) *MembershipCreate {
-	mc.mutation.SetCreatedAt(t)
-	return mc
+func (_c *MembershipCreate) SetCreatedAt(v time.Time) *MembershipCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableCreatedAt(t *time.Time) *MembershipCreate {
-	if t != nil {
-		mc.SetCreatedAt(*t)
+func (_c *MembershipCreate) SetNillableCreatedAt(v *time.Time) *MembershipCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (mc *MembershipCreate) SetUpdatedAt(t time.Time) *MembershipCreate {
-	mc.mutation.SetUpdatedAt(t)
-	return mc
+func (_c *MembershipCreate) SetUpdatedAt(v time.Time) *MembershipCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableUpdatedAt(t *time.Time) *MembershipCreate {
-	if t != nil {
-		mc.SetUpdatedAt(*t)
+func (_c *MembershipCreate) SetNillableUpdatedAt(v *time.Time) *MembershipCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetRole sets the "role" field.
-func (mc *MembershipCreate) SetRole(a authz.Role) *MembershipCreate {
-	mc.mutation.SetRole(a)
-	return mc
+func (_c *MembershipCreate) SetRole(v authz.Role) *MembershipCreate {
+	_c.mutation.SetRole(v)
+	return _c
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (mc *MembershipCreate) SetMembershipType(at authz.MembershipType) *MembershipCreate {
-	mc.mutation.SetMembershipType(at)
-	return mc
+func (_c *MembershipCreate) SetMembershipType(v authz.MembershipType) *MembershipCreate {
+	_c.mutation.SetMembershipType(v)
+	return _c
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableMembershipType(at *authz.MembershipType) *MembershipCreate {
-	if at != nil {
-		mc.SetMembershipType(*at)
+func (_c *MembershipCreate) SetNillableMembershipType(v *authz.MembershipType) *MembershipCreate {
+	if v != nil {
+		_c.SetMembershipType(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetMemberID sets the "member_id" field.
-func (mc *MembershipCreate) SetMemberID(u uuid.UUID) *MembershipCreate {
-	mc.mutation.SetMemberID(u)
-	return mc
+func (_c *MembershipCreate) SetMemberID(v uuid.UUID) *MembershipCreate {
+	_c.mutation.SetMemberID(v)
+	return _c
 }
 
 // SetNillableMemberID sets the "member_id" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableMemberID(u *uuid.UUID) *MembershipCreate {
-	if u != nil {
-		mc.SetMemberID(*u)
+func (_c *MembershipCreate) SetNillableMemberID(v *uuid.UUID) *MembershipCreate {
+	if v != nil {
+		_c.SetMemberID(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetResourceType sets the "resource_type" field.
-func (mc *MembershipCreate) SetResourceType(at authz.ResourceType) *MembershipCreate {
-	mc.mutation.SetResourceType(at)
-	return mc
+func (_c *MembershipCreate) SetResourceType(v authz.ResourceType) *MembershipCreate {
+	_c.mutation.SetResourceType(v)
+	return _c
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableResourceType(at *authz.ResourceType) *MembershipCreate {
-	if at != nil {
-		mc.SetResourceType(*at)
+func (_c *MembershipCreate) SetNillableResourceType(v *authz.ResourceType) *MembershipCreate {
+	if v != nil {
+		_c.SetResourceType(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetResourceID sets the "resource_id" field.
-func (mc *MembershipCreate) SetResourceID(u uuid.UUID) *MembershipCreate {
-	mc.mutation.SetResourceID(u)
-	return mc
+func (_c *MembershipCreate) SetResourceID(v uuid.UUID) *MembershipCreate {
+	_c.mutation.SetResourceID(v)
+	return _c
 }
 
 // SetNillableResourceID sets the "resource_id" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableResourceID(u *uuid.UUID) *MembershipCreate {
-	if u != nil {
-		mc.SetResourceID(*u)
+func (_c *MembershipCreate) SetNillableResourceID(v *uuid.UUID) *MembershipCreate {
+	if v != nil {
+		_c.SetResourceID(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetParentID sets the "parent_id" field.
-func (mc *MembershipCreate) SetParentID(u uuid.UUID) *MembershipCreate {
-	mc.mutation.SetParentID(u)
-	return mc
+func (_c *MembershipCreate) SetParentID(v uuid.UUID) *MembershipCreate {
+	_c.mutation.SetParentID(v)
+	return _c
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableParentID(u *uuid.UUID) *MembershipCreate {
-	if u != nil {
-		mc.SetParentID(*u)
+func (_c *MembershipCreate) SetNillableParentID(v *uuid.UUID) *MembershipCreate {
+	if v != nil {
+		_c.SetParentID(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (mc *MembershipCreate) SetID(u uuid.UUID) *MembershipCreate {
-	mc.mutation.SetID(u)
-	return mc
+func (_c *MembershipCreate) SetID(v uuid.UUID) *MembershipCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableID(u *uuid.UUID) *MembershipCreate {
-	if u != nil {
-		mc.SetID(*u)
+func (_c *MembershipCreate) SetNillableID(v *uuid.UUID) *MembershipCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return mc
+	return _c
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (mc *MembershipCreate) SetOrganizationID(id uuid.UUID) *MembershipCreate {
-	mc.mutation.SetOrganizationID(id)
-	return mc
+func (_c *MembershipCreate) SetOrganizationID(id uuid.UUID) *MembershipCreate {
+	_c.mutation.SetOrganizationID(id)
+	return _c
 }
 
 // SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (mc *MembershipCreate) SetNillableOrganizationID(id *uuid.UUID) *MembershipCreate {
+func (_c *MembershipCreate) SetNillableOrganizationID(id *uuid.UUID) *MembershipCreate {
 	if id != nil {
-		mc = mc.SetOrganizationID(*id)
+		_c = _c.SetOrganizationID(*id)
 	}
-	return mc
+	return _c
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (mc *MembershipCreate) SetOrganization(o *Organization) *MembershipCreate {
-	return mc.SetOrganizationID(o.ID)
+func (_c *MembershipCreate) SetOrganization(v *Organization) *MembershipCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (mc *MembershipCreate) SetUserID(id uuid.UUID) *MembershipCreate {
-	mc.mutation.SetUserID(id)
-	return mc
+func (_c *MembershipCreate) SetUserID(id uuid.UUID) *MembershipCreate {
+	_c.mutation.SetUserID(id)
+	return _c
 }
 
 // SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (mc *MembershipCreate) SetNillableUserID(id *uuid.UUID) *MembershipCreate {
+func (_c *MembershipCreate) SetNillableUserID(id *uuid.UUID) *MembershipCreate {
 	if id != nil {
-		mc = mc.SetUserID(*id)
+		_c = _c.SetUserID(*id)
 	}
-	return mc
+	return _c
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (mc *MembershipCreate) SetUser(u *User) *MembershipCreate {
-	return mc.SetUserID(u.ID)
+func (_c *MembershipCreate) SetUser(v *User) *MembershipCreate {
+	return _c.SetUserID(v.ID)
 }
 
 // SetParent sets the "parent" edge to the Membership entity.
-func (mc *MembershipCreate) SetParent(m *Membership) *MembershipCreate {
-	return mc.SetParentID(m.ID)
+func (_c *MembershipCreate) SetParent(v *Membership) *MembershipCreate {
+	return _c.SetParentID(v.ID)
 }
 
 // AddChildIDs adds the "children" edge to the Membership entity by IDs.
-func (mc *MembershipCreate) AddChildIDs(ids ...uuid.UUID) *MembershipCreate {
-	mc.mutation.AddChildIDs(ids...)
-	return mc
+func (_c *MembershipCreate) AddChildIDs(ids ...uuid.UUID) *MembershipCreate {
+	_c.mutation.AddChildIDs(ids...)
+	return _c
 }
 
 // AddChildren adds the "children" edges to the Membership entity.
-func (mc *MembershipCreate) AddChildren(m ...*Membership) *MembershipCreate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+func (_c *MembershipCreate) AddChildren(v ...*Membership) *MembershipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return mc.AddChildIDs(ids...)
+	return _c.AddChildIDs(ids...)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
-func (mc *MembershipCreate) Mutation() *MembershipMutation {
-	return mc.mutation
+func (_c *MembershipCreate) Mutation() *MembershipMutation {
+	return _c.mutation
 }
 
 // Save creates the Membership in the database.
-func (mc *MembershipCreate) Save(ctx context.Context) (*Membership, error) {
-	mc.defaults()
-	return withHooks(ctx, mc.sqlSave, mc.mutation, mc.hooks)
+func (_c *MembershipCreate) Save(ctx context.Context) (*Membership, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (mc *MembershipCreate) SaveX(ctx context.Context) *Membership {
-	v, err := mc.Save(ctx)
+func (_c *MembershipCreate) SaveX(ctx context.Context) *Membership {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -238,63 +238,63 @@ func (mc *MembershipCreate) SaveX(ctx context.Context) *Membership {
 }
 
 // Exec executes the query.
-func (mc *MembershipCreate) Exec(ctx context.Context) error {
-	_, err := mc.Save(ctx)
+func (_c *MembershipCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (mc *MembershipCreate) ExecX(ctx context.Context) {
-	if err := mc.Exec(ctx); err != nil {
+func (_c *MembershipCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (mc *MembershipCreate) defaults() {
-	if _, ok := mc.mutation.Current(); !ok {
+func (_c *MembershipCreate) defaults() {
+	if _, ok := _c.mutation.Current(); !ok {
 		v := membership.DefaultCurrent
-		mc.mutation.SetCurrent(v)
+		_c.mutation.SetCurrent(v)
 	}
-	if _, ok := mc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := membership.DefaultCreatedAt()
-		mc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := mc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := membership.DefaultUpdatedAt()
-		mc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := mc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := membership.DefaultID()
-		mc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (mc *MembershipCreate) check() error {
-	if _, ok := mc.mutation.Current(); !ok {
+func (_c *MembershipCreate) check() error {
+	if _, ok := _c.mutation.Current(); !ok {
 		return &ValidationError{Name: "current", err: errors.New(`ent: missing required field "Membership.current"`)}
 	}
-	if _, ok := mc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Membership.created_at"`)}
 	}
-	if _, ok := mc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Membership.updated_at"`)}
 	}
-	if _, ok := mc.mutation.Role(); !ok {
+	if _, ok := _c.mutation.Role(); !ok {
 		return &ValidationError{Name: "role", err: errors.New(`ent: missing required field "Membership.role"`)}
 	}
-	if v, ok := mc.mutation.Role(); ok {
+	if v, ok := _c.mutation.Role(); ok {
 		if err := membership.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
 		}
 	}
-	if v, ok := mc.mutation.MembershipType(); ok {
+	if v, ok := _c.mutation.MembershipType(); ok {
 		if err := membership.MembershipTypeValidator(v); err != nil {
 			return &ValidationError{Name: "membership_type", err: fmt.Errorf(`ent: validator failed for field "Membership.membership_type": %w`, err)}
 		}
 	}
-	if v, ok := mc.mutation.ResourceType(); ok {
+	if v, ok := _c.mutation.ResourceType(); ok {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
@@ -302,12 +302,12 @@ func (mc *MembershipCreate) check() error {
 	return nil
 }
 
-func (mc *MembershipCreate) sqlSave(ctx context.Context) (*Membership, error) {
-	if err := mc.check(); err != nil {
+func (_c *MembershipCreate) sqlSave(ctx context.Context) (*Membership, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := mc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, mc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -320,54 +320,54 @@ func (mc *MembershipCreate) sqlSave(ctx context.Context) (*Membership, error) {
 			return nil, err
 		}
 	}
-	mc.mutation.id = &_node.ID
-	mc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
+func (_c *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Membership{config: mc.config}
+		_node = &Membership{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(membership.Table, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = mc.conflict
-	if id, ok := mc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := mc.mutation.Current(); ok {
+	if value, ok := _c.mutation.Current(); ok {
 		_spec.SetField(membership.FieldCurrent, field.TypeBool, value)
 		_node.Current = value
 	}
-	if value, ok := mc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(membership.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := mc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := mc.mutation.Role(); ok {
+	if value, ok := _c.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 		_node.Role = value
 	}
-	if value, ok := mc.mutation.MembershipType(); ok {
+	if value, ok := _c.mutation.MembershipType(); ok {
 		_spec.SetField(membership.FieldMembershipType, field.TypeEnum, value)
 		_node.MembershipType = value
 	}
-	if value, ok := mc.mutation.MemberID(); ok {
+	if value, ok := _c.mutation.MemberID(); ok {
 		_spec.SetField(membership.FieldMemberID, field.TypeUUID, value)
 		_node.MemberID = value
 	}
-	if value, ok := mc.mutation.ResourceType(); ok {
+	if value, ok := _c.mutation.ResourceType(); ok {
 		_spec.SetField(membership.FieldResourceType, field.TypeEnum, value)
 		_node.ResourceType = value
 	}
-	if value, ok := mc.mutation.ResourceID(); ok {
+	if value, ok := _c.mutation.ResourceID(); ok {
 		_spec.SetField(membership.FieldResourceID, field.TypeUUID, value)
 		_node.ResourceID = value
 	}
-	if nodes := mc.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -384,7 +384,7 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		_node.organization_memberships = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := mc.mutation.UserIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -401,7 +401,7 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		_node.user_memberships = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := mc.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -418,7 +418,7 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 		_node.ParentID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := mc.mutation.ChildrenIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ChildrenIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -453,10 +453,10 @@ func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 //			SetCurrent(v+v).
 //		}).
 //		Exec(ctx)
-func (mc *MembershipCreate) OnConflict(opts ...sql.ConflictOption) *MembershipUpsertOne {
-	mc.conflict = opts
+func (_c *MembershipCreate) OnConflict(opts ...sql.ConflictOption) *MembershipUpsertOne {
+	_c.conflict = opts
 	return &MembershipUpsertOne{
-		create: mc,
+		create: _c,
 	}
 }
 
@@ -466,10 +466,10 @@ func (mc *MembershipCreate) OnConflict(opts ...sql.ConflictOption) *MembershipUp
 //	client.Membership.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (mc *MembershipCreate) OnConflictColumns(columns ...string) *MembershipUpsertOne {
-	mc.conflict = append(mc.conflict, sql.ConflictColumns(columns...))
+func (_c *MembershipCreate) OnConflictColumns(columns ...string) *MembershipUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &MembershipUpsertOne{
-		create: mc,
+		create: _c,
 	}
 }
 
@@ -857,16 +857,16 @@ type MembershipCreateBulk struct {
 }
 
 // Save creates the Membership entities in the database.
-func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error) {
-	if mcb.err != nil {
-		return nil, mcb.err
+func (_c *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(mcb.builders))
-	nodes := make([]*Membership, len(mcb.builders))
-	mutators := make([]Mutator, len(mcb.builders))
-	for i := range mcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Membership, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := mcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*MembershipMutation)
@@ -880,12 +880,12 @@ func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, mcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = mcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, mcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -905,7 +905,7 @@ func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, mcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -913,8 +913,8 @@ func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (mcb *MembershipCreateBulk) SaveX(ctx context.Context) []*Membership {
-	v, err := mcb.Save(ctx)
+func (_c *MembershipCreateBulk) SaveX(ctx context.Context) []*Membership {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -922,14 +922,14 @@ func (mcb *MembershipCreateBulk) SaveX(ctx context.Context) []*Membership {
 }
 
 // Exec executes the query.
-func (mcb *MembershipCreateBulk) Exec(ctx context.Context) error {
-	_, err := mcb.Save(ctx)
+func (_c *MembershipCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (mcb *MembershipCreateBulk) ExecX(ctx context.Context) {
-	if err := mcb.Exec(ctx); err != nil {
+func (_c *MembershipCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -949,10 +949,10 @@ func (mcb *MembershipCreateBulk) ExecX(ctx context.Context) {
 //			SetCurrent(v+v).
 //		}).
 //		Exec(ctx)
-func (mcb *MembershipCreateBulk) OnConflict(opts ...sql.ConflictOption) *MembershipUpsertBulk {
-	mcb.conflict = opts
+func (_c *MembershipCreateBulk) OnConflict(opts ...sql.ConflictOption) *MembershipUpsertBulk {
+	_c.conflict = opts
 	return &MembershipUpsertBulk{
-		create: mcb,
+		create: _c,
 	}
 }
 
@@ -962,10 +962,10 @@ func (mcb *MembershipCreateBulk) OnConflict(opts ...sql.ConflictOption) *Members
 //	client.Membership.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (mcb *MembershipCreateBulk) OnConflictColumns(columns ...string) *MembershipUpsertBulk {
-	mcb.conflict = append(mcb.conflict, sql.ConflictColumns(columns...))
+func (_c *MembershipCreateBulk) OnConflictColumns(columns ...string) *MembershipUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &MembershipUpsertBulk{
-		create: mcb,
+		create: _c,
 	}
 }
 

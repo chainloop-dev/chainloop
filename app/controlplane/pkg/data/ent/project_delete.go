@@ -20,56 +20,56 @@ type ProjectDelete struct {
 }
 
 // Where appends a list predicates to the ProjectDelete builder.
-func (pd *ProjectDelete) Where(ps ...predicate.Project) *ProjectDelete {
-	pd.mutation.Where(ps...)
-	return pd
+func (_d *ProjectDelete) Where(ps ...predicate.Project) *ProjectDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (pd *ProjectDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, pd.sqlExec, pd.mutation, pd.hooks)
+func (_d *ProjectDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pd *ProjectDelete) ExecX(ctx context.Context) int {
-	n, err := pd.Exec(ctx)
+func (_d *ProjectDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (pd *ProjectDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *ProjectDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(project.Table, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
-	if ps := pd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, pd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	pd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // ProjectDeleteOne is the builder for deleting a single Project entity.
 type ProjectDeleteOne struct {
-	pd *ProjectDelete
+	_d *ProjectDelete
 }
 
 // Where appends a list predicates to the ProjectDelete builder.
-func (pdo *ProjectDeleteOne) Where(ps ...predicate.Project) *ProjectDeleteOne {
-	pdo.pd.mutation.Where(ps...)
-	return pdo
+func (_d *ProjectDeleteOne) Where(ps ...predicate.Project) *ProjectDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (pdo *ProjectDeleteOne) Exec(ctx context.Context) error {
-	n, err := pdo.pd.Exec(ctx)
+func (_d *ProjectDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (pdo *ProjectDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pdo *ProjectDeleteOne) ExecX(ctx context.Context) {
-	if err := pdo.Exec(ctx); err != nil {
+func (_d *ProjectDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

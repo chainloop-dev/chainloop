@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
@@ -68,7 +68,7 @@ type Crafter struct {
 	stateManager  StateManager
 	// Authn is used to authenticate with the OCI registry
 	ociRegistryAuth authn.Keychain
-	validator       *protovalidate.Validator
+	validator       protovalidate.Validator
 
 	// attestation client is used to load chainloop policies
 	attClient v1.AttestationServiceClient

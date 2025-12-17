@@ -5,6 +5,6 @@ package runtime
 // The schema-stitching logic is generated in github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/runtime.go
 
 const (
-	Version = "v0.14.4"                                         // Version of ent codegen.
-	Sum     = "h1:/DhDraSLXIkBhyiVoJeSshr4ZYi7femzhj6/TckzZuI=" // Sum of ent codegen.
+	Version = "v0.14.6-0.20251003170342-01063ef6395c"           // Version of ent codegen.
+	Sum     = "h1:74zQRklceH5iran5LRWX4KyIHHlwRadGVpEn3JieC4A=" // Sum of ent codegen.
 )

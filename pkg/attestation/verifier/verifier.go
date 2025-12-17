@@ -24,7 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/sigstore/cosign/v2/pkg/cosign"
+	"github.com/sigstore/cosign/v3/pkg/cosign"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	sigstorebundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
@@ -63,9 +63,9 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		}
 	}
 
-	if vc != nil && vc.GetCertificate() != nil {
+	if vc != nil && vc.Certificate() != nil {
 		hasVerificationMaterial = true
-		signingCert := vc.GetCertificate()
+		signingCert := vc.Certificate()
 
 		aki := fmt.Sprintf("%x", sha256.Sum256(signingCert.AuthorityKeyId))
 		chain, ok := tr.Keys[aki]

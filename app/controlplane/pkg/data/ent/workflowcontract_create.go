@@ -29,172 +29,172 @@ type WorkflowContractCreate struct {
 }
 
 // SetName sets the "name" field.
-func (wcc *WorkflowContractCreate) SetName(s string) *WorkflowContractCreate {
-	wcc.mutation.SetName(s)
-	return wcc
+func (_c *WorkflowContractCreate) SetName(v string) *WorkflowContractCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (wcc *WorkflowContractCreate) SetCreatedAt(t time.Time) *WorkflowContractCreate {
-	wcc.mutation.SetCreatedAt(t)
-	return wcc
+func (_c *WorkflowContractCreate) SetCreatedAt(v time.Time) *WorkflowContractCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableCreatedAt(t *time.Time) *WorkflowContractCreate {
-	if t != nil {
-		wcc.SetCreatedAt(*t)
+func (_c *WorkflowContractCreate) SetNillableCreatedAt(v *time.Time) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return wcc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (wcc *WorkflowContractCreate) SetUpdatedAt(t time.Time) *WorkflowContractCreate {
-	wcc.mutation.SetUpdatedAt(t)
-	return wcc
+func (_c *WorkflowContractCreate) SetUpdatedAt(v time.Time) *WorkflowContractCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableUpdatedAt(t *time.Time) *WorkflowContractCreate {
-	if t != nil {
-		wcc.SetUpdatedAt(*t)
+func (_c *WorkflowContractCreate) SetNillableUpdatedAt(v *time.Time) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return wcc
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (wcc *WorkflowContractCreate) SetDeletedAt(t time.Time) *WorkflowContractCreate {
-	wcc.mutation.SetDeletedAt(t)
-	return wcc
+func (_c *WorkflowContractCreate) SetDeletedAt(v time.Time) *WorkflowContractCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableDeletedAt(t *time.Time) *WorkflowContractCreate {
-	if t != nil {
-		wcc.SetDeletedAt(*t)
+func (_c *WorkflowContractCreate) SetNillableDeletedAt(v *time.Time) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return wcc
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (wcc *WorkflowContractCreate) SetDescription(s string) *WorkflowContractCreate {
-	wcc.mutation.SetDescription(s)
-	return wcc
+func (_c *WorkflowContractCreate) SetDescription(v string) *WorkflowContractCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableDescription(s *string) *WorkflowContractCreate {
-	if s != nil {
-		wcc.SetDescription(*s)
+func (_c *WorkflowContractCreate) SetNillableDescription(v *string) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return wcc
+	return _c
 }
 
 // SetScopedResourceType sets the "scoped_resource_type" field.
-func (wcc *WorkflowContractCreate) SetScopedResourceType(bs biz.ContractScope) *WorkflowContractCreate {
-	wcc.mutation.SetScopedResourceType(bs)
-	return wcc
+func (_c *WorkflowContractCreate) SetScopedResourceType(v biz.ContractScope) *WorkflowContractCreate {
+	_c.mutation.SetScopedResourceType(v)
+	return _c
 }
 
 // SetNillableScopedResourceType sets the "scoped_resource_type" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableScopedResourceType(bs *biz.ContractScope) *WorkflowContractCreate {
-	if bs != nil {
-		wcc.SetScopedResourceType(*bs)
+func (_c *WorkflowContractCreate) SetNillableScopedResourceType(v *biz.ContractScope) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetScopedResourceType(*v)
 	}
-	return wcc
+	return _c
 }
 
 // SetScopedResourceID sets the "scoped_resource_id" field.
-func (wcc *WorkflowContractCreate) SetScopedResourceID(u uuid.UUID) *WorkflowContractCreate {
-	wcc.mutation.SetScopedResourceID(u)
-	return wcc
+func (_c *WorkflowContractCreate) SetScopedResourceID(v uuid.UUID) *WorkflowContractCreate {
+	_c.mutation.SetScopedResourceID(v)
+	return _c
 }
 
 // SetNillableScopedResourceID sets the "scoped_resource_id" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableScopedResourceID(u *uuid.UUID) *WorkflowContractCreate {
-	if u != nil {
-		wcc.SetScopedResourceID(*u)
+func (_c *WorkflowContractCreate) SetNillableScopedResourceID(v *uuid.UUID) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetScopedResourceID(*v)
 	}
-	return wcc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (wcc *WorkflowContractCreate) SetID(u uuid.UUID) *WorkflowContractCreate {
-	wcc.mutation.SetID(u)
-	return wcc
+func (_c *WorkflowContractCreate) SetID(v uuid.UUID) *WorkflowContractCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableID(u *uuid.UUID) *WorkflowContractCreate {
-	if u != nil {
-		wcc.SetID(*u)
+func (_c *WorkflowContractCreate) SetNillableID(v *uuid.UUID) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return wcc
+	return _c
 }
 
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
-func (wcc *WorkflowContractCreate) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractCreate {
-	wcc.mutation.AddVersionIDs(ids...)
-	return wcc
+func (_c *WorkflowContractCreate) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractCreate {
+	_c.mutation.AddVersionIDs(ids...)
+	return _c
 }
 
 // AddVersions adds the "versions" edges to the WorkflowContractVersion entity.
-func (wcc *WorkflowContractCreate) AddVersions(w ...*WorkflowContractVersion) *WorkflowContractCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *WorkflowContractCreate) AddVersions(v ...*WorkflowContractVersion) *WorkflowContractCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wcc.AddVersionIDs(ids...)
+	return _c.AddVersionIDs(ids...)
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (wcc *WorkflowContractCreate) SetOrganizationID(id uuid.UUID) *WorkflowContractCreate {
-	wcc.mutation.SetOrganizationID(id)
-	return wcc
+func (_c *WorkflowContractCreate) SetOrganizationID(id uuid.UUID) *WorkflowContractCreate {
+	_c.mutation.SetOrganizationID(id)
+	return _c
 }
 
 // SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (wcc *WorkflowContractCreate) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractCreate {
+func (_c *WorkflowContractCreate) SetNillableOrganizationID(id *uuid.UUID) *WorkflowContractCreate {
 	if id != nil {
-		wcc = wcc.SetOrganizationID(*id)
+		_c = _c.SetOrganizationID(*id)
 	}
-	return wcc
+	return _c
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (wcc *WorkflowContractCreate) SetOrganization(o *Organization) *WorkflowContractCreate {
-	return wcc.SetOrganizationID(o.ID)
+func (_c *WorkflowContractCreate) SetOrganization(v *Organization) *WorkflowContractCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (wcc *WorkflowContractCreate) AddWorkflowIDs(ids ...uuid.UUID) *WorkflowContractCreate {
-	wcc.mutation.AddWorkflowIDs(ids...)
-	return wcc
+func (_c *WorkflowContractCreate) AddWorkflowIDs(ids ...uuid.UUID) *WorkflowContractCreate {
+	_c.mutation.AddWorkflowIDs(ids...)
+	return _c
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (wcc *WorkflowContractCreate) AddWorkflows(w ...*Workflow) *WorkflowContractCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *WorkflowContractCreate) AddWorkflows(v ...*Workflow) *WorkflowContractCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wcc.AddWorkflowIDs(ids...)
+	return _c.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the WorkflowContractMutation object of the builder.
-func (wcc *WorkflowContractCreate) Mutation() *WorkflowContractMutation {
-	return wcc.mutation
+func (_c *WorkflowContractCreate) Mutation() *WorkflowContractMutation {
+	return _c.mutation
 }
 
 // Save creates the WorkflowContract in the database.
-func (wcc *WorkflowContractCreate) Save(ctx context.Context) (*WorkflowContract, error) {
-	wcc.defaults()
-	return withHooks(ctx, wcc.sqlSave, wcc.mutation, wcc.hooks)
+func (_c *WorkflowContractCreate) Save(ctx context.Context) (*WorkflowContract, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (wcc *WorkflowContractCreate) SaveX(ctx context.Context) *WorkflowContract {
-	v, err := wcc.Save(ctx)
+func (_c *WorkflowContractCreate) SaveX(ctx context.Context) *WorkflowContract {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -202,46 +202,46 @@ func (wcc *WorkflowContractCreate) SaveX(ctx context.Context) *WorkflowContract 
 }
 
 // Exec executes the query.
-func (wcc *WorkflowContractCreate) Exec(ctx context.Context) error {
-	_, err := wcc.Save(ctx)
+func (_c *WorkflowContractCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcc *WorkflowContractCreate) ExecX(ctx context.Context) {
-	if err := wcc.Exec(ctx); err != nil {
+func (_c *WorkflowContractCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (wcc *WorkflowContractCreate) defaults() {
-	if _, ok := wcc.mutation.CreatedAt(); !ok {
+func (_c *WorkflowContractCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := workflowcontract.DefaultCreatedAt()
-		wcc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := wcc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := workflowcontract.DefaultUpdatedAt()
-		wcc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := wcc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := workflowcontract.DefaultID()
-		wcc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wcc *WorkflowContractCreate) check() error {
-	if _, ok := wcc.mutation.Name(); !ok {
+func (_c *WorkflowContractCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "WorkflowContract.name"`)}
 	}
-	if _, ok := wcc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkflowContract.created_at"`)}
 	}
-	if _, ok := wcc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "WorkflowContract.updated_at"`)}
 	}
-	if v, ok := wcc.mutation.ScopedResourceType(); ok {
+	if v, ok := _c.mutation.ScopedResourceType(); ok {
 		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
 		}
@@ -249,12 +249,12 @@ func (wcc *WorkflowContractCreate) check() error {
 	return nil
 }
 
-func (wcc *WorkflowContractCreate) sqlSave(ctx context.Context) (*WorkflowContract, error) {
-	if err := wcc.check(); err != nil {
+func (_c *WorkflowContractCreate) sqlSave(ctx context.Context) (*WorkflowContract, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := wcc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, wcc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -267,50 +267,50 @@ func (wcc *WorkflowContractCreate) sqlSave(ctx context.Context) (*WorkflowContra
 			return nil, err
 		}
 	}
-	wcc.mutation.id = &_node.ID
-	wcc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.CreateSpec) {
+func (_c *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.CreateSpec) {
 	var (
-		_node = &WorkflowContract{config: wcc.config}
+		_node = &WorkflowContract{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(workflowcontract.Table, sqlgraph.NewFieldSpec(workflowcontract.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = wcc.conflict
-	if id, ok := wcc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := wcc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(workflowcontract.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := wcc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(workflowcontract.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := wcc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(workflowcontract.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := wcc.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(workflowcontract.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := wcc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(workflowcontract.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := wcc.mutation.ScopedResourceType(); ok {
+	if value, ok := _c.mutation.ScopedResourceType(); ok {
 		_spec.SetField(workflowcontract.FieldScopedResourceType, field.TypeEnum, value)
 		_node.ScopedResourceType = value
 	}
-	if value, ok := wcc.mutation.ScopedResourceID(); ok {
+	if value, ok := _c.mutation.ScopedResourceID(); ok {
 		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
 		_node.ScopedResourceID = value
 	}
-	if nodes := wcc.mutation.VersionsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -326,7 +326,7 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := wcc.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -343,7 +343,7 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 		_node.organization_workflow_contracts = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := wcc.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -378,10 +378,10 @@ func (wcc *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cr
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (wcc *WorkflowContractCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowContractUpsertOne {
-	wcc.conflict = opts
+func (_c *WorkflowContractCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowContractUpsertOne {
+	_c.conflict = opts
 	return &WorkflowContractUpsertOne{
-		create: wcc,
+		create: _c,
 	}
 }
 
@@ -391,10 +391,10 @@ func (wcc *WorkflowContractCreate) OnConflict(opts ...sql.ConflictOption) *Workf
 //	client.WorkflowContract.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (wcc *WorkflowContractCreate) OnConflictColumns(columns ...string) *WorkflowContractUpsertOne {
-	wcc.conflict = append(wcc.conflict, sql.ConflictColumns(columns...))
+func (_c *WorkflowContractCreate) OnConflictColumns(columns ...string) *WorkflowContractUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &WorkflowContractUpsertOne{
-		create: wcc,
+		create: _c,
 	}
 }
 
@@ -694,16 +694,16 @@ type WorkflowContractCreateBulk struct {
 }
 
 // Save creates the WorkflowContract entities in the database.
-func (wccb *WorkflowContractCreateBulk) Save(ctx context.Context) ([]*WorkflowContract, error) {
-	if wccb.err != nil {
-		return nil, wccb.err
+func (_c *WorkflowContractCreateBulk) Save(ctx context.Context) ([]*WorkflowContract, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(wccb.builders))
-	nodes := make([]*WorkflowContract, len(wccb.builders))
-	mutators := make([]Mutator, len(wccb.builders))
-	for i := range wccb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*WorkflowContract, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := wccb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*WorkflowContractMutation)
@@ -717,12 +717,12 @@ func (wccb *WorkflowContractCreateBulk) Save(ctx context.Context) ([]*WorkflowCo
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, wccb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = wccb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, wccb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -742,7 +742,7 @@ func (wccb *WorkflowContractCreateBulk) Save(ctx context.Context) ([]*WorkflowCo
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, wccb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -750,8 +750,8 @@ func (wccb *WorkflowContractCreateBulk) Save(ctx context.Context) ([]*WorkflowCo
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wccb *WorkflowContractCreateBulk) SaveX(ctx context.Context) []*WorkflowContract {
-	v, err := wccb.Save(ctx)
+func (_c *WorkflowContractCreateBulk) SaveX(ctx context.Context) []*WorkflowContract {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -759,14 +759,14 @@ func (wccb *WorkflowContractCreateBulk) SaveX(ctx context.Context) []*WorkflowCo
 }
 
 // Exec executes the query.
-func (wccb *WorkflowContractCreateBulk) Exec(ctx context.Context) error {
-	_, err := wccb.Save(ctx)
+func (_c *WorkflowContractCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wccb *WorkflowContractCreateBulk) ExecX(ctx context.Context) {
-	if err := wccb.Exec(ctx); err != nil {
+func (_c *WorkflowContractCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -786,10 +786,10 @@ func (wccb *WorkflowContractCreateBulk) ExecX(ctx context.Context) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (wccb *WorkflowContractCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowContractUpsertBulk {
-	wccb.conflict = opts
+func (_c *WorkflowContractCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowContractUpsertBulk {
+	_c.conflict = opts
 	return &WorkflowContractUpsertBulk{
-		create: wccb,
+		create: _c,
 	}
 }
 
@@ -799,10 +799,10 @@ func (wccb *WorkflowContractCreateBulk) OnConflict(opts ...sql.ConflictOption) *
 //	client.WorkflowContract.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (wccb *WorkflowContractCreateBulk) OnConflictColumns(columns ...string) *WorkflowContractUpsertBulk {
-	wccb.conflict = append(wccb.conflict, sql.ConflictColumns(columns...))
+func (_c *WorkflowContractCreateBulk) OnConflictColumns(columns ...string) *WorkflowContractUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &WorkflowContractUpsertBulk{
-		create: wccb,
+		create: _c,
 	}
 }
 

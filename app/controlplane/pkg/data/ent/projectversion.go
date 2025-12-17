@@ -100,7 +100,7 @@ func (*ProjectVersion) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the ProjectVersion fields.
-func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
+func (_m *ProjectVersion) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -110,70 +110,70 @@ func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				pv.ID = *value
+				_m.ID = *value
 			}
 		case projectversion.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field version", values[i])
 			} else if value.Valid {
-				pv.Version = value.String
+				_m.Version = value.String
 			}
 		case projectversion.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				pv.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case projectversion.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				pv.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case projectversion.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				pv.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case projectversion.FieldProjectID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
 			} else if value != nil {
-				pv.ProjectID = *value
+				_m.ProjectID = *value
 			}
 		case projectversion.FieldPrerelease:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field prerelease", values[i])
 			} else if value.Valid {
-				pv.Prerelease = value.Bool
+				_m.Prerelease = value.Bool
 			}
 		case projectversion.FieldWorkflowRunCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_count", values[i])
 			} else if value.Valid {
-				pv.WorkflowRunCount = int(value.Int64)
+				_m.WorkflowRunCount = int(value.Int64)
 			}
 		case projectversion.FieldReleasedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field released_at", values[i])
 			} else if value.Valid {
-				pv.ReleasedAt = value.Time
+				_m.ReleasedAt = value.Time
 			}
 		case projectversion.FieldLastRunAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_run_at", values[i])
 			} else if value.Valid {
-				pv.LastRunAt = value.Time
+				_m.LastRunAt = value.Time
 			}
 		case projectversion.FieldLatest:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field latest", values[i])
 			} else if value.Valid {
-				pv.Latest = value.Bool
+				_m.Latest = value.Bool
 			}
 		default:
-			pv.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -181,72 +181,72 @@ func (pv *ProjectVersion) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the ProjectVersion.
 // This includes values selected through modifiers, order, etc.
-func (pv *ProjectVersion) Value(name string) (ent.Value, error) {
-	return pv.selectValues.Get(name)
+func (_m *ProjectVersion) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryProject queries the "project" edge of the ProjectVersion entity.
-func (pv *ProjectVersion) QueryProject() *ProjectQuery {
-	return NewProjectVersionClient(pv.config).QueryProject(pv)
+func (_m *ProjectVersion) QueryProject() *ProjectQuery {
+	return NewProjectVersionClient(_m.config).QueryProject(_m)
 }
 
 // QueryRuns queries the "runs" edge of the ProjectVersion entity.
-func (pv *ProjectVersion) QueryRuns() *WorkflowRunQuery {
-	return NewProjectVersionClient(pv.config).QueryRuns(pv)
+func (_m *ProjectVersion) QueryRuns() *WorkflowRunQuery {
+	return NewProjectVersionClient(_m.config).QueryRuns(_m)
 }
 
 // Update returns a builder for updating this ProjectVersion.
 // Note that you need to call ProjectVersion.Unwrap() before calling this method if this ProjectVersion
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (pv *ProjectVersion) Update() *ProjectVersionUpdateOne {
-	return NewProjectVersionClient(pv.config).UpdateOne(pv)
+func (_m *ProjectVersion) Update() *ProjectVersionUpdateOne {
+	return NewProjectVersionClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the ProjectVersion entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (pv *ProjectVersion) Unwrap() *ProjectVersion {
-	_tx, ok := pv.config.driver.(*txDriver)
+func (_m *ProjectVersion) Unwrap() *ProjectVersion {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: ProjectVersion is not a transactional entity")
 	}
-	pv.config.driver = _tx.drv
-	return pv
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (pv *ProjectVersion) String() string {
+func (_m *ProjectVersion) String() string {
 	var builder strings.Builder
 	builder.WriteString("ProjectVersion(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", pv.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("version=")
-	builder.WriteString(pv.Version)
+	builder.WriteString(_m.Version)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(pv.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(pv.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(pv.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", pv.ProjectID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))
 	builder.WriteString(", ")
 	builder.WriteString("prerelease=")
-	builder.WriteString(fmt.Sprintf("%v", pv.Prerelease))
+	builder.WriteString(fmt.Sprintf("%v", _m.Prerelease))
 	builder.WriteString(", ")
 	builder.WriteString("workflow_run_count=")
-	builder.WriteString(fmt.Sprintf("%v", pv.WorkflowRunCount))
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowRunCount))
 	builder.WriteString(", ")
 	builder.WriteString("released_at=")
-	builder.WriteString(pv.ReleasedAt.Format(time.ANSIC))
+	builder.WriteString(_m.ReleasedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("last_run_at=")
-	builder.WriteString(pv.LastRunAt.Format(time.ANSIC))
+	builder.WriteString(_m.LastRunAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("latest=")
-	builder.WriteString(fmt.Sprintf("%v", pv.Latest))
+	builder.WriteString(fmt.Sprintf("%v", _m.Latest))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -26,12 +26,12 @@ message IdentityReference {
   // ID is optional, but if provided, it must be a valid UUID.
   optional string id = 1 [
     (buf.validate.field).string.uuid = true,
-    (buf.validate.field).ignore_empty = true
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
   // Name is optional, but if provided, it must be a non-empty string.
   optional string name = 2 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).ignore_empty = true
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
 
   // Custom validation to ensure that either id or name is provided

@@ -28,215 +28,215 @@ type CASBackendCreate struct {
 }
 
 // SetLocation sets the "location" field.
-func (cbc *CASBackendCreate) SetLocation(s string) *CASBackendCreate {
-	cbc.mutation.SetLocation(s)
-	return cbc
+func (_c *CASBackendCreate) SetLocation(v string) *CASBackendCreate {
+	_c.mutation.SetLocation(v)
+	return _c
 }
 
 // SetName sets the "name" field.
-func (cbc *CASBackendCreate) SetName(s string) *CASBackendCreate {
-	cbc.mutation.SetName(s)
-	return cbc
+func (_c *CASBackendCreate) SetName(v string) *CASBackendCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetProvider sets the "provider" field.
-func (cbc *CASBackendCreate) SetProvider(bbp biz.CASBackendProvider) *CASBackendCreate {
-	cbc.mutation.SetProvider(bbp)
-	return cbc
+func (_c *CASBackendCreate) SetProvider(v biz.CASBackendProvider) *CASBackendCreate {
+	_c.mutation.SetProvider(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (cbc *CASBackendCreate) SetDescription(s string) *CASBackendCreate {
-	cbc.mutation.SetDescription(s)
-	return cbc
+func (_c *CASBackendCreate) SetDescription(v string) *CASBackendCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableDescription(s *string) *CASBackendCreate {
-	if s != nil {
-		cbc.SetDescription(*s)
+func (_c *CASBackendCreate) SetNillableDescription(v *string) *CASBackendCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetSecretName sets the "secret_name" field.
-func (cbc *CASBackendCreate) SetSecretName(s string) *CASBackendCreate {
-	cbc.mutation.SetSecretName(s)
-	return cbc
+func (_c *CASBackendCreate) SetSecretName(v string) *CASBackendCreate {
+	_c.mutation.SetSecretName(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (cbc *CASBackendCreate) SetCreatedAt(t time.Time) *CASBackendCreate {
-	cbc.mutation.SetCreatedAt(t)
-	return cbc
+func (_c *CASBackendCreate) SetCreatedAt(v time.Time) *CASBackendCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableCreatedAt(t *time.Time) *CASBackendCreate {
-	if t != nil {
-		cbc.SetCreatedAt(*t)
+func (_c *CASBackendCreate) SetNillableCreatedAt(v *time.Time) *CASBackendCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (cbc *CASBackendCreate) SetUpdatedAt(t time.Time) *CASBackendCreate {
-	cbc.mutation.SetUpdatedAt(t)
-	return cbc
+func (_c *CASBackendCreate) SetUpdatedAt(v time.Time) *CASBackendCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableUpdatedAt(t *time.Time) *CASBackendCreate {
-	if t != nil {
-		cbc.SetUpdatedAt(*t)
+func (_c *CASBackendCreate) SetNillableUpdatedAt(v *time.Time) *CASBackendCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (cbc *CASBackendCreate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendCreate {
-	cbc.mutation.SetValidationStatus(bbvs)
-	return cbc
+func (_c *CASBackendCreate) SetValidationStatus(v biz.CASBackendValidationStatus) *CASBackendCreate {
+	_c.mutation.SetValidationStatus(v)
+	return _c
 }
 
 // SetNillableValidationStatus sets the "validation_status" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableValidationStatus(bbvs *biz.CASBackendValidationStatus) *CASBackendCreate {
-	if bbvs != nil {
-		cbc.SetValidationStatus(*bbvs)
+func (_c *CASBackendCreate) SetNillableValidationStatus(v *biz.CASBackendValidationStatus) *CASBackendCreate {
+	if v != nil {
+		_c.SetValidationStatus(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetValidationError sets the "validation_error" field.
-func (cbc *CASBackendCreate) SetValidationError(s string) *CASBackendCreate {
-	cbc.mutation.SetValidationError(s)
-	return cbc
+func (_c *CASBackendCreate) SetValidationError(v string) *CASBackendCreate {
+	_c.mutation.SetValidationError(v)
+	return _c
 }
 
 // SetNillableValidationError sets the "validation_error" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableValidationError(s *string) *CASBackendCreate {
-	if s != nil {
-		cbc.SetValidationError(*s)
+func (_c *CASBackendCreate) SetNillableValidationError(v *string) *CASBackendCreate {
+	if v != nil {
+		_c.SetValidationError(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetValidatedAt sets the "validated_at" field.
-func (cbc *CASBackendCreate) SetValidatedAt(t time.Time) *CASBackendCreate {
-	cbc.mutation.SetValidatedAt(t)
-	return cbc
+func (_c *CASBackendCreate) SetValidatedAt(v time.Time) *CASBackendCreate {
+	_c.mutation.SetValidatedAt(v)
+	return _c
 }
 
 // SetNillableValidatedAt sets the "validated_at" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableValidatedAt(t *time.Time) *CASBackendCreate {
-	if t != nil {
-		cbc.SetValidatedAt(*t)
+func (_c *CASBackendCreate) SetNillableValidatedAt(v *time.Time) *CASBackendCreate {
+	if v != nil {
+		_c.SetValidatedAt(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetDefault sets the "default" field.
-func (cbc *CASBackendCreate) SetDefault(b bool) *CASBackendCreate {
-	cbc.mutation.SetDefault(b)
-	return cbc
+func (_c *CASBackendCreate) SetDefault(v bool) *CASBackendCreate {
+	_c.mutation.SetDefault(v)
+	return _c
 }
 
 // SetNillableDefault sets the "default" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableDefault(b *bool) *CASBackendCreate {
-	if b != nil {
-		cbc.SetDefault(*b)
+func (_c *CASBackendCreate) SetNillableDefault(v *bool) *CASBackendCreate {
+	if v != nil {
+		_c.SetDefault(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (cbc *CASBackendCreate) SetDeletedAt(t time.Time) *CASBackendCreate {
-	cbc.mutation.SetDeletedAt(t)
-	return cbc
+func (_c *CASBackendCreate) SetDeletedAt(v time.Time) *CASBackendCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableDeletedAt(t *time.Time) *CASBackendCreate {
-	if t != nil {
-		cbc.SetDeletedAt(*t)
+func (_c *CASBackendCreate) SetNillableDeletedAt(v *time.Time) *CASBackendCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetFallback sets the "fallback" field.
-func (cbc *CASBackendCreate) SetFallback(b bool) *CASBackendCreate {
-	cbc.mutation.SetFallback(b)
-	return cbc
+func (_c *CASBackendCreate) SetFallback(v bool) *CASBackendCreate {
+	_c.mutation.SetFallback(v)
+	return _c
 }
 
 // SetNillableFallback sets the "fallback" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableFallback(b *bool) *CASBackendCreate {
-	if b != nil {
-		cbc.SetFallback(*b)
+func (_c *CASBackendCreate) SetNillableFallback(v *bool) *CASBackendCreate {
+	if v != nil {
+		_c.SetFallback(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
-func (cbc *CASBackendCreate) SetMaxBlobSizeBytes(i int64) *CASBackendCreate {
-	cbc.mutation.SetMaxBlobSizeBytes(i)
-	return cbc
+func (_c *CASBackendCreate) SetMaxBlobSizeBytes(v int64) *CASBackendCreate {
+	_c.mutation.SetMaxBlobSizeBytes(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (cbc *CASBackendCreate) SetID(u uuid.UUID) *CASBackendCreate {
-	cbc.mutation.SetID(u)
-	return cbc
+func (_c *CASBackendCreate) SetID(v uuid.UUID) *CASBackendCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (cbc *CASBackendCreate) SetNillableID(u *uuid.UUID) *CASBackendCreate {
-	if u != nil {
-		cbc.SetID(*u)
+func (_c *CASBackendCreate) SetNillableID(v *uuid.UUID) *CASBackendCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return cbc
+	return _c
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (cbc *CASBackendCreate) SetOrganizationID(id uuid.UUID) *CASBackendCreate {
-	cbc.mutation.SetOrganizationID(id)
-	return cbc
+func (_c *CASBackendCreate) SetOrganizationID(id uuid.UUID) *CASBackendCreate {
+	_c.mutation.SetOrganizationID(id)
+	return _c
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (cbc *CASBackendCreate) SetOrganization(o *Organization) *CASBackendCreate {
-	return cbc.SetOrganizationID(o.ID)
+func (_c *CASBackendCreate) SetOrganization(v *Organization) *CASBackendCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by IDs.
-func (cbc *CASBackendCreate) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendCreate {
-	cbc.mutation.AddWorkflowRunIDs(ids...)
-	return cbc
+func (_c *CASBackendCreate) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendCreate {
+	_c.mutation.AddWorkflowRunIDs(ids...)
+	return _c
 }
 
 // AddWorkflowRun adds the "workflow_run" edges to the WorkflowRun entity.
-func (cbc *CASBackendCreate) AddWorkflowRun(w ...*WorkflowRun) *CASBackendCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *CASBackendCreate) AddWorkflowRun(v ...*WorkflowRun) *CASBackendCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return cbc.AddWorkflowRunIDs(ids...)
+	return _c.AddWorkflowRunIDs(ids...)
 }
 
 // Mutation returns the CASBackendMutation object of the builder.
-func (cbc *CASBackendCreate) Mutation() *CASBackendMutation {
-	return cbc.mutation
+func (_c *CASBackendCreate) Mutation() *CASBackendMutation {
+	return _c.mutation
 }
 
 // Save creates the CASBackend in the database.
-func (cbc *CASBackendCreate) Save(ctx context.Context) (*CASBackend, error) {
-	cbc.defaults()
-	return withHooks(ctx, cbc.sqlSave, cbc.mutation, cbc.hooks)
+func (_c *CASBackendCreate) Save(ctx context.Context) (*CASBackend, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (cbc *CASBackendCreate) SaveX(ctx context.Context) *CASBackend {
-	v, err := cbc.Save(ctx)
+func (_c *CASBackendCreate) SaveX(ctx context.Context) *CASBackend {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -244,107 +244,107 @@ func (cbc *CASBackendCreate) SaveX(ctx context.Context) *CASBackend {
 }
 
 // Exec executes the query.
-func (cbc *CASBackendCreate) Exec(ctx context.Context) error {
-	_, err := cbc.Save(ctx)
+func (_c *CASBackendCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cbc *CASBackendCreate) ExecX(ctx context.Context) {
-	if err := cbc.Exec(ctx); err != nil {
+func (_c *CASBackendCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cbc *CASBackendCreate) defaults() {
-	if _, ok := cbc.mutation.CreatedAt(); !ok {
+func (_c *CASBackendCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := casbackend.DefaultCreatedAt()
-		cbc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := cbc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := casbackend.DefaultUpdatedAt()
-		cbc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := cbc.mutation.ValidationStatus(); !ok {
+	if _, ok := _c.mutation.ValidationStatus(); !ok {
 		v := casbackend.DefaultValidationStatus
-		cbc.mutation.SetValidationStatus(v)
+		_c.mutation.SetValidationStatus(v)
 	}
-	if _, ok := cbc.mutation.ValidatedAt(); !ok {
+	if _, ok := _c.mutation.ValidatedAt(); !ok {
 		v := casbackend.DefaultValidatedAt()
-		cbc.mutation.SetValidatedAt(v)
+		_c.mutation.SetValidatedAt(v)
 	}
-	if _, ok := cbc.mutation.Default(); !ok {
+	if _, ok := _c.mutation.Default(); !ok {
 		v := casbackend.DefaultDefault
-		cbc.mutation.SetDefault(v)
+		_c.mutation.SetDefault(v)
 	}
-	if _, ok := cbc.mutation.Fallback(); !ok {
+	if _, ok := _c.mutation.Fallback(); !ok {
 		v := casbackend.DefaultFallback
-		cbc.mutation.SetFallback(v)
+		_c.mutation.SetFallback(v)
 	}
-	if _, ok := cbc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := casbackend.DefaultID()
-		cbc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cbc *CASBackendCreate) check() error {
-	if _, ok := cbc.mutation.Location(); !ok {
+func (_c *CASBackendCreate) check() error {
+	if _, ok := _c.mutation.Location(); !ok {
 		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "CASBackend.location"`)}
 	}
-	if _, ok := cbc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "CASBackend.name"`)}
 	}
-	if _, ok := cbc.mutation.Provider(); !ok {
+	if _, ok := _c.mutation.Provider(); !ok {
 		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "CASBackend.provider"`)}
 	}
-	if v, ok := cbc.mutation.Provider(); ok {
+	if v, ok := _c.mutation.Provider(); ok {
 		if err := casbackend.ProviderValidator(v); err != nil {
 			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "CASBackend.provider": %w`, err)}
 		}
 	}
-	if _, ok := cbc.mutation.SecretName(); !ok {
+	if _, ok := _c.mutation.SecretName(); !ok {
 		return &ValidationError{Name: "secret_name", err: errors.New(`ent: missing required field "CASBackend.secret_name"`)}
 	}
-	if _, ok := cbc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CASBackend.created_at"`)}
 	}
-	if _, ok := cbc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "CASBackend.updated_at"`)}
 	}
-	if _, ok := cbc.mutation.ValidationStatus(); !ok {
+	if _, ok := _c.mutation.ValidationStatus(); !ok {
 		return &ValidationError{Name: "validation_status", err: errors.New(`ent: missing required field "CASBackend.validation_status"`)}
 	}
-	if v, ok := cbc.mutation.ValidationStatus(); ok {
+	if v, ok := _c.mutation.ValidationStatus(); ok {
 		if err := casbackend.ValidationStatusValidator(v); err != nil {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
-	if _, ok := cbc.mutation.ValidatedAt(); !ok {
+	if _, ok := _c.mutation.ValidatedAt(); !ok {
 		return &ValidationError{Name: "validated_at", err: errors.New(`ent: missing required field "CASBackend.validated_at"`)}
 	}
-	if _, ok := cbc.mutation.Default(); !ok {
+	if _, ok := _c.mutation.Default(); !ok {
 		return &ValidationError{Name: "default", err: errors.New(`ent: missing required field "CASBackend.default"`)}
 	}
-	if _, ok := cbc.mutation.Fallback(); !ok {
+	if _, ok := _c.mutation.Fallback(); !ok {
 		return &ValidationError{Name: "fallback", err: errors.New(`ent: missing required field "CASBackend.fallback"`)}
 	}
-	if _, ok := cbc.mutation.MaxBlobSizeBytes(); !ok {
+	if _, ok := _c.mutation.MaxBlobSizeBytes(); !ok {
 		return &ValidationError{Name: "max_blob_size_bytes", err: errors.New(`ent: missing required field "CASBackend.max_blob_size_bytes"`)}
 	}
-	if len(cbc.mutation.OrganizationIDs()) == 0 {
+	if len(_c.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
 	}
 	return nil
 }
 
-func (cbc *CASBackendCreate) sqlSave(ctx context.Context) (*CASBackend, error) {
-	if err := cbc.check(); err != nil {
+func (_c *CASBackendCreate) sqlSave(ctx context.Context) (*CASBackend, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := cbc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, cbc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -357,78 +357,78 @@ func (cbc *CASBackendCreate) sqlSave(ctx context.Context) (*CASBackend, error) {
 			return nil, err
 		}
 	}
-	cbc.mutation.id = &_node.ID
-	cbc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
+func (_c *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	var (
-		_node = &CASBackend{config: cbc.config}
+		_node = &CASBackend{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(casbackend.Table, sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = cbc.conflict
-	if id, ok := cbc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := cbc.mutation.Location(); ok {
+	if value, ok := _c.mutation.Location(); ok {
 		_spec.SetField(casbackend.FieldLocation, field.TypeString, value)
 		_node.Location = value
 	}
-	if value, ok := cbc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(casbackend.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := cbc.mutation.Provider(); ok {
+	if value, ok := _c.mutation.Provider(); ok {
 		_spec.SetField(casbackend.FieldProvider, field.TypeEnum, value)
 		_node.Provider = value
 	}
-	if value, ok := cbc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(casbackend.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := cbc.mutation.SecretName(); ok {
+	if value, ok := _c.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
 		_node.SecretName = value
 	}
-	if value, ok := cbc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(casbackend.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := cbc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := cbc.mutation.ValidationStatus(); ok {
+	if value, ok := _c.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
 		_node.ValidationStatus = value
 	}
-	if value, ok := cbc.mutation.ValidationError(); ok {
+	if value, ok := _c.mutation.ValidationError(); ok {
 		_spec.SetField(casbackend.FieldValidationError, field.TypeString, value)
 		_node.ValidationError = value
 	}
-	if value, ok := cbc.mutation.ValidatedAt(); ok {
+	if value, ok := _c.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 		_node.ValidatedAt = value
 	}
-	if value, ok := cbc.mutation.Default(); ok {
+	if value, ok := _c.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
 		_node.Default = value
 	}
-	if value, ok := cbc.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := cbc.mutation.Fallback(); ok {
+	if value, ok := _c.mutation.Fallback(); ok {
 		_spec.SetField(casbackend.FieldFallback, field.TypeBool, value)
 		_node.Fallback = value
 	}
-	if value, ok := cbc.mutation.MaxBlobSizeBytes(); ok {
+	if value, ok := _c.mutation.MaxBlobSizeBytes(); ok {
 		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 		_node.MaxBlobSizeBytes = value
 	}
-	if nodes := cbc.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -445,7 +445,7 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		_node.organization_cas_backends = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := cbc.mutation.WorkflowRunIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowRunIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -480,10 +480,10 @@ func (cbc *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 //			SetLocation(v+v).
 //		}).
 //		Exec(ctx)
-func (cbc *CASBackendCreate) OnConflict(opts ...sql.ConflictOption) *CASBackendUpsertOne {
-	cbc.conflict = opts
+func (_c *CASBackendCreate) OnConflict(opts ...sql.ConflictOption) *CASBackendUpsertOne {
+	_c.conflict = opts
 	return &CASBackendUpsertOne{
-		create: cbc,
+		create: _c,
 	}
 }
 
@@ -493,10 +493,10 @@ func (cbc *CASBackendCreate) OnConflict(opts ...sql.ConflictOption) *CASBackendU
 //	client.CASBackend.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (cbc *CASBackendCreate) OnConflictColumns(columns ...string) *CASBackendUpsertOne {
-	cbc.conflict = append(cbc.conflict, sql.ConflictColumns(columns...))
+func (_c *CASBackendCreate) OnConflictColumns(columns ...string) *CASBackendUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &CASBackendUpsertOne{
-		create: cbc,
+		create: _c,
 	}
 }
 
@@ -909,16 +909,16 @@ type CASBackendCreateBulk struct {
 }
 
 // Save creates the CASBackend entities in the database.
-func (cbcb *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, error) {
-	if cbcb.err != nil {
-		return nil, cbcb.err
+func (_c *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(cbcb.builders))
-	nodes := make([]*CASBackend, len(cbcb.builders))
-	mutators := make([]Mutator, len(cbcb.builders))
-	for i := range cbcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*CASBackend, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := cbcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CASBackendMutation)
@@ -932,12 +932,12 @@ func (cbcb *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, erro
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, cbcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = cbcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, cbcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -957,7 +957,7 @@ func (cbcb *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, erro
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, cbcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -965,8 +965,8 @@ func (cbcb *CASBackendCreateBulk) Save(ctx context.Context) ([]*CASBackend, erro
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cbcb *CASBackendCreateBulk) SaveX(ctx context.Context) []*CASBackend {
-	v, err := cbcb.Save(ctx)
+func (_c *CASBackendCreateBulk) SaveX(ctx context.Context) []*CASBackend {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -974,14 +974,14 @@ func (cbcb *CASBackendCreateBulk) SaveX(ctx context.Context) []*CASBackend {
 }
 
 // Exec executes the query.
-func (cbcb *CASBackendCreateBulk) Exec(ctx context.Context) error {
-	_, err := cbcb.Save(ctx)
+func (_c *CASBackendCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cbcb *CASBackendCreateBulk) ExecX(ctx context.Context) {
-	if err := cbcb.Exec(ctx); err != nil {
+func (_c *CASBackendCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -1001,10 +1001,10 @@ func (cbcb *CASBackendCreateBulk) ExecX(ctx context.Context) {
 //			SetLocation(v+v).
 //		}).
 //		Exec(ctx)
-func (cbcb *CASBackendCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASBackendUpsertBulk {
-	cbcb.conflict = opts
+func (_c *CASBackendCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASBackendUpsertBulk {
+	_c.conflict = opts
 	return &CASBackendUpsertBulk{
-		create: cbcb,
+		create: _c,
 	}
 }
 
@@ -1014,10 +1014,10 @@ func (cbcb *CASBackendCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASBac
 //	client.CASBackend.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (cbcb *CASBackendCreateBulk) OnConflictColumns(columns ...string) *CASBackendUpsertBulk {
-	cbcb.conflict = append(cbcb.conflict, sql.ConflictColumns(columns...))
+func (_c *CASBackendCreateBulk) OnConflictColumns(columns ...string) *CASBackendUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &CASBackendUpsertBulk{
-		create: cbcb,
+		create: _c,
 	}
 }
 
