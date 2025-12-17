@@ -38,9 +38,8 @@ type AttestationPushOpts struct {
 	*ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
 
-	LocalStatePath      string
-	SignServerOpts      *SignServerOpts
-	ValidateAttestation bool
+	LocalStatePath string
+	SignServerOpts *SignServerOpts
 }
 
 // SignServerOpts holds SignServer integration options
@@ -61,7 +60,6 @@ type AttestationPush struct {
 	*ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
 	localStatePath                             string
-	validateAttestation                        bool
 	signServerOpts                             *SignServerOpts
 	*newCrafterOpts
 }
@@ -69,15 +67,14 @@ type AttestationPush struct {
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger), crafter.WithAuthRawToken(cfg.AuthTokenRaw)}
 	return &AttestationPush{
-		ActionsOpts:         cfg.ActionsOpts,
-		keyPath:             cfg.KeyPath,
-		cliVersion:          cfg.CLIVersion,
-		cliDigest:           cfg.CLIDigest,
-		bundlePath:          cfg.BundlePath,
-		signServerOpts:      cfg.SignServerOpts,
-		localStatePath:      cfg.LocalStatePath,
-		validateAttestation: cfg.ValidateAttestation,
-		newCrafterOpts:      &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
+		ActionsOpts:    cfg.ActionsOpts,
+		keyPath:        cfg.KeyPath,
+		cliVersion:     cfg.CLIVersion,
+		cliDigest:      cfg.CLIDigest,
+		bundlePath:     cfg.BundlePath,
+		signServerOpts: cfg.SignServerOpts,
+		localStatePath: cfg.LocalStatePath,
+		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 	}, nil
 }
 
@@ -135,28 +132,24 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	// Make sure all the annotation values are now set
 	// This is in fact validated below but by manually checking we can provide a better error message
-	if action.validateAttestation {
-		for k, v := range craftedAnnotations {
-			var missingAnnotations []string
-			if v == "" {
-				missingAnnotations = append(missingAnnotations, k)
-			}
+	for k, v := range craftedAnnotations {
+		var missingAnnotations []string
+		if v == "" {
+			missingAnnotations = append(missingAnnotations, k)
+		}
 
-			if len(missingAnnotations) > 0 {
-				return nil, fmt.Errorf("annotations %q required", missingAnnotations)
-			}
+		if len(missingAnnotations) > 0 {
+			return nil, fmt.Errorf("annotations %q required", missingAnnotations)
 		}
 	}
 	// Set the annotations
 	crafter.CraftingState.Attestation.Annotations = craftedAnnotations
 
-	if action.validateAttestation {
-		if err := crafter.ValidateAttestation(); err != nil {
-			return nil, err
-		}
-
-		action.Logger.Debug().Msg("validation completed")
+	if err := crafter.ValidateAttestation(); err != nil {
+		return nil, err
 	}
+
+	action.Logger.Debug().Msg("validation completed")
 
 	// Update status annotations
 	finalAnnotations := make([]*Annotation, 0, len(craftedAnnotations))
