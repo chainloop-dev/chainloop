@@ -102,10 +102,11 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		createOpts.Owner = &userID
 
 		// Check if user is an org admin
-		membership, err := s.userUseCase.MembershipInOrg(ctx, user.ID, org.Name)
-		if err == nil && membership != nil {
-			createOpts.UserIsOrgAdmin = membership.Role.IsAdmin()
+		orgUUID, err := uuid.Parse(currentOrg.ID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
 		}
+		createOpts.UserIsOrgAdmin = isUserOrgAdmin(ctx, orgUUID)
 	}
 
 	p, err := s.useCase.Create(ctx, createOpts)

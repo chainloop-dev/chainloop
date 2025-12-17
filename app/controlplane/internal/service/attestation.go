@@ -778,12 +778,11 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		createOpts.Owner = &userID
 
 		// Check if user is an org admin
-		membership, err := s.userUseCase.MembershipInOrg(ctx, user.ID, org.Name)
-
-		if err == nil && membership != nil {
-			isAdmin := membership.Role.IsAdmin()
-			createOpts.UserIsOrgAdmin = isAdmin
+		orgUUID, err := uuid.Parse(apiToken.OrgID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
 		}
+		createOpts.UserIsOrgAdmin = isUserOrgAdmin(ctx, orgUUID)
 	}
 
 	wf, err := s.workflowUseCase.Create(ctx, createOpts)

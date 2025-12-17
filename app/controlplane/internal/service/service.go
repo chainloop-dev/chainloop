@@ -329,6 +329,23 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
+// isUserOrgAdmin checks if the current user is an org admin or owner
+func isUserOrgAdmin(ctx context.Context, orgUUID uuid.UUID) bool {
+	membership := entities.CurrentMembership(ctx)
+	if membership == nil {
+		return false
+	}
+
+	// Find the resource membership for this organization
+	for _, resource := range membership.Resources {
+		if resource.ResourceType == authz.ResourceTypeOrganization && resource.ResourceID == orgUUID {
+			return resource.Role.IsAdmin()
+		}
+	}
+
+	return false
+}
+
 // initializePaginationOpts initializes the pagination options with the provided request pagination options.
 func initializePaginationOpts(reqPagination *pb.OffsetPaginationRequest) (*pagination.OffsetPaginationOpts, error) {
 	// Initialize the pagination options, with default values
