@@ -20,56 +20,56 @@ type WorkflowContractVersionDelete struct {
 }
 
 // Where appends a list predicates to the WorkflowContractVersionDelete builder.
-func (wcvd *WorkflowContractVersionDelete) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionDelete {
-	wcvd.mutation.Where(ps...)
-	return wcvd
+func (_d *WorkflowContractVersionDelete) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (wcvd *WorkflowContractVersionDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, wcvd.sqlExec, wcvd.mutation, wcvd.hooks)
+func (_d *WorkflowContractVersionDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcvd *WorkflowContractVersionDelete) ExecX(ctx context.Context) int {
-	n, err := wcvd.Exec(ctx)
+func (_d *WorkflowContractVersionDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (wcvd *WorkflowContractVersionDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *WorkflowContractVersionDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(workflowcontractversion.Table, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
-	if ps := wcvd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, wcvd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	wcvd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // WorkflowContractVersionDeleteOne is the builder for deleting a single WorkflowContractVersion entity.
 type WorkflowContractVersionDeleteOne struct {
-	wcvd *WorkflowContractVersionDelete
+	_d *WorkflowContractVersionDelete
 }
 
 // Where appends a list predicates to the WorkflowContractVersionDelete builder.
-func (wcvdo *WorkflowContractVersionDeleteOne) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionDeleteOne {
-	wcvdo.wcvd.mutation.Where(ps...)
-	return wcvdo
+func (_d *WorkflowContractVersionDeleteOne) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (wcvdo *WorkflowContractVersionDeleteOne) Exec(ctx context.Context) error {
-	n, err := wcvdo.wcvd.Exec(ctx)
+func (_d *WorkflowContractVersionDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (wcvdo *WorkflowContractVersionDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcvdo *WorkflowContractVersionDeleteOne) ExecX(ctx context.Context) {
-	if err := wcvdo.Exec(ctx); err != nil {
+func (_d *WorkflowContractVersionDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

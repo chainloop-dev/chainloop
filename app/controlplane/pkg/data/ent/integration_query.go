@@ -37,44 +37,44 @@ type IntegrationQuery struct {
 }
 
 // Where adds a new predicate for the IntegrationQuery builder.
-func (iq *IntegrationQuery) Where(ps ...predicate.Integration) *IntegrationQuery {
-	iq.predicates = append(iq.predicates, ps...)
-	return iq
+func (_q *IntegrationQuery) Where(ps ...predicate.Integration) *IntegrationQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (iq *IntegrationQuery) Limit(limit int) *IntegrationQuery {
-	iq.ctx.Limit = &limit
-	return iq
+func (_q *IntegrationQuery) Limit(limit int) *IntegrationQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (iq *IntegrationQuery) Offset(offset int) *IntegrationQuery {
-	iq.ctx.Offset = &offset
-	return iq
+func (_q *IntegrationQuery) Offset(offset int) *IntegrationQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (iq *IntegrationQuery) Unique(unique bool) *IntegrationQuery {
-	iq.ctx.Unique = &unique
-	return iq
+func (_q *IntegrationQuery) Unique(unique bool) *IntegrationQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (iq *IntegrationQuery) Order(o ...integration.OrderOption) *IntegrationQuery {
-	iq.order = append(iq.order, o...)
-	return iq
+func (_q *IntegrationQuery) Order(o ...integration.OrderOption) *IntegrationQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryAttachments chains the current query on the "attachments" edge.
-func (iq *IntegrationQuery) QueryAttachments() *IntegrationAttachmentQuery {
-	query := (&IntegrationAttachmentClient{config: iq.config}).Query()
+func (_q *IntegrationQuery) QueryAttachments() *IntegrationAttachmentQuery {
+	query := (&IntegrationAttachmentClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := iq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -83,20 +83,20 @@ func (iq *IntegrationQuery) QueryAttachments() *IntegrationAttachmentQuery {
 			sqlgraph.To(integrationattachment.Table, integrationattachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, integration.AttachmentsTable, integration.AttachmentsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryOrganization chains the current query on the "organization" edge.
-func (iq *IntegrationQuery) QueryOrganization() *OrganizationQuery {
-	query := (&OrganizationClient{config: iq.config}).Query()
+func (_q *IntegrationQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := iq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (iq *IntegrationQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, integration.OrganizationTable, integration.OrganizationColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -113,8 +113,8 @@ func (iq *IntegrationQuery) QueryOrganization() *OrganizationQuery {
 
 // First returns the first Integration entity from the query.
 // Returns a *NotFoundError when no Integration was found.
-func (iq *IntegrationQuery) First(ctx context.Context) (*Integration, error) {
-	nodes, err := iq.Limit(1).All(setContextOp(ctx, iq.ctx, ent.OpQueryFirst))
+func (_q *IntegrationQuery) First(ctx context.Context) (*Integration, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +125,8 @@ func (iq *IntegrationQuery) First(ctx context.Context) (*Integration, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (iq *IntegrationQuery) FirstX(ctx context.Context) *Integration {
-	node, err := iq.First(ctx)
+func (_q *IntegrationQuery) FirstX(ctx context.Context) *Integration {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -135,9 +135,9 @@ func (iq *IntegrationQuery) FirstX(ctx context.Context) *Integration {
 
 // FirstID returns the first Integration ID from the query.
 // Returns a *NotFoundError when no Integration ID was found.
-func (iq *IntegrationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *IntegrationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = iq.Limit(1).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -148,8 +148,8 @@ func (iq *IntegrationQuery) FirstID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (iq *IntegrationQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := iq.FirstID(ctx)
+func (_q *IntegrationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -159,8 +159,8 @@ func (iq *IntegrationQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single Integration entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Integration entity is found.
 // Returns a *NotFoundError when no Integration entities are found.
-func (iq *IntegrationQuery) Only(ctx context.Context) (*Integration, error) {
-	nodes, err := iq.Limit(2).All(setContextOp(ctx, iq.ctx, ent.OpQueryOnly))
+func (_q *IntegrationQuery) Only(ctx context.Context) (*Integration, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +175,8 @@ func (iq *IntegrationQuery) Only(ctx context.Context) (*Integration, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (iq *IntegrationQuery) OnlyX(ctx context.Context) *Integration {
-	node, err := iq.Only(ctx)
+func (_q *IntegrationQuery) OnlyX(ctx context.Context) *Integration {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -186,9 +186,9 @@ func (iq *IntegrationQuery) OnlyX(ctx context.Context) *Integration {
 // OnlyID is like Only, but returns the only Integration ID in the query.
 // Returns a *NotSingularError when more than one Integration ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (iq *IntegrationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *IntegrationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = iq.Limit(2).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -203,8 +203,8 @@ func (iq *IntegrationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (iq *IntegrationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := iq.OnlyID(ctx)
+func (_q *IntegrationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -212,18 +212,18 @@ func (iq *IntegrationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of Integrations.
-func (iq *IntegrationQuery) All(ctx context.Context) ([]*Integration, error) {
-	ctx = setContextOp(ctx, iq.ctx, ent.OpQueryAll)
-	if err := iq.prepareQuery(ctx); err != nil {
+func (_q *IntegrationQuery) All(ctx context.Context) ([]*Integration, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*Integration, *IntegrationQuery]()
-	return withInterceptors[[]*Integration](ctx, iq, qr, iq.inters)
+	return withInterceptors[[]*Integration](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (iq *IntegrationQuery) AllX(ctx context.Context) []*Integration {
-	nodes, err := iq.All(ctx)
+func (_q *IntegrationQuery) AllX(ctx context.Context) []*Integration {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -231,20 +231,20 @@ func (iq *IntegrationQuery) AllX(ctx context.Context) []*Integration {
 }
 
 // IDs executes the query and returns a list of Integration IDs.
-func (iq *IntegrationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if iq.ctx.Unique == nil && iq.path != nil {
-		iq.Unique(true)
+func (_q *IntegrationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, iq.ctx, ent.OpQueryIDs)
-	if err = iq.Select(integration.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(integration.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (iq *IntegrationQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := iq.IDs(ctx)
+func (_q *IntegrationQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -252,17 +252,17 @@ func (iq *IntegrationQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (iq *IntegrationQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, iq.ctx, ent.OpQueryCount)
-	if err := iq.prepareQuery(ctx); err != nil {
+func (_q *IntegrationQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, iq, querierCount[*IntegrationQuery](), iq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*IntegrationQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (iq *IntegrationQuery) CountX(ctx context.Context) int {
-	count, err := iq.Count(ctx)
+func (_q *IntegrationQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -270,9 +270,9 @@ func (iq *IntegrationQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (iq *IntegrationQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, iq.ctx, ent.OpQueryExist)
-	switch _, err := iq.FirstID(ctx); {
+func (_q *IntegrationQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -283,8 +283,8 @@ func (iq *IntegrationQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (iq *IntegrationQuery) ExistX(ctx context.Context) bool {
-	exist, err := iq.Exist(ctx)
+func (_q *IntegrationQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -293,45 +293,45 @@ func (iq *IntegrationQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the IntegrationQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (iq *IntegrationQuery) Clone() *IntegrationQuery {
-	if iq == nil {
+func (_q *IntegrationQuery) Clone() *IntegrationQuery {
+	if _q == nil {
 		return nil
 	}
 	return &IntegrationQuery{
-		config:           iq.config,
-		ctx:              iq.ctx.Clone(),
-		order:            append([]integration.OrderOption{}, iq.order...),
-		inters:           append([]Interceptor{}, iq.inters...),
-		predicates:       append([]predicate.Integration{}, iq.predicates...),
-		withAttachments:  iq.withAttachments.Clone(),
-		withOrganization: iq.withOrganization.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]integration.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.Integration{}, _q.predicates...),
+		withAttachments:  _q.withAttachments.Clone(),
+		withOrganization: _q.withOrganization.Clone(),
 		// clone intermediate query.
-		sql:       iq.sql.Clone(),
-		path:      iq.path,
-		modifiers: append([]func(*sql.Selector){}, iq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithAttachments tells the query-builder to eager-load the nodes that are connected to
 // the "attachments" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *IntegrationQuery) WithAttachments(opts ...func(*IntegrationAttachmentQuery)) *IntegrationQuery {
-	query := (&IntegrationAttachmentClient{config: iq.config}).Query()
+func (_q *IntegrationQuery) WithAttachments(opts ...func(*IntegrationAttachmentQuery)) *IntegrationQuery {
+	query := (&IntegrationAttachmentClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	iq.withAttachments = query
-	return iq
+	_q.withAttachments = query
+	return _q
 }
 
 // WithOrganization tells the query-builder to eager-load the nodes that are connected to
 // the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *IntegrationQuery) WithOrganization(opts ...func(*OrganizationQuery)) *IntegrationQuery {
-	query := (&OrganizationClient{config: iq.config}).Query()
+func (_q *IntegrationQuery) WithOrganization(opts ...func(*OrganizationQuery)) *IntegrationQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	iq.withOrganization = query
-	return iq
+	_q.withOrganization = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -348,10 +348,10 @@ func (iq *IntegrationQuery) WithOrganization(opts ...func(*OrganizationQuery)) *
 //		GroupBy(integration.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (iq *IntegrationQuery) GroupBy(field string, fields ...string) *IntegrationGroupBy {
-	iq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &IntegrationGroupBy{build: iq}
-	grbuild.flds = &iq.ctx.Fields
+func (_q *IntegrationQuery) GroupBy(field string, fields ...string) *IntegrationGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &IntegrationGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = integration.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -369,56 +369,56 @@ func (iq *IntegrationQuery) GroupBy(field string, fields ...string) *Integration
 //	client.Integration.Query().
 //		Select(integration.FieldName).
 //		Scan(ctx, &v)
-func (iq *IntegrationQuery) Select(fields ...string) *IntegrationSelect {
-	iq.ctx.Fields = append(iq.ctx.Fields, fields...)
-	sbuild := &IntegrationSelect{IntegrationQuery: iq}
+func (_q *IntegrationQuery) Select(fields ...string) *IntegrationSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &IntegrationSelect{IntegrationQuery: _q}
 	sbuild.label = integration.Label
-	sbuild.flds, sbuild.scan = &iq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a IntegrationSelect configured with the given aggregations.
-func (iq *IntegrationQuery) Aggregate(fns ...AggregateFunc) *IntegrationSelect {
-	return iq.Select().Aggregate(fns...)
+func (_q *IntegrationQuery) Aggregate(fns ...AggregateFunc) *IntegrationSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (iq *IntegrationQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range iq.inters {
+func (_q *IntegrationQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, iq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range iq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !integration.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if iq.path != nil {
-		prev, err := iq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		iq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (iq *IntegrationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Integration, error) {
+func (_q *IntegrationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Integration, error) {
 	var (
 		nodes       = []*Integration{}
-		withFKs     = iq.withFKs
-		_spec       = iq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			iq.withAttachments != nil,
-			iq.withOrganization != nil,
+			_q.withAttachments != nil,
+			_q.withOrganization != nil,
 		}
 	)
-	if iq.withOrganization != nil {
+	if _q.withOrganization != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -428,32 +428,32 @@ func (iq *IntegrationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		return (*Integration).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Integration{config: iq.config}
+		node := &Integration{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(iq.modifiers) > 0 {
-		_spec.Modifiers = iq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, iq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := iq.withAttachments; query != nil {
-		if err := iq.loadAttachments(ctx, query, nodes,
+	if query := _q.withAttachments; query != nil {
+		if err := _q.loadAttachments(ctx, query, nodes,
 			func(n *Integration) { n.Edges.Attachments = []*IntegrationAttachment{} },
 			func(n *Integration, e *IntegrationAttachment) { n.Edges.Attachments = append(n.Edges.Attachments, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := iq.withOrganization; query != nil {
-		if err := iq.loadOrganization(ctx, query, nodes, nil,
+	if query := _q.withOrganization; query != nil {
+		if err := _q.loadOrganization(ctx, query, nodes, nil,
 			func(n *Integration, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
@@ -461,7 +461,7 @@ func (iq *IntegrationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
-func (iq *IntegrationQuery) loadAttachments(ctx context.Context, query *IntegrationAttachmentQuery, nodes []*Integration, init func(*Integration), assign func(*Integration, *IntegrationAttachment)) error {
+func (_q *IntegrationQuery) loadAttachments(ctx context.Context, query *IntegrationAttachmentQuery, nodes []*Integration, init func(*Integration), assign func(*Integration, *IntegrationAttachment)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Integration)
 	for i := range nodes {
@@ -492,7 +492,7 @@ func (iq *IntegrationQuery) loadAttachments(ctx context.Context, query *Integrat
 	}
 	return nil
 }
-func (iq *IntegrationQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Integration, init func(*Integration), assign func(*Integration, *Organization)) error {
+func (_q *IntegrationQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Integration, init func(*Integration), assign func(*Integration, *Organization)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Integration)
 	for i := range nodes {
@@ -525,27 +525,27 @@ func (iq *IntegrationQuery) loadOrganization(ctx context.Context, query *Organiz
 	return nil
 }
 
-func (iq *IntegrationQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := iq.querySpec()
-	if len(iq.modifiers) > 0 {
-		_spec.Modifiers = iq.modifiers
+func (_q *IntegrationQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = iq.ctx.Fields
-	if len(iq.ctx.Fields) > 0 {
-		_spec.Unique = iq.ctx.Unique != nil && *iq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, iq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (iq *IntegrationQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *IntegrationQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(integration.Table, integration.Columns, sqlgraph.NewFieldSpec(integration.FieldID, field.TypeUUID))
-	_spec.From = iq.sql
-	if unique := iq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if iq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := iq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, integration.FieldID)
 		for i := range fields {
@@ -554,20 +554,20 @@ func (iq *IntegrationQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := iq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := iq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := iq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := iq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -577,36 +577,36 @@ func (iq *IntegrationQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (iq *IntegrationQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(iq.driver.Dialect())
+func (_q *IntegrationQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(integration.Table)
-	columns := iq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = integration.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if iq.sql != nil {
-		selector = iq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if iq.ctx.Unique != nil && *iq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range iq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range iq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range iq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := iq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := iq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -615,33 +615,33 @@ func (iq *IntegrationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (iq *IntegrationQuery) ForUpdate(opts ...sql.LockOption) *IntegrationQuery {
-	if iq.driver.Dialect() == dialect.Postgres {
-		iq.Unique(false)
+func (_q *IntegrationQuery) ForUpdate(opts ...sql.LockOption) *IntegrationQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	iq.modifiers = append(iq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return iq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (iq *IntegrationQuery) ForShare(opts ...sql.LockOption) *IntegrationQuery {
-	if iq.driver.Dialect() == dialect.Postgres {
-		iq.Unique(false)
+func (_q *IntegrationQuery) ForShare(opts ...sql.LockOption) *IntegrationQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	iq.modifiers = append(iq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return iq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (iq *IntegrationQuery) Modify(modifiers ...func(s *sql.Selector)) *IntegrationSelect {
-	iq.modifiers = append(iq.modifiers, modifiers...)
-	return iq.Select()
+func (_q *IntegrationQuery) Modify(modifiers ...func(s *sql.Selector)) *IntegrationSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // IntegrationGroupBy is the group-by builder for Integration entities.
@@ -651,41 +651,41 @@ type IntegrationGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (igb *IntegrationGroupBy) Aggregate(fns ...AggregateFunc) *IntegrationGroupBy {
-	igb.fns = append(igb.fns, fns...)
-	return igb
+func (_g *IntegrationGroupBy) Aggregate(fns ...AggregateFunc) *IntegrationGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (igb *IntegrationGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, igb.build.ctx, ent.OpQueryGroupBy)
-	if err := igb.build.prepareQuery(ctx); err != nil {
+func (_g *IntegrationGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*IntegrationQuery, *IntegrationGroupBy](ctx, igb.build, igb, igb.build.inters, v)
+	return scanWithInterceptors[*IntegrationQuery, *IntegrationGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (igb *IntegrationGroupBy) sqlScan(ctx context.Context, root *IntegrationQuery, v any) error {
+func (_g *IntegrationGroupBy) sqlScan(ctx context.Context, root *IntegrationQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(igb.fns))
-	for _, fn := range igb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*igb.flds)+len(igb.fns))
-		for _, f := range *igb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*igb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := igb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -699,27 +699,27 @@ type IntegrationSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (is *IntegrationSelect) Aggregate(fns ...AggregateFunc) *IntegrationSelect {
-	is.fns = append(is.fns, fns...)
-	return is
+func (_s *IntegrationSelect) Aggregate(fns ...AggregateFunc) *IntegrationSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (is *IntegrationSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, is.ctx, ent.OpQuerySelect)
-	if err := is.prepareQuery(ctx); err != nil {
+func (_s *IntegrationSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*IntegrationQuery, *IntegrationSelect](ctx, is.IntegrationQuery, is, is.inters, v)
+	return scanWithInterceptors[*IntegrationQuery, *IntegrationSelect](ctx, _s.IntegrationQuery, _s, _s.inters, v)
 }
 
-func (is *IntegrationSelect) sqlScan(ctx context.Context, root *IntegrationQuery, v any) error {
+func (_s *IntegrationSelect) sqlScan(ctx context.Context, root *IntegrationQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(is.fns))
-	for _, fn := range is.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*is.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -727,7 +727,7 @@ func (is *IntegrationSelect) sqlScan(ctx context.Context, root *IntegrationQuery
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := is.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -735,7 +735,7 @@ func (is *IntegrationSelect) sqlScan(ctx context.Context, root *IntegrationQuery
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (is *IntegrationSelect) Modify(modifiers ...func(s *sql.Selector)) *IntegrationSelect {
-	is.modifiers = append(is.modifiers, modifiers...)
-	return is
+func (_s *IntegrationSelect) Modify(modifiers ...func(s *sql.Selector)) *IntegrationSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

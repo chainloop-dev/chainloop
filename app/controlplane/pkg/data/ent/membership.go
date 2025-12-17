@@ -132,7 +132,7 @@ func (*Membership) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Membership fields.
-func (m *Membership) assignValues(columns []string, values []any) error {
+func (_m *Membership) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -142,79 +142,79 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				m.ID = *value
+				_m.ID = *value
 			}
 		case membership.FieldCurrent:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field current", values[i])
 			} else if value.Valid {
-				m.Current = value.Bool
+				_m.Current = value.Bool
 			}
 		case membership.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				m.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case membership.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				m.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case membership.FieldRole:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
-				m.Role = authz.Role(value.String)
+				_m.Role = authz.Role(value.String)
 			}
 		case membership.FieldMembershipType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field membership_type", values[i])
 			} else if value.Valid {
-				m.MembershipType = authz.MembershipType(value.String)
+				_m.MembershipType = authz.MembershipType(value.String)
 			}
 		case membership.FieldMemberID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field member_id", values[i])
 			} else if value != nil {
-				m.MemberID = *value
+				_m.MemberID = *value
 			}
 		case membership.FieldResourceType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
 			} else if value.Valid {
-				m.ResourceType = authz.ResourceType(value.String)
+				_m.ResourceType = authz.ResourceType(value.String)
 			}
 		case membership.FieldResourceID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field resource_id", values[i])
 			} else if value != nil {
-				m.ResourceID = *value
+				_m.ResourceID = *value
 			}
 		case membership.FieldParentID:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
 			} else if value.Valid {
-				m.ParentID = new(uuid.UUID)
-				*m.ParentID = *value.S.(*uuid.UUID)
+				_m.ParentID = new(uuid.UUID)
+				*_m.ParentID = *value.S.(*uuid.UUID)
 			}
 		case membership.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_memberships", values[i])
 			} else if value.Valid {
-				m.organization_memberships = new(uuid.UUID)
-				*m.organization_memberships = *value.S.(*uuid.UUID)
+				_m.organization_memberships = new(uuid.UUID)
+				*_m.organization_memberships = *value.S.(*uuid.UUID)
 			}
 		case membership.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_memberships", values[i])
 			} else if value.Valid {
-				m.user_memberships = new(uuid.UUID)
-				*m.user_memberships = *value.S.(*uuid.UUID)
+				_m.user_memberships = new(uuid.UUID)
+				*_m.user_memberships = *value.S.(*uuid.UUID)
 			}
 		default:
-			m.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -222,78 +222,78 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Membership.
 // This includes values selected through modifiers, order, etc.
-func (m *Membership) Value(name string) (ent.Value, error) {
-	return m.selectValues.Get(name)
+func (_m *Membership) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the Membership entity.
-func (m *Membership) QueryOrganization() *OrganizationQuery {
-	return NewMembershipClient(m.config).QueryOrganization(m)
+func (_m *Membership) QueryOrganization() *OrganizationQuery {
+	return NewMembershipClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryUser queries the "user" edge of the Membership entity.
-func (m *Membership) QueryUser() *UserQuery {
-	return NewMembershipClient(m.config).QueryUser(m)
+func (_m *Membership) QueryUser() *UserQuery {
+	return NewMembershipClient(_m.config).QueryUser(_m)
 }
 
 // QueryParent queries the "parent" edge of the Membership entity.
-func (m *Membership) QueryParent() *MembershipQuery {
-	return NewMembershipClient(m.config).QueryParent(m)
+func (_m *Membership) QueryParent() *MembershipQuery {
+	return NewMembershipClient(_m.config).QueryParent(_m)
 }
 
 // QueryChildren queries the "children" edge of the Membership entity.
-func (m *Membership) QueryChildren() *MembershipQuery {
-	return NewMembershipClient(m.config).QueryChildren(m)
+func (_m *Membership) QueryChildren() *MembershipQuery {
+	return NewMembershipClient(_m.config).QueryChildren(_m)
 }
 
 // Update returns a builder for updating this Membership.
 // Note that you need to call Membership.Unwrap() before calling this method if this Membership
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (m *Membership) Update() *MembershipUpdateOne {
-	return NewMembershipClient(m.config).UpdateOne(m)
+func (_m *Membership) Update() *MembershipUpdateOne {
+	return NewMembershipClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Membership entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (m *Membership) Unwrap() *Membership {
-	_tx, ok := m.config.driver.(*txDriver)
+func (_m *Membership) Unwrap() *Membership {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Membership is not a transactional entity")
 	}
-	m.config.driver = _tx.drv
-	return m
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (m *Membership) String() string {
+func (_m *Membership) String() string {
 	var builder strings.Builder
 	builder.WriteString("Membership(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("current=")
-	builder.WriteString(fmt.Sprintf("%v", m.Current))
+	builder.WriteString(fmt.Sprintf("%v", _m.Current))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("role=")
-	builder.WriteString(fmt.Sprintf("%v", m.Role))
+	builder.WriteString(fmt.Sprintf("%v", _m.Role))
 	builder.WriteString(", ")
 	builder.WriteString("membership_type=")
-	builder.WriteString(fmt.Sprintf("%v", m.MembershipType))
+	builder.WriteString(fmt.Sprintf("%v", _m.MembershipType))
 	builder.WriteString(", ")
 	builder.WriteString("member_id=")
-	builder.WriteString(fmt.Sprintf("%v", m.MemberID))
+	builder.WriteString(fmt.Sprintf("%v", _m.MemberID))
 	builder.WriteString(", ")
 	builder.WriteString("resource_type=")
-	builder.WriteString(fmt.Sprintf("%v", m.ResourceType))
+	builder.WriteString(fmt.Sprintf("%v", _m.ResourceType))
 	builder.WriteString(", ")
 	builder.WriteString("resource_id=")
-	builder.WriteString(fmt.Sprintf("%v", m.ResourceID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ResourceID))
 	builder.WriteString(", ")
-	if v := m.ParentID; v != nil {
+	if v := _m.ParentID; v != nil {
 		builder.WriteString("parent_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}

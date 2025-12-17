@@ -32,244 +32,244 @@ type WorkflowRunCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (wrc *WorkflowRunCreate) SetCreatedAt(t time.Time) *WorkflowRunCreate {
-	wrc.mutation.SetCreatedAt(t)
-	return wrc
+func (_c *WorkflowRunCreate) SetCreatedAt(v time.Time) *WorkflowRunCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableCreatedAt(t *time.Time) *WorkflowRunCreate {
-	if t != nil {
-		wrc.SetCreatedAt(*t)
+func (_c *WorkflowRunCreate) SetNillableCreatedAt(v *time.Time) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetFinishedAt sets the "finished_at" field.
-func (wrc *WorkflowRunCreate) SetFinishedAt(t time.Time) *WorkflowRunCreate {
-	wrc.mutation.SetFinishedAt(t)
-	return wrc
+func (_c *WorkflowRunCreate) SetFinishedAt(v time.Time) *WorkflowRunCreate {
+	_c.mutation.SetFinishedAt(v)
+	return _c
 }
 
 // SetNillableFinishedAt sets the "finished_at" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableFinishedAt(t *time.Time) *WorkflowRunCreate {
-	if t != nil {
-		wrc.SetFinishedAt(*t)
+func (_c *WorkflowRunCreate) SetNillableFinishedAt(v *time.Time) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetFinishedAt(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetState sets the "state" field.
-func (wrc *WorkflowRunCreate) SetState(brs biz.WorkflowRunStatus) *WorkflowRunCreate {
-	wrc.mutation.SetState(brs)
-	return wrc
+func (_c *WorkflowRunCreate) SetState(v biz.WorkflowRunStatus) *WorkflowRunCreate {
+	_c.mutation.SetState(v)
+	return _c
 }
 
 // SetNillableState sets the "state" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableState(brs *biz.WorkflowRunStatus) *WorkflowRunCreate {
-	if brs != nil {
-		wrc.SetState(*brs)
+func (_c *WorkflowRunCreate) SetNillableState(v *biz.WorkflowRunStatus) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetState(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetReason sets the "reason" field.
-func (wrc *WorkflowRunCreate) SetReason(s string) *WorkflowRunCreate {
-	wrc.mutation.SetReason(s)
-	return wrc
+func (_c *WorkflowRunCreate) SetReason(v string) *WorkflowRunCreate {
+	_c.mutation.SetReason(v)
+	return _c
 }
 
 // SetNillableReason sets the "reason" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableReason(s *string) *WorkflowRunCreate {
-	if s != nil {
-		wrc.SetReason(*s)
+func (_c *WorkflowRunCreate) SetNillableReason(v *string) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetReason(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetRunURL sets the "run_url" field.
-func (wrc *WorkflowRunCreate) SetRunURL(s string) *WorkflowRunCreate {
-	wrc.mutation.SetRunURL(s)
-	return wrc
+func (_c *WorkflowRunCreate) SetRunURL(v string) *WorkflowRunCreate {
+	_c.mutation.SetRunURL(v)
+	return _c
 }
 
 // SetNillableRunURL sets the "run_url" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableRunURL(s *string) *WorkflowRunCreate {
-	if s != nil {
-		wrc.SetRunURL(*s)
+func (_c *WorkflowRunCreate) SetNillableRunURL(v *string) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetRunURL(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetRunnerType sets the "runner_type" field.
-func (wrc *WorkflowRunCreate) SetRunnerType(s string) *WorkflowRunCreate {
-	wrc.mutation.SetRunnerType(s)
-	return wrc
+func (_c *WorkflowRunCreate) SetRunnerType(v string) *WorkflowRunCreate {
+	_c.mutation.SetRunnerType(v)
+	return _c
 }
 
 // SetNillableRunnerType sets the "runner_type" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableRunnerType(s *string) *WorkflowRunCreate {
-	if s != nil {
-		wrc.SetRunnerType(*s)
+func (_c *WorkflowRunCreate) SetNillableRunnerType(v *string) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetRunnerType(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetAttestation sets the "attestation" field.
-func (wrc *WorkflowRunCreate) SetAttestation(d *dsse.Envelope) *WorkflowRunCreate {
-	wrc.mutation.SetAttestation(d)
-	return wrc
+func (_c *WorkflowRunCreate) SetAttestation(v *dsse.Envelope) *WorkflowRunCreate {
+	_c.mutation.SetAttestation(v)
+	return _c
 }
 
 // SetAttestationDigest sets the "attestation_digest" field.
-func (wrc *WorkflowRunCreate) SetAttestationDigest(s string) *WorkflowRunCreate {
-	wrc.mutation.SetAttestationDigest(s)
-	return wrc
+func (_c *WorkflowRunCreate) SetAttestationDigest(v string) *WorkflowRunCreate {
+	_c.mutation.SetAttestationDigest(v)
+	return _c
 }
 
 // SetNillableAttestationDigest sets the "attestation_digest" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableAttestationDigest(s *string) *WorkflowRunCreate {
-	if s != nil {
-		wrc.SetAttestationDigest(*s)
+func (_c *WorkflowRunCreate) SetNillableAttestationDigest(v *string) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetAttestationDigest(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetAttestationState sets the "attestation_state" field.
-func (wrc *WorkflowRunCreate) SetAttestationState(b []byte) *WorkflowRunCreate {
-	wrc.mutation.SetAttestationState(b)
-	return wrc
+func (_c *WorkflowRunCreate) SetAttestationState(v []byte) *WorkflowRunCreate {
+	_c.mutation.SetAttestationState(v)
+	return _c
 }
 
 // SetContractRevisionUsed sets the "contract_revision_used" field.
-func (wrc *WorkflowRunCreate) SetContractRevisionUsed(i int) *WorkflowRunCreate {
-	wrc.mutation.SetContractRevisionUsed(i)
-	return wrc
+func (_c *WorkflowRunCreate) SetContractRevisionUsed(v int) *WorkflowRunCreate {
+	_c.mutation.SetContractRevisionUsed(v)
+	return _c
 }
 
 // SetContractRevisionLatest sets the "contract_revision_latest" field.
-func (wrc *WorkflowRunCreate) SetContractRevisionLatest(i int) *WorkflowRunCreate {
-	wrc.mutation.SetContractRevisionLatest(i)
-	return wrc
+func (_c *WorkflowRunCreate) SetContractRevisionLatest(v int) *WorkflowRunCreate {
+	_c.mutation.SetContractRevisionLatest(v)
+	return _c
 }
 
 // SetVersionID sets the "version_id" field.
-func (wrc *WorkflowRunCreate) SetVersionID(u uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetVersionID(u)
-	return wrc
+func (_c *WorkflowRunCreate) SetVersionID(v uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.SetVersionID(v)
+	return _c
 }
 
 // SetWorkflowID sets the "workflow_id" field.
-func (wrc *WorkflowRunCreate) SetWorkflowID(u uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetWorkflowID(u)
-	return wrc
+func (_c *WorkflowRunCreate) SetWorkflowID(v uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.SetWorkflowID(v)
+	return _c
 }
 
 // SetHasPolicyViolations sets the "has_policy_violations" field.
-func (wrc *WorkflowRunCreate) SetHasPolicyViolations(b bool) *WorkflowRunCreate {
-	wrc.mutation.SetHasPolicyViolations(b)
-	return wrc
+func (_c *WorkflowRunCreate) SetHasPolicyViolations(v bool) *WorkflowRunCreate {
+	_c.mutation.SetHasPolicyViolations(v)
+	return _c
 }
 
 // SetNillableHasPolicyViolations sets the "has_policy_violations" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableHasPolicyViolations(b *bool) *WorkflowRunCreate {
-	if b != nil {
-		wrc.SetHasPolicyViolations(*b)
+func (_c *WorkflowRunCreate) SetNillableHasPolicyViolations(v *bool) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetHasPolicyViolations(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (wrc *WorkflowRunCreate) SetID(u uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetID(u)
-	return wrc
+func (_c *WorkflowRunCreate) SetID(v uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableID(u *uuid.UUID) *WorkflowRunCreate {
-	if u != nil {
-		wrc.SetID(*u)
+func (_c *WorkflowRunCreate) SetNillableID(v *uuid.UUID) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return wrc
+	return _c
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (wrc *WorkflowRunCreate) SetWorkflow(w *Workflow) *WorkflowRunCreate {
-	return wrc.SetWorkflowID(w.ID)
+func (_c *WorkflowRunCreate) SetWorkflow(v *Workflow) *WorkflowRunCreate {
+	return _c.SetWorkflowID(v.ID)
 }
 
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
-func (wrc *WorkflowRunCreate) SetContractVersionID(id uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetContractVersionID(id)
-	return wrc
+func (_c *WorkflowRunCreate) SetContractVersionID(id uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.SetContractVersionID(id)
+	return _c
 }
 
 // SetNillableContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableContractVersionID(id *uuid.UUID) *WorkflowRunCreate {
+func (_c *WorkflowRunCreate) SetNillableContractVersionID(id *uuid.UUID) *WorkflowRunCreate {
 	if id != nil {
-		wrc = wrc.SetContractVersionID(*id)
+		_c = _c.SetContractVersionID(*id)
 	}
-	return wrc
+	return _c
 }
 
 // SetContractVersion sets the "contract_version" edge to the WorkflowContractVersion entity.
-func (wrc *WorkflowRunCreate) SetContractVersion(w *WorkflowContractVersion) *WorkflowRunCreate {
-	return wrc.SetContractVersionID(w.ID)
+func (_c *WorkflowRunCreate) SetContractVersion(v *WorkflowContractVersion) *WorkflowRunCreate {
+	return _c.SetContractVersionID(v.ID)
 }
 
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
-func (wrc *WorkflowRunCreate) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.AddCasBackendIDs(ids...)
-	return wrc
+func (_c *WorkflowRunCreate) AddCasBackendIDs(ids ...uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.AddCasBackendIDs(ids...)
+	return _c
 }
 
 // AddCasBackends adds the "cas_backends" edges to the CASBackend entity.
-func (wrc *WorkflowRunCreate) AddCasBackends(c ...*CASBackend) *WorkflowRunCreate {
-	ids := make([]uuid.UUID, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_c *WorkflowRunCreate) AddCasBackends(v ...*CASBackend) *WorkflowRunCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return wrc.AddCasBackendIDs(ids...)
+	return _c.AddCasBackendIDs(ids...)
 }
 
 // SetVersion sets the "version" edge to the ProjectVersion entity.
-func (wrc *WorkflowRunCreate) SetVersion(p *ProjectVersion) *WorkflowRunCreate {
-	return wrc.SetVersionID(p.ID)
+func (_c *WorkflowRunCreate) SetVersion(v *ProjectVersion) *WorkflowRunCreate {
+	return _c.SetVersionID(v.ID)
 }
 
 // SetAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID.
-func (wrc *WorkflowRunCreate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunCreate {
-	wrc.mutation.SetAttestationBundleID(id)
-	return wrc
+func (_c *WorkflowRunCreate) SetAttestationBundleID(id uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.SetAttestationBundleID(id)
+	return _c
 }
 
 // SetNillableAttestationBundleID sets the "attestation_bundle" edge to the Attestation entity by ID if the given value is not nil.
-func (wrc *WorkflowRunCreate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunCreate {
+func (_c *WorkflowRunCreate) SetNillableAttestationBundleID(id *uuid.UUID) *WorkflowRunCreate {
 	if id != nil {
-		wrc = wrc.SetAttestationBundleID(*id)
+		_c = _c.SetAttestationBundleID(*id)
 	}
-	return wrc
+	return _c
 }
 
 // SetAttestationBundle sets the "attestation_bundle" edge to the Attestation entity.
-func (wrc *WorkflowRunCreate) SetAttestationBundle(a *Attestation) *WorkflowRunCreate {
-	return wrc.SetAttestationBundleID(a.ID)
+func (_c *WorkflowRunCreate) SetAttestationBundle(v *Attestation) *WorkflowRunCreate {
+	return _c.SetAttestationBundleID(v.ID)
 }
 
 // Mutation returns the WorkflowRunMutation object of the builder.
-func (wrc *WorkflowRunCreate) Mutation() *WorkflowRunMutation {
-	return wrc.mutation
+func (_c *WorkflowRunCreate) Mutation() *WorkflowRunMutation {
+	return _c.mutation
 }
 
 // Save creates the WorkflowRun in the database.
-func (wrc *WorkflowRunCreate) Save(ctx context.Context) (*WorkflowRun, error) {
-	wrc.defaults()
-	return withHooks(ctx, wrc.sqlSave, wrc.mutation, wrc.hooks)
+func (_c *WorkflowRunCreate) Save(ctx context.Context) (*WorkflowRun, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (wrc *WorkflowRunCreate) SaveX(ctx context.Context) *WorkflowRun {
-	v, err := wrc.Save(ctx)
+func (_c *WorkflowRunCreate) SaveX(ctx context.Context) *WorkflowRun {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -277,74 +277,74 @@ func (wrc *WorkflowRunCreate) SaveX(ctx context.Context) *WorkflowRun {
 }
 
 // Exec executes the query.
-func (wrc *WorkflowRunCreate) Exec(ctx context.Context) error {
-	_, err := wrc.Save(ctx)
+func (_c *WorkflowRunCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wrc *WorkflowRunCreate) ExecX(ctx context.Context) {
-	if err := wrc.Exec(ctx); err != nil {
+func (_c *WorkflowRunCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (wrc *WorkflowRunCreate) defaults() {
-	if _, ok := wrc.mutation.CreatedAt(); !ok {
+func (_c *WorkflowRunCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := workflowrun.DefaultCreatedAt()
-		wrc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := wrc.mutation.State(); !ok {
+	if _, ok := _c.mutation.State(); !ok {
 		v := workflowrun.DefaultState
-		wrc.mutation.SetState(v)
+		_c.mutation.SetState(v)
 	}
-	if _, ok := wrc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := workflowrun.DefaultID()
-		wrc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wrc *WorkflowRunCreate) check() error {
-	if _, ok := wrc.mutation.CreatedAt(); !ok {
+func (_c *WorkflowRunCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkflowRun.created_at"`)}
 	}
-	if _, ok := wrc.mutation.State(); !ok {
+	if _, ok := _c.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "WorkflowRun.state"`)}
 	}
-	if v, ok := wrc.mutation.State(); ok {
+	if v, ok := _c.mutation.State(); ok {
 		if err := workflowrun.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
 	}
-	if _, ok := wrc.mutation.ContractRevisionUsed(); !ok {
+	if _, ok := _c.mutation.ContractRevisionUsed(); !ok {
 		return &ValidationError{Name: "contract_revision_used", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_used"`)}
 	}
-	if _, ok := wrc.mutation.ContractRevisionLatest(); !ok {
+	if _, ok := _c.mutation.ContractRevisionLatest(); !ok {
 		return &ValidationError{Name: "contract_revision_latest", err: errors.New(`ent: missing required field "WorkflowRun.contract_revision_latest"`)}
 	}
-	if _, ok := wrc.mutation.VersionID(); !ok {
+	if _, ok := _c.mutation.VersionID(); !ok {
 		return &ValidationError{Name: "version_id", err: errors.New(`ent: missing required field "WorkflowRun.version_id"`)}
 	}
-	if _, ok := wrc.mutation.WorkflowID(); !ok {
+	if _, ok := _c.mutation.WorkflowID(); !ok {
 		return &ValidationError{Name: "workflow_id", err: errors.New(`ent: missing required field "WorkflowRun.workflow_id"`)}
 	}
-	if len(wrc.mutation.WorkflowIDs()) == 0 {
+	if len(_c.mutation.WorkflowIDs()) == 0 {
 		return &ValidationError{Name: "workflow", err: errors.New(`ent: missing required edge "WorkflowRun.workflow"`)}
 	}
-	if len(wrc.mutation.VersionIDs()) == 0 {
+	if len(_c.mutation.VersionIDs()) == 0 {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required edge "WorkflowRun.version"`)}
 	}
 	return nil
 }
 
-func (wrc *WorkflowRunCreate) sqlSave(ctx context.Context) (*WorkflowRun, error) {
-	if err := wrc.check(); err != nil {
+func (_c *WorkflowRunCreate) sqlSave(ctx context.Context) (*WorkflowRun, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := wrc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, wrc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -357,70 +357,70 @@ func (wrc *WorkflowRunCreate) sqlSave(ctx context.Context) (*WorkflowRun, error)
 			return nil, err
 		}
 	}
-	wrc.mutation.id = &_node.ID
-	wrc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
+func (_c *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
 	var (
-		_node = &WorkflowRun{config: wrc.config}
+		_node = &WorkflowRun{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(workflowrun.Table, sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = wrc.conflict
-	if id, ok := wrc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := wrc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(workflowrun.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := wrc.mutation.FinishedAt(); ok {
+	if value, ok := _c.mutation.FinishedAt(); ok {
 		_spec.SetField(workflowrun.FieldFinishedAt, field.TypeTime, value)
 		_node.FinishedAt = value
 	}
-	if value, ok := wrc.mutation.State(); ok {
+	if value, ok := _c.mutation.State(); ok {
 		_spec.SetField(workflowrun.FieldState, field.TypeEnum, value)
 		_node.State = value
 	}
-	if value, ok := wrc.mutation.Reason(); ok {
+	if value, ok := _c.mutation.Reason(); ok {
 		_spec.SetField(workflowrun.FieldReason, field.TypeString, value)
 		_node.Reason = value
 	}
-	if value, ok := wrc.mutation.RunURL(); ok {
+	if value, ok := _c.mutation.RunURL(); ok {
 		_spec.SetField(workflowrun.FieldRunURL, field.TypeString, value)
 		_node.RunURL = value
 	}
-	if value, ok := wrc.mutation.RunnerType(); ok {
+	if value, ok := _c.mutation.RunnerType(); ok {
 		_spec.SetField(workflowrun.FieldRunnerType, field.TypeString, value)
 		_node.RunnerType = value
 	}
-	if value, ok := wrc.mutation.Attestation(); ok {
+	if value, ok := _c.mutation.Attestation(); ok {
 		_spec.SetField(workflowrun.FieldAttestation, field.TypeJSON, value)
 		_node.Attestation = value
 	}
-	if value, ok := wrc.mutation.AttestationDigest(); ok {
+	if value, ok := _c.mutation.AttestationDigest(); ok {
 		_spec.SetField(workflowrun.FieldAttestationDigest, field.TypeString, value)
 		_node.AttestationDigest = value
 	}
-	if value, ok := wrc.mutation.AttestationState(); ok {
+	if value, ok := _c.mutation.AttestationState(); ok {
 		_spec.SetField(workflowrun.FieldAttestationState, field.TypeBytes, value)
 		_node.AttestationState = value
 	}
-	if value, ok := wrc.mutation.ContractRevisionUsed(); ok {
+	if value, ok := _c.mutation.ContractRevisionUsed(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionUsed, field.TypeInt, value)
 		_node.ContractRevisionUsed = value
 	}
-	if value, ok := wrc.mutation.ContractRevisionLatest(); ok {
+	if value, ok := _c.mutation.ContractRevisionLatest(); ok {
 		_spec.SetField(workflowrun.FieldContractRevisionLatest, field.TypeInt, value)
 		_node.ContractRevisionLatest = value
 	}
-	if value, ok := wrc.mutation.HasPolicyViolations(); ok {
+	if value, ok := _c.mutation.HasPolicyViolations(); ok {
 		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
 		_node.HasPolicyViolations = &value
 	}
-	if nodes := wrc.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -437,7 +437,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_node.WorkflowID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := wrc.mutation.ContractVersionIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ContractVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -454,7 +454,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_node.workflow_run_contract_version = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := wrc.mutation.CasBackendsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.CasBackendsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -470,7 +470,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := wrc.mutation.VersionIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.VersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -487,7 +487,7 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 		_node.VersionID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := wrc.mutation.AttestationBundleIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.AttestationBundleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -522,10 +522,10 @@ func (wrc *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) 
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (wrc *WorkflowRunCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowRunUpsertOne {
-	wrc.conflict = opts
+func (_c *WorkflowRunCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowRunUpsertOne {
+	_c.conflict = opts
 	return &WorkflowRunUpsertOne{
-		create: wrc,
+		create: _c,
 	}
 }
 
@@ -535,10 +535,10 @@ func (wrc *WorkflowRunCreate) OnConflict(opts ...sql.ConflictOption) *WorkflowRu
 //	client.WorkflowRun.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (wrc *WorkflowRunCreate) OnConflictColumns(columns ...string) *WorkflowRunUpsertOne {
-	wrc.conflict = append(wrc.conflict, sql.ConflictColumns(columns...))
+func (_c *WorkflowRunCreate) OnConflictColumns(columns ...string) *WorkflowRunUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &WorkflowRunUpsertOne{
-		create: wrc,
+		create: _c,
 	}
 }
 
@@ -1098,16 +1098,16 @@ type WorkflowRunCreateBulk struct {
 }
 
 // Save creates the WorkflowRun entities in the database.
-func (wrcb *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, error) {
-	if wrcb.err != nil {
-		return nil, wrcb.err
+func (_c *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(wrcb.builders))
-	nodes := make([]*WorkflowRun, len(wrcb.builders))
-	mutators := make([]Mutator, len(wrcb.builders))
-	for i := range wrcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*WorkflowRun, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := wrcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*WorkflowRunMutation)
@@ -1121,12 +1121,12 @@ func (wrcb *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, er
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, wrcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = wrcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, wrcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -1146,7 +1146,7 @@ func (wrcb *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, er
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, wrcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -1154,8 +1154,8 @@ func (wrcb *WorkflowRunCreateBulk) Save(ctx context.Context) ([]*WorkflowRun, er
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wrcb *WorkflowRunCreateBulk) SaveX(ctx context.Context) []*WorkflowRun {
-	v, err := wrcb.Save(ctx)
+func (_c *WorkflowRunCreateBulk) SaveX(ctx context.Context) []*WorkflowRun {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -1163,14 +1163,14 @@ func (wrcb *WorkflowRunCreateBulk) SaveX(ctx context.Context) []*WorkflowRun {
 }
 
 // Exec executes the query.
-func (wrcb *WorkflowRunCreateBulk) Exec(ctx context.Context) error {
-	_, err := wrcb.Save(ctx)
+func (_c *WorkflowRunCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wrcb *WorkflowRunCreateBulk) ExecX(ctx context.Context) {
-	if err := wrcb.Exec(ctx); err != nil {
+func (_c *WorkflowRunCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -1190,10 +1190,10 @@ func (wrcb *WorkflowRunCreateBulk) ExecX(ctx context.Context) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (wrcb *WorkflowRunCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowRunUpsertBulk {
-	wrcb.conflict = opts
+func (_c *WorkflowRunCreateBulk) OnConflict(opts ...sql.ConflictOption) *WorkflowRunUpsertBulk {
+	_c.conflict = opts
 	return &WorkflowRunUpsertBulk{
-		create: wrcb,
+		create: _c,
 	}
 }
 
@@ -1203,10 +1203,10 @@ func (wrcb *WorkflowRunCreateBulk) OnConflict(opts ...sql.ConflictOption) *Workf
 //	client.WorkflowRun.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (wrcb *WorkflowRunCreateBulk) OnConflictColumns(columns ...string) *WorkflowRunUpsertBulk {
-	wrcb.conflict = append(wrcb.conflict, sql.ConflictColumns(columns...))
+func (_c *WorkflowRunCreateBulk) OnConflictColumns(columns ...string) *WorkflowRunUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &WorkflowRunUpsertBulk{
-		create: wrcb,
+		create: _c,
 	}
 }
 

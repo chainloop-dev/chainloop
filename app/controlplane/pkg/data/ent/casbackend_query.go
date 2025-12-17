@@ -37,44 +37,44 @@ type CASBackendQuery struct {
 }
 
 // Where adds a new predicate for the CASBackendQuery builder.
-func (cbq *CASBackendQuery) Where(ps ...predicate.CASBackend) *CASBackendQuery {
-	cbq.predicates = append(cbq.predicates, ps...)
-	return cbq
+func (_q *CASBackendQuery) Where(ps ...predicate.CASBackend) *CASBackendQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (cbq *CASBackendQuery) Limit(limit int) *CASBackendQuery {
-	cbq.ctx.Limit = &limit
-	return cbq
+func (_q *CASBackendQuery) Limit(limit int) *CASBackendQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (cbq *CASBackendQuery) Offset(offset int) *CASBackendQuery {
-	cbq.ctx.Offset = &offset
-	return cbq
+func (_q *CASBackendQuery) Offset(offset int) *CASBackendQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (cbq *CASBackendQuery) Unique(unique bool) *CASBackendQuery {
-	cbq.ctx.Unique = &unique
-	return cbq
+func (_q *CASBackendQuery) Unique(unique bool) *CASBackendQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (cbq *CASBackendQuery) Order(o ...casbackend.OrderOption) *CASBackendQuery {
-	cbq.order = append(cbq.order, o...)
-	return cbq
+func (_q *CASBackendQuery) Order(o ...casbackend.OrderOption) *CASBackendQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryOrganization chains the current query on the "organization" edge.
-func (cbq *CASBackendQuery) QueryOrganization() *OrganizationQuery {
-	query := (&OrganizationClient{config: cbq.config}).Query()
+func (_q *CASBackendQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cbq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cbq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -83,20 +83,20 @@ func (cbq *CASBackendQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, casbackend.OrganizationTable, casbackend.OrganizationColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(cbq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryWorkflowRun chains the current query on the "workflow_run" edge.
-func (cbq *CASBackendQuery) QueryWorkflowRun() *WorkflowRunQuery {
-	query := (&WorkflowRunClient{config: cbq.config}).Query()
+func (_q *CASBackendQuery) QueryWorkflowRun() *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cbq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cbq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (cbq *CASBackendQuery) QueryWorkflowRun() *WorkflowRunQuery {
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, casbackend.WorkflowRunTable, casbackend.WorkflowRunPrimaryKey...),
 		)
-		fromU = sqlgraph.SetNeighbors(cbq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -113,8 +113,8 @@ func (cbq *CASBackendQuery) QueryWorkflowRun() *WorkflowRunQuery {
 
 // First returns the first CASBackend entity from the query.
 // Returns a *NotFoundError when no CASBackend was found.
-func (cbq *CASBackendQuery) First(ctx context.Context) (*CASBackend, error) {
-	nodes, err := cbq.Limit(1).All(setContextOp(ctx, cbq.ctx, ent.OpQueryFirst))
+func (_q *CASBackendQuery) First(ctx context.Context) (*CASBackend, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +125,8 @@ func (cbq *CASBackendQuery) First(ctx context.Context) (*CASBackend, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (cbq *CASBackendQuery) FirstX(ctx context.Context) *CASBackend {
-	node, err := cbq.First(ctx)
+func (_q *CASBackendQuery) FirstX(ctx context.Context) *CASBackend {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -135,9 +135,9 @@ func (cbq *CASBackendQuery) FirstX(ctx context.Context) *CASBackend {
 
 // FirstID returns the first CASBackend ID from the query.
 // Returns a *NotFoundError when no CASBackend ID was found.
-func (cbq *CASBackendQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *CASBackendQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cbq.Limit(1).IDs(setContextOp(ctx, cbq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -148,8 +148,8 @@ func (cbq *CASBackendQuery) FirstID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (cbq *CASBackendQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := cbq.FirstID(ctx)
+func (_q *CASBackendQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -159,8 +159,8 @@ func (cbq *CASBackendQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single CASBackend entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one CASBackend entity is found.
 // Returns a *NotFoundError when no CASBackend entities are found.
-func (cbq *CASBackendQuery) Only(ctx context.Context) (*CASBackend, error) {
-	nodes, err := cbq.Limit(2).All(setContextOp(ctx, cbq.ctx, ent.OpQueryOnly))
+func (_q *CASBackendQuery) Only(ctx context.Context) (*CASBackend, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +175,8 @@ func (cbq *CASBackendQuery) Only(ctx context.Context) (*CASBackend, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (cbq *CASBackendQuery) OnlyX(ctx context.Context) *CASBackend {
-	node, err := cbq.Only(ctx)
+func (_q *CASBackendQuery) OnlyX(ctx context.Context) *CASBackend {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -186,9 +186,9 @@ func (cbq *CASBackendQuery) OnlyX(ctx context.Context) *CASBackend {
 // OnlyID is like Only, but returns the only CASBackend ID in the query.
 // Returns a *NotSingularError when more than one CASBackend ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (cbq *CASBackendQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *CASBackendQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = cbq.Limit(2).IDs(setContextOp(ctx, cbq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -203,8 +203,8 @@ func (cbq *CASBackendQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (cbq *CASBackendQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := cbq.OnlyID(ctx)
+func (_q *CASBackendQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -212,18 +212,18 @@ func (cbq *CASBackendQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of CASBackends.
-func (cbq *CASBackendQuery) All(ctx context.Context) ([]*CASBackend, error) {
-	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryAll)
-	if err := cbq.prepareQuery(ctx); err != nil {
+func (_q *CASBackendQuery) All(ctx context.Context) ([]*CASBackend, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*CASBackend, *CASBackendQuery]()
-	return withInterceptors[[]*CASBackend](ctx, cbq, qr, cbq.inters)
+	return withInterceptors[[]*CASBackend](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (cbq *CASBackendQuery) AllX(ctx context.Context) []*CASBackend {
-	nodes, err := cbq.All(ctx)
+func (_q *CASBackendQuery) AllX(ctx context.Context) []*CASBackend {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -231,20 +231,20 @@ func (cbq *CASBackendQuery) AllX(ctx context.Context) []*CASBackend {
 }
 
 // IDs executes the query and returns a list of CASBackend IDs.
-func (cbq *CASBackendQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if cbq.ctx.Unique == nil && cbq.path != nil {
-		cbq.Unique(true)
+func (_q *CASBackendQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryIDs)
-	if err = cbq.Select(casbackend.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(casbackend.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (cbq *CASBackendQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := cbq.IDs(ctx)
+func (_q *CASBackendQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -252,17 +252,17 @@ func (cbq *CASBackendQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (cbq *CASBackendQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryCount)
-	if err := cbq.prepareQuery(ctx); err != nil {
+func (_q *CASBackendQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, cbq, querierCount[*CASBackendQuery](), cbq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*CASBackendQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (cbq *CASBackendQuery) CountX(ctx context.Context) int {
-	count, err := cbq.Count(ctx)
+func (_q *CASBackendQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -270,9 +270,9 @@ func (cbq *CASBackendQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (cbq *CASBackendQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, cbq.ctx, ent.OpQueryExist)
-	switch _, err := cbq.FirstID(ctx); {
+func (_q *CASBackendQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -283,8 +283,8 @@ func (cbq *CASBackendQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (cbq *CASBackendQuery) ExistX(ctx context.Context) bool {
-	exist, err := cbq.Exist(ctx)
+func (_q *CASBackendQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -293,45 +293,45 @@ func (cbq *CASBackendQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the CASBackendQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (cbq *CASBackendQuery) Clone() *CASBackendQuery {
-	if cbq == nil {
+func (_q *CASBackendQuery) Clone() *CASBackendQuery {
+	if _q == nil {
 		return nil
 	}
 	return &CASBackendQuery{
-		config:           cbq.config,
-		ctx:              cbq.ctx.Clone(),
-		order:            append([]casbackend.OrderOption{}, cbq.order...),
-		inters:           append([]Interceptor{}, cbq.inters...),
-		predicates:       append([]predicate.CASBackend{}, cbq.predicates...),
-		withOrganization: cbq.withOrganization.Clone(),
-		withWorkflowRun:  cbq.withWorkflowRun.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]casbackend.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.CASBackend{}, _q.predicates...),
+		withOrganization: _q.withOrganization.Clone(),
+		withWorkflowRun:  _q.withWorkflowRun.Clone(),
 		// clone intermediate query.
-		sql:       cbq.sql.Clone(),
-		path:      cbq.path,
-		modifiers: append([]func(*sql.Selector){}, cbq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithOrganization tells the query-builder to eager-load the nodes that are connected to
 // the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (cbq *CASBackendQuery) WithOrganization(opts ...func(*OrganizationQuery)) *CASBackendQuery {
-	query := (&OrganizationClient{config: cbq.config}).Query()
+func (_q *CASBackendQuery) WithOrganization(opts ...func(*OrganizationQuery)) *CASBackendQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	cbq.withOrganization = query
-	return cbq
+	_q.withOrganization = query
+	return _q
 }
 
 // WithWorkflowRun tells the query-builder to eager-load the nodes that are connected to
 // the "workflow_run" edge. The optional arguments are used to configure the query builder of the edge.
-func (cbq *CASBackendQuery) WithWorkflowRun(opts ...func(*WorkflowRunQuery)) *CASBackendQuery {
-	query := (&WorkflowRunClient{config: cbq.config}).Query()
+func (_q *CASBackendQuery) WithWorkflowRun(opts ...func(*WorkflowRunQuery)) *CASBackendQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	cbq.withWorkflowRun = query
-	return cbq
+	_q.withWorkflowRun = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -348,10 +348,10 @@ func (cbq *CASBackendQuery) WithWorkflowRun(opts ...func(*WorkflowRunQuery)) *CA
 //		GroupBy(casbackend.FieldLocation).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (cbq *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendGroupBy {
-	cbq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &CASBackendGroupBy{build: cbq}
-	grbuild.flds = &cbq.ctx.Fields
+func (_q *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &CASBackendGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = casbackend.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -369,56 +369,56 @@ func (cbq *CASBackendQuery) GroupBy(field string, fields ...string) *CASBackendG
 //	client.CASBackend.Query().
 //		Select(casbackend.FieldLocation).
 //		Scan(ctx, &v)
-func (cbq *CASBackendQuery) Select(fields ...string) *CASBackendSelect {
-	cbq.ctx.Fields = append(cbq.ctx.Fields, fields...)
-	sbuild := &CASBackendSelect{CASBackendQuery: cbq}
+func (_q *CASBackendQuery) Select(fields ...string) *CASBackendSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &CASBackendSelect{CASBackendQuery: _q}
 	sbuild.label = casbackend.Label
-	sbuild.flds, sbuild.scan = &cbq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a CASBackendSelect configured with the given aggregations.
-func (cbq *CASBackendQuery) Aggregate(fns ...AggregateFunc) *CASBackendSelect {
-	return cbq.Select().Aggregate(fns...)
+func (_q *CASBackendQuery) Aggregate(fns ...AggregateFunc) *CASBackendSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (cbq *CASBackendQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range cbq.inters {
+func (_q *CASBackendQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, cbq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range cbq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !casbackend.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if cbq.path != nil {
-		prev, err := cbq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		cbq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (cbq *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CASBackend, error) {
+func (_q *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CASBackend, error) {
 	var (
 		nodes       = []*CASBackend{}
-		withFKs     = cbq.withFKs
-		_spec       = cbq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			cbq.withOrganization != nil,
-			cbq.withWorkflowRun != nil,
+			_q.withOrganization != nil,
+			_q.withWorkflowRun != nil,
 		}
 	)
-	if cbq.withOrganization != nil {
+	if _q.withOrganization != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -428,31 +428,31 @@ func (cbq *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		return (*CASBackend).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &CASBackend{config: cbq.config}
+		node := &CASBackend{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(cbq.modifiers) > 0 {
-		_spec.Modifiers = cbq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, cbq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := cbq.withOrganization; query != nil {
-		if err := cbq.loadOrganization(ctx, query, nodes, nil,
+	if query := _q.withOrganization; query != nil {
+		if err := _q.loadOrganization(ctx, query, nodes, nil,
 			func(n *CASBackend, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := cbq.withWorkflowRun; query != nil {
-		if err := cbq.loadWorkflowRun(ctx, query, nodes,
+	if query := _q.withWorkflowRun; query != nil {
+		if err := _q.loadWorkflowRun(ctx, query, nodes,
 			func(n *CASBackend) { n.Edges.WorkflowRun = []*WorkflowRun{} },
 			func(n *CASBackend, e *WorkflowRun) { n.Edges.WorkflowRun = append(n.Edges.WorkflowRun, e) }); err != nil {
 			return nil, err
@@ -461,7 +461,7 @@ func (cbq *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
-func (cbq *CASBackendQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*CASBackend, init func(*CASBackend), assign func(*CASBackend, *Organization)) error {
+func (_q *CASBackendQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*CASBackend, init func(*CASBackend), assign func(*CASBackend, *Organization)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASBackend)
 	for i := range nodes {
@@ -493,7 +493,7 @@ func (cbq *CASBackendQuery) loadOrganization(ctx context.Context, query *Organiz
 	}
 	return nil
 }
-func (cbq *CASBackendQuery) loadWorkflowRun(ctx context.Context, query *WorkflowRunQuery, nodes []*CASBackend, init func(*CASBackend), assign func(*CASBackend, *WorkflowRun)) error {
+func (_q *CASBackendQuery) loadWorkflowRun(ctx context.Context, query *WorkflowRunQuery, nodes []*CASBackend, init func(*CASBackend), assign func(*CASBackend, *WorkflowRun)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*CASBackend)
 	nids := make(map[uuid.UUID]map[*CASBackend]struct{})
@@ -555,27 +555,27 @@ func (cbq *CASBackendQuery) loadWorkflowRun(ctx context.Context, query *Workflow
 	return nil
 }
 
-func (cbq *CASBackendQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := cbq.querySpec()
-	if len(cbq.modifiers) > 0 {
-		_spec.Modifiers = cbq.modifiers
+func (_q *CASBackendQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = cbq.ctx.Fields
-	if len(cbq.ctx.Fields) > 0 {
-		_spec.Unique = cbq.ctx.Unique != nil && *cbq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, cbq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (cbq *CASBackendQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *CASBackendQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(casbackend.Table, casbackend.Columns, sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID))
-	_spec.From = cbq.sql
-	if unique := cbq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if cbq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := cbq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, casbackend.FieldID)
 		for i := range fields {
@@ -584,20 +584,20 @@ func (cbq *CASBackendQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := cbq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := cbq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := cbq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := cbq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -607,36 +607,36 @@ func (cbq *CASBackendQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (cbq *CASBackendQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(cbq.driver.Dialect())
+func (_q *CASBackendQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(casbackend.Table)
-	columns := cbq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = casbackend.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if cbq.sql != nil {
-		selector = cbq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if cbq.ctx.Unique != nil && *cbq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range cbq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range cbq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range cbq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := cbq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := cbq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -645,33 +645,33 @@ func (cbq *CASBackendQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (cbq *CASBackendQuery) ForUpdate(opts ...sql.LockOption) *CASBackendQuery {
-	if cbq.driver.Dialect() == dialect.Postgres {
-		cbq.Unique(false)
+func (_q *CASBackendQuery) ForUpdate(opts ...sql.LockOption) *CASBackendQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	cbq.modifiers = append(cbq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return cbq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (cbq *CASBackendQuery) ForShare(opts ...sql.LockOption) *CASBackendQuery {
-	if cbq.driver.Dialect() == dialect.Postgres {
-		cbq.Unique(false)
+func (_q *CASBackendQuery) ForShare(opts ...sql.LockOption) *CASBackendQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	cbq.modifiers = append(cbq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return cbq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (cbq *CASBackendQuery) Modify(modifiers ...func(s *sql.Selector)) *CASBackendSelect {
-	cbq.modifiers = append(cbq.modifiers, modifiers...)
-	return cbq.Select()
+func (_q *CASBackendQuery) Modify(modifiers ...func(s *sql.Selector)) *CASBackendSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // CASBackendGroupBy is the group-by builder for CASBackend entities.
@@ -681,41 +681,41 @@ type CASBackendGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (cbgb *CASBackendGroupBy) Aggregate(fns ...AggregateFunc) *CASBackendGroupBy {
-	cbgb.fns = append(cbgb.fns, fns...)
-	return cbgb
+func (_g *CASBackendGroupBy) Aggregate(fns ...AggregateFunc) *CASBackendGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (cbgb *CASBackendGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cbgb.build.ctx, ent.OpQueryGroupBy)
-	if err := cbgb.build.prepareQuery(ctx); err != nil {
+func (_g *CASBackendGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*CASBackendQuery, *CASBackendGroupBy](ctx, cbgb.build, cbgb, cbgb.build.inters, v)
+	return scanWithInterceptors[*CASBackendQuery, *CASBackendGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (cbgb *CASBackendGroupBy) sqlScan(ctx context.Context, root *CASBackendQuery, v any) error {
+func (_g *CASBackendGroupBy) sqlScan(ctx context.Context, root *CASBackendQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(cbgb.fns))
-	for _, fn := range cbgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*cbgb.flds)+len(cbgb.fns))
-		for _, f := range *cbgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*cbgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := cbgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -729,27 +729,27 @@ type CASBackendSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (cbs *CASBackendSelect) Aggregate(fns ...AggregateFunc) *CASBackendSelect {
-	cbs.fns = append(cbs.fns, fns...)
-	return cbs
+func (_s *CASBackendSelect) Aggregate(fns ...AggregateFunc) *CASBackendSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (cbs *CASBackendSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cbs.ctx, ent.OpQuerySelect)
-	if err := cbs.prepareQuery(ctx); err != nil {
+func (_s *CASBackendSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*CASBackendQuery, *CASBackendSelect](ctx, cbs.CASBackendQuery, cbs, cbs.inters, v)
+	return scanWithInterceptors[*CASBackendQuery, *CASBackendSelect](ctx, _s.CASBackendQuery, _s, _s.inters, v)
 }
 
-func (cbs *CASBackendSelect) sqlScan(ctx context.Context, root *CASBackendQuery, v any) error {
+func (_s *CASBackendSelect) sqlScan(ctx context.Context, root *CASBackendQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(cbs.fns))
-	for _, fn := range cbs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*cbs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -757,7 +757,7 @@ func (cbs *CASBackendSelect) sqlScan(ctx context.Context, root *CASBackendQuery,
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := cbs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -765,7 +765,7 @@ func (cbs *CASBackendSelect) sqlScan(ctx context.Context, root *CASBackendQuery,
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (cbs *CASBackendSelect) Modify(modifiers ...func(s *sql.Selector)) *CASBackendSelect {
-	cbs.modifiers = append(cbs.modifiers, modifiers...)
-	return cbs
+func (_s *CASBackendSelect) Modify(modifiers ...func(s *sql.Selector)) *CASBackendSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

@@ -28,221 +28,221 @@ type CASBackendUpdate struct {
 }
 
 // Where appends a list predicates to the CASBackendUpdate builder.
-func (cbu *CASBackendUpdate) Where(ps ...predicate.CASBackend) *CASBackendUpdate {
-	cbu.mutation.Where(ps...)
-	return cbu
+func (_u *CASBackendUpdate) Where(ps ...predicate.CASBackend) *CASBackendUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (cbu *CASBackendUpdate) SetDescription(s string) *CASBackendUpdate {
-	cbu.mutation.SetDescription(s)
-	return cbu
+func (_u *CASBackendUpdate) SetDescription(v string) *CASBackendUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableDescription(s *string) *CASBackendUpdate {
-	if s != nil {
-		cbu.SetDescription(*s)
+func (_u *CASBackendUpdate) SetNillableDescription(v *string) *CASBackendUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return cbu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (cbu *CASBackendUpdate) ClearDescription() *CASBackendUpdate {
-	cbu.mutation.ClearDescription()
-	return cbu
+func (_u *CASBackendUpdate) ClearDescription() *CASBackendUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetSecretName sets the "secret_name" field.
-func (cbu *CASBackendUpdate) SetSecretName(s string) *CASBackendUpdate {
-	cbu.mutation.SetSecretName(s)
-	return cbu
+func (_u *CASBackendUpdate) SetSecretName(v string) *CASBackendUpdate {
+	_u.mutation.SetSecretName(v)
+	return _u
 }
 
 // SetNillableSecretName sets the "secret_name" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableSecretName(s *string) *CASBackendUpdate {
-	if s != nil {
-		cbu.SetSecretName(*s)
+func (_u *CASBackendUpdate) SetNillableSecretName(v *string) *CASBackendUpdate {
+	if v != nil {
+		_u.SetSecretName(*v)
 	}
-	return cbu
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (cbu *CASBackendUpdate) SetUpdatedAt(t time.Time) *CASBackendUpdate {
-	cbu.mutation.SetUpdatedAt(t)
-	return cbu
+func (_u *CASBackendUpdate) SetUpdatedAt(v time.Time) *CASBackendUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (cbu *CASBackendUpdate) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdate {
-	cbu.mutation.SetValidationStatus(bbvs)
-	return cbu
+func (_u *CASBackendUpdate) SetValidationStatus(v biz.CASBackendValidationStatus) *CASBackendUpdate {
+	_u.mutation.SetValidationStatus(v)
+	return _u
 }
 
 // SetNillableValidationStatus sets the "validation_status" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableValidationStatus(bbvs *biz.CASBackendValidationStatus) *CASBackendUpdate {
-	if bbvs != nil {
-		cbu.SetValidationStatus(*bbvs)
+func (_u *CASBackendUpdate) SetNillableValidationStatus(v *biz.CASBackendValidationStatus) *CASBackendUpdate {
+	if v != nil {
+		_u.SetValidationStatus(*v)
 	}
-	return cbu
+	return _u
 }
 
 // SetValidationError sets the "validation_error" field.
-func (cbu *CASBackendUpdate) SetValidationError(s string) *CASBackendUpdate {
-	cbu.mutation.SetValidationError(s)
-	return cbu
+func (_u *CASBackendUpdate) SetValidationError(v string) *CASBackendUpdate {
+	_u.mutation.SetValidationError(v)
+	return _u
 }
 
 // SetNillableValidationError sets the "validation_error" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableValidationError(s *string) *CASBackendUpdate {
-	if s != nil {
-		cbu.SetValidationError(*s)
+func (_u *CASBackendUpdate) SetNillableValidationError(v *string) *CASBackendUpdate {
+	if v != nil {
+		_u.SetValidationError(*v)
 	}
-	return cbu
+	return _u
 }
 
 // ClearValidationError clears the value of the "validation_error" field.
-func (cbu *CASBackendUpdate) ClearValidationError() *CASBackendUpdate {
-	cbu.mutation.ClearValidationError()
-	return cbu
+func (_u *CASBackendUpdate) ClearValidationError() *CASBackendUpdate {
+	_u.mutation.ClearValidationError()
+	return _u
 }
 
 // SetValidatedAt sets the "validated_at" field.
-func (cbu *CASBackendUpdate) SetValidatedAt(t time.Time) *CASBackendUpdate {
-	cbu.mutation.SetValidatedAt(t)
-	return cbu
+func (_u *CASBackendUpdate) SetValidatedAt(v time.Time) *CASBackendUpdate {
+	_u.mutation.SetValidatedAt(v)
+	return _u
 }
 
 // SetNillableValidatedAt sets the "validated_at" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableValidatedAt(t *time.Time) *CASBackendUpdate {
-	if t != nil {
-		cbu.SetValidatedAt(*t)
+func (_u *CASBackendUpdate) SetNillableValidatedAt(v *time.Time) *CASBackendUpdate {
+	if v != nil {
+		_u.SetValidatedAt(*v)
 	}
-	return cbu
+	return _u
 }
 
 // SetDefault sets the "default" field.
-func (cbu *CASBackendUpdate) SetDefault(b bool) *CASBackendUpdate {
-	cbu.mutation.SetDefault(b)
-	return cbu
+func (_u *CASBackendUpdate) SetDefault(v bool) *CASBackendUpdate {
+	_u.mutation.SetDefault(v)
+	return _u
 }
 
 // SetNillableDefault sets the "default" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableDefault(b *bool) *CASBackendUpdate {
-	if b != nil {
-		cbu.SetDefault(*b)
+func (_u *CASBackendUpdate) SetNillableDefault(v *bool) *CASBackendUpdate {
+	if v != nil {
+		_u.SetDefault(*v)
 	}
-	return cbu
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (cbu *CASBackendUpdate) SetDeletedAt(t time.Time) *CASBackendUpdate {
-	cbu.mutation.SetDeletedAt(t)
-	return cbu
+func (_u *CASBackendUpdate) SetDeletedAt(v time.Time) *CASBackendUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableDeletedAt(t *time.Time) *CASBackendUpdate {
-	if t != nil {
-		cbu.SetDeletedAt(*t)
+func (_u *CASBackendUpdate) SetNillableDeletedAt(v *time.Time) *CASBackendUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return cbu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (cbu *CASBackendUpdate) ClearDeletedAt() *CASBackendUpdate {
-	cbu.mutation.ClearDeletedAt()
-	return cbu
+func (_u *CASBackendUpdate) ClearDeletedAt() *CASBackendUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
-func (cbu *CASBackendUpdate) SetMaxBlobSizeBytes(i int64) *CASBackendUpdate {
-	cbu.mutation.ResetMaxBlobSizeBytes()
-	cbu.mutation.SetMaxBlobSizeBytes(i)
-	return cbu
+func (_u *CASBackendUpdate) SetMaxBlobSizeBytes(v int64) *CASBackendUpdate {
+	_u.mutation.ResetMaxBlobSizeBytes()
+	_u.mutation.SetMaxBlobSizeBytes(v)
+	return _u
 }
 
 // SetNillableMaxBlobSizeBytes sets the "max_blob_size_bytes" field if the given value is not nil.
-func (cbu *CASBackendUpdate) SetNillableMaxBlobSizeBytes(i *int64) *CASBackendUpdate {
-	if i != nil {
-		cbu.SetMaxBlobSizeBytes(*i)
+func (_u *CASBackendUpdate) SetNillableMaxBlobSizeBytes(v *int64) *CASBackendUpdate {
+	if v != nil {
+		_u.SetMaxBlobSizeBytes(*v)
 	}
-	return cbu
+	return _u
 }
 
-// AddMaxBlobSizeBytes adds i to the "max_blob_size_bytes" field.
-func (cbu *CASBackendUpdate) AddMaxBlobSizeBytes(i int64) *CASBackendUpdate {
-	cbu.mutation.AddMaxBlobSizeBytes(i)
-	return cbu
+// AddMaxBlobSizeBytes adds value to the "max_blob_size_bytes" field.
+func (_u *CASBackendUpdate) AddMaxBlobSizeBytes(v int64) *CASBackendUpdate {
+	_u.mutation.AddMaxBlobSizeBytes(v)
+	return _u
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (cbu *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
-	cbu.mutation.SetOrganizationID(id)
-	return cbu
+func (_u *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
+	_u.mutation.SetOrganizationID(id)
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (cbu *CASBackendUpdate) SetOrganization(o *Organization) *CASBackendUpdate {
-	return cbu.SetOrganizationID(o.ID)
+func (_u *CASBackendUpdate) SetOrganization(v *Organization) *CASBackendUpdate {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by IDs.
-func (cbu *CASBackendUpdate) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdate {
-	cbu.mutation.AddWorkflowRunIDs(ids...)
-	return cbu
+func (_u *CASBackendUpdate) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdate {
+	_u.mutation.AddWorkflowRunIDs(ids...)
+	return _u
 }
 
 // AddWorkflowRun adds the "workflow_run" edges to the WorkflowRun entity.
-func (cbu *CASBackendUpdate) AddWorkflowRun(w ...*WorkflowRun) *CASBackendUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *CASBackendUpdate) AddWorkflowRun(v ...*WorkflowRun) *CASBackendUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return cbu.AddWorkflowRunIDs(ids...)
+	return _u.AddWorkflowRunIDs(ids...)
 }
 
 // Mutation returns the CASBackendMutation object of the builder.
-func (cbu *CASBackendUpdate) Mutation() *CASBackendMutation {
-	return cbu.mutation
+func (_u *CASBackendUpdate) Mutation() *CASBackendMutation {
+	return _u.mutation
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (cbu *CASBackendUpdate) ClearOrganization() *CASBackendUpdate {
-	cbu.mutation.ClearOrganization()
-	return cbu
+func (_u *CASBackendUpdate) ClearOrganization() *CASBackendUpdate {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearWorkflowRun clears all "workflow_run" edges to the WorkflowRun entity.
-func (cbu *CASBackendUpdate) ClearWorkflowRun() *CASBackendUpdate {
-	cbu.mutation.ClearWorkflowRun()
-	return cbu
+func (_u *CASBackendUpdate) ClearWorkflowRun() *CASBackendUpdate {
+	_u.mutation.ClearWorkflowRun()
+	return _u
 }
 
 // RemoveWorkflowRunIDs removes the "workflow_run" edge to WorkflowRun entities by IDs.
-func (cbu *CASBackendUpdate) RemoveWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdate {
-	cbu.mutation.RemoveWorkflowRunIDs(ids...)
-	return cbu
+func (_u *CASBackendUpdate) RemoveWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdate {
+	_u.mutation.RemoveWorkflowRunIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflowRun removes "workflow_run" edges to WorkflowRun entities.
-func (cbu *CASBackendUpdate) RemoveWorkflowRun(w ...*WorkflowRun) *CASBackendUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *CASBackendUpdate) RemoveWorkflowRun(v ...*WorkflowRun) *CASBackendUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return cbu.RemoveWorkflowRunIDs(ids...)
+	return _u.RemoveWorkflowRunIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (cbu *CASBackendUpdate) Save(ctx context.Context) (int, error) {
-	cbu.defaults()
-	return withHooks(ctx, cbu.sqlSave, cbu.mutation, cbu.hooks)
+func (_u *CASBackendUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cbu *CASBackendUpdate) SaveX(ctx context.Context) int {
-	affected, err := cbu.Save(ctx)
+func (_u *CASBackendUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -250,97 +250,97 @@ func (cbu *CASBackendUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (cbu *CASBackendUpdate) Exec(ctx context.Context) error {
-	_, err := cbu.Save(ctx)
+func (_u *CASBackendUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cbu *CASBackendUpdate) ExecX(ctx context.Context) {
-	if err := cbu.Exec(ctx); err != nil {
+func (_u *CASBackendUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cbu *CASBackendUpdate) defaults() {
-	if _, ok := cbu.mutation.UpdatedAt(); !ok {
+func (_u *CASBackendUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := casbackend.UpdateDefaultUpdatedAt()
-		cbu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cbu *CASBackendUpdate) check() error {
-	if v, ok := cbu.mutation.ValidationStatus(); ok {
+func (_u *CASBackendUpdate) check() error {
+	if v, ok := _u.mutation.ValidationStatus(); ok {
 		if err := casbackend.ValidationStatusValidator(v); err != nil {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
-	if cbu.mutation.OrganizationCleared() && len(cbu.mutation.OrganizationIDs()) > 0 {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASBackend.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (cbu *CASBackendUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASBackendUpdate {
-	cbu.modifiers = append(cbu.modifiers, modifiers...)
-	return cbu
+func (_u *CASBackendUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASBackendUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := cbu.check(); err != nil {
-		return n, err
+func (_u *CASBackendUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(casbackend.Table, casbackend.Columns, sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID))
-	if ps := cbu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cbu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(casbackend.FieldDescription, field.TypeString, value)
 	}
-	if cbu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(casbackend.FieldDescription, field.TypeString)
 	}
-	if value, ok := cbu.mutation.SecretName(); ok {
+	if value, ok := _u.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
 	}
-	if value, ok := cbu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := cbu.mutation.ValidationStatus(); ok {
+	if value, ok := _u.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
 	}
-	if value, ok := cbu.mutation.ValidationError(); ok {
+	if value, ok := _u.mutation.ValidationError(); ok {
 		_spec.SetField(casbackend.FieldValidationError, field.TypeString, value)
 	}
-	if cbu.mutation.ValidationErrorCleared() {
+	if _u.mutation.ValidationErrorCleared() {
 		_spec.ClearField(casbackend.FieldValidationError, field.TypeString)
 	}
-	if value, ok := cbu.mutation.ValidatedAt(); ok {
+	if value, ok := _u.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 	}
-	if value, ok := cbu.mutation.Default(); ok {
+	if value, ok := _u.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
 	}
-	if value, ok := cbu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
 	}
-	if cbu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := cbu.mutation.MaxBlobSizeBytes(); ok {
+	if value, ok := _u.mutation.MaxBlobSizeBytes(); ok {
 		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 	}
-	if value, ok := cbu.mutation.AddedMaxBlobSizeBytes(); ok {
+	if value, ok := _u.mutation.AddedMaxBlobSizeBytes(); ok {
 		_spec.AddField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 	}
-	if cbu.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -353,7 +353,7 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cbu.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -369,7 +369,7 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if cbu.mutation.WorkflowRunCleared() {
+	if _u.mutation.WorkflowRunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -382,7 +382,7 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cbu.mutation.RemovedWorkflowRunIDs(); len(nodes) > 0 && !cbu.mutation.WorkflowRunCleared() {
+	if nodes := _u.mutation.RemovedWorkflowRunIDs(); len(nodes) > 0 && !_u.mutation.WorkflowRunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -398,7 +398,7 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cbu.mutation.WorkflowRunIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowRunIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -414,8 +414,8 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(cbu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, cbu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{casbackend.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -423,8 +423,8 @@ func (cbu *CASBackendUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	cbu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // CASBackendUpdateOne is the builder for updating a single CASBackend entity.
@@ -437,228 +437,228 @@ type CASBackendUpdateOne struct {
 }
 
 // SetDescription sets the "description" field.
-func (cbuo *CASBackendUpdateOne) SetDescription(s string) *CASBackendUpdateOne {
-	cbuo.mutation.SetDescription(s)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetDescription(v string) *CASBackendUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableDescription(s *string) *CASBackendUpdateOne {
-	if s != nil {
-		cbuo.SetDescription(*s)
+func (_u *CASBackendUpdateOne) SetNillableDescription(v *string) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (cbuo *CASBackendUpdateOne) ClearDescription() *CASBackendUpdateOne {
-	cbuo.mutation.ClearDescription()
-	return cbuo
+func (_u *CASBackendUpdateOne) ClearDescription() *CASBackendUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetSecretName sets the "secret_name" field.
-func (cbuo *CASBackendUpdateOne) SetSecretName(s string) *CASBackendUpdateOne {
-	cbuo.mutation.SetSecretName(s)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetSecretName(v string) *CASBackendUpdateOne {
+	_u.mutation.SetSecretName(v)
+	return _u
 }
 
 // SetNillableSecretName sets the "secret_name" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableSecretName(s *string) *CASBackendUpdateOne {
-	if s != nil {
-		cbuo.SetSecretName(*s)
+func (_u *CASBackendUpdateOne) SetNillableSecretName(v *string) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetSecretName(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (cbuo *CASBackendUpdateOne) SetUpdatedAt(t time.Time) *CASBackendUpdateOne {
-	cbuo.mutation.SetUpdatedAt(t)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetUpdatedAt(v time.Time) *CASBackendUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetValidationStatus sets the "validation_status" field.
-func (cbuo *CASBackendUpdateOne) SetValidationStatus(bbvs biz.CASBackendValidationStatus) *CASBackendUpdateOne {
-	cbuo.mutation.SetValidationStatus(bbvs)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetValidationStatus(v biz.CASBackendValidationStatus) *CASBackendUpdateOne {
+	_u.mutation.SetValidationStatus(v)
+	return _u
 }
 
 // SetNillableValidationStatus sets the "validation_status" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableValidationStatus(bbvs *biz.CASBackendValidationStatus) *CASBackendUpdateOne {
-	if bbvs != nil {
-		cbuo.SetValidationStatus(*bbvs)
+func (_u *CASBackendUpdateOne) SetNillableValidationStatus(v *biz.CASBackendValidationStatus) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetValidationStatus(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // SetValidationError sets the "validation_error" field.
-func (cbuo *CASBackendUpdateOne) SetValidationError(s string) *CASBackendUpdateOne {
-	cbuo.mutation.SetValidationError(s)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetValidationError(v string) *CASBackendUpdateOne {
+	_u.mutation.SetValidationError(v)
+	return _u
 }
 
 // SetNillableValidationError sets the "validation_error" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableValidationError(s *string) *CASBackendUpdateOne {
-	if s != nil {
-		cbuo.SetValidationError(*s)
+func (_u *CASBackendUpdateOne) SetNillableValidationError(v *string) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetValidationError(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // ClearValidationError clears the value of the "validation_error" field.
-func (cbuo *CASBackendUpdateOne) ClearValidationError() *CASBackendUpdateOne {
-	cbuo.mutation.ClearValidationError()
-	return cbuo
+func (_u *CASBackendUpdateOne) ClearValidationError() *CASBackendUpdateOne {
+	_u.mutation.ClearValidationError()
+	return _u
 }
 
 // SetValidatedAt sets the "validated_at" field.
-func (cbuo *CASBackendUpdateOne) SetValidatedAt(t time.Time) *CASBackendUpdateOne {
-	cbuo.mutation.SetValidatedAt(t)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetValidatedAt(v time.Time) *CASBackendUpdateOne {
+	_u.mutation.SetValidatedAt(v)
+	return _u
 }
 
 // SetNillableValidatedAt sets the "validated_at" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableValidatedAt(t *time.Time) *CASBackendUpdateOne {
-	if t != nil {
-		cbuo.SetValidatedAt(*t)
+func (_u *CASBackendUpdateOne) SetNillableValidatedAt(v *time.Time) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetValidatedAt(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // SetDefault sets the "default" field.
-func (cbuo *CASBackendUpdateOne) SetDefault(b bool) *CASBackendUpdateOne {
-	cbuo.mutation.SetDefault(b)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetDefault(v bool) *CASBackendUpdateOne {
+	_u.mutation.SetDefault(v)
+	return _u
 }
 
 // SetNillableDefault sets the "default" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableDefault(b *bool) *CASBackendUpdateOne {
-	if b != nil {
-		cbuo.SetDefault(*b)
+func (_u *CASBackendUpdateOne) SetNillableDefault(v *bool) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetDefault(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (cbuo *CASBackendUpdateOne) SetDeletedAt(t time.Time) *CASBackendUpdateOne {
-	cbuo.mutation.SetDeletedAt(t)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetDeletedAt(v time.Time) *CASBackendUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableDeletedAt(t *time.Time) *CASBackendUpdateOne {
-	if t != nil {
-		cbuo.SetDeletedAt(*t)
+func (_u *CASBackendUpdateOne) SetNillableDeletedAt(v *time.Time) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return cbuo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (cbuo *CASBackendUpdateOne) ClearDeletedAt() *CASBackendUpdateOne {
-	cbuo.mutation.ClearDeletedAt()
-	return cbuo
+func (_u *CASBackendUpdateOne) ClearDeletedAt() *CASBackendUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
-func (cbuo *CASBackendUpdateOne) SetMaxBlobSizeBytes(i int64) *CASBackendUpdateOne {
-	cbuo.mutation.ResetMaxBlobSizeBytes()
-	cbuo.mutation.SetMaxBlobSizeBytes(i)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetMaxBlobSizeBytes(v int64) *CASBackendUpdateOne {
+	_u.mutation.ResetMaxBlobSizeBytes()
+	_u.mutation.SetMaxBlobSizeBytes(v)
+	return _u
 }
 
 // SetNillableMaxBlobSizeBytes sets the "max_blob_size_bytes" field if the given value is not nil.
-func (cbuo *CASBackendUpdateOne) SetNillableMaxBlobSizeBytes(i *int64) *CASBackendUpdateOne {
-	if i != nil {
-		cbuo.SetMaxBlobSizeBytes(*i)
+func (_u *CASBackendUpdateOne) SetNillableMaxBlobSizeBytes(v *int64) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetMaxBlobSizeBytes(*v)
 	}
-	return cbuo
+	return _u
 }
 
-// AddMaxBlobSizeBytes adds i to the "max_blob_size_bytes" field.
-func (cbuo *CASBackendUpdateOne) AddMaxBlobSizeBytes(i int64) *CASBackendUpdateOne {
-	cbuo.mutation.AddMaxBlobSizeBytes(i)
-	return cbuo
+// AddMaxBlobSizeBytes adds value to the "max_blob_size_bytes" field.
+func (_u *CASBackendUpdateOne) AddMaxBlobSizeBytes(v int64) *CASBackendUpdateOne {
+	_u.mutation.AddMaxBlobSizeBytes(v)
+	return _u
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (cbuo *CASBackendUpdateOne) SetOrganizationID(id uuid.UUID) *CASBackendUpdateOne {
-	cbuo.mutation.SetOrganizationID(id)
-	return cbuo
+func (_u *CASBackendUpdateOne) SetOrganizationID(id uuid.UUID) *CASBackendUpdateOne {
+	_u.mutation.SetOrganizationID(id)
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (cbuo *CASBackendUpdateOne) SetOrganization(o *Organization) *CASBackendUpdateOne {
-	return cbuo.SetOrganizationID(o.ID)
+func (_u *CASBackendUpdateOne) SetOrganization(v *Organization) *CASBackendUpdateOne {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // AddWorkflowRunIDs adds the "workflow_run" edge to the WorkflowRun entity by IDs.
-func (cbuo *CASBackendUpdateOne) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdateOne {
-	cbuo.mutation.AddWorkflowRunIDs(ids...)
-	return cbuo
+func (_u *CASBackendUpdateOne) AddWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdateOne {
+	_u.mutation.AddWorkflowRunIDs(ids...)
+	return _u
 }
 
 // AddWorkflowRun adds the "workflow_run" edges to the WorkflowRun entity.
-func (cbuo *CASBackendUpdateOne) AddWorkflowRun(w ...*WorkflowRun) *CASBackendUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *CASBackendUpdateOne) AddWorkflowRun(v ...*WorkflowRun) *CASBackendUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return cbuo.AddWorkflowRunIDs(ids...)
+	return _u.AddWorkflowRunIDs(ids...)
 }
 
 // Mutation returns the CASBackendMutation object of the builder.
-func (cbuo *CASBackendUpdateOne) Mutation() *CASBackendMutation {
-	return cbuo.mutation
+func (_u *CASBackendUpdateOne) Mutation() *CASBackendMutation {
+	return _u.mutation
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (cbuo *CASBackendUpdateOne) ClearOrganization() *CASBackendUpdateOne {
-	cbuo.mutation.ClearOrganization()
-	return cbuo
+func (_u *CASBackendUpdateOne) ClearOrganization() *CASBackendUpdateOne {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearWorkflowRun clears all "workflow_run" edges to the WorkflowRun entity.
-func (cbuo *CASBackendUpdateOne) ClearWorkflowRun() *CASBackendUpdateOne {
-	cbuo.mutation.ClearWorkflowRun()
-	return cbuo
+func (_u *CASBackendUpdateOne) ClearWorkflowRun() *CASBackendUpdateOne {
+	_u.mutation.ClearWorkflowRun()
+	return _u
 }
 
 // RemoveWorkflowRunIDs removes the "workflow_run" edge to WorkflowRun entities by IDs.
-func (cbuo *CASBackendUpdateOne) RemoveWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdateOne {
-	cbuo.mutation.RemoveWorkflowRunIDs(ids...)
-	return cbuo
+func (_u *CASBackendUpdateOne) RemoveWorkflowRunIDs(ids ...uuid.UUID) *CASBackendUpdateOne {
+	_u.mutation.RemoveWorkflowRunIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflowRun removes "workflow_run" edges to WorkflowRun entities.
-func (cbuo *CASBackendUpdateOne) RemoveWorkflowRun(w ...*WorkflowRun) *CASBackendUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *CASBackendUpdateOne) RemoveWorkflowRun(v ...*WorkflowRun) *CASBackendUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return cbuo.RemoveWorkflowRunIDs(ids...)
+	return _u.RemoveWorkflowRunIDs(ids...)
 }
 
 // Where appends a list predicates to the CASBackendUpdate builder.
-func (cbuo *CASBackendUpdateOne) Where(ps ...predicate.CASBackend) *CASBackendUpdateOne {
-	cbuo.mutation.Where(ps...)
-	return cbuo
+func (_u *CASBackendUpdateOne) Where(ps ...predicate.CASBackend) *CASBackendUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (cbuo *CASBackendUpdateOne) Select(field string, fields ...string) *CASBackendUpdateOne {
-	cbuo.fields = append([]string{field}, fields...)
-	return cbuo
+func (_u *CASBackendUpdateOne) Select(field string, fields ...string) *CASBackendUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated CASBackend entity.
-func (cbuo *CASBackendUpdateOne) Save(ctx context.Context) (*CASBackend, error) {
-	cbuo.defaults()
-	return withHooks(ctx, cbuo.sqlSave, cbuo.mutation, cbuo.hooks)
+func (_u *CASBackendUpdateOne) Save(ctx context.Context) (*CASBackend, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cbuo *CASBackendUpdateOne) SaveX(ctx context.Context) *CASBackend {
-	node, err := cbuo.Save(ctx)
+func (_u *CASBackendUpdateOne) SaveX(ctx context.Context) *CASBackend {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -666,56 +666,56 @@ func (cbuo *CASBackendUpdateOne) SaveX(ctx context.Context) *CASBackend {
 }
 
 // Exec executes the query on the entity.
-func (cbuo *CASBackendUpdateOne) Exec(ctx context.Context) error {
-	_, err := cbuo.Save(ctx)
+func (_u *CASBackendUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cbuo *CASBackendUpdateOne) ExecX(ctx context.Context) {
-	if err := cbuo.Exec(ctx); err != nil {
+func (_u *CASBackendUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cbuo *CASBackendUpdateOne) defaults() {
-	if _, ok := cbuo.mutation.UpdatedAt(); !ok {
+func (_u *CASBackendUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := casbackend.UpdateDefaultUpdatedAt()
-		cbuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cbuo *CASBackendUpdateOne) check() error {
-	if v, ok := cbuo.mutation.ValidationStatus(); ok {
+func (_u *CASBackendUpdateOne) check() error {
+	if v, ok := _u.mutation.ValidationStatus(); ok {
 		if err := casbackend.ValidationStatusValidator(v); err != nil {
 			return &ValidationError{Name: "validation_status", err: fmt.Errorf(`ent: validator failed for field "CASBackend.validation_status": %w`, err)}
 		}
 	}
-	if cbuo.mutation.OrganizationCleared() && len(cbuo.mutation.OrganizationIDs()) > 0 {
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CASBackend.organization"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (cbuo *CASBackendUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASBackendUpdateOne {
-	cbuo.modifiers = append(cbuo.modifiers, modifiers...)
-	return cbuo
+func (_u *CASBackendUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CASBackendUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend, err error) {
-	if err := cbuo.check(); err != nil {
+func (_u *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(casbackend.Table, casbackend.Columns, sqlgraph.NewFieldSpec(casbackend.FieldID, field.TypeUUID))
-	id, ok := cbuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "CASBackend.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := cbuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, casbackend.FieldID)
 		for _, f := range fields {
@@ -727,53 +727,53 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 			}
 		}
 	}
-	if ps := cbuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cbuo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(casbackend.FieldDescription, field.TypeString, value)
 	}
-	if cbuo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(casbackend.FieldDescription, field.TypeString)
 	}
-	if value, ok := cbuo.mutation.SecretName(); ok {
+	if value, ok := _u.mutation.SecretName(); ok {
 		_spec.SetField(casbackend.FieldSecretName, field.TypeString, value)
 	}
-	if value, ok := cbuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(casbackend.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := cbuo.mutation.ValidationStatus(); ok {
+	if value, ok := _u.mutation.ValidationStatus(); ok {
 		_spec.SetField(casbackend.FieldValidationStatus, field.TypeEnum, value)
 	}
-	if value, ok := cbuo.mutation.ValidationError(); ok {
+	if value, ok := _u.mutation.ValidationError(); ok {
 		_spec.SetField(casbackend.FieldValidationError, field.TypeString, value)
 	}
-	if cbuo.mutation.ValidationErrorCleared() {
+	if _u.mutation.ValidationErrorCleared() {
 		_spec.ClearField(casbackend.FieldValidationError, field.TypeString)
 	}
-	if value, ok := cbuo.mutation.ValidatedAt(); ok {
+	if value, ok := _u.mutation.ValidatedAt(); ok {
 		_spec.SetField(casbackend.FieldValidatedAt, field.TypeTime, value)
 	}
-	if value, ok := cbuo.mutation.Default(); ok {
+	if value, ok := _u.mutation.Default(); ok {
 		_spec.SetField(casbackend.FieldDefault, field.TypeBool, value)
 	}
-	if value, ok := cbuo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(casbackend.FieldDeletedAt, field.TypeTime, value)
 	}
-	if cbuo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := cbuo.mutation.MaxBlobSizeBytes(); ok {
+	if value, ok := _u.mutation.MaxBlobSizeBytes(); ok {
 		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 	}
-	if value, ok := cbuo.mutation.AddedMaxBlobSizeBytes(); ok {
+	if value, ok := _u.mutation.AddedMaxBlobSizeBytes(); ok {
 		_spec.AddField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
 	}
-	if cbuo.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -786,7 +786,7 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cbuo.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -802,7 +802,7 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if cbuo.mutation.WorkflowRunCleared() {
+	if _u.mutation.WorkflowRunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -815,7 +815,7 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cbuo.mutation.RemovedWorkflowRunIDs(); len(nodes) > 0 && !cbuo.mutation.WorkflowRunCleared() {
+	if nodes := _u.mutation.RemovedWorkflowRunIDs(); len(nodes) > 0 && !_u.mutation.WorkflowRunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -831,7 +831,7 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cbuo.mutation.WorkflowRunIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowRunIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -847,11 +847,11 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(cbuo.modifiers...)
-	_node = &CASBackend{config: cbuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &CASBackend{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, cbuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{casbackend.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -859,6 +859,6 @@ func (cbuo *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend
 		}
 		return nil, err
 	}
-	cbuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

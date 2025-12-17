@@ -27,185 +27,185 @@ type ProjectVersionCreate struct {
 }
 
 // SetVersion sets the "version" field.
-func (pvc *ProjectVersionCreate) SetVersion(s string) *ProjectVersionCreate {
-	pvc.mutation.SetVersion(s)
-	return pvc
+func (_c *ProjectVersionCreate) SetVersion(v string) *ProjectVersionCreate {
+	_c.mutation.SetVersion(v)
+	return _c
 }
 
 // SetNillableVersion sets the "version" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableVersion(s *string) *ProjectVersionCreate {
-	if s != nil {
-		pvc.SetVersion(*s)
+func (_c *ProjectVersionCreate) SetNillableVersion(v *string) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetVersion(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (pvc *ProjectVersionCreate) SetCreatedAt(t time.Time) *ProjectVersionCreate {
-	pvc.mutation.SetCreatedAt(t)
-	return pvc
+func (_c *ProjectVersionCreate) SetCreatedAt(v time.Time) *ProjectVersionCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableCreatedAt(t *time.Time) *ProjectVersionCreate {
-	if t != nil {
-		pvc.SetCreatedAt(*t)
+func (_c *ProjectVersionCreate) SetNillableCreatedAt(v *time.Time) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pvc *ProjectVersionCreate) SetUpdatedAt(t time.Time) *ProjectVersionCreate {
-	pvc.mutation.SetUpdatedAt(t)
-	return pvc
+func (_c *ProjectVersionCreate) SetUpdatedAt(v time.Time) *ProjectVersionCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableUpdatedAt(t *time.Time) *ProjectVersionCreate {
-	if t != nil {
-		pvc.SetUpdatedAt(*t)
+func (_c *ProjectVersionCreate) SetNillableUpdatedAt(v *time.Time) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (pvc *ProjectVersionCreate) SetDeletedAt(t time.Time) *ProjectVersionCreate {
-	pvc.mutation.SetDeletedAt(t)
-	return pvc
+func (_c *ProjectVersionCreate) SetDeletedAt(v time.Time) *ProjectVersionCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableDeletedAt(t *time.Time) *ProjectVersionCreate {
-	if t != nil {
-		pvc.SetDeletedAt(*t)
+func (_c *ProjectVersionCreate) SetNillableDeletedAt(v *time.Time) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetProjectID sets the "project_id" field.
-func (pvc *ProjectVersionCreate) SetProjectID(u uuid.UUID) *ProjectVersionCreate {
-	pvc.mutation.SetProjectID(u)
-	return pvc
+func (_c *ProjectVersionCreate) SetProjectID(v uuid.UUID) *ProjectVersionCreate {
+	_c.mutation.SetProjectID(v)
+	return _c
 }
 
 // SetPrerelease sets the "prerelease" field.
-func (pvc *ProjectVersionCreate) SetPrerelease(b bool) *ProjectVersionCreate {
-	pvc.mutation.SetPrerelease(b)
-	return pvc
+func (_c *ProjectVersionCreate) SetPrerelease(v bool) *ProjectVersionCreate {
+	_c.mutation.SetPrerelease(v)
+	return _c
 }
 
 // SetNillablePrerelease sets the "prerelease" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillablePrerelease(b *bool) *ProjectVersionCreate {
-	if b != nil {
-		pvc.SetPrerelease(*b)
+func (_c *ProjectVersionCreate) SetNillablePrerelease(v *bool) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetPrerelease(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetWorkflowRunCount sets the "workflow_run_count" field.
-func (pvc *ProjectVersionCreate) SetWorkflowRunCount(i int) *ProjectVersionCreate {
-	pvc.mutation.SetWorkflowRunCount(i)
-	return pvc
+func (_c *ProjectVersionCreate) SetWorkflowRunCount(v int) *ProjectVersionCreate {
+	_c.mutation.SetWorkflowRunCount(v)
+	return _c
 }
 
 // SetNillableWorkflowRunCount sets the "workflow_run_count" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableWorkflowRunCount(i *int) *ProjectVersionCreate {
-	if i != nil {
-		pvc.SetWorkflowRunCount(*i)
+func (_c *ProjectVersionCreate) SetNillableWorkflowRunCount(v *int) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetWorkflowRunCount(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetReleasedAt sets the "released_at" field.
-func (pvc *ProjectVersionCreate) SetReleasedAt(t time.Time) *ProjectVersionCreate {
-	pvc.mutation.SetReleasedAt(t)
-	return pvc
+func (_c *ProjectVersionCreate) SetReleasedAt(v time.Time) *ProjectVersionCreate {
+	_c.mutation.SetReleasedAt(v)
+	return _c
 }
 
 // SetNillableReleasedAt sets the "released_at" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableReleasedAt(t *time.Time) *ProjectVersionCreate {
-	if t != nil {
-		pvc.SetReleasedAt(*t)
+func (_c *ProjectVersionCreate) SetNillableReleasedAt(v *time.Time) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetReleasedAt(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetLastRunAt sets the "last_run_at" field.
-func (pvc *ProjectVersionCreate) SetLastRunAt(t time.Time) *ProjectVersionCreate {
-	pvc.mutation.SetLastRunAt(t)
-	return pvc
+func (_c *ProjectVersionCreate) SetLastRunAt(v time.Time) *ProjectVersionCreate {
+	_c.mutation.SetLastRunAt(v)
+	return _c
 }
 
 // SetNillableLastRunAt sets the "last_run_at" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableLastRunAt(t *time.Time) *ProjectVersionCreate {
-	if t != nil {
-		pvc.SetLastRunAt(*t)
+func (_c *ProjectVersionCreate) SetNillableLastRunAt(v *time.Time) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetLastRunAt(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetLatest sets the "latest" field.
-func (pvc *ProjectVersionCreate) SetLatest(b bool) *ProjectVersionCreate {
-	pvc.mutation.SetLatest(b)
-	return pvc
+func (_c *ProjectVersionCreate) SetLatest(v bool) *ProjectVersionCreate {
+	_c.mutation.SetLatest(v)
+	return _c
 }
 
 // SetNillableLatest sets the "latest" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableLatest(b *bool) *ProjectVersionCreate {
-	if b != nil {
-		pvc.SetLatest(*b)
+func (_c *ProjectVersionCreate) SetNillableLatest(v *bool) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetLatest(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (pvc *ProjectVersionCreate) SetID(u uuid.UUID) *ProjectVersionCreate {
-	pvc.mutation.SetID(u)
-	return pvc
+func (_c *ProjectVersionCreate) SetID(v uuid.UUID) *ProjectVersionCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pvc *ProjectVersionCreate) SetNillableID(u *uuid.UUID) *ProjectVersionCreate {
-	if u != nil {
-		pvc.SetID(*u)
+func (_c *ProjectVersionCreate) SetNillableID(v *uuid.UUID) *ProjectVersionCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return pvc
+	return _c
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (pvc *ProjectVersionCreate) SetProject(p *Project) *ProjectVersionCreate {
-	return pvc.SetProjectID(p.ID)
+func (_c *ProjectVersionCreate) SetProject(v *Project) *ProjectVersionCreate {
+	return _c.SetProjectID(v.ID)
 }
 
 // AddRunIDs adds the "runs" edge to the WorkflowRun entity by IDs.
-func (pvc *ProjectVersionCreate) AddRunIDs(ids ...uuid.UUID) *ProjectVersionCreate {
-	pvc.mutation.AddRunIDs(ids...)
-	return pvc
+func (_c *ProjectVersionCreate) AddRunIDs(ids ...uuid.UUID) *ProjectVersionCreate {
+	_c.mutation.AddRunIDs(ids...)
+	return _c
 }
 
 // AddRuns adds the "runs" edges to the WorkflowRun entity.
-func (pvc *ProjectVersionCreate) AddRuns(w ...*WorkflowRun) *ProjectVersionCreate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_c *ProjectVersionCreate) AddRuns(v ...*WorkflowRun) *ProjectVersionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pvc.AddRunIDs(ids...)
+	return _c.AddRunIDs(ids...)
 }
 
 // Mutation returns the ProjectVersionMutation object of the builder.
-func (pvc *ProjectVersionCreate) Mutation() *ProjectVersionMutation {
-	return pvc.mutation
+func (_c *ProjectVersionCreate) Mutation() *ProjectVersionMutation {
+	return _c.mutation
 }
 
 // Save creates the ProjectVersion in the database.
-func (pvc *ProjectVersionCreate) Save(ctx context.Context) (*ProjectVersion, error) {
-	pvc.defaults()
-	return withHooks(ctx, pvc.sqlSave, pvc.mutation, pvc.hooks)
+func (_c *ProjectVersionCreate) Save(ctx context.Context) (*ProjectVersion, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (pvc *ProjectVersionCreate) SaveX(ctx context.Context) *ProjectVersion {
-	v, err := pvc.Save(ctx)
+func (_c *ProjectVersionCreate) SaveX(ctx context.Context) *ProjectVersion {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -213,90 +213,90 @@ func (pvc *ProjectVersionCreate) SaveX(ctx context.Context) *ProjectVersion {
 }
 
 // Exec executes the query.
-func (pvc *ProjectVersionCreate) Exec(ctx context.Context) error {
-	_, err := pvc.Save(ctx)
+func (_c *ProjectVersionCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pvc *ProjectVersionCreate) ExecX(ctx context.Context) {
-	if err := pvc.Exec(ctx); err != nil {
+func (_c *ProjectVersionCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pvc *ProjectVersionCreate) defaults() {
-	if _, ok := pvc.mutation.Version(); !ok {
+func (_c *ProjectVersionCreate) defaults() {
+	if _, ok := _c.mutation.Version(); !ok {
 		v := projectversion.DefaultVersion
-		pvc.mutation.SetVersion(v)
+		_c.mutation.SetVersion(v)
 	}
-	if _, ok := pvc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := projectversion.DefaultCreatedAt()
-		pvc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := pvc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := projectversion.DefaultUpdatedAt()
-		pvc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := pvc.mutation.Prerelease(); !ok {
+	if _, ok := _c.mutation.Prerelease(); !ok {
 		v := projectversion.DefaultPrerelease
-		pvc.mutation.SetPrerelease(v)
+		_c.mutation.SetPrerelease(v)
 	}
-	if _, ok := pvc.mutation.WorkflowRunCount(); !ok {
+	if _, ok := _c.mutation.WorkflowRunCount(); !ok {
 		v := projectversion.DefaultWorkflowRunCount
-		pvc.mutation.SetWorkflowRunCount(v)
+		_c.mutation.SetWorkflowRunCount(v)
 	}
-	if _, ok := pvc.mutation.Latest(); !ok {
+	if _, ok := _c.mutation.Latest(); !ok {
 		v := projectversion.DefaultLatest
-		pvc.mutation.SetLatest(v)
+		_c.mutation.SetLatest(v)
 	}
-	if _, ok := pvc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := projectversion.DefaultID()
-		pvc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pvc *ProjectVersionCreate) check() error {
-	if _, ok := pvc.mutation.Version(); !ok {
+func (_c *ProjectVersionCreate) check() error {
+	if _, ok := _c.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "ProjectVersion.version"`)}
 	}
-	if v, ok := pvc.mutation.Version(); ok {
+	if v, ok := _c.mutation.Version(); ok {
 		if err := projectversion.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectVersion.version": %w`, err)}
 		}
 	}
-	if _, ok := pvc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectVersion.created_at"`)}
 	}
-	if _, ok := pvc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectVersion.updated_at"`)}
 	}
-	if _, ok := pvc.mutation.ProjectID(); !ok {
+	if _, ok := _c.mutation.ProjectID(); !ok {
 		return &ValidationError{Name: "project_id", err: errors.New(`ent: missing required field "ProjectVersion.project_id"`)}
 	}
-	if _, ok := pvc.mutation.Prerelease(); !ok {
+	if _, ok := _c.mutation.Prerelease(); !ok {
 		return &ValidationError{Name: "prerelease", err: errors.New(`ent: missing required field "ProjectVersion.prerelease"`)}
 	}
-	if _, ok := pvc.mutation.WorkflowRunCount(); !ok {
+	if _, ok := _c.mutation.WorkflowRunCount(); !ok {
 		return &ValidationError{Name: "workflow_run_count", err: errors.New(`ent: missing required field "ProjectVersion.workflow_run_count"`)}
 	}
-	if _, ok := pvc.mutation.Latest(); !ok {
+	if _, ok := _c.mutation.Latest(); !ok {
 		return &ValidationError{Name: "latest", err: errors.New(`ent: missing required field "ProjectVersion.latest"`)}
 	}
-	if len(pvc.mutation.ProjectIDs()) == 0 {
+	if len(_c.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectVersion.project"`)}
 	}
 	return nil
 }
 
-func (pvc *ProjectVersionCreate) sqlSave(ctx context.Context) (*ProjectVersion, error) {
-	if err := pvc.check(); err != nil {
+func (_c *ProjectVersionCreate) sqlSave(ctx context.Context) (*ProjectVersion, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := pvc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, pvc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -309,58 +309,58 @@ func (pvc *ProjectVersionCreate) sqlSave(ctx context.Context) (*ProjectVersion, 
 			return nil, err
 		}
 	}
-	pvc.mutation.id = &_node.ID
-	pvc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.CreateSpec) {
+func (_c *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.CreateSpec) {
 	var (
-		_node = &ProjectVersion{config: pvc.config}
+		_node = &ProjectVersion{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(projectversion.Table, sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = pvc.conflict
-	if id, ok := pvc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := pvc.mutation.Version(); ok {
+	if value, ok := _c.mutation.Version(); ok {
 		_spec.SetField(projectversion.FieldVersion, field.TypeString, value)
 		_node.Version = value
 	}
-	if value, ok := pvc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(projectversion.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := pvc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectversion.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := pvc.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := pvc.mutation.Prerelease(); ok {
+	if value, ok := _c.mutation.Prerelease(); ok {
 		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
 		_node.Prerelease = value
 	}
-	if value, ok := pvc.mutation.WorkflowRunCount(); ok {
+	if value, ok := _c.mutation.WorkflowRunCount(); ok {
 		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 		_node.WorkflowRunCount = value
 	}
-	if value, ok := pvc.mutation.ReleasedAt(); ok {
+	if value, ok := _c.mutation.ReleasedAt(); ok {
 		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
 		_node.ReleasedAt = value
 	}
-	if value, ok := pvc.mutation.LastRunAt(); ok {
+	if value, ok := _c.mutation.LastRunAt(); ok {
 		_spec.SetField(projectversion.FieldLastRunAt, field.TypeTime, value)
 		_node.LastRunAt = value
 	}
-	if value, ok := pvc.mutation.Latest(); ok {
+	if value, ok := _c.mutation.Latest(); ok {
 		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
 		_node.Latest = value
 	}
-	if nodes := pvc.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -377,7 +377,7 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 		_node.ProjectID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pvc.mutation.RunsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.RunsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -412,10 +412,10 @@ func (pvc *ProjectVersionCreate) createSpec() (*ProjectVersion, *sqlgraph.Create
 //			SetVersion(v+v).
 //		}).
 //		Exec(ctx)
-func (pvc *ProjectVersionCreate) OnConflict(opts ...sql.ConflictOption) *ProjectVersionUpsertOne {
-	pvc.conflict = opts
+func (_c *ProjectVersionCreate) OnConflict(opts ...sql.ConflictOption) *ProjectVersionUpsertOne {
+	_c.conflict = opts
 	return &ProjectVersionUpsertOne{
-		create: pvc,
+		create: _c,
 	}
 }
 
@@ -425,10 +425,10 @@ func (pvc *ProjectVersionCreate) OnConflict(opts ...sql.ConflictOption) *Project
 //	client.ProjectVersion.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pvc *ProjectVersionCreate) OnConflictColumns(columns ...string) *ProjectVersionUpsertOne {
-	pvc.conflict = append(pvc.conflict, sql.ConflictColumns(columns...))
+func (_c *ProjectVersionCreate) OnConflictColumns(columns ...string) *ProjectVersionUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProjectVersionUpsertOne{
-		create: pvc,
+		create: _c,
 	}
 }
 
@@ -829,16 +829,16 @@ type ProjectVersionCreateBulk struct {
 }
 
 // Save creates the ProjectVersion entities in the database.
-func (pvcb *ProjectVersionCreateBulk) Save(ctx context.Context) ([]*ProjectVersion, error) {
-	if pvcb.err != nil {
-		return nil, pvcb.err
+func (_c *ProjectVersionCreateBulk) Save(ctx context.Context) ([]*ProjectVersion, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(pvcb.builders))
-	nodes := make([]*ProjectVersion, len(pvcb.builders))
-	mutators := make([]Mutator, len(pvcb.builders))
-	for i := range pvcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*ProjectVersion, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := pvcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ProjectVersionMutation)
@@ -852,12 +852,12 @@ func (pvcb *ProjectVersionCreateBulk) Save(ctx context.Context) ([]*ProjectVersi
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, pvcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = pvcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pvcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -877,7 +877,7 @@ func (pvcb *ProjectVersionCreateBulk) Save(ctx context.Context) ([]*ProjectVersi
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, pvcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -885,8 +885,8 @@ func (pvcb *ProjectVersionCreateBulk) Save(ctx context.Context) ([]*ProjectVersi
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pvcb *ProjectVersionCreateBulk) SaveX(ctx context.Context) []*ProjectVersion {
-	v, err := pvcb.Save(ctx)
+func (_c *ProjectVersionCreateBulk) SaveX(ctx context.Context) []*ProjectVersion {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -894,14 +894,14 @@ func (pvcb *ProjectVersionCreateBulk) SaveX(ctx context.Context) []*ProjectVersi
 }
 
 // Exec executes the query.
-func (pvcb *ProjectVersionCreateBulk) Exec(ctx context.Context) error {
-	_, err := pvcb.Save(ctx)
+func (_c *ProjectVersionCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pvcb *ProjectVersionCreateBulk) ExecX(ctx context.Context) {
-	if err := pvcb.Exec(ctx); err != nil {
+func (_c *ProjectVersionCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -921,10 +921,10 @@ func (pvcb *ProjectVersionCreateBulk) ExecX(ctx context.Context) {
 //			SetVersion(v+v).
 //		}).
 //		Exec(ctx)
-func (pvcb *ProjectVersionCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProjectVersionUpsertBulk {
-	pvcb.conflict = opts
+func (_c *ProjectVersionCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProjectVersionUpsertBulk {
+	_c.conflict = opts
 	return &ProjectVersionUpsertBulk{
-		create: pvcb,
+		create: _c,
 	}
 }
 
@@ -934,10 +934,10 @@ func (pvcb *ProjectVersionCreateBulk) OnConflict(opts ...sql.ConflictOption) *Pr
 //	client.ProjectVersion.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pvcb *ProjectVersionCreateBulk) OnConflictColumns(columns ...string) *ProjectVersionUpsertBulk {
-	pvcb.conflict = append(pvcb.conflict, sql.ConflictColumns(columns...))
+func (_c *ProjectVersionCreateBulk) OnConflictColumns(columns ...string) *ProjectVersionUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProjectVersionUpsertBulk{
-		create: pvcb,
+		create: _c,
 	}
 }
 

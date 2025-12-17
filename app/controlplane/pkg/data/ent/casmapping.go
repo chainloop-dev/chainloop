@@ -106,7 +106,7 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the CASMapping fields.
-func (cm *CASMapping) assignValues(columns []string, values []any) error {
+func (_m *CASMapping) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -116,47 +116,47 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				cm.ID = *value
+				_m.ID = *value
 			}
 		case casmapping.FieldDigest:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field digest", values[i])
 			} else if value.Valid {
-				cm.Digest = value.String
+				_m.Digest = value.String
 			}
 		case casmapping.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				cm.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case casmapping.FieldWorkflowRunID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_id", values[i])
 			} else if value != nil {
-				cm.WorkflowRunID = *value
+				_m.WorkflowRunID = *value
 			}
 		case casmapping.FieldOrganizationID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
 			} else if value != nil {
-				cm.OrganizationID = *value
+				_m.OrganizationID = *value
 			}
 		case casmapping.FieldProjectID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
 			} else if value != nil {
-				cm.ProjectID = *value
+				_m.ProjectID = *value
 			}
 		case casmapping.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field cas_mapping_cas_backend", values[i])
 			} else if value.Valid {
-				cm.cas_mapping_cas_backend = new(uuid.UUID)
-				*cm.cas_mapping_cas_backend = *value.S.(*uuid.UUID)
+				_m.cas_mapping_cas_backend = new(uuid.UUID)
+				*_m.cas_mapping_cas_backend = *value.S.(*uuid.UUID)
 			}
 		default:
-			cm.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -164,62 +164,62 @@ func (cm *CASMapping) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the CASMapping.
 // This includes values selected through modifiers, order, etc.
-func (cm *CASMapping) Value(name string) (ent.Value, error) {
-	return cm.selectValues.Get(name)
+func (_m *CASMapping) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryCasBackend queries the "cas_backend" edge of the CASMapping entity.
-func (cm *CASMapping) QueryCasBackend() *CASBackendQuery {
-	return NewCASMappingClient(cm.config).QueryCasBackend(cm)
+func (_m *CASMapping) QueryCasBackend() *CASBackendQuery {
+	return NewCASMappingClient(_m.config).QueryCasBackend(_m)
 }
 
 // QueryOrganization queries the "organization" edge of the CASMapping entity.
-func (cm *CASMapping) QueryOrganization() *OrganizationQuery {
-	return NewCASMappingClient(cm.config).QueryOrganization(cm)
+func (_m *CASMapping) QueryOrganization() *OrganizationQuery {
+	return NewCASMappingClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryProject queries the "project" edge of the CASMapping entity.
-func (cm *CASMapping) QueryProject() *ProjectQuery {
-	return NewCASMappingClient(cm.config).QueryProject(cm)
+func (_m *CASMapping) QueryProject() *ProjectQuery {
+	return NewCASMappingClient(_m.config).QueryProject(_m)
 }
 
 // Update returns a builder for updating this CASMapping.
 // Note that you need to call CASMapping.Unwrap() before calling this method if this CASMapping
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (cm *CASMapping) Update() *CASMappingUpdateOne {
-	return NewCASMappingClient(cm.config).UpdateOne(cm)
+func (_m *CASMapping) Update() *CASMappingUpdateOne {
+	return NewCASMappingClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the CASMapping entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (cm *CASMapping) Unwrap() *CASMapping {
-	_tx, ok := cm.config.driver.(*txDriver)
+func (_m *CASMapping) Unwrap() *CASMapping {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: CASMapping is not a transactional entity")
 	}
-	cm.config.driver = _tx.drv
-	return cm
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (cm *CASMapping) String() string {
+func (_m *CASMapping) String() string {
 	var builder strings.Builder
 	builder.WriteString("CASMapping(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", cm.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("digest=")
-	builder.WriteString(cm.Digest)
+	builder.WriteString(_m.Digest)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(cm.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("workflow_run_id=")
-	builder.WriteString(fmt.Sprintf("%v", cm.WorkflowRunID))
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowRunID))
 	builder.WriteString(", ")
 	builder.WriteString("organization_id=")
-	builder.WriteString(fmt.Sprintf("%v", cm.OrganizationID))
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", cm.ProjectID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))
 	builder.WriteByte(')')
 	return builder.String()
 }

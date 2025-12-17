@@ -26,63 +26,63 @@ type WorkflowContractVersionUpdate struct {
 }
 
 // Where appends a list predicates to the WorkflowContractVersionUpdate builder.
-func (wcvu *WorkflowContractVersionUpdate) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionUpdate {
-	wcvu.mutation.Where(ps...)
-	return wcvu
+func (_u *WorkflowContractVersionUpdate) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvu *WorkflowContractVersionUpdate) SetRawBodyFormat(uf unmarshal.RawFormat) *WorkflowContractVersionUpdate {
-	wcvu.mutation.SetRawBodyFormat(uf)
-	return wcvu
+func (_u *WorkflowContractVersionUpdate) SetRawBodyFormat(v unmarshal.RawFormat) *WorkflowContractVersionUpdate {
+	_u.mutation.SetRawBodyFormat(v)
+	return _u
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvu *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(uf *unmarshal.RawFormat) *WorkflowContractVersionUpdate {
-	if uf != nil {
-		wcvu.SetRawBodyFormat(*uf)
+func (_u *WorkflowContractVersionUpdate) SetNillableRawBodyFormat(v *unmarshal.RawFormat) *WorkflowContractVersionUpdate {
+	if v != nil {
+		_u.SetRawBodyFormat(*v)
 	}
-	return wcvu
+	return _u
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
-func (wcvu *WorkflowContractVersionUpdate) SetContractID(id uuid.UUID) *WorkflowContractVersionUpdate {
-	wcvu.mutation.SetContractID(id)
-	return wcvu
+func (_u *WorkflowContractVersionUpdate) SetContractID(id uuid.UUID) *WorkflowContractVersionUpdate {
+	_u.mutation.SetContractID(id)
+	return _u
 }
 
 // SetNillableContractID sets the "contract" edge to the WorkflowContract entity by ID if the given value is not nil.
-func (wcvu *WorkflowContractVersionUpdate) SetNillableContractID(id *uuid.UUID) *WorkflowContractVersionUpdate {
+func (_u *WorkflowContractVersionUpdate) SetNillableContractID(id *uuid.UUID) *WorkflowContractVersionUpdate {
 	if id != nil {
-		wcvu = wcvu.SetContractID(*id)
+		_u = _u.SetContractID(*id)
 	}
-	return wcvu
+	return _u
 }
 
 // SetContract sets the "contract" edge to the WorkflowContract entity.
-func (wcvu *WorkflowContractVersionUpdate) SetContract(w *WorkflowContract) *WorkflowContractVersionUpdate {
-	return wcvu.SetContractID(w.ID)
+func (_u *WorkflowContractVersionUpdate) SetContract(v *WorkflowContract) *WorkflowContractVersionUpdate {
+	return _u.SetContractID(v.ID)
 }
 
 // Mutation returns the WorkflowContractVersionMutation object of the builder.
-func (wcvu *WorkflowContractVersionUpdate) Mutation() *WorkflowContractVersionMutation {
-	return wcvu.mutation
+func (_u *WorkflowContractVersionUpdate) Mutation() *WorkflowContractVersionMutation {
+	return _u.mutation
 }
 
 // ClearContract clears the "contract" edge to the WorkflowContract entity.
-func (wcvu *WorkflowContractVersionUpdate) ClearContract() *WorkflowContractVersionUpdate {
-	wcvu.mutation.ClearContract()
-	return wcvu
+func (_u *WorkflowContractVersionUpdate) ClearContract() *WorkflowContractVersionUpdate {
+	_u.mutation.ClearContract()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (wcvu *WorkflowContractVersionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, wcvu.sqlSave, wcvu.mutation, wcvu.hooks)
+func (_u *WorkflowContractVersionUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wcvu *WorkflowContractVersionUpdate) SaveX(ctx context.Context) int {
-	affected, err := wcvu.Save(ctx)
+func (_u *WorkflowContractVersionUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -90,21 +90,21 @@ func (wcvu *WorkflowContractVersionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (wcvu *WorkflowContractVersionUpdate) Exec(ctx context.Context) error {
-	_, err := wcvu.Save(ctx)
+func (_u *WorkflowContractVersionUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcvu *WorkflowContractVersionUpdate) ExecX(ctx context.Context) {
-	if err := wcvu.Exec(ctx); err != nil {
+func (_u *WorkflowContractVersionUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wcvu *WorkflowContractVersionUpdate) check() error {
-	if v, ok := wcvu.mutation.RawBodyFormat(); ok {
+func (_u *WorkflowContractVersionUpdate) check() error {
+	if v, ok := _u.mutation.RawBodyFormat(); ok {
 		if err := workflowcontractversion.RawBodyFormatValidator(v); err != nil {
 			return &ValidationError{Name: "raw_body_format", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body_format": %w`, err)}
 		}
@@ -113,30 +113,30 @@ func (wcvu *WorkflowContractVersionUpdate) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (wcvu *WorkflowContractVersionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdate {
-	wcvu.modifiers = append(wcvu.modifiers, modifiers...)
-	return wcvu
+func (_u *WorkflowContractVersionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := wcvu.check(); err != nil {
-		return n, err
+func (_u *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontractversion.Table, workflowcontractversion.Columns, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
-	if ps := wcvu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if wcvu.mutation.BodyCleared() {
+	if _u.mutation.BodyCleared() {
 		_spec.ClearField(workflowcontractversion.FieldBody, field.TypeBytes)
 	}
-	if value, ok := wcvu.mutation.RawBodyFormat(); ok {
+	if value, ok := _u.mutation.RawBodyFormat(); ok {
 		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
 	}
-	if wcvu.mutation.ContractCleared() {
+	if _u.mutation.ContractCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -149,7 +149,7 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wcvu.mutation.ContractIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ContractIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -165,8 +165,8 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(wcvu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, wcvu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowcontractversion.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -174,8 +174,8 @@ func (wcvu *WorkflowContractVersionUpdate) sqlSave(ctx context.Context) (n int, 
 		}
 		return 0, err
 	}
-	wcvu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // WorkflowContractVersionUpdateOne is the builder for updating a single WorkflowContractVersion entity.
@@ -188,70 +188,70 @@ type WorkflowContractVersionUpdateOne struct {
 }
 
 // SetRawBodyFormat sets the "raw_body_format" field.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetRawBodyFormat(uf unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
-	wcvuo.mutation.SetRawBodyFormat(uf)
-	return wcvuo
+func (_u *WorkflowContractVersionUpdateOne) SetRawBodyFormat(v unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
+	_u.mutation.SetRawBodyFormat(v)
+	return _u
 }
 
 // SetNillableRawBodyFormat sets the "raw_body_format" field if the given value is not nil.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(uf *unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
-	if uf != nil {
-		wcvuo.SetRawBodyFormat(*uf)
+func (_u *WorkflowContractVersionUpdateOne) SetNillableRawBodyFormat(v *unmarshal.RawFormat) *WorkflowContractVersionUpdateOne {
+	if v != nil {
+		_u.SetRawBodyFormat(*v)
 	}
-	return wcvuo
+	return _u
 }
 
 // SetContractID sets the "contract" edge to the WorkflowContract entity by ID.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetContractID(id uuid.UUID) *WorkflowContractVersionUpdateOne {
-	wcvuo.mutation.SetContractID(id)
-	return wcvuo
+func (_u *WorkflowContractVersionUpdateOne) SetContractID(id uuid.UUID) *WorkflowContractVersionUpdateOne {
+	_u.mutation.SetContractID(id)
+	return _u
 }
 
 // SetNillableContractID sets the "contract" edge to the WorkflowContract entity by ID if the given value is not nil.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetNillableContractID(id *uuid.UUID) *WorkflowContractVersionUpdateOne {
+func (_u *WorkflowContractVersionUpdateOne) SetNillableContractID(id *uuid.UUID) *WorkflowContractVersionUpdateOne {
 	if id != nil {
-		wcvuo = wcvuo.SetContractID(*id)
+		_u = _u.SetContractID(*id)
 	}
-	return wcvuo
+	return _u
 }
 
 // SetContract sets the "contract" edge to the WorkflowContract entity.
-func (wcvuo *WorkflowContractVersionUpdateOne) SetContract(w *WorkflowContract) *WorkflowContractVersionUpdateOne {
-	return wcvuo.SetContractID(w.ID)
+func (_u *WorkflowContractVersionUpdateOne) SetContract(v *WorkflowContract) *WorkflowContractVersionUpdateOne {
+	return _u.SetContractID(v.ID)
 }
 
 // Mutation returns the WorkflowContractVersionMutation object of the builder.
-func (wcvuo *WorkflowContractVersionUpdateOne) Mutation() *WorkflowContractVersionMutation {
-	return wcvuo.mutation
+func (_u *WorkflowContractVersionUpdateOne) Mutation() *WorkflowContractVersionMutation {
+	return _u.mutation
 }
 
 // ClearContract clears the "contract" edge to the WorkflowContract entity.
-func (wcvuo *WorkflowContractVersionUpdateOne) ClearContract() *WorkflowContractVersionUpdateOne {
-	wcvuo.mutation.ClearContract()
-	return wcvuo
+func (_u *WorkflowContractVersionUpdateOne) ClearContract() *WorkflowContractVersionUpdateOne {
+	_u.mutation.ClearContract()
+	return _u
 }
 
 // Where appends a list predicates to the WorkflowContractVersionUpdate builder.
-func (wcvuo *WorkflowContractVersionUpdateOne) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionUpdateOne {
-	wcvuo.mutation.Where(ps...)
-	return wcvuo
+func (_u *WorkflowContractVersionUpdateOne) Where(ps ...predicate.WorkflowContractVersion) *WorkflowContractVersionUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (wcvuo *WorkflowContractVersionUpdateOne) Select(field string, fields ...string) *WorkflowContractVersionUpdateOne {
-	wcvuo.fields = append([]string{field}, fields...)
-	return wcvuo
+func (_u *WorkflowContractVersionUpdateOne) Select(field string, fields ...string) *WorkflowContractVersionUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated WorkflowContractVersion entity.
-func (wcvuo *WorkflowContractVersionUpdateOne) Save(ctx context.Context) (*WorkflowContractVersion, error) {
-	return withHooks(ctx, wcvuo.sqlSave, wcvuo.mutation, wcvuo.hooks)
+func (_u *WorkflowContractVersionUpdateOne) Save(ctx context.Context) (*WorkflowContractVersion, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (wcvuo *WorkflowContractVersionUpdateOne) SaveX(ctx context.Context) *WorkflowContractVersion {
-	node, err := wcvuo.Save(ctx)
+func (_u *WorkflowContractVersionUpdateOne) SaveX(ctx context.Context) *WorkflowContractVersion {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -259,21 +259,21 @@ func (wcvuo *WorkflowContractVersionUpdateOne) SaveX(ctx context.Context) *Workf
 }
 
 // Exec executes the query on the entity.
-func (wcvuo *WorkflowContractVersionUpdateOne) Exec(ctx context.Context) error {
-	_, err := wcvuo.Save(ctx)
+func (_u *WorkflowContractVersionUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (wcvuo *WorkflowContractVersionUpdateOne) ExecX(ctx context.Context) {
-	if err := wcvuo.Exec(ctx); err != nil {
+func (_u *WorkflowContractVersionUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (wcvuo *WorkflowContractVersionUpdateOne) check() error {
-	if v, ok := wcvuo.mutation.RawBodyFormat(); ok {
+func (_u *WorkflowContractVersionUpdateOne) check() error {
+	if v, ok := _u.mutation.RawBodyFormat(); ok {
 		if err := workflowcontractversion.RawBodyFormatValidator(v); err != nil {
 			return &ValidationError{Name: "raw_body_format", err: fmt.Errorf(`ent: validator failed for field "WorkflowContractVersion.raw_body_format": %w`, err)}
 		}
@@ -282,22 +282,22 @@ func (wcvuo *WorkflowContractVersionUpdateOne) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (wcvuo *WorkflowContractVersionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdateOne {
-	wcvuo.modifiers = append(wcvuo.modifiers, modifiers...)
-	return wcvuo
+func (_u *WorkflowContractVersionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *WorkflowContractVersionUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContractVersion, err error) {
-	if err := wcvuo.check(); err != nil {
+func (_u *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowContractVersion, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(workflowcontractversion.Table, workflowcontractversion.Columns, sqlgraph.NewFieldSpec(workflowcontractversion.FieldID, field.TypeUUID))
-	id, ok := wcvuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "WorkflowContractVersion.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := wcvuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, workflowcontractversion.FieldID)
 		for _, f := range fields {
@@ -309,20 +309,20 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 			}
 		}
 	}
-	if ps := wcvuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if wcvuo.mutation.BodyCleared() {
+	if _u.mutation.BodyCleared() {
 		_spec.ClearField(workflowcontractversion.FieldBody, field.TypeBytes)
 	}
-	if value, ok := wcvuo.mutation.RawBodyFormat(); ok {
+	if value, ok := _u.mutation.RawBodyFormat(); ok {
 		_spec.SetField(workflowcontractversion.FieldRawBodyFormat, field.TypeEnum, value)
 	}
-	if wcvuo.mutation.ContractCleared() {
+	if _u.mutation.ContractCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -335,7 +335,7 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := wcvuo.mutation.ContractIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ContractIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -351,11 +351,11 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(wcvuo.modifiers...)
-	_node = &WorkflowContractVersion{config: wcvuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &WorkflowContractVersion{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, wcvuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{workflowcontractversion.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -363,6 +363,6 @@ func (wcvuo *WorkflowContractVersionUpdateOne) sqlSave(ctx context.Context) (_no
 		}
 		return nil, err
 	}
-	wcvuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

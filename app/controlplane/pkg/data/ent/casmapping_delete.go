@@ -20,56 +20,56 @@ type CASMappingDelete struct {
 }
 
 // Where appends a list predicates to the CASMappingDelete builder.
-func (cmd *CASMappingDelete) Where(ps ...predicate.CASMapping) *CASMappingDelete {
-	cmd.mutation.Where(ps...)
-	return cmd
+func (_d *CASMappingDelete) Where(ps ...predicate.CASMapping) *CASMappingDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (cmd *CASMappingDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, cmd.sqlExec, cmd.mutation, cmd.hooks)
+func (_d *CASMappingDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cmd *CASMappingDelete) ExecX(ctx context.Context) int {
-	n, err := cmd.Exec(ctx)
+func (_d *CASMappingDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (cmd *CASMappingDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *CASMappingDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
-	if ps := cmd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, cmd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	cmd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // CASMappingDeleteOne is the builder for deleting a single CASMapping entity.
 type CASMappingDeleteOne struct {
-	cmd *CASMappingDelete
+	_d *CASMappingDelete
 }
 
 // Where appends a list predicates to the CASMappingDelete builder.
-func (cmdo *CASMappingDeleteOne) Where(ps ...predicate.CASMapping) *CASMappingDeleteOne {
-	cmdo.cmd.mutation.Where(ps...)
-	return cmdo
+func (_d *CASMappingDeleteOne) Where(ps ...predicate.CASMapping) *CASMappingDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (cmdo *CASMappingDeleteOne) Exec(ctx context.Context) error {
-	n, err := cmdo.cmd.Exec(ctx)
+func (_d *CASMappingDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (cmdo *CASMappingDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cmdo *CASMappingDeleteOne) ExecX(ctx context.Context) {
-	if err := cmdo.Exec(ctx); err != nil {
+func (_d *CASMappingDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

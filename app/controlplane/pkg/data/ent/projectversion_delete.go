@@ -20,56 +20,56 @@ type ProjectVersionDelete struct {
 }
 
 // Where appends a list predicates to the ProjectVersionDelete builder.
-func (pvd *ProjectVersionDelete) Where(ps ...predicate.ProjectVersion) *ProjectVersionDelete {
-	pvd.mutation.Where(ps...)
-	return pvd
+func (_d *ProjectVersionDelete) Where(ps ...predicate.ProjectVersion) *ProjectVersionDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (pvd *ProjectVersionDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, pvd.sqlExec, pvd.mutation, pvd.hooks)
+func (_d *ProjectVersionDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pvd *ProjectVersionDelete) ExecX(ctx context.Context) int {
-	n, err := pvd.Exec(ctx)
+func (_d *ProjectVersionDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (pvd *ProjectVersionDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *ProjectVersionDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(projectversion.Table, sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID))
-	if ps := pvd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, pvd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	pvd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // ProjectVersionDeleteOne is the builder for deleting a single ProjectVersion entity.
 type ProjectVersionDeleteOne struct {
-	pvd *ProjectVersionDelete
+	_d *ProjectVersionDelete
 }
 
 // Where appends a list predicates to the ProjectVersionDelete builder.
-func (pvdo *ProjectVersionDeleteOne) Where(ps ...predicate.ProjectVersion) *ProjectVersionDeleteOne {
-	pvdo.pvd.mutation.Where(ps...)
-	return pvdo
+func (_d *ProjectVersionDeleteOne) Where(ps ...predicate.ProjectVersion) *ProjectVersionDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (pvdo *ProjectVersionDeleteOne) Exec(ctx context.Context) error {
-	n, err := pvdo.pvd.Exec(ctx)
+func (_d *ProjectVersionDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (pvdo *ProjectVersionDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pvdo *ProjectVersionDeleteOne) ExecX(ctx context.Context) {
-	if err := pvdo.Exec(ctx); err != nil {
+func (_d *ProjectVersionDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

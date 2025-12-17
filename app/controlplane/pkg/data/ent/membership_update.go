@@ -28,263 +28,263 @@ type MembershipUpdate struct {
 }
 
 // Where appends a list predicates to the MembershipUpdate builder.
-func (mu *MembershipUpdate) Where(ps ...predicate.Membership) *MembershipUpdate {
-	mu.mutation.Where(ps...)
-	return mu
+func (_u *MembershipUpdate) Where(ps ...predicate.Membership) *MembershipUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetCurrent sets the "current" field.
-func (mu *MembershipUpdate) SetCurrent(b bool) *MembershipUpdate {
-	mu.mutation.SetCurrent(b)
-	return mu
+func (_u *MembershipUpdate) SetCurrent(v bool) *MembershipUpdate {
+	_u.mutation.SetCurrent(v)
+	return _u
 }
 
 // SetNillableCurrent sets the "current" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableCurrent(b *bool) *MembershipUpdate {
-	if b != nil {
-		mu.SetCurrent(*b)
+func (_u *MembershipUpdate) SetNillableCurrent(v *bool) *MembershipUpdate {
+	if v != nil {
+		_u.SetCurrent(*v)
 	}
-	return mu
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (mu *MembershipUpdate) SetUpdatedAt(t time.Time) *MembershipUpdate {
-	mu.mutation.SetUpdatedAt(t)
-	return mu
+func (_u *MembershipUpdate) SetUpdatedAt(v time.Time) *MembershipUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableUpdatedAt(t *time.Time) *MembershipUpdate {
-	if t != nil {
-		mu.SetUpdatedAt(*t)
+func (_u *MembershipUpdate) SetNillableUpdatedAt(v *time.Time) *MembershipUpdate {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return mu
+	return _u
 }
 
 // SetRole sets the "role" field.
-func (mu *MembershipUpdate) SetRole(a authz.Role) *MembershipUpdate {
-	mu.mutation.SetRole(a)
-	return mu
+func (_u *MembershipUpdate) SetRole(v authz.Role) *MembershipUpdate {
+	_u.mutation.SetRole(v)
+	return _u
 }
 
 // SetNillableRole sets the "role" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableRole(a *authz.Role) *MembershipUpdate {
-	if a != nil {
-		mu.SetRole(*a)
+func (_u *MembershipUpdate) SetNillableRole(v *authz.Role) *MembershipUpdate {
+	if v != nil {
+		_u.SetRole(*v)
 	}
-	return mu
+	return _u
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (mu *MembershipUpdate) SetMembershipType(at authz.MembershipType) *MembershipUpdate {
-	mu.mutation.SetMembershipType(at)
-	return mu
+func (_u *MembershipUpdate) SetMembershipType(v authz.MembershipType) *MembershipUpdate {
+	_u.mutation.SetMembershipType(v)
+	return _u
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableMembershipType(at *authz.MembershipType) *MembershipUpdate {
-	if at != nil {
-		mu.SetMembershipType(*at)
+func (_u *MembershipUpdate) SetNillableMembershipType(v *authz.MembershipType) *MembershipUpdate {
+	if v != nil {
+		_u.SetMembershipType(*v)
 	}
-	return mu
+	return _u
 }
 
 // ClearMembershipType clears the value of the "membership_type" field.
-func (mu *MembershipUpdate) ClearMembershipType() *MembershipUpdate {
-	mu.mutation.ClearMembershipType()
-	return mu
+func (_u *MembershipUpdate) ClearMembershipType() *MembershipUpdate {
+	_u.mutation.ClearMembershipType()
+	return _u
 }
 
 // SetMemberID sets the "member_id" field.
-func (mu *MembershipUpdate) SetMemberID(u uuid.UUID) *MembershipUpdate {
-	mu.mutation.SetMemberID(u)
-	return mu
+func (_u *MembershipUpdate) SetMemberID(v uuid.UUID) *MembershipUpdate {
+	_u.mutation.SetMemberID(v)
+	return _u
 }
 
 // SetNillableMemberID sets the "member_id" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableMemberID(u *uuid.UUID) *MembershipUpdate {
-	if u != nil {
-		mu.SetMemberID(*u)
+func (_u *MembershipUpdate) SetNillableMemberID(v *uuid.UUID) *MembershipUpdate {
+	if v != nil {
+		_u.SetMemberID(*v)
 	}
-	return mu
+	return _u
 }
 
 // ClearMemberID clears the value of the "member_id" field.
-func (mu *MembershipUpdate) ClearMemberID() *MembershipUpdate {
-	mu.mutation.ClearMemberID()
-	return mu
+func (_u *MembershipUpdate) ClearMemberID() *MembershipUpdate {
+	_u.mutation.ClearMemberID()
+	return _u
 }
 
 // SetResourceType sets the "resource_type" field.
-func (mu *MembershipUpdate) SetResourceType(at authz.ResourceType) *MembershipUpdate {
-	mu.mutation.SetResourceType(at)
-	return mu
+func (_u *MembershipUpdate) SetResourceType(v authz.ResourceType) *MembershipUpdate {
+	_u.mutation.SetResourceType(v)
+	return _u
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableResourceType(at *authz.ResourceType) *MembershipUpdate {
-	if at != nil {
-		mu.SetResourceType(*at)
+func (_u *MembershipUpdate) SetNillableResourceType(v *authz.ResourceType) *MembershipUpdate {
+	if v != nil {
+		_u.SetResourceType(*v)
 	}
-	return mu
+	return _u
 }
 
 // ClearResourceType clears the value of the "resource_type" field.
-func (mu *MembershipUpdate) ClearResourceType() *MembershipUpdate {
-	mu.mutation.ClearResourceType()
-	return mu
+func (_u *MembershipUpdate) ClearResourceType() *MembershipUpdate {
+	_u.mutation.ClearResourceType()
+	return _u
 }
 
 // SetResourceID sets the "resource_id" field.
-func (mu *MembershipUpdate) SetResourceID(u uuid.UUID) *MembershipUpdate {
-	mu.mutation.SetResourceID(u)
-	return mu
+func (_u *MembershipUpdate) SetResourceID(v uuid.UUID) *MembershipUpdate {
+	_u.mutation.SetResourceID(v)
+	return _u
 }
 
 // SetNillableResourceID sets the "resource_id" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableResourceID(u *uuid.UUID) *MembershipUpdate {
-	if u != nil {
-		mu.SetResourceID(*u)
+func (_u *MembershipUpdate) SetNillableResourceID(v *uuid.UUID) *MembershipUpdate {
+	if v != nil {
+		_u.SetResourceID(*v)
 	}
-	return mu
+	return _u
 }
 
 // ClearResourceID clears the value of the "resource_id" field.
-func (mu *MembershipUpdate) ClearResourceID() *MembershipUpdate {
-	mu.mutation.ClearResourceID()
-	return mu
+func (_u *MembershipUpdate) ClearResourceID() *MembershipUpdate {
+	_u.mutation.ClearResourceID()
+	return _u
 }
 
 // SetParentID sets the "parent_id" field.
-func (mu *MembershipUpdate) SetParentID(u uuid.UUID) *MembershipUpdate {
-	mu.mutation.SetParentID(u)
-	return mu
+func (_u *MembershipUpdate) SetParentID(v uuid.UUID) *MembershipUpdate {
+	_u.mutation.SetParentID(v)
+	return _u
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableParentID(u *uuid.UUID) *MembershipUpdate {
-	if u != nil {
-		mu.SetParentID(*u)
+func (_u *MembershipUpdate) SetNillableParentID(v *uuid.UUID) *MembershipUpdate {
+	if v != nil {
+		_u.SetParentID(*v)
 	}
-	return mu
+	return _u
 }
 
 // ClearParentID clears the value of the "parent_id" field.
-func (mu *MembershipUpdate) ClearParentID() *MembershipUpdate {
-	mu.mutation.ClearParentID()
-	return mu
+func (_u *MembershipUpdate) ClearParentID() *MembershipUpdate {
+	_u.mutation.ClearParentID()
+	return _u
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (mu *MembershipUpdate) SetOrganizationID(id uuid.UUID) *MembershipUpdate {
-	mu.mutation.SetOrganizationID(id)
-	return mu
+func (_u *MembershipUpdate) SetOrganizationID(id uuid.UUID) *MembershipUpdate {
+	_u.mutation.SetOrganizationID(id)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdate {
+func (_u *MembershipUpdate) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdate {
 	if id != nil {
-		mu = mu.SetOrganizationID(*id)
+		_u = _u.SetOrganizationID(*id)
 	}
-	return mu
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (mu *MembershipUpdate) SetOrganization(o *Organization) *MembershipUpdate {
-	return mu.SetOrganizationID(o.ID)
+func (_u *MembershipUpdate) SetOrganization(v *Organization) *MembershipUpdate {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (mu *MembershipUpdate) SetUserID(id uuid.UUID) *MembershipUpdate {
-	mu.mutation.SetUserID(id)
-	return mu
+func (_u *MembershipUpdate) SetUserID(id uuid.UUID) *MembershipUpdate {
+	_u.mutation.SetUserID(id)
+	return _u
 }
 
 // SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (mu *MembershipUpdate) SetNillableUserID(id *uuid.UUID) *MembershipUpdate {
+func (_u *MembershipUpdate) SetNillableUserID(id *uuid.UUID) *MembershipUpdate {
 	if id != nil {
-		mu = mu.SetUserID(*id)
+		_u = _u.SetUserID(*id)
 	}
-	return mu
+	return _u
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (mu *MembershipUpdate) SetUser(u *User) *MembershipUpdate {
-	return mu.SetUserID(u.ID)
+func (_u *MembershipUpdate) SetUser(v *User) *MembershipUpdate {
+	return _u.SetUserID(v.ID)
 }
 
 // SetParent sets the "parent" edge to the Membership entity.
-func (mu *MembershipUpdate) SetParent(m *Membership) *MembershipUpdate {
-	return mu.SetParentID(m.ID)
+func (_u *MembershipUpdate) SetParent(v *Membership) *MembershipUpdate {
+	return _u.SetParentID(v.ID)
 }
 
 // AddChildIDs adds the "children" edge to the Membership entity by IDs.
-func (mu *MembershipUpdate) AddChildIDs(ids ...uuid.UUID) *MembershipUpdate {
-	mu.mutation.AddChildIDs(ids...)
-	return mu
+func (_u *MembershipUpdate) AddChildIDs(ids ...uuid.UUID) *MembershipUpdate {
+	_u.mutation.AddChildIDs(ids...)
+	return _u
 }
 
 // AddChildren adds the "children" edges to the Membership entity.
-func (mu *MembershipUpdate) AddChildren(m ...*Membership) *MembershipUpdate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+func (_u *MembershipUpdate) AddChildren(v ...*Membership) *MembershipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return mu.AddChildIDs(ids...)
+	return _u.AddChildIDs(ids...)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
-func (mu *MembershipUpdate) Mutation() *MembershipMutation {
-	return mu.mutation
+func (_u *MembershipUpdate) Mutation() *MembershipMutation {
+	return _u.mutation
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (mu *MembershipUpdate) ClearOrganization() *MembershipUpdate {
-	mu.mutation.ClearOrganization()
-	return mu
+func (_u *MembershipUpdate) ClearOrganization() *MembershipUpdate {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearUser clears the "user" edge to the User entity.
-func (mu *MembershipUpdate) ClearUser() *MembershipUpdate {
-	mu.mutation.ClearUser()
-	return mu
+func (_u *MembershipUpdate) ClearUser() *MembershipUpdate {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // ClearParent clears the "parent" edge to the Membership entity.
-func (mu *MembershipUpdate) ClearParent() *MembershipUpdate {
-	mu.mutation.ClearParent()
-	return mu
+func (_u *MembershipUpdate) ClearParent() *MembershipUpdate {
+	_u.mutation.ClearParent()
+	return _u
 }
 
 // ClearChildren clears all "children" edges to the Membership entity.
-func (mu *MembershipUpdate) ClearChildren() *MembershipUpdate {
-	mu.mutation.ClearChildren()
-	return mu
+func (_u *MembershipUpdate) ClearChildren() *MembershipUpdate {
+	_u.mutation.ClearChildren()
+	return _u
 }
 
 // RemoveChildIDs removes the "children" edge to Membership entities by IDs.
-func (mu *MembershipUpdate) RemoveChildIDs(ids ...uuid.UUID) *MembershipUpdate {
-	mu.mutation.RemoveChildIDs(ids...)
-	return mu
+func (_u *MembershipUpdate) RemoveChildIDs(ids ...uuid.UUID) *MembershipUpdate {
+	_u.mutation.RemoveChildIDs(ids...)
+	return _u
 }
 
 // RemoveChildren removes "children" edges to Membership entities.
-func (mu *MembershipUpdate) RemoveChildren(m ...*Membership) *MembershipUpdate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+func (_u *MembershipUpdate) RemoveChildren(v ...*Membership) *MembershipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return mu.RemoveChildIDs(ids...)
+	return _u.RemoveChildIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (mu *MembershipUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, mu.sqlSave, mu.mutation, mu.hooks)
+func (_u *MembershipUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (mu *MembershipUpdate) SaveX(ctx context.Context) int {
-	affected, err := mu.Save(ctx)
+func (_u *MembershipUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -292,31 +292,31 @@ func (mu *MembershipUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (mu *MembershipUpdate) Exec(ctx context.Context) error {
-	_, err := mu.Save(ctx)
+func (_u *MembershipUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (mu *MembershipUpdate) ExecX(ctx context.Context) {
-	if err := mu.Exec(ctx); err != nil {
+func (_u *MembershipUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (mu *MembershipUpdate) check() error {
-	if v, ok := mu.mutation.Role(); ok {
+func (_u *MembershipUpdate) check() error {
+	if v, ok := _u.mutation.Role(); ok {
 		if err := membership.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
 		}
 	}
-	if v, ok := mu.mutation.MembershipType(); ok {
+	if v, ok := _u.mutation.MembershipType(); ok {
 		if err := membership.MembershipTypeValidator(v); err != nil {
 			return &ValidationError{Name: "membership_type", err: fmt.Errorf(`ent: validator failed for field "Membership.membership_type": %w`, err)}
 		}
 	}
-	if v, ok := mu.mutation.ResourceType(); ok {
+	if v, ok := _u.mutation.ResourceType(); ok {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
@@ -325,57 +325,57 @@ func (mu *MembershipUpdate) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (mu *MembershipUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *MembershipUpdate {
-	mu.modifiers = append(mu.modifiers, modifiers...)
-	return mu
+func (_u *MembershipUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *MembershipUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := mu.check(); err != nil {
-		return n, err
+func (_u *MembershipUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
-	if ps := mu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := mu.mutation.Current(); ok {
+	if value, ok := _u.mutation.Current(); ok {
 		_spec.SetField(membership.FieldCurrent, field.TypeBool, value)
 	}
-	if value, ok := mu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := mu.mutation.Role(); ok {
+	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 	}
-	if value, ok := mu.mutation.MembershipType(); ok {
+	if value, ok := _u.mutation.MembershipType(); ok {
 		_spec.SetField(membership.FieldMembershipType, field.TypeEnum, value)
 	}
-	if mu.mutation.MembershipTypeCleared() {
+	if _u.mutation.MembershipTypeCleared() {
 		_spec.ClearField(membership.FieldMembershipType, field.TypeEnum)
 	}
-	if value, ok := mu.mutation.MemberID(); ok {
+	if value, ok := _u.mutation.MemberID(); ok {
 		_spec.SetField(membership.FieldMemberID, field.TypeUUID, value)
 	}
-	if mu.mutation.MemberIDCleared() {
+	if _u.mutation.MemberIDCleared() {
 		_spec.ClearField(membership.FieldMemberID, field.TypeUUID)
 	}
-	if value, ok := mu.mutation.ResourceType(); ok {
+	if value, ok := _u.mutation.ResourceType(); ok {
 		_spec.SetField(membership.FieldResourceType, field.TypeEnum, value)
 	}
-	if mu.mutation.ResourceTypeCleared() {
+	if _u.mutation.ResourceTypeCleared() {
 		_spec.ClearField(membership.FieldResourceType, field.TypeEnum)
 	}
-	if value, ok := mu.mutation.ResourceID(); ok {
+	if value, ok := _u.mutation.ResourceID(); ok {
 		_spec.SetField(membership.FieldResourceID, field.TypeUUID, value)
 	}
-	if mu.mutation.ResourceIDCleared() {
+	if _u.mutation.ResourceIDCleared() {
 		_spec.ClearField(membership.FieldResourceID, field.TypeUUID)
 	}
-	if mu.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -388,7 +388,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -404,7 +404,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if mu.mutation.UserCleared() {
+	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -417,7 +417,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.UserIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -433,7 +433,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if mu.mutation.ParentCleared() {
+	if _u.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -446,7 +446,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -462,7 +462,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if mu.mutation.ChildrenCleared() {
+	if _u.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -475,7 +475,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !mu.mutation.ChildrenCleared() {
+	if nodes := _u.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !_u.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -491,7 +491,7 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.ChildrenIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ChildrenIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -507,8 +507,8 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(mu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, mu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{membership.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -516,8 +516,8 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	mu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // MembershipUpdateOne is the builder for updating a single Membership entity.
@@ -530,270 +530,270 @@ type MembershipUpdateOne struct {
 }
 
 // SetCurrent sets the "current" field.
-func (muo *MembershipUpdateOne) SetCurrent(b bool) *MembershipUpdateOne {
-	muo.mutation.SetCurrent(b)
-	return muo
+func (_u *MembershipUpdateOne) SetCurrent(v bool) *MembershipUpdateOne {
+	_u.mutation.SetCurrent(v)
+	return _u
 }
 
 // SetNillableCurrent sets the "current" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableCurrent(b *bool) *MembershipUpdateOne {
-	if b != nil {
-		muo.SetCurrent(*b)
+func (_u *MembershipUpdateOne) SetNillableCurrent(v *bool) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetCurrent(*v)
 	}
-	return muo
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (muo *MembershipUpdateOne) SetUpdatedAt(t time.Time) *MembershipUpdateOne {
-	muo.mutation.SetUpdatedAt(t)
-	return muo
+func (_u *MembershipUpdateOne) SetUpdatedAt(v time.Time) *MembershipUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableUpdatedAt(t *time.Time) *MembershipUpdateOne {
-	if t != nil {
-		muo.SetUpdatedAt(*t)
+func (_u *MembershipUpdateOne) SetNillableUpdatedAt(v *time.Time) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return muo
+	return _u
 }
 
 // SetRole sets the "role" field.
-func (muo *MembershipUpdateOne) SetRole(a authz.Role) *MembershipUpdateOne {
-	muo.mutation.SetRole(a)
-	return muo
+func (_u *MembershipUpdateOne) SetRole(v authz.Role) *MembershipUpdateOne {
+	_u.mutation.SetRole(v)
+	return _u
 }
 
 // SetNillableRole sets the "role" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableRole(a *authz.Role) *MembershipUpdateOne {
-	if a != nil {
-		muo.SetRole(*a)
+func (_u *MembershipUpdateOne) SetNillableRole(v *authz.Role) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetRole(*v)
 	}
-	return muo
+	return _u
 }
 
 // SetMembershipType sets the "membership_type" field.
-func (muo *MembershipUpdateOne) SetMembershipType(at authz.MembershipType) *MembershipUpdateOne {
-	muo.mutation.SetMembershipType(at)
-	return muo
+func (_u *MembershipUpdateOne) SetMembershipType(v authz.MembershipType) *MembershipUpdateOne {
+	_u.mutation.SetMembershipType(v)
+	return _u
 }
 
 // SetNillableMembershipType sets the "membership_type" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableMembershipType(at *authz.MembershipType) *MembershipUpdateOne {
-	if at != nil {
-		muo.SetMembershipType(*at)
+func (_u *MembershipUpdateOne) SetNillableMembershipType(v *authz.MembershipType) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetMembershipType(*v)
 	}
-	return muo
+	return _u
 }
 
 // ClearMembershipType clears the value of the "membership_type" field.
-func (muo *MembershipUpdateOne) ClearMembershipType() *MembershipUpdateOne {
-	muo.mutation.ClearMembershipType()
-	return muo
+func (_u *MembershipUpdateOne) ClearMembershipType() *MembershipUpdateOne {
+	_u.mutation.ClearMembershipType()
+	return _u
 }
 
 // SetMemberID sets the "member_id" field.
-func (muo *MembershipUpdateOne) SetMemberID(u uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.SetMemberID(u)
-	return muo
+func (_u *MembershipUpdateOne) SetMemberID(v uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.SetMemberID(v)
+	return _u
 }
 
 // SetNillableMemberID sets the "member_id" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableMemberID(u *uuid.UUID) *MembershipUpdateOne {
-	if u != nil {
-		muo.SetMemberID(*u)
+func (_u *MembershipUpdateOne) SetNillableMemberID(v *uuid.UUID) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetMemberID(*v)
 	}
-	return muo
+	return _u
 }
 
 // ClearMemberID clears the value of the "member_id" field.
-func (muo *MembershipUpdateOne) ClearMemberID() *MembershipUpdateOne {
-	muo.mutation.ClearMemberID()
-	return muo
+func (_u *MembershipUpdateOne) ClearMemberID() *MembershipUpdateOne {
+	_u.mutation.ClearMemberID()
+	return _u
 }
 
 // SetResourceType sets the "resource_type" field.
-func (muo *MembershipUpdateOne) SetResourceType(at authz.ResourceType) *MembershipUpdateOne {
-	muo.mutation.SetResourceType(at)
-	return muo
+func (_u *MembershipUpdateOne) SetResourceType(v authz.ResourceType) *MembershipUpdateOne {
+	_u.mutation.SetResourceType(v)
+	return _u
 }
 
 // SetNillableResourceType sets the "resource_type" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableResourceType(at *authz.ResourceType) *MembershipUpdateOne {
-	if at != nil {
-		muo.SetResourceType(*at)
+func (_u *MembershipUpdateOne) SetNillableResourceType(v *authz.ResourceType) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetResourceType(*v)
 	}
-	return muo
+	return _u
 }
 
 // ClearResourceType clears the value of the "resource_type" field.
-func (muo *MembershipUpdateOne) ClearResourceType() *MembershipUpdateOne {
-	muo.mutation.ClearResourceType()
-	return muo
+func (_u *MembershipUpdateOne) ClearResourceType() *MembershipUpdateOne {
+	_u.mutation.ClearResourceType()
+	return _u
 }
 
 // SetResourceID sets the "resource_id" field.
-func (muo *MembershipUpdateOne) SetResourceID(u uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.SetResourceID(u)
-	return muo
+func (_u *MembershipUpdateOne) SetResourceID(v uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.SetResourceID(v)
+	return _u
 }
 
 // SetNillableResourceID sets the "resource_id" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableResourceID(u *uuid.UUID) *MembershipUpdateOne {
-	if u != nil {
-		muo.SetResourceID(*u)
+func (_u *MembershipUpdateOne) SetNillableResourceID(v *uuid.UUID) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetResourceID(*v)
 	}
-	return muo
+	return _u
 }
 
 // ClearResourceID clears the value of the "resource_id" field.
-func (muo *MembershipUpdateOne) ClearResourceID() *MembershipUpdateOne {
-	muo.mutation.ClearResourceID()
-	return muo
+func (_u *MembershipUpdateOne) ClearResourceID() *MembershipUpdateOne {
+	_u.mutation.ClearResourceID()
+	return _u
 }
 
 // SetParentID sets the "parent_id" field.
-func (muo *MembershipUpdateOne) SetParentID(u uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.SetParentID(u)
-	return muo
+func (_u *MembershipUpdateOne) SetParentID(v uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.SetParentID(v)
+	return _u
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableParentID(u *uuid.UUID) *MembershipUpdateOne {
-	if u != nil {
-		muo.SetParentID(*u)
+func (_u *MembershipUpdateOne) SetNillableParentID(v *uuid.UUID) *MembershipUpdateOne {
+	if v != nil {
+		_u.SetParentID(*v)
 	}
-	return muo
+	return _u
 }
 
 // ClearParentID clears the value of the "parent_id" field.
-func (muo *MembershipUpdateOne) ClearParentID() *MembershipUpdateOne {
-	muo.mutation.ClearParentID()
-	return muo
+func (_u *MembershipUpdateOne) ClearParentID() *MembershipUpdateOne {
+	_u.mutation.ClearParentID()
+	return _u
 }
 
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (muo *MembershipUpdateOne) SetOrganizationID(id uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.SetOrganizationID(id)
-	return muo
+func (_u *MembershipUpdateOne) SetOrganizationID(id uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.SetOrganizationID(id)
+	return _u
 }
 
 // SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdateOne {
+func (_u *MembershipUpdateOne) SetNillableOrganizationID(id *uuid.UUID) *MembershipUpdateOne {
 	if id != nil {
-		muo = muo.SetOrganizationID(*id)
+		_u = _u.SetOrganizationID(*id)
 	}
-	return muo
+	return _u
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (muo *MembershipUpdateOne) SetOrganization(o *Organization) *MembershipUpdateOne {
-	return muo.SetOrganizationID(o.ID)
+func (_u *MembershipUpdateOne) SetOrganization(v *Organization) *MembershipUpdateOne {
+	return _u.SetOrganizationID(v.ID)
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (muo *MembershipUpdateOne) SetUserID(id uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.SetUserID(id)
-	return muo
+func (_u *MembershipUpdateOne) SetUserID(id uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.SetUserID(id)
+	return _u
 }
 
 // SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (muo *MembershipUpdateOne) SetNillableUserID(id *uuid.UUID) *MembershipUpdateOne {
+func (_u *MembershipUpdateOne) SetNillableUserID(id *uuid.UUID) *MembershipUpdateOne {
 	if id != nil {
-		muo = muo.SetUserID(*id)
+		_u = _u.SetUserID(*id)
 	}
-	return muo
+	return _u
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (muo *MembershipUpdateOne) SetUser(u *User) *MembershipUpdateOne {
-	return muo.SetUserID(u.ID)
+func (_u *MembershipUpdateOne) SetUser(v *User) *MembershipUpdateOne {
+	return _u.SetUserID(v.ID)
 }
 
 // SetParent sets the "parent" edge to the Membership entity.
-func (muo *MembershipUpdateOne) SetParent(m *Membership) *MembershipUpdateOne {
-	return muo.SetParentID(m.ID)
+func (_u *MembershipUpdateOne) SetParent(v *Membership) *MembershipUpdateOne {
+	return _u.SetParentID(v.ID)
 }
 
 // AddChildIDs adds the "children" edge to the Membership entity by IDs.
-func (muo *MembershipUpdateOne) AddChildIDs(ids ...uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.AddChildIDs(ids...)
-	return muo
+func (_u *MembershipUpdateOne) AddChildIDs(ids ...uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.AddChildIDs(ids...)
+	return _u
 }
 
 // AddChildren adds the "children" edges to the Membership entity.
-func (muo *MembershipUpdateOne) AddChildren(m ...*Membership) *MembershipUpdateOne {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+func (_u *MembershipUpdateOne) AddChildren(v ...*Membership) *MembershipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return muo.AddChildIDs(ids...)
+	return _u.AddChildIDs(ids...)
 }
 
 // Mutation returns the MembershipMutation object of the builder.
-func (muo *MembershipUpdateOne) Mutation() *MembershipMutation {
-	return muo.mutation
+func (_u *MembershipUpdateOne) Mutation() *MembershipMutation {
+	return _u.mutation
 }
 
 // ClearOrganization clears the "organization" edge to the Organization entity.
-func (muo *MembershipUpdateOne) ClearOrganization() *MembershipUpdateOne {
-	muo.mutation.ClearOrganization()
-	return muo
+func (_u *MembershipUpdateOne) ClearOrganization() *MembershipUpdateOne {
+	_u.mutation.ClearOrganization()
+	return _u
 }
 
 // ClearUser clears the "user" edge to the User entity.
-func (muo *MembershipUpdateOne) ClearUser() *MembershipUpdateOne {
-	muo.mutation.ClearUser()
-	return muo
+func (_u *MembershipUpdateOne) ClearUser() *MembershipUpdateOne {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // ClearParent clears the "parent" edge to the Membership entity.
-func (muo *MembershipUpdateOne) ClearParent() *MembershipUpdateOne {
-	muo.mutation.ClearParent()
-	return muo
+func (_u *MembershipUpdateOne) ClearParent() *MembershipUpdateOne {
+	_u.mutation.ClearParent()
+	return _u
 }
 
 // ClearChildren clears all "children" edges to the Membership entity.
-func (muo *MembershipUpdateOne) ClearChildren() *MembershipUpdateOne {
-	muo.mutation.ClearChildren()
-	return muo
+func (_u *MembershipUpdateOne) ClearChildren() *MembershipUpdateOne {
+	_u.mutation.ClearChildren()
+	return _u
 }
 
 // RemoveChildIDs removes the "children" edge to Membership entities by IDs.
-func (muo *MembershipUpdateOne) RemoveChildIDs(ids ...uuid.UUID) *MembershipUpdateOne {
-	muo.mutation.RemoveChildIDs(ids...)
-	return muo
+func (_u *MembershipUpdateOne) RemoveChildIDs(ids ...uuid.UUID) *MembershipUpdateOne {
+	_u.mutation.RemoveChildIDs(ids...)
+	return _u
 }
 
 // RemoveChildren removes "children" edges to Membership entities.
-func (muo *MembershipUpdateOne) RemoveChildren(m ...*Membership) *MembershipUpdateOne {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+func (_u *MembershipUpdateOne) RemoveChildren(v ...*Membership) *MembershipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return muo.RemoveChildIDs(ids...)
+	return _u.RemoveChildIDs(ids...)
 }
 
 // Where appends a list predicates to the MembershipUpdate builder.
-func (muo *MembershipUpdateOne) Where(ps ...predicate.Membership) *MembershipUpdateOne {
-	muo.mutation.Where(ps...)
-	return muo
+func (_u *MembershipUpdateOne) Where(ps ...predicate.Membership) *MembershipUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (muo *MembershipUpdateOne) Select(field string, fields ...string) *MembershipUpdateOne {
-	muo.fields = append([]string{field}, fields...)
-	return muo
+func (_u *MembershipUpdateOne) Select(field string, fields ...string) *MembershipUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Membership entity.
-func (muo *MembershipUpdateOne) Save(ctx context.Context) (*Membership, error) {
-	return withHooks(ctx, muo.sqlSave, muo.mutation, muo.hooks)
+func (_u *MembershipUpdateOne) Save(ctx context.Context) (*Membership, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (muo *MembershipUpdateOne) SaveX(ctx context.Context) *Membership {
-	node, err := muo.Save(ctx)
+func (_u *MembershipUpdateOne) SaveX(ctx context.Context) *Membership {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -801,31 +801,31 @@ func (muo *MembershipUpdateOne) SaveX(ctx context.Context) *Membership {
 }
 
 // Exec executes the query on the entity.
-func (muo *MembershipUpdateOne) Exec(ctx context.Context) error {
-	_, err := muo.Save(ctx)
+func (_u *MembershipUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (muo *MembershipUpdateOne) ExecX(ctx context.Context) {
-	if err := muo.Exec(ctx); err != nil {
+func (_u *MembershipUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (muo *MembershipUpdateOne) check() error {
-	if v, ok := muo.mutation.Role(); ok {
+func (_u *MembershipUpdateOne) check() error {
+	if v, ok := _u.mutation.Role(); ok {
 		if err := membership.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "Membership.role": %w`, err)}
 		}
 	}
-	if v, ok := muo.mutation.MembershipType(); ok {
+	if v, ok := _u.mutation.MembershipType(); ok {
 		if err := membership.MembershipTypeValidator(v); err != nil {
 			return &ValidationError{Name: "membership_type", err: fmt.Errorf(`ent: validator failed for field "Membership.membership_type": %w`, err)}
 		}
 	}
-	if v, ok := muo.mutation.ResourceType(); ok {
+	if v, ok := _u.mutation.ResourceType(); ok {
 		if err := membership.ResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Membership.resource_type": %w`, err)}
 		}
@@ -834,22 +834,22 @@ func (muo *MembershipUpdateOne) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (muo *MembershipUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *MembershipUpdateOne {
-	muo.modifiers = append(muo.modifiers, modifiers...)
-	return muo
+func (_u *MembershipUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *MembershipUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership, err error) {
-	if err := muo.check(); err != nil {
+func (_u *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
-	id, ok := muo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Membership.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := muo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, membership.FieldID)
 		for _, f := range fields {
@@ -861,47 +861,47 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 			}
 		}
 	}
-	if ps := muo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := muo.mutation.Current(); ok {
+	if value, ok := _u.mutation.Current(); ok {
 		_spec.SetField(membership.FieldCurrent, field.TypeBool, value)
 	}
-	if value, ok := muo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := muo.mutation.Role(); ok {
+	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 	}
-	if value, ok := muo.mutation.MembershipType(); ok {
+	if value, ok := _u.mutation.MembershipType(); ok {
 		_spec.SetField(membership.FieldMembershipType, field.TypeEnum, value)
 	}
-	if muo.mutation.MembershipTypeCleared() {
+	if _u.mutation.MembershipTypeCleared() {
 		_spec.ClearField(membership.FieldMembershipType, field.TypeEnum)
 	}
-	if value, ok := muo.mutation.MemberID(); ok {
+	if value, ok := _u.mutation.MemberID(); ok {
 		_spec.SetField(membership.FieldMemberID, field.TypeUUID, value)
 	}
-	if muo.mutation.MemberIDCleared() {
+	if _u.mutation.MemberIDCleared() {
 		_spec.ClearField(membership.FieldMemberID, field.TypeUUID)
 	}
-	if value, ok := muo.mutation.ResourceType(); ok {
+	if value, ok := _u.mutation.ResourceType(); ok {
 		_spec.SetField(membership.FieldResourceType, field.TypeEnum, value)
 	}
-	if muo.mutation.ResourceTypeCleared() {
+	if _u.mutation.ResourceTypeCleared() {
 		_spec.ClearField(membership.FieldResourceType, field.TypeEnum)
 	}
-	if value, ok := muo.mutation.ResourceID(); ok {
+	if value, ok := _u.mutation.ResourceID(); ok {
 		_spec.SetField(membership.FieldResourceID, field.TypeUUID, value)
 	}
-	if muo.mutation.ResourceIDCleared() {
+	if _u.mutation.ResourceIDCleared() {
 		_spec.ClearField(membership.FieldResourceID, field.TypeUUID)
 	}
-	if muo.mutation.OrganizationCleared() {
+	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -914,7 +914,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -930,7 +930,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if muo.mutation.UserCleared() {
+	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -943,7 +943,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.UserIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -959,7 +959,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if muo.mutation.ParentCleared() {
+	if _u.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -972,7 +972,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -988,7 +988,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if muo.mutation.ChildrenCleared() {
+	if _u.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1001,7 +1001,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !muo.mutation.ChildrenCleared() {
+	if nodes := _u.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !_u.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1017,7 +1017,7 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.ChildrenIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ChildrenIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1033,11 +1033,11 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(muo.modifiers...)
-	_node = &Membership{config: muo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Membership{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, muo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{membership.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1045,6 +1045,6 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 		}
 		return nil, err
 	}
-	muo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

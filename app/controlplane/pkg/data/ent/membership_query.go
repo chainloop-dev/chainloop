@@ -39,44 +39,44 @@ type MembershipQuery struct {
 }
 
 // Where adds a new predicate for the MembershipQuery builder.
-func (mq *MembershipQuery) Where(ps ...predicate.Membership) *MembershipQuery {
-	mq.predicates = append(mq.predicates, ps...)
-	return mq
+func (_q *MembershipQuery) Where(ps ...predicate.Membership) *MembershipQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (mq *MembershipQuery) Limit(limit int) *MembershipQuery {
-	mq.ctx.Limit = &limit
-	return mq
+func (_q *MembershipQuery) Limit(limit int) *MembershipQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (mq *MembershipQuery) Offset(offset int) *MembershipQuery {
-	mq.ctx.Offset = &offset
-	return mq
+func (_q *MembershipQuery) Offset(offset int) *MembershipQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (mq *MembershipQuery) Unique(unique bool) *MembershipQuery {
-	mq.ctx.Unique = &unique
-	return mq
+func (_q *MembershipQuery) Unique(unique bool) *MembershipQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (mq *MembershipQuery) Order(o ...membership.OrderOption) *MembershipQuery {
-	mq.order = append(mq.order, o...)
-	return mq
+func (_q *MembershipQuery) Order(o ...membership.OrderOption) *MembershipQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryOrganization chains the current query on the "organization" edge.
-func (mq *MembershipQuery) QueryOrganization() *OrganizationQuery {
-	query := (&OrganizationClient{config: mq.config}).Query()
+func (_q *MembershipQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := mq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -85,20 +85,20 @@ func (mq *MembershipQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.OrganizationTable, membership.OrganizationColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryUser chains the current query on the "user" edge.
-func (mq *MembershipQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: mq.config}).Query()
+func (_q *MembershipQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := mq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -107,20 +107,20 @@ func (mq *MembershipQuery) QueryUser() *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.UserTable, membership.UserColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryParent chains the current query on the "parent" edge.
-func (mq *MembershipQuery) QueryParent() *MembershipQuery {
-	query := (&MembershipClient{config: mq.config}).Query()
+func (_q *MembershipQuery) QueryParent() *MembershipQuery {
+	query := (&MembershipClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := mq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -129,20 +129,20 @@ func (mq *MembershipQuery) QueryParent() *MembershipQuery {
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.ParentTable, membership.ParentColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryChildren chains the current query on the "children" edge.
-func (mq *MembershipQuery) QueryChildren() *MembershipQuery {
-	query := (&MembershipClient{config: mq.config}).Query()
+func (_q *MembershipQuery) QueryChildren() *MembershipQuery {
+	query := (&MembershipClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := mq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -151,7 +151,7 @@ func (mq *MembershipQuery) QueryChildren() *MembershipQuery {
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, membership.ChildrenTable, membership.ChildrenColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -159,8 +159,8 @@ func (mq *MembershipQuery) QueryChildren() *MembershipQuery {
 
 // First returns the first Membership entity from the query.
 // Returns a *NotFoundError when no Membership was found.
-func (mq *MembershipQuery) First(ctx context.Context) (*Membership, error) {
-	nodes, err := mq.Limit(1).All(setContextOp(ctx, mq.ctx, ent.OpQueryFirst))
+func (_q *MembershipQuery) First(ctx context.Context) (*Membership, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +171,8 @@ func (mq *MembershipQuery) First(ctx context.Context) (*Membership, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (mq *MembershipQuery) FirstX(ctx context.Context) *Membership {
-	node, err := mq.First(ctx)
+func (_q *MembershipQuery) FirstX(ctx context.Context) *Membership {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -181,9 +181,9 @@ func (mq *MembershipQuery) FirstX(ctx context.Context) *Membership {
 
 // FirstID returns the first Membership ID from the query.
 // Returns a *NotFoundError when no Membership ID was found.
-func (mq *MembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *MembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = mq.Limit(1).IDs(setContextOp(ctx, mq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -194,8 +194,8 @@ func (mq *MembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (mq *MembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := mq.FirstID(ctx)
+func (_q *MembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -205,8 +205,8 @@ func (mq *MembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single Membership entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Membership entity is found.
 // Returns a *NotFoundError when no Membership entities are found.
-func (mq *MembershipQuery) Only(ctx context.Context) (*Membership, error) {
-	nodes, err := mq.Limit(2).All(setContextOp(ctx, mq.ctx, ent.OpQueryOnly))
+func (_q *MembershipQuery) Only(ctx context.Context) (*Membership, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -221,8 +221,8 @@ func (mq *MembershipQuery) Only(ctx context.Context) (*Membership, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (mq *MembershipQuery) OnlyX(ctx context.Context) *Membership {
-	node, err := mq.Only(ctx)
+func (_q *MembershipQuery) OnlyX(ctx context.Context) *Membership {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -232,9 +232,9 @@ func (mq *MembershipQuery) OnlyX(ctx context.Context) *Membership {
 // OnlyID is like Only, but returns the only Membership ID in the query.
 // Returns a *NotSingularError when more than one Membership ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (mq *MembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *MembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = mq.Limit(2).IDs(setContextOp(ctx, mq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -249,8 +249,8 @@ func (mq *MembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error)
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (mq *MembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := mq.OnlyID(ctx)
+func (_q *MembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -258,18 +258,18 @@ func (mq *MembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of Memberships.
-func (mq *MembershipQuery) All(ctx context.Context) ([]*Membership, error) {
-	ctx = setContextOp(ctx, mq.ctx, ent.OpQueryAll)
-	if err := mq.prepareQuery(ctx); err != nil {
+func (_q *MembershipQuery) All(ctx context.Context) ([]*Membership, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*Membership, *MembershipQuery]()
-	return withInterceptors[[]*Membership](ctx, mq, qr, mq.inters)
+	return withInterceptors[[]*Membership](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (mq *MembershipQuery) AllX(ctx context.Context) []*Membership {
-	nodes, err := mq.All(ctx)
+func (_q *MembershipQuery) AllX(ctx context.Context) []*Membership {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -277,20 +277,20 @@ func (mq *MembershipQuery) AllX(ctx context.Context) []*Membership {
 }
 
 // IDs executes the query and returns a list of Membership IDs.
-func (mq *MembershipQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if mq.ctx.Unique == nil && mq.path != nil {
-		mq.Unique(true)
+func (_q *MembershipQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, mq.ctx, ent.OpQueryIDs)
-	if err = mq.Select(membership.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(membership.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (mq *MembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := mq.IDs(ctx)
+func (_q *MembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -298,17 +298,17 @@ func (mq *MembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (mq *MembershipQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, mq.ctx, ent.OpQueryCount)
-	if err := mq.prepareQuery(ctx); err != nil {
+func (_q *MembershipQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, mq, querierCount[*MembershipQuery](), mq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*MembershipQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (mq *MembershipQuery) CountX(ctx context.Context) int {
-	count, err := mq.Count(ctx)
+func (_q *MembershipQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -316,9 +316,9 @@ func (mq *MembershipQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (mq *MembershipQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, mq.ctx, ent.OpQueryExist)
-	switch _, err := mq.FirstID(ctx); {
+func (_q *MembershipQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -329,8 +329,8 @@ func (mq *MembershipQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (mq *MembershipQuery) ExistX(ctx context.Context) bool {
-	exist, err := mq.Exist(ctx)
+func (_q *MembershipQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -339,69 +339,69 @@ func (mq *MembershipQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the MembershipQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (mq *MembershipQuery) Clone() *MembershipQuery {
-	if mq == nil {
+func (_q *MembershipQuery) Clone() *MembershipQuery {
+	if _q == nil {
 		return nil
 	}
 	return &MembershipQuery{
-		config:           mq.config,
-		ctx:              mq.ctx.Clone(),
-		order:            append([]membership.OrderOption{}, mq.order...),
-		inters:           append([]Interceptor{}, mq.inters...),
-		predicates:       append([]predicate.Membership{}, mq.predicates...),
-		withOrganization: mq.withOrganization.Clone(),
-		withUser:         mq.withUser.Clone(),
-		withParent:       mq.withParent.Clone(),
-		withChildren:     mq.withChildren.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]membership.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.Membership{}, _q.predicates...),
+		withOrganization: _q.withOrganization.Clone(),
+		withUser:         _q.withUser.Clone(),
+		withParent:       _q.withParent.Clone(),
+		withChildren:     _q.withChildren.Clone(),
 		// clone intermediate query.
-		sql:       mq.sql.Clone(),
-		path:      mq.path,
-		modifiers: append([]func(*sql.Selector){}, mq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithOrganization tells the query-builder to eager-load the nodes that are connected to
 // the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MembershipQuery) WithOrganization(opts ...func(*OrganizationQuery)) *MembershipQuery {
-	query := (&OrganizationClient{config: mq.config}).Query()
+func (_q *MembershipQuery) WithOrganization(opts ...func(*OrganizationQuery)) *MembershipQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	mq.withOrganization = query
-	return mq
+	_q.withOrganization = query
+	return _q
 }
 
 // WithUser tells the query-builder to eager-load the nodes that are connected to
 // the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MembershipQuery) WithUser(opts ...func(*UserQuery)) *MembershipQuery {
-	query := (&UserClient{config: mq.config}).Query()
+func (_q *MembershipQuery) WithUser(opts ...func(*UserQuery)) *MembershipQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	mq.withUser = query
-	return mq
+	_q.withUser = query
+	return _q
 }
 
 // WithParent tells the query-builder to eager-load the nodes that are connected to
 // the "parent" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MembershipQuery) WithParent(opts ...func(*MembershipQuery)) *MembershipQuery {
-	query := (&MembershipClient{config: mq.config}).Query()
+func (_q *MembershipQuery) WithParent(opts ...func(*MembershipQuery)) *MembershipQuery {
+	query := (&MembershipClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	mq.withParent = query
-	return mq
+	_q.withParent = query
+	return _q
 }
 
 // WithChildren tells the query-builder to eager-load the nodes that are connected to
 // the "children" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MembershipQuery) WithChildren(opts ...func(*MembershipQuery)) *MembershipQuery {
-	query := (&MembershipClient{config: mq.config}).Query()
+func (_q *MembershipQuery) WithChildren(opts ...func(*MembershipQuery)) *MembershipQuery {
+	query := (&MembershipClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	mq.withChildren = query
-	return mq
+	_q.withChildren = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -418,10 +418,10 @@ func (mq *MembershipQuery) WithChildren(opts ...func(*MembershipQuery)) *Members
 //		GroupBy(membership.FieldCurrent).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (mq *MembershipQuery) GroupBy(field string, fields ...string) *MembershipGroupBy {
-	mq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &MembershipGroupBy{build: mq}
-	grbuild.flds = &mq.ctx.Fields
+func (_q *MembershipQuery) GroupBy(field string, fields ...string) *MembershipGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &MembershipGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = membership.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -439,58 +439,58 @@ func (mq *MembershipQuery) GroupBy(field string, fields ...string) *MembershipGr
 //	client.Membership.Query().
 //		Select(membership.FieldCurrent).
 //		Scan(ctx, &v)
-func (mq *MembershipQuery) Select(fields ...string) *MembershipSelect {
-	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
-	sbuild := &MembershipSelect{MembershipQuery: mq}
+func (_q *MembershipQuery) Select(fields ...string) *MembershipSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &MembershipSelect{MembershipQuery: _q}
 	sbuild.label = membership.Label
-	sbuild.flds, sbuild.scan = &mq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a MembershipSelect configured with the given aggregations.
-func (mq *MembershipQuery) Aggregate(fns ...AggregateFunc) *MembershipSelect {
-	return mq.Select().Aggregate(fns...)
+func (_q *MembershipQuery) Aggregate(fns ...AggregateFunc) *MembershipSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (mq *MembershipQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range mq.inters {
+func (_q *MembershipQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, mq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range mq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !membership.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if mq.path != nil {
-		prev, err := mq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		mq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (mq *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membership, error) {
+func (_q *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membership, error) {
 	var (
 		nodes       = []*Membership{}
-		withFKs     = mq.withFKs
-		_spec       = mq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [4]bool{
-			mq.withOrganization != nil,
-			mq.withUser != nil,
-			mq.withParent != nil,
-			mq.withChildren != nil,
+			_q.withOrganization != nil,
+			_q.withUser != nil,
+			_q.withParent != nil,
+			_q.withChildren != nil,
 		}
 	)
-	if mq.withOrganization != nil || mq.withUser != nil {
+	if _q.withOrganization != nil || _q.withUser != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -500,43 +500,43 @@ func (mq *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*M
 		return (*Membership).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Membership{config: mq.config}
+		node := &Membership{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(mq.modifiers) > 0 {
-		_spec.Modifiers = mq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, mq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := mq.withOrganization; query != nil {
-		if err := mq.loadOrganization(ctx, query, nodes, nil,
+	if query := _q.withOrganization; query != nil {
+		if err := _q.loadOrganization(ctx, query, nodes, nil,
 			func(n *Membership, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := mq.withUser; query != nil {
-		if err := mq.loadUser(ctx, query, nodes, nil,
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
 			func(n *Membership, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := mq.withParent; query != nil {
-		if err := mq.loadParent(ctx, query, nodes, nil,
+	if query := _q.withParent; query != nil {
+		if err := _q.loadParent(ctx, query, nodes, nil,
 			func(n *Membership, e *Membership) { n.Edges.Parent = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := mq.withChildren; query != nil {
-		if err := mq.loadChildren(ctx, query, nodes,
+	if query := _q.withChildren; query != nil {
+		if err := _q.loadChildren(ctx, query, nodes,
 			func(n *Membership) { n.Edges.Children = []*Membership{} },
 			func(n *Membership, e *Membership) { n.Edges.Children = append(n.Edges.Children, e) }); err != nil {
 			return nil, err
@@ -545,7 +545,7 @@ func (mq *MembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*M
 	return nodes, nil
 }
 
-func (mq *MembershipQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Organization)) error {
+func (_q *MembershipQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Organization)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Membership)
 	for i := range nodes {
@@ -577,7 +577,7 @@ func (mq *MembershipQuery) loadOrganization(ctx context.Context, query *Organiza
 	}
 	return nil
 }
-func (mq *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *User)) error {
+func (_q *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *User)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Membership)
 	for i := range nodes {
@@ -609,7 +609,7 @@ func (mq *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	}
 	return nil
 }
-func (mq *MembershipQuery) loadParent(ctx context.Context, query *MembershipQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Membership)) error {
+func (_q *MembershipQuery) loadParent(ctx context.Context, query *MembershipQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Membership)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Membership)
 	for i := range nodes {
@@ -641,7 +641,7 @@ func (mq *MembershipQuery) loadParent(ctx context.Context, query *MembershipQuer
 	}
 	return nil
 }
-func (mq *MembershipQuery) loadChildren(ctx context.Context, query *MembershipQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Membership)) error {
+func (_q *MembershipQuery) loadChildren(ctx context.Context, query *MembershipQuery, nodes []*Membership, init func(*Membership), assign func(*Membership, *Membership)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Membership)
 	for i := range nodes {
@@ -676,27 +676,27 @@ func (mq *MembershipQuery) loadChildren(ctx context.Context, query *MembershipQu
 	return nil
 }
 
-func (mq *MembershipQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := mq.querySpec()
-	if len(mq.modifiers) > 0 {
-		_spec.Modifiers = mq.modifiers
+func (_q *MembershipQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = mq.ctx.Fields
-	if len(mq.ctx.Fields) > 0 {
-		_spec.Unique = mq.ctx.Unique != nil && *mq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, mq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
-	_spec.From = mq.sql
-	if unique := mq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if mq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := mq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, membership.FieldID)
 		for i := range fields {
@@ -704,24 +704,24 @@ func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if mq.withParent != nil {
+		if _q.withParent != nil {
 			_spec.Node.AddColumnOnce(membership.FieldParentID)
 		}
 	}
-	if ps := mq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := mq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := mq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := mq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -731,36 +731,36 @@ func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (mq *MembershipQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(mq.driver.Dialect())
+func (_q *MembershipQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(membership.Table)
-	columns := mq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = membership.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if mq.sql != nil {
-		selector = mq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if mq.ctx.Unique != nil && *mq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range mq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range mq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range mq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := mq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := mq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -769,33 +769,33 @@ func (mq *MembershipQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (mq *MembershipQuery) ForUpdate(opts ...sql.LockOption) *MembershipQuery {
-	if mq.driver.Dialect() == dialect.Postgres {
-		mq.Unique(false)
+func (_q *MembershipQuery) ForUpdate(opts ...sql.LockOption) *MembershipQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	mq.modifiers = append(mq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return mq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (mq *MembershipQuery) ForShare(opts ...sql.LockOption) *MembershipQuery {
-	if mq.driver.Dialect() == dialect.Postgres {
-		mq.Unique(false)
+func (_q *MembershipQuery) ForShare(opts ...sql.LockOption) *MembershipQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	mq.modifiers = append(mq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return mq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (mq *MembershipQuery) Modify(modifiers ...func(s *sql.Selector)) *MembershipSelect {
-	mq.modifiers = append(mq.modifiers, modifiers...)
-	return mq.Select()
+func (_q *MembershipQuery) Modify(modifiers ...func(s *sql.Selector)) *MembershipSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // MembershipGroupBy is the group-by builder for Membership entities.
@@ -805,41 +805,41 @@ type MembershipGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (mgb *MembershipGroupBy) Aggregate(fns ...AggregateFunc) *MembershipGroupBy {
-	mgb.fns = append(mgb.fns, fns...)
-	return mgb
+func (_g *MembershipGroupBy) Aggregate(fns ...AggregateFunc) *MembershipGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (mgb *MembershipGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, mgb.build.ctx, ent.OpQueryGroupBy)
-	if err := mgb.build.prepareQuery(ctx); err != nil {
+func (_g *MembershipGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*MembershipQuery, *MembershipGroupBy](ctx, mgb.build, mgb, mgb.build.inters, v)
+	return scanWithInterceptors[*MembershipQuery, *MembershipGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (mgb *MembershipGroupBy) sqlScan(ctx context.Context, root *MembershipQuery, v any) error {
+func (_g *MembershipGroupBy) sqlScan(ctx context.Context, root *MembershipQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(mgb.fns))
-	for _, fn := range mgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*mgb.flds)+len(mgb.fns))
-		for _, f := range *mgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*mgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := mgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -853,27 +853,27 @@ type MembershipSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (ms *MembershipSelect) Aggregate(fns ...AggregateFunc) *MembershipSelect {
-	ms.fns = append(ms.fns, fns...)
-	return ms
+func (_s *MembershipSelect) Aggregate(fns ...AggregateFunc) *MembershipSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ms *MembershipSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ms.ctx, ent.OpQuerySelect)
-	if err := ms.prepareQuery(ctx); err != nil {
+func (_s *MembershipSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*MembershipQuery, *MembershipSelect](ctx, ms.MembershipQuery, ms, ms.inters, v)
+	return scanWithInterceptors[*MembershipQuery, *MembershipSelect](ctx, _s.MembershipQuery, _s, _s.inters, v)
 }
 
-func (ms *MembershipSelect) sqlScan(ctx context.Context, root *MembershipQuery, v any) error {
+func (_s *MembershipSelect) sqlScan(ctx context.Context, root *MembershipQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(ms.fns))
-	for _, fn := range ms.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*ms.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -881,7 +881,7 @@ func (ms *MembershipSelect) sqlScan(ctx context.Context, root *MembershipQuery, 
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ms.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -889,7 +889,7 @@ func (ms *MembershipSelect) sqlScan(ctx context.Context, root *MembershipQuery, 
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (ms *MembershipSelect) Modify(modifiers ...func(s *sql.Selector)) *MembershipSelect {
-	ms.modifiers = append(ms.modifiers, modifiers...)
-	return ms
+func (_s *MembershipSelect) Modify(modifiers ...func(s *sql.Selector)) *MembershipSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

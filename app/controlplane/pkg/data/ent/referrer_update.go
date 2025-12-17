@@ -25,96 +25,96 @@ type ReferrerUpdate struct {
 }
 
 // Where appends a list predicates to the ReferrerUpdate builder.
-func (ru *ReferrerUpdate) Where(ps ...predicate.Referrer) *ReferrerUpdate {
-	ru.mutation.Where(ps...)
-	return ru
+func (_u *ReferrerUpdate) Where(ps ...predicate.Referrer) *ReferrerUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // AddReferenceIDs adds the "references" edge to the Referrer entity by IDs.
-func (ru *ReferrerUpdate) AddReferenceIDs(ids ...uuid.UUID) *ReferrerUpdate {
-	ru.mutation.AddReferenceIDs(ids...)
-	return ru
+func (_u *ReferrerUpdate) AddReferenceIDs(ids ...uuid.UUID) *ReferrerUpdate {
+	_u.mutation.AddReferenceIDs(ids...)
+	return _u
 }
 
 // AddReferences adds the "references" edges to the Referrer entity.
-func (ru *ReferrerUpdate) AddReferences(r ...*Referrer) *ReferrerUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *ReferrerUpdate) AddReferences(v ...*Referrer) *ReferrerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.AddReferenceIDs(ids...)
+	return _u.AddReferenceIDs(ids...)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (ru *ReferrerUpdate) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdate {
-	ru.mutation.AddWorkflowIDs(ids...)
-	return ru
+func (_u *ReferrerUpdate) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdate {
+	_u.mutation.AddWorkflowIDs(ids...)
+	return _u
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (ru *ReferrerUpdate) AddWorkflows(w ...*Workflow) *ReferrerUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ReferrerUpdate) AddWorkflows(v ...*Workflow) *ReferrerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.AddWorkflowIDs(ids...)
+	return _u.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the ReferrerMutation object of the builder.
-func (ru *ReferrerUpdate) Mutation() *ReferrerMutation {
-	return ru.mutation
+func (_u *ReferrerUpdate) Mutation() *ReferrerMutation {
+	return _u.mutation
 }
 
 // ClearReferences clears all "references" edges to the Referrer entity.
-func (ru *ReferrerUpdate) ClearReferences() *ReferrerUpdate {
-	ru.mutation.ClearReferences()
-	return ru
+func (_u *ReferrerUpdate) ClearReferences() *ReferrerUpdate {
+	_u.mutation.ClearReferences()
+	return _u
 }
 
 // RemoveReferenceIDs removes the "references" edge to Referrer entities by IDs.
-func (ru *ReferrerUpdate) RemoveReferenceIDs(ids ...uuid.UUID) *ReferrerUpdate {
-	ru.mutation.RemoveReferenceIDs(ids...)
-	return ru
+func (_u *ReferrerUpdate) RemoveReferenceIDs(ids ...uuid.UUID) *ReferrerUpdate {
+	_u.mutation.RemoveReferenceIDs(ids...)
+	return _u
 }
 
 // RemoveReferences removes "references" edges to Referrer entities.
-func (ru *ReferrerUpdate) RemoveReferences(r ...*Referrer) *ReferrerUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *ReferrerUpdate) RemoveReferences(v ...*Referrer) *ReferrerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.RemoveReferenceIDs(ids...)
+	return _u.RemoveReferenceIDs(ids...)
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
-func (ru *ReferrerUpdate) ClearWorkflows() *ReferrerUpdate {
-	ru.mutation.ClearWorkflows()
-	return ru
+func (_u *ReferrerUpdate) ClearWorkflows() *ReferrerUpdate {
+	_u.mutation.ClearWorkflows()
+	return _u
 }
 
 // RemoveWorkflowIDs removes the "workflows" edge to Workflow entities by IDs.
-func (ru *ReferrerUpdate) RemoveWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdate {
-	ru.mutation.RemoveWorkflowIDs(ids...)
-	return ru
+func (_u *ReferrerUpdate) RemoveWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdate {
+	_u.mutation.RemoveWorkflowIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflows removes "workflows" edges to Workflow entities.
-func (ru *ReferrerUpdate) RemoveWorkflows(w ...*Workflow) *ReferrerUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ReferrerUpdate) RemoveWorkflows(v ...*Workflow) *ReferrerUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.RemoveWorkflowIDs(ids...)
+	return _u.RemoveWorkflowIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (ru *ReferrerUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, ru.sqlSave, ru.mutation, ru.hooks)
+func (_u *ReferrerUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ru *ReferrerUpdate) SaveX(ctx context.Context) int {
-	affected, err := ru.Save(ctx)
+func (_u *ReferrerUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -122,40 +122,40 @@ func (ru *ReferrerUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (ru *ReferrerUpdate) Exec(ctx context.Context) error {
-	_, err := ru.Save(ctx)
+func (_u *ReferrerUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ru *ReferrerUpdate) ExecX(ctx context.Context) {
-	if err := ru.Exec(ctx); err != nil {
+func (_u *ReferrerUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (ru *ReferrerUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ReferrerUpdate {
-	ru.modifiers = append(ru.modifiers, modifiers...)
-	return ru
+func (_u *ReferrerUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ReferrerUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
+func (_u *ReferrerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(referrer.Table, referrer.Columns, sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID))
-	if ps := ru.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if ru.mutation.MetadataCleared() {
+	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(referrer.FieldMetadata, field.TypeJSON)
 	}
-	if ru.mutation.AnnotationsCleared() {
+	if _u.mutation.AnnotationsCleared() {
 		_spec.ClearField(referrer.FieldAnnotations, field.TypeJSON)
 	}
-	if ru.mutation.ReferencesCleared() {
+	if _u.mutation.ReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -168,7 +168,7 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedReferencesIDs(); len(nodes) > 0 && !ru.mutation.ReferencesCleared() {
+	if nodes := _u.mutation.RemovedReferencesIDs(); len(nodes) > 0 && !_u.mutation.ReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -184,7 +184,7 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.ReferencesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ReferencesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -200,7 +200,7 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.WorkflowsCleared() {
+	if _u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -213,7 +213,7 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !ru.mutation.WorkflowsCleared() {
+	if nodes := _u.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -229,7 +229,7 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -245,8 +245,8 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(ru.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{referrer.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -254,8 +254,8 @@ func (ru *ReferrerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	ru.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ReferrerUpdateOne is the builder for updating a single Referrer entity.
@@ -268,103 +268,103 @@ type ReferrerUpdateOne struct {
 }
 
 // AddReferenceIDs adds the "references" edge to the Referrer entity by IDs.
-func (ruo *ReferrerUpdateOne) AddReferenceIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
-	ruo.mutation.AddReferenceIDs(ids...)
-	return ruo
+func (_u *ReferrerUpdateOne) AddReferenceIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
+	_u.mutation.AddReferenceIDs(ids...)
+	return _u
 }
 
 // AddReferences adds the "references" edges to the Referrer entity.
-func (ruo *ReferrerUpdateOne) AddReferences(r ...*Referrer) *ReferrerUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *ReferrerUpdateOne) AddReferences(v ...*Referrer) *ReferrerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.AddReferenceIDs(ids...)
+	return _u.AddReferenceIDs(ids...)
 }
 
 // AddWorkflowIDs adds the "workflows" edge to the Workflow entity by IDs.
-func (ruo *ReferrerUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
-	ruo.mutation.AddWorkflowIDs(ids...)
-	return ruo
+func (_u *ReferrerUpdateOne) AddWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
+	_u.mutation.AddWorkflowIDs(ids...)
+	return _u
 }
 
 // AddWorkflows adds the "workflows" edges to the Workflow entity.
-func (ruo *ReferrerUpdateOne) AddWorkflows(w ...*Workflow) *ReferrerUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ReferrerUpdateOne) AddWorkflows(v ...*Workflow) *ReferrerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.AddWorkflowIDs(ids...)
+	return _u.AddWorkflowIDs(ids...)
 }
 
 // Mutation returns the ReferrerMutation object of the builder.
-func (ruo *ReferrerUpdateOne) Mutation() *ReferrerMutation {
-	return ruo.mutation
+func (_u *ReferrerUpdateOne) Mutation() *ReferrerMutation {
+	return _u.mutation
 }
 
 // ClearReferences clears all "references" edges to the Referrer entity.
-func (ruo *ReferrerUpdateOne) ClearReferences() *ReferrerUpdateOne {
-	ruo.mutation.ClearReferences()
-	return ruo
+func (_u *ReferrerUpdateOne) ClearReferences() *ReferrerUpdateOne {
+	_u.mutation.ClearReferences()
+	return _u
 }
 
 // RemoveReferenceIDs removes the "references" edge to Referrer entities by IDs.
-func (ruo *ReferrerUpdateOne) RemoveReferenceIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
-	ruo.mutation.RemoveReferenceIDs(ids...)
-	return ruo
+func (_u *ReferrerUpdateOne) RemoveReferenceIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
+	_u.mutation.RemoveReferenceIDs(ids...)
+	return _u
 }
 
 // RemoveReferences removes "references" edges to Referrer entities.
-func (ruo *ReferrerUpdateOne) RemoveReferences(r ...*Referrer) *ReferrerUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *ReferrerUpdateOne) RemoveReferences(v ...*Referrer) *ReferrerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.RemoveReferenceIDs(ids...)
+	return _u.RemoveReferenceIDs(ids...)
 }
 
 // ClearWorkflows clears all "workflows" edges to the Workflow entity.
-func (ruo *ReferrerUpdateOne) ClearWorkflows() *ReferrerUpdateOne {
-	ruo.mutation.ClearWorkflows()
-	return ruo
+func (_u *ReferrerUpdateOne) ClearWorkflows() *ReferrerUpdateOne {
+	_u.mutation.ClearWorkflows()
+	return _u
 }
 
 // RemoveWorkflowIDs removes the "workflows" edge to Workflow entities by IDs.
-func (ruo *ReferrerUpdateOne) RemoveWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
-	ruo.mutation.RemoveWorkflowIDs(ids...)
-	return ruo
+func (_u *ReferrerUpdateOne) RemoveWorkflowIDs(ids ...uuid.UUID) *ReferrerUpdateOne {
+	_u.mutation.RemoveWorkflowIDs(ids...)
+	return _u
 }
 
 // RemoveWorkflows removes "workflows" edges to Workflow entities.
-func (ruo *ReferrerUpdateOne) RemoveWorkflows(w ...*Workflow) *ReferrerUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ReferrerUpdateOne) RemoveWorkflows(v ...*Workflow) *ReferrerUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.RemoveWorkflowIDs(ids...)
+	return _u.RemoveWorkflowIDs(ids...)
 }
 
 // Where appends a list predicates to the ReferrerUpdate builder.
-func (ruo *ReferrerUpdateOne) Where(ps ...predicate.Referrer) *ReferrerUpdateOne {
-	ruo.mutation.Where(ps...)
-	return ruo
+func (_u *ReferrerUpdateOne) Where(ps ...predicate.Referrer) *ReferrerUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (ruo *ReferrerUpdateOne) Select(field string, fields ...string) *ReferrerUpdateOne {
-	ruo.fields = append([]string{field}, fields...)
-	return ruo
+func (_u *ReferrerUpdateOne) Select(field string, fields ...string) *ReferrerUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Referrer entity.
-func (ruo *ReferrerUpdateOne) Save(ctx context.Context) (*Referrer, error) {
-	return withHooks(ctx, ruo.sqlSave, ruo.mutation, ruo.hooks)
+func (_u *ReferrerUpdateOne) Save(ctx context.Context) (*Referrer, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ruo *ReferrerUpdateOne) SaveX(ctx context.Context) *Referrer {
-	node, err := ruo.Save(ctx)
+func (_u *ReferrerUpdateOne) SaveX(ctx context.Context) *Referrer {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -372,32 +372,32 @@ func (ruo *ReferrerUpdateOne) SaveX(ctx context.Context) *Referrer {
 }
 
 // Exec executes the query on the entity.
-func (ruo *ReferrerUpdateOne) Exec(ctx context.Context) error {
-	_, err := ruo.Save(ctx)
+func (_u *ReferrerUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ruo *ReferrerUpdateOne) ExecX(ctx context.Context) {
-	if err := ruo.Exec(ctx); err != nil {
+func (_u *ReferrerUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (ruo *ReferrerUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ReferrerUpdateOne {
-	ruo.modifiers = append(ruo.modifiers, modifiers...)
-	return ruo
+func (_u *ReferrerUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ReferrerUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err error) {
+func (_u *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err error) {
 	_spec := sqlgraph.NewUpdateSpec(referrer.Table, referrer.Columns, sqlgraph.NewFieldSpec(referrer.FieldID, field.TypeUUID))
-	id, ok := ruo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Referrer.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := ruo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, referrer.FieldID)
 		for _, f := range fields {
@@ -409,20 +409,20 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 			}
 		}
 	}
-	if ps := ruo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if ruo.mutation.MetadataCleared() {
+	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(referrer.FieldMetadata, field.TypeJSON)
 	}
-	if ruo.mutation.AnnotationsCleared() {
+	if _u.mutation.AnnotationsCleared() {
 		_spec.ClearField(referrer.FieldAnnotations, field.TypeJSON)
 	}
-	if ruo.mutation.ReferencesCleared() {
+	if _u.mutation.ReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -435,7 +435,7 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedReferencesIDs(); len(nodes) > 0 && !ruo.mutation.ReferencesCleared() {
+	if nodes := _u.mutation.RemovedReferencesIDs(); len(nodes) > 0 && !_u.mutation.ReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -451,7 +451,7 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.ReferencesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ReferencesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -467,7 +467,7 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.WorkflowsCleared() {
+	if _u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -480,7 +480,7 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !ruo.mutation.WorkflowsCleared() {
+	if nodes := _u.mutation.RemovedWorkflowsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -496,7 +496,7 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.WorkflowsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.WorkflowsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -512,11 +512,11 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(ruo.modifiers...)
-	_node = &Referrer{config: ruo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Referrer{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, ruo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{referrer.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -524,6 +524,6 @@ func (ruo *ReferrerUpdateOne) sqlSave(ctx context.Context) (_node *Referrer, err
 		}
 		return nil, err
 	}
-	ruo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

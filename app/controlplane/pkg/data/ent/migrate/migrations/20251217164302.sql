@@ -1,0 +1,2 @@
+-- Rename an index from "membership_membership_type_mem_69a8fe555e26fd9532f5e3fe38ba2651" to "membership_membership_type_member_id_resource_type_resource_id_"
+ALTER INDEX "membership_membership_type_mem_69a8fe555e26fd9532f5e3fe38ba2651" RENAME TO "membership_membership_type_member_id_resource_type_resource_id_";

@@ -36,44 +36,44 @@ type IntegrationAttachmentQuery struct {
 }
 
 // Where adds a new predicate for the IntegrationAttachmentQuery builder.
-func (iaq *IntegrationAttachmentQuery) Where(ps ...predicate.IntegrationAttachment) *IntegrationAttachmentQuery {
-	iaq.predicates = append(iaq.predicates, ps...)
-	return iaq
+func (_q *IntegrationAttachmentQuery) Where(ps ...predicate.IntegrationAttachment) *IntegrationAttachmentQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (iaq *IntegrationAttachmentQuery) Limit(limit int) *IntegrationAttachmentQuery {
-	iaq.ctx.Limit = &limit
-	return iaq
+func (_q *IntegrationAttachmentQuery) Limit(limit int) *IntegrationAttachmentQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (iaq *IntegrationAttachmentQuery) Offset(offset int) *IntegrationAttachmentQuery {
-	iaq.ctx.Offset = &offset
-	return iaq
+func (_q *IntegrationAttachmentQuery) Offset(offset int) *IntegrationAttachmentQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (iaq *IntegrationAttachmentQuery) Unique(unique bool) *IntegrationAttachmentQuery {
-	iaq.ctx.Unique = &unique
-	return iaq
+func (_q *IntegrationAttachmentQuery) Unique(unique bool) *IntegrationAttachmentQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (iaq *IntegrationAttachmentQuery) Order(o ...integrationattachment.OrderOption) *IntegrationAttachmentQuery {
-	iaq.order = append(iaq.order, o...)
-	return iaq
+func (_q *IntegrationAttachmentQuery) Order(o ...integrationattachment.OrderOption) *IntegrationAttachmentQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryIntegration chains the current query on the "integration" edge.
-func (iaq *IntegrationAttachmentQuery) QueryIntegration() *IntegrationQuery {
-	query := (&IntegrationClient{config: iaq.config}).Query()
+func (_q *IntegrationAttachmentQuery) QueryIntegration() *IntegrationQuery {
+	query := (&IntegrationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iaq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := iaq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -82,20 +82,20 @@ func (iaq *IntegrationAttachmentQuery) QueryIntegration() *IntegrationQuery {
 			sqlgraph.To(integration.Table, integration.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, integrationattachment.IntegrationTable, integrationattachment.IntegrationColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(iaq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryWorkflow chains the current query on the "workflow" edge.
-func (iaq *IntegrationAttachmentQuery) QueryWorkflow() *WorkflowQuery {
-	query := (&WorkflowClient{config: iaq.config}).Query()
+func (_q *IntegrationAttachmentQuery) QueryWorkflow() *WorkflowQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iaq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := iaq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -104,7 +104,7 @@ func (iaq *IntegrationAttachmentQuery) QueryWorkflow() *WorkflowQuery {
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, integrationattachment.WorkflowTable, integrationattachment.WorkflowColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(iaq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -112,8 +112,8 @@ func (iaq *IntegrationAttachmentQuery) QueryWorkflow() *WorkflowQuery {
 
 // First returns the first IntegrationAttachment entity from the query.
 // Returns a *NotFoundError when no IntegrationAttachment was found.
-func (iaq *IntegrationAttachmentQuery) First(ctx context.Context) (*IntegrationAttachment, error) {
-	nodes, err := iaq.Limit(1).All(setContextOp(ctx, iaq.ctx, ent.OpQueryFirst))
+func (_q *IntegrationAttachmentQuery) First(ctx context.Context) (*IntegrationAttachment, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ func (iaq *IntegrationAttachmentQuery) First(ctx context.Context) (*IntegrationA
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) FirstX(ctx context.Context) *IntegrationAttachment {
-	node, err := iaq.First(ctx)
+func (_q *IntegrationAttachmentQuery) FirstX(ctx context.Context) *IntegrationAttachment {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -134,9 +134,9 @@ func (iaq *IntegrationAttachmentQuery) FirstX(ctx context.Context) *IntegrationA
 
 // FirstID returns the first IntegrationAttachment ID from the query.
 // Returns a *NotFoundError when no IntegrationAttachment ID was found.
-func (iaq *IntegrationAttachmentQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *IntegrationAttachmentQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = iaq.Limit(1).IDs(setContextOp(ctx, iaq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -147,8 +147,8 @@ func (iaq *IntegrationAttachmentQuery) FirstID(ctx context.Context) (id uuid.UUI
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := iaq.FirstID(ctx)
+func (_q *IntegrationAttachmentQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -158,8 +158,8 @@ func (iaq *IntegrationAttachmentQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single IntegrationAttachment entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one IntegrationAttachment entity is found.
 // Returns a *NotFoundError when no IntegrationAttachment entities are found.
-func (iaq *IntegrationAttachmentQuery) Only(ctx context.Context) (*IntegrationAttachment, error) {
-	nodes, err := iaq.Limit(2).All(setContextOp(ctx, iaq.ctx, ent.OpQueryOnly))
+func (_q *IntegrationAttachmentQuery) Only(ctx context.Context) (*IntegrationAttachment, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +174,8 @@ func (iaq *IntegrationAttachmentQuery) Only(ctx context.Context) (*IntegrationAt
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) OnlyX(ctx context.Context) *IntegrationAttachment {
-	node, err := iaq.Only(ctx)
+func (_q *IntegrationAttachmentQuery) OnlyX(ctx context.Context) *IntegrationAttachment {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -185,9 +185,9 @@ func (iaq *IntegrationAttachmentQuery) OnlyX(ctx context.Context) *IntegrationAt
 // OnlyID is like Only, but returns the only IntegrationAttachment ID in the query.
 // Returns a *NotSingularError when more than one IntegrationAttachment ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (iaq *IntegrationAttachmentQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *IntegrationAttachmentQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = iaq.Limit(2).IDs(setContextOp(ctx, iaq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -202,8 +202,8 @@ func (iaq *IntegrationAttachmentQuery) OnlyID(ctx context.Context) (id uuid.UUID
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := iaq.OnlyID(ctx)
+func (_q *IntegrationAttachmentQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -211,18 +211,18 @@ func (iaq *IntegrationAttachmentQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of IntegrationAttachments.
-func (iaq *IntegrationAttachmentQuery) All(ctx context.Context) ([]*IntegrationAttachment, error) {
-	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryAll)
-	if err := iaq.prepareQuery(ctx); err != nil {
+func (_q *IntegrationAttachmentQuery) All(ctx context.Context) ([]*IntegrationAttachment, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*IntegrationAttachment, *IntegrationAttachmentQuery]()
-	return withInterceptors[[]*IntegrationAttachment](ctx, iaq, qr, iaq.inters)
+	return withInterceptors[[]*IntegrationAttachment](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) AllX(ctx context.Context) []*IntegrationAttachment {
-	nodes, err := iaq.All(ctx)
+func (_q *IntegrationAttachmentQuery) AllX(ctx context.Context) []*IntegrationAttachment {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -230,20 +230,20 @@ func (iaq *IntegrationAttachmentQuery) AllX(ctx context.Context) []*IntegrationA
 }
 
 // IDs executes the query and returns a list of IntegrationAttachment IDs.
-func (iaq *IntegrationAttachmentQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if iaq.ctx.Unique == nil && iaq.path != nil {
-		iaq.Unique(true)
+func (_q *IntegrationAttachmentQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryIDs)
-	if err = iaq.Select(integrationattachment.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(integrationattachment.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := iaq.IDs(ctx)
+func (_q *IntegrationAttachmentQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -251,17 +251,17 @@ func (iaq *IntegrationAttachmentQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (iaq *IntegrationAttachmentQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryCount)
-	if err := iaq.prepareQuery(ctx); err != nil {
+func (_q *IntegrationAttachmentQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, iaq, querierCount[*IntegrationAttachmentQuery](), iaq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*IntegrationAttachmentQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) CountX(ctx context.Context) int {
-	count, err := iaq.Count(ctx)
+func (_q *IntegrationAttachmentQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -269,9 +269,9 @@ func (iaq *IntegrationAttachmentQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (iaq *IntegrationAttachmentQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, iaq.ctx, ent.OpQueryExist)
-	switch _, err := iaq.FirstID(ctx); {
+func (_q *IntegrationAttachmentQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -282,8 +282,8 @@ func (iaq *IntegrationAttachmentQuery) Exist(ctx context.Context) (bool, error) 
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (iaq *IntegrationAttachmentQuery) ExistX(ctx context.Context) bool {
-	exist, err := iaq.Exist(ctx)
+func (_q *IntegrationAttachmentQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -292,45 +292,45 @@ func (iaq *IntegrationAttachmentQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the IntegrationAttachmentQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (iaq *IntegrationAttachmentQuery) Clone() *IntegrationAttachmentQuery {
-	if iaq == nil {
+func (_q *IntegrationAttachmentQuery) Clone() *IntegrationAttachmentQuery {
+	if _q == nil {
 		return nil
 	}
 	return &IntegrationAttachmentQuery{
-		config:          iaq.config,
-		ctx:             iaq.ctx.Clone(),
-		order:           append([]integrationattachment.OrderOption{}, iaq.order...),
-		inters:          append([]Interceptor{}, iaq.inters...),
-		predicates:      append([]predicate.IntegrationAttachment{}, iaq.predicates...),
-		withIntegration: iaq.withIntegration.Clone(),
-		withWorkflow:    iaq.withWorkflow.Clone(),
+		config:          _q.config,
+		ctx:             _q.ctx.Clone(),
+		order:           append([]integrationattachment.OrderOption{}, _q.order...),
+		inters:          append([]Interceptor{}, _q.inters...),
+		predicates:      append([]predicate.IntegrationAttachment{}, _q.predicates...),
+		withIntegration: _q.withIntegration.Clone(),
+		withWorkflow:    _q.withWorkflow.Clone(),
 		// clone intermediate query.
-		sql:       iaq.sql.Clone(),
-		path:      iaq.path,
-		modifiers: append([]func(*sql.Selector){}, iaq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithIntegration tells the query-builder to eager-load the nodes that are connected to
 // the "integration" edge. The optional arguments are used to configure the query builder of the edge.
-func (iaq *IntegrationAttachmentQuery) WithIntegration(opts ...func(*IntegrationQuery)) *IntegrationAttachmentQuery {
-	query := (&IntegrationClient{config: iaq.config}).Query()
+func (_q *IntegrationAttachmentQuery) WithIntegration(opts ...func(*IntegrationQuery)) *IntegrationAttachmentQuery {
+	query := (&IntegrationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	iaq.withIntegration = query
-	return iaq
+	_q.withIntegration = query
+	return _q
 }
 
 // WithWorkflow tells the query-builder to eager-load the nodes that are connected to
 // the "workflow" edge. The optional arguments are used to configure the query builder of the edge.
-func (iaq *IntegrationAttachmentQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *IntegrationAttachmentQuery {
-	query := (&WorkflowClient{config: iaq.config}).Query()
+func (_q *IntegrationAttachmentQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *IntegrationAttachmentQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	iaq.withWorkflow = query
-	return iaq
+	_q.withWorkflow = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -347,10 +347,10 @@ func (iaq *IntegrationAttachmentQuery) WithWorkflow(opts ...func(*WorkflowQuery)
 //		GroupBy(integrationattachment.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (iaq *IntegrationAttachmentQuery) GroupBy(field string, fields ...string) *IntegrationAttachmentGroupBy {
-	iaq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &IntegrationAttachmentGroupBy{build: iaq}
-	grbuild.flds = &iaq.ctx.Fields
+func (_q *IntegrationAttachmentQuery) GroupBy(field string, fields ...string) *IntegrationAttachmentGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &IntegrationAttachmentGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = integrationattachment.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -368,56 +368,56 @@ func (iaq *IntegrationAttachmentQuery) GroupBy(field string, fields ...string) *
 //	client.IntegrationAttachment.Query().
 //		Select(integrationattachment.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (iaq *IntegrationAttachmentQuery) Select(fields ...string) *IntegrationAttachmentSelect {
-	iaq.ctx.Fields = append(iaq.ctx.Fields, fields...)
-	sbuild := &IntegrationAttachmentSelect{IntegrationAttachmentQuery: iaq}
+func (_q *IntegrationAttachmentQuery) Select(fields ...string) *IntegrationAttachmentSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &IntegrationAttachmentSelect{IntegrationAttachmentQuery: _q}
 	sbuild.label = integrationattachment.Label
-	sbuild.flds, sbuild.scan = &iaq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a IntegrationAttachmentSelect configured with the given aggregations.
-func (iaq *IntegrationAttachmentQuery) Aggregate(fns ...AggregateFunc) *IntegrationAttachmentSelect {
-	return iaq.Select().Aggregate(fns...)
+func (_q *IntegrationAttachmentQuery) Aggregate(fns ...AggregateFunc) *IntegrationAttachmentSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (iaq *IntegrationAttachmentQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range iaq.inters {
+func (_q *IntegrationAttachmentQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, iaq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range iaq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !integrationattachment.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if iaq.path != nil {
-		prev, err := iaq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		iaq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (iaq *IntegrationAttachmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*IntegrationAttachment, error) {
+func (_q *IntegrationAttachmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*IntegrationAttachment, error) {
 	var (
 		nodes       = []*IntegrationAttachment{}
-		withFKs     = iaq.withFKs
-		_spec       = iaq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			iaq.withIntegration != nil,
-			iaq.withWorkflow != nil,
+			_q.withIntegration != nil,
+			_q.withWorkflow != nil,
 		}
 	)
-	if iaq.withIntegration != nil {
+	if _q.withIntegration != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -427,31 +427,31 @@ func (iaq *IntegrationAttachmentQuery) sqlAll(ctx context.Context, hooks ...quer
 		return (*IntegrationAttachment).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &IntegrationAttachment{config: iaq.config}
+		node := &IntegrationAttachment{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(iaq.modifiers) > 0 {
-		_spec.Modifiers = iaq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, iaq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := iaq.withIntegration; query != nil {
-		if err := iaq.loadIntegration(ctx, query, nodes, nil,
+	if query := _q.withIntegration; query != nil {
+		if err := _q.loadIntegration(ctx, query, nodes, nil,
 			func(n *IntegrationAttachment, e *Integration) { n.Edges.Integration = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := iaq.withWorkflow; query != nil {
-		if err := iaq.loadWorkflow(ctx, query, nodes, nil,
+	if query := _q.withWorkflow; query != nil {
+		if err := _q.loadWorkflow(ctx, query, nodes, nil,
 			func(n *IntegrationAttachment, e *Workflow) { n.Edges.Workflow = e }); err != nil {
 			return nil, err
 		}
@@ -459,7 +459,7 @@ func (iaq *IntegrationAttachmentQuery) sqlAll(ctx context.Context, hooks ...quer
 	return nodes, nil
 }
 
-func (iaq *IntegrationAttachmentQuery) loadIntegration(ctx context.Context, query *IntegrationQuery, nodes []*IntegrationAttachment, init func(*IntegrationAttachment), assign func(*IntegrationAttachment, *Integration)) error {
+func (_q *IntegrationAttachmentQuery) loadIntegration(ctx context.Context, query *IntegrationQuery, nodes []*IntegrationAttachment, init func(*IntegrationAttachment), assign func(*IntegrationAttachment, *Integration)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*IntegrationAttachment)
 	for i := range nodes {
@@ -491,7 +491,7 @@ func (iaq *IntegrationAttachmentQuery) loadIntegration(ctx context.Context, quer
 	}
 	return nil
 }
-func (iaq *IntegrationAttachmentQuery) loadWorkflow(ctx context.Context, query *WorkflowQuery, nodes []*IntegrationAttachment, init func(*IntegrationAttachment), assign func(*IntegrationAttachment, *Workflow)) error {
+func (_q *IntegrationAttachmentQuery) loadWorkflow(ctx context.Context, query *WorkflowQuery, nodes []*IntegrationAttachment, init func(*IntegrationAttachment), assign func(*IntegrationAttachment, *Workflow)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*IntegrationAttachment)
 	for i := range nodes {
@@ -521,27 +521,27 @@ func (iaq *IntegrationAttachmentQuery) loadWorkflow(ctx context.Context, query *
 	return nil
 }
 
-func (iaq *IntegrationAttachmentQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := iaq.querySpec()
-	if len(iaq.modifiers) > 0 {
-		_spec.Modifiers = iaq.modifiers
+func (_q *IntegrationAttachmentQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = iaq.ctx.Fields
-	if len(iaq.ctx.Fields) > 0 {
-		_spec.Unique = iaq.ctx.Unique != nil && *iaq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, iaq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (iaq *IntegrationAttachmentQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *IntegrationAttachmentQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(integrationattachment.Table, integrationattachment.Columns, sqlgraph.NewFieldSpec(integrationattachment.FieldID, field.TypeUUID))
-	_spec.From = iaq.sql
-	if unique := iaq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if iaq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := iaq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, integrationattachment.FieldID)
 		for i := range fields {
@@ -549,24 +549,24 @@ func (iaq *IntegrationAttachmentQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if iaq.withWorkflow != nil {
+		if _q.withWorkflow != nil {
 			_spec.Node.AddColumnOnce(integrationattachment.FieldWorkflowID)
 		}
 	}
-	if ps := iaq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := iaq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := iaq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := iaq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -576,36 +576,36 @@ func (iaq *IntegrationAttachmentQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (iaq *IntegrationAttachmentQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(iaq.driver.Dialect())
+func (_q *IntegrationAttachmentQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(integrationattachment.Table)
-	columns := iaq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = integrationattachment.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if iaq.sql != nil {
-		selector = iaq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if iaq.ctx.Unique != nil && *iaq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range iaq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range iaq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range iaq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := iaq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := iaq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -614,33 +614,33 @@ func (iaq *IntegrationAttachmentQuery) sqlQuery(ctx context.Context) *sql.Select
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (iaq *IntegrationAttachmentQuery) ForUpdate(opts ...sql.LockOption) *IntegrationAttachmentQuery {
-	if iaq.driver.Dialect() == dialect.Postgres {
-		iaq.Unique(false)
+func (_q *IntegrationAttachmentQuery) ForUpdate(opts ...sql.LockOption) *IntegrationAttachmentQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	iaq.modifiers = append(iaq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return iaq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (iaq *IntegrationAttachmentQuery) ForShare(opts ...sql.LockOption) *IntegrationAttachmentQuery {
-	if iaq.driver.Dialect() == dialect.Postgres {
-		iaq.Unique(false)
+func (_q *IntegrationAttachmentQuery) ForShare(opts ...sql.LockOption) *IntegrationAttachmentQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	iaq.modifiers = append(iaq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return iaq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (iaq *IntegrationAttachmentQuery) Modify(modifiers ...func(s *sql.Selector)) *IntegrationAttachmentSelect {
-	iaq.modifiers = append(iaq.modifiers, modifiers...)
-	return iaq.Select()
+func (_q *IntegrationAttachmentQuery) Modify(modifiers ...func(s *sql.Selector)) *IntegrationAttachmentSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // IntegrationAttachmentGroupBy is the group-by builder for IntegrationAttachment entities.
@@ -650,41 +650,41 @@ type IntegrationAttachmentGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (iagb *IntegrationAttachmentGroupBy) Aggregate(fns ...AggregateFunc) *IntegrationAttachmentGroupBy {
-	iagb.fns = append(iagb.fns, fns...)
-	return iagb
+func (_g *IntegrationAttachmentGroupBy) Aggregate(fns ...AggregateFunc) *IntegrationAttachmentGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (iagb *IntegrationAttachmentGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, iagb.build.ctx, ent.OpQueryGroupBy)
-	if err := iagb.build.prepareQuery(ctx); err != nil {
+func (_g *IntegrationAttachmentGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*IntegrationAttachmentQuery, *IntegrationAttachmentGroupBy](ctx, iagb.build, iagb, iagb.build.inters, v)
+	return scanWithInterceptors[*IntegrationAttachmentQuery, *IntegrationAttachmentGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (iagb *IntegrationAttachmentGroupBy) sqlScan(ctx context.Context, root *IntegrationAttachmentQuery, v any) error {
+func (_g *IntegrationAttachmentGroupBy) sqlScan(ctx context.Context, root *IntegrationAttachmentQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(iagb.fns))
-	for _, fn := range iagb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*iagb.flds)+len(iagb.fns))
-		for _, f := range *iagb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*iagb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := iagb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -698,27 +698,27 @@ type IntegrationAttachmentSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (ias *IntegrationAttachmentSelect) Aggregate(fns ...AggregateFunc) *IntegrationAttachmentSelect {
-	ias.fns = append(ias.fns, fns...)
-	return ias
+func (_s *IntegrationAttachmentSelect) Aggregate(fns ...AggregateFunc) *IntegrationAttachmentSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ias *IntegrationAttachmentSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ias.ctx, ent.OpQuerySelect)
-	if err := ias.prepareQuery(ctx); err != nil {
+func (_s *IntegrationAttachmentSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*IntegrationAttachmentQuery, *IntegrationAttachmentSelect](ctx, ias.IntegrationAttachmentQuery, ias, ias.inters, v)
+	return scanWithInterceptors[*IntegrationAttachmentQuery, *IntegrationAttachmentSelect](ctx, _s.IntegrationAttachmentQuery, _s, _s.inters, v)
 }
 
-func (ias *IntegrationAttachmentSelect) sqlScan(ctx context.Context, root *IntegrationAttachmentQuery, v any) error {
+func (_s *IntegrationAttachmentSelect) sqlScan(ctx context.Context, root *IntegrationAttachmentQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(ias.fns))
-	for _, fn := range ias.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*ias.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -726,7 +726,7 @@ func (ias *IntegrationAttachmentSelect) sqlScan(ctx context.Context, root *Integ
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ias.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -734,7 +734,7 @@ func (ias *IntegrationAttachmentSelect) sqlScan(ctx context.Context, root *Integ
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (ias *IntegrationAttachmentSelect) Modify(modifiers ...func(s *sql.Selector)) *IntegrationAttachmentSelect {
-	ias.modifiers = append(ias.modifiers, modifiers...)
-	return ias
+func (_s *IntegrationAttachmentSelect) Modify(modifiers ...func(s *sql.Selector)) *IntegrationAttachmentSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

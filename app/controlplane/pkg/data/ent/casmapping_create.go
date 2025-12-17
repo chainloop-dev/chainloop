@@ -28,108 +28,108 @@ type CASMappingCreate struct {
 }
 
 // SetDigest sets the "digest" field.
-func (cmc *CASMappingCreate) SetDigest(s string) *CASMappingCreate {
-	cmc.mutation.SetDigest(s)
-	return cmc
+func (_c *CASMappingCreate) SetDigest(v string) *CASMappingCreate {
+	_c.mutation.SetDigest(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (cmc *CASMappingCreate) SetCreatedAt(t time.Time) *CASMappingCreate {
-	cmc.mutation.SetCreatedAt(t)
-	return cmc
+func (_c *CASMappingCreate) SetCreatedAt(v time.Time) *CASMappingCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (cmc *CASMappingCreate) SetNillableCreatedAt(t *time.Time) *CASMappingCreate {
-	if t != nil {
-		cmc.SetCreatedAt(*t)
+func (_c *CASMappingCreate) SetNillableCreatedAt(v *time.Time) *CASMappingCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return cmc
+	return _c
 }
 
 // SetWorkflowRunID sets the "workflow_run_id" field.
-func (cmc *CASMappingCreate) SetWorkflowRunID(u uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetWorkflowRunID(u)
-	return cmc
+func (_c *CASMappingCreate) SetWorkflowRunID(v uuid.UUID) *CASMappingCreate {
+	_c.mutation.SetWorkflowRunID(v)
+	return _c
 }
 
 // SetNillableWorkflowRunID sets the "workflow_run_id" field if the given value is not nil.
-func (cmc *CASMappingCreate) SetNillableWorkflowRunID(u *uuid.UUID) *CASMappingCreate {
-	if u != nil {
-		cmc.SetWorkflowRunID(*u)
+func (_c *CASMappingCreate) SetNillableWorkflowRunID(v *uuid.UUID) *CASMappingCreate {
+	if v != nil {
+		_c.SetWorkflowRunID(*v)
 	}
-	return cmc
+	return _c
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (cmc *CASMappingCreate) SetOrganizationID(u uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetOrganizationID(u)
-	return cmc
+func (_c *CASMappingCreate) SetOrganizationID(v uuid.UUID) *CASMappingCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
 }
 
 // SetProjectID sets the "project_id" field.
-func (cmc *CASMappingCreate) SetProjectID(u uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetProjectID(u)
-	return cmc
+func (_c *CASMappingCreate) SetProjectID(v uuid.UUID) *CASMappingCreate {
+	_c.mutation.SetProjectID(v)
+	return _c
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (cmc *CASMappingCreate) SetNillableProjectID(u *uuid.UUID) *CASMappingCreate {
-	if u != nil {
-		cmc.SetProjectID(*u)
+func (_c *CASMappingCreate) SetNillableProjectID(v *uuid.UUID) *CASMappingCreate {
+	if v != nil {
+		_c.SetProjectID(*v)
 	}
-	return cmc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (cmc *CASMappingCreate) SetID(u uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetID(u)
-	return cmc
+func (_c *CASMappingCreate) SetID(v uuid.UUID) *CASMappingCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (cmc *CASMappingCreate) SetNillableID(u *uuid.UUID) *CASMappingCreate {
-	if u != nil {
-		cmc.SetID(*u)
+func (_c *CASMappingCreate) SetNillableID(v *uuid.UUID) *CASMappingCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return cmc
+	return _c
 }
 
 // SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by ID.
-func (cmc *CASMappingCreate) SetCasBackendID(id uuid.UUID) *CASMappingCreate {
-	cmc.mutation.SetCasBackendID(id)
-	return cmc
+func (_c *CASMappingCreate) SetCasBackendID(id uuid.UUID) *CASMappingCreate {
+	_c.mutation.SetCasBackendID(id)
+	return _c
 }
 
 // SetCasBackend sets the "cas_backend" edge to the CASBackend entity.
-func (cmc *CASMappingCreate) SetCasBackend(c *CASBackend) *CASMappingCreate {
-	return cmc.SetCasBackendID(c.ID)
+func (_c *CASMappingCreate) SetCasBackend(v *CASBackend) *CASMappingCreate {
+	return _c.SetCasBackendID(v.ID)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (cmc *CASMappingCreate) SetOrganization(o *Organization) *CASMappingCreate {
-	return cmc.SetOrganizationID(o.ID)
+func (_c *CASMappingCreate) SetOrganization(v *Organization) *CASMappingCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (cmc *CASMappingCreate) SetProject(p *Project) *CASMappingCreate {
-	return cmc.SetProjectID(p.ID)
+func (_c *CASMappingCreate) SetProject(v *Project) *CASMappingCreate {
+	return _c.SetProjectID(v.ID)
 }
 
 // Mutation returns the CASMappingMutation object of the builder.
-func (cmc *CASMappingCreate) Mutation() *CASMappingMutation {
-	return cmc.mutation
+func (_c *CASMappingCreate) Mutation() *CASMappingMutation {
+	return _c.mutation
 }
 
 // Save creates the CASMapping in the database.
-func (cmc *CASMappingCreate) Save(ctx context.Context) (*CASMapping, error) {
-	cmc.defaults()
-	return withHooks(ctx, cmc.sqlSave, cmc.mutation, cmc.hooks)
+func (_c *CASMappingCreate) Save(ctx context.Context) (*CASMapping, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (cmc *CASMappingCreate) SaveX(ctx context.Context) *CASMapping {
-	v, err := cmc.Save(ctx)
+func (_c *CASMappingCreate) SaveX(ctx context.Context) *CASMapping {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -137,56 +137,56 @@ func (cmc *CASMappingCreate) SaveX(ctx context.Context) *CASMapping {
 }
 
 // Exec executes the query.
-func (cmc *CASMappingCreate) Exec(ctx context.Context) error {
-	_, err := cmc.Save(ctx)
+func (_c *CASMappingCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cmc *CASMappingCreate) ExecX(ctx context.Context) {
-	if err := cmc.Exec(ctx); err != nil {
+func (_c *CASMappingCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cmc *CASMappingCreate) defaults() {
-	if _, ok := cmc.mutation.CreatedAt(); !ok {
+func (_c *CASMappingCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := casmapping.DefaultCreatedAt()
-		cmc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := cmc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := casmapping.DefaultID()
-		cmc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cmc *CASMappingCreate) check() error {
-	if _, ok := cmc.mutation.Digest(); !ok {
+func (_c *CASMappingCreate) check() error {
+	if _, ok := _c.mutation.Digest(); !ok {
 		return &ValidationError{Name: "digest", err: errors.New(`ent: missing required field "CASMapping.digest"`)}
 	}
-	if _, ok := cmc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CASMapping.created_at"`)}
 	}
-	if _, ok := cmc.mutation.OrganizationID(); !ok {
+	if _, ok := _c.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "CASMapping.organization_id"`)}
 	}
-	if len(cmc.mutation.CasBackendIDs()) == 0 {
+	if len(_c.mutation.CasBackendIDs()) == 0 {
 		return &ValidationError{Name: "cas_backend", err: errors.New(`ent: missing required edge "CASMapping.cas_backend"`)}
 	}
-	if len(cmc.mutation.OrganizationIDs()) == 0 {
+	if len(_c.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASMapping.organization"`)}
 	}
 	return nil
 }
 
-func (cmc *CASMappingCreate) sqlSave(ctx context.Context) (*CASMapping, error) {
-	if err := cmc.check(); err != nil {
+func (_c *CASMappingCreate) sqlSave(ctx context.Context) (*CASMapping, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := cmc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, cmc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -199,34 +199,34 @@ func (cmc *CASMappingCreate) sqlSave(ctx context.Context) (*CASMapping, error) {
 			return nil, err
 		}
 	}
-	cmc.mutation.id = &_node.ID
-	cmc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
+func (_c *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 	var (
-		_node = &CASMapping{config: cmc.config}
+		_node = &CASMapping{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(casmapping.Table, sqlgraph.NewFieldSpec(casmapping.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = cmc.conflict
-	if id, ok := cmc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := cmc.mutation.Digest(); ok {
+	if value, ok := _c.mutation.Digest(); ok {
 		_spec.SetField(casmapping.FieldDigest, field.TypeString, value)
 		_node.Digest = value
 	}
-	if value, ok := cmc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(casmapping.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := cmc.mutation.WorkflowRunID(); ok {
+	if value, ok := _c.mutation.WorkflowRunID(); ok {
 		_spec.SetField(casmapping.FieldWorkflowRunID, field.TypeUUID, value)
 		_node.WorkflowRunID = value
 	}
-	if nodes := cmc.mutation.CasBackendIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.CasBackendIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -243,7 +243,7 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_node.cas_mapping_cas_backend = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := cmc.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -260,7 +260,7 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := cmc.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -296,10 +296,10 @@ func (cmc *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 //			SetDigest(v+v).
 //		}).
 //		Exec(ctx)
-func (cmc *CASMappingCreate) OnConflict(opts ...sql.ConflictOption) *CASMappingUpsertOne {
-	cmc.conflict = opts
+func (_c *CASMappingCreate) OnConflict(opts ...sql.ConflictOption) *CASMappingUpsertOne {
+	_c.conflict = opts
 	return &CASMappingUpsertOne{
-		create: cmc,
+		create: _c,
 	}
 }
 
@@ -309,10 +309,10 @@ func (cmc *CASMappingCreate) OnConflict(opts ...sql.ConflictOption) *CASMappingU
 //	client.CASMapping.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (cmc *CASMappingCreate) OnConflictColumns(columns ...string) *CASMappingUpsertOne {
-	cmc.conflict = append(cmc.conflict, sql.ConflictColumns(columns...))
+func (_c *CASMappingCreate) OnConflictColumns(columns ...string) *CASMappingUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &CASMappingUpsertOne{
-		create: cmc,
+		create: _c,
 	}
 }
 
@@ -439,16 +439,16 @@ type CASMappingCreateBulk struct {
 }
 
 // Save creates the CASMapping entities in the database.
-func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, error) {
-	if cmcb.err != nil {
-		return nil, cmcb.err
+func (_c *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(cmcb.builders))
-	nodes := make([]*CASMapping, len(cmcb.builders))
-	mutators := make([]Mutator, len(cmcb.builders))
-	for i := range cmcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*CASMapping, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := cmcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CASMappingMutation)
@@ -462,12 +462,12 @@ func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, erro
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, cmcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = cmcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, cmcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -487,7 +487,7 @@ func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, erro
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, cmcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -495,8 +495,8 @@ func (cmcb *CASMappingCreateBulk) Save(ctx context.Context) ([]*CASMapping, erro
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cmcb *CASMappingCreateBulk) SaveX(ctx context.Context) []*CASMapping {
-	v, err := cmcb.Save(ctx)
+func (_c *CASMappingCreateBulk) SaveX(ctx context.Context) []*CASMapping {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -504,14 +504,14 @@ func (cmcb *CASMappingCreateBulk) SaveX(ctx context.Context) []*CASMapping {
 }
 
 // Exec executes the query.
-func (cmcb *CASMappingCreateBulk) Exec(ctx context.Context) error {
-	_, err := cmcb.Save(ctx)
+func (_c *CASMappingCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cmcb *CASMappingCreateBulk) ExecX(ctx context.Context) {
-	if err := cmcb.Exec(ctx); err != nil {
+func (_c *CASMappingCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -531,10 +531,10 @@ func (cmcb *CASMappingCreateBulk) ExecX(ctx context.Context) {
 //			SetDigest(v+v).
 //		}).
 //		Exec(ctx)
-func (cmcb *CASMappingCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASMappingUpsertBulk {
-	cmcb.conflict = opts
+func (_c *CASMappingCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASMappingUpsertBulk {
+	_c.conflict = opts
 	return &CASMappingUpsertBulk{
-		create: cmcb,
+		create: _c,
 	}
 }
 
@@ -544,10 +544,10 @@ func (cmcb *CASMappingCreateBulk) OnConflict(opts ...sql.ConflictOption) *CASMap
 //	client.CASMapping.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (cmcb *CASMappingCreateBulk) OnConflictColumns(columns ...string) *CASMappingUpsertBulk {
-	cmcb.conflict = append(cmcb.conflict, sql.ConflictColumns(columns...))
+func (_c *CASMappingCreateBulk) OnConflictColumns(columns ...string) *CASMappingUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &CASMappingUpsertBulk{
-		create: cmcb,
+		create: _c,
 	}
 }
 

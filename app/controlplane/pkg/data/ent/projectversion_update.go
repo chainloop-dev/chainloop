@@ -27,222 +27,222 @@ type ProjectVersionUpdate struct {
 }
 
 // Where appends a list predicates to the ProjectVersionUpdate builder.
-func (pvu *ProjectVersionUpdate) Where(ps ...predicate.ProjectVersion) *ProjectVersionUpdate {
-	pvu.mutation.Where(ps...)
-	return pvu
+func (_u *ProjectVersionUpdate) Where(ps ...predicate.ProjectVersion) *ProjectVersionUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetVersion sets the "version" field.
-func (pvu *ProjectVersionUpdate) SetVersion(s string) *ProjectVersionUpdate {
-	pvu.mutation.SetVersion(s)
-	return pvu
+func (_u *ProjectVersionUpdate) SetVersion(v string) *ProjectVersionUpdate {
+	_u.mutation.SetVersion(v)
+	return _u
 }
 
 // SetNillableVersion sets the "version" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableVersion(s *string) *ProjectVersionUpdate {
-	if s != nil {
-		pvu.SetVersion(*s)
+func (_u *ProjectVersionUpdate) SetNillableVersion(v *string) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetVersion(*v)
 	}
-	return pvu
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pvu *ProjectVersionUpdate) SetUpdatedAt(t time.Time) *ProjectVersionUpdate {
-	pvu.mutation.SetUpdatedAt(t)
-	return pvu
+func (_u *ProjectVersionUpdate) SetUpdatedAt(v time.Time) *ProjectVersionUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableUpdatedAt(t *time.Time) *ProjectVersionUpdate {
-	if t != nil {
-		pvu.SetUpdatedAt(*t)
+func (_u *ProjectVersionUpdate) SetNillableUpdatedAt(v *time.Time) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return pvu
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (pvu *ProjectVersionUpdate) SetDeletedAt(t time.Time) *ProjectVersionUpdate {
-	pvu.mutation.SetDeletedAt(t)
-	return pvu
+func (_u *ProjectVersionUpdate) SetDeletedAt(v time.Time) *ProjectVersionUpdate {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableDeletedAt(t *time.Time) *ProjectVersionUpdate {
-	if t != nil {
-		pvu.SetDeletedAt(*t)
+func (_u *ProjectVersionUpdate) SetNillableDeletedAt(v *time.Time) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return pvu
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (pvu *ProjectVersionUpdate) ClearDeletedAt() *ProjectVersionUpdate {
-	pvu.mutation.ClearDeletedAt()
-	return pvu
+func (_u *ProjectVersionUpdate) ClearDeletedAt() *ProjectVersionUpdate {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetProjectID sets the "project_id" field.
-func (pvu *ProjectVersionUpdate) SetProjectID(u uuid.UUID) *ProjectVersionUpdate {
-	pvu.mutation.SetProjectID(u)
-	return pvu
+func (_u *ProjectVersionUpdate) SetProjectID(v uuid.UUID) *ProjectVersionUpdate {
+	_u.mutation.SetProjectID(v)
+	return _u
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableProjectID(u *uuid.UUID) *ProjectVersionUpdate {
-	if u != nil {
-		pvu.SetProjectID(*u)
+func (_u *ProjectVersionUpdate) SetNillableProjectID(v *uuid.UUID) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetProjectID(*v)
 	}
-	return pvu
+	return _u
 }
 
 // SetPrerelease sets the "prerelease" field.
-func (pvu *ProjectVersionUpdate) SetPrerelease(b bool) *ProjectVersionUpdate {
-	pvu.mutation.SetPrerelease(b)
-	return pvu
+func (_u *ProjectVersionUpdate) SetPrerelease(v bool) *ProjectVersionUpdate {
+	_u.mutation.SetPrerelease(v)
+	return _u
 }
 
 // SetNillablePrerelease sets the "prerelease" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillablePrerelease(b *bool) *ProjectVersionUpdate {
-	if b != nil {
-		pvu.SetPrerelease(*b)
+func (_u *ProjectVersionUpdate) SetNillablePrerelease(v *bool) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetPrerelease(*v)
 	}
-	return pvu
+	return _u
 }
 
 // SetWorkflowRunCount sets the "workflow_run_count" field.
-func (pvu *ProjectVersionUpdate) SetWorkflowRunCount(i int) *ProjectVersionUpdate {
-	pvu.mutation.ResetWorkflowRunCount()
-	pvu.mutation.SetWorkflowRunCount(i)
-	return pvu
+func (_u *ProjectVersionUpdate) SetWorkflowRunCount(v int) *ProjectVersionUpdate {
+	_u.mutation.ResetWorkflowRunCount()
+	_u.mutation.SetWorkflowRunCount(v)
+	return _u
 }
 
 // SetNillableWorkflowRunCount sets the "workflow_run_count" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableWorkflowRunCount(i *int) *ProjectVersionUpdate {
-	if i != nil {
-		pvu.SetWorkflowRunCount(*i)
+func (_u *ProjectVersionUpdate) SetNillableWorkflowRunCount(v *int) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetWorkflowRunCount(*v)
 	}
-	return pvu
+	return _u
 }
 
-// AddWorkflowRunCount adds i to the "workflow_run_count" field.
-func (pvu *ProjectVersionUpdate) AddWorkflowRunCount(i int) *ProjectVersionUpdate {
-	pvu.mutation.AddWorkflowRunCount(i)
-	return pvu
+// AddWorkflowRunCount adds value to the "workflow_run_count" field.
+func (_u *ProjectVersionUpdate) AddWorkflowRunCount(v int) *ProjectVersionUpdate {
+	_u.mutation.AddWorkflowRunCount(v)
+	return _u
 }
 
 // SetReleasedAt sets the "released_at" field.
-func (pvu *ProjectVersionUpdate) SetReleasedAt(t time.Time) *ProjectVersionUpdate {
-	pvu.mutation.SetReleasedAt(t)
-	return pvu
+func (_u *ProjectVersionUpdate) SetReleasedAt(v time.Time) *ProjectVersionUpdate {
+	_u.mutation.SetReleasedAt(v)
+	return _u
 }
 
 // SetNillableReleasedAt sets the "released_at" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableReleasedAt(t *time.Time) *ProjectVersionUpdate {
-	if t != nil {
-		pvu.SetReleasedAt(*t)
+func (_u *ProjectVersionUpdate) SetNillableReleasedAt(v *time.Time) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetReleasedAt(*v)
 	}
-	return pvu
+	return _u
 }
 
 // ClearReleasedAt clears the value of the "released_at" field.
-func (pvu *ProjectVersionUpdate) ClearReleasedAt() *ProjectVersionUpdate {
-	pvu.mutation.ClearReleasedAt()
-	return pvu
+func (_u *ProjectVersionUpdate) ClearReleasedAt() *ProjectVersionUpdate {
+	_u.mutation.ClearReleasedAt()
+	return _u
 }
 
 // SetLastRunAt sets the "last_run_at" field.
-func (pvu *ProjectVersionUpdate) SetLastRunAt(t time.Time) *ProjectVersionUpdate {
-	pvu.mutation.SetLastRunAt(t)
-	return pvu
+func (_u *ProjectVersionUpdate) SetLastRunAt(v time.Time) *ProjectVersionUpdate {
+	_u.mutation.SetLastRunAt(v)
+	return _u
 }
 
 // SetNillableLastRunAt sets the "last_run_at" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableLastRunAt(t *time.Time) *ProjectVersionUpdate {
-	if t != nil {
-		pvu.SetLastRunAt(*t)
+func (_u *ProjectVersionUpdate) SetNillableLastRunAt(v *time.Time) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetLastRunAt(*v)
 	}
-	return pvu
+	return _u
 }
 
 // ClearLastRunAt clears the value of the "last_run_at" field.
-func (pvu *ProjectVersionUpdate) ClearLastRunAt() *ProjectVersionUpdate {
-	pvu.mutation.ClearLastRunAt()
-	return pvu
+func (_u *ProjectVersionUpdate) ClearLastRunAt() *ProjectVersionUpdate {
+	_u.mutation.ClearLastRunAt()
+	return _u
 }
 
 // SetLatest sets the "latest" field.
-func (pvu *ProjectVersionUpdate) SetLatest(b bool) *ProjectVersionUpdate {
-	pvu.mutation.SetLatest(b)
-	return pvu
+func (_u *ProjectVersionUpdate) SetLatest(v bool) *ProjectVersionUpdate {
+	_u.mutation.SetLatest(v)
+	return _u
 }
 
 // SetNillableLatest sets the "latest" field if the given value is not nil.
-func (pvu *ProjectVersionUpdate) SetNillableLatest(b *bool) *ProjectVersionUpdate {
-	if b != nil {
-		pvu.SetLatest(*b)
+func (_u *ProjectVersionUpdate) SetNillableLatest(v *bool) *ProjectVersionUpdate {
+	if v != nil {
+		_u.SetLatest(*v)
 	}
-	return pvu
+	return _u
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (pvu *ProjectVersionUpdate) SetProject(p *Project) *ProjectVersionUpdate {
-	return pvu.SetProjectID(p.ID)
+func (_u *ProjectVersionUpdate) SetProject(v *Project) *ProjectVersionUpdate {
+	return _u.SetProjectID(v.ID)
 }
 
 // AddRunIDs adds the "runs" edge to the WorkflowRun entity by IDs.
-func (pvu *ProjectVersionUpdate) AddRunIDs(ids ...uuid.UUID) *ProjectVersionUpdate {
-	pvu.mutation.AddRunIDs(ids...)
-	return pvu
+func (_u *ProjectVersionUpdate) AddRunIDs(ids ...uuid.UUID) *ProjectVersionUpdate {
+	_u.mutation.AddRunIDs(ids...)
+	return _u
 }
 
 // AddRuns adds the "runs" edges to the WorkflowRun entity.
-func (pvu *ProjectVersionUpdate) AddRuns(w ...*WorkflowRun) *ProjectVersionUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectVersionUpdate) AddRuns(v ...*WorkflowRun) *ProjectVersionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pvu.AddRunIDs(ids...)
+	return _u.AddRunIDs(ids...)
 }
 
 // Mutation returns the ProjectVersionMutation object of the builder.
-func (pvu *ProjectVersionUpdate) Mutation() *ProjectVersionMutation {
-	return pvu.mutation
+func (_u *ProjectVersionUpdate) Mutation() *ProjectVersionMutation {
+	return _u.mutation
 }
 
 // ClearProject clears the "project" edge to the Project entity.
-func (pvu *ProjectVersionUpdate) ClearProject() *ProjectVersionUpdate {
-	pvu.mutation.ClearProject()
-	return pvu
+func (_u *ProjectVersionUpdate) ClearProject() *ProjectVersionUpdate {
+	_u.mutation.ClearProject()
+	return _u
 }
 
 // ClearRuns clears all "runs" edges to the WorkflowRun entity.
-func (pvu *ProjectVersionUpdate) ClearRuns() *ProjectVersionUpdate {
-	pvu.mutation.ClearRuns()
-	return pvu
+func (_u *ProjectVersionUpdate) ClearRuns() *ProjectVersionUpdate {
+	_u.mutation.ClearRuns()
+	return _u
 }
 
 // RemoveRunIDs removes the "runs" edge to WorkflowRun entities by IDs.
-func (pvu *ProjectVersionUpdate) RemoveRunIDs(ids ...uuid.UUID) *ProjectVersionUpdate {
-	pvu.mutation.RemoveRunIDs(ids...)
-	return pvu
+func (_u *ProjectVersionUpdate) RemoveRunIDs(ids ...uuid.UUID) *ProjectVersionUpdate {
+	_u.mutation.RemoveRunIDs(ids...)
+	return _u
 }
 
 // RemoveRuns removes "runs" edges to WorkflowRun entities.
-func (pvu *ProjectVersionUpdate) RemoveRuns(w ...*WorkflowRun) *ProjectVersionUpdate {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectVersionUpdate) RemoveRuns(v ...*WorkflowRun) *ProjectVersionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pvu.RemoveRunIDs(ids...)
+	return _u.RemoveRunIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (pvu *ProjectVersionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, pvu.sqlSave, pvu.mutation, pvu.hooks)
+func (_u *ProjectVersionUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pvu *ProjectVersionUpdate) SaveX(ctx context.Context) int {
-	affected, err := pvu.Save(ctx)
+func (_u *ProjectVersionUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -250,86 +250,86 @@ func (pvu *ProjectVersionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (pvu *ProjectVersionUpdate) Exec(ctx context.Context) error {
-	_, err := pvu.Save(ctx)
+func (_u *ProjectVersionUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pvu *ProjectVersionUpdate) ExecX(ctx context.Context) {
-	if err := pvu.Exec(ctx); err != nil {
+func (_u *ProjectVersionUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pvu *ProjectVersionUpdate) check() error {
-	if v, ok := pvu.mutation.Version(); ok {
+func (_u *ProjectVersionUpdate) check() error {
+	if v, ok := _u.mutation.Version(); ok {
 		if err := projectversion.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectVersion.version": %w`, err)}
 		}
 	}
-	if pvu.mutation.ProjectCleared() && len(pvu.mutation.ProjectIDs()) > 0 {
+	if _u.mutation.ProjectCleared() && len(_u.mutation.ProjectIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProjectVersion.project"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (pvu *ProjectVersionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectVersionUpdate {
-	pvu.modifiers = append(pvu.modifiers, modifiers...)
-	return pvu
+func (_u *ProjectVersionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectVersionUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pvu.check(); err != nil {
-		return n, err
+func (_u *ProjectVersionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(projectversion.Table, projectversion.Columns, sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID))
-	if ps := pvu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pvu.mutation.Version(); ok {
+	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(projectversion.FieldVersion, field.TypeString, value)
 	}
-	if value, ok := pvu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectversion.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := pvu.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)
 	}
-	if pvu.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(projectversion.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := pvu.mutation.Prerelease(); ok {
+	if value, ok := _u.mutation.Prerelease(); ok {
 		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
 	}
-	if value, ok := pvu.mutation.WorkflowRunCount(); ok {
+	if value, ok := _u.mutation.WorkflowRunCount(); ok {
 		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 	}
-	if value, ok := pvu.mutation.AddedWorkflowRunCount(); ok {
+	if value, ok := _u.mutation.AddedWorkflowRunCount(); ok {
 		_spec.AddField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 	}
-	if value, ok := pvu.mutation.ReleasedAt(); ok {
+	if value, ok := _u.mutation.ReleasedAt(); ok {
 		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
 	}
-	if pvu.mutation.ReleasedAtCleared() {
+	if _u.mutation.ReleasedAtCleared() {
 		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
 	}
-	if value, ok := pvu.mutation.LastRunAt(); ok {
+	if value, ok := _u.mutation.LastRunAt(); ok {
 		_spec.SetField(projectversion.FieldLastRunAt, field.TypeTime, value)
 	}
-	if pvu.mutation.LastRunAtCleared() {
+	if _u.mutation.LastRunAtCleared() {
 		_spec.ClearField(projectversion.FieldLastRunAt, field.TypeTime)
 	}
-	if value, ok := pvu.mutation.Latest(); ok {
+	if value, ok := _u.mutation.Latest(); ok {
 		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
 	}
-	if pvu.mutation.ProjectCleared() {
+	if _u.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -342,7 +342,7 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pvu.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -358,7 +358,7 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pvu.mutation.RunsCleared() {
+	if _u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -371,7 +371,7 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pvu.mutation.RemovedRunsIDs(); len(nodes) > 0 && !pvu.mutation.RunsCleared() {
+	if nodes := _u.mutation.RemovedRunsIDs(); len(nodes) > 0 && !_u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -387,7 +387,7 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pvu.mutation.RunsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RunsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -403,8 +403,8 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(pvu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, pvu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{projectversion.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -412,8 +412,8 @@ func (pvu *ProjectVersionUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		return 0, err
 	}
-	pvu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ProjectVersionUpdateOne is the builder for updating a single ProjectVersion entity.
@@ -426,229 +426,229 @@ type ProjectVersionUpdateOne struct {
 }
 
 // SetVersion sets the "version" field.
-func (pvuo *ProjectVersionUpdateOne) SetVersion(s string) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetVersion(s)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetVersion(v string) *ProjectVersionUpdateOne {
+	_u.mutation.SetVersion(v)
+	return _u
 }
 
 // SetNillableVersion sets the "version" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableVersion(s *string) *ProjectVersionUpdateOne {
-	if s != nil {
-		pvuo.SetVersion(*s)
+func (_u *ProjectVersionUpdateOne) SetNillableVersion(v *string) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetVersion(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pvuo *ProjectVersionUpdateOne) SetUpdatedAt(t time.Time) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetUpdatedAt(t)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetUpdatedAt(v time.Time) *ProjectVersionUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableUpdatedAt(t *time.Time) *ProjectVersionUpdateOne {
-	if t != nil {
-		pvuo.SetUpdatedAt(*t)
+func (_u *ProjectVersionUpdateOne) SetNillableUpdatedAt(v *time.Time) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetUpdatedAt(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (pvuo *ProjectVersionUpdateOne) SetDeletedAt(t time.Time) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetDeletedAt(t)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetDeletedAt(v time.Time) *ProjectVersionUpdateOne {
+	_u.mutation.SetDeletedAt(v)
+	return _u
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableDeletedAt(t *time.Time) *ProjectVersionUpdateOne {
-	if t != nil {
-		pvuo.SetDeletedAt(*t)
+func (_u *ProjectVersionUpdateOne) SetNillableDeletedAt(v *time.Time) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetDeletedAt(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // ClearDeletedAt clears the value of the "deleted_at" field.
-func (pvuo *ProjectVersionUpdateOne) ClearDeletedAt() *ProjectVersionUpdateOne {
-	pvuo.mutation.ClearDeletedAt()
-	return pvuo
+func (_u *ProjectVersionUpdateOne) ClearDeletedAt() *ProjectVersionUpdateOne {
+	_u.mutation.ClearDeletedAt()
+	return _u
 }
 
 // SetProjectID sets the "project_id" field.
-func (pvuo *ProjectVersionUpdateOne) SetProjectID(u uuid.UUID) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetProjectID(u)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetProjectID(v uuid.UUID) *ProjectVersionUpdateOne {
+	_u.mutation.SetProjectID(v)
+	return _u
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableProjectID(u *uuid.UUID) *ProjectVersionUpdateOne {
-	if u != nil {
-		pvuo.SetProjectID(*u)
+func (_u *ProjectVersionUpdateOne) SetNillableProjectID(v *uuid.UUID) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetProjectID(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // SetPrerelease sets the "prerelease" field.
-func (pvuo *ProjectVersionUpdateOne) SetPrerelease(b bool) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetPrerelease(b)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetPrerelease(v bool) *ProjectVersionUpdateOne {
+	_u.mutation.SetPrerelease(v)
+	return _u
 }
 
 // SetNillablePrerelease sets the "prerelease" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillablePrerelease(b *bool) *ProjectVersionUpdateOne {
-	if b != nil {
-		pvuo.SetPrerelease(*b)
+func (_u *ProjectVersionUpdateOne) SetNillablePrerelease(v *bool) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetPrerelease(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // SetWorkflowRunCount sets the "workflow_run_count" field.
-func (pvuo *ProjectVersionUpdateOne) SetWorkflowRunCount(i int) *ProjectVersionUpdateOne {
-	pvuo.mutation.ResetWorkflowRunCount()
-	pvuo.mutation.SetWorkflowRunCount(i)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetWorkflowRunCount(v int) *ProjectVersionUpdateOne {
+	_u.mutation.ResetWorkflowRunCount()
+	_u.mutation.SetWorkflowRunCount(v)
+	return _u
 }
 
 // SetNillableWorkflowRunCount sets the "workflow_run_count" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableWorkflowRunCount(i *int) *ProjectVersionUpdateOne {
-	if i != nil {
-		pvuo.SetWorkflowRunCount(*i)
+func (_u *ProjectVersionUpdateOne) SetNillableWorkflowRunCount(v *int) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetWorkflowRunCount(*v)
 	}
-	return pvuo
+	return _u
 }
 
-// AddWorkflowRunCount adds i to the "workflow_run_count" field.
-func (pvuo *ProjectVersionUpdateOne) AddWorkflowRunCount(i int) *ProjectVersionUpdateOne {
-	pvuo.mutation.AddWorkflowRunCount(i)
-	return pvuo
+// AddWorkflowRunCount adds value to the "workflow_run_count" field.
+func (_u *ProjectVersionUpdateOne) AddWorkflowRunCount(v int) *ProjectVersionUpdateOne {
+	_u.mutation.AddWorkflowRunCount(v)
+	return _u
 }
 
 // SetReleasedAt sets the "released_at" field.
-func (pvuo *ProjectVersionUpdateOne) SetReleasedAt(t time.Time) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetReleasedAt(t)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetReleasedAt(v time.Time) *ProjectVersionUpdateOne {
+	_u.mutation.SetReleasedAt(v)
+	return _u
 }
 
 // SetNillableReleasedAt sets the "released_at" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableReleasedAt(t *time.Time) *ProjectVersionUpdateOne {
-	if t != nil {
-		pvuo.SetReleasedAt(*t)
+func (_u *ProjectVersionUpdateOne) SetNillableReleasedAt(v *time.Time) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetReleasedAt(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // ClearReleasedAt clears the value of the "released_at" field.
-func (pvuo *ProjectVersionUpdateOne) ClearReleasedAt() *ProjectVersionUpdateOne {
-	pvuo.mutation.ClearReleasedAt()
-	return pvuo
+func (_u *ProjectVersionUpdateOne) ClearReleasedAt() *ProjectVersionUpdateOne {
+	_u.mutation.ClearReleasedAt()
+	return _u
 }
 
 // SetLastRunAt sets the "last_run_at" field.
-func (pvuo *ProjectVersionUpdateOne) SetLastRunAt(t time.Time) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetLastRunAt(t)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetLastRunAt(v time.Time) *ProjectVersionUpdateOne {
+	_u.mutation.SetLastRunAt(v)
+	return _u
 }
 
 // SetNillableLastRunAt sets the "last_run_at" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableLastRunAt(t *time.Time) *ProjectVersionUpdateOne {
-	if t != nil {
-		pvuo.SetLastRunAt(*t)
+func (_u *ProjectVersionUpdateOne) SetNillableLastRunAt(v *time.Time) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetLastRunAt(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // ClearLastRunAt clears the value of the "last_run_at" field.
-func (pvuo *ProjectVersionUpdateOne) ClearLastRunAt() *ProjectVersionUpdateOne {
-	pvuo.mutation.ClearLastRunAt()
-	return pvuo
+func (_u *ProjectVersionUpdateOne) ClearLastRunAt() *ProjectVersionUpdateOne {
+	_u.mutation.ClearLastRunAt()
+	return _u
 }
 
 // SetLatest sets the "latest" field.
-func (pvuo *ProjectVersionUpdateOne) SetLatest(b bool) *ProjectVersionUpdateOne {
-	pvuo.mutation.SetLatest(b)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) SetLatest(v bool) *ProjectVersionUpdateOne {
+	_u.mutation.SetLatest(v)
+	return _u
 }
 
 // SetNillableLatest sets the "latest" field if the given value is not nil.
-func (pvuo *ProjectVersionUpdateOne) SetNillableLatest(b *bool) *ProjectVersionUpdateOne {
-	if b != nil {
-		pvuo.SetLatest(*b)
+func (_u *ProjectVersionUpdateOne) SetNillableLatest(v *bool) *ProjectVersionUpdateOne {
+	if v != nil {
+		_u.SetLatest(*v)
 	}
-	return pvuo
+	return _u
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (pvuo *ProjectVersionUpdateOne) SetProject(p *Project) *ProjectVersionUpdateOne {
-	return pvuo.SetProjectID(p.ID)
+func (_u *ProjectVersionUpdateOne) SetProject(v *Project) *ProjectVersionUpdateOne {
+	return _u.SetProjectID(v.ID)
 }
 
 // AddRunIDs adds the "runs" edge to the WorkflowRun entity by IDs.
-func (pvuo *ProjectVersionUpdateOne) AddRunIDs(ids ...uuid.UUID) *ProjectVersionUpdateOne {
-	pvuo.mutation.AddRunIDs(ids...)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) AddRunIDs(ids ...uuid.UUID) *ProjectVersionUpdateOne {
+	_u.mutation.AddRunIDs(ids...)
+	return _u
 }
 
 // AddRuns adds the "runs" edges to the WorkflowRun entity.
-func (pvuo *ProjectVersionUpdateOne) AddRuns(w ...*WorkflowRun) *ProjectVersionUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectVersionUpdateOne) AddRuns(v ...*WorkflowRun) *ProjectVersionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pvuo.AddRunIDs(ids...)
+	return _u.AddRunIDs(ids...)
 }
 
 // Mutation returns the ProjectVersionMutation object of the builder.
-func (pvuo *ProjectVersionUpdateOne) Mutation() *ProjectVersionMutation {
-	return pvuo.mutation
+func (_u *ProjectVersionUpdateOne) Mutation() *ProjectVersionMutation {
+	return _u.mutation
 }
 
 // ClearProject clears the "project" edge to the Project entity.
-func (pvuo *ProjectVersionUpdateOne) ClearProject() *ProjectVersionUpdateOne {
-	pvuo.mutation.ClearProject()
-	return pvuo
+func (_u *ProjectVersionUpdateOne) ClearProject() *ProjectVersionUpdateOne {
+	_u.mutation.ClearProject()
+	return _u
 }
 
 // ClearRuns clears all "runs" edges to the WorkflowRun entity.
-func (pvuo *ProjectVersionUpdateOne) ClearRuns() *ProjectVersionUpdateOne {
-	pvuo.mutation.ClearRuns()
-	return pvuo
+func (_u *ProjectVersionUpdateOne) ClearRuns() *ProjectVersionUpdateOne {
+	_u.mutation.ClearRuns()
+	return _u
 }
 
 // RemoveRunIDs removes the "runs" edge to WorkflowRun entities by IDs.
-func (pvuo *ProjectVersionUpdateOne) RemoveRunIDs(ids ...uuid.UUID) *ProjectVersionUpdateOne {
-	pvuo.mutation.RemoveRunIDs(ids...)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) RemoveRunIDs(ids ...uuid.UUID) *ProjectVersionUpdateOne {
+	_u.mutation.RemoveRunIDs(ids...)
+	return _u
 }
 
 // RemoveRuns removes "runs" edges to WorkflowRun entities.
-func (pvuo *ProjectVersionUpdateOne) RemoveRuns(w ...*WorkflowRun) *ProjectVersionUpdateOne {
-	ids := make([]uuid.UUID, len(w))
-	for i := range w {
-		ids[i] = w[i].ID
+func (_u *ProjectVersionUpdateOne) RemoveRuns(v ...*WorkflowRun) *ProjectVersionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pvuo.RemoveRunIDs(ids...)
+	return _u.RemoveRunIDs(ids...)
 }
 
 // Where appends a list predicates to the ProjectVersionUpdate builder.
-func (pvuo *ProjectVersionUpdateOne) Where(ps ...predicate.ProjectVersion) *ProjectVersionUpdateOne {
-	pvuo.mutation.Where(ps...)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) Where(ps ...predicate.ProjectVersion) *ProjectVersionUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (pvuo *ProjectVersionUpdateOne) Select(field string, fields ...string) *ProjectVersionUpdateOne {
-	pvuo.fields = append([]string{field}, fields...)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) Select(field string, fields ...string) *ProjectVersionUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated ProjectVersion entity.
-func (pvuo *ProjectVersionUpdateOne) Save(ctx context.Context) (*ProjectVersion, error) {
-	return withHooks(ctx, pvuo.sqlSave, pvuo.mutation, pvuo.hooks)
+func (_u *ProjectVersionUpdateOne) Save(ctx context.Context) (*ProjectVersion, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pvuo *ProjectVersionUpdateOne) SaveX(ctx context.Context) *ProjectVersion {
-	node, err := pvuo.Save(ctx)
+func (_u *ProjectVersionUpdateOne) SaveX(ctx context.Context) *ProjectVersion {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -656,48 +656,48 @@ func (pvuo *ProjectVersionUpdateOne) SaveX(ctx context.Context) *ProjectVersion 
 }
 
 // Exec executes the query on the entity.
-func (pvuo *ProjectVersionUpdateOne) Exec(ctx context.Context) error {
-	_, err := pvuo.Save(ctx)
+func (_u *ProjectVersionUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pvuo *ProjectVersionUpdateOne) ExecX(ctx context.Context) {
-	if err := pvuo.Exec(ctx); err != nil {
+func (_u *ProjectVersionUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pvuo *ProjectVersionUpdateOne) check() error {
-	if v, ok := pvuo.mutation.Version(); ok {
+func (_u *ProjectVersionUpdateOne) check() error {
+	if v, ok := _u.mutation.Version(); ok {
 		if err := projectversion.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectVersion.version": %w`, err)}
 		}
 	}
-	if pvuo.mutation.ProjectCleared() && len(pvuo.mutation.ProjectIDs()) > 0 {
+	if _u.mutation.ProjectCleared() && len(_u.mutation.ProjectIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProjectVersion.project"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (pvuo *ProjectVersionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectVersionUpdateOne {
-	pvuo.modifiers = append(pvuo.modifiers, modifiers...)
-	return pvuo
+func (_u *ProjectVersionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ProjectVersionUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *ProjectVersion, err error) {
-	if err := pvuo.check(); err != nil {
+func (_u *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *ProjectVersion, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(projectversion.Table, projectversion.Columns, sqlgraph.NewFieldSpec(projectversion.FieldID, field.TypeUUID))
-	id, ok := pvuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectVersion.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := pvuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, projectversion.FieldID)
 		for _, f := range fields {
@@ -709,50 +709,50 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 			}
 		}
 	}
-	if ps := pvuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pvuo.mutation.Version(); ok {
+	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(projectversion.FieldVersion, field.TypeString, value)
 	}
-	if value, ok := pvuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectversion.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := pvuo.mutation.DeletedAt(); ok {
+	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(projectversion.FieldDeletedAt, field.TypeTime, value)
 	}
-	if pvuo.mutation.DeletedAtCleared() {
+	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(projectversion.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := pvuo.mutation.Prerelease(); ok {
+	if value, ok := _u.mutation.Prerelease(); ok {
 		_spec.SetField(projectversion.FieldPrerelease, field.TypeBool, value)
 	}
-	if value, ok := pvuo.mutation.WorkflowRunCount(); ok {
+	if value, ok := _u.mutation.WorkflowRunCount(); ok {
 		_spec.SetField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 	}
-	if value, ok := pvuo.mutation.AddedWorkflowRunCount(); ok {
+	if value, ok := _u.mutation.AddedWorkflowRunCount(); ok {
 		_spec.AddField(projectversion.FieldWorkflowRunCount, field.TypeInt, value)
 	}
-	if value, ok := pvuo.mutation.ReleasedAt(); ok {
+	if value, ok := _u.mutation.ReleasedAt(); ok {
 		_spec.SetField(projectversion.FieldReleasedAt, field.TypeTime, value)
 	}
-	if pvuo.mutation.ReleasedAtCleared() {
+	if _u.mutation.ReleasedAtCleared() {
 		_spec.ClearField(projectversion.FieldReleasedAt, field.TypeTime)
 	}
-	if value, ok := pvuo.mutation.LastRunAt(); ok {
+	if value, ok := _u.mutation.LastRunAt(); ok {
 		_spec.SetField(projectversion.FieldLastRunAt, field.TypeTime, value)
 	}
-	if pvuo.mutation.LastRunAtCleared() {
+	if _u.mutation.LastRunAtCleared() {
 		_spec.ClearField(projectversion.FieldLastRunAt, field.TypeTime)
 	}
-	if value, ok := pvuo.mutation.Latest(); ok {
+	if value, ok := _u.mutation.Latest(); ok {
 		_spec.SetField(projectversion.FieldLatest, field.TypeBool, value)
 	}
-	if pvuo.mutation.ProjectCleared() {
+	if _u.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -765,7 +765,7 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pvuo.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -781,7 +781,7 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pvuo.mutation.RunsCleared() {
+	if _u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -794,7 +794,7 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pvuo.mutation.RemovedRunsIDs(); len(nodes) > 0 && !pvuo.mutation.RunsCleared() {
+	if nodes := _u.mutation.RemovedRunsIDs(); len(nodes) > 0 && !_u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -810,7 +810,7 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pvuo.mutation.RunsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RunsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -826,11 +826,11 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(pvuo.modifiers...)
-	_node = &ProjectVersion{config: pvuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &ProjectVersion{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, pvuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{projectversion.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -838,6 +838,6 @@ func (pvuo *ProjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 		}
 		return nil, err
 	}
-	pvuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

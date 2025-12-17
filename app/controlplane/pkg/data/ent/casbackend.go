@@ -112,7 +112,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the CASBackend fields.
-func (cb *CASBackend) assignValues(columns []string, values []any) error {
+func (_m *CASBackend) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -122,101 +122,101 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				cb.ID = *value
+				_m.ID = *value
 			}
 		case casbackend.FieldLocation:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field location", values[i])
 			} else if value.Valid {
-				cb.Location = value.String
+				_m.Location = value.String
 			}
 		case casbackend.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				cb.Name = value.String
+				_m.Name = value.String
 			}
 		case casbackend.FieldProvider:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider", values[i])
 			} else if value.Valid {
-				cb.Provider = biz.CASBackendProvider(value.String)
+				_m.Provider = biz.CASBackendProvider(value.String)
 			}
 		case casbackend.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				cb.Description = value.String
+				_m.Description = value.String
 			}
 		case casbackend.FieldSecretName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field secret_name", values[i])
 			} else if value.Valid {
-				cb.SecretName = value.String
+				_m.SecretName = value.String
 			}
 		case casbackend.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				cb.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case casbackend.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				cb.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case casbackend.FieldValidationStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field validation_status", values[i])
 			} else if value.Valid {
-				cb.ValidationStatus = biz.CASBackendValidationStatus(value.String)
+				_m.ValidationStatus = biz.CASBackendValidationStatus(value.String)
 			}
 		case casbackend.FieldValidationError:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field validation_error", values[i])
 			} else if value.Valid {
-				cb.ValidationError = value.String
+				_m.ValidationError = value.String
 			}
 		case casbackend.FieldValidatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field validated_at", values[i])
 			} else if value.Valid {
-				cb.ValidatedAt = value.Time
+				_m.ValidatedAt = value.Time
 			}
 		case casbackend.FieldDefault:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field default", values[i])
 			} else if value.Valid {
-				cb.Default = value.Bool
+				_m.Default = value.Bool
 			}
 		case casbackend.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				cb.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case casbackend.FieldFallback:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field fallback", values[i])
 			} else if value.Valid {
-				cb.Fallback = value.Bool
+				_m.Fallback = value.Bool
 			}
 		case casbackend.FieldMaxBlobSizeBytes:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field max_blob_size_bytes", values[i])
 			} else if value.Valid {
-				cb.MaxBlobSizeBytes = value.Int64
+				_m.MaxBlobSizeBytes = value.Int64
 			}
 		case casbackend.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_cas_backends", values[i])
 			} else if value.Valid {
-				cb.organization_cas_backends = new(uuid.UUID)
-				*cb.organization_cas_backends = *value.S.(*uuid.UUID)
+				_m.organization_cas_backends = new(uuid.UUID)
+				*_m.organization_cas_backends = *value.S.(*uuid.UUID)
 			}
 		default:
-			cb.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -224,84 +224,84 @@ func (cb *CASBackend) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the CASBackend.
 // This includes values selected through modifiers, order, etc.
-func (cb *CASBackend) Value(name string) (ent.Value, error) {
-	return cb.selectValues.Get(name)
+func (_m *CASBackend) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryOrganization queries the "organization" edge of the CASBackend entity.
-func (cb *CASBackend) QueryOrganization() *OrganizationQuery {
-	return NewCASBackendClient(cb.config).QueryOrganization(cb)
+func (_m *CASBackend) QueryOrganization() *OrganizationQuery {
+	return NewCASBackendClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryWorkflowRun queries the "workflow_run" edge of the CASBackend entity.
-func (cb *CASBackend) QueryWorkflowRun() *WorkflowRunQuery {
-	return NewCASBackendClient(cb.config).QueryWorkflowRun(cb)
+func (_m *CASBackend) QueryWorkflowRun() *WorkflowRunQuery {
+	return NewCASBackendClient(_m.config).QueryWorkflowRun(_m)
 }
 
 // Update returns a builder for updating this CASBackend.
 // Note that you need to call CASBackend.Unwrap() before calling this method if this CASBackend
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (cb *CASBackend) Update() *CASBackendUpdateOne {
-	return NewCASBackendClient(cb.config).UpdateOne(cb)
+func (_m *CASBackend) Update() *CASBackendUpdateOne {
+	return NewCASBackendClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the CASBackend entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (cb *CASBackend) Unwrap() *CASBackend {
-	_tx, ok := cb.config.driver.(*txDriver)
+func (_m *CASBackend) Unwrap() *CASBackend {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: CASBackend is not a transactional entity")
 	}
-	cb.config.driver = _tx.drv
-	return cb
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (cb *CASBackend) String() string {
+func (_m *CASBackend) String() string {
 	var builder strings.Builder
 	builder.WriteString("CASBackend(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", cb.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("location=")
-	builder.WriteString(cb.Location)
+	builder.WriteString(_m.Location)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(cb.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("provider=")
-	builder.WriteString(fmt.Sprintf("%v", cb.Provider))
+	builder.WriteString(fmt.Sprintf("%v", _m.Provider))
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(cb.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("secret_name=")
-	builder.WriteString(cb.SecretName)
+	builder.WriteString(_m.SecretName)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(cb.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(cb.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("validation_status=")
-	builder.WriteString(fmt.Sprintf("%v", cb.ValidationStatus))
+	builder.WriteString(fmt.Sprintf("%v", _m.ValidationStatus))
 	builder.WriteString(", ")
 	builder.WriteString("validation_error=")
-	builder.WriteString(cb.ValidationError)
+	builder.WriteString(_m.ValidationError)
 	builder.WriteString(", ")
 	builder.WriteString("validated_at=")
-	builder.WriteString(cb.ValidatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.ValidatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("default=")
-	builder.WriteString(fmt.Sprintf("%v", cb.Default))
+	builder.WriteString(fmt.Sprintf("%v", _m.Default))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(cb.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("fallback=")
-	builder.WriteString(fmt.Sprintf("%v", cb.Fallback))
+	builder.WriteString(fmt.Sprintf("%v", _m.Fallback))
 	builder.WriteString(", ")
 	builder.WriteString("max_blob_size_bytes=")
-	builder.WriteString(fmt.Sprintf("%v", cb.MaxBlobSizeBytes))
+	builder.WriteString(fmt.Sprintf("%v", _m.MaxBlobSizeBytes))
 	builder.WriteByte(')')
 	return builder.String()
 }

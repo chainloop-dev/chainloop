@@ -158,7 +158,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Organization fields.
-func (o *Organization) assignValues(columns []string, values []any) error {
+func (_m *Organization) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -168,43 +168,43 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				o.ID = *value
+				_m.ID = *value
 			}
 		case organization.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				o.Name = value.String
+				_m.Name = value.String
 			}
 		case organization.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				o.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case organization.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				o.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case organization.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				o.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case organization.FieldBlockOnPolicyViolation:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field block_on_policy_violation", values[i])
 			} else if value.Valid {
-				o.BlockOnPolicyViolation = value.Bool
+				_m.BlockOnPolicyViolation = value.Bool
 			}
 		case organization.FieldPoliciesAllowedHostnames:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field policies_allowed_hostnames", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &o.PoliciesAllowedHostnames); err != nil {
+				if err := json.Unmarshal(*value, &_m.PoliciesAllowedHostnames); err != nil {
 					return fmt.Errorf("unmarshal field policies_allowed_hostnames: %w", err)
 				}
 			}
@@ -212,10 +212,10 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field prevent_implicit_workflow_creation", values[i])
 			} else if value.Valid {
-				o.PreventImplicitWorkflowCreation = value.Bool
+				_m.PreventImplicitWorkflowCreation = value.Bool
 			}
 		default:
-			o.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -223,93 +223,93 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Organization.
 // This includes values selected through modifiers, order, etc.
-func (o *Organization) Value(name string) (ent.Value, error) {
-	return o.selectValues.Get(name)
+func (_m *Organization) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryMemberships queries the "memberships" edge of the Organization entity.
-func (o *Organization) QueryMemberships() *MembershipQuery {
-	return NewOrganizationClient(o.config).QueryMemberships(o)
+func (_m *Organization) QueryMemberships() *MembershipQuery {
+	return NewOrganizationClient(_m.config).QueryMemberships(_m)
 }
 
 // QueryWorkflowContracts queries the "workflow_contracts" edge of the Organization entity.
-func (o *Organization) QueryWorkflowContracts() *WorkflowContractQuery {
-	return NewOrganizationClient(o.config).QueryWorkflowContracts(o)
+func (_m *Organization) QueryWorkflowContracts() *WorkflowContractQuery {
+	return NewOrganizationClient(_m.config).QueryWorkflowContracts(_m)
 }
 
 // QueryWorkflows queries the "workflows" edge of the Organization entity.
-func (o *Organization) QueryWorkflows() *WorkflowQuery {
-	return NewOrganizationClient(o.config).QueryWorkflows(o)
+func (_m *Organization) QueryWorkflows() *WorkflowQuery {
+	return NewOrganizationClient(_m.config).QueryWorkflows(_m)
 }
 
 // QueryCasBackends queries the "cas_backends" edge of the Organization entity.
-func (o *Organization) QueryCasBackends() *CASBackendQuery {
-	return NewOrganizationClient(o.config).QueryCasBackends(o)
+func (_m *Organization) QueryCasBackends() *CASBackendQuery {
+	return NewOrganizationClient(_m.config).QueryCasBackends(_m)
 }
 
 // QueryIntegrations queries the "integrations" edge of the Organization entity.
-func (o *Organization) QueryIntegrations() *IntegrationQuery {
-	return NewOrganizationClient(o.config).QueryIntegrations(o)
+func (_m *Organization) QueryIntegrations() *IntegrationQuery {
+	return NewOrganizationClient(_m.config).QueryIntegrations(_m)
 }
 
 // QueryAPITokens queries the "api_tokens" edge of the Organization entity.
-func (o *Organization) QueryAPITokens() *APITokenQuery {
-	return NewOrganizationClient(o.config).QueryAPITokens(o)
+func (_m *Organization) QueryAPITokens() *APITokenQuery {
+	return NewOrganizationClient(_m.config).QueryAPITokens(_m)
 }
 
 // QueryProjects queries the "projects" edge of the Organization entity.
-func (o *Organization) QueryProjects() *ProjectQuery {
-	return NewOrganizationClient(o.config).QueryProjects(o)
+func (_m *Organization) QueryProjects() *ProjectQuery {
+	return NewOrganizationClient(_m.config).QueryProjects(_m)
 }
 
 // QueryGroups queries the "groups" edge of the Organization entity.
-func (o *Organization) QueryGroups() *GroupQuery {
-	return NewOrganizationClient(o.config).QueryGroups(o)
+func (_m *Organization) QueryGroups() *GroupQuery {
+	return NewOrganizationClient(_m.config).QueryGroups(_m)
 }
 
 // Update returns a builder for updating this Organization.
 // Note that you need to call Organization.Unwrap() before calling this method if this Organization
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (o *Organization) Update() *OrganizationUpdateOne {
-	return NewOrganizationClient(o.config).UpdateOne(o)
+func (_m *Organization) Update() *OrganizationUpdateOne {
+	return NewOrganizationClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Organization entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (o *Organization) Unwrap() *Organization {
-	_tx, ok := o.config.driver.(*txDriver)
+func (_m *Organization) Unwrap() *Organization {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Organization is not a transactional entity")
 	}
-	o.config.driver = _tx.drv
-	return o
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (o *Organization) String() string {
+func (_m *Organization) String() string {
 	var builder strings.Builder
 	builder.WriteString("Organization(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", o.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(o.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(o.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(o.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(o.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("block_on_policy_violation=")
-	builder.WriteString(fmt.Sprintf("%v", o.BlockOnPolicyViolation))
+	builder.WriteString(fmt.Sprintf("%v", _m.BlockOnPolicyViolation))
 	builder.WriteString(", ")
 	builder.WriteString("policies_allowed_hostnames=")
-	builder.WriteString(fmt.Sprintf("%v", o.PoliciesAllowedHostnames))
+	builder.WriteString(fmt.Sprintf("%v", _m.PoliciesAllowedHostnames))
 	builder.WriteString(", ")
 	builder.WriteString("prevent_implicit_workflow_creation=")
-	builder.WriteString(fmt.Sprintf("%v", o.PreventImplicitWorkflowCreation))
+	builder.WriteString(fmt.Sprintf("%v", _m.PreventImplicitWorkflowCreation))
 	builder.WriteByte(')')
 	return builder.String()
 }

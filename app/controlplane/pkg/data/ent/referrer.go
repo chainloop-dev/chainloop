@@ -101,7 +101,7 @@ func (*Referrer) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Referrer fields.
-func (r *Referrer) assignValues(columns []string, values []any) error {
+func (_m *Referrer) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -111,37 +111,37 @@ func (r *Referrer) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				r.ID = *value
+				_m.ID = *value
 			}
 		case referrer.FieldDigest:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field digest", values[i])
 			} else if value.Valid {
-				r.Digest = value.String
+				_m.Digest = value.String
 			}
 		case referrer.FieldKind:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field kind", values[i])
 			} else if value.Valid {
-				r.Kind = value.String
+				_m.Kind = value.String
 			}
 		case referrer.FieldDownloadable:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field downloadable", values[i])
 			} else if value.Valid {
-				r.Downloadable = value.Bool
+				_m.Downloadable = value.Bool
 			}
 		case referrer.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				r.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case referrer.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &r.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -149,12 +149,12 @@ func (r *Referrer) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field annotations", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &r.Annotations); err != nil {
+				if err := json.Unmarshal(*value, &_m.Annotations); err != nil {
 					return fmt.Errorf("unmarshal field annotations: %w", err)
 				}
 			}
 		default:
-			r.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -162,65 +162,65 @@ func (r *Referrer) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Referrer.
 // This includes values selected through modifiers, order, etc.
-func (r *Referrer) Value(name string) (ent.Value, error) {
-	return r.selectValues.Get(name)
+func (_m *Referrer) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryReferredBy queries the "referred_by" edge of the Referrer entity.
-func (r *Referrer) QueryReferredBy() *ReferrerQuery {
-	return NewReferrerClient(r.config).QueryReferredBy(r)
+func (_m *Referrer) QueryReferredBy() *ReferrerQuery {
+	return NewReferrerClient(_m.config).QueryReferredBy(_m)
 }
 
 // QueryReferences queries the "references" edge of the Referrer entity.
-func (r *Referrer) QueryReferences() *ReferrerQuery {
-	return NewReferrerClient(r.config).QueryReferences(r)
+func (_m *Referrer) QueryReferences() *ReferrerQuery {
+	return NewReferrerClient(_m.config).QueryReferences(_m)
 }
 
 // QueryWorkflows queries the "workflows" edge of the Referrer entity.
-func (r *Referrer) QueryWorkflows() *WorkflowQuery {
-	return NewReferrerClient(r.config).QueryWorkflows(r)
+func (_m *Referrer) QueryWorkflows() *WorkflowQuery {
+	return NewReferrerClient(_m.config).QueryWorkflows(_m)
 }
 
 // Update returns a builder for updating this Referrer.
 // Note that you need to call Referrer.Unwrap() before calling this method if this Referrer
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (r *Referrer) Update() *ReferrerUpdateOne {
-	return NewReferrerClient(r.config).UpdateOne(r)
+func (_m *Referrer) Update() *ReferrerUpdateOne {
+	return NewReferrerClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Referrer entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (r *Referrer) Unwrap() *Referrer {
-	_tx, ok := r.config.driver.(*txDriver)
+func (_m *Referrer) Unwrap() *Referrer {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Referrer is not a transactional entity")
 	}
-	r.config.driver = _tx.drv
-	return r
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (r *Referrer) String() string {
+func (_m *Referrer) String() string {
 	var builder strings.Builder
 	builder.WriteString("Referrer(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("digest=")
-	builder.WriteString(r.Digest)
+	builder.WriteString(_m.Digest)
 	builder.WriteString(", ")
 	builder.WriteString("kind=")
-	builder.WriteString(r.Kind)
+	builder.WriteString(_m.Kind)
 	builder.WriteString(", ")
 	builder.WriteString("downloadable=")
-	builder.WriteString(fmt.Sprintf("%v", r.Downloadable))
+	builder.WriteString(fmt.Sprintf("%v", _m.Downloadable))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", r.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("annotations=")
-	builder.WriteString(fmt.Sprintf("%v", r.Annotations))
+	builder.WriteString(fmt.Sprintf("%v", _m.Annotations))
 	builder.WriteByte(')')
 	return builder.String()
 }

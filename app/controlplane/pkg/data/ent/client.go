@@ -421,8 +421,8 @@ func (c *APITokenClient) Update() *APITokenUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *APITokenClient) UpdateOne(at *APIToken) *APITokenUpdateOne {
-	mutation := newAPITokenMutation(c.config, OpUpdateOne, withAPIToken(at))
+func (c *APITokenClient) UpdateOne(_m *APIToken) *APITokenUpdateOne {
+	mutation := newAPITokenMutation(c.config, OpUpdateOne, withAPIToken(_m))
 	return &APITokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -439,8 +439,8 @@ func (c *APITokenClient) Delete() *APITokenDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *APITokenClient) DeleteOne(at *APIToken) *APITokenDeleteOne {
-	return c.DeleteOneID(at.ID)
+func (c *APITokenClient) DeleteOne(_m *APIToken) *APITokenDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -475,32 +475,32 @@ func (c *APITokenClient) GetX(ctx context.Context, id uuid.UUID) *APIToken {
 }
 
 // QueryOrganization queries the organization edge of a APIToken.
-func (c *APITokenClient) QueryOrganization(at *APIToken) *OrganizationQuery {
+func (c *APITokenClient) QueryOrganization(_m *APIToken) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := at.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(apitoken.Table, apitoken.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, apitoken.OrganizationTable, apitoken.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryProject queries the project edge of a APIToken.
-func (c *APITokenClient) QueryProject(at *APIToken) *ProjectQuery {
+func (c *APITokenClient) QueryProject(_m *APIToken) *ProjectQuery {
 	query := (&ProjectClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := at.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(apitoken.Table, apitoken.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.ProjectTable, apitoken.ProjectColumn),
 		)
-		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -586,8 +586,8 @@ func (c *AttestationClient) Update() *AttestationUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *AttestationClient) UpdateOne(a *Attestation) *AttestationUpdateOne {
-	mutation := newAttestationMutation(c.config, OpUpdateOne, withAttestation(a))
+func (c *AttestationClient) UpdateOne(_m *Attestation) *AttestationUpdateOne {
+	mutation := newAttestationMutation(c.config, OpUpdateOne, withAttestation(_m))
 	return &AttestationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -604,8 +604,8 @@ func (c *AttestationClient) Delete() *AttestationDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *AttestationClient) DeleteOne(a *Attestation) *AttestationDeleteOne {
-	return c.DeleteOneID(a.ID)
+func (c *AttestationClient) DeleteOne(_m *Attestation) *AttestationDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -640,16 +640,16 @@ func (c *AttestationClient) GetX(ctx context.Context, id uuid.UUID) *Attestation
 }
 
 // QueryWorkflowrun queries the workflowrun edge of a Attestation.
-func (c *AttestationClient) QueryWorkflowrun(a *Attestation) *WorkflowRunQuery {
+func (c *AttestationClient) QueryWorkflowrun(_m *Attestation) *WorkflowRunQuery {
 	query := (&WorkflowRunClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := a.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(attestation.Table, attestation.FieldID, id),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, attestation.WorkflowrunTable, attestation.WorkflowrunColumn),
 		)
-		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -735,8 +735,8 @@ func (c *CASBackendClient) Update() *CASBackendUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *CASBackendClient) UpdateOne(cb *CASBackend) *CASBackendUpdateOne {
-	mutation := newCASBackendMutation(c.config, OpUpdateOne, withCASBackend(cb))
+func (c *CASBackendClient) UpdateOne(_m *CASBackend) *CASBackendUpdateOne {
+	mutation := newCASBackendMutation(c.config, OpUpdateOne, withCASBackend(_m))
 	return &CASBackendUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -753,8 +753,8 @@ func (c *CASBackendClient) Delete() *CASBackendDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *CASBackendClient) DeleteOne(cb *CASBackend) *CASBackendDeleteOne {
-	return c.DeleteOneID(cb.ID)
+func (c *CASBackendClient) DeleteOne(_m *CASBackend) *CASBackendDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -789,32 +789,32 @@ func (c *CASBackendClient) GetX(ctx context.Context, id uuid.UUID) *CASBackend {
 }
 
 // QueryOrganization queries the organization edge of a CASBackend.
-func (c *CASBackendClient) QueryOrganization(cb *CASBackend) *OrganizationQuery {
+func (c *CASBackendClient) QueryOrganization(_m *CASBackend) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cb.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(casbackend.Table, casbackend.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, casbackend.OrganizationTable, casbackend.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(cb.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflowRun queries the workflow_run edge of a CASBackend.
-func (c *CASBackendClient) QueryWorkflowRun(cb *CASBackend) *WorkflowRunQuery {
+func (c *CASBackendClient) QueryWorkflowRun(_m *CASBackend) *WorkflowRunQuery {
 	query := (&WorkflowRunClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cb.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(casbackend.Table, casbackend.FieldID, id),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, casbackend.WorkflowRunTable, casbackend.WorkflowRunPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(cb.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -900,8 +900,8 @@ func (c *CASMappingClient) Update() *CASMappingUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *CASMappingClient) UpdateOne(cm *CASMapping) *CASMappingUpdateOne {
-	mutation := newCASMappingMutation(c.config, OpUpdateOne, withCASMapping(cm))
+func (c *CASMappingClient) UpdateOne(_m *CASMapping) *CASMappingUpdateOne {
+	mutation := newCASMappingMutation(c.config, OpUpdateOne, withCASMapping(_m))
 	return &CASMappingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -918,8 +918,8 @@ func (c *CASMappingClient) Delete() *CASMappingDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *CASMappingClient) DeleteOne(cm *CASMapping) *CASMappingDeleteOne {
-	return c.DeleteOneID(cm.ID)
+func (c *CASMappingClient) DeleteOne(_m *CASMapping) *CASMappingDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -954,48 +954,48 @@ func (c *CASMappingClient) GetX(ctx context.Context, id uuid.UUID) *CASMapping {
 }
 
 // QueryCasBackend queries the cas_backend edge of a CASMapping.
-func (c *CASMappingClient) QueryCasBackend(cm *CASMapping) *CASBackendQuery {
+func (c *CASMappingClient) QueryCasBackend(_m *CASMapping) *CASBackendQuery {
 	query := (&CASBackendClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cm.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
 			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.CasBackendTable, casmapping.CasBackendColumn),
 		)
-		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryOrganization queries the organization edge of a CASMapping.
-func (c *CASMappingClient) QueryOrganization(cm *CASMapping) *OrganizationQuery {
+func (c *CASMappingClient) QueryOrganization(_m *CASMapping) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cm.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.OrganizationTable, casmapping.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryProject queries the project edge of a CASMapping.
-func (c *CASMappingClient) QueryProject(cm *CASMapping) *ProjectQuery {
+func (c *CASMappingClient) QueryProject(_m *CASMapping) *ProjectQuery {
 	query := (&ProjectClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cm.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(casmapping.Table, casmapping.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, casmapping.ProjectTable, casmapping.ProjectColumn),
 		)
-		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1081,8 +1081,8 @@ func (c *GroupClient) Update() *GroupUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *GroupClient) UpdateOne(gr *Group) *GroupUpdateOne {
-	mutation := newGroupMutation(c.config, OpUpdateOne, withGroup(gr))
+func (c *GroupClient) UpdateOne(_m *Group) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroup(_m))
 	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1099,8 +1099,8 @@ func (c *GroupClient) Delete() *GroupDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
-	return c.DeleteOneID(gr.ID)
+func (c *GroupClient) DeleteOne(_m *Group) *GroupDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1135,32 +1135,32 @@ func (c *GroupClient) GetX(ctx context.Context, id uuid.UUID) *Group {
 }
 
 // QueryGroupMemberships queries the group_memberships edge of a Group.
-func (c *GroupClient) QueryGroupMemberships(gr *Group) *GroupMembershipQuery {
+func (c *GroupClient) QueryGroupMemberships(_m *Group) *GroupMembershipQuery {
 	query := (&GroupMembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, group.GroupMembershipsTable, group.GroupMembershipsColumn),
 		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryOrganization queries the organization edge of a Group.
-func (c *GroupClient) QueryOrganization(gr *Group) *OrganizationQuery {
+func (c *GroupClient) QueryOrganization(_m *Group) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, group.OrganizationTable, group.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1246,8 +1246,8 @@ func (c *GroupMembershipClient) Update() *GroupMembershipUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *GroupMembershipClient) UpdateOne(gm *GroupMembership) *GroupMembershipUpdateOne {
-	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembership(gm))
+func (c *GroupMembershipClient) UpdateOne(_m *GroupMembership) *GroupMembershipUpdateOne {
+	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembership(_m))
 	return &GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1264,8 +1264,8 @@ func (c *GroupMembershipClient) Delete() *GroupMembershipDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *GroupMembershipClient) DeleteOne(gm *GroupMembership) *GroupMembershipDeleteOne {
-	return c.DeleteOneID(gm.ID)
+func (c *GroupMembershipClient) DeleteOne(_m *GroupMembership) *GroupMembershipDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1300,32 +1300,32 @@ func (c *GroupMembershipClient) GetX(ctx context.Context, id uuid.UUID) *GroupMe
 }
 
 // QueryGroup queries the group edge of a GroupMembership.
-func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
+func (c *GroupMembershipClient) QueryGroup(_m *GroupMembership) *GroupQuery {
 	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gm.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.GroupTable, groupmembership.GroupColumn),
 		)
-		fromV = sqlgraph.Neighbors(gm.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryUser queries the user edge of a GroupMembership.
-func (c *GroupMembershipClient) QueryUser(gm *GroupMembership) *UserQuery {
+func (c *GroupMembershipClient) QueryUser(_m *GroupMembership) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gm.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.UserTable, groupmembership.UserColumn),
 		)
-		fromV = sqlgraph.Neighbors(gm.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1411,8 +1411,8 @@ func (c *IntegrationClient) Update() *IntegrationUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *IntegrationClient) UpdateOne(i *Integration) *IntegrationUpdateOne {
-	mutation := newIntegrationMutation(c.config, OpUpdateOne, withIntegration(i))
+func (c *IntegrationClient) UpdateOne(_m *Integration) *IntegrationUpdateOne {
+	mutation := newIntegrationMutation(c.config, OpUpdateOne, withIntegration(_m))
 	return &IntegrationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1429,8 +1429,8 @@ func (c *IntegrationClient) Delete() *IntegrationDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *IntegrationClient) DeleteOne(i *Integration) *IntegrationDeleteOne {
-	return c.DeleteOneID(i.ID)
+func (c *IntegrationClient) DeleteOne(_m *Integration) *IntegrationDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1465,32 +1465,32 @@ func (c *IntegrationClient) GetX(ctx context.Context, id uuid.UUID) *Integration
 }
 
 // QueryAttachments queries the attachments edge of a Integration.
-func (c *IntegrationClient) QueryAttachments(i *Integration) *IntegrationAttachmentQuery {
+func (c *IntegrationClient) QueryAttachments(_m *Integration) *IntegrationAttachmentQuery {
 	query := (&IntegrationAttachmentClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := i.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(integration.Table, integration.FieldID, id),
 			sqlgraph.To(integrationattachment.Table, integrationattachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, integration.AttachmentsTable, integration.AttachmentsColumn),
 		)
-		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryOrganization queries the organization edge of a Integration.
-func (c *IntegrationClient) QueryOrganization(i *Integration) *OrganizationQuery {
+func (c *IntegrationClient) QueryOrganization(_m *Integration) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := i.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(integration.Table, integration.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, integration.OrganizationTable, integration.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1576,8 +1576,8 @@ func (c *IntegrationAttachmentClient) Update() *IntegrationAttachmentUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *IntegrationAttachmentClient) UpdateOne(ia *IntegrationAttachment) *IntegrationAttachmentUpdateOne {
-	mutation := newIntegrationAttachmentMutation(c.config, OpUpdateOne, withIntegrationAttachment(ia))
+func (c *IntegrationAttachmentClient) UpdateOne(_m *IntegrationAttachment) *IntegrationAttachmentUpdateOne {
+	mutation := newIntegrationAttachmentMutation(c.config, OpUpdateOne, withIntegrationAttachment(_m))
 	return &IntegrationAttachmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1594,8 +1594,8 @@ func (c *IntegrationAttachmentClient) Delete() *IntegrationAttachmentDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *IntegrationAttachmentClient) DeleteOne(ia *IntegrationAttachment) *IntegrationAttachmentDeleteOne {
-	return c.DeleteOneID(ia.ID)
+func (c *IntegrationAttachmentClient) DeleteOne(_m *IntegrationAttachment) *IntegrationAttachmentDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1630,32 +1630,32 @@ func (c *IntegrationAttachmentClient) GetX(ctx context.Context, id uuid.UUID) *I
 }
 
 // QueryIntegration queries the integration edge of a IntegrationAttachment.
-func (c *IntegrationAttachmentClient) QueryIntegration(ia *IntegrationAttachment) *IntegrationQuery {
+func (c *IntegrationAttachmentClient) QueryIntegration(_m *IntegrationAttachment) *IntegrationQuery {
 	query := (&IntegrationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ia.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(integrationattachment.Table, integrationattachment.FieldID, id),
 			sqlgraph.To(integration.Table, integration.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, integrationattachment.IntegrationTable, integrationattachment.IntegrationColumn),
 		)
-		fromV = sqlgraph.Neighbors(ia.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflow queries the workflow edge of a IntegrationAttachment.
-func (c *IntegrationAttachmentClient) QueryWorkflow(ia *IntegrationAttachment) *WorkflowQuery {
+func (c *IntegrationAttachmentClient) QueryWorkflow(_m *IntegrationAttachment) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ia.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(integrationattachment.Table, integrationattachment.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, integrationattachment.WorkflowTable, integrationattachment.WorkflowColumn),
 		)
-		fromV = sqlgraph.Neighbors(ia.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1741,8 +1741,8 @@ func (c *MembershipClient) Update() *MembershipUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *MembershipClient) UpdateOne(m *Membership) *MembershipUpdateOne {
-	mutation := newMembershipMutation(c.config, OpUpdateOne, withMembership(m))
+func (c *MembershipClient) UpdateOne(_m *Membership) *MembershipUpdateOne {
+	mutation := newMembershipMutation(c.config, OpUpdateOne, withMembership(_m))
 	return &MembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1759,8 +1759,8 @@ func (c *MembershipClient) Delete() *MembershipDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *MembershipClient) DeleteOne(m *Membership) *MembershipDeleteOne {
-	return c.DeleteOneID(m.ID)
+func (c *MembershipClient) DeleteOne(_m *Membership) *MembershipDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1795,64 +1795,64 @@ func (c *MembershipClient) GetX(ctx context.Context, id uuid.UUID) *Membership {
 }
 
 // QueryOrganization queries the organization edge of a Membership.
-func (c *MembershipClient) QueryOrganization(m *Membership) *OrganizationQuery {
+func (c *MembershipClient) QueryOrganization(_m *Membership) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(membership.Table, membership.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.OrganizationTable, membership.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryUser queries the user edge of a Membership.
-func (c *MembershipClient) QueryUser(m *Membership) *UserQuery {
+func (c *MembershipClient) QueryUser(_m *Membership) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(membership.Table, membership.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.UserTable, membership.UserColumn),
 		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryParent queries the parent edge of a Membership.
-func (c *MembershipClient) QueryParent(m *Membership) *MembershipQuery {
+func (c *MembershipClient) QueryParent(_m *Membership) *MembershipQuery {
 	query := (&MembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(membership.Table, membership.FieldID, id),
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, membership.ParentTable, membership.ParentColumn),
 		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryChildren queries the children edge of a Membership.
-func (c *MembershipClient) QueryChildren(m *Membership) *MembershipQuery {
+func (c *MembershipClient) QueryChildren(_m *Membership) *MembershipQuery {
 	query := (&MembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(membership.Table, membership.FieldID, id),
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, membership.ChildrenTable, membership.ChildrenColumn),
 		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1938,8 +1938,8 @@ func (c *OrgInvitationClient) Update() *OrgInvitationUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *OrgInvitationClient) UpdateOne(oi *OrgInvitation) *OrgInvitationUpdateOne {
-	mutation := newOrgInvitationMutation(c.config, OpUpdateOne, withOrgInvitation(oi))
+func (c *OrgInvitationClient) UpdateOne(_m *OrgInvitation) *OrgInvitationUpdateOne {
+	mutation := newOrgInvitationMutation(c.config, OpUpdateOne, withOrgInvitation(_m))
 	return &OrgInvitationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1956,8 +1956,8 @@ func (c *OrgInvitationClient) Delete() *OrgInvitationDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *OrgInvitationClient) DeleteOne(oi *OrgInvitation) *OrgInvitationDeleteOne {
-	return c.DeleteOneID(oi.ID)
+func (c *OrgInvitationClient) DeleteOne(_m *OrgInvitation) *OrgInvitationDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1992,32 +1992,32 @@ func (c *OrgInvitationClient) GetX(ctx context.Context, id uuid.UUID) *OrgInvita
 }
 
 // QueryOrganization queries the organization edge of a OrgInvitation.
-func (c *OrgInvitationClient) QueryOrganization(oi *OrgInvitation) *OrganizationQuery {
+func (c *OrgInvitationClient) QueryOrganization(_m *OrgInvitation) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := oi.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(orginvitation.Table, orginvitation.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, orginvitation.OrganizationTable, orginvitation.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(oi.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QuerySender queries the sender edge of a OrgInvitation.
-func (c *OrgInvitationClient) QuerySender(oi *OrgInvitation) *UserQuery {
+func (c *OrgInvitationClient) QuerySender(_m *OrgInvitation) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := oi.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(orginvitation.Table, orginvitation.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, orginvitation.SenderTable, orginvitation.SenderColumn),
 		)
-		fromV = sqlgraph.Neighbors(oi.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -2103,8 +2103,8 @@ func (c *OrganizationClient) Update() *OrganizationUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *OrganizationClient) UpdateOne(o *Organization) *OrganizationUpdateOne {
-	mutation := newOrganizationMutation(c.config, OpUpdateOne, withOrganization(o))
+func (c *OrganizationClient) UpdateOne(_m *Organization) *OrganizationUpdateOne {
+	mutation := newOrganizationMutation(c.config, OpUpdateOne, withOrganization(_m))
 	return &OrganizationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -2121,8 +2121,8 @@ func (c *OrganizationClient) Delete() *OrganizationDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *OrganizationClient) DeleteOne(o *Organization) *OrganizationDeleteOne {
-	return c.DeleteOneID(o.ID)
+func (c *OrganizationClient) DeleteOne(_m *Organization) *OrganizationDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -2157,128 +2157,128 @@ func (c *OrganizationClient) GetX(ctx context.Context, id uuid.UUID) *Organizati
 }
 
 // QueryMemberships queries the memberships edge of a Organization.
-func (c *OrganizationClient) QueryMemberships(o *Organization) *MembershipQuery {
+func (c *OrganizationClient) QueryMemberships(_m *Organization) *MembershipQuery {
 	query := (&MembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.MembershipsTable, organization.MembershipsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflowContracts queries the workflow_contracts edge of a Organization.
-func (c *OrganizationClient) QueryWorkflowContracts(o *Organization) *WorkflowContractQuery {
+func (c *OrganizationClient) QueryWorkflowContracts(_m *Organization) *WorkflowContractQuery {
 	query := (&WorkflowContractClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(workflowcontract.Table, workflowcontract.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.WorkflowContractsTable, organization.WorkflowContractsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflows queries the workflows edge of a Organization.
-func (c *OrganizationClient) QueryWorkflows(o *Organization) *WorkflowQuery {
+func (c *OrganizationClient) QueryWorkflows(_m *Organization) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.WorkflowsTable, organization.WorkflowsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryCasBackends queries the cas_backends edge of a Organization.
-func (c *OrganizationClient) QueryCasBackends(o *Organization) *CASBackendQuery {
+func (c *OrganizationClient) QueryCasBackends(_m *Organization) *CASBackendQuery {
 	query := (&CASBackendClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.CasBackendsTable, organization.CasBackendsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryIntegrations queries the integrations edge of a Organization.
-func (c *OrganizationClient) QueryIntegrations(o *Organization) *IntegrationQuery {
+func (c *OrganizationClient) QueryIntegrations(_m *Organization) *IntegrationQuery {
 	query := (&IntegrationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(integration.Table, integration.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.IntegrationsTable, organization.IntegrationsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryAPITokens queries the api_tokens edge of a Organization.
-func (c *OrganizationClient) QueryAPITokens(o *Organization) *APITokenQuery {
+func (c *OrganizationClient) QueryAPITokens(_m *Organization) *APITokenQuery {
 	query := (&APITokenClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(apitoken.Table, apitoken.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.APITokensTable, organization.APITokensColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryProjects queries the projects edge of a Organization.
-func (c *OrganizationClient) QueryProjects(o *Organization) *ProjectQuery {
+func (c *OrganizationClient) QueryProjects(_m *Organization) *ProjectQuery {
 	query := (&ProjectClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.ProjectsTable, organization.ProjectsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryGroups queries the groups edge of a Organization.
-func (c *OrganizationClient) QueryGroups(o *Organization) *GroupQuery {
+func (c *OrganizationClient) QueryGroups(_m *Organization) *GroupQuery {
 	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.GroupsTable, organization.GroupsColumn),
 		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -2364,8 +2364,8 @@ func (c *ProjectClient) Update() *ProjectUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ProjectClient) UpdateOne(pr *Project) *ProjectUpdateOne {
-	mutation := newProjectMutation(c.config, OpUpdateOne, withProject(pr))
+func (c *ProjectClient) UpdateOne(_m *Project) *ProjectUpdateOne {
+	mutation := newProjectMutation(c.config, OpUpdateOne, withProject(_m))
 	return &ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -2382,8 +2382,8 @@ func (c *ProjectClient) Delete() *ProjectDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ProjectClient) DeleteOne(pr *Project) *ProjectDeleteOne {
-	return c.DeleteOneID(pr.ID)
+func (c *ProjectClient) DeleteOne(_m *Project) *ProjectDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -2418,48 +2418,48 @@ func (c *ProjectClient) GetX(ctx context.Context, id uuid.UUID) *Project {
 }
 
 // QueryOrganization queries the organization edge of a Project.
-func (c *ProjectClient) QueryOrganization(pr *Project) *OrganizationQuery {
+func (c *ProjectClient) QueryOrganization(_m *Project) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, project.OrganizationTable, project.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflows queries the workflows edge of a Project.
-func (c *ProjectClient) QueryWorkflows(pr *Project) *WorkflowQuery {
+func (c *ProjectClient) QueryWorkflows(_m *Project) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.WorkflowsTable, project.WorkflowsColumn),
 		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryVersions queries the versions edge of a Project.
-func (c *ProjectClient) QueryVersions(pr *Project) *ProjectVersionQuery {
+func (c *ProjectClient) QueryVersions(_m *Project) *ProjectVersionQuery {
 	query := (&ProjectVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
 			sqlgraph.To(projectversion.Table, projectversion.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.VersionsTable, project.VersionsColumn),
 		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -2545,8 +2545,8 @@ func (c *ProjectVersionClient) Update() *ProjectVersionUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ProjectVersionClient) UpdateOne(pv *ProjectVersion) *ProjectVersionUpdateOne {
-	mutation := newProjectVersionMutation(c.config, OpUpdateOne, withProjectVersion(pv))
+func (c *ProjectVersionClient) UpdateOne(_m *ProjectVersion) *ProjectVersionUpdateOne {
+	mutation := newProjectVersionMutation(c.config, OpUpdateOne, withProjectVersion(_m))
 	return &ProjectVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -2563,8 +2563,8 @@ func (c *ProjectVersionClient) Delete() *ProjectVersionDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ProjectVersionClient) DeleteOne(pv *ProjectVersion) *ProjectVersionDeleteOne {
-	return c.DeleteOneID(pv.ID)
+func (c *ProjectVersionClient) DeleteOne(_m *ProjectVersion) *ProjectVersionDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -2599,32 +2599,32 @@ func (c *ProjectVersionClient) GetX(ctx context.Context, id uuid.UUID) *ProjectV
 }
 
 // QueryProject queries the project edge of a ProjectVersion.
-func (c *ProjectVersionClient) QueryProject(pv *ProjectVersion) *ProjectQuery {
+func (c *ProjectVersionClient) QueryProject(_m *ProjectVersion) *ProjectQuery {
 	query := (&ProjectClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pv.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(projectversion.Table, projectversion.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, projectversion.ProjectTable, projectversion.ProjectColumn),
 		)
-		fromV = sqlgraph.Neighbors(pv.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryRuns queries the runs edge of a ProjectVersion.
-func (c *ProjectVersionClient) QueryRuns(pv *ProjectVersion) *WorkflowRunQuery {
+func (c *ProjectVersionClient) QueryRuns(_m *ProjectVersion) *WorkflowRunQuery {
 	query := (&WorkflowRunClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pv.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(projectversion.Table, projectversion.FieldID, id),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, projectversion.RunsTable, projectversion.RunsColumn),
 		)
-		fromV = sqlgraph.Neighbors(pv.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -2710,8 +2710,8 @@ func (c *ReferrerClient) Update() *ReferrerUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ReferrerClient) UpdateOne(r *Referrer) *ReferrerUpdateOne {
-	mutation := newReferrerMutation(c.config, OpUpdateOne, withReferrer(r))
+func (c *ReferrerClient) UpdateOne(_m *Referrer) *ReferrerUpdateOne {
+	mutation := newReferrerMutation(c.config, OpUpdateOne, withReferrer(_m))
 	return &ReferrerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -2728,8 +2728,8 @@ func (c *ReferrerClient) Delete() *ReferrerDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ReferrerClient) DeleteOne(r *Referrer) *ReferrerDeleteOne {
-	return c.DeleteOneID(r.ID)
+func (c *ReferrerClient) DeleteOne(_m *Referrer) *ReferrerDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -2764,48 +2764,48 @@ func (c *ReferrerClient) GetX(ctx context.Context, id uuid.UUID) *Referrer {
 }
 
 // QueryReferredBy queries the referred_by edge of a Referrer.
-func (c *ReferrerClient) QueryReferredBy(r *Referrer) *ReferrerQuery {
+func (c *ReferrerClient) QueryReferredBy(_m *Referrer) *ReferrerQuery {
 	query := (&ReferrerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(referrer.Table, referrer.FieldID, id),
 			sqlgraph.To(referrer.Table, referrer.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, referrer.ReferredByTable, referrer.ReferredByPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryReferences queries the references edge of a Referrer.
-func (c *ReferrerClient) QueryReferences(r *Referrer) *ReferrerQuery {
+func (c *ReferrerClient) QueryReferences(_m *Referrer) *ReferrerQuery {
 	query := (&ReferrerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(referrer.Table, referrer.FieldID, id),
 			sqlgraph.To(referrer.Table, referrer.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.ReferencesTable, referrer.ReferencesPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflows queries the workflows edge of a Referrer.
-func (c *ReferrerClient) QueryWorkflows(r *Referrer) *WorkflowQuery {
+func (c *ReferrerClient) QueryWorkflows(_m *Referrer) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(referrer.Table, referrer.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.WorkflowsTable, referrer.WorkflowsPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -2891,8 +2891,8 @@ func (c *RobotAccountClient) Update() *RobotAccountUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *RobotAccountClient) UpdateOne(ra *RobotAccount) *RobotAccountUpdateOne {
-	mutation := newRobotAccountMutation(c.config, OpUpdateOne, withRobotAccount(ra))
+func (c *RobotAccountClient) UpdateOne(_m *RobotAccount) *RobotAccountUpdateOne {
+	mutation := newRobotAccountMutation(c.config, OpUpdateOne, withRobotAccount(_m))
 	return &RobotAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -2909,8 +2909,8 @@ func (c *RobotAccountClient) Delete() *RobotAccountDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *RobotAccountClient) DeleteOne(ra *RobotAccount) *RobotAccountDeleteOne {
-	return c.DeleteOneID(ra.ID)
+func (c *RobotAccountClient) DeleteOne(_m *RobotAccount) *RobotAccountDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -2945,16 +2945,16 @@ func (c *RobotAccountClient) GetX(ctx context.Context, id uuid.UUID) *RobotAccou
 }
 
 // QueryWorkflow queries the workflow edge of a RobotAccount.
-func (c *RobotAccountClient) QueryWorkflow(ra *RobotAccount) *WorkflowQuery {
+func (c *RobotAccountClient) QueryWorkflow(_m *RobotAccount) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ra.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(robotaccount.Table, robotaccount.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, robotaccount.WorkflowTable, robotaccount.WorkflowColumn),
 		)
-		fromV = sqlgraph.Neighbors(ra.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -3040,8 +3040,8 @@ func (c *UserClient) Update() *UserUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
-	mutation := newUserMutation(c.config, OpUpdateOne, withUser(u))
+func (c *UserClient) UpdateOne(_m *User) *UserUpdateOne {
+	mutation := newUserMutation(c.config, OpUpdateOne, withUser(_m))
 	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -3058,8 +3058,8 @@ func (c *UserClient) Delete() *UserDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
-	return c.DeleteOneID(u.ID)
+func (c *UserClient) DeleteOne(_m *User) *UserDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -3094,32 +3094,32 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 }
 
 // QueryMemberships queries the memberships edge of a User.
-func (c *UserClient) QueryMemberships(u *User) *MembershipQuery {
+func (c *UserClient) QueryMemberships(_m *User) *MembershipQuery {
 	query := (&MembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(membership.Table, membership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.MembershipsTable, user.MembershipsColumn),
 		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryGroupMemberships queries the group_memberships edge of a User.
-func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
+func (c *UserClient) QueryGroupMemberships(_m *User) *GroupMembershipQuery {
 	query := (&GroupMembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.GroupMembershipsTable, user.GroupMembershipsColumn),
 		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -3205,8 +3205,8 @@ func (c *WorkflowClient) Update() *WorkflowUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *WorkflowClient) UpdateOne(w *Workflow) *WorkflowUpdateOne {
-	mutation := newWorkflowMutation(c.config, OpUpdateOne, withWorkflow(w))
+func (c *WorkflowClient) UpdateOne(_m *Workflow) *WorkflowUpdateOne {
+	mutation := newWorkflowMutation(c.config, OpUpdateOne, withWorkflow(_m))
 	return &WorkflowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -3223,8 +3223,8 @@ func (c *WorkflowClient) Delete() *WorkflowDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *WorkflowClient) DeleteOne(w *Workflow) *WorkflowDeleteOne {
-	return c.DeleteOneID(w.ID)
+func (c *WorkflowClient) DeleteOne(_m *Workflow) *WorkflowDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -3259,128 +3259,128 @@ func (c *WorkflowClient) GetX(ctx context.Context, id uuid.UUID) *Workflow {
 }
 
 // QueryRobotaccounts queries the robotaccounts edge of a Workflow.
-func (c *WorkflowClient) QueryRobotaccounts(w *Workflow) *RobotAccountQuery {
+func (c *WorkflowClient) QueryRobotaccounts(_m *Workflow) *RobotAccountQuery {
 	query := (&RobotAccountClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(robotaccount.Table, robotaccount.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, workflow.RobotaccountsTable, workflow.RobotaccountsColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflowruns queries the workflowruns edge of a Workflow.
-func (c *WorkflowClient) QueryWorkflowruns(w *Workflow) *WorkflowRunQuery {
+func (c *WorkflowClient) QueryWorkflowruns(_m *Workflow) *WorkflowRunQuery {
 	query := (&WorkflowRunClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, workflow.WorkflowrunsTable, workflow.WorkflowrunsColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryOrganization queries the organization edge of a Workflow.
-func (c *WorkflowClient) QueryOrganization(w *Workflow) *OrganizationQuery {
+func (c *WorkflowClient) QueryOrganization(_m *Workflow) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflow.OrganizationTable, workflow.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryContract queries the contract edge of a Workflow.
-func (c *WorkflowClient) QueryContract(w *Workflow) *WorkflowContractQuery {
+func (c *WorkflowClient) QueryContract(_m *Workflow) *WorkflowContractQuery {
 	query := (&WorkflowContractClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(workflowcontract.Table, workflowcontract.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, workflow.ContractTable, workflow.ContractColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryIntegrationAttachments queries the integration_attachments edge of a Workflow.
-func (c *WorkflowClient) QueryIntegrationAttachments(w *Workflow) *IntegrationAttachmentQuery {
+func (c *WorkflowClient) QueryIntegrationAttachments(_m *Workflow) *IntegrationAttachmentQuery {
 	query := (&IntegrationAttachmentClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(integrationattachment.Table, integrationattachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, workflow.IntegrationAttachmentsTable, workflow.IntegrationAttachmentsColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryProject queries the project edge of a Workflow.
-func (c *WorkflowClient) QueryProject(w *Workflow) *ProjectQuery {
+func (c *WorkflowClient) QueryProject(_m *Workflow) *ProjectQuery {
 	query := (&ProjectClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflow.ProjectTable, workflow.ProjectColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryLatestWorkflowRun queries the latest_workflow_run edge of a Workflow.
-func (c *WorkflowClient) QueryLatestWorkflowRun(w *Workflow) *WorkflowRunQuery {
+func (c *WorkflowClient) QueryLatestWorkflowRun(_m *Workflow) *WorkflowRunQuery {
 	query := (&WorkflowRunClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, workflow.LatestWorkflowRunTable, workflow.LatestWorkflowRunColumn),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryReferrers queries the referrers edge of a Workflow.
-func (c *WorkflowClient) QueryReferrers(w *Workflow) *ReferrerQuery {
+func (c *WorkflowClient) QueryReferrers(_m *Workflow) *ReferrerQuery {
 	query := (&ReferrerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := w.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflow.Table, workflow.FieldID, id),
 			sqlgraph.To(referrer.Table, referrer.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, workflow.ReferrersTable, workflow.ReferrersPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -3466,8 +3466,8 @@ func (c *WorkflowContractClient) Update() *WorkflowContractUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *WorkflowContractClient) UpdateOne(wc *WorkflowContract) *WorkflowContractUpdateOne {
-	mutation := newWorkflowContractMutation(c.config, OpUpdateOne, withWorkflowContract(wc))
+func (c *WorkflowContractClient) UpdateOne(_m *WorkflowContract) *WorkflowContractUpdateOne {
+	mutation := newWorkflowContractMutation(c.config, OpUpdateOne, withWorkflowContract(_m))
 	return &WorkflowContractUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -3484,8 +3484,8 @@ func (c *WorkflowContractClient) Delete() *WorkflowContractDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *WorkflowContractClient) DeleteOne(wc *WorkflowContract) *WorkflowContractDeleteOne {
-	return c.DeleteOneID(wc.ID)
+func (c *WorkflowContractClient) DeleteOne(_m *WorkflowContract) *WorkflowContractDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -3520,48 +3520,48 @@ func (c *WorkflowContractClient) GetX(ctx context.Context, id uuid.UUID) *Workfl
 }
 
 // QueryVersions queries the versions edge of a WorkflowContract.
-func (c *WorkflowContractClient) QueryVersions(wc *WorkflowContract) *WorkflowContractVersionQuery {
+func (c *WorkflowContractClient) QueryVersions(_m *WorkflowContract) *WorkflowContractVersionQuery {
 	query := (&WorkflowContractVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wc.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, id),
 			sqlgraph.To(workflowcontractversion.Table, workflowcontractversion.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, workflowcontract.VersionsTable, workflowcontract.VersionsColumn),
 		)
-		fromV = sqlgraph.Neighbors(wc.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryOrganization queries the organization edge of a WorkflowContract.
-func (c *WorkflowContractClient) QueryOrganization(wc *WorkflowContract) *OrganizationQuery {
+func (c *WorkflowContractClient) QueryOrganization(_m *WorkflowContract) *OrganizationQuery {
 	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wc.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowcontract.OrganizationTable, workflowcontract.OrganizationColumn),
 		)
-		fromV = sqlgraph.Neighbors(wc.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryWorkflows queries the workflows edge of a WorkflowContract.
-func (c *WorkflowContractClient) QueryWorkflows(wc *WorkflowContract) *WorkflowQuery {
+func (c *WorkflowContractClient) QueryWorkflows(_m *WorkflowContract) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wc.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowcontract.Table, workflowcontract.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, workflowcontract.WorkflowsTable, workflowcontract.WorkflowsColumn),
 		)
-		fromV = sqlgraph.Neighbors(wc.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -3647,8 +3647,8 @@ func (c *WorkflowContractVersionClient) Update() *WorkflowContractVersionUpdate 
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *WorkflowContractVersionClient) UpdateOne(wcv *WorkflowContractVersion) *WorkflowContractVersionUpdateOne {
-	mutation := newWorkflowContractVersionMutation(c.config, OpUpdateOne, withWorkflowContractVersion(wcv))
+func (c *WorkflowContractVersionClient) UpdateOne(_m *WorkflowContractVersion) *WorkflowContractVersionUpdateOne {
+	mutation := newWorkflowContractVersionMutation(c.config, OpUpdateOne, withWorkflowContractVersion(_m))
 	return &WorkflowContractVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -3665,8 +3665,8 @@ func (c *WorkflowContractVersionClient) Delete() *WorkflowContractVersionDelete 
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *WorkflowContractVersionClient) DeleteOne(wcv *WorkflowContractVersion) *WorkflowContractVersionDeleteOne {
-	return c.DeleteOneID(wcv.ID)
+func (c *WorkflowContractVersionClient) DeleteOne(_m *WorkflowContractVersion) *WorkflowContractVersionDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -3701,16 +3701,16 @@ func (c *WorkflowContractVersionClient) GetX(ctx context.Context, id uuid.UUID) 
 }
 
 // QueryContract queries the contract edge of a WorkflowContractVersion.
-func (c *WorkflowContractVersionClient) QueryContract(wcv *WorkflowContractVersion) *WorkflowContractQuery {
+func (c *WorkflowContractVersionClient) QueryContract(_m *WorkflowContractVersion) *WorkflowContractQuery {
 	query := (&WorkflowContractClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wcv.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowcontractversion.Table, workflowcontractversion.FieldID, id),
 			sqlgraph.To(workflowcontract.Table, workflowcontract.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowcontractversion.ContractTable, workflowcontractversion.ContractColumn),
 		)
-		fromV = sqlgraph.Neighbors(wcv.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -3796,8 +3796,8 @@ func (c *WorkflowRunClient) Update() *WorkflowRunUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *WorkflowRunClient) UpdateOne(wr *WorkflowRun) *WorkflowRunUpdateOne {
-	mutation := newWorkflowRunMutation(c.config, OpUpdateOne, withWorkflowRun(wr))
+func (c *WorkflowRunClient) UpdateOne(_m *WorkflowRun) *WorkflowRunUpdateOne {
+	mutation := newWorkflowRunMutation(c.config, OpUpdateOne, withWorkflowRun(_m))
 	return &WorkflowRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -3814,8 +3814,8 @@ func (c *WorkflowRunClient) Delete() *WorkflowRunDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *WorkflowRunClient) DeleteOne(wr *WorkflowRun) *WorkflowRunDeleteOne {
-	return c.DeleteOneID(wr.ID)
+func (c *WorkflowRunClient) DeleteOne(_m *WorkflowRun) *WorkflowRunDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -3850,80 +3850,80 @@ func (c *WorkflowRunClient) GetX(ctx context.Context, id uuid.UUID) *WorkflowRun
 }
 
 // QueryWorkflow queries the workflow edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryWorkflow(wr *WorkflowRun) *WorkflowQuery {
+func (c *WorkflowRunClient) QueryWorkflow(_m *WorkflowRun) *WorkflowQuery {
 	query := (&WorkflowClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.WorkflowTable, workflowrun.WorkflowColumn),
 		)
-		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryContractVersion queries the contract_version edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryContractVersion(wr *WorkflowRun) *WorkflowContractVersionQuery {
+func (c *WorkflowRunClient) QueryContractVersion(_m *WorkflowRun) *WorkflowContractVersionQuery {
 	query := (&WorkflowContractVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(workflowcontractversion.Table, workflowcontractversion.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, workflowrun.ContractVersionTable, workflowrun.ContractVersionColumn),
 		)
-		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryCasBackends queries the cas_backends edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryCasBackends(wr *WorkflowRun) *CASBackendQuery {
+func (c *WorkflowRunClient) QueryCasBackends(_m *WorkflowRun) *CASBackendQuery {
 	query := (&CASBackendClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(casbackend.Table, casbackend.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, workflowrun.CasBackendsTable, workflowrun.CasBackendsPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryVersion queries the version edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryVersion(wr *WorkflowRun) *ProjectVersionQuery {
+func (c *WorkflowRunClient) QueryVersion(_m *WorkflowRun) *ProjectVersionQuery {
 	query := (&ProjectVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(projectversion.Table, projectversion.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.VersionTable, workflowrun.VersionColumn),
 		)
-		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryAttestationBundle queries the attestation_bundle edge of a WorkflowRun.
-func (c *WorkflowRunClient) QueryAttestationBundle(wr *WorkflowRun) *AttestationQuery {
+func (c *WorkflowRunClient) QueryAttestationBundle(_m *WorkflowRun) *AttestationQuery {
 	query := (&AttestationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := wr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(attestation.Table, attestation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, workflowrun.AttestationBundleTable, workflowrun.AttestationBundleColumn),
 		)
-		fromV = sqlgraph.Neighbors(wr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query

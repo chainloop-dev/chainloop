@@ -38,44 +38,44 @@ type ProjectQuery struct {
 }
 
 // Where adds a new predicate for the ProjectQuery builder.
-func (pq *ProjectQuery) Where(ps ...predicate.Project) *ProjectQuery {
-	pq.predicates = append(pq.predicates, ps...)
-	return pq
+func (_q *ProjectQuery) Where(ps ...predicate.Project) *ProjectQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (pq *ProjectQuery) Limit(limit int) *ProjectQuery {
-	pq.ctx.Limit = &limit
-	return pq
+func (_q *ProjectQuery) Limit(limit int) *ProjectQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (pq *ProjectQuery) Offset(offset int) *ProjectQuery {
-	pq.ctx.Offset = &offset
-	return pq
+func (_q *ProjectQuery) Offset(offset int) *ProjectQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (pq *ProjectQuery) Unique(unique bool) *ProjectQuery {
-	pq.ctx.Unique = &unique
-	return pq
+func (_q *ProjectQuery) Unique(unique bool) *ProjectQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (pq *ProjectQuery) Order(o ...project.OrderOption) *ProjectQuery {
-	pq.order = append(pq.order, o...)
-	return pq
+func (_q *ProjectQuery) Order(o ...project.OrderOption) *ProjectQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryOrganization chains the current query on the "organization" edge.
-func (pq *ProjectQuery) QueryOrganization() *OrganizationQuery {
-	query := (&OrganizationClient{config: pq.config}).Query()
+func (_q *ProjectQuery) QueryOrganization() *OrganizationQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := pq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -84,20 +84,20 @@ func (pq *ProjectQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, project.OrganizationTable, project.OrganizationColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryWorkflows chains the current query on the "workflows" edge.
-func (pq *ProjectQuery) QueryWorkflows() *WorkflowQuery {
-	query := (&WorkflowClient{config: pq.config}).Query()
+func (_q *ProjectQuery) QueryWorkflows() *WorkflowQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := pq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -106,20 +106,20 @@ func (pq *ProjectQuery) QueryWorkflows() *WorkflowQuery {
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.WorkflowsTable, project.WorkflowsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryVersions chains the current query on the "versions" edge.
-func (pq *ProjectQuery) QueryVersions() *ProjectVersionQuery {
-	query := (&ProjectVersionClient{config: pq.config}).Query()
+func (_q *ProjectQuery) QueryVersions() *ProjectVersionQuery {
+	query := (&ProjectVersionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := pq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func (pq *ProjectQuery) QueryVersions() *ProjectVersionQuery {
 			sqlgraph.To(projectversion.Table, projectversion.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.VersionsTable, project.VersionsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -136,8 +136,8 @@ func (pq *ProjectQuery) QueryVersions() *ProjectVersionQuery {
 
 // First returns the first Project entity from the query.
 // Returns a *NotFoundError when no Project was found.
-func (pq *ProjectQuery) First(ctx context.Context) (*Project, error) {
-	nodes, err := pq.Limit(1).All(setContextOp(ctx, pq.ctx, ent.OpQueryFirst))
+func (_q *ProjectQuery) First(ctx context.Context) (*Project, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (pq *ProjectQuery) First(ctx context.Context) (*Project, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (pq *ProjectQuery) FirstX(ctx context.Context) *Project {
-	node, err := pq.First(ctx)
+func (_q *ProjectQuery) FirstX(ctx context.Context) *Project {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -158,9 +158,9 @@ func (pq *ProjectQuery) FirstX(ctx context.Context) *Project {
 
 // FirstID returns the first Project ID from the query.
 // Returns a *NotFoundError when no Project ID was found.
-func (pq *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = pq.Limit(1).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -171,8 +171,8 @@ func (pq *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pq *ProjectQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := pq.FirstID(ctx)
+func (_q *ProjectQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -182,8 +182,8 @@ func (pq *ProjectQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single Project entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Project entity is found.
 // Returns a *NotFoundError when no Project entities are found.
-func (pq *ProjectQuery) Only(ctx context.Context) (*Project, error) {
-	nodes, err := pq.Limit(2).All(setContextOp(ctx, pq.ctx, ent.OpQueryOnly))
+func (_q *ProjectQuery) Only(ctx context.Context) (*Project, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +198,8 @@ func (pq *ProjectQuery) Only(ctx context.Context) (*Project, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (pq *ProjectQuery) OnlyX(ctx context.Context) *Project {
-	node, err := pq.Only(ctx)
+func (_q *ProjectQuery) OnlyX(ctx context.Context) *Project {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -209,9 +209,9 @@ func (pq *ProjectQuery) OnlyX(ctx context.Context) *Project {
 // OnlyID is like Only, but returns the only Project ID in the query.
 // Returns a *NotSingularError when more than one Project ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pq *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = pq.Limit(2).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -226,8 +226,8 @@ func (pq *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pq *ProjectQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := pq.OnlyID(ctx)
+func (_q *ProjectQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -235,18 +235,18 @@ func (pq *ProjectQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of Projects.
-func (pq *ProjectQuery) All(ctx context.Context) ([]*Project, error) {
-	ctx = setContextOp(ctx, pq.ctx, ent.OpQueryAll)
-	if err := pq.prepareQuery(ctx); err != nil {
+func (_q *ProjectQuery) All(ctx context.Context) ([]*Project, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*Project, *ProjectQuery]()
-	return withInterceptors[[]*Project](ctx, pq, qr, pq.inters)
+	return withInterceptors[[]*Project](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (pq *ProjectQuery) AllX(ctx context.Context) []*Project {
-	nodes, err := pq.All(ctx)
+func (_q *ProjectQuery) AllX(ctx context.Context) []*Project {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -254,20 +254,20 @@ func (pq *ProjectQuery) AllX(ctx context.Context) []*Project {
 }
 
 // IDs executes the query and returns a list of Project IDs.
-func (pq *ProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if pq.ctx.Unique == nil && pq.path != nil {
-		pq.Unique(true)
+func (_q *ProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, pq.ctx, ent.OpQueryIDs)
-	if err = pq.Select(project.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(project.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pq *ProjectQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := pq.IDs(ctx)
+func (_q *ProjectQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -275,17 +275,17 @@ func (pq *ProjectQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (pq *ProjectQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, pq.ctx, ent.OpQueryCount)
-	if err := pq.prepareQuery(ctx); err != nil {
+func (_q *ProjectQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, pq, querierCount[*ProjectQuery](), pq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ProjectQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (pq *ProjectQuery) CountX(ctx context.Context) int {
-	count, err := pq.Count(ctx)
+func (_q *ProjectQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -293,9 +293,9 @@ func (pq *ProjectQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (pq *ProjectQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, pq.ctx, ent.OpQueryExist)
-	switch _, err := pq.FirstID(ctx); {
+func (_q *ProjectQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -306,8 +306,8 @@ func (pq *ProjectQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (pq *ProjectQuery) ExistX(ctx context.Context) bool {
-	exist, err := pq.Exist(ctx)
+func (_q *ProjectQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -316,57 +316,57 @@ func (pq *ProjectQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the ProjectQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (pq *ProjectQuery) Clone() *ProjectQuery {
-	if pq == nil {
+func (_q *ProjectQuery) Clone() *ProjectQuery {
+	if _q == nil {
 		return nil
 	}
 	return &ProjectQuery{
-		config:           pq.config,
-		ctx:              pq.ctx.Clone(),
-		order:            append([]project.OrderOption{}, pq.order...),
-		inters:           append([]Interceptor{}, pq.inters...),
-		predicates:       append([]predicate.Project{}, pq.predicates...),
-		withOrganization: pq.withOrganization.Clone(),
-		withWorkflows:    pq.withWorkflows.Clone(),
-		withVersions:     pq.withVersions.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]project.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.Project{}, _q.predicates...),
+		withOrganization: _q.withOrganization.Clone(),
+		withWorkflows:    _q.withWorkflows.Clone(),
+		withVersions:     _q.withVersions.Clone(),
 		// clone intermediate query.
-		sql:       pq.sql.Clone(),
-		path:      pq.path,
-		modifiers: append([]func(*sql.Selector){}, pq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithOrganization tells the query-builder to eager-load the nodes that are connected to
 // the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithOrganization(opts ...func(*OrganizationQuery)) *ProjectQuery {
-	query := (&OrganizationClient{config: pq.config}).Query()
+func (_q *ProjectQuery) WithOrganization(opts ...func(*OrganizationQuery)) *ProjectQuery {
+	query := (&OrganizationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withOrganization = query
-	return pq
+	_q.withOrganization = query
+	return _q
 }
 
 // WithWorkflows tells the query-builder to eager-load the nodes that are connected to
 // the "workflows" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ProjectQuery {
-	query := (&WorkflowClient{config: pq.config}).Query()
+func (_q *ProjectQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ProjectQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withWorkflows = query
-	return pq
+	_q.withWorkflows = query
+	return _q
 }
 
 // WithVersions tells the query-builder to eager-load the nodes that are connected to
 // the "versions" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithVersions(opts ...func(*ProjectVersionQuery)) *ProjectQuery {
-	query := (&ProjectVersionClient{config: pq.config}).Query()
+func (_q *ProjectQuery) WithVersions(opts ...func(*ProjectVersionQuery)) *ProjectQuery {
+	query := (&ProjectVersionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withVersions = query
-	return pq
+	_q.withVersions = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -383,10 +383,10 @@ func (pq *ProjectQuery) WithVersions(opts ...func(*ProjectVersionQuery)) *Projec
 //		GroupBy(project.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (pq *ProjectQuery) GroupBy(field string, fields ...string) *ProjectGroupBy {
-	pq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ProjectGroupBy{build: pq}
-	grbuild.flds = &pq.ctx.Fields
+func (_q *ProjectQuery) GroupBy(field string, fields ...string) *ProjectGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &ProjectGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = project.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -404,91 +404,91 @@ func (pq *ProjectQuery) GroupBy(field string, fields ...string) *ProjectGroupBy 
 //	client.Project.Query().
 //		Select(project.FieldName).
 //		Scan(ctx, &v)
-func (pq *ProjectQuery) Select(fields ...string) *ProjectSelect {
-	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
-	sbuild := &ProjectSelect{ProjectQuery: pq}
+func (_q *ProjectQuery) Select(fields ...string) *ProjectSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &ProjectSelect{ProjectQuery: _q}
 	sbuild.label = project.Label
-	sbuild.flds, sbuild.scan = &pq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a ProjectSelect configured with the given aggregations.
-func (pq *ProjectQuery) Aggregate(fns ...AggregateFunc) *ProjectSelect {
-	return pq.Select().Aggregate(fns...)
+func (_q *ProjectQuery) Aggregate(fns ...AggregateFunc) *ProjectSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (pq *ProjectQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range pq.inters {
+func (_q *ProjectQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, pq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range pq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !project.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if pq.path != nil {
-		prev, err := pq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		pq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Project, error) {
+func (_q *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Project, error) {
 	var (
 		nodes       = []*Project{}
-		_spec       = pq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
-			pq.withOrganization != nil,
-			pq.withWorkflows != nil,
-			pq.withVersions != nil,
+			_q.withOrganization != nil,
+			_q.withWorkflows != nil,
+			_q.withVersions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Project).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Project{config: pq.config}
+		node := &Project{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(pq.modifiers) > 0 {
-		_spec.Modifiers = pq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, pq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pq.withOrganization; query != nil {
-		if err := pq.loadOrganization(ctx, query, nodes, nil,
+	if query := _q.withOrganization; query != nil {
+		if err := _q.loadOrganization(ctx, query, nodes, nil,
 			func(n *Project, e *Organization) { n.Edges.Organization = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := pq.withWorkflows; query != nil {
-		if err := pq.loadWorkflows(ctx, query, nodes,
+	if query := _q.withWorkflows; query != nil {
+		if err := _q.loadWorkflows(ctx, query, nodes,
 			func(n *Project) { n.Edges.Workflows = []*Workflow{} },
 			func(n *Project, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := pq.withVersions; query != nil {
-		if err := pq.loadVersions(ctx, query, nodes,
+	if query := _q.withVersions; query != nil {
+		if err := _q.loadVersions(ctx, query, nodes,
 			func(n *Project) { n.Edges.Versions = []*ProjectVersion{} },
 			func(n *Project, e *ProjectVersion) { n.Edges.Versions = append(n.Edges.Versions, e) }); err != nil {
 			return nil, err
@@ -497,7 +497,7 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	return nodes, nil
 }
 
-func (pq *ProjectQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Project, init func(*Project), assign func(*Project, *Organization)) error {
+func (_q *ProjectQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Project, init func(*Project), assign func(*Project, *Organization)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Project)
 	for i := range nodes {
@@ -526,7 +526,7 @@ func (pq *ProjectQuery) loadOrganization(ctx context.Context, query *Organizatio
 	}
 	return nil
 }
-func (pq *ProjectQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery, nodes []*Project, init func(*Project), assign func(*Project, *Workflow)) error {
+func (_q *ProjectQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery, nodes []*Project, init func(*Project), assign func(*Project, *Workflow)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Project)
 	for i := range nodes {
@@ -557,7 +557,7 @@ func (pq *ProjectQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery,
 	}
 	return nil
 }
-func (pq *ProjectQuery) loadVersions(ctx context.Context, query *ProjectVersionQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectVersion)) error {
+func (_q *ProjectQuery) loadVersions(ctx context.Context, query *ProjectVersionQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectVersion)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Project)
 	for i := range nodes {
@@ -588,27 +588,27 @@ func (pq *ProjectQuery) loadVersions(ctx context.Context, query *ProjectVersionQ
 	return nil
 }
 
-func (pq *ProjectQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := pq.querySpec()
-	if len(pq.modifiers) > 0 {
-		_spec.Modifiers = pq.modifiers
+func (_q *ProjectQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = pq.ctx.Fields
-	if len(pq.ctx.Fields) > 0 {
-		_spec.Unique = pq.ctx.Unique != nil && *pq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, pq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (pq *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
-	_spec.From = pq.sql
-	if unique := pq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if pq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := pq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, project.FieldID)
 		for i := range fields {
@@ -616,24 +616,24 @@ func (pq *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if pq.withOrganization != nil {
+		if _q.withOrganization != nil {
 			_spec.Node.AddColumnOnce(project.FieldOrganizationID)
 		}
 	}
-	if ps := pq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := pq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := pq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := pq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -643,36 +643,36 @@ func (pq *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (pq *ProjectQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(pq.driver.Dialect())
+func (_q *ProjectQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(project.Table)
-	columns := pq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = project.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if pq.sql != nil {
-		selector = pq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if pq.ctx.Unique != nil && *pq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range pq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range pq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range pq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := pq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := pq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -681,33 +681,33 @@ func (pq *ProjectQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // ForUpdate locks the selected rows against concurrent updates, and prevent them from being
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
-func (pq *ProjectQuery) ForUpdate(opts ...sql.LockOption) *ProjectQuery {
-	if pq.driver.Dialect() == dialect.Postgres {
-		pq.Unique(false)
+func (_q *ProjectQuery) ForUpdate(opts ...sql.LockOption) *ProjectQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	pq.modifiers = append(pq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForUpdate(opts...)
 	})
-	return pq
+	return _q
 }
 
 // ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
-func (pq *ProjectQuery) ForShare(opts ...sql.LockOption) *ProjectQuery {
-	if pq.driver.Dialect() == dialect.Postgres {
-		pq.Unique(false)
+func (_q *ProjectQuery) ForShare(opts ...sql.LockOption) *ProjectQuery {
+	if _q.driver.Dialect() == dialect.Postgres {
+		_q.Unique(false)
 	}
-	pq.modifiers = append(pq.modifiers, func(s *sql.Selector) {
+	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
 		s.ForShare(opts...)
 	})
-	return pq
+	return _q
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (pq *ProjectQuery) Modify(modifiers ...func(s *sql.Selector)) *ProjectSelect {
-	pq.modifiers = append(pq.modifiers, modifiers...)
-	return pq.Select()
+func (_q *ProjectQuery) Modify(modifiers ...func(s *sql.Selector)) *ProjectSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // ProjectGroupBy is the group-by builder for Project entities.
@@ -717,41 +717,41 @@ type ProjectGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (pgb *ProjectGroupBy) Aggregate(fns ...AggregateFunc) *ProjectGroupBy {
-	pgb.fns = append(pgb.fns, fns...)
-	return pgb
+func (_g *ProjectGroupBy) Aggregate(fns ...AggregateFunc) *ProjectGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (pgb *ProjectGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, pgb.build.ctx, ent.OpQueryGroupBy)
-	if err := pgb.build.prepareQuery(ctx); err != nil {
+func (_g *ProjectGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ProjectQuery, *ProjectGroupBy](ctx, pgb.build, pgb, pgb.build.inters, v)
+	return scanWithInterceptors[*ProjectQuery, *ProjectGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (pgb *ProjectGroupBy) sqlScan(ctx context.Context, root *ProjectQuery, v any) error {
+func (_g *ProjectGroupBy) sqlScan(ctx context.Context, root *ProjectQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(pgb.fns))
-	for _, fn := range pgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*pgb.flds)+len(pgb.fns))
-		for _, f := range *pgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*pgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -765,27 +765,27 @@ type ProjectSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (ps *ProjectSelect) Aggregate(fns ...AggregateFunc) *ProjectSelect {
-	ps.fns = append(ps.fns, fns...)
-	return ps
+func (_s *ProjectSelect) Aggregate(fns ...AggregateFunc) *ProjectSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ps *ProjectSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ps.ctx, ent.OpQuerySelect)
-	if err := ps.prepareQuery(ctx); err != nil {
+func (_s *ProjectSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ProjectQuery, *ProjectSelect](ctx, ps.ProjectQuery, ps, ps.inters, v)
+	return scanWithInterceptors[*ProjectQuery, *ProjectSelect](ctx, _s.ProjectQuery, _s, _s.inters, v)
 }
 
-func (ps *ProjectSelect) sqlScan(ctx context.Context, root *ProjectQuery, v any) error {
+func (_s *ProjectSelect) sqlScan(ctx context.Context, root *ProjectQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(ps.fns))
-	for _, fn := range ps.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*ps.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -793,7 +793,7 @@ func (ps *ProjectSelect) sqlScan(ctx context.Context, root *ProjectQuery, v any)
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ps.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -801,7 +801,7 @@ func (ps *ProjectSelect) sqlScan(ctx context.Context, root *ProjectQuery, v any)
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (ps *ProjectSelect) Modify(modifiers ...func(s *sql.Selector)) *ProjectSelect {
-	ps.modifiers = append(ps.modifiers, modifiers...)
-	return ps
+func (_s *ProjectSelect) Modify(modifiers ...func(s *sql.Selector)) *ProjectSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

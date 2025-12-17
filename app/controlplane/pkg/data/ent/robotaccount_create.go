@@ -26,86 +26,86 @@ type RobotAccountCreate struct {
 }
 
 // SetName sets the "name" field.
-func (rac *RobotAccountCreate) SetName(s string) *RobotAccountCreate {
-	rac.mutation.SetName(s)
-	return rac
+func (_c *RobotAccountCreate) SetName(v string) *RobotAccountCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (rac *RobotAccountCreate) SetCreatedAt(t time.Time) *RobotAccountCreate {
-	rac.mutation.SetCreatedAt(t)
-	return rac
+func (_c *RobotAccountCreate) SetCreatedAt(v time.Time) *RobotAccountCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (rac *RobotAccountCreate) SetNillableCreatedAt(t *time.Time) *RobotAccountCreate {
-	if t != nil {
-		rac.SetCreatedAt(*t)
+func (_c *RobotAccountCreate) SetNillableCreatedAt(v *time.Time) *RobotAccountCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return rac
+	return _c
 }
 
 // SetRevokedAt sets the "revoked_at" field.
-func (rac *RobotAccountCreate) SetRevokedAt(t time.Time) *RobotAccountCreate {
-	rac.mutation.SetRevokedAt(t)
-	return rac
+func (_c *RobotAccountCreate) SetRevokedAt(v time.Time) *RobotAccountCreate {
+	_c.mutation.SetRevokedAt(v)
+	return _c
 }
 
 // SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
-func (rac *RobotAccountCreate) SetNillableRevokedAt(t *time.Time) *RobotAccountCreate {
-	if t != nil {
-		rac.SetRevokedAt(*t)
+func (_c *RobotAccountCreate) SetNillableRevokedAt(v *time.Time) *RobotAccountCreate {
+	if v != nil {
+		_c.SetRevokedAt(*v)
 	}
-	return rac
+	return _c
 }
 
 // SetID sets the "id" field.
-func (rac *RobotAccountCreate) SetID(u uuid.UUID) *RobotAccountCreate {
-	rac.mutation.SetID(u)
-	return rac
+func (_c *RobotAccountCreate) SetID(v uuid.UUID) *RobotAccountCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (rac *RobotAccountCreate) SetNillableID(u *uuid.UUID) *RobotAccountCreate {
-	if u != nil {
-		rac.SetID(*u)
+func (_c *RobotAccountCreate) SetNillableID(v *uuid.UUID) *RobotAccountCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return rac
+	return _c
 }
 
 // SetWorkflowID sets the "workflow" edge to the Workflow entity by ID.
-func (rac *RobotAccountCreate) SetWorkflowID(id uuid.UUID) *RobotAccountCreate {
-	rac.mutation.SetWorkflowID(id)
-	return rac
+func (_c *RobotAccountCreate) SetWorkflowID(id uuid.UUID) *RobotAccountCreate {
+	_c.mutation.SetWorkflowID(id)
+	return _c
 }
 
 // SetNillableWorkflowID sets the "workflow" edge to the Workflow entity by ID if the given value is not nil.
-func (rac *RobotAccountCreate) SetNillableWorkflowID(id *uuid.UUID) *RobotAccountCreate {
+func (_c *RobotAccountCreate) SetNillableWorkflowID(id *uuid.UUID) *RobotAccountCreate {
 	if id != nil {
-		rac = rac.SetWorkflowID(*id)
+		_c = _c.SetWorkflowID(*id)
 	}
-	return rac
+	return _c
 }
 
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
-func (rac *RobotAccountCreate) SetWorkflow(w *Workflow) *RobotAccountCreate {
-	return rac.SetWorkflowID(w.ID)
+func (_c *RobotAccountCreate) SetWorkflow(v *Workflow) *RobotAccountCreate {
+	return _c.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the RobotAccountMutation object of the builder.
-func (rac *RobotAccountCreate) Mutation() *RobotAccountMutation {
-	return rac.mutation
+func (_c *RobotAccountCreate) Mutation() *RobotAccountMutation {
+	return _c.mutation
 }
 
 // Save creates the RobotAccount in the database.
-func (rac *RobotAccountCreate) Save(ctx context.Context) (*RobotAccount, error) {
-	rac.defaults()
-	return withHooks(ctx, rac.sqlSave, rac.mutation, rac.hooks)
+func (_c *RobotAccountCreate) Save(ctx context.Context) (*RobotAccount, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (rac *RobotAccountCreate) SaveX(ctx context.Context) *RobotAccount {
-	v, err := rac.Save(ctx)
+func (_c *RobotAccountCreate) SaveX(ctx context.Context) *RobotAccount {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -113,47 +113,47 @@ func (rac *RobotAccountCreate) SaveX(ctx context.Context) *RobotAccount {
 }
 
 // Exec executes the query.
-func (rac *RobotAccountCreate) Exec(ctx context.Context) error {
-	_, err := rac.Save(ctx)
+func (_c *RobotAccountCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rac *RobotAccountCreate) ExecX(ctx context.Context) {
-	if err := rac.Exec(ctx); err != nil {
+func (_c *RobotAccountCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (rac *RobotAccountCreate) defaults() {
-	if _, ok := rac.mutation.CreatedAt(); !ok {
+func (_c *RobotAccountCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := robotaccount.DefaultCreatedAt()
-		rac.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := rac.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := robotaccount.DefaultID()
-		rac.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (rac *RobotAccountCreate) check() error {
-	if _, ok := rac.mutation.Name(); !ok {
+func (_c *RobotAccountCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "RobotAccount.name"`)}
 	}
-	if _, ok := rac.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RobotAccount.created_at"`)}
 	}
 	return nil
 }
 
-func (rac *RobotAccountCreate) sqlSave(ctx context.Context) (*RobotAccount, error) {
-	if err := rac.check(); err != nil {
+func (_c *RobotAccountCreate) sqlSave(ctx context.Context) (*RobotAccount, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := rac.createSpec()
-	if err := sqlgraph.CreateNode(ctx, rac.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -166,34 +166,34 @@ func (rac *RobotAccountCreate) sqlSave(ctx context.Context) (*RobotAccount, erro
 			return nil, err
 		}
 	}
-	rac.mutation.id = &_node.ID
-	rac.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec) {
+func (_c *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec) {
 	var (
-		_node = &RobotAccount{config: rac.config}
+		_node = &RobotAccount{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(robotaccount.Table, sqlgraph.NewFieldSpec(robotaccount.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = rac.conflict
-	if id, ok := rac.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := rac.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(robotaccount.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := rac.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(robotaccount.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := rac.mutation.RevokedAt(); ok {
+	if value, ok := _c.mutation.RevokedAt(); ok {
 		_spec.SetField(robotaccount.FieldRevokedAt, field.TypeTime, value)
 		_node.RevokedAt = value
 	}
-	if nodes := rac.mutation.WorkflowIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -229,10 +229,10 @@ func (rac *RobotAccountCreate) createSpec() (*RobotAccount, *sqlgraph.CreateSpec
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (rac *RobotAccountCreate) OnConflict(opts ...sql.ConflictOption) *RobotAccountUpsertOne {
-	rac.conflict = opts
+func (_c *RobotAccountCreate) OnConflict(opts ...sql.ConflictOption) *RobotAccountUpsertOne {
+	_c.conflict = opts
 	return &RobotAccountUpsertOne{
-		create: rac,
+		create: _c,
 	}
 }
 
@@ -242,10 +242,10 @@ func (rac *RobotAccountCreate) OnConflict(opts ...sql.ConflictOption) *RobotAcco
 //	client.RobotAccount.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (rac *RobotAccountCreate) OnConflictColumns(columns ...string) *RobotAccountUpsertOne {
-	rac.conflict = append(rac.conflict, sql.ConflictColumns(columns...))
+func (_c *RobotAccountCreate) OnConflictColumns(columns ...string) *RobotAccountUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &RobotAccountUpsertOne{
-		create: rac,
+		create: _c,
 	}
 }
 
@@ -425,16 +425,16 @@ type RobotAccountCreateBulk struct {
 }
 
 // Save creates the RobotAccount entities in the database.
-func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, error) {
-	if racb.err != nil {
-		return nil, racb.err
+func (_c *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(racb.builders))
-	nodes := make([]*RobotAccount, len(racb.builders))
-	mutators := make([]Mutator, len(racb.builders))
-	for i := range racb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*RobotAccount, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := racb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*RobotAccountMutation)
@@ -448,12 +448,12 @@ func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, 
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, racb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = racb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, racb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -473,7 +473,7 @@ func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, 
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, racb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -481,8 +481,8 @@ func (racb *RobotAccountCreateBulk) Save(ctx context.Context) ([]*RobotAccount, 
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (racb *RobotAccountCreateBulk) SaveX(ctx context.Context) []*RobotAccount {
-	v, err := racb.Save(ctx)
+func (_c *RobotAccountCreateBulk) SaveX(ctx context.Context) []*RobotAccount {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -490,14 +490,14 @@ func (racb *RobotAccountCreateBulk) SaveX(ctx context.Context) []*RobotAccount {
 }
 
 // Exec executes the query.
-func (racb *RobotAccountCreateBulk) Exec(ctx context.Context) error {
-	_, err := racb.Save(ctx)
+func (_c *RobotAccountCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (racb *RobotAccountCreateBulk) ExecX(ctx context.Context) {
-	if err := racb.Exec(ctx); err != nil {
+func (_c *RobotAccountCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -517,10 +517,10 @@ func (racb *RobotAccountCreateBulk) ExecX(ctx context.Context) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (racb *RobotAccountCreateBulk) OnConflict(opts ...sql.ConflictOption) *RobotAccountUpsertBulk {
-	racb.conflict = opts
+func (_c *RobotAccountCreateBulk) OnConflict(opts ...sql.ConflictOption) *RobotAccountUpsertBulk {
+	_c.conflict = opts
 	return &RobotAccountUpsertBulk{
-		create: racb,
+		create: _c,
 	}
 }
 
@@ -530,10 +530,10 @@ func (racb *RobotAccountCreateBulk) OnConflict(opts ...sql.ConflictOption) *Robo
 //	client.RobotAccount.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (racb *RobotAccountCreateBulk) OnConflictColumns(columns ...string) *RobotAccountUpsertBulk {
-	racb.conflict = append(racb.conflict, sql.ConflictColumns(columns...))
+func (_c *RobotAccountCreateBulk) OnConflictColumns(columns ...string) *RobotAccountUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &RobotAccountUpsertBulk{
-		create: racb,
+		create: _c,
 	}
 }
 

@@ -27,135 +27,135 @@ type GroupCreate struct {
 }
 
 // SetName sets the "name" field.
-func (gc *GroupCreate) SetName(s string) *GroupCreate {
-	gc.mutation.SetName(s)
-	return gc
+func (_c *GroupCreate) SetName(v string) *GroupCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (gc *GroupCreate) SetDescription(s string) *GroupCreate {
-	gc.mutation.SetDescription(s)
-	return gc
+func (_c *GroupCreate) SetDescription(v string) *GroupCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableDescription(s *string) *GroupCreate {
-	if s != nil {
-		gc.SetDescription(*s)
+func (_c *GroupCreate) SetNillableDescription(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return gc
+	return _c
 }
 
 // SetOrganizationID sets the "organization_id" field.
-func (gc *GroupCreate) SetOrganizationID(u uuid.UUID) *GroupCreate {
-	gc.mutation.SetOrganizationID(u)
-	return gc
+func (_c *GroupCreate) SetOrganizationID(v uuid.UUID) *GroupCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (gc *GroupCreate) SetCreatedAt(t time.Time) *GroupCreate {
-	gc.mutation.SetCreatedAt(t)
-	return gc
+func (_c *GroupCreate) SetCreatedAt(v time.Time) *GroupCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableCreatedAt(t *time.Time) *GroupCreate {
-	if t != nil {
-		gc.SetCreatedAt(*t)
+func (_c *GroupCreate) SetNillableCreatedAt(v *time.Time) *GroupCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return gc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (gc *GroupCreate) SetUpdatedAt(t time.Time) *GroupCreate {
-	gc.mutation.SetUpdatedAt(t)
-	return gc
+func (_c *GroupCreate) SetUpdatedAt(v time.Time) *GroupCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableUpdatedAt(t *time.Time) *GroupCreate {
-	if t != nil {
-		gc.SetUpdatedAt(*t)
+func (_c *GroupCreate) SetNillableUpdatedAt(v *time.Time) *GroupCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return gc
+	return _c
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (gc *GroupCreate) SetDeletedAt(t time.Time) *GroupCreate {
-	gc.mutation.SetDeletedAt(t)
-	return gc
+func (_c *GroupCreate) SetDeletedAt(v time.Time) *GroupCreate {
+	_c.mutation.SetDeletedAt(v)
+	return _c
 }
 
 // SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableDeletedAt(t *time.Time) *GroupCreate {
-	if t != nil {
-		gc.SetDeletedAt(*t)
+func (_c *GroupCreate) SetNillableDeletedAt(v *time.Time) *GroupCreate {
+	if v != nil {
+		_c.SetDeletedAt(*v)
 	}
-	return gc
+	return _c
 }
 
 // SetMemberCount sets the "member_count" field.
-func (gc *GroupCreate) SetMemberCount(i int) *GroupCreate {
-	gc.mutation.SetMemberCount(i)
-	return gc
+func (_c *GroupCreate) SetMemberCount(v int) *GroupCreate {
+	_c.mutation.SetMemberCount(v)
+	return _c
 }
 
 // SetNillableMemberCount sets the "member_count" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableMemberCount(i *int) *GroupCreate {
-	if i != nil {
-		gc.SetMemberCount(*i)
+func (_c *GroupCreate) SetNillableMemberCount(v *int) *GroupCreate {
+	if v != nil {
+		_c.SetMemberCount(*v)
 	}
-	return gc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (gc *GroupCreate) SetID(u uuid.UUID) *GroupCreate {
-	gc.mutation.SetID(u)
-	return gc
+func (_c *GroupCreate) SetID(v uuid.UUID) *GroupCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableID(u *uuid.UUID) *GroupCreate {
-	if u != nil {
-		gc.SetID(*u)
+func (_c *GroupCreate) SetNillableID(v *uuid.UUID) *GroupCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return gc
+	return _c
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (gc *GroupCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupCreate {
-	gc.mutation.AddGroupMembershipIDs(ids...)
-	return gc
+func (_c *GroupCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *GroupCreate {
+	_c.mutation.AddGroupMembershipIDs(ids...)
+	return _c
 }
 
 // AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
-func (gc *GroupCreate) AddGroupMemberships(g ...*GroupMembership) *GroupCreate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_c *GroupCreate) AddGroupMemberships(v ...*GroupMembership) *GroupCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return gc.AddGroupMembershipIDs(ids...)
+	return _c.AddGroupMembershipIDs(ids...)
 }
 
 // SetOrganization sets the "organization" edge to the Organization entity.
-func (gc *GroupCreate) SetOrganization(o *Organization) *GroupCreate {
-	return gc.SetOrganizationID(o.ID)
+func (_c *GroupCreate) SetOrganization(v *Organization) *GroupCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // Mutation returns the GroupMutation object of the builder.
-func (gc *GroupCreate) Mutation() *GroupMutation {
-	return gc.mutation
+func (_c *GroupCreate) Mutation() *GroupMutation {
+	return _c.mutation
 }
 
 // Save creates the Group in the database.
-func (gc *GroupCreate) Save(ctx context.Context) (*Group, error) {
-	gc.defaults()
-	return withHooks(ctx, gc.sqlSave, gc.mutation, gc.hooks)
+func (_c *GroupCreate) Save(ctx context.Context) (*Group, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (gc *GroupCreate) SaveX(ctx context.Context) *Group {
-	v, err := gc.Save(ctx)
+func (_c *GroupCreate) SaveX(ctx context.Context) *Group {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -163,72 +163,72 @@ func (gc *GroupCreate) SaveX(ctx context.Context) *Group {
 }
 
 // Exec executes the query.
-func (gc *GroupCreate) Exec(ctx context.Context) error {
-	_, err := gc.Save(ctx)
+func (_c *GroupCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (gc *GroupCreate) ExecX(ctx context.Context) {
-	if err := gc.Exec(ctx); err != nil {
+func (_c *GroupCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (gc *GroupCreate) defaults() {
-	if _, ok := gc.mutation.CreatedAt(); !ok {
+func (_c *GroupCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := group.DefaultCreatedAt()
-		gc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := gc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := group.DefaultUpdatedAt()
-		gc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := gc.mutation.MemberCount(); !ok {
+	if _, ok := _c.mutation.MemberCount(); !ok {
 		v := group.DefaultMemberCount
-		gc.mutation.SetMemberCount(v)
+		_c.mutation.SetMemberCount(v)
 	}
-	if _, ok := gc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := group.DefaultID()
-		gc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (gc *GroupCreate) check() error {
-	if _, ok := gc.mutation.Name(); !ok {
+func (_c *GroupCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Group.name"`)}
 	}
-	if v, ok := gc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
-	if _, ok := gc.mutation.OrganizationID(); !ok {
+	if _, ok := _c.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "Group.organization_id"`)}
 	}
-	if _, ok := gc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Group.created_at"`)}
 	}
-	if _, ok := gc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Group.updated_at"`)}
 	}
-	if _, ok := gc.mutation.MemberCount(); !ok {
+	if _, ok := _c.mutation.MemberCount(); !ok {
 		return &ValidationError{Name: "member_count", err: errors.New(`ent: missing required field "Group.member_count"`)}
 	}
-	if len(gc.mutation.OrganizationIDs()) == 0 {
+	if len(_c.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "Group.organization"`)}
 	}
 	return nil
 }
 
-func (gc *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
-	if err := gc.check(); err != nil {
+func (_c *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := gc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, gc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -241,46 +241,46 @@ func (gc *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
 			return nil, err
 		}
 	}
-	gc.mutation.id = &_node.ID
-	gc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
+func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Group{config: gc.config}
+		_node = &Group{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(group.Table, sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = gc.conflict
-	if id, ok := gc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := gc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := gc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := gc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(group.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := gc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := gc.mutation.DeletedAt(); ok {
+	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(group.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := gc.mutation.MemberCount(); ok {
+	if value, ok := _c.mutation.MemberCount(); ok {
 		_spec.SetField(group.FieldMemberCount, field.TypeInt, value)
 		_node.MemberCount = value
 	}
-	if nodes := gc.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -296,7 +296,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := gc.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -332,10 +332,10 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (gc *GroupCreate) OnConflict(opts ...sql.ConflictOption) *GroupUpsertOne {
-	gc.conflict = opts
+func (_c *GroupCreate) OnConflict(opts ...sql.ConflictOption) *GroupUpsertOne {
+	_c.conflict = opts
 	return &GroupUpsertOne{
-		create: gc,
+		create: _c,
 	}
 }
 
@@ -345,10 +345,10 @@ func (gc *GroupCreate) OnConflict(opts ...sql.ConflictOption) *GroupUpsertOne {
 //	client.Group.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (gc *GroupCreate) OnConflictColumns(columns ...string) *GroupUpsertOne {
-	gc.conflict = append(gc.conflict, sql.ConflictColumns(columns...))
+func (_c *GroupCreate) OnConflictColumns(columns ...string) *GroupUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &GroupUpsertOne{
-		create: gc,
+		create: _c,
 	}
 }
 
@@ -658,16 +658,16 @@ type GroupCreateBulk struct {
 }
 
 // Save creates the Group entities in the database.
-func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
-	if gcb.err != nil {
-		return nil, gcb.err
+func (_c *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(gcb.builders))
-	nodes := make([]*Group, len(gcb.builders))
-	mutators := make([]Mutator, len(gcb.builders))
-	for i := range gcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Group, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := gcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*GroupMutation)
@@ -681,12 +681,12 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, gcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = gcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, gcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -706,7 +706,7 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, gcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -714,8 +714,8 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (gcb *GroupCreateBulk) SaveX(ctx context.Context) []*Group {
-	v, err := gcb.Save(ctx)
+func (_c *GroupCreateBulk) SaveX(ctx context.Context) []*Group {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -723,14 +723,14 @@ func (gcb *GroupCreateBulk) SaveX(ctx context.Context) []*Group {
 }
 
 // Exec executes the query.
-func (gcb *GroupCreateBulk) Exec(ctx context.Context) error {
-	_, err := gcb.Save(ctx)
+func (_c *GroupCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (gcb *GroupCreateBulk) ExecX(ctx context.Context) {
-	if err := gcb.Exec(ctx); err != nil {
+func (_c *GroupCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -750,10 +750,10 @@ func (gcb *GroupCreateBulk) ExecX(ctx context.Context) {
 //			SetName(v+v).
 //		}).
 //		Exec(ctx)
-func (gcb *GroupCreateBulk) OnConflict(opts ...sql.ConflictOption) *GroupUpsertBulk {
-	gcb.conflict = opts
+func (_c *GroupCreateBulk) OnConflict(opts ...sql.ConflictOption) *GroupUpsertBulk {
+	_c.conflict = opts
 	return &GroupUpsertBulk{
-		create: gcb,
+		create: _c,
 	}
 }
 
@@ -763,10 +763,10 @@ func (gcb *GroupCreateBulk) OnConflict(opts ...sql.ConflictOption) *GroupUpsertB
 //	client.Group.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (gcb *GroupCreateBulk) OnConflictColumns(columns ...string) *GroupUpsertBulk {
-	gcb.conflict = append(gcb.conflict, sql.ConflictColumns(columns...))
+func (_c *GroupCreateBulk) OnConflictColumns(columns ...string) *GroupUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &GroupUpsertBulk{
-		create: gcb,
+		create: _c,
 	}
 }
 
