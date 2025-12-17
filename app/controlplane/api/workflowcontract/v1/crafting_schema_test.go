@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ func TestPolicyAttachment(t *testing.T) {
 			policy:         &v1.PolicyAttachment{},
 			wantErr:        true,
 			nviolations:    1,
-			firstViolation: "policy",
+			firstViolation: "policy: exactly one field is required in oneof",
 		},
 		{
 			desc:    "policy ref",
@@ -143,7 +143,7 @@ func TestPolicyAttachment(t *testing.T) {
 				Requirements: []string{"foo bar", "foo@bar@1.2.3", "foo @1.2", "123@123 ", "foo"},
 			},
 			nviolations:    5,
-			firstViolation: "requirements[0]",
+			firstViolation: "requirements[0]: value does not match regex pattern `^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$`",
 			wantErr:        true,
 		},
 	}
@@ -160,7 +160,7 @@ func TestPolicyAttachment(t *testing.T) {
 				valErr := &protovalidate.ValidationError{}
 				errors.As(err, &valErr)
 				assert.Equal(t, tc.nviolations, len(valErr.Violations))
-				assert.Equal(t, tc.firstViolation, valErr.Violations[0].FieldPath)
+				assert.Equal(t, tc.firstViolation, valErr.Violations[0].String())
 				assert.Contains(t, err.Error(), tc.firstViolation)
 
 				return
